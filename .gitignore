@@ -17,6 +17,9 @@ db.sqlite3-journal
 staticfiles/
 media/
 
+# Django FileField report uploads (year-based subdirectories)
+reports/20*/
+
 # Node
 node_modules/
 frontend/dist/
