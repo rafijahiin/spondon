@@ -1,0 +1,12 @@
+[phases.setup]
+nixPkgs = ["nodejs_20"]
+
+[phases.build]
+cmds = [
+  "npm --prefix frontend ci",
+  "npm --prefix frontend run build",
+  "python manage.py collectstatic --noinput"
+]
+
+[start]
+cmd = "python manage.py migrate --noinput && gunicorn spondon.wsgi --bind 0.0.0.0:$PORT --workers 2 --timeout 120"
