@@ -1,9 +1,14 @@
 [phases.setup]
-nixPkgs = ["nodejs_20"]
+nixPkgs = ["nodejs_20", "python312"]
+
+[phases.install]
+cmds = [
+  "pip install -r requirements.txt",
+  "npm --prefix frontend ci"
+]
 
 [phases.build]
 cmds = [
-  "npm --prefix frontend ci",
   "npm --prefix frontend run build",
   "python manage.py collectstatic --noinput"
 ]
