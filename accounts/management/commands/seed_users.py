@@ -6,6 +6,7 @@ class Command(BaseCommand):
     help = 'Create default users if they do not exist (idempotent)'
 
     USERS = [
+        # ── Developer ──────────────────────────────────────────────────────────
         {
             'email': 'rafijahiin@gmail.com',
             'password': 'REDACTED',
@@ -13,19 +14,43 @@ class Command(BaseCommand):
             'organisation': 'CIPRB',
             'role': 'developer',
         },
+        # ── UNFPA focal persons (super admin — full access, all orgs) ──────────
         {
-            'email': 'ciprb@spondon.app',
+            'email': 'animesh@unfpa.org',
             'password': 'REDACTED',
-            'full_name': 'CIPRB Admin',
-            'organisation': 'CIPRB',
+            'full_name': 'Dr. Animesh Biswas',
+            'organisation': 'UNFPA',
             'role': 'super_admin',
         },
         {
-            'email': 'unfpa@spondon.app',
+            'email': 'rokhsana@unfpa.org',
             'password': 'REDACTED',
-            'full_name': 'UNFPA Admin',
+            'full_name': 'Rokhsana',
             'organisation': 'UNFPA',
             'role': 'super_admin',
+        },
+        # ── CIPRB focal person (super admin — full access, all orgs) ───────────
+        {
+            'email': 'sayeed@ciprb.org',
+            'password': 'REDACTED',
+            'full_name': 'Dr. Abu Sayeed Md. Abdullah',
+            'organisation': 'CIPRB',
+            'role': 'super_admin',
+        },
+        # ── Org managers (role-based, org-scoped) ──────────────────────────────
+        {
+            'email': 'manager@bandhu.org',
+            'password': 'REDACTED',
+            'full_name': 'Bandhu Manager',
+            'organisation': 'Bandhu',
+            'role': 'manager',
+        },
+        {
+            'email': 'manager@phd.org',
+            'password': 'REDACTED',
+            'full_name': 'PHD Manager',
+            'organisation': 'PHD',
+            'role': 'manager',
         },
     ]
 

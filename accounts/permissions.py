@@ -46,6 +46,22 @@ class IsDeveloper(BasePermission):
         )
 
 
+class IsSuperAdminOrDeveloper(BasePermission):
+    """
+    Super admins (TOTP-verified) OR developers (no OTP required).
+    Used for user management and other admin-only actions.
+    """
+
+    def has_permission(self, request, view):
+        if not request.user.is_authenticated:
+            return False
+        if request.user.role == Role.DEVELOPER:
+            return True
+        if request.user.role == Role.SUPER_ADMIN:
+            return is_verified(request.user)
+        return False
+
+
 class OrgFilterMixin:
     """
     DRF ViewSet mixin enforcing org-level queryset isolation.

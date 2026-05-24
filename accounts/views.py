@@ -14,7 +14,7 @@ from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 
 from .models import User
-from .permissions import IsSuperAdmin
+from .permissions import IsSuperAdmin, IsSuperAdminOrDeveloper
 from .serializers import (
     AdminUserSerializer,
     LoginSerializer,
@@ -172,9 +172,9 @@ class TOTPVerifyView(APIView):
 
 
 class UserViewSet(ModelViewSet):
-    """User management — super admins and developers only."""
+    """User management — super admins (TOTP-verified) and developers."""
     queryset = User.objects.all().order_by('organisation', 'full_name')
-    permission_classes = [IsSuperAdmin]
+    permission_classes = [IsSuperAdminOrDeveloper]
 
     def get_serializer_class(self):
         if self.action == 'create':
