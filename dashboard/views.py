@@ -475,7 +475,7 @@ class ProgramsSummaryView(APIView):
     permission_classes = [IsSuperAdminOrManager]
 
     def get(self, request):
-        from tracker.programs_query import PROGRAMS_REGISTRY, count_programs
+        from tracker.programs_query import PROGRAMS_REGISTRY, ORG_FORM_TYPES, count_programs
 
         partner = request.query_params.get('partner', '')
         if not partner or partner not in allowed_partners(request.user):
@@ -488,9 +488,14 @@ class ProgramsSummaryView(APIView):
         except (ValueError, TypeError):
             year, month = now.year, now.month
 
+        # Only query form types relevant to this partner
+        org_keys = [k for k in ORG_FORM_TYPES.get(partner, list(PROGRAMS_REGISTRY.keys()))
+                    if k in PROGRAMS_REGISTRY]
+
         # Per-form-type counts for this month
         counts: dict[str, dict] = {}
-        for key, (model_name, label, label_bn, category) in PROGRAMS_REGISTRY.items():
+        for key in org_keys:
+            _, label, label_bn, category = PROGRAMS_REGISTRY[key]
             c = count_programs(key, partner, year, month)
             counts[key] = {
                 'count': c,
@@ -508,10 +513,7 @@ class ProgramsSummaryView(APIView):
 
         # Previous-month comparison
         py, pm = _months_ago(year, month, 1)
-        prev_total = sum(
-            count_programs(key, partner, py, pm)
-            for key in PROGRAMS_REGISTRY
-        )
+        prev_total = sum(count_programs(key, partner, py, pm) for key in org_keys)
         mom_change = (
             round((total - prev_total) / prev_total * 100, 1)
             if prev_total > 0
@@ -524,15 +526,15 @@ class ProgramsSummaryView(APIView):
             my, mm = _months_ago(year, month, i)
             clinical = sum(
                 count_programs(k, partner, my, mm)
-                for k, v in PROGRAMS_REGISTRY.items() if v[3] == 'Clinical'
+                for k in org_keys if PROGRAMS_REGISTRY[k][3] == 'Clinical'
             )
             community = sum(
                 count_programs(k, partner, my, mm)
-                for k, v in PROGRAMS_REGISTRY.items() if v[3] == 'Community'
+                for k in org_keys if PROGRAMS_REGISTRY[k][3] == 'Community'
             )
             operations = sum(
                 count_programs(k, partner, my, mm)
-                for k, v in PROGRAMS_REGISTRY.items() if v[3] == 'Operations'
+                for k in org_keys if PROGRAMS_REGISTRY[k][3] == 'Operations'
             )
             monthly_trend.append({
                 'month': mm,

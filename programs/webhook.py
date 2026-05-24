@@ -7,6 +7,7 @@ Single endpoint; dispatch is keyed on `_xform_id_string` from KoboToolbox.
 Form id_string → model mapping (id_string is set in the XLS form settings
 sheet and MUST match exactly what KoboToolbox sends):
 
+  spondon_client_reg_v1      → Client (registration — both orgs)
   spondon_clinic_visit_v1    → ClinicVisit
   spondon_hiv_sti_test_v1    → HIVSTITestResult
   spondon_adr_record_v1      → ADRRecord
@@ -705,11 +706,65 @@ def _handle_mobile_camp(payload, lat, lng):
     return HttpResponse('Created', status=201)
 
 
+# ─── KF-01 Client Registration ────────────────────────────────────────────────
+
+def _handle_client_reg(payload: dict, lat: float | None, lng: float | None) -> HttpResponse:
+    """
+    KF-01 Client Registration — creates or updates the full Client record.
+
+    Unlike service delivery forms, client registration does NOT go through the
+    approval workflow (no approval_status field on Client).  The record is
+    written directly.  If a stub Client already exists (created by a prior
+    service delivery submission with the same client_id), it is updated with
+    the full demographic data.
+    """
+    org = _org(payload)
+    if not org:
+        return HttpResponse('Bad Request — organisation could not be resolved', status=400)
+
+    center = _get_center(payload, org)
+    if not center:
+        return HttpResponse('Bad Request — no active ServiceCenter for this organisation', status=400)
+
+    client_id = _str(payload.get('client_id'))
+    if not client_id:
+        return HttpResponse('Bad Request — client_id required', status=400)
+
+    full_data: dict = {
+        'organisation': org,
+        'center': center,
+        'name': _str(payload.get('client_name')),
+        'mother_name': _str(payload.get('mother_name')),
+        'father_name': _str(payload.get('father_name')),
+        'birth_year': _int_or_none(payload.get('birth_year')),
+        'gender': _str(payload.get('gender')),
+        'target_group_code': _str(payload.get('target_group_code')),
+        'current_address': _str(payload.get('current_address')),
+        'spot_name': _str(payload.get('spot_name')),
+        'uses_fp_method': _nullable_bool(payload, 'uses_fp_method'),
+        'has_nid': _nullable_bool(payload, 'has_nid'),
+        'enrolled_date': _date(payload.get('enrolled_date')),
+        'notes': _str(payload.get('notes')),
+        'current_status': Client.ACTIVE,
+    }
+
+    client, created = Client.objects.update_or_create(
+        client_id=client_id,
+        defaults=full_data,
+    )
+    action = 'registered' if created else 'updated'
+    logger.info('Client %s: %s [%s]', action, client_id, org)
+    # Return 201 for new registrations (triggers Telegram notification),
+    # 200 for updates so existing stubs are silently patched.
+    return HttpResponse('Created' if created else 'OK', status=201 if created else 200)
+
+
 # ─── Dispatch table ────────────────────────────────────────────────────────────
 
 # Keys are the XLS form id_string values (set in KoboToolbox form settings).
 # Phase 5 XLS forms MUST use these exact id_strings for routing to work.
 FORM_HANDLERS: dict = {
+    'spondon_client_reg_v1':   _handle_client_reg,
     'spondon_clinic_visit_v1':   _handle_clinic_visit,
     'spondon_hiv_sti_test_v1':   _handle_hiv_sti_test,
     'spondon_adr_record_v1':     _handle_adr_record,
@@ -771,6 +826,7 @@ def _notify(org: str, form_label: str, kobo_id: str) -> None:
 # ─── Webhook view ──────────────────────────────────────────────────────────────
 
 _FORM_LABELS = {
+    'spondon_client_reg_v1':     'Client Registration (KF-01)',
     'spondon_clinic_visit_v1':   'Clinic Visit (KF-02)',
     'spondon_hiv_sti_test_v1':   'HIV/STI Test Result (KF-03)',
     'spondon_adr_record_v1':     'ADR Record (KF-13)',

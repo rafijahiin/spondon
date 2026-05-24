@@ -42,6 +42,36 @@ LEGACY_REGISTRY: dict[str, tuple[str, str, str]] = {
 
 CATEGORY_ORDER = ['Clinical', 'Community', 'Operations', 'Legacy']
 
+# ── Per-org form type lists ────────────────────────────────────────────────────
+# Defines which form types each organisation actually uses.
+# PHD: maternal/reproductive health — ANC and Mobile Camps are PHD-only.
+# Bondhu: key populations (FSW, TG, MSM) — Hygiene Kit is Bondhu-only.
+# Shared forms (clinic_visit, outreach, counselling, etc.) appear in both lists.
+# Used by ProgramsSummaryView to avoid querying irrelevant form types per org.
+
+ORG_FORM_TYPES: dict[str, list[str]] = {
+    'PHD': [
+        # Clinical
+        'clinic_visit', 'antenatal_card', 'hiv_sti_test', 'htc_counselling',
+        'mh_screening', 'adr_record', 'autoclave_log',
+        # Community
+        'outreach_session', 'group_education', 'individual_counsel',
+        'gbv_case', 'referral',
+        # Operations
+        'mobile_camp', 'training_event', 'coord_meeting',
+    ],
+    'Bondhu': [
+        # Clinical
+        'clinic_visit', 'hiv_sti_test', 'htc_counselling',
+        'mh_screening', 'adr_record', 'autoclave_log',
+        # Community
+        'outreach_session', 'group_education', 'individual_counsel',
+        'gbv_case', 'referral', 'hygiene_kit',
+        # Operations
+        'training_event', 'coord_meeting',
+    ],
+}
+
 
 def _get_programs_model(model_name: str):
     """Lazily import a programs model by class name."""
