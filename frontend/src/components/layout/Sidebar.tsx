@@ -25,10 +25,9 @@ interface NavItem {
 }
 
 const KOBO_FORMS = [
-  { uid: 'aHWrKznPLgzEAaoT9p2aFM', label: 'MPDSR Form',     labelBn: 'মাতৃমৃত্যু ফর্ম',  icon: <Activity className="h-4 w-4" /> },
-  { uid: 'arcAMRYLPizmHhe4uFNmtt', label: 'Fistula Form',   labelBn: 'ফিস্টুলা ফর্ম',    icon: <Heart className="h-4 w-4" /> },
-  { uid: 'axmKG3hcQpL35kcL577Xwn', label: 'Baseline Form',  labelBn: 'বেসলাইন ফর্ম',     icon: <BookOpen className="h-4 w-4" /> },
-  { uid: 'aHWrKznPLgzEAaoT9p2aFM', label: 'Activity Form',  labelBn: 'কার্যক্রম ফর্ম',   icon: <BarChart2 className="h-4 w-4" /> },
+  { url: 'https://ee.kobotoolbox.org/x/ZOBX0pKd',  label: 'MPDSR Form',          labelBn: 'মাতৃমৃত্যু ফর্ম', icon: <Activity className="h-4 w-4" /> },
+  { url: 'https://ee.kobotoolbox.org/x/MHkEKfzl',  label: 'Fistula Form',        labelBn: 'ফিস্টুলা ফর্ম',   icon: <Heart className="h-4 w-4" /> },
+  { url: 'https://ee.kobotoolbox.org/x/MTvoZ3Hz',  label: 'Baseline & Endline',  labelBn: 'বেসলাইন ফর্ম',    icon: <BookOpen className="h-4 w-4" /> },
 ]
 
 const NAV: NavItem[] = [
@@ -129,7 +128,7 @@ export function Sidebar({ collapsed, onClose }: Props) {
         {KOBO_FORMS.map((form) => (
           <a
             key={form.uid}
-            href={`https://kf.kobotoolbox.org/#/forms/${form.uid}`}
+            href={form.url}
             target="_blank"
             rel="noopener noreferrer"
             title={collapsed ? form.label : undefined}
