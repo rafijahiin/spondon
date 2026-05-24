@@ -1,7 +1,10 @@
 import hashlib
 import hmac
+import logging
 
 from django.conf import settings
+
+logger = logging.getLogger(__name__)
 
 
 def validate_kobo_signature(request) -> bool:
@@ -21,6 +24,9 @@ def validate_kobo_signature(request) -> bool:
     """
     secret = settings.KOBO_WEBHOOK_SECRET
     if not secret:
+        logger.critical(
+            'KOBO_WEBHOOK_SECRET is not set — all webhook requests are accepted without validation'
+        )
         return True
 
     auth = request.headers.get('Authorization', '')

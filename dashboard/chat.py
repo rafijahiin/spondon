@@ -74,7 +74,11 @@ def _safe_count(model, org: str, start: date, end: date) -> int:
         if org:
             qs = qs.filter(organisation=org)
         return qs.count()
-    except Exception:
+    except Exception as exc:
+        logger.error(
+            'AI chat: DB query failed for %s [org=%r %s–%s]: %s',
+            getattr(model, '__name__', model), org, start, end, exc,
+        )
         return 0
 
 
@@ -98,7 +102,10 @@ def _gather_context(partner: str) -> dict:
     # Import all programs models lazily
     try:
         from programs import models as pm
-    except Exception:
+    except Exception as exc:
+        logger.error(
+            'AI chat: failed to import programs models — all counts will be zero: %s', exc
+        )
         pm = None
 
     counts:      dict[str, int] = {}
@@ -137,8 +144,8 @@ def _gather_context(partner: str) -> dict:
         ):
             scope = f' [{a.partner}]' if a.partner else ''
             alerts.append(f'{a.get_severity_display().upper()}: {a.title}{scope}')
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.warning('AI chat: alert fetch failed: %s', exc)
 
     # Legacy fistula / MPDSR quick counts
     fistula = mpdsr = 0
@@ -158,14 +165,16 @@ def _gather_context(partner: str) -> dict:
 
     return {
         'period':            ps.strftime('%B %Y'),
+        'prev_period':       pp_s.strftime('%B %Y'),
         'partner':           partner or 'PHD + Bondhu (all)',
         'activities_this_month':  total,
         'activities_prev_month':  prev_total,
         'mom_change_pct':         mom_pct,
         'fistula_cases_this_month': fistula,
         'mpdsr_cases_this_month':   mpdsr,
-        'activity_breakdown':     counts,
-        'active_alerts':          alerts or ['No active alerts.'],
+        'activity_breakdown':      counts,
+        'activity_breakdown_prev': prev_counts,
+        'active_alerts':           alerts or ['No active alerts.'],
     }
 
 
@@ -179,9 +188,18 @@ def _build_context_text(ctx: dict) -> str:
         f"Fistula cases (legacy) this month: {ctx['fistula_cases_this_month']}",
         f"MPDSR cases (legacy) this month: {ctx['mpdsr_cases_this_month']}",
         "",
-        "Activity breakdown (this month, approved):",
+        f"Activity breakdown — {ctx['period']} (this month, approved):",
     ]
     for label, val in ctx['activity_breakdown'].items():
+        prev_val = ctx['activity_breakdown_prev'].get(label, 0)
+        change = val - prev_val
+        sign = '+' if change >= 0 else ''
+        lines.append(f"  {label}: {val} ({sign}{change} vs previous month)")
+    lines += [
+        "",
+        f"Activity breakdown — {ctx['prev_period']} (previous month, for reference):",
+    ]
+    for label, val in ctx['activity_breakdown_prev'].items():
         lines.append(f"  {label}: {val}")
     lines += [
         "",
@@ -223,7 +241,7 @@ def answer_question(question: str, partner: str = '') -> str:
                 {'role': 'system', 'content': _SYSTEM},
                 {'role': 'user',   'content': body},
             ],
-            max_tokens=400,
+            max_tokens=600,
             temperature=0.2,
         )
         return completion.choices[0].message.content.strip()

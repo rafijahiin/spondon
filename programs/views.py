@@ -14,6 +14,7 @@ import logging
 
 import requests as _requests
 from django.conf import settings as _settings
+from django.db import transaction as _tx
 from django.utils import timezone
 from rest_framework import viewsets, views, status
 from rest_framework.decorators import action
@@ -104,27 +105,37 @@ class OrgFilteredViewSet(viewsets.ModelViewSet):
         return _org_filter(super().get_queryset(), self.request)
 
     def _approve_or_reject(self, request, pk, action_type):
-        obj = self.get_object()
         user = request.user
+        with _tx.atomic():
+            try:
+                obj = self.get_queryset().select_for_update().get(pk=pk)
+            except Exception:
+                return Response({'detail': 'Record not found.'}, status=status.HTTP_404_NOT_FOUND)
 
-        can_approve = (
-            user.role in ('super_admin', 'developer') or
-            (user.role == 'manager' and obj.organisation == user.organisation)
-        )
-        if not can_approve:
-            return Response({'detail': 'Not authorised.'}, status=status.HTTP_403_FORBIDDEN)
+            can_approve = (
+                user.role in ('super_admin', 'developer') or
+                (user.role == 'manager' and obj.organisation == user.organisation)
+            )
+            if not can_approve:
+                return Response({'detail': 'Not authorised.'}, status=status.HTTP_403_FORBIDDEN)
 
-        if action_type == 'approve':
-            obj.approval_status = 'APPROVED'
-            obj.approved_by = user
-            obj.approved_at = timezone.now()
-            obj.rejected_reason = ''
-        else:
-            reason = request.data.get('reason', '')
-            obj.approval_status = 'REJECTED'
-            obj.rejected_reason = reason
+            if obj.approval_status != 'PENDING':
+                return Response(
+                    {'status': obj.approval_status, 'detail': 'Already processed.'},
+                    status=status.HTTP_409_CONFLICT,
+                )
 
-        obj.save()
+            if action_type == 'approve':
+                obj.approval_status = 'APPROVED'
+                obj.approved_by = user
+                obj.approved_at = timezone.now()
+                obj.rejected_reason = ''
+            else:
+                reason = request.data.get('reason', '')
+                obj.approval_status = 'REJECTED'
+                obj.rejected_reason = reason
+
+            obj.save()
         return Response({'status': obj.approval_status})
 
     @action(detail=True, methods=['post'])
@@ -377,8 +388,8 @@ def _build_summary(obj, model_type: str) -> str:
             if obj.enrolled_date:
                 parts.append(f"Enrolled: {obj.enrolled_date}")
             return ' · '.join(parts)
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.warning('_build_summary(%s, pk=%s): %s', model_type, getattr(obj, 'id', '?'), exc)
     return f"{model_type.replace('_', ' ').title()} record"
 
 
@@ -507,31 +518,38 @@ class PendingApprovalsView(views.APIView):
         if model_mgr is None:
             return Response({'detail': f'Unknown model_type: {model_type}'}, status=status.HTTP_400_BAD_REQUEST)
 
-        try:
-            obj = model_mgr.get(id=pk)
-        except Exception:
-            return Response({'detail': 'Record not found.'}, status=status.HTTP_404_NOT_FOUND)
+        with _tx.atomic():
+            try:
+                obj = model_mgr.select_for_update().get(id=pk)
+            except Exception:
+                return Response({'detail': 'Record not found.'}, status=status.HTTP_404_NOT_FOUND)
 
-        user = request.user
-        can_approve = (
-            user.role in ('super_admin', 'developer') or
-            (user.role == 'manager' and obj.organisation == user.organisation)
-        )
-        if not can_approve:
-            return Response({'detail': 'Not authorised.'}, status=status.HTTP_403_FORBIDDEN)
+            user = request.user
+            can_approve = (
+                user.role in ('super_admin', 'developer') or
+                (user.role == 'manager' and obj.organisation == user.organisation)
+            )
+            if not can_approve:
+                return Response({'detail': 'Not authorised.'}, status=status.HTTP_403_FORBIDDEN)
 
-        if action_type == 'approve':
-            obj.approval_status = 'APPROVED'
-            obj.approved_by = user
-            obj.approved_at = timezone.now()
-            obj.rejected_reason = ''
-        elif action_type == 'reject':
-            obj.approval_status = 'REJECTED'
-            obj.rejected_reason = reason
-        else:
-            return Response({'detail': "action must be 'approve' or 'reject'."}, status=status.HTTP_400_BAD_REQUEST)
+            if obj.approval_status != 'PENDING':
+                return Response(
+                    {'status': obj.approval_status, 'detail': 'Already processed.'},
+                    status=status.HTTP_409_CONFLICT,
+                )
 
-        obj.save()
+            if action_type == 'approve':
+                obj.approval_status = 'APPROVED'
+                obj.approved_by = user
+                obj.approved_at = timezone.now()
+                obj.rejected_reason = ''
+            elif action_type == 'reject':
+                obj.approval_status = 'REJECTED'
+                obj.rejected_reason = reason
+            else:
+                return Response({'detail': "action must be 'approve' or 'reject'."}, status=status.HTTP_400_BAD_REQUEST)
+
+            obj.save()
 
         # Telegram — notify org chat of approval/rejection
         try:

@@ -63,7 +63,7 @@ const PHD_COUNTS: MockProgramsSummary['counts'] = {
   // Community
   outreach_session:   { count: 45,  label: 'Outreach Sessions',     label_bn: 'আউটরিচ সেশন',         category: 'Community'  },
   group_education:    { count: 28,  label: 'Group Education',       label_bn: 'গ্রুপ শিক্ষা',        category: 'Community'  },
-  individual_counsel: { count: 32,  label: 'Individual Counselling',label_bn: 'ব্যক্তিগত পরামর্শ',   category: 'Community'  },
+  individual_counselling: { count: 32,  label: 'Individual Counselling',label_bn: 'ব্যক্তিগত পরামর্শ',   category: 'Community'  },
   referral:           { count: 21,  label: 'Referrals',             label_bn: 'রেফারেল',              category: 'Community'  },
   gbv_case:           { count: 9,   label: 'GBV Cases',             label_bn: 'জিবিভি কেস',          category: 'Community'  },
   // Operations (mobile_camp is PHD only)
@@ -93,7 +93,7 @@ export const MOCK_PHD: MockProgramsSummary = {
     { key: 'clinic_visit',       count: 89,  label: 'Clinic Visits',          label_bn: 'ক্লিনিক পরিদর্শন',    category: 'Clinical'   },
     { key: 'antenatal_card',     count: 67,  label: 'Antenatal Cards',        label_bn: 'প্রসব পূর্ব যত্ন',    category: 'Clinical'   },
     { key: 'outreach_session',   count: 45,  label: 'Outreach Sessions',      label_bn: 'আউটরিচ সেশন',         category: 'Community'  },
-    { key: 'individual_counsel', count: 32,  label: 'Individual Counselling', label_bn: 'ব্যক্তিগত পরামর্শ',   category: 'Community'  },
+    { key: 'individual_counselling', count: 32,  label: 'Individual Counselling', label_bn: 'ব্যক্তিগত পরামর্শ',   category: 'Community'  },
     { key: 'group_education',    count: 28,  label: 'Group Education',        label_bn: 'গ্রুপ শিক্ষা',        category: 'Community'  },
     { key: 'hiv_sti_test',       count: 24,  label: 'HIV/STI Tests',          label_bn: 'এইচআইভি পরীক্ষা',     category: 'Clinical'   },
     { key: 'referral',           count: 21,  label: 'Referrals',              label_bn: 'রেফারেল',              category: 'Community'  },
@@ -134,7 +134,7 @@ const BONDHU_COUNTS: MockProgramsSummary['counts'] = {
   autoclave_log:      { count: 7,   label: 'Autoclave Logs',        label_bn: 'অটোক্লেভ লগ',         category: 'Clinical'   },
   // Community (hygiene_kit is Bondhu only; no mobile_camp — PHD only)
   outreach_session:   { count: 134, label: 'Outreach Sessions',     label_bn: 'আউটরিচ সেশন',         category: 'Community'  },
-  individual_counsel: { count: 189, label: 'Individual Counselling',label_bn: 'ব্যক্তিগত পরামর্শ',   category: 'Community'  },
+  individual_counselling: { count: 189, label: 'Individual Counselling',label_bn: 'ব্যক্তিগত পরামর্শ',   category: 'Community'  },
   group_education:    { count: 78,  label: 'Group Education',       label_bn: 'গ্রুপ শিক্ষা',        category: 'Community'  },
   referral:           { count: 56,  label: 'Referrals',             label_bn: 'রেফারেল',              category: 'Community'  },
   gbv_case:           { count: 38,  label: 'GBV Cases',             label_bn: 'জিবিভি কেস',          category: 'Community'  },
@@ -163,7 +163,7 @@ export const MOCK_BONDHU: MockProgramsSummary = {
   ],
   top_forms: [
     { key: 'hiv_sti_test',       count: 203, label: 'HIV/STI Tests',          label_bn: 'এইচআইভি পরীক্ষা',     category: 'Clinical'  },
-    { key: 'individual_counsel', count: 189, label: 'Individual Counselling', label_bn: 'ব্যক্তিগত পরামর্শ',   category: 'Community' },
+    { key: 'individual_counselling', count: 189, label: 'Individual Counselling', label_bn: 'ব্যক্তিগত পরামর্শ',   category: 'Community' },
     { key: 'clinic_visit',       count: 156, label: 'Clinic Visits',          label_bn: 'ক্লিনিক পরিদর্শন',    category: 'Clinical'  },
     { key: 'outreach_session',   count: 134, label: 'Outreach Sessions',      label_bn: 'আউটরিচ সেশন',         category: 'Community' },
     { key: 'htc_counselling',    count: 112, label: 'HTC Counselling',        label_bn: 'এইচটিসি পরামর্শ',     category: 'Clinical'  },

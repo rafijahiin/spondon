@@ -21,7 +21,7 @@ PROGRAMS_REGISTRY: dict[str, tuple[str, str, str, str]] = {
     'autoclave_log':      ('AutoclaveLog',           'Autoclave Logs',        'অটোক্লেভ লগ',           'Clinical'),
     'antenatal_card':     ('AntenatalCard',          'Antenatal Cards',       'প্রসব পূর্ব যত্ন',      'Clinical'),
     'htc_counselling':    ('HTCCounselling',         'HTC Counselling',       'এইচটিসি পরামর্শ',       'Clinical'),
-    'individual_counsel': ('IndividualCounselling',  'Individual Counselling','ব্যক্তিগত পরামর্শ',     'Community'),
+    'individual_counselling': ('IndividualCounselling',  'Individual Counselling','ব্যক্তিগত পরামর্শ',     'Community'),
     'mh_screening':       ('MHScreening',            'MH Screenings',         'মানসিক স্বাস্থ্য',      'Clinical'),
     'gbv_case':           ('GBVCase',                'GBV Cases',             'জিবিভি কেস',             'Community'),
     'outreach_session':   ('OutreachSession',        'Outreach Sessions',     'আউটরিচ সেশন',           'Community'),
@@ -55,7 +55,7 @@ ORG_FORM_TYPES: dict[str, list[str]] = {
         'clinic_visit', 'antenatal_card', 'hiv_sti_test', 'htc_counselling',
         'mh_screening', 'adr_record', 'autoclave_log',
         # Community
-        'outreach_session', 'group_education', 'individual_counsel',
+        'outreach_session', 'group_education', 'individual_counselling',
         'gbv_case', 'referral',
         # Operations
         'mobile_camp', 'training_event', 'coord_meeting',
@@ -65,7 +65,7 @@ ORG_FORM_TYPES: dict[str, list[str]] = {
         'clinic_visit', 'hiv_sti_test', 'htc_counselling',
         'mh_screening', 'adr_record', 'autoclave_log',
         # Community
-        'outreach_session', 'group_education', 'individual_counsel',
+        'outreach_session', 'group_education', 'individual_counselling',
         'gbv_case', 'referral', 'hygiene_kit',
         # Operations
         'training_event', 'coord_meeting',
