@@ -859,17 +859,19 @@ _FORM_LABELS = {
 
 @csrf_exempt
 @require_POST
-def programs_webhook(request, org_override: str = ''):
+def programs_webhook(request, org_override: str = '', form_slug: str = ''):
     """
-    POST /webhook/programs/            — org resolved from payload field
-    POST /webhook/programs/PHD/        — force organisation='PHD'
-    POST /webhook/programs/Bondhu/     — force organisation='Bondhu'
+    POST /webhook/programs/                              — id_string from payload
+    POST /webhook/programs/PHD/                          — force org=PHD
+    POST /webhook/programs/Bondhu/                       — force org=Bondhu
+    POST /webhook/programs/form/<form_slug>/             — form type from URL (recommended)
 
-    Using the org-specific URLs is strongly recommended so submissions are
-    correctly tagged even when the KoboToolbox form has no organisation field.
+    The /form/<form_slug>/ variant is the most reliable: it bypasses
+    _xform_id_string entirely, so it works even when KoboToolbox auto-generates
+    its own id_string on upload.
 
-    KoboToolbox REST Service setup (per form, per org):
-      URL:    https://<domain>/webhook/programs/PHD/   (or /Bondhu/)
+    KoboToolbox REST Service setup (per form):
+      URL:    https://<domain>/webhook/programs/form/spondon_client_reg_v1/
       Method: POST
       Header: Authorization: Token REDACTED
     """
@@ -889,13 +891,18 @@ def programs_webhook(request, org_override: str = ''):
     if not kobo_id:
         return HttpResponse('Bad Request — missing _id', status=400)
 
-    # Org-specific URL overrides the payload field so forms don't need
-    # an explicit organisation field — the URL itself is the source of truth.
     if org_override:
         payload['organisation'] = org_override
         logger.debug('Programs webhook: org forced to %r via URL', org_override)
 
-    xform_id = payload.get('_xform_id_string', '')
+    # form_slug in URL takes priority over _xform_id_string in payload —
+    # this is the reliable path when KoboToolbox auto-generates its own id_string.
+    if form_slug:
+        xform_id = form_slug
+        logger.debug('Programs webhook: form type %r resolved from URL slug', xform_id)
+    else:
+        xform_id = payload.get('_xform_id_string', '')
+
     handler = FORM_HANDLERS.get(xform_id)
     if not handler:
         logger.warning('Programs webhook: unknown form id_string %r', xform_id)
@@ -933,3 +940,21 @@ def programs_webhook_phd(request):
 def programs_webhook_bondhu(request):
     """POST /webhook/programs/Bondhu/ — all submissions tagged organisation='Bondhu'."""
     return programs_webhook(request, org_override='Bondhu')
+
+
+@csrf_exempt
+@require_POST
+def programs_webhook_by_form(request, form_slug: str):
+    """
+    POST /webhook/programs/form/<form_slug>/
+
+    Identifies the form type from the URL slug rather than _xform_id_string.
+    This is the recommended endpoint when KoboToolbox has auto-generated its
+    own id_string and doesn't match the XLS settings sheet value.
+
+    KoboToolbox REST Service URL per form:
+      https://<domain>/webhook/programs/form/spondon_client_reg_v1/
+      https://<domain>/webhook/programs/form/spondon_clinic_visit_v1/
+      ... etc.
+    """
+    return programs_webhook(request, form_slug=form_slug)
