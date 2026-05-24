@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState } from 'react'
-import { MapContainer, TileLayer, GeoJSON } from 'react-leaflet'
+import { useEffect, useRef } from 'react'
+import { MapContainer, TileLayer, GeoJSON, CircleMarker, Popup } from 'react-leaflet'
 import type { Layer, PathOptions } from 'leaflet'
 import 'leaflet/dist/leaflet.css'
-import type { ActivityItem } from '@/types'
+import type { ActivityItem, ServiceCenter } from '@/types'
+import { useState } from 'react'
 
 // GeoJSON bundled in frontend/public — avoids GitHub LFS CDN CORS issues
 const GEOJSON_URL = '/bangladesh-adm2.geojson'
@@ -13,8 +14,16 @@ const CP10_DISTRICTS = new Set([
   'barguna', 'bagerhat',
 ])
 
+const CENTER_COLORS: Record<string, string> = {
+  DIC: '#7c3aed',
+  BROTHEL: '#00658C',
+  SUB_DIC: '#059669',
+  MOBILE: '#d97706',
+}
+
 interface Props {
   activityFeed: ActivityItem[]
+  centers?: ServiceCenter[]
   className?: string
 }
 
@@ -22,7 +31,7 @@ function normalize(name: string) {
   return name.toLowerCase().replace(/[^a-z]/g, '')
 }
 
-export function BangladeshMap({ activityFeed, className }: Props) {
+export function BangladeshMap({ activityFeed, centers = [], className }: Props) {
   const [geoData, setGeoData] = useState<GeoJSON.FeatureCollection | null>(null)
   const [error, setError] = useState(false)
   const geoJsonRef = useRef<L.GeoJSON | null>(null)
@@ -56,9 +65,11 @@ export function BangladeshMap({ activityFeed, className }: Props) {
   useEffect(() => {
     if (!geoJsonRef.current) return
     geoJsonRef.current.eachLayer((layer: Layer) => {
-      const f = (layer as any).feature as GeoJSON.Feature
+      const f = (layer as unknown as { feature: GeoJSON.Feature }).feature
       const name = normalize((f.properties?.shapeName as string) ?? '')
-      ;(layer as any).setStyle(districtStyle(name, districtCounts[name] ?? 0))
+      ;(layer as unknown as { setStyle: (s: PathOptions) => void }).setStyle(
+        districtStyle(name, districtCounts[name] ?? 0)
+      )
     })
   }, [activityFeed]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -70,11 +81,15 @@ export function BangladeshMap({ activityFeed, className }: Props) {
   const onEachFeature = (feature: GeoJSON.Feature, layer: Layer) => {
     const name = (feature.properties?.shapeName as string) ?? 'Unknown'
     const count = districtCounts[normalize(name)] ?? 0
-    ;(layer as any).bindTooltip?.(`${name}: ${count} submission${count !== 1 ? 's' : ''}`, {
-      direction: 'top',
-      className: 'leaflet-tooltip-custom',
-    })
+    ;(layer as unknown as { bindTooltip: (s: string, o: object) => void }).bindTooltip(
+      `${name}: ${count} submission${count !== 1 ? 's' : ''}`,
+      { direction: 'top', className: 'leaflet-tooltip-custom' }
+    )
   }
+
+  const mappableCenters = centers.filter(
+    (c) => c.latitude !== null && c.longitude !== null
+  )
 
   return (
     <div className={className} style={{ minHeight: 320 }}>
@@ -84,31 +99,64 @@ export function BangladeshMap({ activityFeed, className }: Props) {
         </div>
       )}
       {!error && (
-        <MapContainer
-          center={[23.7, 90.4]}
-          zoom={6}
-          scrollWheelZoom={false}
-          className="h-80 w-full rounded-xl"
-          zoomControl={false}
-        >
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            opacity={0.35}
-          />
-          {geoData && (
-            <GeoJSON
-              key={JSON.stringify(districtCounts)}
-              data={geoData}
-              style={styleFeature}
-              onEachFeature={onEachFeature}
-              ref={(r) => {
-                if (r) geoJsonRef.current = r
-              }}
-            >
-            </GeoJSON>
+        <>
+          <MapContainer
+            center={[23.7, 90.4]}
+            zoom={6}
+            scrollWheelZoom={false}
+            className="h-80 w-full rounded-xl"
+            zoomControl={false}
+          >
+            <TileLayer
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              opacity={0.35}
+            />
+            {geoData && (
+              <GeoJSON
+                key={JSON.stringify(districtCounts)}
+                data={geoData}
+                style={styleFeature}
+                onEachFeature={onEachFeature}
+                ref={(r) => { if (r) geoJsonRef.current = r }}
+              />
+            )}
+            {/* Service center markers */}
+            {mappableCenters.map((c) => (
+              <CircleMarker
+                key={c.id}
+                center={[c.latitude!, c.longitude!]}
+                radius={7}
+                pathOptions={{
+                  fillColor: CENTER_COLORS[c.center_type] ?? '#6b7280',
+                  fillOpacity: 0.9,
+                  color: '#fff',
+                  weight: 2,
+                }}
+              >
+                <Popup>
+                  <div className="text-sm">
+                    <p className="font-semibold">{c.name}</p>
+                    {c.name_bangla && <p className="font-bangla text-xs text-gray-500">{c.name_bangla}</p>}
+                    <p className="mt-1 text-xs text-gray-600">{c.center_type} · {c.district}</p>
+                    <p className="text-xs text-gray-500">{c.organisation}</p>
+                  </div>
+                </Popup>
+              </CircleMarker>
+            ))}
+          </MapContainer>
+          {/* Map legend */}
+          {mappableCenters.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-3 text-[10px] text-gray-500 dark:text-gray-400">
+              {Object.entries(CENTER_COLORS).map(([type, color]) => (
+                <span key={type} className="flex items-center gap-1">
+                  <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: color }} />
+                  {type}
+                </span>
+              ))}
+            </div>
           )}
-        </MapContainer>
+        </>
       )}
     </div>
   )

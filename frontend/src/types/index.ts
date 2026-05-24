@@ -309,6 +309,48 @@ export interface BaselineSurvey {
   updated_at: string
 }
 
+// ─── Indicator types (programs / indicators apps) ────────────────────────────
+
+export interface IndicatorProgress {
+  code: string
+  label: string
+  actual: number
+  target: number | null
+  pct: number | null
+  unit: string
+  on_track: boolean | null
+  objective?: string
+  activity_ref?: string
+  organisation?: string
+}
+
+export interface ServiceCenter {
+  id: string
+  organisation: string
+  name: string
+  name_bangla: string
+  code: string
+  center_type: 'DIC' | 'BROTHEL' | 'SUB_DIC' | 'MOBILE'
+  district: string
+  upazila: string
+  address: string
+  latitude: number | null
+  longitude: number | null
+  is_active: boolean
+}
+
+export type ApprovalStatus = 'PENDING' | 'APPROVED' | 'REJECTED'
+
+export interface ApprovalItem {
+  id: string
+  organisation: string
+  approval_status: ApprovalStatus
+  submitted_by_kobo_user: string
+  created_at: string
+  // model-specific fields added at runtime
+  [key: string]: unknown
+}
+
 export type ParticipantRole = 'community_worker' | 'supervisor' | 'health_staff' | 'other'
 
 export interface TrainingAttendance {
