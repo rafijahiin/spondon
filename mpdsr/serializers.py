@@ -15,16 +15,16 @@ class MPDSRCaseSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'case_hash', 'partner', 'district', 'region',
             'date_of_death', 'death_type', 'death_type_display',
-            'cause_of_death', 'facility_name', 'age_years',
+            'cause_of_death', 'place_of_death', 'facility_name', 'age_years',
             'status', 'status_display', 'committee_date',
-            'action_plan', 'notes', 'is_overdue_committee',
+            'action_plan', 'notes', 'audit_trail', 'is_overdue_committee',
             'latitude', 'longitude',
             'created_at', 'updated_at',
         ]
         read_only_fields = [
             'id', 'case_hash', 'partner', 'district', 'region',
-            'date_of_death', 'death_type', 'cause_of_death',
-            'facility_name', 'age_years', 'latitude', 'longitude',
+            'date_of_death', 'death_type', 'cause_of_death', 'place_of_death',
+            'facility_name', 'age_years', 'audit_trail', 'latitude', 'longitude',
             'created_at',
         ]
 

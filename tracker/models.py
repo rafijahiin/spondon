@@ -45,6 +45,7 @@ class AlertType(models.TextChoices):
     BELOW_TARGET = 'below_target', 'Below Target'
     ANOMALY = 'anomaly', 'Anomaly Detected'
     OVERDUE_CASES = 'overdue_cases', 'Overdue Cases'
+    SUBMISSION_GAP = 'submission_gap', '48-Hour Submission Gap'
     CUSTOM = 'custom', 'Custom'
 
 

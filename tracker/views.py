@@ -118,3 +118,60 @@ class ForecastView(APIView):
             'history': history,
             'attainment_percent': attainment,
         })
+
+
+class ComplianceView(APIView):
+    """
+    GET /api/tracker/compliance/?partner=PHD&year=2025&month=5
+    Returns traffic-light status (on_track / behind / critical) per partner/form_type
+    based on submission counts vs monthly targets.
+    """
+    permission_classes = [IsSuperAdminOrManager]
+
+    def get(self, request):
+        from submissions.models import KoboSubmission, SubmissionStatus
+        from .models import MonthlyTarget
+
+        now = timezone.now()
+        try:
+            year = int(request.query_params.get('year', now.year))
+            month = int(request.query_params.get('month', now.month))
+        except (ValueError, TypeError):
+            year, month = now.year, now.month
+
+        partner_filter = request.query_params.get('partner', '')
+
+        targets = MonthlyTarget.objects.filter(year=year, month=month)
+        if partner_filter:
+            targets = targets.filter(partner=partner_filter)
+
+        results = []
+        for t in targets:
+            actual = KoboSubmission.objects.filter(
+                partner=t.partner,
+                form_type=t.form_type,
+                status=SubmissionStatus.APPROVED,
+                submitted_at__year=year,
+                submitted_at__month=month,
+            ).count()
+
+            pct = round(actual / t.target * 100, 1) if t.target > 0 else 100.0
+            if pct >= 80:
+                traffic_light = 'on_track'
+            elif pct >= 50:
+                traffic_light = 'behind'
+            else:
+                traffic_light = 'critical'
+
+            results.append({
+                'partner': t.partner,
+                'form_type': t.form_type,
+                'year': year,
+                'month': month,
+                'target': t.target,
+                'actual': actual,
+                'attainment_percent': pct,
+                'status': traffic_light,
+            })
+
+        return Response({'year': year, 'month': month, 'results': results})

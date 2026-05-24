@@ -19,6 +19,12 @@ class DeathType(models.TextChoices):
     PERINATAL = 'perinatal', 'Perinatal Death'
 
 
+class PlaceOfDeath(models.TextChoices):
+    FACILITY = 'facility', 'Facility'
+    HOME = 'home', 'Home'
+    IN_TRANSIT = 'in_transit', 'In Transit'
+
+
 def _safe_int(value):
     try:
         return int(value)
@@ -28,17 +34,22 @@ def _safe_int(value):
 
 class MPDSRCaseManager(models.Manager):
     def get_or_create_from_submission(self, submission):
-        """
-        Called by submissions.signals when an MPDSR form submission is approved.
-        Field names in raw_data are placeholders — CIPRB will confirm exact
-        KoboToolbox XLS form field names before go-live.
-        """
         raw = submission.raw_data
         death_type_raw = (raw.get('death_type') or '').lower()
         if 'perinatal' in death_type_raw:
             death_type = DeathType.PERINATAL
         else:
             death_type = DeathType.MATERNAL
+
+        place_raw = (raw.get('place_of_death') or raw.get('location_of_death') or '').lower()
+        if 'transit' in place_raw:
+            place_of_death = PlaceOfDeath.IN_TRANSIT
+        elif 'home' in place_raw:
+            place_of_death = PlaceOfDeath.HOME
+        elif 'facility' in place_raw or 'hospital' in place_raw or 'clinic' in place_raw:
+            place_of_death = PlaceOfDeath.FACILITY
+        else:
+            place_of_death = PlaceOfDeath.FACILITY  # default
 
         obj, created = self.get_or_create(
             submission=submission,
@@ -51,9 +62,11 @@ class MPDSRCaseManager(models.Manager):
                 'date_of_death': submission.submitted_at.date(),
                 'death_type': death_type,
                 'cause_of_death': raw.get('cause_of_death') or '',
+                'place_of_death': place_of_death,
                 'facility_name': raw.get('facility_name') or '',
                 'age_years': _safe_int(raw.get('age_years')),
                 'status': ReviewStatus.REPORTED,
+                'audit_trail': [],
             },
         )
         return obj, created
@@ -80,6 +93,12 @@ class MPDSRCase(models.Model):
         db_index=True,
     )
     cause_of_death = models.CharField(max_length=300, blank=True)
+    place_of_death = models.CharField(
+        max_length=20,
+        choices=PlaceOfDeath.choices,
+        default=PlaceOfDeath.FACILITY,
+        blank=True,
+    )
     facility_name = models.CharField(max_length=200, blank=True)
     age_years = models.PositiveSmallIntegerField(null=True, blank=True)
 
@@ -92,6 +111,7 @@ class MPDSRCase(models.Model):
     committee_date = models.DateField(null=True, blank=True)
     action_plan = models.TextField(blank=True)
     notes = models.TextField(blank=True)
+    audit_trail = models.JSONField(default=list, blank=True)
 
     latitude = models.DecimalField(max_digits=10, decimal_places=7, null=True, blank=True)
     longitude = models.DecimalField(max_digits=10, decimal_places=7, null=True, blank=True)
@@ -132,9 +152,19 @@ class MPDSRCase(models.Model):
     def __str__(self):
         return f'{self.case_hash} ({self.get_death_type_display()})'
 
+    def add_audit_entry(self, user_email: str, action: str, notes: str = '') -> None:
+        entry = {
+            'timestamp': timezone.now().isoformat(),
+            'user': user_email,
+            'action': action,
+            'notes': notes,
+        }
+        if self.audit_trail is None:
+            self.audit_trail = []
+        self.audit_trail.append(entry)
+
     @property
     def is_overdue_committee(self) -> bool:
-        """True when committee review is scheduled but date has passed and not yet closed."""
         if self.status == ReviewStatus.CLOSED:
             return False
         if not self.committee_date:
