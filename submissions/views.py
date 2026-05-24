@@ -26,23 +26,42 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 def _form_type_from_payload(payload: dict) -> str | None:
-    asset_uid = payload.get('_xform_id_string', '')
-    mapping = {
-        settings.KOBO_ASSET_UID_MPDSR: FormType.MPDSR,
-        settings.KOBO_ASSET_UID_FISTULA: FormType.FISTULA,
-        settings.KOBO_ASSET_UID_ACTIVITY: FormType.ACTIVITY,
-        settings.KOBO_ASSET_UID_BASELINE: FormType.BASELINE,
+    xform_id = payload.get('_xform_id_string', '')
+    # Primary: map by id_string set in XLS form settings sheet
+    id_string_map = {
+        'spondon_mpdsr_combined_v1': FormType.MPDSR,
+        'spondon_baseline_v1': FormType.BASELINE,
+        'spondon_fistula_v1': FormType.FISTULA,
     }
-    return mapping.get(asset_uid)
+    if xform_id in id_string_map:
+        return id_string_map[xform_id]
+    # Fallback: some KoboToolbox deployments send asset UID in this field
+    asset_uid_map = {
+        getattr(settings, 'KOBO_ASSET_UID_MPDSR', ''): FormType.MPDSR,
+        getattr(settings, 'KOBO_ASSET_UID_FISTULA', ''): FormType.FISTULA,
+        getattr(settings, 'KOBO_ASSET_UID_ACTIVITY', ''): FormType.ACTIVITY,
+        getattr(settings, 'KOBO_ASSET_UID_BASELINE', ''): FormType.BASELINE,
+    }
+    return asset_uid_map.get(xform_id)
 
 
 def _partner_from_payload(payload: dict) -> str:
-    raw = (payload.get('partner') or payload.get('organisation') or '').strip().upper()
+    raw = (
+        payload.get('partner_org') or payload.get('partner') or payload.get('organisation') or ''
+    ).strip().upper()
     if 'PHD' in raw:
         return 'PHD'
     if 'BONDHU' in raw or 'BONDU' in raw:
         return 'Bondhu'
     return ''
+
+
+def _district_from_payload(payload: dict, form_type: str) -> str:
+    if form_type == FormType.MPDSR:
+        sub = payload.get('form_type', '')
+        field = f'{sub}_district' if sub else ''
+        return payload.get(field) or payload.get('district') or ''
+    return payload.get('district') or ''
 
 
 def _geolocation(payload: dict) -> tuple[float | None, float | None]:
@@ -103,8 +122,12 @@ def kobo_webhook(request):
         kobo_id=kobo_id,
         form_type=form_type,
         partner=_partner_from_payload(payload),
-        worker_name=payload.get('worker_name') or payload.get('enumerator_name') or '',
-        district=payload.get('district') or '',
+        worker_name=(
+            payload.get('collector_name') or
+            payload.get('worker_name') or
+            payload.get('enumerator_name') or ''
+        ),
+        district=_district_from_payload(payload, form_type),
         region=payload.get('division') or payload.get('region') or '',
         latitude=lat,
         longitude=lng,

@@ -26,7 +26,7 @@ def flag_duplicates_for_partner(partner: str) -> int:
         BaselineSurvey.objects
         .filter(partner=partner)
         .exclude(participant_code='')
-        .order_by('date_conducted', 'created_at')
+        .order_by('survey_date', 'created_at')
     )
 
     for survey in surveys:
@@ -62,7 +62,7 @@ def check_new_survey(survey) -> bool:
             partner=survey.partner,
         )
         .exclude(id=survey.id)
-        .order_by('date_conducted', 'created_at')
+        .order_by('survey_date', 'created_at')
         .first()
     )
 

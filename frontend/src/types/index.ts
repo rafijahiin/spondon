@@ -126,24 +126,42 @@ export type FistulaStatus =
   | 'followup_pending'
   | 'referral_completed'
 
-export interface FistulaCase {
+export interface FistulaCampaign {
   id: string
   case_hash: string
   partner: string
   district: string
+  upazila: string
+  union: string
+  village: string
+  facility_name: string
   region: string
-  date_identified: string
-  patient_name: string
-  patient_id_number: string
-  age: number | null
-  status: FistulaStatus
-  status_display: string
-  referral_status: string
-  follow_up_date: string | null
-  is_overdue: boolean
+  campaign_date: string
+  women_screened: number
+  women_reached_awareness: number
+  men_reached_awareness: number
+  community_sessions: number
+  suspected_fistula_cases: number
+  confirmed_fistula_cases: number
+  new_cases: number
+  repeat_cases: number
+  fistula_type: string
+  fistula_cause: string
+  cases_referred: number
+  cases_accepted_referral: number
+  cases_reached_facility: number
+  cases_surgery_completed: number
+  cases_surgery_pending: number
+  cases_surgery_not_eligible: number
+  cases_followup_due: number
+  cases_followup_completed: number
+  cases_lost_followup: number
+  cases_counselling_provided: number
+  cases_social_reintegration: number
+  main_barriers: string
+  notes: string
   latitude: number | null
   longitude: number | null
-  notes: string
   created_at: string
   updated_at: string
 }
@@ -169,7 +187,11 @@ export interface MPDSRCase {
   id: string
   case_hash: string
   partner: string
+  sub_form_type: string
+  sub_form_label: string
   district: string
+  upazila: string
+  union: string
   region: string
   date_of_death: string
   death_type: DeathType
@@ -257,11 +279,30 @@ export interface BaselineSurvey {
   id: string
   partner: string
   district: string
+  upazila: string
+  union: string
+  facility_name: string
   region: string
   survey_type: SurveyType
   survey_type_display: string
+  survey_date: string
   participant_code: string
-  date_conducted: string
+  respondent_age: number | null
+  sex: string
+  education: string
+  ses: string
+  fp_use: string
+  fp_method: string
+  currently_pregnant: string
+  anc_4visits: string
+  skilled_birth_attendant: string
+  danger_signs_knowledge: string
+  fistula_awareness: string
+  mpdsr_awareness: string
+  gbv_awareness: string
+  child_marriage_knowledge: string
+  health_facility_distance: string
+  srh_service_satisfaction: string
   is_duplicate: boolean
   duplicate_of: string | null
   created_at: string

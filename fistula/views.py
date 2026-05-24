@@ -1,72 +1,52 @@
-import datetime
-
-from django.db.models import Count, Q
+from django.db.models import Sum
 from django.utils import timezone
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
 from accounts.permissions import IsSuperAdminOrManager, OrgFilterMixin
-from .models import CaseStatus, FistulaCase
-from .serializers import FistulaCaseSerializer, FistulaCaseUpdateSerializer
+from .models import FistulaCampaign
+from .serializers import FistulaCampaignSerializer
 
 
-class FistulaCaseViewSet(OrgFilterMixin, ModelViewSet):
-    queryset = FistulaCase.objects.select_related('submission', 'created_by').all()
+class FistulaCampaignViewSet(OrgFilterMixin, ModelViewSet):
+    queryset = FistulaCampaign.objects.select_related('submission', 'created_by').all()
     permission_classes = [IsSuperAdminOrManager]
-    http_method_names = ['get', 'head', 'options', 'post', 'patch']
+    http_method_names = ['get', 'head', 'options']
     org_field = 'partner'
 
     def get_queryset(self):
         qs = super().get_queryset()
-        status_param = self.request.query_params.get('status')
         partner_param = self.request.query_params.get('partner')
-        overdue = self.request.query_params.get('overdue')
-        if status_param:
-            qs = qs.filter(status=status_param)
-        if partner_param and self.request.user.can_see_all_orgs:
+        district_param = self.request.query_params.get('district')
+        if partner_param and getattr(self.request.user, 'can_see_all_orgs', False):
             qs = qs.filter(partner=partner_param)
-        if overdue == 'true':
-            today = datetime.date.today()
-            qs = qs.filter(
-                follow_up_date__lt=today,
-                follow_up_date__isnull=False,
-            ).exclude(status=CaseStatus.REFERRAL_COMPLETED)
+        if district_param:
+            qs = qs.filter(district__icontains=district_param)
         return qs
 
     def get_serializer_class(self):
-        if self.action == 'partial_update':
-            return FistulaCaseUpdateSerializer
-        return FistulaCaseSerializer
-
-    @action(detail=False, methods=['get'])
-    def overdue(self, request):
-        today = datetime.date.today()
-        qs = self.get_queryset().filter(
-            follow_up_date__lt=today,
-            follow_up_date__isnull=False,
-        ).exclude(status=CaseStatus.REFERRAL_COMPLETED)
-        serializer = FistulaCaseSerializer(qs, many=True)
-        return Response({'count': qs.count(), 'results': serializer.data})
+        return FistulaCampaignSerializer
 
     @action(detail=False, methods=['get'])
     def stats(self, request):
         qs = self.get_queryset()
-        today = datetime.date.today()
+        today = timezone.now().date()
         month_start = today.replace(day=1)
+        month_qs = qs.filter(campaign_date__gte=month_start)
 
-        by_status = {
-            status: qs.filter(status=status).count()
-            for status in CaseStatus.values
-        }
-        overdue_count = qs.filter(
-            follow_up_date__lt=today,
-            follow_up_date__isnull=False,
-        ).exclude(status=CaseStatus.REFERRAL_COMPLETED).count()
+        totals = month_qs.aggregate(
+            women_screened=Sum('women_screened'),
+            confirmed=Sum('confirmed_fistula_cases'),
+            referred=Sum('cases_referred'),
+            surgery=Sum('cases_surgery_completed'),
+        )
 
         return Response({
-            'total': qs.count(),
-            'by_status': by_status,
-            'overdue': overdue_count,
-            'this_month': qs.filter(date_identified__gte=month_start).count(),
+            'total_sessions': qs.count(),
+            'this_month_sessions': month_qs.count(),
+            'this_month_women_screened': totals['women_screened'] or 0,
+            'this_month_confirmed_cases': totals['confirmed'] or 0,
+            'this_month_cases_referred': totals['referred'] or 0,
+            'this_month_surgery_completed': totals['surgery'] or 0,
         })
