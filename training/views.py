@@ -21,6 +21,13 @@ class TrainingSessionViewSet(OrgFilterMixin, ModelViewSet):
     permission_classes = [IsSuperAdminOrManager]
     org_field = 'partner'
 
+    def get_queryset(self):
+        qs = super().get_queryset()
+        partner = self.request.query_params.get('partner')
+        if partner and self.request.user.can_see_all_orgs:
+            qs = qs.filter(partner=partner)
+        return qs
+
     def get_serializer_class(self):
         if self.action in ('create', 'update', 'partial_update'):
             return TrainingSessionWriteSerializer

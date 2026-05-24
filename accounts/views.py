@@ -6,6 +6,7 @@ from django.contrib.auth import login, logout, update_session_auth_hash
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django_otp import login as otp_login
+from django_otp.middleware import is_verified
 from django_otp.plugins.otp_totp.models import TOTPDevice
 from rest_framework import permissions, status
 from rest_framework.response import Response
