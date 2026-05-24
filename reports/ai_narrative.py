@@ -1,6 +1,6 @@
 """
-AI-generated narrative summaries using the Groq API (llama-3 family).
-Gracefully returns a fallback message when GROQ_API_KEY is not configured.
+AI-generated narrative summaries using the Groq API (llama-3.3-70b-versatile).
+Gracefully returns fallback text when GROQ_API_KEY is not configured.
 """
 import logging
 
@@ -8,46 +8,88 @@ from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
-_SYSTEM_PROMPT = (
-    'You are a public health data analyst for a Bangladesh maternal health programme. '
-    'Write concise, professional narrative summaries (2-3 paragraphs) of the data '
-    'provided. Use plain English suitable for a health ministry report. '
-    'Do not invent numbers not present in the data.'
+# --- System prompts ---
+
+_SYSTEM_SUMMARY = (
+    'You are a senior public health programme officer for CIPRB, Bangladesh, '
+    'writing formal reports for UNFPA, the Bangladesh Ministry of Health, and international donors. '
+    'Your writing is precise, confident, and evidence-based. '
+    'Summarise the programme data in 2–3 short paragraphs. '
+    'Highlight progress, note any gaps without alarmism, and connect the numbers to human impact. '
+    'Do not invent or extrapolate figures not present in the data. '
+    'Write in formal British English.'
+)
+
+_SYSTEM_NEWSLETTER = (
+    'You are a senior communications officer at CIPRB, Bangladesh, '
+    'writing a programme bulletin for senior Bangladesh government officials, UNFPA leadership, '
+    'and international donors. '
+    'Your tone is authoritative, positive, and forward-looking. '
+    'Structure your response as follows — use these exact headings:\n\n'
+    'EXECUTIVE SUMMARY\n'
+    '[One concise paragraph summarising the reporting period — outcomes, reach, key achievements]\n\n'
+    'PROGRAMME HIGHLIGHTS\n'
+    '[Three to four specific, data-backed bullet points starting with a strong verb, e.g. "Delivered", "Reached", "Recorded"]\n\n'
+    'NARRATIVE\n'
+    '[Two paragraphs of narrative context: what the numbers mean for communities, '
+    'any operational challenges, and how the programme is responding]\n\n'
+    'FORWARD LOOK\n'
+    '[One paragraph on planned activities, targets for the next period, '
+    'and any specific requests or recommendations for stakeholders]\n\n'
+    'Do not invent or extrapolate figures. Write in formal British English. '
+    'Each section must use the exact heading text shown above.'
 )
 
 
 def generate_narrative(context: dict) -> str:
     """
-    Generate a narrative summary from a dict of programme statistics.
-    Returns an empty string and logs a warning if the Groq API is unavailable.
+    Generate a brief 2–3 paragraph summary narrative.
+    Used for monthly summary PDFs and the report narrative field.
     """
+    return _call_groq(_SYSTEM_SUMMARY, _build_prompt(context), max_tokens=500)
+
+
+def generate_newsletter_narrative(context: dict) -> str:
+    """
+    Generate a full structured newsletter narrative for government officials and donors.
+    Returns text with section headings EXECUTIVE SUMMARY / PROGRAMME HIGHLIGHTS /
+    NARRATIVE / FORWARD LOOK.
+    """
+    return _call_groq(_SYSTEM_NEWSLETTER, _build_prompt(context), max_tokens=900)
+
+
+def _build_prompt(context: dict) -> str:
+    lines = ['Programme data for this reporting period:']
+    for key, value in context.items():
+        if isinstance(value, dict):
+            for k2, v2 in value.items():
+                lines.append(f'  {key}.{k2}: {v2}')
+        elif isinstance(value, list):
+            pass  # skip nested lists in prompt
+        else:
+            lines.append(f'  {key}: {value}')
+    lines.append('\nPlease write the report as instructed.')
+    return '\n'.join(lines)
+
+
+def _call_groq(system: str, user_content: str, max_tokens: int = 500) -> str:
     api_key = getattr(settings, 'GROQ_API_KEY', '')
     if not api_key:
         logger.warning('GROQ_API_KEY not configured — skipping AI narrative generation.')
         return ''
-
     try:
         from groq import Groq
         client = Groq(api_key=api_key)
-        user_content = _build_prompt(context)
         completion = client.chat.completions.create(
             model='llama-3.3-70b-versatile',
             messages=[
-                {'role': 'system', 'content': _SYSTEM_PROMPT},
+                {'role': 'system', 'content': system},
                 {'role': 'user', 'content': user_content},
             ],
-            max_tokens=500,
+            max_tokens=max_tokens,
             temperature=0.3,
         )
         return completion.choices[0].message.content.strip()
     except Exception as exc:
         logger.error('AI narrative generation failed: %s', exc)
         return ''
-
-
-def _build_prompt(context: dict) -> str:
-    lines = ['Programme data summary:']
-    for key, value in context.items():
-        lines.append(f'- {key}: {value}')
-    lines.append('\nWrite a 2-3 paragraph narrative summary of this data for a health report.')
-    return '\n'.join(lines)
