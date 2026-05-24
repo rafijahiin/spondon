@@ -27,6 +27,8 @@ INSTALLED_APPS = [
     'reports',
     'baseline',
     'training',
+    'programs',
+    'indicators',
 ]
 
 MIDDLEWARE = [

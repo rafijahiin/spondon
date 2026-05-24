@@ -1,0 +1,59 @@
+"""
+Abstract base classes shared across all programs models.
+All KoboToolbox-sourced records extend SubmissionBase.
+"""
+import uuid
+from django.db import models
+from django.conf import settings
+
+
+class TimestampedModel(models.Model):
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        abstract = True
+
+
+class SubmissionBase(TimestampedModel):
+    """
+    Base for every record that originates from a KoboToolbox webhook.
+    Approval flow: PENDING → APPROVED (visible in dashboard) or REJECTED.
+    """
+    PENDING = 'PENDING'
+    APPROVED = 'APPROVED'
+    REJECTED = 'REJECTED'
+    APPROVAL_CHOICES = [
+        (PENDING, 'Pending'),
+        (APPROVED, 'Approved'),
+        (REJECTED, 'Rejected'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    kobo_submission_id = models.CharField(max_length=100, unique=True, null=True, blank=True)
+    approval_status = models.CharField(
+        max_length=10, choices=APPROVAL_CHOICES, default=PENDING, db_index=True
+    )
+    approved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True, blank=True,
+        on_delete=models.SET_NULL,
+        related_name='+',
+    )
+    approved_at = models.DateTimeField(null=True, blank=True)
+    rejected_reason = models.TextField(blank=True)
+    latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    submitted_by_kobo_user = models.CharField(max_length=100, blank=True)
+    raw_payload = models.JSONField(default=dict)
+
+    class Meta:
+        abstract = True
+
+    @property
+    def is_approved(self):
+        return self.approval_status == self.APPROVED
+
+    @property
+    def is_pending(self):
+        return self.approval_status == self.PENDING
