@@ -2,18 +2,21 @@ import datetime
 
 from rest_framework import serializers
 
-from .models import MPDSRCase, ReviewStatus
+from .models import MPDSRCase, ReviewStatus, SUB_FORM_LABELS
 
 
 class MPDSRCaseSerializer(serializers.ModelSerializer):
     status_display = serializers.CharField(source='get_status_display', read_only=True)
     death_type_display = serializers.CharField(source='get_death_type_display', read_only=True)
+    sub_form_label = serializers.SerializerMethodField()
     is_overdue_committee = serializers.SerializerMethodField()
 
     class Meta:
         model = MPDSRCase
         fields = [
-            'id', 'case_hash', 'partner', 'district', 'region',
+            'id', 'case_hash', 'partner',
+            'sub_form_type', 'sub_form_label',
+            'district', 'upazila', 'union', 'region',
             'date_of_death', 'death_type', 'death_type_display',
             'cause_of_death', 'place_of_death', 'facility_name', 'age_years',
             'status', 'status_display', 'committee_date',
@@ -22,11 +25,15 @@ class MPDSRCaseSerializer(serializers.ModelSerializer):
             'created_at', 'updated_at',
         ]
         read_only_fields = [
-            'id', 'case_hash', 'partner', 'district', 'region',
+            'id', 'case_hash', 'partner',
+            'sub_form_type', 'district', 'upazila', 'union', 'region',
             'date_of_death', 'death_type', 'cause_of_death', 'place_of_death',
             'facility_name', 'age_years', 'audit_trail', 'latitude', 'longitude',
             'created_at',
         ]
+
+    def get_sub_form_label(self, obj):
+        return SUB_FORM_LABELS.get(obj.sub_form_type, obj.sub_form_type.upper())
 
     def get_is_overdue_committee(self, obj):
         return obj.is_overdue_committee

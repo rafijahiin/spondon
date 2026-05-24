@@ -16,13 +16,29 @@ class ReviewStatus(models.TextChoices):
 
 class DeathType(models.TextChoices):
     MATERNAL = 'maternal', 'Maternal Death'
-    PERINATAL = 'perinatal', 'Perinatal Death'
+    PERINATAL = 'perinatal', 'Perinatal / Neonatal'
 
 
 class PlaceOfDeath(models.TextChoices):
-    FACILITY = 'facility', 'Facility'
+    FACILITY = 'facility', 'Health Facility'
     HOME = 'home', 'Home'
-    IN_TRANSIT = 'in_transit', 'In Transit'
+    IN_TRANSIT = 'in_transit', 'In Transit / On the Way'
+
+
+# Maps sub-form name → human label (F1–F6 from MPDSR combined form)
+SUB_FORM_LABELS = {
+    'f1': 'F1 Community Notification',
+    'f2': 'F2 Facility Notification',
+    'f3': 'F3 Community Stillbirth Review',
+    'f4': 'F4 Facility Maternal Death Review',
+    'f5': 'F5 Facility Neonatal Death Review',
+    'f6': 'F6 Facility Stillbirth Review',
+}
+
+# Sub-forms that are always perinatal/neonatal regardless of death_type field
+_PERINATAL_FORMS = {'f3', 'f5', 'f6'}
+# Sub-forms that are always maternal
+_MATERNAL_FORMS = {'f4'}
 
 
 def _safe_int(value):
@@ -32,45 +48,106 @@ def _safe_int(value):
         return None
 
 
+def _first(*args):
+    for v in args:
+        if v:
+            return v
+    return ''
+
+
 class MPDSRCaseManager(models.Manager):
     def get_or_create_from_submission(self, submission):
-        """
-        Called by submissions.signals when a KoboSubmission is approved.
-        Extracted fields (confirm exact XLS form names with CIPRB before go-live):
-          death_type, cause_of_death, facility_name, age_years,
-          place_of_death / location_of_death (both checked, keyword-matched).
-        """
         raw = submission.raw_data
-        death_type_raw = (raw.get('death_type') or '').lower()
-        if 'perinatal' in death_type_raw:
-            death_type = DeathType.PERINATAL
-        else:
-            death_type = DeathType.MATERNAL
+        sub = (raw.get('form_type') or '').strip().lower()
 
-        place_raw = (raw.get('place_of_death') or raw.get('location_of_death') or '').lower()
-        if 'transit' in place_raw:
-            place_of_death = PlaceOfDeath.IN_TRANSIT
-        elif 'home' in place_raw:
+        # ----- death type -----
+        if sub in _PERINATAL_FORMS:
+            death_type = DeathType.PERINATAL
+        elif sub in _MATERNAL_FORMS:
+            death_type = DeathType.MATERNAL
+        else:
+            # F1/F2 have an explicit death_type question
+            dt_raw = (raw.get(f'{sub}_death_type') or raw.get('death_type') or '').lower()
+            if dt_raw in ('stillbirth', 'neonatal', 'perinatal'):
+                death_type = DeathType.PERINATAL
+            else:
+                death_type = DeathType.MATERNAL
+
+        # ----- cause of death (ICD-10 select_multiple → space-separated values) -----
+        cause = _first(
+            raw.get('f4_probable_cause'),
+            raw.get('f5_probable_cause'),
+            raw.get('f6_contributing_factors'),
+            raw.get('f2_cause_of_death'),
+        )
+
+        # ----- place of death -----
+        place_raw = _first(
+            raw.get('f1_death_place'),
+            raw.get('f3_place_of_death'),
+        ).lower()
+        if 'home' in place_raw:
             place_of_death = PlaceOfDeath.HOME
-        elif 'facility' in place_raw or 'hospital' in place_raw or 'clinic' in place_raw:
+        elif 'on_way' in place_raw or 'transit' in place_raw:
+            place_of_death = PlaceOfDeath.IN_TRANSIT
+        elif sub in ('f2', 'f4', 'f5', 'f6'):
+            place_of_death = PlaceOfDeath.FACILITY
+        elif place_raw:
             place_of_death = PlaceOfDeath.FACILITY
         else:
-            place_of_death = PlaceOfDeath.FACILITY  # default
+            place_of_death = PlaceOfDeath.FACILITY
+
+        # ----- facility name -----
+        facility_name = _first(
+            raw.get('f4_facility_name'),
+            raw.get('f5_facility_name'),
+            raw.get('f6_facility_name'),
+            raw.get('f2_facility_name'),
+        )
+
+        # ----- mother / subject age -----
+        age_raw = _first(
+            raw.get(f'{sub}_mother_age') if sub else None,
+            raw.get('f1_mother_age'), raw.get('f2_mother_age'),
+            raw.get('f3_mother_age'), raw.get('f4_mother_age'),
+            raw.get('f5_mother_age'), raw.get('f6_mother_age'),
+        )
+        age_years = _safe_int(age_raw)
+
+        # ----- district / upazila / union (sub-form specific) -----
+        district = _first(
+            raw.get(f'{sub}_district') if sub else None,
+            raw.get('f1_district'), raw.get('f2_district'),
+            raw.get('f3_district'), raw.get('f4_district'),
+            raw.get('f5_district'), raw.get('f6_district'),
+            submission.district,
+        )
+        upazila = _first(
+            raw.get(f'{sub}_upazila') if sub else None,
+            raw.get('f1_upazila'), raw.get('f3_upazila'), raw.get('f4_upazila'),
+        )
+        union = _first(
+            raw.get(f'{sub}_union') if sub else None,
+            raw.get('f1_union'), raw.get('f3_union'), raw.get('f4_union'),
+        )
 
         obj, created = self.get_or_create(
             submission=submission,
             defaults={
                 'partner': submission.partner,
-                'district': submission.district,
+                'district': district,
                 'region': submission.region,
+                'upazila': upazila,
+                'union': union,
                 'latitude': submission.latitude,
                 'longitude': submission.longitude,
                 'date_of_death': submission.submitted_at.date(),
+                'sub_form_type': sub,
                 'death_type': death_type,
-                'cause_of_death': raw.get('cause_of_death') or '',
+                'cause_of_death': cause,
                 'place_of_death': place_of_death,
-                'facility_name': raw.get('facility_name') or '',
-                'age_years': _safe_int(raw.get('age_years')),
+                'facility_name': facility_name,
+                'age_years': age_years,
                 'status': ReviewStatus.REPORTED,
                 'audit_trail': [],
             },
@@ -90,7 +167,11 @@ class MPDSRCase(models.Model):
     )
     partner = models.CharField(max_length=20, db_index=True)
     district = models.CharField(max_length=100, blank=True)
+    upazila = models.CharField(max_length=100, blank=True)
+    union = models.CharField(max_length=100, blank=True)
     region = models.CharField(max_length=100, blank=True)
+
+    sub_form_type = models.CharField(max_length=10, blank=True, db_index=True)
     date_of_death = models.DateField()
     death_type = models.CharField(
         max_length=20,
@@ -98,7 +179,7 @@ class MPDSRCase(models.Model):
         default=DeathType.MATERNAL,
         db_index=True,
     )
-    cause_of_death = models.CharField(max_length=300, blank=True)
+    cause_of_death = models.CharField(max_length=500, blank=True)
     place_of_death = models.CharField(
         max_length=20,
         choices=PlaceOfDeath.choices,
@@ -157,6 +238,10 @@ class MPDSRCase(models.Model):
 
     def __str__(self):
         return f'{self.case_hash} ({self.get_death_type_display()})'
+
+    @property
+    def sub_form_label(self) -> str:
+        return SUB_FORM_LABELS.get(self.sub_form_type, self.sub_form_type.upper())
 
     def add_audit_entry(self, user_email: str, action: str, notes: str = '') -> None:
         entry = {

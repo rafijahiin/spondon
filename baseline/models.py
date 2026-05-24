@@ -4,9 +4,61 @@ from django.conf import settings
 from django.db import models
 
 
+def _safe_int(value):
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
 class SurveyType(models.TextChoices):
     BASELINE = 'baseline', 'Baseline'
     ENDLINE = 'endline', 'Endline'
+
+
+class BaselineSurveyManager(models.Manager):
+    def get_or_create_from_submission(self, submission):
+        raw = submission.raw_data
+        survey_type_raw = (raw.get('survey_type') or '').lower()
+        survey_type = SurveyType.ENDLINE if 'endline' in survey_type_raw else SurveyType.BASELINE
+
+        obj, created = self.get_or_create(
+            submission=submission,
+            defaults={
+                'partner': submission.partner,
+                'district': raw.get('district') or submission.district,
+                'upazila': raw.get('upazila') or '',
+                'union': raw.get('union') or '',
+                'facility_name': raw.get('facility_name') or '',
+                'region': submission.region,
+                'survey_type': survey_type,
+                'survey_date': submission.submitted_at.date(),
+                'participant_code': raw.get('respondent_id') or '',
+                # Respondent profile
+                'respondent_age': _safe_int(raw.get('age')),
+                'sex': raw.get('sex') or '',
+                'education': raw.get('education') or '',
+                'ses': raw.get('ses') or '',
+                # Family planning
+                'fp_use': raw.get('fp_use') or '',
+                'fp_method': raw.get('fp_method') or '',
+                # Maternal health
+                'currently_pregnant': raw.get('currently_pregnant') or '',
+                'anc_4visits': raw.get('anc_4visits') or '',
+                'skilled_birth_attendant': raw.get('skilled_birth_attendant') or '',
+                'danger_signs_knowledge': raw.get('danger_signs_knowledge') or '',
+                # Awareness
+                'fistula_awareness': raw.get('fistula_awareness') or '',
+                'mpdsr_awareness': raw.get('mpdsr_awareness') or '',
+                'gbv_awareness': raw.get('gbv_awareness') or '',
+                'child_marriage_knowledge': raw.get('child_marriage_knowledge') or '',
+                # Access
+                'health_facility_distance': raw.get('health_facility_distance') or '',
+                'srh_service_satisfaction': raw.get('srh_service_satisfaction') or '',
+                'raw_data': raw,
+            },
+        )
+        return obj, created
 
 
 class BaselineSurvey(models.Model):
@@ -19,20 +71,47 @@ class BaselineSurvey(models.Model):
     )
     partner = models.CharField(max_length=20, db_index=True)
     district = models.CharField(max_length=100, blank=True)
+    upazila = models.CharField(max_length=100, blank=True)
+    union = models.CharField(max_length=100, blank=True)
+    facility_name = models.CharField(max_length=200, blank=True)
     region = models.CharField(max_length=100, blank=True)
+
     survey_type = models.CharField(
         max_length=20,
         choices=SurveyType.choices,
         default=SurveyType.BASELINE,
         db_index=True,
     )
-
-    # Anonymised participant reference — not stored as PII
+    survey_date = models.DateField(null=True, blank=True)
     participant_code = models.CharField(max_length=100, blank=True, db_index=True)
 
-    date_conducted = models.DateField()
-    raw_data = models.JSONField(default=dict)
+    # Respondent profile
+    respondent_age = models.PositiveSmallIntegerField(null=True, blank=True)
+    sex = models.CharField(max_length=20, blank=True)
+    education = models.CharField(max_length=50, blank=True)
+    ses = models.CharField(max_length=50, blank=True)
 
+    # Family planning
+    fp_use = models.CharField(max_length=20, blank=True)
+    fp_method = models.CharField(max_length=50, blank=True)
+
+    # Maternal health
+    currently_pregnant = models.CharField(max_length=20, blank=True)
+    anc_4visits = models.CharField(max_length=20, blank=True)
+    skilled_birth_attendant = models.CharField(max_length=20, blank=True)
+    danger_signs_knowledge = models.CharField(max_length=20, blank=True)
+
+    # Awareness
+    fistula_awareness = models.CharField(max_length=20, blank=True)
+    mpdsr_awareness = models.CharField(max_length=20, blank=True)
+    gbv_awareness = models.CharField(max_length=20, blank=True)
+    child_marriage_knowledge = models.CharField(max_length=20, blank=True)
+
+    # Health access
+    health_facility_distance = models.CharField(max_length=50, blank=True)
+    srh_service_satisfaction = models.CharField(max_length=50, blank=True)
+
+    raw_data = models.JSONField(default=dict)
     is_duplicate = models.BooleanField(default=False, db_index=True)
     duplicate_of = models.ForeignKey(
         'self', null=True, blank=True,
@@ -43,12 +122,14 @@ class BaselineSurvey(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    objects = BaselineSurveyManager()
+
     class Meta:
-        ordering = ['-date_conducted', '-created_at']
+        ordering = ['-survey_date', '-created_at']
         indexes = [
             models.Index(fields=['partner', 'survey_type']),
             models.Index(fields=['participant_code', 'district', 'survey_type']),
         ]
 
     def __str__(self):
-        return f'{self.survey_type} / {self.partner} / {self.district} / {self.date_conducted}'
+        return f'{self.survey_type} / {self.partner} / {self.district} / {self.survey_date}'

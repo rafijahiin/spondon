@@ -6,7 +6,7 @@ import { StatusBadge } from '@/components/ui/StatusBadge'
 import { PageLoader } from '@/components/ui/LoadingSpinner'
 import { formatDate, formatDateTime } from '@/utils/format'
 import { cn } from '@/utils/cn'
-import type { MPDSRCase, AuditEntry } from '@/types'
+import type { MPDSRCase, AuditEntry } from '@/types/index'
 
 const CAUSE_LABELS: Record<string, string> = {
   pph: 'PPH',
@@ -46,9 +46,13 @@ function AuditDrawer({ kase, onClose }: { kase: MPDSRCase; onClose: () => void }
           {/* Case summary */}
           <div className="rounded-xl bg-gray-50 dark:bg-gray-800 p-4 space-y-2 text-sm">
             <div className="grid grid-cols-2 gap-2">
+              <div className="col-span-2">
+                <p className="text-xs text-gray-400">Form</p>
+                <p className="font-medium text-gray-900 dark:text-white">{kase.sub_form_label || kase.sub_form_type}</p>
+              </div>
               <div>
-                <p className="text-xs text-gray-400">Cause</p>
-                <p className="font-medium text-gray-900 dark:text-white">{CAUSE_LABELS[kase.cause_of_death] ?? kase.cause_of_death}</p>
+                <p className="text-xs text-gray-400">Type</p>
+                <p className="font-medium text-gray-900 dark:text-white">{kase.death_type_display}</p>
               </div>
               <div>
                 <p className="text-xs text-gray-400">Place</p>
@@ -58,10 +62,34 @@ function AuditDrawer({ kase, onClose }: { kase: MPDSRCase; onClose: () => void }
                 <p className="text-xs text-gray-400">District</p>
                 <p className="font-medium text-gray-900 dark:text-white">{kase.district}</p>
               </div>
+              {kase.upazila && (
+                <div>
+                  <p className="text-xs text-gray-400">Upazila</p>
+                  <p className="font-medium text-gray-900 dark:text-white">{kase.upazila}</p>
+                </div>
+              )}
+              {kase.facility_name && (
+                <div className="col-span-2">
+                  <p className="text-xs text-gray-400">Facility</p>
+                  <p className="font-medium text-gray-900 dark:text-white">{kase.facility_name}</p>
+                </div>
+              )}
               <div>
-                <p className="text-xs text-gray-400">Date</p>
+                <p className="text-xs text-gray-400">Date of Death</p>
                 <p className="font-medium text-gray-900 dark:text-white">{formatDate(kase.date_of_death)}</p>
               </div>
+              {kase.age_years != null && (
+                <div>
+                  <p className="text-xs text-gray-400">Age</p>
+                  <p className="font-medium text-gray-900 dark:text-white">{kase.age_years} yrs</p>
+                </div>
+              )}
+              {kase.cause_of_death && (
+                <div className="col-span-2">
+                  <p className="text-xs text-gray-400">Cause / ICD-10</p>
+                  <p className="font-medium text-gray-900 dark:text-white break-words">{kase.cause_of_death.replace(/ /g, ', ')}</p>
+                </div>
+              )}
             </div>
           </div>
 
@@ -197,7 +225,7 @@ export default function MPDSRTracker() {
             <table className="w-full text-sm">
               <thead className="border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/40">
                 <tr>
-                  {['Case ID', 'Partner', 'District', 'Date', 'Cause', 'Place', 'Status', 'Audit'].map((h) => (
+                  {['Case ID', 'Form', 'Partner', 'District', 'Date', 'Type', 'Status', 'Audit'].map((h) => (
                     <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
                       {h}
                     </th>
@@ -208,18 +236,20 @@ export default function MPDSRTracker() {
                 {(cases ?? []).map((c) => (
                   <tr key={c.id} className={cn('hover:bg-gray-50 dark:hover:bg-gray-700/30', c.is_overdue_committee && 'bg-amber-50/50 dark:bg-amber-900/10')}>
                     <td className="px-4 py-3 font-mono text-xs text-gray-500 dark:text-gray-400">
-                      {c.case_hash.slice(0, 8)}…
+                      {c.case_hash.slice(0, 12)}…
+                    </td>
+                    <td className="px-4 py-3 text-xs text-gray-600 dark:text-gray-400 max-w-[140px] truncate" title={c.sub_form_label}>
+                      {c.sub_form_label || c.sub_form_type || '—'}
                     </td>
                     <td className="px-4 py-3 font-medium text-unfpa-blue">{c.partner}</td>
                     <td className="px-4 py-3">
                       <span className="flex items-center gap-1 text-gray-700 dark:text-gray-300">
                         <MapPin className="h-3 w-3 text-gray-400" />
-                        {c.district}
+                        {c.district}{c.upazila ? `, ${c.upazila}` : ''}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{formatDate(c.date_of_death)}</td>
-                    <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{CAUSE_LABELS[c.cause_of_death] ?? c.cause_of_death}</td>
-                    <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{PLACE_LABELS[c.place_of_death] ?? c.place_of_death}</td>
+                    <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{c.death_type_display}</td>
                     <td className="px-4 py-3"><StatusBadge status={c.status} /></td>
                     <td className="px-4 py-3">
                       <button
