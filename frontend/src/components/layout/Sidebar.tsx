@@ -4,6 +4,7 @@ import {
   BarChart2,
   BookOpen,
   CheckSquare,
+  ExternalLink,
   FileText,
   Heart,
   Home,
@@ -22,6 +23,13 @@ interface NavItem {
   icon: React.ReactNode
   roles?: string[]
 }
+
+const KOBO_FORMS = [
+  { uid: 'aHWrKznPLgzEAaoT9p2aFM', label: 'MPDSR Form',     labelBn: 'মাতৃমৃত্যু ফর্ম',  icon: <Activity className="h-4 w-4" /> },
+  { uid: 'arcAMRYLPizmHhe4uFNmtt', label: 'Fistula Form',   labelBn: 'ফিস্টুলা ফর্ম',    icon: <Heart className="h-4 w-4" /> },
+  { uid: 'axmKG3hcQpL35kcL577Xwn', label: 'Baseline Form',  labelBn: 'বেসলাইন ফর্ম',     icon: <BookOpen className="h-4 w-4" /> },
+  { uid: 'aHWrKznPLgzEAaoT9p2aFM', label: 'Activity Form',  labelBn: 'কার্যক্রম ফর্ম',   icon: <BarChart2 className="h-4 w-4" /> },
+]
 
 const NAV: NavItem[] = [
   { to: '/', label: 'Home', labelBn: 'হোম', icon: <Home className="h-5 w-5" /> },
@@ -110,6 +118,39 @@ export function Sidebar({ collapsed, onClose }: Props) {
           </NavLink>
         ))}
       </nav>
+
+      {/* KoboToolbox forms */}
+      <div className={cn('border-t border-white/10 py-3 px-2 space-y-0.5', collapsed && 'px-2')}>
+        {!collapsed && (
+          <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-widest text-blue-400">
+            KoboToolbox
+          </p>
+        )}
+        {KOBO_FORMS.map((form) => (
+          <a
+            key={form.uid}
+            href={`https://kf.kobotoolbox.org/#/forms/${form.uid}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            title={collapsed ? form.label : undefined}
+            className={cn(
+              'flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-blue-100 transition-colors',
+              'hover:bg-white/10 hover:text-white active:scale-[0.97]',
+              collapsed && 'justify-center px-2'
+            )}
+            style={{ transition: 'transform 160ms cubic-bezier(0.23,1,0.32,1), background-color 150ms ease-out' }}
+          >
+            <span className="flex-shrink-0">{form.icon}</span>
+            {!collapsed && (
+              <span className="min-w-0 flex-1 truncate">
+                {form.label}
+                <span className="block font-bangla text-[10px] text-blue-300 leading-tight">{form.labelBn}</span>
+              </span>
+            )}
+            {!collapsed && <ExternalLink className="h-3 w-3 flex-shrink-0 text-blue-400" />}
+          </a>
+        ))}
+      </div>
 
       {/* User footer */}
       <div className={cn('border-t border-white/10 p-3', collapsed && 'px-2')}>
