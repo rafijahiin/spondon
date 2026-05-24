@@ -47,7 +47,7 @@ export interface MockPartnerKPIs {
   mpdsr_cases: number
 }
 
-// ─── PHD: Population Health Dynamics ─────────────────────────────────────────
+// ─── PHD ─────────────────────────────────────────────────────────────────────
 // Focus: maternal health, ANC, MPDSR, fistula, community outreach
 // Areas: Cox's Bazar (Rohingya + host community), Chattogram, Sylhet
 

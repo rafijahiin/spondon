@@ -792,8 +792,20 @@ _FORM_LABELS = {
 
 @csrf_exempt
 @require_POST
-def programs_webhook(request):
-    """POST /webhook/programs/ — receives all 16 programs form types."""
+def programs_webhook(request, org_override: str = ''):
+    """
+    POST /webhook/programs/            — org resolved from payload field
+    POST /webhook/programs/PHD/        — force organisation='PHD'
+    POST /webhook/programs/Bondhu/     — force organisation='Bondhu'
+
+    Using the org-specific URLs is strongly recommended so submissions are
+    correctly tagged even when the KoboToolbox form has no organisation field.
+
+    KoboToolbox REST Service setup (per form, per org):
+      URL:    https://<domain>/webhook/programs/PHD/   (or /Bondhu/)
+      Method: POST
+      Header: Authorization: Token REDACTED
+    """
     if not validate_kobo_signature(request):
         logger.warning(
             'Programs webhook rejected — bad signature from %s',
@@ -810,6 +822,12 @@ def programs_webhook(request):
     if not kobo_id:
         return HttpResponse('Bad Request — missing _id', status=400)
 
+    # Org-specific URL overrides the payload field so forms don't need
+    # an explicit organisation field — the URL itself is the source of truth.
+    if org_override:
+        payload['organisation'] = org_override
+        logger.debug('Programs webhook: org forced to %r via URL', org_override)
+
     xform_id = payload.get('_xform_id_string', '')
     handler = FORM_HANDLERS.get(xform_id)
     if not handler:
@@ -825,11 +843,26 @@ def programs_webhook(request):
         return HttpResponse('Internal Server Error', status=500)
 
     if response.status_code == 201:
-        logger.info('Programs submission created: %s [%s]', kobo_id, xform_id)
+        logger.info('Programs submission created: %s [%s] org=%s', kobo_id, xform_id,
+                    org_override or _org(payload) or '?')
         try:
-            org = _org(payload)
+            org = org_override or _org(payload)
             _notify(org, _FORM_LABELS.get(xform_id, xform_id), kobo_id)
         except Exception as exc:
             logger.error('Programs webhook Telegram dispatch error: %s', exc)
 
     return response
+
+
+@csrf_exempt
+@require_POST
+def programs_webhook_phd(request):
+    """POST /webhook/programs/PHD/ — all submissions tagged organisation='PHD'."""
+    return programs_webhook(request, org_override='PHD')
+
+
+@csrf_exempt
+@require_POST
+def programs_webhook_bondhu(request):
+    """POST /webhook/programs/Bondhu/ — all submissions tagged organisation='Bondhu'."""
+    return programs_webhook(request, org_override='Bondhu')

@@ -165,8 +165,8 @@ export function OrgDashboard({ partner }: Props) {
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{partner} Dashboard</h1>
           <p className="font-bangla mt-1 text-sm text-gray-500 dark:text-gray-400">
             {partner === 'PHD'
-              ? 'পপুলেশন হেলথ ডিপার্টমেন্ট'
-              : 'বন্ধু সোশ্যাল ওয়েলফেয়ার সোসাইটি'}{' '}
+              ? 'Partners in Health and Development'
+              : 'Bondhu Social Welfare Society'}{' '}
             · SRHR M&amp;E Dashboard
           </p>
         </div>
