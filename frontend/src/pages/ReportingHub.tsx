@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import {
   Download, FileImage, Newspaper, Presentation,
-  RefreshCw, Sparkles, Calendar, ChevronDown,
+  RefreshCw, Sparkles, Calendar, ChevronDown, FlaskConical,
 } from 'lucide-react'
 import { api, apiErrorMessage } from '@/api/client'
 import { useAuth } from '@/context/AuthContext'
@@ -20,6 +20,17 @@ interface GenerateCard {
   id: string
   reportType: 'one_pager' | 'newsletter' | 'monthly_summary'
   format: 'pdf' | 'pdf' | 'pptx'
+  icon: React.ReactNode
+  label: string
+  labelBn: string
+  description: string
+  accentClass: string
+}
+
+interface DemoCard {
+  id: string
+  type: 'infographic' | 'newsletter' | 'presentation'
+  ext: 'pdf' | 'pptx'
   icon: React.ReactNode
   label: string
   labelBn: string
@@ -57,6 +68,45 @@ const GENERATE_CARDS: GenerateCard[] = [
     labelBn: 'প্রেজেন্টেশন পিপিটি',
     description: '6-slide UNFPA-branded PowerPoint with chart, data table, AI narrative, and forward look.',
     accentClass: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800',
+  },
+]
+
+const DEMO_CARDS: DemoCard[] = [
+  {
+    id: 'demo-infographic',
+    type: 'infographic',
+    ext: 'pdf',
+    icon: <FileImage className="h-5 w-5" />,
+    label: 'Demo Infographic',
+    labelBn: 'ডেমো ইনফোগ্রাফিক',
+    description:
+      'One-page visual summary using CPE 2022–2026 evaluation data — PHD + Bondhu combined, full year 2024. Same layout as the live infographic.',
+    accentClass:
+      'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800',
+  },
+  {
+    id: 'demo-newsletter',
+    type: 'newsletter',
+    ext: 'pdf',
+    icon: <Newspaper className="h-5 w-5" />,
+    label: 'Demo Newsletter',
+    labelBn: 'ডেমো নিউজলেটার',
+    description:
+      'Formal programme bulletin using CPE evaluation data — stat boxes, activity table, and a CPE-grounded narrative. Same layout as the live newsletter.',
+    accentClass:
+      'bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-900/20 dark:text-violet-400 dark:border-violet-800',
+  },
+  {
+    id: 'demo-presentation',
+    type: 'presentation',
+    ext: 'pptx',
+    icon: <Presentation className="h-5 w-5" />,
+    label: 'Demo Presentation',
+    labelBn: 'ডেমো প্রেজেন্টেশন',
+    description:
+      'UNFPA-branded PowerPoint using CPE evaluation data — charts, data table, and narrative slides. Same template as the live presentation.',
+    accentClass:
+      'bg-teal-50 text-teal-700 border-teal-200 dark:bg-teal-900/20 dark:text-teal-400 dark:border-teal-800',
   },
 ]
 
@@ -100,10 +150,14 @@ export default function ReportingHub() {
   const [biEnd,      setBiEnd]        = useState(isoDate(NOW))
   const [partner,    setPartner]      = useState(canSeeAll ? '' : (user?.organisation ?? ''))
 
-  // Per-card generating state
+  // Per-card generating state (live reports)
   const [generating, setGenerating] = useState<Record<string, boolean>>({})
   const [cardError,  setCardError]  = useState<Record<string, string>>({})
   const [cardOk,     setCardOk]     = useState<Record<string, string>>({})
+
+  // Per-card state (demo reports)
+  const [demoLoading, setDemoLoading] = useState<Record<string, boolean>>({})
+  const [demoError,   setDemoError]   = useState<Record<string, string>>({})
 
   const { data: reports, loading, refetch } = usePolling<Report[]>({
     fetcher: () =>
@@ -149,6 +203,35 @@ export default function ReportingHub() {
 
   const handleDownload = (report: Report) => {
     if (report.file) { window.open(report.file, '_blank') }
+  }
+
+  const handleDemoDownload = async (card: DemoCard) => {
+    setDemoLoading((p) => ({ ...p, [card.id]: true }))
+    setDemoError((p)   => ({ ...p, [card.id]: '' }))
+    try {
+      const resp = await api.get(`/reports/demo/?type=${card.type}`, {
+        responseType: 'blob',
+      })
+      const mime =
+        card.ext === 'pptx'
+          ? 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+          : 'application/pdf'
+      const blobUrl = URL.createObjectURL(new Blob([resp.data as BlobPart], { type: mime }))
+      const anchor  = document.createElement('a')
+      anchor.href     = blobUrl
+      anchor.download = `demo_${card.type}_cpe2024.${card.ext}`
+      document.body.appendChild(anchor)
+      anchor.click()
+      document.body.removeChild(anchor)
+      URL.revokeObjectURL(blobUrl)
+    } catch (err) {
+      setDemoError((p) => ({
+        ...p,
+        [card.id]: err instanceof Error ? err.message : 'Download failed.',
+      }))
+    } finally {
+      setDemoLoading((p) => ({ ...p, [card.id]: false }))
+    }
   }
 
   const anomalyAlerts = (alerts ?? []).filter((a) => a.alert_type === 'anomaly' && !a.acknowledged)
@@ -297,6 +380,67 @@ export default function ReportingHub() {
             </button>
           </div>
         ))}
+      </div>
+
+      {/* ── Demo report cards ────────────────────────────────────────────────── */}
+      <div>
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          <FlaskConical className="h-4 w-4 text-amber-500" />
+          <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+            Demo Reports
+          </h2>
+          <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+            CPE 2022–2026 data
+          </span>
+          <span className="text-xs text-gray-400 dark:text-gray-500">
+            · Same pipeline as live reports — previews the exact output format
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          {DEMO_CARDS.map((card) => (
+            <div
+              key={card.id}
+              className="flex flex-col rounded-xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm p-5"
+            >
+              {/* Icon + label */}
+              <div
+                className={cn(
+                  'mb-3 inline-flex w-fit items-center gap-2 rounded-lg border px-3 py-1.5 text-sm font-medium',
+                  card.accentClass,
+                )}
+              >
+                {card.icon}
+                {card.label}
+              </div>
+              <p className="font-bangla mb-0.5 text-[10px] text-gray-400 dark:text-gray-500">
+                {card.labelBn}
+              </p>
+              <p className="mb-4 flex-1 text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+                {card.description}
+              </p>
+
+              {/* Error */}
+              {demoError[card.id] && (
+                <p className="mb-2 text-xs text-red-500 dark:text-red-400">
+                  {demoError[card.id]}
+                </p>
+              )}
+
+              <button
+                onClick={() => handleDemoDownload(card)}
+                disabled={demoLoading[card.id]}
+                className="flex w-full items-center justify-center gap-2 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 px-4 py-2.5 text-sm font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-60 transition-colors"
+              >
+                {demoLoading[card.id]
+                  ? <LoadingSpinner size="sm" />
+                  : <Download className="h-4 w-4" />
+                }
+                {demoLoading[card.id] ? 'Building…' : 'Download Demo'}
+              </button>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* ── Anomaly alerts ───────────────────────────────────────────────────── */}

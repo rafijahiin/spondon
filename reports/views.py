@@ -2,7 +2,7 @@ import calendar
 from datetime import date, timedelta
 
 from django.core.files.base import ContentFile
-from django.http import FileResponse
+from django.http import FileResponse, HttpResponse
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.decorators import action
@@ -200,6 +200,56 @@ class ReportViewSet(ModelViewSet):
             return Response({'detail': 'No file attached.'}, status=status.HTTP_404_NOT_FOUND)
         return FileResponse(report.file.open('rb'), as_attachment=True,
                             filename=report.file.name.split('/')[-1])
+
+    @action(detail=False, methods=['get'], url_path='demo')
+    def demo(self, request):
+        """
+        Generate and immediately download a demo report using static CPE 2022–2026 data.
+
+        Query params:
+            type: infographic | newsletter | presentation  (default: infographic)
+
+        The demo data is sourced from reports/demo_data.py and flows through the
+        identical generator pipeline as live approved submissions.
+        """
+        report_type = request.query_params.get('type', 'infographic')
+
+        from .demo_data import get_demo_data, DEMO_NARRATIVE
+        data = get_demo_data()
+
+        if report_type == 'infographic':
+            from .generators.one_pager import build_infographic
+            file_bytes   = build_infographic(data, DEMO_NARRATIVE)
+            content_type = 'application/pdf'
+            filename     = 'demo_infographic_cpe2024.pdf'
+
+        elif report_type == 'newsletter':
+            from .generators.newsletter import build_newsletter
+            file_bytes   = build_newsletter(data=data, narrative=DEMO_NARRATIVE)
+            content_type = 'application/pdf'
+            filename     = 'demo_newsletter_cpe2024.pdf'
+
+        elif report_type == 'presentation':
+            from .generators.pptx import build_presentation
+            file_bytes   = build_presentation(data, DEMO_NARRATIVE)
+            content_type = (
+                'application/vnd.openxmlformats-officedocument'
+                '.presentationml.presentation'
+            )
+            filename = 'demo_presentation_cpe2024.pptx'
+
+        else:
+            return Response(
+                {'detail': (
+                    f'Unknown type {report_type!r}. '
+                    'Use infographic, newsletter, or presentation.'
+                )},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        response = HttpResponse(file_bytes, content_type=content_type)
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        return response
 
     @action(detail=False, methods=['get'])
     def anomalies(self, request):
