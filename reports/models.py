@@ -14,8 +14,14 @@ class ReportFormat(models.TextChoices):
 
 class ReportType(models.TextChoices):
     MONTHLY_SUMMARY = 'monthly_summary', 'Monthly Summary'
-    ONE_PAGER = 'one_pager', 'One-Pager'
+    ONE_PAGER = 'one_pager', 'Infographic'
     NEWSLETTER = 'newsletter', 'Newsletter'
+
+
+class PeriodType(models.TextChoices):
+    BIWEEKLY  = 'biweekly',  'Bi-Weekly'
+    MONTHLY   = 'monthly',   'Monthly'
+    QUARTERLY = 'quarterly', 'Quarterly'
 
 
 class Report(models.Model):
@@ -24,8 +30,17 @@ class Report(models.Model):
     format = models.CharField(max_length=10, choices=ReportFormat.choices)
     partner = models.CharField(max_length=20, blank=True, db_index=True)
 
-    year = models.PositiveSmallIntegerField()
-    month = models.PositiveSmallIntegerField()
+    # Legacy period fields (kept for backward compat)
+    year = models.PositiveSmallIntegerField(default=2026)
+    month = models.PositiveSmallIntegerField(default=1)
+
+    # New period fields
+    period_type  = models.CharField(
+        max_length=10, choices=PeriodType.choices,
+        default=PeriodType.MONTHLY, db_index=True,
+    )
+    period_start = models.DateField(null=True, blank=True)
+    period_end   = models.DateField(null=True, blank=True)
 
     title = models.CharField(max_length=300)
     narrative = models.TextField(blank=True)
