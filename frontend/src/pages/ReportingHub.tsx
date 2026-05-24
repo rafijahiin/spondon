@@ -32,7 +32,8 @@ export default function ReportingHub() {
   })
 
   const { data: alerts } = usePolling<Alert[]>({
-    fetcher: () => api.get('/dashboard/alerts/?acknowledged=false').then((r) => r.data),
+    fetcher: () =>
+      api.get('/dashboard/alerts/?acknowledged=false').then((r) => (Array.isArray(r.data) ? r.data : (r.data?.results ?? []))),
     interval: 60_000,
   })
 

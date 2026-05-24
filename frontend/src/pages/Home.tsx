@@ -15,14 +15,16 @@ function useKPIs() {
 
 function useActivityFeed() {
   return usePolling<ActivityItem[]>({
-    fetcher: () => api.get('/dashboard/activity-feed/').then((r) => r.data),
+    fetcher: () =>
+      api.get('/dashboard/activity-feed/').then((r) => (Array.isArray(r.data) ? r.data : (r.data?.results ?? []))),
     interval: 20_000,
   })
 }
 
 function useAlerts() {
   return usePolling<Alert[]>({
-    fetcher: () => api.get('/dashboard/alerts/?acknowledged=false').then((r) => r.data),
+    fetcher: () =>
+      api.get('/dashboard/alerts/?acknowledged=false').then((r) => (Array.isArray(r.data) ? r.data : (r.data?.results ?? []))),
     interval: 60_000,
   })
 }
