@@ -6,7 +6,13 @@ import type { ActivityItem } from '@/types'
 
 // geoBoundaries ADM2 simplified for Bangladesh
 const GEOJSON_URL =
-  'https://raw.githubusercontent.com/wmgeolab/geoBoundaries/main/releaseData/gbOpen/BGD/ADM2/geoBoundaries-BGD-ADM2_simplified.geojson'
+  'https://cdn.jsdelivr.net/gh/wmgeolab/geoBoundaries@main/releaseData/gbOpen/BGD/ADM2/geoBoundaries-BGD-ADM2_simplified.geojson'
+
+const CP10_DISTRICTS = new Set([
+  'coxsbazar', 'bandarban', 'noakhali', 'dhaka',
+  'sirajganj', 'jamalpur', 'gaibandha', 'patuakhali',
+  'barguna', 'bagerhat',
+])
 
 interface Props {
   activityFeed: ActivityItem[]
@@ -41,33 +47,25 @@ export function BangladeshMap({ activityFeed, className }: Props) {
       .catch(() => setError(true))
   }, [])
 
+  function districtStyle(name: string, count: number): PathOptions {
+    if (count > 0) return { fillColor: '#00658C', fillOpacity: 0.3 + (count / maxCount) * 0.6, color: '#004A66', weight: 0.5 }
+    if (CP10_DISTRICTS.has(name)) return { fillColor: '#f59e0b', fillOpacity: 0.25, color: '#004A66', weight: 0.5 }
+    return { fillColor: '#94a3b8', fillOpacity: 0.08, color: '#004A66', weight: 0.5 }
+  }
+
   // Re-style when activityFeed changes
   useEffect(() => {
     if (!geoJsonRef.current) return
     geoJsonRef.current.eachLayer((layer: Layer) => {
       const f = (layer as any).feature as GeoJSON.Feature
       const name = normalize((f.properties?.shapeName as string) ?? '')
-      const count = districtCounts[name] ?? 0
-      const opacity = count > 0 ? 0.3 + (count / maxCount) * 0.6 : 0.08
-      ;(layer as any).setStyle({
-        fillColor: count > 0 ? '#00658C' : '#94a3b8',
-        fillOpacity: opacity,
-        color: '#004A66',
-        weight: 0.5,
-      })
+      ;(layer as any).setStyle(districtStyle(name, districtCounts[name] ?? 0))
     })
   }, [activityFeed]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const styleFeature = (feature?: GeoJSON.Feature): PathOptions => {
     const name = normalize((feature?.properties?.shapeName as string) ?? '')
-    const count = districtCounts[name] ?? 0
-    const opacity = count > 0 ? 0.3 + (count / maxCount) * 0.6 : 0.08
-    return {
-      fillColor: count > 0 ? '#00658C' : '#94a3b8',
-      fillOpacity: opacity,
-      color: '#004A66',
-      weight: 0.5,
-    }
+    return districtStyle(name, districtCounts[name] ?? 0)
   }
 
   const onEachFeature = (feature: GeoJSON.Feature, layer: Layer) => {

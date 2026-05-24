@@ -33,7 +33,7 @@ export default function BaselineEndline() {
           params: {
             ...(surveyFilter !== 'all' ? { survey_type: surveyFilter } : {}),
             ...(partnerFilter !== 'all' ? { partner: partnerFilter } : {}),
-            ...(dupeOnly ? { is_duplicate: true } : {}),
+            ...(dupeOnly ? { duplicates_only: true } : {}),
           },
         })
         .then((r) => (Array.isArray(r.data) ? r.data : r.data.results ?? [])),
