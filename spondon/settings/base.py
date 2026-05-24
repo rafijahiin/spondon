@@ -118,3 +118,6 @@ KOBO_ASSET_UID_FISTULA = os.environ.get('KOBO_ASSET_UID_FISTULA', 'placeholder')
 KOBO_ASSET_UID_ACTIVITY = os.environ.get('KOBO_ASSET_UID_ACTIVITY', 'placeholder')
 KOBO_ASSET_UID_BASELINE = os.environ.get('KOBO_ASSET_UID_BASELINE', 'placeholder')
 KOBO_SERVER_URL = os.environ.get('KOBO_SERVER_URL', 'https://kobo.humanitarianresponse.info')
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'mediafiles'

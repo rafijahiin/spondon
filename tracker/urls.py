@@ -8,4 +8,5 @@ router.register(r'alerts', views.AlertViewSet, basename='tracker-alerts')
 
 urlpatterns = router.urls + [
     path('forecast/', views.ForecastView.as_view(), name='tracker-forecast'),
+    path('compliance/', views.ComplianceView.as_view(), name='tracker-compliance'),
 ]

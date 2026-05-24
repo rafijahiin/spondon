@@ -23,7 +23,7 @@ COPY . .
 COPY --from=frontend-builder /app/frontend/dist ./frontend/dist
 
 # Create staticfiles directory and collect static
-RUN mkdir -p staticfiles && python manage.py collectstatic --noinput
+RUN mkdir -p staticfiles mediafiles && python manage.py collectstatic --noinput
 
 EXPOSE 8080
 

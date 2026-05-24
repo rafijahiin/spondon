@@ -30,6 +30,26 @@ class MPDSRCaseViewSet(OrgFilterMixin, ModelViewSet):
             return MPDSRCaseUpdateSerializer
         return MPDSRCaseSerializer
 
+    def partial_update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        old_status = instance.status
+
+        serializer = MPDSRCaseUpdateSerializer(instance, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        new_status = serializer.validated_data.get('status', old_status)
+
+        serializer.save()
+
+        if new_status != old_status:
+            instance.add_audit_entry(
+                user_email=request.user.email,
+                action=f'Status changed: {old_status} → {new_status}',
+                notes=serializer.validated_data.get('notes', ''),
+            )
+            instance.save(update_fields=['audit_trail'])
+
+        return Response(MPDSRCaseSerializer(instance).data)
+
     @action(detail=False, methods=['get'])
     def stats(self, request):
         qs = self.get_queryset()

@@ -1,6 +1,5 @@
 """
-Alert generation helpers.  Called from management commands or cron tasks
-to detect below-target performance and overdue cases.
+Alert generation helpers. Called from management commands or cron tasks.
 """
 import datetime
 import logging
@@ -14,7 +13,6 @@ def generate_below_target_alerts(dry_run: bool = False) -> list[dict]:
     """
     Compare current-month approved submission counts against MonthlyTarget.
     Creates Alert records for partners tracking below 80% of target.
-    Returns a list of created alert dicts (for logging / testing).
     """
     from submissions.models import KoboSubmission, SubmissionStatus
     from .models import Alert, AlertSeverity, AlertType, MonthlyTarget
@@ -106,5 +104,71 @@ def generate_overdue_case_alerts(dry_run: bool = False) -> list[dict]:
         if not dry_run:
             Alert.objects.create(**alert_data)
         created_alerts.append(alert_data)
+
+    return created_alerts
+
+
+def detect_submission_gaps(dry_run: bool = False) -> list[dict]:
+    """
+    For each partner/form_type with a current monthly target, check whether any
+    submission was received in the last 48 hours. If not, raise a SUBMISSION_GAP
+    alert and send a Telegram notification. Deduplicates: only one unacknowledged
+    gap alert per partner/form_type per calendar day.
+    """
+    from submissions.models import KoboSubmission
+    from .models import Alert, AlertSeverity, AlertType, MonthlyTarget
+
+    now = timezone.now()
+    cutoff = now - datetime.timedelta(hours=48)
+    year, month = now.year, now.month
+
+    targets = MonthlyTarget.objects.filter(year=year, month=month)
+    created_alerts = []
+
+    for t in targets:
+        has_recent = KoboSubmission.objects.filter(
+            partner=t.partner,
+            form_type=t.form_type,
+            submitted_at__gte=cutoff,
+        ).exists()
+
+        if has_recent:
+            continue
+
+        # Deduplicate: skip if unacknowledged gap alert already raised today
+        already_alerted = Alert.objects.filter(
+            partner=t.partner,
+            alert_type=AlertType.SUBMISSION_GAP,
+            acknowledged=False,
+            created_at__date=now.date(),
+        ).exists()
+
+        if already_alerted:
+            continue
+
+        title = f'{t.partner} {t.form_type.upper()}: no submissions in 48 h'
+        message = (
+            f'No {t.form_type} submissions received from {t.partner} '
+            f'in the last 48 hours. Focal person has been notified via Telegram.'
+        )
+
+        alert_data = {
+            'partner': t.partner,
+            'alert_type': AlertType.SUBMISSION_GAP,
+            'severity': AlertSeverity.WARNING,
+            'title': title,
+            'message': message,
+        }
+
+        if not dry_run:
+            Alert.objects.create(**alert_data)
+            try:
+                from submissions.telegram import send_gap_alert
+                send_gap_alert(t.partner, t.form_type)
+            except Exception as exc:
+                logger.error('Gap alert Telegram failed: %s', exc)
+
+        created_alerts.append(alert_data)
+        logger.info('Gap alert created: %s', title)
 
     return created_alerts
