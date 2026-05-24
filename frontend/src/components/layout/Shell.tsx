@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Outlet } from 'react-router-dom'
 import { Header } from './Header'
 import { Sidebar } from './Sidebar'
+import { AIProgrammeOfficer } from '@/components/chat/AIProgrammeOfficer'
 import { cn } from '@/utils/cn'
 
 export function Shell() {
@@ -52,6 +53,9 @@ export function Shell() {
           </div>
         </main>
       </div>
+
+      {/* AI Programme Officer — floating chat, available on all authenticated pages */}
+      <AIProgrammeOfficer />
     </div>
   )
 }

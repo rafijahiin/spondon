@@ -565,3 +565,41 @@ class ProgramsSummaryView(APIView):
             'monthly_trend': monthly_trend,
             'top_forms': top_forms,
         })
+
+
+# ---------------------------------------------------------------------------
+# AI Programme Officer chat
+# ---------------------------------------------------------------------------
+
+class ChatView(APIView):
+    """
+    POST /api/dashboard/chat/
+    Body: { question: str, partner?: str }
+    Returns: { answer: str }
+
+    Gathers live programme data as context and answers natural-language
+    questions via Groq / LLaMA 3.3 70B.
+    """
+    permission_classes = [IsSuperAdminOrManager]
+
+    def post(self, request):
+        question = (request.data.get('question') or '').strip()
+        if not question:
+            return Response(
+                {'detail': 'question is required.'},
+                status=400,
+            )
+        if len(question) > 500:
+            return Response(
+                {'detail': 'Question must be ≤ 500 characters.'},
+                status=400,
+            )
+
+        # Restrict partner scope for org managers
+        partner = (request.data.get('partner') or '').strip()
+        if not request.user.can_see_all_orgs:
+            partner = request.user.organisation
+
+        from .chat import answer_question
+        answer = answer_question(question, partner)
+        return Response({'answer': answer})
