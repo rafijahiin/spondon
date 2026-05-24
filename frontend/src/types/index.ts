@@ -351,6 +351,29 @@ export interface ApprovalItem {
   [key: string]: unknown
 }
 
+export interface ProgramPendingItem {
+  id: string
+  model_type: string
+  model_label: string
+  endpoint: string
+  organisation: string
+  approval_status: ApprovalStatus
+  submitted_by: string
+  center_name: string
+  center_code: string
+  created_at: string
+  summary: string
+  latitude: number | null
+  longitude: number | null
+  kobo_submission_id: string
+}
+
+export interface ProgramPendingResponse {
+  total: number
+  counts_by_type: Record<string, number>
+  items: ProgramPendingItem[]
+}
+
 export type ParticipantRole = 'community_worker' | 'supervisor' | 'health_staff' | 'other'
 
 export interface TrainingAttendance {

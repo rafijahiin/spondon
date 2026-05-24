@@ -13,6 +13,7 @@ from .views import (
     SafetyHygieneKitViewSet, StoreRequisitionViewSet,
     TrainingEventViewSet, CoordMeetingViewSet,
     MobileHealthCampViewSet, VisitorRegisterViewSet,
+    PendingApprovalsView,
 )
 
 router = DefaultRouter()
@@ -41,4 +42,5 @@ router.register('visitor-register',    VisitorRegisterViewSet,        basename='
 
 urlpatterns = [
     path('', include(router.urls)),
+    path('pending-approvals/', PendingApprovalsView.as_view(), name='pending-approvals'),
 ]
