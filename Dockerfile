@@ -27,4 +27,4 @@ RUN mkdir -p staticfiles mediafiles && python manage.py collectstatic --noinput
 
 EXPOSE 8080
 
-CMD ["sh", "-c", "python manage.py migrate --noinput && python manage.py seed_users && gunicorn spondon.wsgi --bind 0.0.0.0:$PORT --workers 2 --timeout 120"]
+CMD ["sh", "-c", "python manage.py migrate --noinput && python manage.py seed_users && python manage.py seed_centers && gunicorn spondon.wsgi --bind 0.0.0.0:$PORT --workers 2 --timeout 120"]
