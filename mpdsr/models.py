@@ -34,6 +34,12 @@ def _safe_int(value):
 
 class MPDSRCaseManager(models.Manager):
     def get_or_create_from_submission(self, submission):
+        """
+        Called by submissions.signals when a KoboSubmission is approved.
+        Extracted fields (confirm exact XLS form names with CIPRB before go-live):
+          death_type, cause_of_death, facility_name, age_years,
+          place_of_death / location_of_death (both checked, keyword-matched).
+        """
         raw = submission.raw_data
         death_type_raw = (raw.get('death_type') or '').lower()
         if 'perinatal' in death_type_raw:
