@@ -15,7 +15,7 @@ from rest_framework.viewsets import ModelViewSet
 from accounts.permissions import IsSuperAdminOrManager, OrgFilterMixin
 from .models import FormType, KoboSubmission, SubmissionStatus
 from .serializers import KoboSubmissionDetailSerializer, KoboSubmissionSerializer, RejectSerializer
-from .telegram import send_submission_alert
+from .telegram import send_approval_confirmation, send_rejection_notification, send_submission_alert
 from .validators import validate_kobo_signature
 
 logger = logging.getLogger(__name__)
@@ -166,6 +166,10 @@ class KoboSubmissionViewSet(OrgFilterMixin, ModelViewSet):
         submission.reviewed_by = request.user
         submission.reviewed_at = timezone.now()
         submission.save()
+        try:
+            send_approval_confirmation(submission)
+        except Exception as exc:
+            logger.error('Telegram approval notification error: %s', exc)
         return Response(KoboSubmissionSerializer(submission).data)
 
     @action(detail=True, methods=['post'])
@@ -183,4 +187,8 @@ class KoboSubmissionViewSet(OrgFilterMixin, ModelViewSet):
         submission.reviewed_at = timezone.now()
         submission.rejection_reason = serializer.validated_data['rejection_reason']
         submission.save()
+        try:
+            send_rejection_notification(submission)
+        except Exception as exc:
+            logger.error('Telegram rejection notification error: %s', exc)
         return Response(KoboSubmissionSerializer(submission).data)
