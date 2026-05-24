@@ -9,7 +9,11 @@ Approval:
   POST /<model>/<pk>/approve/  or  POST /<model>/<pk>/reject/
   Only managers (of the same org) and super_admins can approve/reject.
 """
+import json
 import logging
+
+import requests as _requests
+from django.conf import settings as _settings
 from django.utils import timezone
 from rest_framework import viewsets, views, status
 from rest_framework.decorators import action
@@ -42,6 +46,46 @@ from .serializers import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+def _send_approval_telegram(org: str, form_label: str, reviewer_name: str, approved: bool, reason: str = '') -> None:
+    """
+    Notify the org's Telegram chat when a programs submission is approved/rejected.
+    Field workers and managers are in the same org group chat.
+    """
+    token = getattr(_settings, 'TELEGRAM_BOT_TOKEN', '')
+    if not token:
+        return
+    try:
+        chat_ids = json.loads(getattr(_settings, 'TELEGRAM_CHAT_IDS', '{}'))
+    except Exception:
+        return
+    chat_id = chat_ids.get(org)
+    if not chat_id:
+        return
+    if approved:
+        text = (
+            f'<b>✅ Submission Approved</b>\n\n'
+            f'Organisation: {org}\n'
+            f'Form: {form_label}\n'
+            f'Approved by: {reviewer_name}'
+        )
+    else:
+        text = (
+            f'<b>❌ Submission Rejected</b>\n\n'
+            f'Organisation: {org}\n'
+            f'Form: {form_label}\n'
+            f'Rejected by: {reviewer_name}'
+            + (f'\nReason: {reason}' if reason else '')
+        )
+    try:
+        _requests.post(
+            f'https://api.telegram.org/bot{token}/sendMessage',
+            json={'chat_id': chat_id, 'text': text, 'parse_mode': 'HTML'},
+            timeout=5,
+        ).raise_for_status()
+    except Exception as exc:
+        logger.error('Programs approval Telegram error: %s', exc)
 
 
 def _org_filter(queryset, request):
@@ -479,4 +523,40 @@ class PendingApprovalsView(views.APIView):
             return Response({'detail': "action must be 'approve' or 'reject'."}, status=status.HTTP_400_BAD_REQUEST)
 
         obj.save()
+
+        # Telegram — notify org chat of approval/rejection
+        try:
+            from .webhook import _FORM_LABELS, FORM_HANDLERS
+            # Reverse-look up form label from model_type
+            _model_to_form = {
+                'clinic_visit': 'spondon_clinic_visit_v1',
+                'hiv_sti_result': 'spondon_hiv_sti_test_v1',
+                'adr_record': 'spondon_adr_record_v1',
+                'autoclave_log': 'spondon_autoclave_log_v1',
+                'antenatal_card': 'spondon_antenatal_card_v1',
+                'htc_counselling': 'spondon_htc_counsel_v1',
+                'individual_counselling': 'spondon_counselling_v1',
+                'mh_screening': 'spondon_mh_screening_v1',
+                'gbv_case': 'spondon_gbv_case_v1',
+                'outreach_session': 'spondon_outreach_v1',
+                'group_education': 'spondon_group_edu_v1',
+                'referral': 'spondon_referral_v1',
+                'safety_hygiene_kit': 'spondon_hygiene_kit_v1',
+                'training_event': 'spondon_training_event_v1',
+                'coord_meeting': 'spondon_coord_meeting_v1',
+                'mobile_camp': 'spondon_mobile_camp_v1',
+            }
+            form_key = _model_to_form.get(model_type, '')
+            form_label = _FORM_LABELS.get(form_key, model_type.replace('_', ' ').title())
+            reviewer_name = getattr(user, 'full_name', None) or user.email
+            _send_approval_telegram(
+                org=obj.organisation,
+                form_label=form_label,
+                reviewer_name=reviewer_name,
+                approved=(action_type == 'approve'),
+                reason=reason,
+            )
+        except Exception as exc:
+            logger.error('Telegram notification failed after approval: %s', exc)
+
         return Response({'status': obj.approval_status, 'id': str(obj.id)})
