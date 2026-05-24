@@ -72,7 +72,7 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { to: '/',       label: 'Home',             labelBn: 'হোম',              icon: <Home className="h-4 w-4" /> },
       { to: '/phd',    label: 'PHD Dashboard',    labelBn: 'PHD ড্যাশবোর্ড',   icon: <LayoutDashboard className="h-4 w-4" /> },
-      { to: '/bondhu', label: 'Bondhu Dashboard', labelBn: 'বন্ধু ড্যাশবোর্ড', icon: <BarChart2 className="h-4 w-4" /> },
+      { to: '/bondhu', label: 'Bandhu Dashboard', labelBn: 'বন্ধু ড্যাশবোর্ড', icon: <BarChart2 className="h-4 w-4" /> },
     ],
   },
   {

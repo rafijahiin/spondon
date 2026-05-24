@@ -94,14 +94,14 @@ PHD_TARGETS = [
 
 
 class Command(BaseCommand):
-    help = 'Load indicator targets for Bondhu and PHD (May–November 2026)'
+    help = 'Load indicator targets for Bandhu and PHD (May–November 2026)'
 
     def handle(self, *args, **options):
         created_count = 0
         updated_count = 0
 
         all_targets = (
-            [('Bondhu', t) for t in BONDHU_TARGETS] +
+            [('Bandhu', t) for t in BONDHU_TARGETS] +
             [('PHD', t) for t in PHD_TARGETS]
         )
 

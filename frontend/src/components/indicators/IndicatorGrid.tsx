@@ -7,7 +7,7 @@ import { IndicatorCard } from './IndicatorCard'
 import type { IndicatorProgress } from '@/types'
 
 interface Props {
-  org: 'PHD' | 'Bondhu'
+  org: 'PHD' | 'Bandhu'
   periodStart?: string
   periodEnd?: string
 }

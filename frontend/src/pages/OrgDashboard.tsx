@@ -34,7 +34,7 @@ import {
   MOCK_PROGRAMS, MOCK_KPIS, MOCK_CENTRES,
 } from '@/data/mockDashboardData'
 
-type Partner = 'PHD' | 'Bondhu'
+type Partner = 'PHD' | 'Bandhu'
 
 interface OrgSummaryResponse {
   partner: Partner
@@ -166,7 +166,7 @@ export function OrgDashboard({ partner }: Props) {
           <p className="font-bangla mt-1 text-sm text-gray-500 dark:text-gray-400">
             {partner === 'PHD'
               ? 'Partners in Health and Development'
-              : 'Bondhu Social Welfare Society'}{' '}
+              : 'Bandhu Social Welfare Society'}{' '}
             · SRHR M&amp;E Dashboard
           </p>
         </div>

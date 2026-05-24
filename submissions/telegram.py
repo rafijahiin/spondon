@@ -94,6 +94,14 @@ def send_rejection_notification(submission) -> None:
     _post(token, chat_id, text)
 
 
+def send_telegram(chat_id: str, message: str) -> None:
+    """Send a plain-text Telegram message to the given chat_id."""
+    token = settings.TELEGRAM_BOT_TOKEN
+    if not token:
+        return
+    _post(token, chat_id, message)
+
+
 def send_gap_alert(partner: str, form_type: str) -> None:
     """Alert partner chat when no submissions received in 48 hours."""
     token = settings.TELEGRAM_BOT_TOKEN
@@ -112,3 +120,30 @@ def send_gap_alert(partner: str, form_type: str) -> None:
         f'<i>Please ensure field workers are submitting regularly.</i>'
     )
     _post(token, chat_id, text)
+
+
+def send_gps_rejection_notice(worker_name: str, form_type: str) -> None:
+    """
+    Alert managers that a submission was rejected for missing GPS.
+    Message is bilingual so field staff understand what happened.
+    """
+    form_label = form_type.replace('_', ' ').title()
+    message = (
+        f"⚠️ Submission Rejected — GPS Missing\n\n"
+        f"Worker: {worker_name}\n"
+        f"Form: {form_label}\n\n"
+        f"Rejected because location data (GPS) was not captured.\n\n"
+        f"বাংলা নোটিশ: এই জমাটি বাতিল হয়েছে কারণ অবস্থান তথ্য (GPS) পাওয়া যায়নি। "
+        f"ফোনে লোকেশন চালু করে আবার জমা দিন।"
+    )
+    try:
+        from django.conf import settings
+        from accounts.models import User
+        managers = User.objects.filter(
+            role__in=('manager', 'super_admin'),
+            is_active=True,
+        ).exclude(telegram_chat_id='').values_list('telegram_chat_id', flat=True)
+        for chat_id in managers:
+            send_telegram(chat_id, message)
+    except Exception as exc:
+        logger.debug('GPS rejection notify failed: %s', exc)

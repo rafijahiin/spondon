@@ -82,7 +82,7 @@ class IndicatorProgressView(views.APIView):
         if org is None:
             # Super admin with no org filter → return both orgs
             results = []
-            for o in ('Bondhu', 'PHD'):
+            for o in ('Bandhu', 'PHD'):
                 rows = get_all_indicators_for_org(o, period_start, period_end)
                 for r in rows:
                     r['organisation'] = o
@@ -107,7 +107,7 @@ class SingleIndicatorProgressView(views.APIView):
         org, period_start, period_end = _resolve_params(request)
         if org is None:
             return Response(
-                {'detail': 'Specify ?org=Bondhu or ?org=PHD for single indicator lookup.'},
+                {'detail': 'Specify ?org=Bandhu or ?org=PHD for single indicator lookup.'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 

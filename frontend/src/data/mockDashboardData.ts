@@ -145,7 +145,7 @@ const BONDHU_COUNTS: MockProgramsSummary['counts'] = {
 }
 
 export const MOCK_BONDHU: MockProgramsSummary = {
-  partner: 'Bondhu',
+  partner: 'Bandhu',
   year: 2026,
   month: 5,
   total: 1156,
@@ -195,17 +195,17 @@ export const MOCK_BONDHU_CENTRES: MockCentresResponse = {
 
 // ─── Convenience lookup ───────────────────────────────────────────────────────
 
-export const MOCK_PROGRAMS: Record<'PHD' | 'Bondhu', MockProgramsSummary> = {
+export const MOCK_PROGRAMS: Record<'PHD' | 'Bandhu', MockProgramsSummary> = {
   PHD: MOCK_PHD,
-  Bondhu: MOCK_BONDHU,
+  Bandhu: MOCK_BONDHU,
 }
 
-export const MOCK_KPIS: Record<'PHD' | 'Bondhu', MockPartnerKPIs> = {
+export const MOCK_KPIS: Record<'PHD' | 'Bandhu', MockPartnerKPIs> = {
   PHD: MOCK_PHD_KPIS,
-  Bondhu: MOCK_BONDHU_KPIS,
+  Bandhu: MOCK_BONDHU_KPIS,
 }
 
-export const MOCK_CENTRES: Record<'PHD' | 'Bondhu', MockCentresResponse> = {
+export const MOCK_CENTRES: Record<'PHD' | 'Bandhu', MockCentresResponse> = {
   PHD: MOCK_PHD_CENTRES,
-  Bondhu: MOCK_BONDHU_CENTRES,
+  Bandhu: MOCK_BONDHU_CENTRES,
 }

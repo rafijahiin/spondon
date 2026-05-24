@@ -27,7 +27,7 @@ interface Message {
 const STARTERS = [
   'How many activities were recorded this month?',
   'Are there any active alerts I should know about?',
-  'Compare PHD and Bondhu performance this month.',
+  'Compare PHD and Bandhu performance this month.',
   'How many fistula cases were identified this month?',
   'What is the month-on-month change in submissions?',
 ]

@@ -25,5 +25,5 @@ def previous_month_bounds() -> tuple[datetime.datetime, datetime.datetime]:
 def allowed_partners(user) -> list[str]:
     """Partners whose data this user is allowed to see."""
     if user.can_see_all_orgs:
-        return ['PHD', 'Bondhu']
+        return ['PHD', 'Bandhu']
     return [user.organisation]

@@ -15,7 +15,7 @@ class TrainingEvent(SubmissionBase):
     """
     Training / orientation / workshop event.
     total_participants feeds indicators:
-      Bondhu: 2.1 (health managers), 2.2 (midwives), 2.5 (PEs)
+      Bandhu: 2.1 (health managers), 2.2 (midwives), 2.5 (PEs)
       PHD: 2.1 (managers), 2.2 (MAs/midwives), 2.3 (PEs)
     """
     ORIENTATION = 'orientation'
@@ -74,7 +74,7 @@ class TrainingEvent(SubmissionBase):
 class CoordMeeting(SubmissionBase):
     """
     Coordination meeting report.
-    feeds indicators: Bondhu 2.3 (GOB), 2.4 (CBO); PHD 2.4
+    feeds indicators: Bandhu 2.3 (GOB), 2.4 (CBO); PHD 2.4
     """
     GOB = 'GOB'
     CBO = 'CBO'

@@ -116,7 +116,7 @@ function AttendanceTable({ session }: { session: TrainingSession }) {
   )
 }
 
-type PartnerFilter = 'all' | 'PHD' | 'Bondhu'
+type PartnerFilter = 'all' | 'PHD' | 'Bandhu'
 
 export default function TrainingLog() {
   const [partnerFilter, setPartnerFilter] = useState<PartnerFilter>('all')
@@ -187,7 +187,7 @@ export default function TrainingLog() {
 
       {/* Partner filter */}
       <div className="flex gap-2">
-        {(['all', 'PHD', 'Bondhu'] as PartnerFilter[]).map((p) => (
+        {(['all', 'PHD', 'Bandhu'] as PartnerFilter[]).map((p) => (
           <button
             key={p}
             onClick={() => setPartnerFilter(p)}

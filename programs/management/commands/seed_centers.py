@@ -10,7 +10,7 @@ from programs.models import ServiceCenter
 BONDHU_DICS = [
     {
         'code': 'BND-DIC-01',
-        'name': 'Bondhu DIC Sunamganj',
+        'name': 'Bandhu DIC Sunamganj',
         'name_bangla': 'বন্ধু ডিআইসি সুনামগঞ্জ',
         'center_type': 'DIC',
         'district': 'Sunamganj',
@@ -20,7 +20,7 @@ BONDHU_DICS = [
     },
     {
         'code': 'BND-DIC-02',
-        'name': 'Bondhu DIC Bandarban',
+        'name': 'Bandhu DIC Bandarban',
         'name_bangla': 'বন্ধু ডিআইসি বান্দরবান',
         'center_type': 'DIC',
         'district': 'Bandarban',
@@ -30,7 +30,7 @@ BONDHU_DICS = [
     },
     {
         'code': 'BND-DIC-03',
-        'name': 'Bondhu DIC Chandpur',
+        'name': 'Bandhu DIC Chandpur',
         'name_bangla': 'বন্ধু ডিআইসি চাঁদপুর',
         'center_type': 'DIC',
         'district': 'Chandpur',
@@ -40,7 +40,7 @@ BONDHU_DICS = [
     },
     {
         'code': 'BND-DIC-04',
-        'name': 'Bondhu DIC Noakhali',
+        'name': 'Bandhu DIC Noakhali',
         'name_bangla': 'বন্ধু ডিআইসি নোয়াখালী',
         'center_type': 'DIC',
         'district': 'Noakhali',
@@ -50,7 +50,7 @@ BONDHU_DICS = [
     },
     {
         'code': 'BND-DIC-05',
-        'name': 'Bondhu DIC Dhaka',
+        'name': 'Bandhu DIC Dhaka',
         'name_bangla': 'বন্ধু ডিআইসি ঢাকা',
         'center_type': 'DIC',
         'district': 'Dhaka',
@@ -89,14 +89,14 @@ PHD_SUB_DICS = [
 
 
 class Command(BaseCommand):
-    help = 'Seed ServiceCenter records for Bondhu (5 DICs) and PHD (11 brothels + 1 SRHR centre)'
+    help = 'Seed ServiceCenter records for Bandhu (5 DICs) and PHD (11 brothels + 1 SRHR centre)'
 
     def handle(self, *args, **options):
         created_count = 0
         updated_count = 0
 
         all_centers = [
-            ('Bondhu', c) for c in BONDHU_DICS
+            ('Bandhu', c) for c in BONDHU_DICS
         ] + [
             ('PHD', c) for c in PHD_BROTHELS
         ] + [

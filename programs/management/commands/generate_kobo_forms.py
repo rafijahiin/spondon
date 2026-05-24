@@ -11,7 +11,7 @@ Output: one .xlsx file per form in XLSForm format, ready to upload to
 https://kf.kobotoolbox.org
 
 Field name conventions (must match programs/webhook.py exactly):
-  - partner_org: "PHD" or "Bondhu" — skip logic uses this
+  - partner_org: "PHD" or "Bandhu" — skip logic uses this
   - center_code: center.code value from ServiceCenter model
   - GPS: `_geolocation` is auto-added by KoboToolbox from the `location` geopoint
   - client_id: links to Client.client_id in the database
@@ -124,7 +124,7 @@ def _common_choices():
     # partner_org
     rows += [
         _choice('partner_org', 'PHD', 'PHD', 'পিএইচডি'),
-        _choice('partner_org', 'Bondhu', 'Bondhu', 'বন্ধু'),
+        _choice('partner_org', 'Bandhu', 'Bandhu', 'বন্ধু'),
     ]
     # visit_type
     rows += [
@@ -240,7 +240,7 @@ def _common_metadata_rows():
     """
     Start-of-form rows shared by every form:
     - GPS location (required)
-    - Partner org (required, choose PHD / Bondhu)
+    - Partner org (required, choose PHD / Bandhu)
     - Service centre (required, filtered by partner_org)
     """
     return [
@@ -672,7 +672,7 @@ def _form_referral():
 
 
 def _form_hygiene_kit():
-    """KF-12: Safety & Hygiene Kit Distribution (Bondhu)."""
+    """KF-12: Safety & Hygiene Kit Distribution (Bandhu)."""
     rows = _common_metadata_rows()
     rows += [
         _survey_row('text', 'client_id', 'Client ID (if individual distribution)', 'ক্লায়েন্ট আইডি (ব্যক্তিগত বিতরণের ক্ষেত্রে)'),

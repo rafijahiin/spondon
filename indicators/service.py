@@ -41,7 +41,7 @@ _ORG_ONLY_CODES = {
 # ─── Registry ──────────────────────────────────────────────────────────────────
 
 INDICATOR_REGISTRY: dict[str, callable] = {
-    # Bondhu
+    # Bandhu
     'BND_1_1':        compute_I_BND_1_1,
     'BND_1_2':        compute_I_BND_1_2,
     'BND_1_3':        compute_I_BND_1_3,
@@ -172,7 +172,7 @@ def get_indicator_progress(
 def get_all_indicators_for_org(org: str, period_start, period_end) -> list[dict]:
     """
     Returns get_indicator_progress() for every indicator belonging to this org.
-    Used by Bondhu/PHD dashboard pages.
+    Used by Bandhu/PHD dashboard pages.
     """
     from .models import IndicatorTarget
 

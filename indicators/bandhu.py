@@ -10,7 +10,7 @@ from programs.models import (
     GBVCase, Referral, ServiceCenter, TrainingEvent, CoordMeeting, MobileHealthCamp,
 )
 
-ORG = 'Bondhu'
+ORG = 'Bandhu'
 APPROVED = 'APPROVED'
 
 

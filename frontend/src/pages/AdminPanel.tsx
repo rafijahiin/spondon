@@ -9,7 +9,7 @@ import { cn } from '@/utils/cn'
 import type { AdminUser, Organisation, Role } from '@/types'
 // AdminUser extends User with: username, is_active, last_login
 
-const ORGS: Organisation[] = ['CIPRB', 'UNFPA', 'PHD', 'Bondhu']
+const ORGS: Organisation[] = ['CIPRB', 'UNFPA', 'PHD', 'Bandhu']
 const ROLES: Role[] = ['super_admin', 'manager', 'developer']
 
 interface UserFormData {
@@ -155,7 +155,7 @@ export default function AdminPanel() {
     CIPRB: 'text-unfpa-blue',
     UNFPA: 'text-unfpa-blue',
     PHD: 'text-green-600 dark:text-green-400',
-    Bondhu: 'text-purple-600 dark:text-purple-400',
+    Bandhu: 'text-purple-600 dark:text-purple-400',
   }
 
   return (

@@ -45,7 +45,7 @@ CATEGORY_ORDER = ['Clinical', 'Community', 'Operations', 'Legacy']
 # ── Per-org form type lists ────────────────────────────────────────────────────
 # Defines which form types each organisation actually uses.
 # PHD: maternal/reproductive health — ANC and Mobile Camps are PHD-only.
-# Bondhu: key populations (FSW, TG, MSM) — Hygiene Kit is Bondhu-only.
+# Bandhu: key populations (FSW, TG, MSM) — Hygiene Kit is Bandhu-only.
 # Shared forms (clinic_visit, outreach, counselling, etc.) appear in both lists.
 # Used by ProgramsSummaryView to avoid querying irrelevant form types per org.
 
@@ -60,7 +60,7 @@ ORG_FORM_TYPES: dict[str, list[str]] = {
         # Operations
         'mobile_camp', 'training_event', 'coord_meeting',
     ],
-    'Bondhu': [
+    'Bandhu': [
         # Clinical
         'clinic_visit', 'hiv_sti_test', 'htc_counselling',
         'mh_screening', 'adr_record', 'autoclave_log',

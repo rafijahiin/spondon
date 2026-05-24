@@ -7,7 +7,7 @@ import { formatDate } from '@/utils/format'
 import { cn } from '@/utils/cn'
 import type { FistulaCampaign } from '@/types/index'
 
-type PartnerFilter = 'all' | 'PHD' | 'Bondhu'
+type PartnerFilter = 'all' | 'PHD' | 'Bandhu'
 
 function StatPill({ label, value, accent }: { label: string; value: number; accent?: boolean }) {
   return (
@@ -170,7 +170,7 @@ export default function FistulaTracker() {
 
       {/* Partner filter */}
       <div className="flex gap-2">
-        {(['all', 'PHD', 'Bondhu'] as PartnerFilter[]).map((p) => (
+        {(['all', 'PHD', 'Bandhu'] as PartnerFilter[]).map((p) => (
           <button
             key={p}
             onClick={() => setPartnerFilter(p)}

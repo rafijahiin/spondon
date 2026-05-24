@@ -8,7 +8,7 @@ class Organisation(models.TextChoices):
     CIPRB = 'CIPRB', 'CIPRB'
     UNFPA = 'UNFPA', 'UNFPA'
     PHD = 'PHD', 'PHD'
-    BONDHU = 'Bondhu', 'Bondhu'
+    BANDHU = 'Bandhu', 'Bandhu'
 
 
 class Role(models.TextChoices):

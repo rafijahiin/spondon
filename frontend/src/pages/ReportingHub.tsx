@@ -80,7 +80,7 @@ const DEMO_CARDS: DemoCard[] = [
     label: 'Demo Infographic',
     labelBn: 'ডেমো ইনফোগ্রাফিক',
     description:
-      'One-page visual summary using CPE 2022–2026 evaluation data — PHD + Bondhu combined, full year 2024. Same layout as the live infographic.',
+      'One-page visual summary using CPE 2022–2026 evaluation data — PHD + Bandhu combined, full year 2024. Same layout as the live infographic.',
     accentClass:
       'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800',
   },
@@ -333,7 +333,7 @@ export default function ReportingHub() {
                 className="appearance-none rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 pr-8 text-sm text-gray-900 dark:text-white focus:border-unfpa-blue focus:outline-none">
                 <option value="">All Partners</option>
                 <option value="PHD">PHD</option>
-                <option value="Bondhu">Bondhu</option>
+                <option value="Bandhu">Bandhu</option>
               </select>
               <ChevronDown className="pointer-events-none absolute right-2 top-2.5 h-4 w-4 text-gray-400" />
             </div>

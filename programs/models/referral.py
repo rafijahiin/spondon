@@ -13,7 +13,7 @@ from ._base import SubmissionBase
 
 
 class Referral(SubmissionBase):
-    # Referral types matching PHD / Bondhu programme needs
+    # Referral types matching PHD / Bandhu programme needs
     HIV = 'hiv'
     STI_KP = 'sti_kp'
     STI_PARTNER = 'sti_partner'

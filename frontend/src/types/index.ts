@@ -1,6 +1,6 @@
 // Mirrors backend DRF serializers. Keep in sync with the corresponding *.py files.
 
-export type Organisation = 'CIPRB' | 'UNFPA' | 'PHD' | 'Bondhu'
+export type Organisation = 'CIPRB' | 'UNFPA' | 'PHD' | 'Bandhu'
 export type Role = 'super_admin' | 'manager' | 'developer'
 export type FormType = 'mpdsr' | 'fistula' | 'activity' | 'baseline'
 export type SubmissionStatus = 'pending' | 'approved' | 'rejected'
@@ -84,7 +84,7 @@ export interface PartnerKPIs {
   fistula_cases: number
   mpdsr_cases: number
 }
-export type PartnerSummary = Record<'PHD' | 'Bondhu', PartnerKPIs>
+export type PartnerSummary = Record<'PHD' | 'Bandhu', PartnerKPIs>
 
 export interface MapPoint {
   id: string

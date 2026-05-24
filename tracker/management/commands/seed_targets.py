@@ -37,7 +37,7 @@ DEFAULT_TARGETS: dict[str, int] = {
     'baseline':           10,
 }
 
-ORGS = ['PHD', 'Bondhu']
+ORGS = ['PHD', 'Bandhu']
 
 
 class Command(BaseCommand):

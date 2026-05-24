@@ -109,7 +109,7 @@ class ProgressView(APIView):
         target_map = {(t.partner, t.form_type): t.target for t in targets_qs}
 
         # Determine which (partner, form_type) combinations to report
-        orgs = [partner_filter] if partner_filter else ['PHD', 'Bondhu']
+        orgs = [partner_filter] if partner_filter else ['PHD', 'Bandhu']
         rows = []
 
         for form_type_key, reg in PROGRAMS_REGISTRY.items():

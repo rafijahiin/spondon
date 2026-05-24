@@ -20,7 +20,7 @@ sheet and MUST match exactly what KoboToolbox sends):
   spondon_outreach_v1        → OutreachSession
   spondon_group_edu_v1       → GroupEducationSession
   spondon_referral_v1        → Referral
-  spondon_hygiene_kit_v1     → SafetyHygieneKit (Bondhu only)
+  spondon_hygiene_kit_v1     → SafetyHygieneKit (Bandhu only)
   spondon_training_event_v1  → TrainingEvent
   spondon_coord_meeting_v1   → CoordMeeting
   spondon_mobile_camp_v1     → MobileHealthCamp (PHD only)
@@ -133,8 +133,8 @@ def _org(payload: dict) -> str:
     ).strip().upper()
     if 'PHD' in raw:
         return 'PHD'
-    if 'BONDHU' in raw or 'BONDU' in raw or 'BND' in raw:
-        return 'Bondhu'
+    if 'BANDHU' in raw or 'BONDHU' in raw or 'BONDU' in raw or 'BND' in raw:
+        return 'Bandhu'
     return ''
 
 
@@ -863,7 +863,7 @@ def programs_webhook(request, org_override: str = '', form_slug: str = ''):
     """
     POST /webhook/programs/                              — id_string from payload
     POST /webhook/programs/PHD/                          — force org=PHD
-    POST /webhook/programs/Bondhu/                       — force org=Bondhu
+    POST /webhook/programs/Bandhu/                       — force org=Bandhu
     POST /webhook/programs/form/<form_slug>/             — form type from URL (recommended)
 
     The /form/<form_slug>/ variant is the most reliable: it bypasses
@@ -938,8 +938,8 @@ def programs_webhook_phd(request):
 @csrf_exempt
 @require_POST
 def programs_webhook_bondhu(request):
-    """POST /webhook/programs/Bondhu/ — all submissions tagged organisation='Bondhu'."""
-    return programs_webhook(request, org_override='Bondhu')
+    """POST /webhook/programs/Bandhu/ — all submissions tagged organisation='Bandhu'."""
+    return programs_webhook(request, org_override='Bandhu')
 
 
 @csrf_exempt

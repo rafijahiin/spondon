@@ -250,10 +250,16 @@ function SubmissionCard({
         <MapPin className="h-3 w-3" />
         {submission.district}{submission.region ? `, ${submission.region}` : ''}
       </span>
-      {submission.latitude && (
-        <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 dark:bg-gray-700 px-2.5 py-1 text-xs text-gray-500 dark:text-gray-400 tabular-nums">
-          {submission.latitude.toFixed(4)}, {submission.longitude?.toFixed(4)}
-        </span>
+      {submission.latitude && submission.longitude && (
+        <a
+          href={`https://www.google.com/maps?q=${submission.latitude},${submission.longitude}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 rounded-full bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 px-2.5 py-1 text-xs font-medium text-green-700 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/40 transition-colors"
+        >
+          <MapPin className="h-3 w-3" />
+          Location captured ✓
+        </a>
       )}
     </div>
   )

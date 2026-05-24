@@ -2,5 +2,5 @@
 
 ORG_CHOICES = [
     ('PHD', 'Partners in Health and Development (PHD)'),
-    ('Bondhu', 'Bondhu Social Welfare Society'),
+    ('Bandhu', 'Bandhu Social Welfare Society'),
 ]

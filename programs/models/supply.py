@@ -121,7 +121,7 @@ class TemperatureLog(TimestampedModel):
 
 
 class SafetyHygieneKit(SubmissionBase):
-    """Safety & Hygiene Kit distribution / Service Logbook (KF-12, Bondhu)."""
+    """Safety & Hygiene Kit distribution / Service Logbook (KF-12, Bandhu)."""
     organisation = models.CharField(max_length=20, choices=ORG_CHOICES, db_index=True)
     center = models.ForeignKey(
         'programs.ServiceCenter', on_delete=models.PROTECT, related_name='safety_kits'

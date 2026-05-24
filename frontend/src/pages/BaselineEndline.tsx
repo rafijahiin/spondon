@@ -18,7 +18,7 @@ import {
 } from 'recharts'
 
 type SurveyFilter = 'all' | 'baseline' | 'endline'
-type PartnerFilter = 'all' | 'PHD' | 'Bondhu'
+type PartnerFilter = 'all' | 'PHD' | 'Bandhu'
 
 const YES_VALUES = new Set(['yes', 'true', '1', 'Yes', 'YES', 'True'])
 const isYes = (v: string | undefined | null) => !!v && YES_VALUES.has(v)
@@ -258,7 +258,7 @@ export default function BaselineEndline() {
           </button>
         ))}
         <div className="w-px bg-gray-200 dark:bg-gray-700 self-stretch" />
-        {(['all', 'PHD', 'Bondhu'] as PartnerFilter[]).map((p) => (
+        {(['all', 'PHD', 'Bandhu'] as PartnerFilter[]).map((p) => (
           <button
             key={p}
             onClick={() => setPartnerFilter(p)}

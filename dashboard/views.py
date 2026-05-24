@@ -322,7 +322,7 @@ class CentresView(APIView):
 class PartnerSummaryView(APIView):
     """
     GET /api/dashboard/partner-summary/
-    Side-by-side PHD vs Bondhu KPIs — super admin / developer only.
+    Side-by-side PHD vs Bandhu KPIs — super admin / developer only.
     """
     permission_classes = [IsSuperAdmin]
 
@@ -332,7 +332,7 @@ class PartnerSummaryView(APIView):
         thirty_days_ago = now - datetime.timedelta(days=30)
 
         summary = {}
-        for partner in ('PHD', 'Bondhu'):
+        for partner in ('PHD', 'Bandhu'):
             approved = KoboSubmission.objects.filter(partner=partner, status__in=[APPROVED, PENDING])
             this_month = approved.filter(
                 submitted_at__gte=month_start, submitted_at__lt=month_end

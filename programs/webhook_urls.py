@@ -22,7 +22,7 @@ urlpatterns = [
 
     # ── Org-specific endpoints (legacy) ───────────────────────────────────
     path('PHD/',    programs_webhook_phd,    name='programs-webhook-phd'),
-    path('Bondhu/', programs_webhook_bondhu, name='programs-webhook-bondhu'),
+    path('Bandhu/', programs_webhook_bondhu, name='programs-webhook-bandhu'),
 
     # ── Shared fallback — org + form type both from payload ───────────────
     path('', programs_webhook, name='programs-webhook'),
