@@ -159,10 +159,73 @@ class MonthlyBreakdownView(APIView):
 # Live activity feed
 # ---------------------------------------------------------------------------
 
+def _time_ago(dt: datetime.datetime, now: datetime.datetime) -> str:
+    """Human-readable time difference string."""
+    minutes = max(0, int((now - dt).total_seconds() / 60))
+    if minutes < 60:
+        return f'{minutes} minute{"s" if minutes != 1 else ""} ago'
+    if minutes < 1440:
+        hours = minutes // 60
+        return f'{hours} hour{"s" if hours != 1 else ""} ago'
+    days = minutes // 1440
+    return f'{days} day{"s" if days != 1 else ""} ago'
+
+
+def _programs_feed_items(partners: list[str], per_model: int = 3) -> list[dict]:
+    """
+    Collect the most recent approved programs submissions across all active
+    form types for the given partner orgs.
+
+    Returns a list of normalised feed dicts (same shape as KoboSubmission feed),
+    with a '_sort_dt' key for merging/sorting (stripped before returning to client).
+    """
+    from tracker.programs_query import PROGRAMS_REGISTRY
+    try:
+        from programs import models as pm
+    except Exception:
+        return []
+
+    now = timezone.now()
+    items: list[dict] = []
+
+    for key, (model_name, label_en, _label_bn, _category) in PROGRAMS_REGISTRY.items():
+        try:
+            model = getattr(pm, model_name)
+        except AttributeError:
+            continue
+        try:
+            qs = (
+                model.objects
+                .filter(approval_status='APPROVED', organisation__in=partners)
+                .select_related('center')
+                .order_by('-created_at')
+                [:per_model]
+            )
+            for obj in qs:
+                center = getattr(obj, 'center', None)
+                district = center.district if center else ''
+                items.append({
+                    'id':               str(obj.id),
+                    'form_type':        key,
+                    'form_type_display': label_en,
+                    'partner':          obj.organisation,
+                    'worker_name':      getattr(obj, 'submitted_by_kobo_user', ''),
+                    'district':         district,
+                    'submitted_at':     obj.created_at.isoformat(),
+                    'time_ago':         _time_ago(obj.created_at, now),
+                    '_sort_dt':         obj.created_at,
+                })
+        except Exception:
+            continue
+
+    return items
+
+
 class ActivityFeedView(APIView):
     """
     GET /api/dashboard/activity/?limit=20
     Most recent approved submissions for the live feed.
+    Merges legacy KoboSubmission records with new programs model submissions.
     """
     permission_classes = [IsSuperAdminOrManager]
 
@@ -172,40 +235,42 @@ class ActivityFeedView(APIView):
         except (ValueError, TypeError):
             limit = 20
 
-        now = timezone.now()
-        items = (
+        now      = timezone.now()
+        partners = allowed_partners(request.user)
+
+        # ── Legacy submissions (KoboToolbox) ────────────────────────────────
+        legacy_qs = (
             KoboSubmission.objects
-            .filter(partner__in=allowed_partners(request.user), status=APPROVED)
+            .filter(partner__in=partners, status=APPROVED)
             .order_by('-submitted_at')
             .values('id', 'form_type', 'partner', 'worker_name', 'district', 'submitted_at')
             [:limit]
         )
-
-        results = []
-        for item in items:
-            delta = now - item['submitted_at']
-            minutes = int(delta.total_seconds() / 60)
-            if minutes < 60:
-                time_ago = f'{minutes} minute{"s" if minutes != 1 else ""} ago'
-            elif minutes < 1440:
-                hours = minutes // 60
-                time_ago = f'{hours} hour{"s" if hours != 1 else ""} ago'
-            else:
-                days = minutes // 1440
-                time_ago = f'{days} day{"s" if days != 1 else ""} ago'
-
-            results.append({
-                'id': str(item['id']),
-                'form_type': item['form_type'],
+        legacy_items: list[dict] = []
+        for item in legacy_qs:
+            legacy_items.append({
+                'id':               str(item['id']),
+                'form_type':        item['form_type'],
                 'form_type_display': FormType(item['form_type']).label,
-                'partner': item['partner'],
-                'worker_name': item['worker_name'],
-                'district': item['district'],
-                'submitted_at': item['submitted_at'].isoformat(),
-                'time_ago': time_ago,
+                'partner':          item['partner'],
+                'worker_name':      item['worker_name'],
+                'district':         item['district'],
+                'submitted_at':     item['submitted_at'].isoformat(),
+                'time_ago':         _time_ago(item['submitted_at'], now),
+                '_sort_dt':         item['submitted_at'],
             })
 
-        return Response({'results': results, 'count': len(results)})
+        # ── Programs submissions (new pipeline) ──────────────────────────────
+        programs_items = _programs_feed_items(partners, per_model=3)
+
+        # ── Merge, sort newest-first, trim to limit ──────────────────────────
+        all_items = legacy_items + programs_items
+        all_items.sort(key=lambda x: x['_sort_dt'], reverse=True)
+        all_items = all_items[:limit]
+        for item in all_items:
+            item.pop('_sort_dt', None)
+
+        return Response({'results': all_items, 'count': len(all_items)})
 
 
 # ---------------------------------------------------------------------------

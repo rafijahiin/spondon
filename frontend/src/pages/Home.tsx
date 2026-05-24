@@ -42,10 +42,28 @@ function useServiceCenters() {
 }
 
 const FORM_ICONS: Record<string, React.ReactNode> = {
-  fistula: <Heart className="h-3.5 w-3.5" />,
-  mpdsr: <Activity className="h-3.5 w-3.5" />,
-  activity: <Users className="h-3.5 w-3.5" />,
+  // Legacy forms
+  fistula:  <Heart    className="h-3.5 w-3.5" />,
+  mpdsr:    <Activity className="h-3.5 w-3.5" />,
+  activity: <Users    className="h-3.5 w-3.5" />,
   baseline: <FileText className="h-3.5 w-3.5" />,
+  // Programs forms — same icon clusters
+  clinic_visit:           <Activity className="h-3.5 w-3.5" />,
+  hiv_sti_test:           <Activity className="h-3.5 w-3.5" />,
+  antenatal_card:         <Heart    className="h-3.5 w-3.5" />,
+  htc_counselling:        <Users    className="h-3.5 w-3.5" />,
+  individual_counsel:     <Users    className="h-3.5 w-3.5" />,
+  mh_screening:           <FileText className="h-3.5 w-3.5" />,
+  gbv_case:               <Activity className="h-3.5 w-3.5" />,
+  outreach_session:       <Users    className="h-3.5 w-3.5" />,
+  group_education:        <Users    className="h-3.5 w-3.5" />,
+  referral:               <FileText className="h-3.5 w-3.5" />,
+  hygiene_kit:            <FileText className="h-3.5 w-3.5" />,
+  adr_record:             <Activity className="h-3.5 w-3.5" />,
+  autoclave_log:          <Activity className="h-3.5 w-3.5" />,
+  training_event:         <Users    className="h-3.5 w-3.5" />,
+  coord_meeting:          <Users    className="h-3.5 w-3.5" />,
+  mobile_camp:            <MapPin   className="h-3.5 w-3.5" />,
 }
 
 export default function Home() {

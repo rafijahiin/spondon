@@ -59,15 +59,12 @@ function AttendanceTable({ session }: { session: TrainingSession }) {
           </div>
         </div>
         <div className="flex items-center gap-3 flex-shrink-0">
-          {/* Competency indicator */}
+          {/* Attendance count */}
           <div className="text-right">
-            <p className="text-xs text-gray-400">Avg score</p>
-            <p className="font-bold text-gray-900 dark:text-white">
-              {(session.attendances ?? []).length > 0
-                ? (
-                    (session.attendances ?? []).reduce((sum, _a) => sum + 0, 0) / (session.attendances ?? []).length
-                  ).toFixed(0)
-                : '—'}
+            <p className="text-xs text-gray-400">Attended</p>
+            <p className="font-bold text-gray-900 dark:text-white tabular-nums">
+              {session.actual_participants}
+              <span className="text-xs font-normal text-gray-400">/{session.expected_participants}</span>
             </p>
           </div>
           <svg
