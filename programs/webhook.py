@@ -176,6 +176,7 @@ def _get_or_create_client(payload: dict, center, org: str):
             'center': center,
             'name': _str(payload.get('client_name', 'Unknown')),
             'current_status': Client.ACTIVE,
+            'approval_status': Client.APPROVED,   # stubs are auto-approved
         },
     )
     if created:
@@ -730,6 +731,11 @@ def _handle_client_reg(payload: dict, lat: float | None, lng: float | None) -> H
     if not client_id:
         return HttpResponse('Bad Request — client_id required', status=400)
 
+    # Check idempotency by kobo_submission_id
+    kobo_id = str(payload.get('_id', ''))
+    if kobo_id and Client.objects.filter(kobo_submission_id=kobo_id).exists():
+        return HttpResponse('OK', status=200)
+
     full_data: dict = {
         'organisation': org,
         'center': center,
@@ -746,6 +752,13 @@ def _handle_client_reg(payload: dict, lat: float | None, lng: float | None) -> H
         'enrolled_date': _date(payload.get('enrolled_date')),
         'notes': _str(payload.get('notes')),
         'current_status': Client.ACTIVE,
+        # Approval workflow — KF-01 requires manager approval
+        'approval_status': Client.PENDING,
+        'kobo_submission_id': kobo_id or None,
+        'submitted_by_kobo_user': _str(payload.get('_submitted_by')),
+        'latitude': lat,
+        'longitude': lng,
+        'raw_payload': payload,
     }
 
     client, created = Client.objects.update_or_create(
@@ -753,9 +766,7 @@ def _handle_client_reg(payload: dict, lat: float | None, lng: float | None) -> H
         defaults=full_data,
     )
     action = 'registered' if created else 'updated'
-    logger.info('Client %s: %s [%s]', action, client_id, org)
-    # Return 201 for new registrations (triggers Telegram notification),
-    # 200 for updates so existing stubs are silently patched.
+    logger.info('Client %s: %s [%s] → PENDING approval', action, client_id, org)
     return HttpResponse('Created' if created else 'OK', status=201 if created else 200)
 
 

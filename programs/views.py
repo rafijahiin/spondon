@@ -370,6 +370,13 @@ def _build_summary(obj, model_type: str) -> str:
             return f"{obj.meeting_type} meeting {obj.meeting_date} · {obj.participant_count} attendees"
         if model_type == 'mobile_camp':
             return f"Mobile camp {obj.camp_date} · {obj.clients_served} clients · {obj.brothel_name or obj.center}"
+        if model_type == 'client_reg':
+            parts = [f"Client ID: {obj.client_id}", obj.name or '–']
+            if obj.target_group_code:
+                parts.append(obj.get_target_group_code_display())
+            if obj.enrolled_date:
+                parts.append(f"Enrolled: {obj.enrolled_date}")
+            return ' · '.join(parts)
     except Exception:
         pass
     return f"{model_type.replace('_', ' ').title()} record"
@@ -403,6 +410,7 @@ def _pending_for_model(queryset, model_type: str, org_filter_org=None):
 
 # endpoint → (queryset, model_type)
 _APPROVAL_MODELS = [
+    ('client_reg',           lambda: Client.objects),
     ('clinic_visit',         lambda: ClinicVisit.objects),
     ('hiv_sti_result',       lambda: HIVSTITestResult.objects),
     ('adr_record',           lambda: ADRRecord.objects),
@@ -423,6 +431,7 @@ _APPROVAL_MODELS = [
 
 # Fix endpoint slugs for DRF router (plural URLs)
 _ENDPOINT_OVERRIDES = {
+    'client_reg': 'clients',
     'clinic_visit': 'clinic-visits',
     'hiv_sti_result': 'hiv-sti-results',
     'adr_record': 'adr-records',
@@ -529,6 +538,7 @@ class PendingApprovalsView(views.APIView):
             from .webhook import _FORM_LABELS, FORM_HANDLERS
             # Reverse-look up form label from model_type
             _model_to_form = {
+                'client_reg': 'spondon_client_reg_v1',
                 'clinic_visit': 'spondon_clinic_visit_v1',
                 'hiv_sti_result': 'spondon_hiv_sti_test_v1',
                 'adr_record': 'spondon_adr_record_v1',

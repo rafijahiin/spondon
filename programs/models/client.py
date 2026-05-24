@@ -1,9 +1,12 @@
 """
 Client — the master client registry (Mother List).
 Every service event links back to a Client record.
+KF-01 registrations go through the manager approval workflow before
+becoming active in the dashboard.
 """
 import uuid
 from django.db import models
+from django.conf import settings
 from .._base_choices import ORG_CHOICES
 from ._base import TimestampedModel
 
@@ -52,6 +55,33 @@ class Client(TimestampedModel):
         (DECEASED, 'Deceased'),
         (NOT_FOUND, 'Not Found'),
     ]
+
+    # ── Approval workflow ──────────────────────────────────────────────────
+    PENDING  = 'PENDING'
+    APPROVED = 'APPROVED'
+    REJECTED = 'REJECTED'
+    APPROVAL_CHOICES = [
+        (PENDING,  'Pending'),
+        (APPROVED, 'Approved'),
+        (REJECTED, 'Rejected'),
+    ]
+    approval_status = models.CharField(
+        max_length=10, choices=APPROVAL_CHOICES, default=APPROVED, db_index=True
+    )
+    approved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True, blank=True,
+        on_delete=models.SET_NULL,
+        related_name='+',
+    )
+    approved_at  = models.DateTimeField(null=True, blank=True)
+    rejected_reason = models.TextField(blank=True)
+    # ── KoboToolbox provenance ─────────────────────────────────────────────
+    kobo_submission_id    = models.CharField(max_length=100, unique=True, null=True, blank=True)
+    submitted_by_kobo_user = models.CharField(max_length=100, blank=True)
+    latitude  = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    raw_payload = models.JSONField(default=dict)
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     organisation = models.CharField(max_length=20, choices=ORG_CHOICES, db_index=True)

@@ -17,6 +17,7 @@ import type { Submission, ProgramPendingItem, ProgramPendingResponse } from '@/t
 // ─── Icon map per model type ────────────────────────────────────────────────
 
 const MODEL_ICONS: Record<string, React.ReactNode> = {
+  client_reg:              <Users       className="h-4 w-4" />,
   clinic_visit:            <Stethoscope className="h-4 w-4" />,
   hiv_sti_result:          <TestTube2   className="h-4 w-4" />,
   adr_record:              <Pill        className="h-4 w-4" />,
@@ -36,6 +37,7 @@ const MODEL_ICONS: Record<string, React.ReactNode> = {
 }
 
 const MODEL_COLORS: Record<string, string> = {
+  client_reg:             'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
   clinic_visit:           'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
   hiv_sti_result:         'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
   adr_record:             'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300',
