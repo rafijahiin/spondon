@@ -7,6 +7,12 @@ from django.utils import timezone
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+
+def _months_ago(year: int, month: int, n: int) -> tuple[int, int]:
+    """Return (year, month) that is n months before the given year/month."""
+    total = (year - 1) * 12 + (month - 1) - n
+    return (total // 12 + 1, total % 12 + 1)
+
 from accounts.permissions import IsSuperAdmin, IsSuperAdminOrManager
 from submissions.models import FormType, KoboSubmission, SubmissionStatus
 from .utils import allowed_partners, current_month_bounds, previous_month_bounds
@@ -452,4 +458,108 @@ class OrgSummaryView(APIView):
             'period': now.strftime('%B %Y'),
             'ai_summary': summary,
             'generated_at': now.isoformat(),
+        })
+
+
+# ---------------------------------------------------------------------------
+# Programs summary — counts from programs models (16 form types)
+# ---------------------------------------------------------------------------
+
+class ProgramsSummaryView(APIView):
+    """
+    GET /api/dashboard/programs-summary/?partner=PHD&year=2026&month=5
+
+    Returns per-form-type counts from programs models for one partner/month,
+    plus category totals, a 6-month trend, and previous-month comparison.
+    """
+    permission_classes = [IsSuperAdminOrManager]
+
+    def get(self, request):
+        from tracker.programs_query import PROGRAMS_REGISTRY, count_programs
+
+        partner = request.query_params.get('partner', '')
+        if not partner or partner not in allowed_partners(request.user):
+            return Response({'detail': 'partner required or access denied.'}, status=400)
+
+        now = timezone.now()
+        try:
+            year = int(request.query_params.get('year', now.year))
+            month = int(request.query_params.get('month', now.month))
+        except (ValueError, TypeError):
+            year, month = now.year, now.month
+
+        # Per-form-type counts for this month
+        counts: dict[str, dict] = {}
+        for key, (model_name, label, label_bn, category) in PROGRAMS_REGISTRY.items():
+            c = count_programs(key, partner, year, month)
+            counts[key] = {
+                'count': c,
+                'label': label,
+                'label_bn': label_bn,
+                'category': category,
+            }
+
+        # Category totals
+        categories: dict[str, int] = {}
+        for item in counts.values():
+            cat = item['category']
+            categories[cat] = categories.get(cat, 0) + item['count']
+        total = sum(c['count'] for c in counts.values())
+
+        # Previous-month comparison
+        py, pm = _months_ago(year, month, 1)
+        prev_total = sum(
+            count_programs(key, partner, py, pm)
+            for key in PROGRAMS_REGISTRY
+        )
+        mom_change = (
+            round((total - prev_total) / prev_total * 100, 1)
+            if prev_total > 0
+            else (100.0 if total > 0 else 0.0)
+        )
+
+        # 6-month trend (oldest → newest)
+        monthly_trend = []
+        for i in range(5, -1, -1):
+            my, mm = _months_ago(year, month, i)
+            clinical = sum(
+                count_programs(k, partner, my, mm)
+                for k, v in PROGRAMS_REGISTRY.items() if v[3] == 'Clinical'
+            )
+            community = sum(
+                count_programs(k, partner, my, mm)
+                for k, v in PROGRAMS_REGISTRY.items() if v[3] == 'Community'
+            )
+            operations = sum(
+                count_programs(k, partner, my, mm)
+                for k, v in PROGRAMS_REGISTRY.items() if v[3] == 'Operations'
+            )
+            monthly_trend.append({
+                'month': mm,
+                'year': my,
+                'month_name': MONTH_NAMES[mm][:3],
+                'clinical': clinical,
+                'community': community,
+                'operations': operations,
+                'total': clinical + community + operations,
+            })
+
+        # Top 8 forms by count descending
+        top_forms = sorted(
+            [{'key': k, **v} for k, v in counts.items()],
+            key=lambda x: x['count'],
+            reverse=True,
+        )[:8]
+
+        return Response({
+            'partner': partner,
+            'year': year,
+            'month': month,
+            'total': total,
+            'prev_total': prev_total,
+            'mom_change': mom_change,
+            'categories': categories,
+            'counts': counts,
+            'monthly_trend': monthly_trend,
+            'top_forms': top_forms,
         })
