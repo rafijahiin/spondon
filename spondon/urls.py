@@ -15,7 +15,6 @@ def health(request):
     return HttpResponse('ok', content_type='text/plain')
 
 def setup_users(request):
-    import os
     secret = request.GET.get('secret', '')
     if secret != 'REDACTED':
         return HttpResponse('Forbidden', status=403)
@@ -23,16 +22,22 @@ def setup_users(request):
     User = get_user_model()
     results = []
     users = [
-        {'username': 'rafijahiin', 'email': 'rafijahiin@gmail.com', 'password': 'REDACTED', 'is_superuser': True},
-        {'username': 'ciprb_admin', 'email': '', 'password': 'REDACTED', 'is_superuser': True},
-        {'username': 'unfpa_admin', 'email': '', 'password': 'REDACTED', 'is_superuser': True},
+        {'email': 'rafijahiin@gmail.com', 'password': 'REDACTED', 'full_name': 'Rafi Jahin', 'organisation': 'CIPRB', 'role': 'developer'},
+        {'email': 'ciprb@spondon.app', 'password': 'REDACTED', 'full_name': 'CIPRB Admin', 'organisation': 'CIPRB', 'role': 'super_admin'},
+        {'email': 'unfpa@spondon.app', 'password': 'REDACTED', 'full_name': 'UNFPA Admin', 'organisation': 'UNFPA', 'role': 'super_admin'},
     ]
     for u in users:
-        if User.objects.filter(username=u['username']).exists():
-            results.append(f"{u['username']}: already exists")
+        if User.objects.filter(email=u['email']).exists():
+            results.append(f"{u['email']}: already exists")
         else:
-            User.objects.create_superuser(u['username'], u['email'], u['password'])
-            results.append(f"{u['username']}: created")
+            User.objects.create_superuser(
+                email=u['email'],
+                password=u['password'],
+                full_name=u['full_name'],
+                organisation=u['organisation'],
+                role=u['role'],
+            )
+            results.append(f"{u['email']}: created")
     return JsonResponse({'results': results})
 
 _admin_router = DefaultRouter()
@@ -53,6 +58,5 @@ urlpatterns = [
     path('api/baseline/', include('baseline.urls')),
     path('api/training/', include('training.urls')),
     path('webhook/kobo/', include('submissions.webhook_urls')),
-    # SPA catch-all — must be last
     re_path(r'^.*$', react_app),
 ]
