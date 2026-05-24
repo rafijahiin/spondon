@@ -26,6 +26,10 @@ def validate_kobo_signature(request) -> bool:
     auth = request.headers.get('Authorization', '')
     if auth.startswith('Token '):
         received = auth[6:].strip()
+        # KoboToolbox REST service sends the plain secret — accept that first.
+        if hmac.compare_digest(received, secret):
+            return True
+        # Also accept HMAC-SHA256 for custom signing proxies.
         expected = hmac.new(
             secret.encode('utf-8'),
             request.body,
@@ -33,5 +37,6 @@ def validate_kobo_signature(request) -> bool:
         ).hexdigest()
         return hmac.compare_digest(received, expected)
 
+    # URL-embedded token: webhook URL configured as .../webhook/kobo/?token=<secret>
     token = request.GET.get('token', '')
     return hmac.compare_digest(token, secret)
