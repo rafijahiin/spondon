@@ -10,7 +10,7 @@ class MonthlyTarget(models.Model):
     """Programme target for a partner's form type in a given month."""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     partner = models.CharField(max_length=20, db_index=True)
-    form_type = models.CharField(max_length=20, choices=FormType.choices, db_index=True)
+    form_type = models.CharField(max_length=30, db_index=True)  # programs or legacy key
     year = models.PositiveSmallIntegerField()
     month = models.PositiveSmallIntegerField()  # 1–12
     target = models.PositiveIntegerField()

@@ -7,6 +7,7 @@ router.register(r'targets', views.MonthlyTargetViewSet, basename='tracker-target
 router.register(r'alerts', views.AlertViewSet, basename='tracker-alerts')
 
 urlpatterns = router.urls + [
-    path('forecast/', views.ForecastView.as_view(), name='tracker-forecast'),
+    path('forecast/',   views.ForecastView.as_view(),   name='tracker-forecast'),
     path('compliance/', views.ComplianceView.as_view(), name='tracker-compliance'),
+    path('progress/',   views.ProgressView.as_view(),   name='tracker-progress'),
 ]
