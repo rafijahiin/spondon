@@ -118,9 +118,16 @@ def kobo_webhook(request):
 
     lat, lng = _geolocation(payload)
 
+    # Surveillance forms (MPDSR, Fistula, Baseline) are auto-approved on arrival:
+    # they bypass the manager approval queue and go straight to the tracker pages
+    # via the post_save signal in submissions/signals.py.
+    _AUTO_APPROVE = {FormType.MPDSR, FormType.FISTULA, FormType.BASELINE}
+    initial_status = SubmissionStatus.APPROVED if form_type in _AUTO_APPROVE else SubmissionStatus.PENDING
+
     submission = KoboSubmission.objects.create(
         kobo_id=kobo_id,
         form_type=form_type,
+        status=initial_status,
         partner=_partner_from_payload(payload),
         worker_name=(
             payload.get('collector_name') or
@@ -140,7 +147,10 @@ def kobo_webhook(request):
     except Exception as exc:
         logger.error('Telegram dispatch error: %s', exc)
 
-    logger.info('Submission ingested: %s [%s / %s]', submission.id, form_type, submission.partner)
+    logger.info(
+        'Submission ingested: %s [%s / %s] status=%s',
+        submission.id, form_type, submission.partner, initial_status,
+    )
     return HttpResponse('Created', status=201)
 
 
