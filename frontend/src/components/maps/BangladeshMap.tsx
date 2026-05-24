@@ -4,9 +4,9 @@ import type { Layer, PathOptions } from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import type { ActivityItem } from '@/types'
 
-// geoBoundaries ADM2 simplified for Bangladesh
+// geoBoundaries ADM2 simplified for Bangladesh — pinned commit SHA resolves Git LFS correctly
 const GEOJSON_URL =
-  'https://cdn.jsdelivr.net/gh/wmgeolab/geoBoundaries@main/releaseData/gbOpen/BGD/ADM2/geoBoundaries-BGD-ADM2_simplified.geojson'
+  'https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/BGD/ADM2/geoBoundaries-BGD-ADM2_simplified.geojson'
 
 const CP10_DISTRICTS = new Set([
   'coxsbazar', 'bandarban', 'noakhali', 'dhaka',
