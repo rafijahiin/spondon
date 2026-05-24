@@ -58,6 +58,8 @@ urlpatterns = [
     path('api/reports/', include('reports.urls')),
     path('api/baseline/', include('baseline.urls')),
     path('api/training/', include('training.urls')),
+    path('api/programs/', include('programs.urls')),
+    path('api/indicators/', include('indicators.urls')),
     path('webhook/kobo/', include('submissions.webhook_urls')),
     re_path(r'^.*$', react_app),
 ]

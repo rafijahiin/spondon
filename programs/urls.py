@@ -1,0 +1,44 @@
+from rest_framework.routers import DefaultRouter
+from django.urls import path, include
+
+from .views import (
+    ServiceCenterViewSet, ClientViewSet,
+    ClinicVisitViewSet, HIVSTITestResultViewSet, ADRRecordViewSet,
+    AutoclaveLogViewSet, AntenatalCardViewSet,
+    HTCCounsellingViewSet, IndividualCounsellingViewSet, MHScreeningViewSet,
+    GBVCaseViewSet,
+    OutreachSessionViewSet, GroupEducationSessionViewSet,
+    ReferralViewSet,
+    StockEntryViewSet, TemperatureLogViewSet,
+    SafetyHygieneKitViewSet, StoreRequisitionViewSet,
+    TrainingEventViewSet, CoordMeetingViewSet,
+    MobileHealthCampViewSet, VisitorRegisterViewSet,
+)
+
+router = DefaultRouter()
+router.register('centers',             ServiceCenterViewSet,          basename='center')
+router.register('clients',             ClientViewSet,                 basename='client')
+router.register('clinic-visits',       ClinicVisitViewSet,            basename='clinic-visit')
+router.register('hiv-sti-results',     HIVSTITestResultViewSet,       basename='hiv-sti-result')
+router.register('adr-records',         ADRRecordViewSet,              basename='adr-record')
+router.register('autoclave-logs',      AutoclaveLogViewSet,           basename='autoclave-log')
+router.register('antenatal-cards',     AntenatalCardViewSet,          basename='antenatal-card')
+router.register('htc-counselling',     HTCCounsellingViewSet,         basename='htc-counselling')
+router.register('individual-counselling', IndividualCounsellingViewSet, basename='individual-counselling')
+router.register('mh-screening',        MHScreeningViewSet,            basename='mh-screening')
+router.register('gbv-cases',           GBVCaseViewSet,                basename='gbv-case')
+router.register('outreach-sessions',   OutreachSessionViewSet,        basename='outreach-session')
+router.register('group-education',     GroupEducationSessionViewSet,  basename='group-education')
+router.register('referrals',           ReferralViewSet,               basename='referral')
+router.register('stock-entries',       StockEntryViewSet,             basename='stock-entry')
+router.register('temperature-logs',    TemperatureLogViewSet,         basename='temperature-log')
+router.register('hygiene-kits',        SafetyHygieneKitViewSet,       basename='hygiene-kit')
+router.register('store-requisitions',  StoreRequisitionViewSet,       basename='store-requisition')
+router.register('training-events',     TrainingEventViewSet,          basename='training-event')
+router.register('coord-meetings',      CoordMeetingViewSet,           basename='coord-meeting')
+router.register('mobile-camps',        MobileHealthCampViewSet,       basename='mobile-camp')
+router.register('visitor-register',    VisitorRegisterViewSet,        basename='visitor-register')
+
+urlpatterns = [
+    path('', include(router.urls)),
+]

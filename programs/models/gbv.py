@@ -1,0 +1,142 @@
+"""
+GBV Case — Gender-Based Violence incident record.
+
+SECURITY: Survivor name, contact, address and perpetrator name/address
+are encrypted at rest using Fernet symmetric encryption (same key as
+existing mpdsr encryption — FERNET_KEY env var).
+Dashboard views show AGGREGATE COUNTS ONLY.
+Individual records visible only to GBV Officer and Super Admin roles.
+All access logged to GBVAccessLog.
+"""
+import uuid
+from django.db import models
+from django.conf import settings
+from .._base_choices import ORG_CHOICES
+from ._base import SubmissionBase
+
+
+def _encrypt(value: str) -> str:
+    if not value:
+        return ''
+    try:
+        from cryptography.fernet import Fernet
+        key = settings.FERNET_KEY
+        if not key:
+            return value
+        return Fernet(key.encode() if isinstance(key, str) else key).encrypt(
+            value.encode()
+        ).decode()
+    except Exception:
+        return value
+
+
+def _decrypt(value: str) -> str:
+    if not value:
+        return ''
+    try:
+        from cryptography.fernet import Fernet
+        key = settings.FERNET_KEY
+        if not key:
+            return value
+        return Fernet(key.encode() if isinstance(key, str) else key).decrypt(
+            value.encode()
+        ).decode()
+    except Exception:
+        return value
+
+
+class EncryptedCharField(models.TextField):
+    """Transparent Fernet-encrypt on save, decrypt on access."""
+
+    def from_db_value(self, value, expression, connection):
+        return _decrypt(value) if value else value
+
+    def pre_save(self, model_instance, add):
+        value = super().pre_save(model_instance, add)
+        encrypted = _encrypt(value)
+        setattr(model_instance, self.attname, encrypted)
+        return encrypted
+
+
+class GBVCase(SubmissionBase):
+    SEXUAL = 'sexual'
+    PHYSICAL = 'physical'
+    ECONOMIC = 'economic'
+    PSYCHOLOGICAL = 'psychological'
+
+    organisation = models.CharField(max_length=20, choices=ORG_CHOICES, db_index=True)
+    center = models.ForeignKey(
+        'programs.ServiceCenter', on_delete=models.PROTECT, related_name='gbv_cases'
+    )
+
+    # Dates
+    interview_date = models.DateField(db_index=True)
+    incident_date = models.DateField(db_index=True)
+
+    # Encrypted PII
+    survivor_name = EncryptedCharField(blank=True)
+    survivor_contact = EncryptedCharField(blank=True)
+    survivor_address = EncryptedCharField(blank=True)
+    perpetrator_name = EncryptedCharField(blank=True)
+    perpetrator_address = EncryptedCharField(blank=True)
+
+    # Survivor demographics (non-PII)
+    survivor_age = models.PositiveSmallIntegerField(null=True, blank=True)
+    survivor_gender_identity = models.CharField(max_length=50, blank=True)
+    survivor_disability = models.BooleanField(default=False)
+
+    # Violence type (multi-select)
+    gbv_sexual = models.BooleanField(default=False)
+    gbv_physical = models.BooleanField(default=False)
+    gbv_economic = models.BooleanField(default=False)
+    gbv_psychological = models.BooleanField(default=False)
+
+    # Perpetrator info (non-PII)
+    perpetrator_count = models.PositiveSmallIntegerField(default=1)
+    perpetrator_gender = models.CharField(max_length=20, blank=True)
+    perpetrator_relationship = models.CharField(max_length=100, blank=True)
+
+    # Prior reporting
+    prior_reporting = models.BooleanField(default=False)
+    prior_gbv_history = models.BooleanField(default=False)
+
+    # Services needed (multi-select)
+    needs_medical = models.BooleanField(default=False)
+    needs_legal = models.BooleanField(default=False)
+    needs_shelter = models.BooleanField(default=False)
+    needs_psychosocial = models.BooleanField(default=False)
+
+    local_action_taken = models.TextField(blank=True)
+    case_officer_name = models.CharField(max_length=200, blank=True)
+    supervisor_name = models.CharField(max_length=200, blank=True)
+    notes = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ['-incident_date']
+
+    def __str__(self):
+        return f'GBV Case {self.incident_date} ({self.organisation})'
+
+    @property
+    def violence_types(self):
+        types = []
+        if self.gbv_sexual: types.append('Sexual')
+        if self.gbv_physical: types.append('Physical')
+        if self.gbv_economic: types.append('Economic')
+        if self.gbv_psychological: types.append('Psychological')
+        return types
+
+
+class GBVAccessLog(models.Model):
+    """Immutable audit log — every view of a GBV case detail is recorded."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    case = models.ForeignKey(GBVCase, on_delete=models.CASCADE, related_name='access_logs')
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='+'
+    )
+    action = models.CharField(max_length=50, default='view')
+    timestamp = models.DateTimeField(auto_now_add=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-timestamp']
