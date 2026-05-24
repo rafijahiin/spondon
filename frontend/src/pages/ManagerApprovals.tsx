@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { CheckCircle2, MapPin, XCircle } from 'lucide-react'
+import { Drawer } from 'vaul'
 import { api, apiErrorMessage } from '@/api/client'
 import { usePolling } from '@/hooks/usePolling'
 import { StatusBadge } from '@/components/ui/StatusBadge'
@@ -24,6 +25,7 @@ function SubmissionCard({
   onApprove: (id: string) => Promise<void>
   onReject: (id: string) => Promise<void>
 }) {
+  const [drawerOpen, setDrawerOpen] = useState(false)
   const [approving, setApproving] = useState(false)
   const [rejecting, setRejecting] = useState(false)
 
@@ -31,89 +33,122 @@ function SubmissionCard({
     setApproving(true)
     await onApprove(submission.id)
     setApproving(false)
+    setDrawerOpen(false)
   }
 
   const reject = async () => {
     setRejecting(true)
     await onReject(submission.id)
     setRejecting(false)
+    setDrawerOpen(false)
   }
 
-  return (
-    <div className="rounded-xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm p-5 space-y-4">
-      {/* Header row */}
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <div className="flex flex-wrap items-center gap-2 mb-1">
-            <span className="text-xs font-bold uppercase tracking-wide text-unfpa-blue">
-              {FORM_LABELS[submission.form_type] ?? submission.form_type}
-            </span>
-            <StatusBadge status={submission.status} />
-          </div>
-          <p className="font-medium text-gray-900 dark:text-white">{submission.worker_name}</p>
-        </div>
-        <span className="text-xs text-gray-400 dark:text-gray-500 flex-shrink-0">
-          {formatDateTime(submission.submitted_at)}
-        </span>
-      </div>
+  const handleCardClick = () => {
+    if (window.innerWidth < 640) setDrawerOpen(true)
+  }
 
-      {/* Detail chips */}
-      <div className="flex flex-wrap gap-2">
-        <span className="inline-flex items-center gap-1 rounded-full bg-unfpa-blue/10 px-2.5 py-1 text-xs font-medium text-unfpa-blue">
-          {submission.partner}
+  const chips = (
+    <div className="flex flex-wrap gap-2">
+      <span className="inline-flex items-center gap-1 rounded-full bg-unfpa-blue/10 px-2.5 py-1 text-xs font-medium text-unfpa-blue">
+        {submission.partner}
+      </span>
+      <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 dark:bg-gray-700 px-2.5 py-1 text-xs text-gray-600 dark:text-gray-300">
+        <MapPin className="h-3 w-3" />
+        {submission.district}{submission.region ? `, ${submission.region}` : ''}
+      </span>
+      {submission.latitude && (
+        <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 dark:bg-gray-700 px-2.5 py-1 text-xs text-gray-500 dark:text-gray-400">
+          {submission.latitude.toFixed(4)}, {submission.longitude?.toFixed(4)}
         </span>
-        <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 dark:bg-gray-700 px-2.5 py-1 text-xs text-gray-600 dark:text-gray-300">
-          <MapPin className="h-3 w-3" />
-          {submission.district}
-          {submission.region ? `, ${submission.region}` : ''}
-        </span>
-        {submission.latitude && (
-          <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 dark:bg-gray-700 px-2.5 py-1 text-xs text-gray-500 dark:text-gray-400">
-            {submission.latitude.toFixed(4)}, {submission.longitude?.toFixed(4)}
+      )}
+    </div>
+  )
+
+  const approveRejectButtons = (
+    <div className="flex gap-3">
+      <button
+        onClick={approve}
+        disabled={approving || rejecting}
+        className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-status-on_track py-3 text-sm font-semibold text-white hover:bg-green-700 disabled:opacity-60 transition-colors"
+      >
+        {approving ? <LoadingSpinner size="sm" className="text-white" /> : <><CheckCircle2 className="h-4 w-4" />Approve</>}
+      </button>
+      <button
+        onClick={reject}
+        disabled={approving || rejecting}
+        className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-status-critical py-3 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-60 transition-colors"
+      >
+        {rejecting ? <LoadingSpinner size="sm" className="text-white" /> : <><XCircle className="h-4 w-4" />Reject</>}
+      </button>
+    </div>
+  )
+
+  return (
+    <Drawer.Root open={drawerOpen} onOpenChange={setDrawerOpen} shouldScaleBackground={false}>
+      {/* Card — tappable on mobile, static on desktop */}
+      <div
+        onClick={handleCardClick}
+        className="rounded-xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm p-5 space-y-4 cursor-pointer sm:cursor-default"
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <div className="flex flex-wrap items-center gap-2 mb-1">
+              <span className="text-xs font-bold uppercase tracking-wide text-unfpa-blue">
+                {FORM_LABELS[submission.form_type] ?? submission.form_type}
+              </span>
+              <StatusBadge status={submission.status} />
+            </div>
+            <p className="font-medium text-gray-900 dark:text-white">{submission.worker_name}</p>
+          </div>
+          <span className="text-xs text-gray-400 dark:text-gray-500 flex-shrink-0">
+            {formatDateTime(submission.submitted_at)}
           </span>
+        </div>
+
+        {chips}
+
+        {/* Desktop-only action buttons */}
+        {submission.status === 'pending' && (
+          <div className="hidden sm:flex gap-3 pt-1">{approveRejectButtons}</div>
+        )}
+
+        {submission.status !== 'pending' && (
+          <div className="text-xs text-gray-400 dark:text-gray-500">
+            Reviewed by {submission.reviewed_by?.email ?? 'system'} · {formatDateTime(submission.reviewed_at)}
+          </div>
         )}
       </div>
 
-      {/* Action buttons — prominent, mobile-friendly */}
-      {submission.status === 'pending' && (
-        <div className="flex gap-3 pt-1">
-          <button
-            onClick={approve}
-            disabled={approving || rejecting}
-            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-status-on_track py-3 text-sm font-semibold text-white hover:bg-green-700 disabled:opacity-60 transition-colors"
-          >
-            {approving ? (
-              <LoadingSpinner size="sm" className="text-white" />
-            ) : (
-              <>
-                <CheckCircle2 className="h-4 w-4" />
-                Approve
-              </>
-            )}
-          </button>
-          <button
-            onClick={reject}
-            disabled={approving || rejecting}
-            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-status-critical py-3 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-60 transition-colors"
-          >
-            {rejecting ? (
-              <LoadingSpinner size="sm" className="text-white" />
-            ) : (
-              <>
-                <XCircle className="h-4 w-4" />
-                Reject
-              </>
-            )}
-          </button>
-        </div>
-      )}
+      {/* Mobile slide-up drawer */}
+      <Drawer.Portal>
+        <Drawer.Overlay className="fixed inset-0 bg-black/40 z-40" />
+        <Drawer.Content className="fixed bottom-0 left-0 right-0 z-50 flex flex-col rounded-t-[20px] bg-white dark:bg-gray-800 px-5 pb-8 outline-none">
+          <div className="mx-auto mt-3 mb-5 h-1.5 w-12 flex-shrink-0 rounded-full bg-gray-300 dark:bg-gray-600" />
 
-      {submission.status !== 'pending' && (
-        <div className="text-xs text-gray-400 dark:text-gray-500">
-          Reviewed by {submission.reviewed_by?.email ?? 'system'} · {formatDateTime(submission.reviewed_at)}
-        </div>
-      )}
-    </div>
+          <div className="space-y-4">
+            <div>
+              <div className="flex flex-wrap items-center gap-2 mb-1">
+                <span className="text-xs font-bold uppercase tracking-wide text-unfpa-blue">
+                  {FORM_LABELS[submission.form_type] ?? submission.form_type}
+                </span>
+                <StatusBadge status={submission.status} />
+              </div>
+              <p className="text-lg font-semibold text-gray-900 dark:text-white">{submission.worker_name}</p>
+              <p className="text-sm text-gray-400 dark:text-gray-500 mt-0.5">{formatDateTime(submission.submitted_at)}</p>
+            </div>
+
+            {chips}
+
+            {submission.status === 'pending'
+              ? <div className="pt-2">{approveRejectButtons}</div>
+              : <div className="text-xs text-gray-400 dark:text-gray-500 pt-2">
+                  Reviewed by {submission.reviewed_by?.email ?? 'system'} · {formatDateTime(submission.reviewed_at)}
+                </div>
+            }
+          </div>
+        </Drawer.Content>
+      </Drawer.Portal>
+    </Drawer.Root>
   )
 }
 
