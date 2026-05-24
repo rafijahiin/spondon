@@ -63,9 +63,9 @@ function AttendanceTable({ session }: { session: TrainingSession }) {
           <div className="text-right">
             <p className="text-xs text-gray-400">Avg score</p>
             <p className="font-bold text-gray-900 dark:text-white">
-              {session.attendances.length > 0
+              {(session.attendances ?? []).length > 0
                 ? (
-                    session.attendances.reduce((sum, _a) => sum + 0, 0) / session.attendances.length
+                    (session.attendances ?? []).reduce((sum, _a) => sum + 0, 0) / (session.attendances ?? []).length
                   ).toFixed(0)
                 : '—'}
             </p>
@@ -82,7 +82,7 @@ function AttendanceTable({ session }: { session: TrainingSession }) {
       {/* Attendance table */}
       {open && (
         <div className="border-t border-gray-100 dark:border-gray-700">
-          {session.attendances.length === 0 ? (
+          {(session.attendances ?? []).length === 0 ? (
             <p className="px-5 py-4 text-sm text-gray-400">No attendance records.</p>
           ) : (
             <table className="w-full text-sm">
@@ -96,7 +96,7 @@ function AttendanceTable({ session }: { session: TrainingSession }) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50 dark:divide-gray-700/50">
-                {session.attendances.map((a: TrainingAttendance) => (
+                {(session.attendances ?? []).map((a: TrainingAttendance) => (
                   <tr key={a.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/30">
                     <td className="px-4 py-2.5 font-medium text-gray-900 dark:text-white">{a.participant_name}</td>
                     <td className="px-4 py-2.5 text-gray-500 dark:text-gray-400 text-xs">{a.role_display}</td>

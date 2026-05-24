@@ -58,7 +58,9 @@ export function OrgDashboard({ partner }: Props) {
 
   const { data: alerts } = usePolling<Alert[]>({
     fetcher: () =>
-      api.get(`/dashboard/alerts/?partner=${partner}&acknowledged=false`).then((r) => r.data),
+      api
+        .get(`/dashboard/alerts/?partner=${partner}&acknowledged=false`)
+        .then((r) => (Array.isArray(r.data) ? r.data : (r.data?.results ?? []))),
     interval: 60_000,
   })
 
