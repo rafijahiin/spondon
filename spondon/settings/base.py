@@ -85,6 +85,7 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_DIRS = [BASE_DIR / 'frontend' / 'dist']  # React build output
 # WhiteNoise serves the React build at the root URL (not under /static/)
 WHITENOISE_ROOT = BASE_DIR / 'frontend' / 'dist'
 WHITENOISE_INDEX_FILE = True
