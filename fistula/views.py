@@ -14,8 +14,25 @@ from .serializers import FistulaCaseSerializer, FistulaCaseUpdateSerializer
 class FistulaCaseViewSet(OrgFilterMixin, ModelViewSet):
     queryset = FistulaCase.objects.select_related('submission', 'created_by').all()
     permission_classes = [IsSuperAdminOrManager]
-    http_method_names = ['get', 'head', 'options', 'patch']
+    http_method_names = ['get', 'head', 'options', 'post', 'patch']
     org_field = 'partner'
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        status_param = self.request.query_params.get('status')
+        partner_param = self.request.query_params.get('partner')
+        overdue = self.request.query_params.get('overdue')
+        if status_param:
+            qs = qs.filter(status=status_param)
+        if partner_param and self.request.user.can_see_all_orgs:
+            qs = qs.filter(partner=partner_param)
+        if overdue == 'true':
+            today = datetime.date.today()
+            qs = qs.filter(
+                follow_up_date__lt=today,
+                follow_up_date__isnull=False,
+            ).exclude(status=CaseStatus.REFERRAL_COMPLETED)
+        return qs
 
     def get_serializer_class(self):
         if self.action == 'partial_update':

@@ -110,9 +110,13 @@ class MonthlyBreakdownView(APIView):
         except (ValueError, TypeError):
             year = timezone.now().year
 
+        partner = request.query_params.get('partner', '')
+        qs = _base_qs(request.user).filter(submitted_at__year=year)
+        if partner and partner in allowed_partners(request.user):
+            qs = qs.filter(partner=partner)
+
         rows = (
-            _base_qs(request.user)
-            .filter(submitted_at__year=year)
+            qs
             .annotate(month=TruncMonth('submitted_at'))
             .values('month', 'form_type')
             .annotate(count=Count('id'))
@@ -208,10 +212,17 @@ class CentresView(APIView):
         month_start, month_end = current_month_bounds()
         now = timezone.now()
 
-        rows = (
+        partner = request.query_params.get('partner', '')
+        qs = (
             _base_qs(request.user)
             .filter(submitted_at__gte=month_start, submitted_at__lt=month_end)
             .exclude(district='')
+        )
+        if partner and partner in allowed_partners(request.user):
+            qs = qs.filter(partner=partner)
+
+        rows = (
+            qs
             .values('district')
             .annotate(count=Count('id'))
             .order_by('-count')

@@ -131,6 +131,16 @@ class KoboSubmissionViewSet(OrgFilterMixin, ModelViewSet):
     http_method_names = ['get', 'head', 'options', 'post']
     org_field = 'partner'
 
+    def get_queryset(self):
+        qs = super().get_queryset()
+        status_param = self.request.query_params.get('status')
+        form_type = self.request.query_params.get('form_type')
+        if status_param:
+            qs = qs.filter(status=status_param)
+        if form_type:
+            qs = qs.filter(form_type=form_type)
+        return qs
+
     def get_serializer_class(self):
         if self.action == 'retrieve':
             return KoboSubmissionDetailSerializer

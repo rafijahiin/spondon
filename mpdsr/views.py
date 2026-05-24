@@ -15,6 +15,16 @@ class MPDSRCaseViewSet(OrgFilterMixin, ModelViewSet):
     http_method_names = ['get', 'head', 'options', 'patch']
     org_field = 'partner'
 
+    def get_queryset(self):
+        qs = super().get_queryset()
+        partner = self.request.query_params.get('partner')
+        cause = self.request.query_params.get('cause_of_death')
+        if partner and self.request.user.can_see_all_orgs:
+            qs = qs.filter(partner=partner)
+        if cause:
+            qs = qs.filter(cause_of_death=cause)
+        return qs
+
     def get_serializer_class(self):
         if self.action == 'partial_update':
             return MPDSRCaseUpdateSerializer
