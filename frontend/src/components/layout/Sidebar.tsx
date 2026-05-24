@@ -24,6 +24,7 @@ import {
   ClipboardList,
   HeartHandshake,
   Megaphone,
+  BarChart,
 } from 'lucide-react'
 import { cn } from '@/utils/cn'
 import { useAuth } from '@/context/AuthContext'
@@ -99,6 +100,7 @@ const NAV: NavItem[] = [
   { to: '/fistula', label: 'Fistula Tracker', labelBn: 'ফিস্টুলা', icon: <Heart className="h-5 w-5" /> },
   { to: '/mpdsr', label: 'MPDSR Tracker', labelBn: 'MPDSR', icon: <Activity className="h-5 w-5" /> },
   { to: '/reports', label: 'Reporting Hub', labelBn: 'রিপোর্ট', icon: <FileText className="h-5 w-5" /> },
+  { to: '/tracker', label: 'Progress Tracker', labelBn: 'অগ্রগতি ট্র্যাকার', icon: <BarChart className="h-5 w-5" /> },
   { to: '/baseline', label: 'Baseline & Endline', labelBn: 'বেসলাইন', icon: <BookOpen className="h-5 w-5" /> },
   { to: '/training', label: 'Training Log', labelBn: 'প্রশিক্ষণ', icon: <Users className="h-5 w-5" /> },
   {

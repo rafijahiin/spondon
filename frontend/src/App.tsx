@@ -14,6 +14,7 @@ const MPDSRTracker = lazy(() => import('@/pages/MPDSRTracker'))
 const ReportingHub = lazy(() => import('@/pages/ReportingHub'))
 const BaselineEndline = lazy(() => import('@/pages/BaselineEndline'))
 const TrainingLog = lazy(() => import('@/pages/TrainingLog'))
+const ProgressTracker = lazy(() => import('@/pages/ProgressTracker'))
 const AdminPanel = lazy(() => import('@/pages/AdminPanel'))
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
@@ -53,6 +54,7 @@ export default function App() {
             <Route path="reports" element={<ReportingHub />} />
             <Route path="baseline" element={<BaselineEndline />} />
             <Route path="training" element={<TrainingLog />} />
+            <Route path="tracker" element={<ProgressTracker />} />
             <Route
               path="admin"
               element={
