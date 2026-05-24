@@ -309,6 +309,38 @@ export interface BaselineSurvey {
   updated_at: string
 }
 
+// ─── Programs summary (from /api/dashboard/programs-summary/) ─────────────────
+
+export interface ProgramsFormCount {
+  count: number
+  label: string
+  label_bn: string
+  category: string
+}
+
+export interface ProgramsMonthPoint {
+  month: number
+  year: number
+  month_name: string
+  clinical: number
+  community: number
+  operations: number
+  total: number
+}
+
+export interface ProgramsSummary {
+  partner: string
+  year: number
+  month: number
+  total: number
+  prev_total: number
+  mom_change: number
+  categories: { Clinical?: number; Community?: number; Operations?: number }
+  counts: Record<string, ProgramsFormCount>
+  monthly_trend: ProgramsMonthPoint[]
+  top_forms: Array<ProgramsFormCount & { key: string }>
+}
+
 // ─── Indicator types (programs / indicators apps) ────────────────────────────
 
 export interface IndicatorProgress {

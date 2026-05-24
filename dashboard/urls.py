@@ -12,4 +12,5 @@ urlpatterns = [
     path('alerts/', views.DashboardAlertsView.as_view(), name='dashboard-alerts'),
     path('org-summary/', views.OrgSummaryView.as_view(), name='dashboard-org-summary'),
     path('map-data/', views.MapDataView.as_view(), name='dashboard-map-data'),
+    path('programs-summary/', views.ProgramsSummaryView.as_view(), name='dashboard-programs-summary'),
 ]
