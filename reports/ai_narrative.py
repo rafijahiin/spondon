@@ -31,7 +31,7 @@ def generate_narrative(context: dict) -> str:
         client = Groq(api_key=api_key)
         user_content = _build_prompt(context)
         completion = client.chat.completions.create(
-            model='llama3-8b-8192',
+            model='llama-3.3-70b-versatile',
             messages=[
                 {'role': 'system', 'content': _SYSTEM_PROMPT},
                 {'role': 'user', 'content': user_content},

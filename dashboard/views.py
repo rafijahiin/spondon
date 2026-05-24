@@ -1,4 +1,5 @@
 import datetime
+import logging
 
 from django.db.models import Count, Q
 from django.db.models.functions import TruncMonth
@@ -13,12 +14,16 @@ from .utils import allowed_partners, current_month_bounds, previous_month_bounds
 APPROVED = SubmissionStatus.APPROVED
 PENDING = SubmissionStatus.PENDING
 
+logger = logging.getLogger(__name__)
+
 
 def _base_qs(user):
-    """Approved submissions visible to this user."""
+    """All received submissions visible to this user — pending and approved.
+    Submissions are visible as soon as they arrive via webhook; the Approvals
+    page is for review/QA, not a gate for dashboard visibility."""
     return KoboSubmission.objects.filter(
         partner__in=allowed_partners(user),
-        status=APPROVED,
+        status__in=[APPROVED, PENDING],
     )
 
 
@@ -257,7 +262,7 @@ class PartnerSummaryView(APIView):
 
         summary = {}
         for partner in ('PHD', 'Bondhu'):
-            approved = KoboSubmission.objects.filter(partner=partner, status=APPROVED)
+            approved = KoboSubmission.objects.filter(partner=partner, status__in=[APPROVED, PENDING])
             this_month = approved.filter(
                 submitted_at__gte=month_start, submitted_at__lt=month_end
             )
@@ -296,7 +301,7 @@ class MapDataView(APIView):
             KoboSubmission.objects
             .filter(
                 partner__in=allowed_partners(request.user),
-                status=APPROVED,
+                status__in=[APPROVED, PENDING],
                 latitude__isnull=False,
                 longitude__isnull=False,
             )
@@ -342,7 +347,7 @@ class PartnerKPIsView(APIView):
         month_start, month_end = current_month_bounds()
         thirty_days_ago = timezone.now() - datetime.timedelta(days=30)
 
-        approved = KoboSubmission.objects.filter(partner=partner, status=APPROVED)
+        approved = KoboSubmission.objects.filter(partner=partner, status__in=[APPROVED, PENDING])
         this_month = approved.filter(submitted_at__gte=month_start, submitted_at__lt=month_end)
 
         return Response({
@@ -412,7 +417,7 @@ class OrgSummaryView(APIView):
         now = timezone.now()
         month_start, month_end = current_month_bounds()
 
-        approved = KoboSubmission.objects.filter(partner=partner, status=APPROVED)
+        approved = KoboSubmission.objects.filter(partner=partner, status__in=[APPROVED, PENDING])
         this_month = approved.filter(submitted_at__gte=month_start, submitted_at__lt=month_end)
         pending = KoboSubmission.objects.filter(partner=partner, status=PENDING).count()
 
@@ -426,8 +431,12 @@ class OrgSummaryView(APIView):
             'Pending review': pending,
         }
 
-        from reports.ai_narrative import generate_narrative
-        summary = generate_narrative(context)
+        try:
+            from reports.ai_narrative import generate_narrative
+            summary = generate_narrative(context)
+        except Exception as exc:
+            logger.error('Narrative generation error: %s', exc)
+            summary = ''
 
         if not summary:
             summary = (
