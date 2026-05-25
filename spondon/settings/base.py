@@ -119,6 +119,7 @@ KOBO_ASSET_UID_MPDSR = os.environ.get('KOBO_ASSET_UID_MPDSR', 'placeholder')
 KOBO_ASSET_UID_FISTULA = os.environ.get('KOBO_ASSET_UID_FISTULA', 'placeholder')
 KOBO_ASSET_UID_ACTIVITY = os.environ.get('KOBO_ASSET_UID_ACTIVITY', 'placeholder')
 KOBO_ASSET_UID_BASELINE = os.environ.get('KOBO_ASSET_UID_BASELINE', 'placeholder')
+KOBO_ASSET_UID_CLIENT_REG = os.environ.get('KOBO_ASSET_UID_CLIENT_REG', '')
 KOBO_SERVER_URL = os.environ.get('KOBO_SERVER_URL', 'https://kobo.humanitarianresponse.info')
 
 MEDIA_URL = '/media/'

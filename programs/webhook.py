@@ -794,6 +794,44 @@ FORM_HANDLERS: dict = {
     'spondon_mobile_camp_v1':    _handle_mobile_camp,
 }
 
+# Fallback: map KoboToolbox asset UIDs → form slugs.
+# Some KoboToolbox deployments send the asset UID as _xform_id_string
+# instead of the XLS settings id_string.  This table lets the webhook
+# resolve the handler even when the slug-based URL isn't used.
+_ASSET_UID_TO_SLUG: dict[str, str] = {}
+
+def _build_uid_map() -> None:
+    """Populate from Django settings at first request (lazy)."""
+    from django.conf import settings as _s
+    uid_pairs = [
+        ('KOBO_ASSET_UID_CLIENT_REG',   'spondon_client_reg_v1'),
+        ('KOBO_ASSET_UID_CLINIC_VISIT', 'spondon_clinic_visit_v1'),
+        ('KOBO_ASSET_UID_HIV_STI',      'spondon_hiv_sti_test_v1'),
+        ('KOBO_ASSET_UID_ADR',          'spondon_adr_record_v1'),
+        ('KOBO_ASSET_UID_AUTOCLAVE',    'spondon_autoclave_log_v1'),
+        ('KOBO_ASSET_UID_ANC',          'spondon_antenatal_card_v1'),
+        ('KOBO_ASSET_UID_HTC',          'spondon_htc_counsel_v1'),
+        ('KOBO_ASSET_UID_COUNSELLING',  'spondon_counselling_v1'),
+        ('KOBO_ASSET_UID_MH_SCREEN',    'spondon_mh_screening_v1'),
+        ('KOBO_ASSET_UID_GBV',          'spondon_gbv_case_v1'),
+        ('KOBO_ASSET_UID_OUTREACH',     'spondon_outreach_v1'),
+        ('KOBO_ASSET_UID_GROUP_EDU',    'spondon_group_edu_v1'),
+        ('KOBO_ASSET_UID_REFERRAL',     'spondon_referral_v1'),
+        ('KOBO_ASSET_UID_HYGIENE',      'spondon_hygiene_kit_v1'),
+        ('KOBO_ASSET_UID_TRAINING',     'spondon_training_event_v1'),
+        ('KOBO_ASSET_UID_COORD_MTG',    'spondon_coord_meeting_v1'),
+        ('KOBO_ASSET_UID_MOBILE_CAMP',  'spondon_mobile_camp_v1'),
+        # Legacy submission-app UIDs
+        ('KOBO_ASSET_UID_MPDSR',        'spondon_mpdsr_combined_v1'),
+        ('KOBO_ASSET_UID_FISTULA',      'spondon_fistula_v1'),
+        ('KOBO_ASSET_UID_BASELINE',     'spondon_baseline_v1'),
+        ('KOBO_ASSET_UID_ACTIVITY',     'spondon_client_reg_v1'),
+    ]
+    for attr, slug in uid_pairs:
+        uid = getattr(_s, attr, '') or ''
+        if uid:
+            _ASSET_UID_TO_SLUG[uid] = slug
+
 
 # ─── Telegram notification ─────────────────────────────────────────────────────
 
@@ -904,6 +942,17 @@ def programs_webhook(request, org_override: str = '', form_slug: str = ''):
         xform_id = payload.get('_xform_id_string', '')
 
     handler = FORM_HANDLERS.get(xform_id)
+
+    # Fallback: resolve KoboToolbox asset UID → form slug
+    if not handler and xform_id:
+        if not _ASSET_UID_TO_SLUG:
+            _build_uid_map()
+        resolved_slug = _ASSET_UID_TO_SLUG.get(xform_id)
+        if resolved_slug:
+            logger.info('Programs webhook: resolved asset UID %r → slug %r', xform_id, resolved_slug)
+            xform_id = resolved_slug
+            handler = FORM_HANDLERS.get(xform_id)
+
     if not handler:
         logger.warning('Programs webhook: unknown form id_string %r', xform_id)
         return HttpResponse(f'Bad Request — unknown form: {xform_id}', status=400)

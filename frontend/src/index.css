@@ -1163,6 +1163,39 @@
   width: 100%;
   height: 100%;
   z-index: 1;
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+
+.leaflet-home-map {
+  min-height: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+}
+.leaflet-home-map .leaflet-container {
+  border-radius: 12px;
+}
+
+.leaflet-org-map {
+  min-height: 320px;
+  border-radius: 12px;
+  overflow: hidden;
+}
+.leaflet-org-map .leaflet-container {
+  border-radius: 12px;
+}
+
+/* Make leaflet tooltips match editorial style */
+.leaflet-tooltip-custom {
+  font-family: var(--mono) !important;
+  font-size: 10px !important;
+  letter-spacing: 0.04em;
+  padding: 4px 8px !important;
+  border-radius: 6px !important;
+  background: var(--surface) !important;
+  color: var(--ink) !important;
+  border: 1px solid var(--hair) !important;
+  box-shadow: 0 4px 12px rgba(20,32,43,0.08) !important;
 }
 
 /* ─── Scrollbar styling ──────────────────────────────────────────────── */
@@ -1212,6 +1245,85 @@
 }
 .appr-spine-item.active .mute {
   color: rgba(255,255,255,0.6);
+}
+
+/* ─── KoboToolbox slide-out panel ─────────────────────────────────────── */
+
+.kobo-panel {
+  position: fixed;
+  top: 0;
+  left: 64px;
+  width: 300px;
+  height: 100vh;
+  background: var(--surface);
+  border-right: 1px solid var(--hair);
+  box-shadow: 6px 0 24px rgba(20, 32, 43, 0.1);
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  animation: koboSlide 200ms ease-out;
+}
+@keyframes koboSlide {
+  from { opacity: 0; transform: translateX(-8px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+.kobo-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 16px 12px;
+  border-bottom: 1px solid var(--hair);
+  flex-shrink: 0;
+}
+.kobo-panel-close {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 150ms;
+}
+.kobo-panel-close:hover {
+  background: var(--surface-2);
+  color: var(--ink);
+}
+
+.kobo-panel-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 0;
+}
+
+.kobo-group {
+  padding: 4px 12px 8px;
+}
+.kobo-group-heading {
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--unfpa);
+  padding: 8px 8px 4px;
+}
+.kobo-form-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 8px;
+  border-radius: 8px;
+  text-decoration: none;
+  color: var(--ink);
+  transition: background 150ms;
+}
+.kobo-form-link:hover {
+  background: var(--surface-2);
 }
 
 /* ─── Responsive: mobile ─────────────────────────────────────────────── */

@@ -2,7 +2,7 @@
  * Programme Overview — editorial light console homepage.
  *
  * Warm paper background · Instrument Serif italic headlines
- * · glassmorphism tiles with shimmer hairlines · SVG Bangladesh map
+ * · glassmorphism tiles with shimmer hairlines · Leaflet Bangladesh map
  * · live activity stream · district leaderboard.
  */
 import { useEffect, useState, useId } from 'react'
@@ -18,6 +18,7 @@ import {
 import { api } from '@/api/client'
 import { usePolling } from '@/hooks/usePolling'
 import { PageLoader } from '@/components/ui/LoadingSpinner'
+import { BangladeshMap } from '@/components/maps/BangladeshMap'
 import { formatDateTime } from '@/utils/format'
 import type { KPIs, ActivityItem, Alert, ProgramsSummary } from '@/types'
 
@@ -117,90 +118,8 @@ function Sparkline({
   )
 }
 
-// ─── Bangladesh SVG Map ─────────────────────────────────────────────────────
-
-const BD_PATHS: Record<string, string> = {
-  rangpur:    'M275 50 L370 55 L380 130 L355 180 L300 175 L260 145 L255 95 Z',
-  rajshahi:   'M165 165 L260 145 L300 175 L295 245 L240 295 L185 280 L150 240 L140 195 Z',
-  mymensingh: 'M355 180 L440 175 L460 240 L420 280 L370 270 L355 215 Z',
-  sylhet:     'M460 175 L590 165 L630 220 L595 295 L520 285 L460 240 L460 195 Z',
-  dhaka:      'M295 245 L370 270 L420 280 L450 330 L420 400 L350 390 L300 360 L295 295 Z',
-  khulna:     'M150 290 L240 295 L300 360 L290 460 L230 490 L160 460 L140 380 Z',
-  barisal:    'M290 460 L350 390 L420 400 L420 470 L380 510 L320 500 L290 480 Z',
-  chittagong: 'M420 280 L520 285 L595 295 L605 360 L580 460 L545 540 L500 560 L460 530 L450 470 L420 400 Z',
-}
-
-const DIVISIONS = [
-  { id: 'rangpur',    name: 'Rangpur',    cx: 320, cy: 110 },
-  { id: 'rajshahi',   name: 'Rajshahi',   cx: 220, cy: 230 },
-  { id: 'mymensingh', name: 'Mymensingh', cx: 410, cy: 220 },
-  { id: 'sylhet',     name: 'Sylhet',     cx: 560, cy: 220 },
-  { id: 'dhaka',      name: 'Dhaka',      cx: 380, cy: 320 },
-  { id: 'khulna',     name: 'Khulna',     cx: 250, cy: 410 },
-  { id: 'barisal',    name: 'Barisal',    cx: 350, cy: 460 },
-  { id: 'chittagong', name: 'Chittagong', cx: 530, cy: 410 },
-]
-
-function HeroMap() {
-  const [hover, setHover] = useState<string | null>(null)
-
-  return (
-    <div className="map-frame" style={{ height: '100%' }}>
-      <svg className="map-svg" viewBox="0 0 700 600" preserveAspectRatio="xMidYMid meet">
-        <defs>
-          <linearGradient id="region-fill" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#00658C" stopOpacity={0.06} />
-            <stop offset="100%" stopColor="#00658C" stopOpacity={0.02} />
-          </linearGradient>
-        </defs>
-
-        {/* Range rings */}
-        {[120, 220, 320].map((rr, i) => (
-          <circle key={i} cx={370} cy={320} r={rr}
-            fill="none" stroke="var(--hair)" strokeDasharray="2 6" strokeWidth={1} opacity={0.5 - i * 0.12} />
-        ))}
-
-        {/* Divisions */}
-        {DIVISIONS.map(d => (
-          <path key={d.id}
-            d={BD_PATHS[d.id]}
-            className={`bd-region ${hover === d.id ? 'active' : ''}`}
-            onMouseEnter={() => setHover(d.id)}
-            onMouseLeave={() => setHover(null)}
-          />
-        ))}
-
-        {/* Labels */}
-        {DIVISIONS.map(d => (
-          <g key={d.id} style={{ pointerEvents: 'none' }}>
-            <text x={d.cx} y={d.cy} className="bd-region-label" textAnchor="middle">{d.name}</text>
-          </g>
-        ))}
-      </svg>
-
-      {/* HUD overlays */}
-      <div className="map-hud tl">
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span className="live-dot" />
-          <span>LIVE</span>
-        </div>
-        <div>8 DIVISIONS</div>
-      </div>
-
-      <div className="map-hud br" style={{ minWidth: 130 }}>
-        {hover ? (
-          <div style={{ textAlign: 'right' }}>
-            <div style={{ color: 'var(--ink)', fontFamily: 'var(--display)', fontStyle: 'italic', fontSize: 18, textTransform: 'none' as const, letterSpacing: 0 }}>
-              {DIVISIONS.find(d => d.id === hover)?.name}
-            </div>
-          </div>
-        ) : (
-          <div>hover a division</div>
-        )}
-      </div>
-    </div>
-  )
-}
+// ─── Bangladesh Map (Leaflet) ────────────────────────────────────────────────
+// Uses the shared BangladeshMap component with GeoJSON + OpenStreetMap tiles.
 
 // ─── Tile (KPI card) ────────────────────────────────────────────────────────
 
@@ -409,7 +328,16 @@ export default function Home() {
 
           {/* RIGHT — map */}
           <div className="hero-right anim-rise d4">
-            <HeroMap />
+            <div className="map-frame" style={{ height: '100%', position: 'relative' }}>
+              <BangladeshMap activityFeed={activityFeed} className="leaflet-home-map" />
+              <div className="map-hud tl">
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span className="live-dot" />
+                  <span>LIVE</span>
+                </div>
+                <div>8 DIVISIONS</div>
+              </div>
+            </div>
           </div>
         </div>
       </section>

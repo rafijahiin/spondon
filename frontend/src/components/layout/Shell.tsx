@@ -3,13 +3,11 @@
  *
  * app-shell grid: Spine (64px) | Main column (topbar + page canvas).
  * Atmosphere layer behind everything.
- * AI Programme Officer floating chat available on all pages.
  */
 import { Outlet } from 'react-router-dom'
 import { Atmosphere } from './Atmosphere'
 import { Spine } from './Spine'
 import { Topbar } from './Topbar'
-import { AIProgrammeOfficer } from '@/components/chat/AIProgrammeOfficer'
 
 export function Shell() {
   return (
@@ -27,9 +25,6 @@ export function Shell() {
           <Outlet />
         </div>
       </main>
-
-      {/* AI Programme Officer — floating chat */}
-      <AIProgrammeOfficer />
     </div>
   )
 }

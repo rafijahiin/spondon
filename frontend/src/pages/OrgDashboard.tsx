@@ -23,6 +23,7 @@ import {
 import { api } from '@/api/client'
 import { usePolling } from '@/hooks/usePolling'
 import { PageLoader } from '@/components/ui/LoadingSpinner'
+import { BangladeshMap } from '@/components/maps/BangladeshMap'
 import { IndicatorGrid } from '@/components/indicators/IndicatorGrid'
 import { formatDate } from '@/utils/format'
 import type { PartnerKPIs, CentresResponse, Alert, ProgramsSummary } from '@/types'
@@ -216,44 +217,8 @@ function Meta({ label, value, sub }: { label: string; value: string; sub: string
   )
 }
 
-// ─── HeroMap (SVG Bangladesh) ─────────────────────────────────────────────────
-
-const BD_PATHS: Record<string, string> = {
-  dhaka:     'M275 50 L370 55 L380 130 L355 180 L300 175 L260 145 L255 95 Z',
-  mymensingh:'M165 165 L260 145 L300 175 L295 245 L240 295 L185 280 L150 240 L140 195 Z',
-  rajshahi:  'M355 180 L440 175 L460 240 L420 280 L370 270 L355 215 Z',
-  rangpur:   'M460 175 L590 165 L630 220 L595 295 L520 285 L460 240 L460 195 Z',
-  khulna:    'M295 245 L370 270 L420 280 L450 330 L420 400 L350 390 L300 360 L295 295 Z',
-  barishal:  'M150 290 L240 295 L300 360 L290 460 L230 490 L160 460 L140 380 Z',
-  sylhet:    'M290 460 L350 390 L420 400 L420 470 L380 510 L320 500 L290 480 Z',
-  chattogram:'M420 280 L520 285 L595 295 L605 360 L580 460 L545 540 L500 560 L460 530 L450 470 L420 400 Z',
-}
-
-function HeroMap() {
-  return (
-    <div className="map-frame" style={{ height: '100%', minHeight: 320 }}>
-      <svg viewBox="0 0 700 600" preserveAspectRatio="xMidYMid meet" style={{ width: '100%', height: '100%' }}>
-        <defs>
-          <linearGradient id="org-map-stroke" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#00658C" stopOpacity={0.5} />
-            <stop offset="100%" stopColor="#F26A4F" stopOpacity={0.3} />
-          </linearGradient>
-        </defs>
-        {Object.entries(BD_PATHS).map(([id, d]) => (
-          <path key={id} d={d}
-            className="bd-region"
-            fill="var(--unfpa)" fillOpacity={0.04}
-            stroke="url(#org-map-stroke)" strokeWidth={1.2}
-          />
-        ))}
-        <g stroke="var(--unfpa)" strokeWidth={0.5} fill="none" opacity={0.3}>
-          <circle cx={370} cy={300} r={80} className="pulse-ring p1" />
-          <circle cx={370} cy={300} r={160} className="pulse-ring p2" />
-        </g>
-      </svg>
-    </div>
-  )
-}
+// ─── HeroMap (Leaflet) ────────────────────────────────────────────────────────
+// Uses the shared BangladeshMap component with GeoJSON + OpenStreetMap tiles.
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
@@ -416,7 +381,9 @@ export function OrgDashboard({ partner }: Props) {
           </div>
 
           <div className="hero-right anim-rise d4">
-            <HeroMap />
+            <div className="map-frame" style={{ height: '100%', minHeight: 320, position: 'relative' }}>
+              <BangladeshMap activityFeed={[]} className="leaflet-org-map" />
+            </div>
           </div>
         </div>
       </section>
