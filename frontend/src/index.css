@@ -125,6 +125,7 @@
   position: sticky;
   top: 0;
   height: 100vh;
+  width: var(--spine);
   background: var(--surface);
   border-right: 1px solid var(--hair);
   display: flex;
@@ -132,7 +133,23 @@
   align-items: center;
   padding: 14px 0;
   z-index: 60;
+  transition: width 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+  overflow: visible;
 }
+
+/* Expanded state — overlays content, doesn't push grid */
+.spine-expanded {
+  width: 220px;
+  position: fixed;
+  left: 0;
+  box-shadow: 8px 0 32px rgba(20, 32, 43, 0.08);
+  align-items: flex-start;
+  padding: 14px 12px;
+}
+.spine-expanded .spine-brand { margin-left: 3px; }
+.spine-expanded .spine-sep { width: 100%; }
+.spine-expanded .spine-foot { align-items: flex-start; width: 100%; }
+.spine-expanded .spine-avatar { margin-left: 4px; }
 
 .spine-brand {
   width: 34px;
@@ -258,6 +275,39 @@
 .spine-item:hover .spine-tip {
   opacity: 1;
   transform: translateY(-50%) translateX(4px);
+}
+
+/* Inline label — visible only when spine is expanded */
+.spine-label {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--ink-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-left: 10px;
+  text-align: left;
+  line-height: 1.3;
+}
+.spine-item.active .spine-label { color: var(--unfpa); }
+
+/* Expanded spine item — wider, left-aligned */
+.spine-expanded .spine-item {
+  width: 100%;
+  justify-content: flex-start;
+  padding: 0 10px;
+  border-radius: 8px;
+}
+.spine-expanded .spine-item.active::after {
+  left: -12px;
+}
+/* Hide hover tooltips in expanded mode */
+.spine-expanded .spine-tip { display: none; }
+/* Reposition badge in expanded mode */
+.spine-expanded .spine-item .badge {
+  position: static;
+  margin-left: auto;
+  border: none;
 }
 
 .spine-foot { margin-top: auto; display: flex; flex-direction: column; align-items: center; gap: 8px; }
@@ -1267,6 +1317,9 @@
 @keyframes koboSlide {
   from { opacity: 0; transform: translateX(-8px); }
   to   { opacity: 1; transform: translateX(0); }
+}
+.spine-expanded .kobo-panel {
+  left: 220px;
 }
 
 .kobo-panel-header {

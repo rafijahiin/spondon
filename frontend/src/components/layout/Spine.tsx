@@ -1,9 +1,9 @@
 /**
- * Spine — 64px icon-only left rail navigation with hover tooltips.
+ * Spine — 64→220px collapsible left rail navigation.
  *
  * Matches the editorial light console design: minimal vertical strip,
- * UNFPA blue active indicator bar, badge for pending approvals.
- * Includes KoboToolbox form links panel.
+ * UNFPA blue active indicator bar, live badge for pending approvals.
+ * S logo toggles expanded/collapsed. Includes KoboToolbox form links panel.
  */
 import { useState, useRef, useEffect } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
@@ -13,6 +13,7 @@ import {
   Heart, BookOpen, Users, BarChart, ClipboardList, X,
 } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
+import { api } from '@/api/client'
 
 interface SpineItemDef {
   to: string
@@ -26,7 +27,7 @@ const PRIMARY_NAV: SpineItemDef[] = [
   { to: '/',         label: 'Programme Overview', labelBn: 'হোম',               icon: <Home size={18} /> },
   { to: '/phd',      label: 'PHD Dashboard',      labelBn: 'PHD ড্যাশবোর্ড',    icon: <LayoutDashboard size={18} /> },
   { to: '/bondhu',   label: 'Bondhu Dashboard',   labelBn: 'বন্ধু ড্যাশবোর্ড',  icon: <BarChart2 size={18} /> },
-  { to: '/approvals',label: 'Manager Approvals',  labelBn: 'অনুমোদন',           icon: <CheckSquare size={18} />, badge: 8 },
+  { to: '/approvals',label: 'Manager Approvals',  labelBn: 'অনুমোদন',           icon: <CheckSquare size={18} /> },
   { to: '/reports',  label: 'Reporting Hub',       labelBn: 'রিপোর্ট',           icon: <FileText size={18} /> },
 ]
 
@@ -99,13 +100,29 @@ const KOBO_GROUPS: KoboGroup[] = [
 export function Spine() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
+  const [expanded, setExpanded] = useState(false)
   const [koboOpen, setKoboOpen] = useState(false)
+  const [pendingCount, setPendingCount] = useState<number>(0)
   const panelRef = useRef<HTMLDivElement>(null)
+  const spineRef = useRef<HTMLElement>(null)
 
   const handleLogout = async () => {
     await logout()
     navigate('/login')
   }
+
+  // Fetch real pending approval count
+  useEffect(() => {
+    let cancelled = false
+    const fetchPending = () => {
+      api.get('/dashboard/kpis/')
+        .then(r => { if (!cancelled) setPendingCount(r.data?.submissions_pending ?? 0) })
+        .catch(() => {})
+    }
+    fetchPending()
+    const interval = setInterval(fetchPending, 30_000)
+    return () => { cancelled = true; clearInterval(interval) }
+  }, [])
 
   // Close kobo panel on outside click
   useEffect(() => {
@@ -119,13 +136,29 @@ export function Spine() {
     return () => document.removeEventListener('mousedown', handler)
   }, [koboOpen])
 
+  // Close expanded spine on outside click
+  useEffect(() => {
+    if (!expanded) return
+    const handler = (e: MouseEvent) => {
+      if (spineRef.current && !spineRef.current.contains(e.target as Node)) {
+        setExpanded(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [expanded])
+
   // Close on Escape
   useEffect(() => {
-    if (!koboOpen) return
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') setKoboOpen(false) }
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (koboOpen) setKoboOpen(false)
+        else if (expanded) setExpanded(false)
+      }
+    }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [koboOpen])
+  }, [koboOpen, expanded])
 
   const initials = user
     ? (user.full_name || user.email)
@@ -136,17 +169,26 @@ export function Spine() {
         .toUpperCase()
     : '?'
 
+  // Build nav with live badge
+  const primaryWithBadge = PRIMARY_NAV.map(item =>
+    item.to === '/approvals' ? { ...item, badge: pendingCount } : item
+  )
+
   return (
-    <aside className="spine">
-      {/* Brand mark */}
-      <NavLink to="/" className="spine-brand" title="Spondon">
+    <aside ref={spineRef} className={`spine ${expanded ? 'spine-expanded' : ''}`}>
+      {/* Brand mark — toggles expand/collapse */}
+      <button
+        className="spine-brand"
+        title={expanded ? 'Collapse menu' : 'Expand menu'}
+        onClick={() => setExpanded(prev => !prev)}
+      >
         <span>S</span>
-      </NavLink>
+      </button>
 
       {/* Primary nav group */}
       <div className="spine-group">
-        {PRIMARY_NAV.map(item => (
-          <SpineItem key={item.to} {...item} />
+        {primaryWithBadge.map(item => (
+          <SpineItem key={item.to} {...item} expanded={expanded} />
         ))}
       </div>
 
@@ -155,7 +197,7 @@ export function Spine() {
       {/* Secondary nav group */}
       <div className="spine-group">
         {SECONDARY_NAV.map(item => (
-          <SpineItem key={item.to} {...item} />
+          <SpineItem key={item.to} {...item} expanded={expanded} />
         ))}
       </div>
 
@@ -170,16 +212,16 @@ export function Spine() {
           onClick={() => setKoboOpen(p => !p)}
         >
           <ClipboardList size={18} />
-          <span className="spine-tip">KoboToolbox Forms</span>
+          {expanded ? <span className="spine-label">Kobo Forms</span> : <span className="spine-tip">KoboToolbox Forms</span>}
         </button>
 
         <button className="spine-item" title="Search">
           <Search size={18} />
-          <span className="spine-tip">Search</span>
+          {expanded ? <span className="spine-label">Search</span> : <span className="spine-tip">Search</span>}
         </button>
         <button className="spine-item" title="Notifications">
           <Bell size={18} />
-          <span className="spine-tip">Notifications</span>
+          {expanded ? <span className="spine-label">Notifications</span> : <span className="spine-tip">Notifications</span>}
         </button>
       </div>
 
@@ -192,17 +234,17 @@ export function Spine() {
             title="Admin Panel"
           >
             <Settings size={18} />
-            <span className="spine-tip">Admin Panel</span>
+            {expanded ? <span className="spine-label">Admin Panel</span> : <span className="spine-tip">Admin Panel</span>}
           </NavLink>
         ) : (
           <button className="spine-item" title="Settings">
             <Settings size={18} />
-            <span className="spine-tip">Settings</span>
+            {expanded ? <span className="spine-label">Settings</span> : <span className="spine-tip">Settings</span>}
           </button>
         )}
         <button className="spine-item" onClick={handleLogout} title="Logout">
           <LogOut size={18} />
-          <span className="spine-tip">Logout</span>
+          {expanded ? <span className="spine-label">Logout</span> : <span className="spine-tip">Logout</span>}
         </button>
         <div className="spine-avatar" title={user?.full_name || user?.email || ''}>
           {initials}
@@ -249,7 +291,7 @@ export function Spine() {
   )
 }
 
-function SpineItem({ to, label, labelBn, icon, badge }: SpineItemDef) {
+function SpineItem({ to, label, labelBn, icon, badge, expanded }: SpineItemDef & { expanded?: boolean }) {
   return (
     <NavLink
       to={to}
@@ -258,9 +300,15 @@ function SpineItem({ to, label, labelBn, icon, badge }: SpineItemDef) {
     >
       {icon}
       {badge != null && badge > 0 && <span className="badge">{badge}</span>}
-      <span className="spine-tip">
-        {label} <small>{labelBn}</small>
-      </span>
+      {expanded ? (
+        <span className="spine-label">
+          {label} <small className="bn" style={{ color: 'var(--muted)', fontSize: 10, marginLeft: 4 }}>{labelBn}</small>
+        </span>
+      ) : (
+        <span className="spine-tip">
+          {label} <small>{labelBn}</small>
+        </span>
+      )}
     </NavLink>
   )
 }
