@@ -15,8 +15,6 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     # Third-party
     'rest_framework',
-    'django_otp',
-    'django_otp.plugins.otp_totp',
     # Local
     'accounts',
     'submissions',
@@ -38,7 +36,6 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django_otp.middleware.OTPMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'accounts.middleware.OrganisationMiddleware',
@@ -106,8 +103,6 @@ REST_FRAMEWORK = {
 LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/login/'
-
-OTP_TOTP_ISSUER = 'Spondon — CIPRB/UNFPA'
 
 # App-level config pulled from env — consumed by individual apps
 FERNET_KEY = os.environ.get('FERNET_KEY', '')

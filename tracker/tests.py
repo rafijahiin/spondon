@@ -1,5 +1,4 @@
 import datetime
-from unittest.mock import patch
 
 from django.test import TestCase
 from rest_framework.test import APIClient
@@ -78,8 +77,7 @@ class MonthlyTargetViewTest(TestCase):
         self.manager = make_user('pm@phd.org', Organisation.PHD, Role.MANAGER)
         self.super_admin = make_user('sa@ciprb.org', Organisation.CIPRB, Role.SUPER_ADMIN)
 
-    @patch('accounts.permissions.is_verified', return_value=True)
-    def test_super_admin_can_create_target(self, _):
+    def test_super_admin_can_create_target(self):
         self.client.force_authenticate(user=self.super_admin)
         resp = self.client.post(TARGETS_URL, {
             'partner': 'PHD',
@@ -99,8 +97,7 @@ class MonthlyTargetViewTest(TestCase):
         }, format='json')
         self.assertEqual(resp.status_code, 403)
 
-    @patch('accounts.permissions.is_verified', return_value=True)
-    def test_invalid_month_rejected(self, _):
+    def test_invalid_month_rejected(self):
         self.client.force_authenticate(user=self.super_admin)
         resp = self.client.post(TARGETS_URL, {
             'partner': 'PHD', 'form_type': FormType.MPDSR,

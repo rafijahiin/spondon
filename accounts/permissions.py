@@ -1,21 +1,19 @@
-from django_otp.middleware import is_verified
 from rest_framework.permissions import BasePermission
 from .models import Role
 
 
 class IsSuperAdmin(BasePermission):
-    """Super admins only — must also have completed TOTP verification."""
+    """Super admins only."""
 
     def has_permission(self, request, view):
-        if not request.user.is_authenticated:
-            return False
-        if request.user.role != Role.SUPER_ADMIN:
-            return False
-        return is_verified(request.user)
+        return (
+            request.user.is_authenticated
+            and request.user.role == Role.SUPER_ADMIN
+        )
 
 
 class IsManager(BasePermission):
-    """Managers and developers. No OTP required."""
+    """Managers and developers."""
 
     def has_permission(self, request, view):
         return (
@@ -25,17 +23,13 @@ class IsManager(BasePermission):
 
 
 class IsSuperAdminOrManager(BasePermission):
-    """
-    Super admins (TOTP-verified) or managers/developers.
-    Most dashboard views use this.
-    """
+    """Super admins, managers, or developers. Used by most dashboard views."""
 
     def has_permission(self, request, view):
-        if not request.user.is_authenticated:
-            return False
-        if request.user.role == Role.SUPER_ADMIN:
-            return is_verified(request.user)
-        return request.user.role in (Role.MANAGER, Role.DEVELOPER)
+        return (
+            request.user.is_authenticated
+            and request.user.role in (Role.SUPER_ADMIN, Role.MANAGER, Role.DEVELOPER)
+        )
 
 
 class IsDeveloper(BasePermission):
@@ -47,19 +41,13 @@ class IsDeveloper(BasePermission):
 
 
 class IsSuperAdminOrDeveloper(BasePermission):
-    """
-    Super admins (TOTP-verified) OR developers (no OTP required).
-    Used for user management and other admin-only actions.
-    """
+    """Super admins or developers. Used for user management and other admin-only actions."""
 
     def has_permission(self, request, view):
-        if not request.user.is_authenticated:
-            return False
-        if request.user.role == Role.DEVELOPER:
-            return True
-        if request.user.role == Role.SUPER_ADMIN:
-            return is_verified(request.user)
-        return False
+        return (
+            request.user.is_authenticated
+            and request.user.role in (Role.SUPER_ADMIN, Role.DEVELOPER)
+        )
 
 
 class OrgFilterMixin:

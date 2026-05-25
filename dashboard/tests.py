@@ -1,5 +1,4 @@
 import datetime
-from unittest.mock import patch
 
 from django.test import TestCase
 from django.utils import timezone
@@ -253,8 +252,7 @@ class PartnerSummaryTest(TestCase):
         resp = self.client.get(f'{BASE_URL}partner-summary/')
         self.assertEqual(resp.status_code, 403)
 
-    @patch('accounts.permissions.is_verified', return_value=True)
-    def test_super_admin_sees_both_partners(self, _):
+    def test_super_admin_sees_both_partners(self):
         make_submission('PHD', FormType.MPDSR, kobo_id='ps1')
         make_submission('Bandhu', FormType.MPDSR, kobo_id='ps2')
         self.client.force_authenticate(user=self.super_admin)

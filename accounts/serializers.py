@@ -69,10 +69,6 @@ class PasswordChangeSerializer(serializers.Serializer):
         return value
 
 
-class TOTPVerifySerializer(serializers.Serializer):
-    token = serializers.CharField(min_length=6, max_length=6)
-
-
 class UserCreateSerializer(serializers.ModelSerializer):
     """Accepts first_name + last_name (combined into full_name) for the admin panel."""
     password = serializers.CharField(write_only=True)

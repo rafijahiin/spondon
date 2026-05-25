@@ -100,12 +100,13 @@ class LoginViewTest(TestCase):
         r = self.client.post(self.url, {'email': 'manager@phd.org'})
         self.assertEqual(r.status_code, 400)
 
-    def test_login_super_admin_requires_2fa(self):
+    def test_login_super_admin_no_2fa(self):
+        """TOTP was removed — super admins log in like everyone else."""
         make_user('admin@ciprb.org', Organisation.CIPRB, Role.SUPER_ADMIN)
         r = self.client.post(self.url, {'email': 'admin@ciprb.org', 'password': 'testpass123'})
         self.assertEqual(r.status_code, 200)
-        self.assertTrue(r.data['requires_2fa'])
-        self.assertFalse(r.data['totp_enrolled'])
+        self.assertFalse(r.data['requires_2fa'])
+        self.assertEqual(r.data['user']['role'], 'super_admin')
 
     def test_login_inactive_user(self):
         self.manager.is_active = False

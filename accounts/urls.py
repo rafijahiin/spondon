@@ -11,8 +11,5 @@ urlpatterns = [
     path('logout/', views.LogoutView.as_view(), name='logout'),
     path('me/', views.MeView.as_view(), name='me'),
     path('password-change/', views.PasswordChangeView.as_view(), name='password-change'),
-    path('totp/enrol/', views.TOTPEnrolView.as_view(), name='totp-enrol'),
-    path('totp/verify/', views.TOTPVerifyView.as_view(), name='totp-verify'),
-    path('totp-verify/', views.TOTPVerifyView.as_view(), name='totp-verify-flat'),
     path('', include(router.urls)),
 ]

@@ -23,8 +23,6 @@ export interface AdminUser extends User {
 }
 
 export interface LoginResponse {
-  requires_2fa: boolean
-  totp_enrolled?: boolean
   user: User
 }
 
