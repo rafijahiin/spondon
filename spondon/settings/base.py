@@ -61,12 +61,60 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'spondon.wsgi.application'
 
-DATABASES = {
-    'default': dj_database_url.config(
-        default=f'sqlite:///{BASE_DIR / "db.sqlite3"}',
-        conn_max_age=600,
+# --- Database resolution ---------------------------------------------------
+# Production (DJANGO_SETTINGS_MODULE=spondon.settings.production) MUST receive
+# a real DATABASE_URL pointing at the attached Postgres plugin. If the env var
+# is missing, empty, or unparseable, we fail loudly at startup naming the
+# missing variable — never silently fall back to SQLite, which would let the
+# app boot against an ephemeral in-container DB and silently lose every write
+# on the next redeploy.
+#
+# Local dev (DJANGO_SETTINGS_MODULE=spondon.settings.development) is allowed
+# to fall back to a SQLite file so contributors can run the project without
+# Postgres installed locally.
+_db_url = os.environ.get('DATABASE_URL', '').strip()
+_settings_module = os.environ.get('DJANGO_SETTINGS_MODULE', '')
+_is_production = _settings_module.endswith('.production')
+
+if _db_url:
+    try:
+        _parsed = dj_database_url.parse(_db_url, conn_max_age=600)
+    except (ValueError, Exception) as exc:
+        raise RuntimeError(
+            f"DATABASE_URL is set but dj_database_url could not parse it "
+            f"(value length={len(_db_url)}, parse error: {exc}). "
+            f"On Railway this usually means the ${{{{...}}}} reference does "
+            f"not resolve to a real Postgres service. Verify the Postgres "
+            f"plugin is provisioned in this project and the reference is "
+            f"${{{{ Postgres.DATABASE_URL }}}} (case-sensitive service name)."
+        ) from exc
+    # Belt-and-braces — if parse() ever returns a dict without ENGINE
+    # (older dj_database_url versions did this on malformed input), still
+    # fail loudly instead of letting Django produce the cryptic
+    # ImproperlyConfigured("Please supply the ENGINE value") later.
+    if not _parsed.get('ENGINE'):
+        raise RuntimeError(
+            f"DATABASE_URL is set but produced a database config with no "
+            f"ENGINE (length={len(_db_url)}). Likely an unresolved Railway "
+            f"reference. Verify the Postgres plugin and the reference name."
+        )
+    DATABASES = {'default': _parsed}
+elif _is_production:
+    raise RuntimeError(
+        'DATABASE_URL is not set in production settings. '
+        'Set it on the Railway web service Variables to '
+        '${{ Postgres.DATABASE_URL }} (or another valid postgres:// URL). '
+        'Refusing to boot with the SQLite fallback because every '
+        'container restart would wipe the database.'
     )
-}
+else:
+    # Dev/local fallback — SQLite file next to manage.py.
+    DATABASES = {
+        'default': dj_database_url.parse(
+            f'sqlite:///{BASE_DIR / "db.sqlite3"}',
+            conn_max_age=600,
+        )
+    }
 
 AUTH_USER_MODEL = 'accounts.User'
 
