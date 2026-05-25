@@ -2,10 +2,28 @@
 python manage.py seed_centers
 
 Seeds ServiceCenter records for both organisations.
-Safe to run multiple times — uses get_or_create on code.
+
+Gating
+------
+This command no-ops unless SEED_DB is truthy in the environment, so it
+will not silently overwrite manager-edited centres on every Railway
+container restart.
+
+Idempotency
+-----------
+Uses get_or_create (NOT update_or_create) so existing rows are left
+untouched. Only missing rows are added. Manager edits to lat/lng/name
+survive.
 """
+import os
+
 from django.core.management.base import BaseCommand
 from programs.models import ServiceCenter
+
+
+def _seed_db_enabled() -> bool:
+    raw = os.environ.get('SEED_DB', '').strip().lower()
+    return raw not in ('', '0', 'false', 'no', 'off')
 
 BONDHU_DICS = [
     {
@@ -92,8 +110,15 @@ class Command(BaseCommand):
     help = 'Seed ServiceCenter records for Bandhu (5 DICs) and PHD (11 brothels + 1 SRHR centre)'
 
     def handle(self, *args, **options):
+        if not _seed_db_enabled():
+            self.stdout.write(
+                'SEED_DB is not set — seed_centers is a no-op. '
+                'Set SEED_DB=1 to enable.'
+            )
+            return
+
         created_count = 0
-        updated_count = 0
+        skipped_count = 0
 
         all_centers = [
             ('Bandhu', c) for c in BONDHU_DICS
@@ -104,7 +129,7 @@ class Command(BaseCommand):
         ]
 
         for org, data in all_centers:
-            obj, created = ServiceCenter.objects.update_or_create(
+            obj, created = ServiceCenter.objects.get_or_create(
                 code=data['code'],
                 defaults={
                     'organisation': org,
@@ -122,11 +147,12 @@ class Command(BaseCommand):
                 created_count += 1
                 self.stdout.write(self.style.SUCCESS(f'  Created: {obj}'))
             else:
-                updated_count += 1
-                self.stdout.write(f'  Updated: {obj}')
+                skipped_count += 1
+                self.stdout.write(f'  Exists (untouched): {obj}')
 
         self.stdout.write(
             self.style.SUCCESS(
-                f'\nDone. Created: {created_count}, Updated: {updated_count}'
+                f'\nseed_centers done. created={created_count} '
+                f'exists_untouched={skipped_count}'
             )
         )
