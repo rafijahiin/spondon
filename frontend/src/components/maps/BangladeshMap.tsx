@@ -92,7 +92,7 @@ export function BangladeshMap({ activityFeed, centers = [], className }: Props) 
   )
 
   return (
-    <div className={className} style={{ minHeight: 320 }}>
+    <div className={className}>
       {error && (
         <div className="flex h-80 items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-400 text-sm">
           Map unavailable — check internet connection
