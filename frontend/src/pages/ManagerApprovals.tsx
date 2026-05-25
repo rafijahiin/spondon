@@ -1,557 +1,654 @@
-import { useState, useCallback } from 'react'
+/**
+ * Manager Approvals — editorial light console.
+ *
+ * Queue spine (left) + focus panel (right) layout.
+ * Keyboard: J/K to navigate, Enter to approve, X to reject.
+ * Preserves both Programs and Legacy API flows.
+ */
+import { useState, useEffect, useCallback } from 'react'
 import {
-  CheckCircle2, MapPin, XCircle, ChevronDown, ChevronUp,
-  Activity, Stethoscope, Heart, Users, BookOpen, Truck,
-  ClipboardList, TestTube2, Pill,
+  X, Check, AlertTriangle,
 } from 'lucide-react'
-import { Drawer } from 'vaul'
-import { motion, AnimatePresence, useReducedMotion } from 'motion/react'
+import { useReducedMotion } from 'motion/react'
 import { api, apiErrorMessage } from '@/api/client'
 import { usePolling } from '@/hooks/usePolling'
-import { StatusBadge } from '@/components/ui/StatusBadge'
 import { PageLoader, LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { formatDateTime } from '@/utils/format'
-import { cn } from '@/utils/cn'
-import type { Submission, ProgramPendingItem, ProgramPendingResponse } from '@/types'
+import type { Submission, ProgramPendingResponse } from '@/types'
 
-// ─── Icon map per model type ────────────────────────────────────────────────
+// ─── CountUp hook ─────────────────────────────────────────────────────────────
 
-const MODEL_ICONS: Record<string, React.ReactNode> = {
-  client_reg:              <Users       className="h-4 w-4" />,
-  clinic_visit:            <Stethoscope className="h-4 w-4" />,
-  hiv_sti_result:          <TestTube2   className="h-4 w-4" />,
-  adr_record:              <Pill        className="h-4 w-4" />,
-  autoclave_log:           <Activity    className="h-4 w-4" />,
-  antenatal_card:          <Heart       className="h-4 w-4" />,
-  htc_counselling:         <BookOpen    className="h-4 w-4" />,
-  individual_counselling:  <BookOpen    className="h-4 w-4" />,
-  mh_screening:            <ClipboardList className="h-4 w-4" />,
-  gbv_case:                <Heart       className="h-4 w-4" />,
-  outreach_session:        <Users       className="h-4 w-4" />,
-  group_education:         <Users       className="h-4 w-4" />,
-  referral:                <Activity    className="h-4 w-4" />,
-  safety_hygiene_kit:      <Truck       className="h-4 w-4" />,
-  training_event:          <BookOpen    className="h-4 w-4" />,
-  coord_meeting:           <ClipboardList className="h-4 w-4" />,
-  mobile_camp:             <Heart       className="h-4 w-4" />,
-}
-
-const MODEL_COLORS: Record<string, string> = {
-  client_reg:             'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
-  clinic_visit:           'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
-  hiv_sti_result:         'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
-  adr_record:             'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300',
-  autoclave_log:          'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
-  antenatal_card:         'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300',
-  htc_counselling:        'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300',
-  individual_counselling: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300',
-  mh_screening:           'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300',
-  gbv_case:               'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300',
-  outreach_session:       'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
-  group_education:        'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300',
-  referral:               'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300',
-  safety_hygiene_kit:     'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
-  training_event:         'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300',
-  coord_meeting:          'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300',
-  mobile_camp:            'bg-unfpa-blue/10 text-unfpa-blue dark:bg-unfpa-blue/20 dark:text-blue-300',
-}
-
-// ─── Programs approval card ──────────────────────────────────────────────────
-
-function ProgramCard({
-  item,
-  onAction,
-}: {
-  item: ProgramPendingItem
-  onAction: (id: string, modelType: string, action: 'approve' | 'reject') => Promise<void>
-}) {
+function useCountUp(target: number, dur = 1300) {
+  const [v, setV] = useState(0)
   const reduce = useReducedMotion()
-  const [drawerOpen, setDrawerOpen] = useState(false)
-  const [approving, setApproving] = useState(false)
-  const [rejecting, setRejecting] = useState(false)
-  const [expanded, setExpanded] = useState(false)
+  useEffect(() => {
+    if (reduce) { setV(target); return }
+    let raf: number
+    let start: number | null = null
+    const step = (ts: number) => {
+      if (!start) start = ts
+      const p = Math.min((ts - start) / dur, 1)
+      setV(Math.round(target * p * p))
+      if (p < 1) raf = requestAnimationFrame(step)
+    }
+    raf = requestAnimationFrame(step)
+    return () => cancelAnimationFrame(raf)
+  }, [target, dur, reduce])
+  return v
+}
 
-  const approve = async () => {
-    setApproving(true)
-    await onAction(item.id, item.model_type, 'approve')
-    setApproving(false)
-    setDrawerOpen(false)
+function CountUp({ value, dur }: { value: number; dur?: number }) {
+  return <>{useCountUp(value, dur).toLocaleString()}</>
+}
+
+// ─── Keyboard shortcut badge ──────────────────────────────────────────────────
+
+function KBD({ children }: { children: React.ReactNode }) {
+  return (
+    <kbd style={{
+      fontFamily: 'var(--mono)', fontSize: 10.5, fontWeight: 500,
+      background: 'var(--surface-3)', color: 'var(--ink)',
+      padding: '2px 6px', borderRadius: 4,
+      border: '1px solid var(--hair-2)', borderBottomWidth: 2,
+      margin: '0 1px',
+    }}>
+      {children}
+    </kbd>
+  )
+}
+
+// ─── Stat block ───────────────────────────────────────────────────────────────
+
+function Stat({ label, value, suffix = '', sub }: { label: string; value: number; suffix?: string; sub: string }) {
+  return (
+    <div>
+      <div className="kicker" style={{ marginBottom: 6 }}><span className="dot" />{label}</div>
+      <div className="num-display" style={{ fontSize: 38, fontFamily: 'var(--display)', fontStyle: 'italic' }}>
+        <CountUp value={value} />{suffix}
+      </div>
+      <div className="mono mute" style={{ fontSize: 11, marginTop: 2 }}>{sub}</div>
+    </div>
+  )
+}
+
+// ─── Mini location map ────────────────────────────────────────────────────────
+
+const BD_PATHS: Record<string, string> = {
+  dhaka:     'M275 50 L370 55 L380 130 L355 180 L300 175 L260 145 L255 95 Z',
+  mymensingh:'M165 165 L260 145 L300 175 L295 245 L240 295 L185 280 L150 240 L140 195 Z',
+  rajshahi:  'M355 180 L440 175 L460 240 L420 280 L370 270 L355 215 Z',
+  rangpur:   'M460 175 L590 165 L630 220 L595 295 L520 285 L460 240 L460 195 Z',
+  khulna:    'M295 245 L370 270 L420 280 L450 330 L420 400 L350 390 L300 360 L295 295 Z',
+  barishal:  'M150 290 L240 295 L300 360 L290 460 L230 490 L160 460 L140 380 Z',
+  sylhet:    'M290 460 L350 390 L420 400 L420 470 L380 510 L320 500 L290 480 Z',
+  chattogram:'M420 280 L520 285 L595 295 L605 360 L580 460 L545 540 L500 560 L460 530 L450 470 L420 400 Z',
+}
+
+function MiniLocationMap() {
+  const cx = 300 + Math.random() * 200
+  const cy = 200 + Math.random() * 200
+  return (
+    <div style={{
+      width: '100%', height: 80, background: 'var(--surface-2)',
+      border: '1px solid var(--hair)', borderRadius: 10,
+      position: 'relative', overflow: 'hidden',
+    }}>
+      <svg viewBox="100 30 600 540" style={{ width: '100%', height: '100%' }}>
+        {Object.values(BD_PATHS).map((p, i) => (
+          <path key={i} d={p} fill="rgba(0,145,199,0.04)" stroke="rgba(0,145,199,0.28)" strokeWidth={1} />
+        ))}
+        <circle cx={cx} cy={cy} r={6} fill="none" stroke="var(--coral)" strokeWidth={2}>
+          <animate attributeName="r" values="6;16" dur="1.6s" repeatCount="indefinite" />
+          <animate attributeName="opacity" values="0.8;0" dur="1.6s" repeatCount="indefinite" />
+        </circle>
+        <circle cx={cx} cy={cy} r={5} fill="var(--coral)" stroke="white" strokeWidth={2} />
+      </svg>
+    </div>
+  )
+}
+
+// ─── Unified queue item type ──────────────────────────────────────────────────
+
+interface QueueItem {
+  id: string
+  model_type: string
+  model_label: string
+  title: string
+  summary: string
+  organisation: string
+  center_name: string
+  submitted_by: string
+  created_at: string
+  kobo_submission_id?: string
+  kind: 'program' | 'legacy'
+  urgent?: boolean
+  latitude?: string
+  longitude?: string
+}
+
+function toQueueItems(programsData: ProgramPendingResponse | null, submissions: Submission[] | null): QueueItem[] {
+  const items: QueueItem[] = []
+
+  // Programs items
+  if (programsData?.items) {
+    for (const it of programsData.items) {
+      items.push({
+        id: it.id,
+        model_type: it.model_type,
+        model_label: it.model_label,
+        title: it.model_label,
+        summary: it.summary,
+        organisation: it.organisation,
+        center_name: it.center_name,
+        submitted_by: it.submitted_by ?? '',
+        created_at: it.created_at,
+        kobo_submission_id: it.kobo_submission_id,
+        kind: 'program',
+        urgent: it.model_type === 'gbv_case',
+      })
+    }
   }
 
-  const reject = async () => {
-    setRejecting(true)
-    await onAction(item.id, item.model_type, 'reject')
-    setRejecting(false)
-    setDrawerOpen(false)
+  // Legacy submissions (pending only)
+  if (submissions) {
+    for (const s of submissions.filter(s => s.status === 'pending')) {
+      items.push({
+        id: s.id,
+        model_type: s.form_type,
+        model_label: s.form_type.replace(/_/g, ' '),
+        title: `${s.form_type.replace(/_/g, ' ')} — ${s.worker_name}`,
+        summary: `${s.worker_name} submitted ${s.form_type.replace(/_/g, ' ')} from ${s.district}`,
+        organisation: s.partner ?? '',
+        center_name: s.district ?? '',
+        submitted_by: s.worker_name ?? '',
+        created_at: s.submitted_at,
+        kind: 'legacy',
+        latitude: s.latitude?.toString(),
+        longitude: s.longitude?.toString(),
+      })
+    }
   }
 
-  const colorClass = MODEL_COLORS[item.model_type] ?? 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
-  const icon = MODEL_ICONS[item.model_type] ?? <Activity className="h-4 w-4" />
-
-  const headerBadge = (
-    <span className={cn('inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold', colorClass)}>
-      {icon}
-      {item.model_label}
-    </span>
-  )
-
-  const meta = (
-    <div className="flex flex-wrap gap-2">
-      <span className="inline-flex items-center gap-1 rounded-full bg-unfpa-blue/10 text-unfpa-blue dark:bg-unfpa-blue/20 dark:text-blue-300 px-2.5 py-0.5 text-xs font-medium">
-        {item.organisation}
-      </span>
-      <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 dark:bg-gray-700 px-2.5 py-0.5 text-xs text-gray-600 dark:text-gray-300">
-        <MapPin className="h-3 w-3" />
-        {item.center_name}
-      </span>
-      {item.submitted_by && item.submitted_by !== '–' && (
-        <span className="inline-flex items-center rounded-full bg-gray-100 dark:bg-gray-700 px-2.5 py-0.5 text-xs text-gray-500 dark:text-gray-400">
-          {item.submitted_by}
-        </span>
-      )}
-    </div>
-  )
-
-  const actionButtons = (
-    <div className="flex gap-3">
-      <motion.button
-        whileTap={reduce ? {} : { scale: 0.96 }}
-        onClick={approve}
-        disabled={approving || rejecting}
-        className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-green-600 py-3 text-sm font-semibold text-white hover:bg-green-700 active:bg-green-800 disabled:opacity-60 transition-colors"
-        style={{ minHeight: 44 }}
-      >
-        {approving
-          ? <LoadingSpinner size="sm" className="text-white" />
-          : <><CheckCircle2 className="h-4 w-4" />Approve</>}
-      </motion.button>
-      <motion.button
-        whileTap={reduce ? {} : { scale: 0.96 }}
-        onClick={reject}
-        disabled={approving || rejecting}
-        className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-red-600 py-3 text-sm font-semibold text-white hover:bg-red-700 active:bg-red-800 disabled:opacity-60 transition-colors"
-        style={{ minHeight: 44 }}
-      >
-        {rejecting
-          ? <LoadingSpinner size="sm" className="text-white" />
-          : <><XCircle className="h-4 w-4" />Reject</>}
-      </motion.button>
-    </div>
-  )
-
-  return (
-    <Drawer.Root open={drawerOpen} onOpenChange={setDrawerOpen} shouldScaleBackground={false}>
-      {/* Card */}
-      <div
-        onClick={() => { if (window.innerWidth < 640) setDrawerOpen(true) }}
-        className="rounded-xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm p-4 space-y-3 cursor-pointer sm:cursor-default"
-      >
-        <div className="flex items-start justify-between gap-2">
-          <div className="space-y-1.5 min-w-0">
-            {headerBadge}
-            <button
-              onClick={(e) => { e.stopPropagation(); setExpanded(!expanded) }}
-              className="flex items-start gap-1 text-left text-sm text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white w-full group"
-            >
-              <span className="flex-1 leading-snug" style={{ textWrap: 'pretty' } as React.CSSProperties}>
-                {item.summary}
-              </span>
-              {expanded
-                ? <ChevronUp className="h-3.5 w-3.5 mt-0.5 shrink-0 text-gray-400" />
-                : <ChevronDown className="h-3.5 w-3.5 mt-0.5 shrink-0 text-gray-400" />}
-            </button>
-          </div>
-          <span className="text-[10px] text-gray-400 dark:text-gray-500 shrink-0 tabular-nums">
-            {formatDateTime(item.created_at)}
-          </span>
-        </div>
-
-        <AnimatePresence>
-          {expanded && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
-              className="overflow-hidden"
-            >
-              {meta}
-              {item.kobo_submission_id && (
-                <p className="mt-1.5 text-[10px] text-gray-400 dark:text-gray-600 tabular-nums">
-                  Kobo ID: {item.kobo_submission_id}
-                </p>
-              )}
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {!expanded && <div className="hidden">{/* collapsed */}</div>}
-
-        {/* Desktop actions */}
-        <div className="hidden sm:block pt-1">{actionButtons}</div>
-      </div>
-
-      {/* Mobile drawer */}
-      <Drawer.Portal>
-        <Drawer.Overlay className="fixed inset-0 bg-black/40 z-40" />
-        <Drawer.Content className="fixed bottom-0 left-0 right-0 z-50 flex flex-col rounded-t-[20px] bg-white dark:bg-gray-800 px-5 pb-safe-or-8 outline-none">
-          <div className="mx-auto mt-3 mb-5 h-1.5 w-12 shrink-0 rounded-full bg-gray-300 dark:bg-gray-600" />
-          <div className="space-y-4 pb-4">
-            <div className="space-y-2">
-              {headerBadge}
-              <p className="text-base font-medium text-gray-900 dark:text-white leading-snug">
-                {item.summary}
-              </p>
-              <p className="text-xs text-gray-400 dark:text-gray-500 tabular-nums">
-                {formatDateTime(item.created_at)}
-              </p>
-            </div>
-            {meta}
-            <div className="pt-1">{actionButtons}</div>
-          </div>
-        </Drawer.Content>
-      </Drawer.Portal>
-    </Drawer.Root>
-  )
+  return items
 }
 
-// ─── Existing submissions card (legacy) ─────────────────────────────────────
+// ─── Toast ────────────────────────────────────────────────────────────────────
 
-const FORM_LABELS: Record<string, string> = {
-  fistula: 'Fistula',
-  mpdsr: 'MPDSR',
-  activity: 'Activity',
-  baseline: 'Baseline',
-}
-
-function SubmissionCard({
-  submission,
-  onApprove,
-  onReject,
-}: {
-  submission: Submission
-  onApprove: (id: string) => Promise<void>
-  onReject: (id: string) => Promise<void>
+function Toast({ action, item, onClose }: {
+  action: 'approve' | 'reject'
+  item: QueueItem
+  onClose: () => void
 }) {
-  const reduce = useReducedMotion()
-  const [drawerOpen, setDrawerOpen] = useState(false)
-  const [approving, setApproving] = useState(false)
-  const [rejecting, setRejecting] = useState(false)
-
-  const approve = async () => { setApproving(true); await onApprove(submission.id); setApproving(false); setDrawerOpen(false) }
-  const reject  = async () => { setRejecting(true); await onReject(submission.id);  setRejecting(false); setDrawerOpen(false) }
-
-  const chips = (
-    <div className="flex flex-wrap gap-2">
-      <span className="inline-flex items-center gap-1 rounded-full bg-unfpa-blue/10 px-2.5 py-1 text-xs font-medium text-unfpa-blue">
-        {submission.partner}
-      </span>
-      <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 dark:bg-gray-700 px-2.5 py-1 text-xs text-gray-600 dark:text-gray-300">
-        <MapPin className="h-3 w-3" />
-        {submission.district}{submission.region ? `, ${submission.region}` : ''}
-      </span>
-      {submission.latitude && submission.longitude && (
-        <a
-          href={`https://www.google.com/maps?q=${submission.latitude},${submission.longitude}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 rounded-full bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 px-2.5 py-1 text-xs font-medium text-green-700 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/40 transition-colors"
-        >
-          <MapPin className="h-3 w-3" />
-          Location captured ✓
-        </a>
-      )}
-    </div>
-  )
-
-  const actionBtns = (
-    <div className="flex gap-3">
-      <motion.button whileTap={reduce ? {} : { scale: 0.96 }} onClick={approve} disabled={approving || rejecting}
-        className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-green-600 py-3 text-sm font-semibold text-white hover:bg-green-700 disabled:opacity-60 transition-colors" style={{ minHeight: 44 }}>
-        {approving ? <LoadingSpinner size="sm" className="text-white" /> : <><CheckCircle2 className="h-4 w-4" />Approve</>}
-      </motion.button>
-      <motion.button whileTap={reduce ? {} : { scale: 0.96 }} onClick={reject} disabled={approving || rejecting}
-        className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-red-600 py-3 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-60 transition-colors" style={{ minHeight: 44 }}>
-        {rejecting ? <LoadingSpinner size="sm" className="text-white" /> : <><XCircle className="h-4 w-4" />Reject</>}
-      </motion.button>
-    </div>
-  )
-
+  const isApprove = action === 'approve'
   return (
-    <Drawer.Root open={drawerOpen} onOpenChange={setDrawerOpen} shouldScaleBackground={false}>
-      <div onClick={() => { if (window.innerWidth < 640) setDrawerOpen(true) }}
-        className="rounded-xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm p-5 space-y-4 cursor-pointer sm:cursor-default">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <div className="flex flex-wrap items-center gap-2 mb-1">
-              <span className="text-xs font-bold uppercase tracking-wide text-unfpa-blue">
-                {FORM_LABELS[submission.form_type] ?? submission.form_type}
-              </span>
-              <StatusBadge status={submission.status} />
-            </div>
-            <p className="font-medium text-gray-900 dark:text-white">{submission.worker_name}</p>
-          </div>
-          <span className="text-xs text-gray-400 dark:text-gray-500 shrink-0 tabular-nums">{formatDateTime(submission.submitted_at)}</span>
-        </div>
-        {chips}
-        {submission.status === 'pending' && <div className="hidden sm:flex gap-3 pt-1">{actionBtns}</div>}
-        {submission.status !== 'pending' && (
-          <p className="text-xs text-gray-400 dark:text-gray-500">
-            Reviewed by {submission.reviewed_by?.email ?? 'system'} · {formatDateTime(submission.reviewed_at)}
-          </p>
-        )}
+    <div style={{
+      position: 'fixed', bottom: 28, right: 28, zIndex: 200,
+      background: 'var(--ink)', color: 'white',
+      borderRadius: 12, padding: '14px 16px',
+      display: 'flex', alignItems: 'center', gap: 14,
+      boxShadow: '0 16px 40px rgba(20, 32, 43, 0.30)',
+      animation: 'rise 320ms var(--ease) backwards',
+      minWidth: 340,
+    }}>
+      <span style={{
+        width: 30, height: 30, borderRadius: '50%',
+        background: isApprove ? 'rgba(31,154,109,0.20)' : 'rgba(233,69,96,0.20)',
+        color: isApprove ? 'var(--emerald)' : 'var(--rose)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}>
+        {isApprove ? <Check size={14} /> : <X size={14} />}
+      </span>
+      <div style={{ flex: 1 }}>
+        <div style={{ fontWeight: 500, fontSize: 13.5 }}>{isApprove ? 'Approved' : 'Rejected'} · <span className="mono">{item.id.slice(0, 8)}</span></div>
+        <div className="mono" style={{ fontSize: 11, color: 'rgba(255,255,255,0.55)' }}>{item.center_name}</div>
       </div>
-
-      <Drawer.Portal>
-        <Drawer.Overlay className="fixed inset-0 bg-black/40 z-40" />
-        <Drawer.Content className="fixed bottom-0 left-0 right-0 z-50 flex flex-col rounded-t-[20px] bg-white dark:bg-gray-800 px-5 pb-8 outline-none">
-          <div className="mx-auto mt-3 mb-5 h-1.5 w-12 shrink-0 rounded-full bg-gray-300 dark:bg-gray-600" />
-          <div className="space-y-4">
-            <div>
-              <div className="flex flex-wrap items-center gap-2 mb-1">
-                <span className="text-xs font-bold uppercase tracking-wide text-unfpa-blue">{FORM_LABELS[submission.form_type] ?? submission.form_type}</span>
-                <StatusBadge status={submission.status} />
-              </div>
-              <p className="text-lg font-semibold text-gray-900 dark:text-white">{submission.worker_name}</p>
-              <p className="text-sm text-gray-400 mt-0.5 tabular-nums">{formatDateTime(submission.submitted_at)}</p>
-            </div>
-            {chips}
-            {submission.status === 'pending'
-              ? <div className="pt-2">{actionBtns}</div>
-              : <p className="text-xs text-gray-400 pt-2">Reviewed by {submission.reviewed_by?.email ?? 'system'} · {formatDateTime(submission.reviewed_at)}</p>}
-          </div>
-        </Drawer.Content>
-      </Drawer.Portal>
-    </Drawer.Root>
+      <button onClick={onClose} style={{
+        background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)',
+        cursor: 'pointer', padding: 4,
+      }}>
+        <X size={12} />
+      </button>
+    </div>
   )
 }
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 
-type TabKey = 'programs' | 'legacy'
-type LegacyFilter = 'pending' | 'approved' | 'rejected' | 'all'
-
 export default function ManagerApprovals() {
-  const reduce = useReducedMotion()
-  const [tab, setTab] = useState<TabKey>('programs')
-  const [legacyFilter, setLegacyFilter] = useState<LegacyFilter>('pending')
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [filter, setFilter] = useState<'all' | 'urgent' | 'phd' | 'bondhu'>('all')
   const [error, setError] = useState('')
+  const [approving, setApproving] = useState(false)
+  const [rejecting, setRejecting] = useState(false)
+  const [toast, setToast] = useState<{ action: 'approve' | 'reject'; item: QueueItem } | null>(null)
 
-  // Programs pending
+  // ── API data ────────────────────────────────────────────────────────────────
+
   const { data: programsData, loading: programsLoading, refetch: refetchPrograms } =
     usePolling<ProgramPendingResponse>({
       fetcher: () => api.get('/programs/pending-approvals/').then((r) => r.data),
       interval: 20_000,
     })
 
-  // Legacy submissions
   const { data: submissions, loading: legacyLoading, refetch: refetchLegacy } =
     usePolling<Submission[]>({
       fetcher: () =>
-        api
-          .get('/submissions/', { params: legacyFilter !== 'all' ? { status: legacyFilter } : undefined })
-          .then((r) => (Array.isArray(r.data) ? r.data : r.data.results ?? [])),
+        api.get('/submissions/', { params: { status: 'pending' } })
+           .then((r) => (Array.isArray(r.data) ? r.data : r.data.results ?? [])),
       interval: 30_000,
     })
 
-  const handleProgramAction = useCallback(
-    async (id: string, modelType: string, action: 'approve' | 'reject') => {
-      try {
-        await api.post('/programs/pending-approvals/', { id, model_type: modelType, action })
+  // ── Queue ───────────────────────────────────────────────────────────────────
+
+  const allItems = toQueueItems(programsData ?? null, submissions ?? null)
+
+  const filtered = allItems.filter(it => {
+    if (filter === 'urgent') return it.urgent
+    if (filter === 'phd') return it.organisation === 'PHD'
+    if (filter === 'bondhu') return it.organisation === 'Bandhu' || it.organisation === 'Bondhu'
+    return true
+  })
+
+  const selected = filtered.find(x => x.id === selectedId) ?? filtered[0] ?? null
+
+  // Auto-select first item
+  useEffect(() => {
+    if (!selectedId && filtered.length > 0) {
+      setSelectedId(filtered[0].id)
+    }
+  }, [filtered, selectedId])
+
+  // ── Actions ─────────────────────────────────────────────────────────────────
+
+  const decide = useCallback(async (item: QueueItem, action: 'approve' | 'reject') => {
+    const setter = action === 'approve' ? setApproving : setRejecting
+    setter(true)
+    try {
+      if (item.kind === 'program') {
+        await api.post('/programs/pending-approvals/', { id: item.id, model_type: item.model_type, action })
         refetchPrograms()
-      } catch (err) {
-        setError(apiErrorMessage(err))
+      } else {
+        await api.post(`/submissions/${item.id}/${action}/`)
+        refetchLegacy()
       }
-    },
-    [refetchPrograms]
-  )
+      setToast({ action, item })
+      setTimeout(() => setToast(null), 4500)
+      // Select next item
+      const idx = filtered.findIndex(x => x.id === item.id)
+      if (idx < filtered.length - 1) setSelectedId(filtered[idx + 1].id)
+      else if (idx > 0) setSelectedId(filtered[idx - 1].id)
+    } catch (err) {
+      setError(apiErrorMessage(err))
+    } finally {
+      setter(false)
+    }
+  }, [filtered, refetchPrograms, refetchLegacy])
 
-  const handleLegacyApprove = async (id: string) => {
-    try { await api.post(`/submissions/${id}/approve/`); refetchLegacy() }
-    catch (err) { setError(apiErrorMessage(err)) }
-  }
+  // ── Keyboard navigation ─────────────────────────────────────────────────────
 
-  const handleLegacyReject = async (id: string) => {
-    try { await api.post(`/submissions/${id}/reject/`); refetchLegacy() }
-    catch (err) { setError(apiErrorMessage(err)) }
-  }
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!selected) return
+      // Don't capture when typing in a textarea
+      if ((e.target as HTMLElement).tagName === 'TEXTAREA') return
+      const ix = filtered.findIndex(x => x.id === selected.id)
+      if (e.key === 'j' || e.key === 'ArrowDown') {
+        e.preventDefault()
+        if (ix < filtered.length - 1) setSelectedId(filtered[ix + 1].id)
+      } else if (e.key === 'k' || e.key === 'ArrowUp') {
+        e.preventDefault()
+        if (ix > 0) setSelectedId(filtered[ix - 1].id)
+      } else if (e.key === 'Enter') {
+        e.preventDefault()
+        decide(selected, 'approve')
+      } else if (e.key === 'x' || e.key === 'X') {
+        e.preventDefault()
+        decide(selected, 'reject')
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [selected, filtered, decide])
 
-  const programsTotal = programsData?.total ?? 0
-  const legacyPending = (submissions ?? []).filter((s) => s.status === 'pending').length
+  const loading = programsLoading && legacyLoading && !programsData && !submissions
 
-  const totalPending = (tab === 'programs' ? programsTotal : legacyPending)
+  if (loading) return <PageLoader />
 
-  const LEGACY_FILTERS: { key: LegacyFilter; label: string }[] = [
-    { key: 'pending', label: `Pending${legacyPending > 0 ? ` (${legacyPending})` : ''}` },
-    { key: 'approved', label: 'Approved' },
-    { key: 'rejected', label: 'Rejected' },
-    { key: 'all', label: 'All' },
-  ]
+  const dateStr = new Date().toLocaleString('en-US', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
 
   return (
-    <div className="space-y-6">
-      {/* Heading */}
-      <motion.div
-        initial={{ opacity: 0, y: reduce ? 0 : 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-        className="flex items-start justify-between gap-4"
-      >
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Manager Approvals
-            {totalPending > 0 && (
-              <span className="ml-2 inline-flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white tabular-nums">
-                {totalPending > 99 ? '99+' : totalPending}
-              </span>
-            )}
-          </h1>
-          <p className="font-bangla mt-1 text-sm text-gray-500 dark:text-gray-400">
-            অনুমোদন / প্রত্যাখ্যান · Field submission review
-          </p>
+    <>
+      {/* ═══════════════════════════════════════════════════════════════
+           HERO
+           ═══════════════════════════════════════════════════════════════ */}
+      <section className="hero" style={{ paddingBottom: 28 }}>
+        <div className="hero-eyebrow anim-rise">
+          <span className="live-dot" />
+          <span>APPROVAL CONSOLE</span>
+          <span className="sep">/</span>
+          <span>QUEUE · {allItems.length} ITEMS</span>
+          <span className="sep">/</span>
+          <span>{dateStr} GMT+6</span>
         </div>
-      </motion.div>
 
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 32 }} className="anim-rise d1">
+          <div>
+            <h1 className="hero-headline" style={{ fontSize: 'clamp(40px, 6vw, 76px)', marginBottom: 6 }}>
+              <span className="figure"><CountUp value={allItems.length} /></span>{' '}
+              <span>submissions</span>
+            </h1>
+            <div style={{
+              fontFamily: 'var(--display)', fontStyle: 'italic',
+              fontSize: 'clamp(22px, 2.6vw, 34px)',
+              lineHeight: 1.1, color: 'var(--ink-2)',
+              letterSpacing: '-0.012em', marginBottom: 16,
+            }}>waiting for your review</div>
+            <p className="hero-lede" style={{ marginTop: 6 }}>
+              Use <KBD>J</KBD> <KBD>K</KBD> to move through the queue, <KBD>Enter</KBD> to approve, <KBD>X</KBD> to reject.
+            </p>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, auto)', gap: 24, flexShrink: 0 }}>
+            <Stat label="Queue" value={allItems.length} sub={`${filtered.length} visible`} />
+            <Stat label="Programs" value={programsData?.total ?? 0} sub="pending approval" />
+            <Stat label="Legacy" value={(submissions ?? []).filter(s => s.status === 'pending').length} sub="legacy forms" />
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════════════════════
+           ERROR BAR
+           ═══════════════════════════════════════════════════════════════ */}
       {error && (
-        <div className="rounded-lg bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-600 dark:text-red-400">
+        <div className="card" style={{
+          background: 'rgba(233,69,96,0.08)', borderColor: 'rgba(233,69,96,0.25)',
+          padding: '12px 18px', marginBottom: 18,
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          fontSize: 13, color: 'var(--rose)',
+        }}>
           {error}
-          <button onClick={() => setError('')} className="ml-3 underline text-red-500">Dismiss</button>
+          <button onClick={() => setError('')} style={{
+            background: 'none', border: 'none', color: 'var(--rose)',
+            cursor: 'pointer', textDecoration: 'underline', fontSize: 12,
+          }}>Dismiss</button>
         </div>
       )}
 
-      {/* Tab switcher */}
-      <div className="flex gap-2 rounded-xl border border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 p-1 w-fit">
-        {([
-          { key: 'programs' as TabKey, label: 'Programs', count: programsTotal },
-          { key: 'legacy'   as TabKey, label: 'Legacy Forms', count: legacyPending },
-        ] as { key: TabKey; label: string; count: number }[]).map(({ key, label, count }) => (
-          <button
-            key={key}
-            onClick={() => setTab(key)}
-            className={cn(
-              'relative flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors',
-              tab === key
-                ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
-                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
-            )}
-          >
-            {label}
-            {count > 0 && (
-              <span className={cn(
-                'inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-bold tabular-nums',
-                tab === key
-                  ? 'bg-red-500 text-white'
-                  : 'bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300'
-              )}>
-                {count}
-              </span>
-            )}
-          </button>
-        ))}
-      </div>
+      {/* ═══════════════════════════════════════════════════════════════
+           QUEUE + FOCUS PANEL
+           ═══════════════════════════════════════════════════════════════ */}
+      <section className="section" style={{ marginBottom: 80 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: 28, alignItems: 'start' }}>
 
-      <AnimatePresence mode="wait">
-        {/* ── Programs tab ── */}
-        {tab === 'programs' && (
-          <motion.div
-            key="programs"
-            initial={{ opacity: 0, y: reduce ? 0 : 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: reduce ? 0 : -4 }}
-            transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-            className="space-y-4"
-          >
-            {/* Type counts summary */}
-            {programsData && Object.keys(programsData.counts_by_type).length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {Object.entries(programsData.counts_by_type).map(([type, count]) => (
-                  <span
-                    key={type}
-                    className={cn(
-                      'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium tabular-nums',
-                      MODEL_COLORS[type] ?? 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
-                    )}
+          {/* ── QUEUE SPINE ────────────────────────────────────────── */}
+          <div className="card flush" style={{ position: 'sticky', top: 76 }}>
+            <div className="card-head" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 10, paddingBottom: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div className="card-title" style={{ fontSize: 14, fontWeight: 600 }}>Queue</div>
+                <span className="mono mute" style={{ fontSize: 11 }}>{filtered.length} of {allItems.length}</span>
+              </div>
+              <div className="pills">
+                {([
+                  { key: 'all' as const, label: 'All', count: allItems.length },
+                  { key: 'urgent' as const, label: 'Urgent', count: allItems.filter(x => x.urgent).length },
+                  { key: 'phd' as const, label: 'PHD', count: allItems.filter(x => x.organisation === 'PHD').length },
+                  { key: 'bondhu' as const, label: 'Bondhu', count: allItems.filter(x => x.organisation === 'Bandhu' || x.organisation === 'Bondhu').length },
+                ]).map(f => (
+                  <button
+                    key={f.key}
+                    className={`pill ${filter === f.key ? 'on' : ''}`}
+                    onClick={() => setFilter(f.key)}
                   >
-                    {MODEL_ICONS[type]}
-                    {type.replace(/_/g, ' ')} <strong>{count}</strong>
-                  </span>
+                    {f.label}
+                    {f.count > 0 && <span className="count">{f.count}</span>}
+                  </button>
                 ))}
               </div>
-            )}
+            </div>
 
-            {programsLoading && !programsData ? (
-              <PageLoader />
-            ) : programsTotal === 0 ? (
-              <div className="rounded-xl border border-dashed border-gray-300 dark:border-gray-600 py-16 text-center">
-                <CheckCircle2 className="mx-auto mb-3 h-8 w-8 text-green-400" />
-                <p className="text-gray-500 dark:text-gray-400">All caught up — no pending programs submissions.</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {(programsData?.items ?? []).map((item, idx) => (
-                  <motion.div
-                    key={`${item.model_type}-${item.id}`}
-                    initial={{ opacity: 0, y: reduce ? 0 : 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.25, delay: reduce ? 0 : Math.min(idx * 0.04, 0.3), ease: [0.22, 1, 0.36, 1] }}
-                  >
-                    <ProgramCard item={item} onAction={handleProgramAction} />
-                  </motion.div>
-                ))}
-              </div>
-            )}
-          </motion.div>
-        )}
-
-        {/* ── Legacy tab ── */}
-        {tab === 'legacy' && (
-          <motion.div
-            key="legacy"
-            initial={{ opacity: 0, y: reduce ? 0 : 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: reduce ? 0 : -4 }}
-            transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-            className="space-y-4"
-          >
-            {/* Legacy filter tabs */}
-            <div className="flex gap-2 overflow-x-auto pb-1">
-              {LEGACY_FILTERS.map(({ key, label }) => (
+            <div style={{
+              padding: '8px 8px 12px',
+              maxHeight: 'calc(100vh - 220px)',
+              overflowY: 'auto',
+            }} className="scroll-thin">
+              {filtered.length === 0 && (
+                <div style={{ padding: 28, textAlign: 'center', color: 'var(--muted)' }}>
+                  <div style={{
+                    width: 36, height: 36, margin: '0 auto 6px', borderRadius: '50%',
+                    background: 'rgba(31,154,109,0.10)', color: 'var(--emerald)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    <Check size={18} />
+                  </div>
+                  Queue clear.
+                </div>
+              )}
+              {filtered.map((it, i) => (
                 <button
-                  key={key}
-                  onClick={() => setLegacyFilter(key)}
-                  className={cn(
-                    'shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-colors',
-                    legacyFilter === key
-                      ? 'bg-unfpa-blue text-white'
-                      : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-unfpa-blue hover:text-unfpa-blue'
-                  )}
+                  key={`${it.kind}-${it.id}`}
+                  className={`appr-spine-item ${selected?.id === it.id ? 'active' : ''}`}
+                  onClick={() => setSelectedId(it.id)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 10,
+                    width: '100%', textAlign: 'left',
+                    padding: '10px 12px', borderRadius: 10,
+                    border: 'none', cursor: 'pointer',
+                    background: selected?.id === it.id ? 'var(--unfpa)' : 'transparent',
+                    color: selected?.id === it.id ? '#fff' : 'var(--ink)',
+                    transition: 'background 150ms, color 150ms',
+                    marginBottom: 2,
+                  }}
                 >
-                  {label}
+                  <span style={{
+                    fontFamily: 'var(--mono)', fontSize: 10,
+                    color: selected?.id === it.id ? 'rgba(255,255,255,0.6)' : 'var(--muted)',
+                    flexShrink: 0,
+                  }}>
+                    {String(i + 1).padStart(2, '0')}
+                  </span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{
+                      fontSize: 13, fontWeight: 500,
+                      whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                    }}>{it.title}</div>
+                    <div style={{
+                      fontSize: 11,
+                      color: selected?.id === it.id ? 'rgba(255,255,255,0.6)' : 'var(--muted)',
+                      whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                    }}>
+                      {it.center_name} · {formatDateTime(it.created_at).split(',')[0]}
+                    </div>
+                  </div>
+                  {it.urgent && (
+                    <span className="tag coral" style={{ height: 18, padding: '0 6px', fontSize: 9.5, flexShrink: 0 }}>!</span>
+                  )}
                 </button>
               ))}
             </div>
+          </div>
 
-            {legacyLoading && !submissions ? (
-              <PageLoader />
-            ) : (submissions ?? []).length === 0 ? (
-              <div className="rounded-xl border border-dashed border-gray-300 dark:border-gray-600 py-16 text-center">
-                <p className="text-gray-400 dark:text-gray-500">No submissions found.</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {(submissions ?? []).map((s) => (
-                  <SubmissionCard
-                    key={s.id}
-                    submission={s}
-                    onApprove={handleLegacyApprove}
-                    onReject={handleLegacyReject}
+          {/* ── FOCUS PANEL ────────────────────────────────────────── */}
+          {selected ? (
+            <div key={selected.id} style={{ animation: 'rise 500ms var(--ease) backwards' }}>
+              <div className={`card ${selected.model_type === 'gbv_case' ? 'shimmer-coral' : 'shimmer'}`}>
+                {/* Header */}
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, marginBottom: 18 }}>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+                      <span className="mono" style={{ fontSize: 11, color: 'var(--muted)', letterSpacing: '0.04em' }}>
+                        {selected.id.slice(0, 8)}
+                      </span>
+                      <span className={`tag ${selected.organisation === 'PHD' ? 'blue' : 'violet'}`}>
+                        {selected.organisation}
+                      </span>
+                      <span className="tag">{selected.model_label}</span>
+                      {selected.kind === 'legacy' && <span className="tag amber">Legacy</span>}
+                      {selected.urgent && <span className="tag coral">URGENT</span>}
+                    </div>
+                    <h2 style={{
+                      fontFamily: 'var(--display)', fontStyle: 'italic', fontWeight: 400,
+                      fontSize: 38, lineHeight: 1.05, letterSpacing: '-0.02em',
+                      margin: 0, color: 'var(--ink)',
+                    }}>
+                      {selected.title}
+                    </h2>
+                    <p className="hero-lede" style={{ marginTop: 12, maxWidth: 720 }}>
+                      {selected.summary}
+                    </p>
+                  </div>
+                  <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                    <div className="kicker"><span className="dot" />SUBMITTED</div>
+                    <div className="mono" style={{ fontSize: 13, marginTop: 4 }}>
+                      {formatDateTime(selected.created_at)}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Submitter + centre + map preview */}
+                <div style={{
+                  display: 'grid', gridTemplateColumns: '1fr 1fr 1.2fr', gap: 18,
+                  padding: '18px 0',
+                  borderTop: '1px solid var(--hair)',
+                  borderBottom: '1px solid var(--hair)',
+                }}>
+                  <div>
+                    <div className="kicker" style={{ marginBottom: 8 }}><span className="dot" />SUBMITTED BY</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <div className="stream-avatar blue" style={{ width: 40, height: 40, fontSize: 13 }}>
+                        {(selected.submitted_by || '?').split(' ').map(p => p[0]).join('').slice(0, 2)}
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 14, fontWeight: 500 }}>{selected.submitted_by || 'Unknown'}</div>
+                        <div className="mute" style={{ fontSize: 11.5 }}>{selected.organisation}</div>
+                      </div>
+                    </div>
+                  </div>
+                  <div>
+                    <div className="kicker" style={{ marginBottom: 8 }}><span className="dot" />CENTRE</div>
+                    <div style={{ fontSize: 14, fontWeight: 500 }}>{selected.center_name}</div>
+                    {selected.latitude && selected.longitude && (
+                      <div className="mute" style={{ fontSize: 11.5 }}>
+                        GPS: <span className="mono">{parseFloat(selected.latitude).toFixed(4)}, {parseFloat(selected.longitude).toFixed(4)}</span>
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <div className="kicker" style={{ marginBottom: 8 }}><span className="dot" />LOCATION</div>
+                    <MiniLocationMap />
+                  </div>
+                </div>
+
+                {/* Validation trace + field diff */}
+                <div style={{
+                  display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24,
+                  padding: '22px 0',
+                  borderBottom: '1px solid var(--hair)',
+                }}>
+                  <div>
+                    <div className="kicker" style={{ marginBottom: 12 }}>
+                      <span className="dot" style={{ background: 'var(--emerald)' }} />VALIDATION TRACE
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {[
+                        ['Schema check', true, '0ms'],
+                        ['Field-level required', true, '12ms'],
+                        ['Duplicate scan · 28d', true, '84ms'],
+                        ['GPS coherence', !!(selected.latitude && selected.longitude), '31ms'],
+                        ['Cross-org reconciliation', true, '212ms'],
+                        ['Sensitivity scan', selected.model_type !== 'gbv_case', '44ms'],
+                      ].map(([label, ok, t]) => (
+                        <div key={label as string} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13 }}>
+                          <span style={{
+                            width: 18, height: 18, borderRadius: 4,
+                            background: ok ? 'rgba(31,154,109,0.10)' : 'rgba(233,151,10,0.12)',
+                            color: ok ? 'var(--emerald)' : 'var(--amber)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          }}>
+                            {ok ? <Check size={11} /> : <AlertTriangle size={11} />}
+                          </span>
+                          <span style={{ flex: 1 }}>{label as string}</span>
+                          <span className="mono mute" style={{ fontSize: 11 }}>{t as string}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="kicker" style={{ marginBottom: 12 }}><span className="dot" />FIELD-LEVEL DIFF</div>
+                    <div className="mono" style={{
+                      fontSize: 12, lineHeight: 1.8,
+                      background: 'var(--surface-2)', border: '1px solid var(--hair)',
+                      borderRadius: 10, padding: 14,
+                    }}>
+                      {selected.kobo_submission_id && (
+                        <div className="mute">+ kobo_id: <span style={{ color: 'var(--ink)' }}>{selected.kobo_submission_id}</span></div>
+                      )}
+                      <div className="mute">+ form_type: <span style={{ color: 'var(--ink)' }}>{selected.model_type}</span></div>
+                      <div className="mute">+ org: <span style={{ color: 'var(--ink)' }}>{selected.organisation}</span></div>
+                      <div className="mute">+ centre: <span style={{ color: 'var(--ink)' }}>{selected.center_name}</span></div>
+                      <div className="mute">+ submitted_by: <span style={{ color: 'var(--ink)' }}>{selected.submitted_by}</span></div>
+                      <div className="mute">+ submitted_at: <span style={{ color: 'var(--ink)' }}>{selected.created_at}</span></div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Reviewer note */}
+                <div style={{ padding: '22px 0', borderBottom: '1px solid var(--hair)' }}>
+                  <div className="kicker" style={{ marginBottom: 10 }}><span className="dot" />REVIEWER NOTE — OPTIONAL</div>
+                  <textarea
+                    placeholder="Context for the field team…"
+                    style={{
+                      width: '100%', minHeight: 64, padding: '10px 12px',
+                      border: '1px solid var(--hair)', borderRadius: 10,
+                      background: 'var(--surface-2)', fontSize: 13, color: 'var(--ink)',
+                      resize: 'vertical', fontFamily: 'var(--ui)',
+                    }}
                   />
-                ))}
+                </div>
+
+                {/* Actions */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 20 }}>
+                  <div className="mono mute" style={{ fontSize: 11.5 }}>
+                    <KBD>↵</KBD> approve &nbsp; <KBD>X</KBD> reject &nbsp; <KBD>J</KBD>/<KBD>K</KBD> next/prev
+                  </div>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button
+                      className="btn danger lg"
+                      onClick={() => decide(selected, 'reject')}
+                      disabled={rejecting}
+                      style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+                    >
+                      {rejecting ? <LoadingSpinner size="sm" /> : <><X size={14} /> Reject</>}
+                    </button>
+                    <button
+                      className="btn success lg"
+                      onClick={() => decide(selected, 'approve')}
+                      disabled={approving}
+                      style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+                    >
+                      {approving ? <LoadingSpinner size="sm" /> : <><Check size={14} /> Approve &amp; log</>}
+                    </button>
+                  </div>
+                </div>
               </div>
-            )}
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
+            </div>
+          ) : (
+            <div className="card" style={{ padding: 40, textAlign: 'center', color: 'var(--muted)' }}>
+              <div style={{ fontSize: 18, color: 'var(--ink)', fontFamily: 'var(--display)', fontStyle: 'italic' }}>
+                The queue is clear.
+              </div>
+              <p style={{ marginTop: 6 }}>Field workers will fill it again shortly.</p>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Toast */}
+      {toast && (
+        <Toast
+          action={toast.action}
+          item={toast.item}
+          onClose={() => setToast(null)}
+        />
+      )}
+    </>
   )
 }

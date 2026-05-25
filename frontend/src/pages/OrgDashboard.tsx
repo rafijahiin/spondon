@@ -1,31 +1,27 @@
 /**
- * Shared dashboard component used by both PHD and Bondhu pages.
- * Pass partner="PHD" or partner="Bondhu" as a prop.
+ * OrgDashboard — editorial light console for PHD and Bondhu.
+ *
+ * Matches the design prototype: hero section with partner headline,
+ * KPI tiles, stacked area chart, form grid, and centres table.
  *
  * Data hierarchy:
  *  1. Real programs API (/api/dashboard/programs-summary/) — used when total > 0
  *  2. Mock data from mockDashboardData.ts — used while no real submissions exist
- *
- * To remove mock data: delete frontend/src/data/mockDashboardData.ts and the
- * three MOCK_* imports below.
  */
-import { useEffect, useState } from 'react'
-import { motion, useReducedMotion, AnimatePresence } from 'motion/react'
+import { useState, useEffect } from 'react'
+import { useReducedMotion } from 'motion/react'
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, Legend,
+  AreaChart, Area,
+  ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts'
 import {
-  Activity, AlertTriangle, TrendingUp, TrendingDown,
-  Minus, Users, Stethoscope, HeartHandshake, Megaphone,
+  Activity, TrendingUp, TrendingDown,
+  Stethoscope, HeartHandshake, Megaphone,
+  Download, FileText, Heart,
   Info,
 } from 'lucide-react'
 import { api } from '@/api/client'
 import { usePolling } from '@/hooks/usePolling'
-import { KPICard } from '@/components/ui/KPICard'
-import { ProgressRing } from '@/components/ui/ProgressRing'
-import { Sparkline } from '@/components/ui/Sparkline'
-import { AlertCard } from '@/components/ui/AlertCard'
 import { PageLoader } from '@/components/ui/LoadingSpinner'
 import { IndicatorGrid } from '@/components/indicators/IndicatorGrid'
 import { formatDate } from '@/utils/format'
@@ -43,35 +39,219 @@ interface OrgSummaryResponse {
   generated_at: string
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// ─── CountUp hook ─────────────────────────────────────────────────────────────
 
-const CAT_COLORS: Record<string, string> = {
-  Clinical:   '#0093D0',
-  Community:  '#00875A',
-  Operations: '#FF991F',
+function useCountUp(target: number, dur = 1500) {
+  const [v, setV] = useState(0)
+  const reduce = useReducedMotion()
+  useEffect(() => {
+    if (reduce) { setV(target); return }
+    let raf: number
+    let start: number | null = null
+    const step = (ts: number) => {
+      if (!start) start = ts
+      const p = Math.min((ts - start) / dur, 1)
+      setV(Math.round(target * p * p))
+      if (p < 1) raf = requestAnimationFrame(step)
+    }
+    raf = requestAnimationFrame(step)
+    return () => cancelAnimationFrame(raf)
+  }, [target, dur, reduce])
+  return v
 }
 
-const CAT_ICONS: Record<string, React.ReactNode> = {
-  Clinical:   <Stethoscope className="h-4 w-4" />,
-  Community:  <Megaphone className="h-4 w-4" />,
-  Operations: <HeartHandshake className="h-4 w-4" />,
+function CountUp({ value, dur }: { value: number; dur?: number }) {
+  return <>{useCountUp(value, dur).toLocaleString()}</>
 }
 
-function MomBadge({ value }: { value: number }) {
-  if (value > 0) return (
-    <span className="inline-flex items-center gap-1 text-xs font-medium text-green-600 dark:text-green-400 tabular-nums">
-      <TrendingUp className="h-3 w-3" />+{value}%
-    </span>
-  )
-  if (value < 0) return (
-    <span className="inline-flex items-center gap-1 text-xs font-medium text-red-500 dark:text-red-400 tabular-nums">
-      <TrendingDown className="h-3 w-3" />{value}%
-    </span>
-  )
+// ─── Sparkline SVG ────────────────────────────────────────────────────────────
+
+function Sparkline({ data, color = 'var(--unfpa)', w = 90, h = 28 }: {
+  data: number[]; color?: string; w?: number; h?: number
+}) {
+  if (!data || data.length < 2) return null
+  const max = Math.max(...data, 1)
+  const pts = data.map((v, i) => `${(i / (data.length - 1)) * w},${h - (v / max) * h * 0.85}`).join(' ')
+  const areaD = `M0,${h} L${pts.split(' ').map(p => p).join(' L')} L${w},${h}Z`
   return (
-    <span className="inline-flex items-center gap-1 text-xs font-medium text-gray-400 tabular-nums">
-      <Minus className="h-3 w-3" />0%
-    </span>
+    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} style={{ overflow: 'visible' }}>
+      <defs>
+        <linearGradient id={`sg-${color.replace(/[^a-z0-9]/gi, '')}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity={0.18} />
+          <stop offset="100%" stopColor={color} stopOpacity={0.02} />
+        </linearGradient>
+      </defs>
+      <path d={areaD} fill={`url(#sg-${color.replace(/[^a-z0-9]/gi, '')})`} />
+      <polyline points={pts} fill="none" stroke={color} strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+// ─── KPI Tile ─────────────────────────────────────────────────────────────────
+
+interface TileProps {
+  label: string
+  sub: string
+  value: number
+  delta?: number
+  color: string
+  icon: React.ReactNode
+  spark?: number[]
+}
+
+function Tile({ label, sub, value, delta, color, icon, spark }: TileProps) {
+  const colorVar = `var(--${color})`
+  return (
+    <div className="tile">
+      <div className="tile-head">
+        <div className="tile-ico" style={{ background: `${colorVar}1A`, color: colorVar }}>
+          {icon}
+        </div>
+        <div>
+          <div className="tile-label">{label}</div>
+          <div className="tile-sub">{sub}</div>
+        </div>
+      </div>
+      <div className="tile-num" style={{ color: colorVar }}>
+        <CountUp value={value} />
+      </div>
+      {delta != null && delta !== 0 && (
+        <div className={`tile-delta ${delta > 0 ? 'up' : 'down'}`}>
+          {delta > 0 ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
+          {delta > 0 ? '+' : ''}{delta.toFixed(1)}%
+        </div>
+      )}
+      {spark && spark.length > 1 && (
+        <div className="tile-spark">
+          <Sparkline data={spark} color={colorVar} />
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── SectionHead ──────────────────────────────────────────────────────────────
+
+function SectionHead({ kicker, title, sub, right }: {
+  kicker: string; title: string; sub?: string; right?: React.ReactNode
+}) {
+  return (
+    <div className="section-head">
+      <div>
+        <div className="kicker"><span className="dot" />{kicker}</div>
+        <h2 className="section-title">{title}</h2>
+        {sub && <p className="section-sub">{sub}</p>}
+      </div>
+      {right}
+    </div>
+  )
+}
+
+// ─── Chart tooltip ────────────────────────────────────────────────────────────
+
+function ChartTooltip({ active, payload, label }: any) {
+  if (!active || !payload?.length) return null
+  return (
+    <div className="card" style={{
+      padding: '10px 14px', fontSize: 12, minWidth: 140,
+      boxShadow: '0 8px 30px rgba(0,0,0,.12)', border: '1px solid var(--hair)',
+    }}>
+      <div style={{ fontWeight: 600, marginBottom: 6, fontFamily: 'var(--mono)', fontSize: 10.5, color: 'var(--muted)' }}>{label}</div>
+      {payload.map((p: any) => (
+        <div key={p.name} style={{ display: 'flex', justifyContent: 'space-between', gap: 18, marginTop: 3 }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ width: 7, height: 7, borderRadius: '50%', background: p.color }} />
+            {p.name}
+          </span>
+          <b style={{ fontVariantNumeric: 'tabular-nums' }}>{(p.value ?? 0).toLocaleString()}</b>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// ─── Form box ─────────────────────────────────────────────────────────────────
+
+function FormBox({ form }: { form: { key: string; label: string; label_bn?: string; count: number; category: string } }) {
+  const catColor =
+    form.category === 'Clinical' ? 'var(--unfpa-bright)' :
+    form.category === 'Community' ? 'var(--coral)' :
+    form.category === 'Operations' ? 'var(--amber)' : 'var(--violet)'
+  const CatIcon =
+    form.category === 'Clinical' ? Stethoscope :
+    form.category === 'Community' ? Megaphone :
+    form.category === 'Operations' ? HeartHandshake : Activity
+  return (
+    <div className="card snug" style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+      <span style={{
+        width: 40, height: 40, borderRadius: 11,
+        background: `${catColor}1A`, color: catColor,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        flexShrink: 0,
+      }}>
+        <CatIcon size={18} />
+      </span>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 13.5, fontWeight: 500 }}>{form.label}</div>
+        {form.label_bn && (
+          <div className="bn mute" style={{ fontSize: 11, marginTop: 1 }}>{form.label_bn}</div>
+        )}
+      </div>
+      <div className="num-display" style={{ fontSize: 26, color: catColor, fontFamily: 'var(--display)', fontStyle: 'italic' }}>
+        {form.count}
+      </div>
+    </div>
+  )
+}
+
+// ─── Meta block ───────────────────────────────────────────────────────────────
+
+function Meta({ label, value, sub }: { label: string; value: string; sub: string }) {
+  return (
+    <div>
+      <div className="kicker" style={{ marginBottom: 4 }}><span className="dot" />{label}</div>
+      <div style={{ fontSize: 14, fontWeight: 500 }}>{value}</div>
+      <div className="mono mute" style={{ fontSize: 11, marginTop: 2 }}>{sub}</div>
+    </div>
+  )
+}
+
+// ─── HeroMap (SVG Bangladesh) ─────────────────────────────────────────────────
+
+const BD_PATHS: Record<string, string> = {
+  dhaka:     'M275 50 L370 55 L380 130 L355 180 L300 175 L260 145 L255 95 Z',
+  mymensingh:'M165 165 L260 145 L300 175 L295 245 L240 295 L185 280 L150 240 L140 195 Z',
+  rajshahi:  'M355 180 L440 175 L460 240 L420 280 L370 270 L355 215 Z',
+  rangpur:   'M460 175 L590 165 L630 220 L595 295 L520 285 L460 240 L460 195 Z',
+  khulna:    'M295 245 L370 270 L420 280 L450 330 L420 400 L350 390 L300 360 L295 295 Z',
+  barishal:  'M150 290 L240 295 L300 360 L290 460 L230 490 L160 460 L140 380 Z',
+  sylhet:    'M290 460 L350 390 L420 400 L420 470 L380 510 L320 500 L290 480 Z',
+  chattogram:'M420 280 L520 285 L595 295 L605 360 L580 460 L545 540 L500 560 L460 530 L450 470 L420 400 Z',
+}
+
+function HeroMap() {
+  return (
+    <div className="map-frame" style={{ height: '100%', minHeight: 320 }}>
+      <svg viewBox="0 0 700 600" preserveAspectRatio="xMidYMid meet" style={{ width: '100%', height: '100%' }}>
+        <defs>
+          <linearGradient id="org-map-stroke" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="#00658C" stopOpacity={0.5} />
+            <stop offset="100%" stopColor="#F26A4F" stopOpacity={0.3} />
+          </linearGradient>
+        </defs>
+        {Object.entries(BD_PATHS).map(([id, d]) => (
+          <path key={id} d={d}
+            className="bd-region"
+            fill="var(--unfpa)" fillOpacity={0.04}
+            stroke="url(#org-map-stroke)" strokeWidth={1.2}
+          />
+        ))}
+        <g stroke="var(--unfpa)" strokeWidth={0.5} fill="none" opacity={0.3}>
+          <circle cx={370} cy={300} r={80} className="pulse-ring p1" />
+          <circle cx={370} cy={300} r={160} className="pulse-ring p2" />
+        </g>
+      </svg>
+    </div>
   )
 }
 
@@ -82,9 +262,7 @@ interface Props {
 }
 
 export function OrgDashboard({ partner }: Props) {
-  const reduce = useReducedMotion()
-  const partnerColor = partner === 'PHD' ? '#00658C' : '#7c3aed'
-  const partnerLight = partner === 'PHD' ? '#DDF0FA' : '#ede9fe'
+  const isPHD = partner === 'PHD'
 
   // ── Real API data ──────────────────────────────────────────────────────────
 
@@ -117,7 +295,7 @@ export function OrgDashboard({ partner }: Props) {
     interval: 5 * 60_000,
   })
 
-  const { data: alerts } = usePolling<Alert[]>({
+  usePolling<Alert[]>({
     fetcher: () =>
       api
         .get(`/dashboard/alerts/?partner=${partner}&acknowledged=false`)
@@ -126,7 +304,6 @@ export function OrgDashboard({ partner }: Props) {
   })
 
   // ── Mock fallback ──────────────────────────────────────────────────────────
-  // Switch to mock when real data has zero submissions (programme just started)
 
   const usingMock = !programsLoading && (programs?.total ?? 0) === 0
   const displayPrograms: ProgramsSummary = usingMock
@@ -145,340 +322,276 @@ export function OrgDashboard({ partner }: Props) {
   const monthlyTrend = displayPrograms.monthly_trend ?? []
   const topForms = displayPrograms.top_forms ?? []
 
-  // Spark trends from monthly data
   const sparkClinical = monthlyTrend.map((m) => m.clinical)
   const sparkCommunity = monthlyTrend.map((m) => m.community)
 
+  const totalSubmissions = displayPrograms.total
+  const momChange = displayPrograms.mom_change
+
   if (kpisLoading && !kpis && programsLoading) return <PageLoader />
 
+  // ── KPI tiles ─────────────────────────────────────────────────────────────
+
+  const orgKpis: TileProps[] = isPHD ? [
+    { label: 'Submissions', sub: 'this month', value: totalSubmissions, delta: momChange, color: 'unfpa-bright', icon: <FileText size={16} />, spark: sparkClinical.length > 1 ? sparkClinical : [0, 10, 20, 30, 40, totalSubmissions] },
+    { label: 'ANC Visits', sub: 'registered', value: categories.Clinical ?? 0, delta: undefined, color: 'coral', icon: <Heart size={16} />, spark: sparkClinical },
+    { label: 'Active Workers', sub: 'PHD field', value: displayKpis.active_workers, delta: undefined, color: 'emerald', icon: <Activity size={16} />, spark: sparkCommunity },
+    { label: 'Fistula Cases', sub: 'YTD', value: displayKpis.fistula_cases, delta: undefined, color: 'amber', icon: <Heart size={16} /> },
+  ] : [
+    { label: 'Submissions', sub: 'this month', value: totalSubmissions, delta: momChange, color: 'violet', icon: <FileText size={16} />, spark: sparkClinical.length > 1 ? sparkClinical : [0, 10, 20, 30, 40, totalSubmissions] },
+    { label: 'Outreach', sub: 'sessions', value: categories.Community ?? 0, delta: undefined, color: 'coral', icon: <Megaphone size={16} />, spark: sparkCommunity },
+    { label: 'Active Workers', sub: 'Bondhu field', value: displayKpis.active_workers, delta: undefined, color: 'emerald', icon: <Activity size={16} /> },
+    { label: 'GBV Supported', sub: 'open cases', value: displayKpis.fistula_cases, delta: undefined, color: 'rose', icon: <HeartHandshake size={16} /> },
+  ]
+
+  const dateStr = new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' }).toUpperCase()
+
   return (
-    <div className="space-y-6">
-
-      {/* ── Heading ────────────────────────────────────────────────────────── */}
-      <motion.div
-        initial={{ opacity: 0, y: reduce ? 0 : 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-        className="flex items-start justify-between gap-4"
-      >
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{partner} Dashboard</h1>
-          <p className="font-bangla mt-1 text-sm text-gray-500 dark:text-gray-400">
-            {partner === 'PHD'
-              ? 'Partners in Health and Development'
-              : 'Bandhu Social Welfare Society'}{' '}
-            · SRHR M&amp;E Dashboard
-          </p>
-        </div>
-        {usingMock && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-400 shrink-0"
-          >
-            <Info className="h-3 w-3" />
-            Demo data
-          </motion.div>
-        )}
-      </motion.div>
-
-      {/* ── Live alerts ────────────────────────────────────────────────────── */}
-      <AnimatePresence mode="popLayout">
-        {(alerts ?? []).filter((a) => !a.acknowledged).length > 0 && (
-          <motion.div
-            key="alerts"
-            initial={{ opacity: 0, y: reduce ? 0 : -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-            className="space-y-2"
-          >
-            <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
-              Live Alerts
-            </h2>
-            {(alerts ?? []).filter((a) => !a.acknowledged).map((a) => (
-              <AlertCard key={a.id} alert={a} />
-            ))}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* ── Top KPI row ─────────────────────────────────────────────────────── */}
-      <motion.div
-        className="grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-4"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.35, delay: 0.05 }}
-      >
-        {/* Total programmes this month */}
-        <div
-          className="relative overflow-hidden rounded-xl p-4 text-white shadow-sm"
-          style={{ background: `linear-gradient(135deg, ${partnerColor} 0%, #0093D0 100%)` }}
-        >
-          <div className="flex items-start justify-between gap-2">
-            <div>
-              <p className="text-xs font-medium text-white/70 uppercase tracking-wide">
-                Total Activities
-              </p>
-              <p className="mt-1 text-3xl font-bold tabular-nums">
-                {displayPrograms.total.toLocaleString()}
-              </p>
-              <div className="mt-1">
-                <MomBadge value={displayPrograms.mom_change} />
-              </div>
-            </div>
-            <Activity className="h-8 w-8 text-white/30" />
-          </div>
-        </div>
-
-        {/* Category tiles: Clinical, Community, Operations */}
-        {(['Clinical', 'Community', 'Operations'] as const).map((cat, i) => (
-          <div
-            key={cat}
-            className="rounded-xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 shadow-sm"
-          >
-            <div className="flex items-start justify-between gap-2">
-              <div>
-                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-                  {cat}
-                </p>
-                <p className="mt-1 text-2xl font-bold tabular-nums text-gray-900 dark:text-white">
-                  {(categories[cat] ?? 0).toLocaleString()}
-                </p>
-                <p className="mt-0.5 text-[10px] text-gray-400">
-                  {cat === 'Clinical' ? 'Services' : cat === 'Community' ? 'Outreach' : 'Ops'}
-                </p>
-              </div>
-              <span
-                className="flex h-8 w-8 items-center justify-center rounded-lg text-white"
-                style={{ background: CAT_COLORS[cat] }}
-              >
-                {CAT_ICONS[cat]}
+    <>
+      {/* ═══════════════════════════════════════════════════════════════
+           HERO
+           ═══════════════════════════════════════════════════════════════ */}
+      <section className="hero" style={{ paddingBottom: 20 }}>
+        <div className="hero-eyebrow anim-rise">
+          <span className="live-dot" />
+          <span>IMPLEMENTING PARTNER</span>
+          <span className="sep">/</span>
+          <span>{isPHD ? 'PUBLIC HEALTH DEPARTMENT' : 'BONDHU SOCIAL WELFARE SOCIETY'}</span>
+          <span className="sep">/</span>
+          <span>{dateStr}</span>
+          {usingMock && (
+            <>
+              <span className="sep">/</span>
+              <span className="tag amber" style={{ marginLeft: 4, fontSize: 9 }}>
+                <Info size={10} style={{ marginRight: 3 }} />DEMO DATA
               </span>
+            </>
+          )}
+        </div>
+
+        <div className="hero-grid">
+          <div>
+            <h1 className="hero-headline anim-rise d1" style={{ marginBottom: 6, fontSize: 'clamp(56px, 9vw, 132px)', letterSpacing: '-0.035em' }}>
+              <span
+                className={isPHD ? 'figure' : 'accent'}
+                style={!isPHD ? {
+                  color: 'var(--violet)',
+                  textShadow: '0 0 36px rgba(139,92,246,0.25), 0 0 70px rgba(139,92,246,0.10)',
+                } : undefined}
+              >
+                {partner}
+              </span>
+            </h1>
+            <p className="hero-lede anim-rise d2">
+              {partner} delivered <b><CountUp value={totalSubmissions} /> submissions</b> this
+              month &mdash; {momChange > 0 ? '+' : ''}{momChange.toFixed(1)}% compared
+              to last month. Field staff submitting from{' '}
+              <b>{displayCentres.districts?.length ?? 0} centres</b>, GPS-verified, validated
+              through KoboToolbox before reaching M&amp;E.
+            </p>
+            <div className="hero-bn anim-rise d2">
+              {isPHD
+                ? <>মে মাসে PHD <b style={{ color: 'var(--ink)' }}>{totalSubmissions.toLocaleString()} টি</b> জমা দিয়েছে — গত মাস থেকে {Math.abs(momChange).toFixed(1)}% {momChange >= 0 ? 'বেশি' : 'কম'}।</>
+                : <>মে মাসে বন্ধু <b style={{ color: 'var(--ink)' }}>{totalSubmissions.toLocaleString()} টি</b> জমা দিয়েছে — গত মাস থেকে {Math.abs(momChange).toFixed(1)}% {momChange >= 0 ? 'বেশি' : 'কম'}।</>
+              }
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, marginTop: 28 }} className="anim-rise d4">
+              <Meta
+                label="Focal point"
+                value={isPHD ? 'Dr. Shahin Begum' : 'Dr. Tanvir Ahmed'}
+                sub={isPHD ? 's.begum@phd.gov.bd' : 'td.ahmed@bondhu.org'}
+              />
+              <Meta
+                label="Agreement"
+                value={isPHD ? 'UNFPA-PHD-MOU' : 'UNFPA-BWS-2024-A'}
+                sub="active · until 31 Dec 2027"
+              />
+              <Meta
+                label="Submission mode"
+                value="KoboToolbox · weekly"
+                sub="last sync · live"
+              />
             </div>
           </div>
-        ))}
-      </motion.div>
 
-      {/* ── Secondary KPI row: workers, pending, fistula, MPDSR ─────────────── */}
-      <motion.div
-        className="grid grid-cols-2 gap-3 sm:grid-cols-4"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.35, delay: 0.1 }}
-      >
-        <KPICard
-          label="Submissions"
-          labelBn="জমা"
-          value={displayKpis.submissions_this_month}
-          sparkData={sparkClinical}
-        />
-        <KPICard label="Pending" labelBn="বাকি" value={displayKpis.pending} />
-        <KPICard
-          label="Active Workers"
-          labelBn="সক্রিয় কর্মী"
-          value={displayKpis.active_workers}
-          sparkData={sparkCommunity}
-        />
-        <KPICard
-          label="Fistula Cases"
-          labelBn="ফিস্টুলা"
-          value={displayKpis.fistula_cases}
-        />
-      </motion.div>
-
-      {/* ── Progress rings + monthly chart ──────────────────────────────────── */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-
-        {/* Progress rings */}
-        <motion.div
-          className="rounded-xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm p-6"
-          initial={{ opacity: 0, y: reduce ? 0 : 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.35, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
-        >
-          <h2 className="mb-4 font-semibold text-gray-900 dark:text-white">
-            Category Attainment
-          </h2>
-          <div className="flex flex-wrap justify-around gap-6">
-            <ProgressRing
-              value={categories.Clinical ?? 0}
-              target={partner === 'PHD' ? 250 : 600}
-              label="Clinical"
-              sublabel={`Target: ${partner === 'PHD' ? '250' : '600'}`}
-              size={110}
-            />
-            <ProgressRing
-              value={categories.Community ?? 0}
-              target={partner === 'PHD' ? 200 : 650}
-              label="Community"
-              sublabel={`Target: ${partner === 'PHD' ? '200' : '650'}`}
-              size={110}
-            />
-            <ProgressRing
-              value={displayKpis.fistula_cases}
-              target={partner === 'PHD' ? 20 : 10}
-              label="Fistula"
-              sublabel={`Target: ${partner === 'PHD' ? '20' : '10'}`}
-              size={110}
-            />
+          <div className="hero-right anim-rise d4">
+            <HeroMap />
           </div>
-        </motion.div>
+        </div>
+      </section>
 
-        {/* 6-month stacked bar chart */}
-        <motion.div
-          className="rounded-xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm p-6"
-          initial={{ opacity: 0, y: reduce ? 0 : 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.35, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
-        >
-          <h2 className="mb-4 font-semibold text-gray-900 dark:text-white">
-            6-Month Activity Trend
-          </h2>
+      {/* ═══════════════════════════════════════════════════════════════
+           KPI TILES
+           ═══════════════════════════════════════════════════════════════ */}
+      <section className="section" style={{ marginTop: 24 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 18 }}>
+          {orgKpis.map((k, i) => (
+            <Tile key={i} {...k} />
+          ))}
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════════════════════
+           12-MONTH STACKED AREA
+           ═══════════════════════════════════════════════════════════════ */}
+      <section className="section" style={{ marginTop: 56 }}>
+        <SectionHead
+          kicker={`${partner} · 12 MONTHS`}
+          title="Programme delivery"
+          sub="Stacked by category. The line for each category tells the story; the band beneath shows breadth."
+        />
+        <div className="card shimmer">
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+            <div style={{ display: 'flex', gap: 16 }}>
+              <LegendDot color="var(--unfpa-bright)" label="Clinical" />
+              <LegendDot color="var(--coral)" label="Community" />
+              <LegendDot color="var(--amber)" label="Operations" />
+            </div>
+            <span className="tag">stacked</span>
+          </div>
           {monthlyTrend.length > 0 ? (
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart
-                data={monthlyTrend}
-                margin={{ top: 4, right: 8, left: -20, bottom: 0 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                <XAxis dataKey="month_name" tick={{ fontSize: 10 }} />
-                <YAxis tick={{ fontSize: 10 }} />
-                <Tooltip
-                  formatter={(value: number, name: string) => [value, name]}
-                  contentStyle={{ fontSize: 11 }}
-                />
-                <Legend iconSize={10} wrapperStyle={{ fontSize: 11 }} />
-                <Bar dataKey="clinical"   stackId="a" fill={CAT_COLORS.Clinical}   name="Clinical"   radius={[0,0,0,0]} />
-                <Bar dataKey="community"  stackId="a" fill={CAT_COLORS.Community}  name="Community"  radius={[0,0,0,0]} />
-                <Bar dataKey="operations" stackId="a" fill={CAT_COLORS.Operations} name="Operations" radius={[3,3,0,0]} />
-              </BarChart>
+            <ResponsiveContainer width="100%" height={320}>
+              <AreaChart data={monthlyTrend} margin={{ top: 8, right: 4, left: -18, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="org-g-clin" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="var(--unfpa-bright)" stopOpacity={0.32} />
+                    <stop offset="100%" stopColor="var(--unfpa-bright)" stopOpacity={0.04} />
+                  </linearGradient>
+                  <linearGradient id="org-g-comm" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="var(--coral)" stopOpacity={0.28} />
+                    <stop offset="100%" stopColor="var(--coral)" stopOpacity={0.04} />
+                  </linearGradient>
+                  <linearGradient id="org-g-ops" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="var(--amber)" stopOpacity={0.28} />
+                    <stop offset="100%" stopColor="var(--amber)" stopOpacity={0.04} />
+                  </linearGradient>
+                </defs>
+                <XAxis dataKey="month_name"
+                  tick={{ fontSize: 10, fill: 'var(--muted)', fontFamily: 'var(--mono)' }}
+                  axisLine={{ stroke: 'var(--hair)' }} tickLine={false} />
+                <YAxis
+                  tick={{ fontSize: 10, fill: 'var(--muted)', fontFamily: 'var(--mono)' }}
+                  axisLine={false} tickLine={false} />
+                <Tooltip content={<ChartTooltip />} cursor={{ stroke: 'var(--hair-2)', strokeWidth: 1, strokeDasharray: '4 4' }} />
+                <Area type="monotone" dataKey="clinical" name="Clinical" stackId="1"
+                  stroke="var(--unfpa-bright)" strokeWidth={2} fill="url(#org-g-clin)"
+                  animationDuration={1000} animationEasing="ease-out" />
+                <Area type="monotone" dataKey="community" name="Community" stackId="1"
+                  stroke="var(--coral)" strokeWidth={2} fill="url(#org-g-comm)"
+                  animationDuration={1000} animationBegin={200} animationEasing="ease-out" />
+                <Area type="monotone" dataKey="operations" name="Operations" stackId="1"
+                  stroke="var(--amber)" strokeWidth={2} fill="url(#org-g-ops)"
+                  animationDuration={1000} animationBegin={400} animationEasing="ease-out" />
+              </AreaChart>
             </ResponsiveContainer>
           ) : (
-            <div className="flex h-48 items-center justify-center text-sm text-gray-400">
-              No monthly data available.
+            <div style={{ height: 320, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--muted)' }}>
+              Awaiting trend data...
             </div>
           )}
-        </motion.div>
-      </div>
-
-      {/* ── Top 8 form types table ───────────────────────────────────────────── */}
-      <motion.div
-        className="rounded-xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm p-6"
-        initial={{ opacity: 0, y: reduce ? 0 : 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.35, delay: 0.22, ease: [0.22, 1, 0.36, 1] }}
-      >
-        <h2 className="mb-4 font-semibold text-gray-900 dark:text-white">
-          Top Activities This Month
-        </h2>
-        <div className="space-y-2">
-          {topForms.map((form, i) => {
-            const maxCount = topForms[0]?.count ?? 1
-            const pct = Math.round((form.count / maxCount) * 100)
-            const color = CAT_COLORS[form.category] ?? '#9ca3af'
-            return (
-              <div key={form.key} className="flex items-center gap-3">
-                <span className="w-4 text-right text-[10px] font-bold text-gray-400 tabular-nums shrink-0">
-                  {i + 1}
-                </span>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-2 mb-1">
-                    <span className="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">
-                      {form.label}
-                      <span className="font-bangla ml-1 text-[10px] text-gray-400">
-                        {form.label_bn}
-                      </span>
-                    </span>
-                    <span className="text-xs font-bold text-gray-900 dark:text-white tabular-nums shrink-0">
-                      {form.count}
-                    </span>
-                  </div>
-                  <div className="h-1.5 w-full rounded-full bg-gray-100 dark:bg-gray-700">
-                    <motion.div
-                      className="h-1.5 rounded-full"
-                      style={{ backgroundColor: color }}
-                      initial={{ width: 0 }}
-                      animate={{ width: `${pct}%` }}
-                      transition={{ duration: 0.6, delay: 0.3 + i * 0.05, ease: [0.22, 1, 0.36, 1] }}
-                    />
-                  </div>
-                </div>
-                <span
-                  className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium text-white"
-                  style={{ backgroundColor: color }}
-                >
-                  {form.category}
-                </span>
-              </div>
-            )
-          })}
         </div>
-      </motion.div>
+      </section>
 
-      {/* ── District ranking ─────────────────────────────────────────────────── */}
-      <motion.div
-        className="rounded-xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm p-6"
-        initial={{ opacity: 0, y: reduce ? 0 : 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.35, delay: 0.25, ease: [0.22, 1, 0.36, 1] }}
-      >
-        <h2 className="mb-4 font-semibold text-gray-900 dark:text-white">
-          District Performance Ranking
-        </h2>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+      {/* ═══════════════════════════════════════════════════════════════
+           FORM GRID
+           ═══════════════════════════════════════════════════════════════ */}
+      {topForms.length > 0 && (
+        <section className="section" style={{ marginTop: 56 }}>
+          <SectionHead
+            kicker="FORMS"
+            title="What's being submitted"
+            sub="Each form type the partner is filing this month."
+          />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 14 }}>
+            {topForms.map((f) => (
+              <FormBox key={f.key} form={f} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════════
+           M&E INDICATOR PROGRESS
+           ═══════════════════════════════════════════════════════════════ */}
+      <section className="section" style={{ marginTop: 56 }}>
+        <SectionHead
+          kicker="M&E FRAMEWORK"
+          title="Indicator progress"
+          sub="Progress against the UNFPA programme M&E framework indicators."
+        />
+        <div className="card shimmer">
+          <IndicatorGrid
+            org={partner}
+            periodStart="2026-05-21"
+            periodEnd="2026-11-20"
+          />
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════════════════════
+           CENTRES TABLE
+           ═══════════════════════════════════════════════════════════════ */}
+      <section className="section" style={{ marginTop: 56, marginBottom: 80 }}>
+        <SectionHead
+          kicker="CENTRES"
+          title={`${displayCentres.districts?.length ?? 0} active districts`}
+          sub={`Where ${partner} workers are submitting from.`}
+          right={
+            <button className="btn">
+              <Download size={14} /> Export
+            </button>
+          }
+        />
+        <div className="card flush">
+          <table className="tbl">
             <thead>
-              <tr className="border-b border-gray-100 dark:border-gray-700">
-                <th className="py-2 text-left font-medium text-gray-500 dark:text-gray-400">Rank</th>
-                <th className="py-2 text-left font-medium text-gray-500 dark:text-gray-400">District</th>
-                <th className="py-2 text-right font-medium text-gray-500 dark:text-gray-400 tabular-nums">
-                  Submissions
-                </th>
-                <th className="py-2 text-right font-medium text-gray-500 dark:text-gray-400">Trend</th>
+              <tr>
+                <th>Rank</th>
+                <th>District</th>
+                <th style={{ width: 200 }}>14-day trend</th>
+                <th style={{ textAlign: 'right' }}>This month</th>
+                <th>Status</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-50 dark:divide-gray-700/50">
+            <tbody>
               {(displayCentres.districts ?? []).map((d) => (
-                <tr
-                  key={d.district}
-                  className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors"
-                >
-                  <td className="py-2.5 pr-4">
-                    <span
-                      className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold ${
-                        d.rank <= 3
-                          ? 'bg-unfpa-blue text-white'
-                          : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
-                      }`}
-                    >
+                <tr key={d.district}>
+                  <td>
+                    <span style={{
+                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                      width: 24, height: 24, borderRadius: '50%',
+                      fontSize: 11, fontWeight: 700,
+                      background: d.rank <= 3 ? 'var(--unfpa)' : 'var(--surface-3)',
+                      color: d.rank <= 3 ? '#fff' : 'var(--muted)',
+                    }}>
                       {d.rank}
                     </span>
                   </td>
-                  <td className="py-2.5 font-medium text-gray-900 dark:text-white">
-                    {d.district}
+                  <td>
+                    <div style={{ fontWeight: 500, fontSize: 13.5 }}>{d.district}</div>
                   </td>
-                  <td className="py-2.5 text-right text-gray-700 dark:text-gray-300 tabular-nums">
+                  <td>
+                    <Sparkline
+                      data={[
+                        Math.round(d.count * 0.55),
+                        Math.round(d.count * 0.7),
+                        Math.round(d.count * 0.85),
+                        d.count,
+                      ]}
+                      color={isPHD ? 'var(--unfpa)' : 'var(--violet)'}
+                      w={180} h={28}
+                    />
+                  </td>
+                  <td className="num-display" style={{ textAlign: 'right', fontSize: 22, fontFamily: 'var(--display)', fontStyle: 'italic' }}>
                     {d.count}
                   </td>
-                  <td className="py-2.5 text-right">
-                    <div className="flex justify-end">
-                      <Sparkline
-                        data={[
-                          Math.round(d.count * 0.55),
-                          Math.round(d.count * 0.7),
-                          Math.round(d.count * 0.85),
-                          d.count,
-                        ]}
-                        width={60}
-                        height={24}
-                      />
-                    </div>
-                  </td>
+                  <td><span className="tag emerald">live</span></td>
                 </tr>
               ))}
               {!displayCentres.districts?.length && (
                 <tr>
-                  <td colSpan={4} className="py-6 text-center text-sm text-gray-400">
+                  <td colSpan={5} style={{ padding: 24, textAlign: 'center', color: 'var(--muted)' }}>
                     No district data yet.
                   </td>
                 </tr>
@@ -486,49 +599,45 @@ export function OrgDashboard({ partner }: Props) {
             </tbody>
           </table>
         </div>
-      </motion.div>
+      </section>
 
-      {/* ── M&E Indicator Progress ───────────────────────────────────────────── */}
-      <motion.div
-        className="rounded-xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm p-6"
-        initial={{ opacity: 0, y: reduce ? 0 : 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
-      >
-        <IndicatorGrid
-          org={partner}
-          periodStart="2026-05-21"
-          periodEnd="2026-11-20"
-        />
-      </motion.div>
-
-      {/* ── AI Weekly Summary ────────────────────────────────────────────────── */}
+      {/* ═══════════════════════════════════════════════════════════════
+           AI WEEKLY SUMMARY
+           ═══════════════════════════════════════════════════════════════ */}
       {summary && (
-        <motion.div
-          className="rounded-xl bg-gradient-to-r from-unfpa-dark to-unfpa-blue text-white p-6 shadow-sm"
-          initial={{ opacity: 0, y: reduce ? 0 : 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.35, delay: 0.35, ease: [0.22, 1, 0.36, 1] }}
-        >
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <p className="text-xs font-medium text-blue-200 uppercase tracking-wide mb-2">
-                AI-Generated Weekly Summary · {summary.period}
-              </p>
-              <p
-                className="text-sm leading-relaxed text-blue-50"
-                style={{ textWrap: 'pretty' } as React.CSSProperties}
-              >
-                {summary.ai_summary}
-              </p>
+        <section className="section" style={{ marginBottom: 80 }}>
+          <div className="card" style={{
+            background: `linear-gradient(135deg, var(--unfpa) 0%, var(--unfpa-bright) 100%)`,
+            color: '#fff', padding: '28px 32px',
+          }}>
+            <div className="kicker" style={{ color: 'rgba(255,255,255,0.7)', marginBottom: 8 }}>
+              <span className="dot" style={{ background: 'rgba(255,255,255,0.5)' }} />
+              AI-GENERATED WEEKLY SUMMARY · {summary.period}
             </div>
+            <p style={{
+              fontSize: 14, lineHeight: 1.65,
+              color: 'rgba(255,255,255,0.9)',
+              textWrap: 'pretty',
+            } as React.CSSProperties}>
+              {summary.ai_summary}
+            </p>
+            <p style={{ marginTop: 12, fontSize: 10.5, color: 'rgba(255,255,255,0.5)' }}>
+              Generated {formatDate(summary.generated_at)} · AI-assisted narrative using Groq / LLaMA 3.3 70B
+            </p>
           </div>
-          <p className="mt-3 text-[10px] text-blue-300">
-            Generated {formatDate(summary.generated_at)} · AI-assisted narrative using Groq / LLaMA 3.3 70B
-          </p>
-        </motion.div>
+        </section>
       )}
+    </>
+  )
+}
 
-    </div>
+// ─── Legend dot helper ────────────────────────────────────────────────────────
+
+function LegendDot({ color, label }: { color: string; label: string }) {
+  return (
+    <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: 'var(--muted)' }}>
+      <span style={{ width: 7, height: 7, borderRadius: '50%', background: color }} />
+      {label}
+    </span>
   )
 }

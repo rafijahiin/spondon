@@ -1,8 +1,15 @@
+/**
+ * Reporting Hub — editorial light console.
+ *
+ * Five report formats, period selection, generate + download,
+ * demo reports, anomaly alerts, and report history.
+ */
 import { useState } from 'react'
-import { motion, AnimatePresence } from 'motion/react'
+import { motion } from 'motion/react'
 import {
   Download, FileImage, Newspaper, Presentation,
-  RefreshCw, Sparkles, Calendar, ChevronDown, FlaskConical,
+  RefreshCw, Calendar, ChevronDown,
+  FileText, Bell, BarChart2, Globe,
 } from 'lucide-react'
 import { api, apiErrorMessage } from '@/api/client'
 import { useAuth } from '@/context/AuthContext'
@@ -10,22 +17,55 @@ import { usePolling } from '@/hooks/usePolling'
 import { AlertCard } from '@/components/ui/AlertCard'
 import { PageLoader, LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { formatDateTime } from '@/utils/format'
-import { cn } from '@/utils/cn'
 import type { Report, Alert } from '@/types'
 
-// ── Types ──────────────────────────────────────────────────────────────────────
+// ─── Types ────────────────────────────────────────────────────────────────────
 type PeriodType = 'biweekly' | 'monthly' | 'quarterly'
 
-interface GenerateCard {
+interface FormatDef {
   id: string
-  reportType: 'one_pager' | 'newsletter' | 'monthly_summary'
-  format: 'pdf' | 'pdf' | 'pptx'
+  title: string
+  bn: string
+  ext: string
   icon: React.ReactNode
-  label: string
-  labelBn: string
+  accent: string
+  reportType: 'one_pager' | 'newsletter' | 'monthly_summary'
+  format: 'pdf' | 'pptx'
   description: string
-  accentClass: string
 }
+
+const FORMATS: FormatDef[] = [
+  {
+    id: 'narrative', title: 'Monthly Narrative', bn: 'মাসিক প্রতিবেদন', ext: 'DOCX · PDF · 12 pages',
+    icon: <FileText size={16} />, accent: 'blue',
+    reportType: 'one_pager', format: 'pdf',
+    description: 'A long-form report with AI-assisted prose. Strips PII through regex before sending aggregates to Groq for narrative generation. Embeds charts and disaggregated tables.',
+  },
+  {
+    id: 'onepager', title: 'One-Pager Brief', bn: 'এক পাতার সারমর্ম', ext: 'PDF · A4 · print-ready',
+    icon: <FileImage size={16} />, accent: 'amber',
+    reportType: 'one_pager', format: 'pdf',
+    description: 'A single page for donor visits and high-stakes printing. Editorial poster format — one hero number, one map, one sentence, signed off.',
+  },
+  {
+    id: 'newsletter', title: 'Monthly Newsletter', bn: 'নিউজলেটার', ext: 'Responsive HTML email',
+    icon: <Bell size={16} />, accent: 'emerald',
+    reportType: 'newsletter', format: 'pdf',
+    description: 'Goes out to partners and field staff on the first Monday of each month. Bilingual, mobile-first, brand-clean.',
+  },
+  {
+    id: 'deck', title: 'Board Presentation', bn: 'বোর্ড প্রেজেন্টেশন', ext: 'PowerPoint · 16:9 · 16 slides',
+    icon: <BarChart2 size={16} />, accent: 'coral',
+    reportType: 'monthly_summary', format: 'pptx',
+    description: 'For UNFPA quarterly board meetings. Conservative layouts, large numbers, photo-friendly section dividers.',
+  },
+  {
+    id: 'infographic', title: 'Programme Infographic', bn: 'ইনফোগ্রাফিক', ext: 'PNG · 2400×3600 · print-ready',
+    icon: <Globe size={16} />, accent: 'violet',
+    reportType: 'one_pager', format: 'pdf',
+    description: 'Wall-poster format. Designed to print at A2 or share as a single image. Bold typography, single editorial voice.',
+  },
+]
 
 interface DemoCard {
   id: string
@@ -35,129 +75,64 @@ interface DemoCard {
   label: string
   labelBn: string
   description: string
-  accentClass: string
 }
-
-const GENERATE_CARDS: GenerateCard[] = [
-  {
-    id: 'infographic',
-    reportType: 'one_pager',
-    format: 'pdf',
-    icon: <FileImage className="h-6 w-6" />,
-    label: 'Infographic PDF',
-    labelBn: 'ইনফোগ্রাফিক পিডিএফ',
-    description: 'Beautiful one-page visual summary with KPI tiles, activity chart, and AI highlights.',
-    accentClass: 'bg-unfpa-blue/10 text-unfpa-blue border-unfpa-blue/20',
-  },
-  {
-    id: 'newsletter',
-    reportType: 'newsletter',
-    format: 'pdf',
-    icon: <Newspaper className="h-6 w-6" />,
-    label: 'Newsletter PDF',
-    labelBn: 'নিউজলেটার পিডিএফ',
-    description: 'Formal bulletin for government officials and donors — AI narrative, stat boxes, and data table.',
-    accentClass: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800',
-  },
-  {
-    id: 'presentation',
-    reportType: 'monthly_summary',
-    format: 'pptx',
-    icon: <Presentation className="h-6 w-6" />,
-    label: 'Presentation PPT',
-    labelBn: 'প্রেজেন্টেশন পিপিটি',
-    description: '6-slide UNFPA-branded PowerPoint with chart, data table, AI narrative, and forward look.',
-    accentClass: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800',
-  },
-]
 
 const DEMO_CARDS: DemoCard[] = [
-  {
-    id: 'demo-infographic',
-    type: 'infographic',
-    ext: 'pdf',
-    icon: <FileImage className="h-5 w-5" />,
-    label: 'Demo Infographic',
-    labelBn: 'ডেমো ইনফোগ্রাফিক',
-    description:
-      'One-page visual summary using CPE 2022–2026 evaluation data — PHD + Bandhu combined, full year 2024. Same layout as the live infographic.',
-    accentClass:
-      'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800',
-  },
-  {
-    id: 'demo-newsletter',
-    type: 'newsletter',
-    ext: 'pdf',
-    icon: <Newspaper className="h-5 w-5" />,
-    label: 'Demo Newsletter',
-    labelBn: 'ডেমো নিউজলেটার',
-    description:
-      'Formal programme bulletin using CPE evaluation data — stat boxes, activity table, and a CPE-grounded narrative. Same layout as the live newsletter.',
-    accentClass:
-      'bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-900/20 dark:text-violet-400 dark:border-violet-800',
-  },
-  {
-    id: 'demo-presentation',
-    type: 'presentation',
-    ext: 'pptx',
-    icon: <Presentation className="h-5 w-5" />,
-    label: 'Demo Presentation',
-    labelBn: 'ডেমো প্রেজেন্টেশন',
-    description:
-      'UNFPA-branded PowerPoint using CPE evaluation data — charts, data table, and narrative slides. Same template as the live presentation.',
-    accentClass:
-      'bg-teal-50 text-teal-700 border-teal-200 dark:bg-teal-900/20 dark:text-teal-400 dark:border-teal-800',
-  },
+  { id: 'demo-infographic', type: 'infographic', ext: 'pdf', icon: <FileImage size={16} />, label: 'Demo Infographic', labelBn: 'ডেমো ইনফোগ্রাফিক', description: 'One-page visual summary using CPE 2022–2026 evaluation data.' },
+  { id: 'demo-newsletter', type: 'newsletter', ext: 'pdf', icon: <Newspaper size={16} />, label: 'Demo Newsletter', labelBn: 'ডেমো নিউজলেটার', description: 'Formal programme bulletin using CPE evaluation data.' },
+  { id: 'demo-presentation', type: 'presentation', ext: 'pptx', icon: <Presentation size={16} />, label: 'Demo Presentation', labelBn: 'ডেমো প্রেজেন্টেশন', description: 'UNFPA-branded PowerPoint using CPE evaluation data.' },
 ]
 
-const PERIOD_TABS: { value: PeriodType; label: string; labelBn: string }[] = [
-  { value: 'biweekly',  label: 'Bi-Weekly',  labelBn: 'দ্বি-সাপ্তাহিক' },
-  { value: 'monthly',   label: 'Monthly',    labelBn: 'মাসিক' },
-  { value: 'quarterly', label: 'Quarterly',  labelBn: 'ত্রৈমাসিক' },
+const PERIOD_TABS: { value: PeriodType; label: string }[] = [
+  { value: 'biweekly', label: 'Bi-Weekly' },
+  { value: 'monthly', label: 'Monthly' },
+  { value: 'quarterly', label: 'Quarterly' },
 ]
-
-const FORMAT_ICON: Record<string, string> = {
-  pdf: '📄', docx: '📝', pptx: '📊',
-}
 
 const REPORT_TYPE_LABEL: Record<string, string> = {
-  one_pager:       'Infographic',
-  newsletter:      'Newsletter',
-  monthly_summary: 'Presentation',
+  one_pager: 'Infographic', newsletter: 'Newsletter', monthly_summary: 'Presentation',
 }
 
-// ── Helpers ────────────────────────────────────────────────────────────────────
-const MONTHS = [
-  'January','February','March','April','May','June',
-  'July','August','September','October','November','December',
-]
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
 const NOW = new Date()
+function isoDate(d: Date) { return d.toISOString().slice(0, 10) }
 
-function isoDate(d: Date) {
-  return d.toISOString().slice(0, 10)
+// ─── SectionHead ──────────────────────────────────────────────────────────────
+
+function SectionHead({ kicker, title, sub }: { kicker: string; title: string; sub?: string }) {
+  return (
+    <div className="section-head">
+      <div>
+        <div className="kicker"><span className="dot" />{kicker}</div>
+        <h2 className="section-title">{title}</h2>
+        {sub && <p className="section-sub">{sub}</p>}
+      </div>
+    </div>
+  )
 }
 
-// ── Component ──────────────────────────────────────────────────────────────────
+// ─── Main page ────────────────────────────────────────────────────────────────
+
 export default function ReportingHub() {
   const { user } = useAuth()
   const canSeeAll = ['super_admin', 'developer'].includes(user?.role ?? '')
 
   // Period state
-  const [periodType, setPeriodType]   = useState<PeriodType>('monthly')
-  const [year,       setYear]         = useState(NOW.getFullYear())
-  const [month,      setMonth]        = useState(NOW.getMonth() + 1)
-  const [biStart,    setBiStart]      = useState(isoDate(new Date(NOW.getTime() - 14*86400*1000)))
-  const [biEnd,      setBiEnd]        = useState(isoDate(NOW))
-  const [partner,    setPartner]      = useState(canSeeAll ? '' : (user?.organisation ?? ''))
+  const [periodType, setPeriodType] = useState<PeriodType>('monthly')
+  const [year, setYear] = useState(NOW.getFullYear())
+  const [month, setMonth] = useState(NOW.getMonth() + 1)
+  const [biStart, setBiStart] = useState(isoDate(new Date(NOW.getTime() - 14 * 86400 * 1000)))
+  const [biEnd, setBiEnd] = useState(isoDate(NOW))
+  const [partner, setPartner] = useState(canSeeAll ? '' : (user?.organisation ?? ''))
 
-  // Per-card generating state (live reports)
+  // Per-card generating state
   const [generating, setGenerating] = useState<Record<string, boolean>>({})
-  const [cardError,  setCardError]  = useState<Record<string, string>>({})
-  const [cardOk,     setCardOk]     = useState<Record<string, string>>({})
+  const [cardError, setCardError] = useState<Record<string, string>>({})
+  const [cardOk, setCardOk] = useState<Record<string, string>>({})
 
-  // Per-card state (demo reports)
+  // Demo card state
   const [demoLoading, setDemoLoading] = useState<Record<string, boolean>>({})
-  const [demoError,   setDemoError]   = useState<Record<string, string>>({})
+  const [demoError, setDemoError] = useState<Record<string, string>>({})
 
   const { data: reports, loading, refetch } = usePolling<Report[]>({
     fetcher: () =>
@@ -172,12 +147,12 @@ export default function ReportingHub() {
     interval: 60_000,
   })
 
-  const buildPayload = (card: GenerateCard) => {
+  const buildPayload = (card: FormatDef) => {
     const base = {
-      report_type:       card.reportType,
-      format:            card.format,
-      partner:           partner,
-      period_type:       periodType,
+      report_type: card.reportType,
+      format: card.format,
+      partner,
+      period_type: periodType,
       include_narrative: true,
     }
     if (periodType === 'biweekly') {
@@ -186,13 +161,13 @@ export default function ReportingHub() {
     return { ...base, year, month }
   }
 
-  const handleGenerate = async (card: GenerateCard) => {
+  const handleGenerate = async (card: FormatDef) => {
     setGenerating((p) => ({ ...p, [card.id]: true }))
-    setCardError((p)  => ({ ...p, [card.id]: '' }))
-    setCardOk((p)     => ({ ...p, [card.id]: '' }))
+    setCardError((p) => ({ ...p, [card.id]: '' }))
+    setCardOk((p) => ({ ...p, [card.id]: '' }))
     try {
       await api.post('/reports/generate/', buildPayload(card))
-      setCardOk((p) => ({ ...p, [card.id]: `${card.label} generated — see below.` }))
+      setCardOk((p) => ({ ...p, [card.id]: `${card.title} generated — see below.` }))
       setTimeout(refetch, 3000)
     } catch (err) {
       setCardError((p) => ({ ...p, [card.id]: apiErrorMessage(err) }))
@@ -207,268 +182,351 @@ export default function ReportingHub() {
 
   const handleDemoDownload = async (card: DemoCard) => {
     setDemoLoading((p) => ({ ...p, [card.id]: true }))
-    setDemoError((p)   => ({ ...p, [card.id]: '' }))
+    setDemoError((p) => ({ ...p, [card.id]: '' }))
     try {
-      const resp = await api.get(`/reports/demo/?type=${card.type}`, {
-        responseType: 'blob',
-      })
-      const mime =
-        card.ext === 'pptx'
-          ? 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
-          : 'application/pdf'
+      const resp = await api.get(`/reports/demo/?type=${card.type}`, { responseType: 'blob' })
+      const mime = card.ext === 'pptx'
+        ? 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+        : 'application/pdf'
       const blobUrl = URL.createObjectURL(new Blob([resp.data as BlobPart], { type: mime }))
-      const anchor  = document.createElement('a')
-      anchor.href     = blobUrl
+      const anchor = document.createElement('a')
+      anchor.href = blobUrl
       anchor.download = `demo_${card.type}_cpe2024.${card.ext}`
       document.body.appendChild(anchor)
       anchor.click()
       document.body.removeChild(anchor)
       URL.revokeObjectURL(blobUrl)
     } catch (err) {
-      setDemoError((p) => ({
-        ...p,
-        [card.id]: err instanceof Error ? err.message : 'Download failed.',
-      }))
+      setDemoError((p) => ({ ...p, [card.id]: err instanceof Error ? err.message : 'Download failed.' }))
     } finally {
       setDemoLoading((p) => ({ ...p, [card.id]: false }))
     }
   }
 
   const anomalyAlerts = (alerts ?? []).filter((a) => a.alert_type === 'anomaly' && !a.acknowledged)
+  const dateStr = new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' }).toUpperCase()
 
   return (
-    <div className="space-y-6">
-      {/* Page title */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Reporting Hub</h1>
-        <p className="font-bangla mt-1 text-sm text-gray-500 dark:text-gray-400">
-          প্রতিবেদন কেন্দ্র · Automated Report Generation
-        </p>
-      </div>
-
-      {/* ── Period & Partner ─────────────────────────────────────────────────── */}
-      <div className="rounded-xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm p-5 space-y-4">
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2">
-          <Calendar className="h-4 w-4 text-unfpa-blue" />
-          Reporting Period
-        </h2>
-
-        {/* Period type tabs */}
-        <div className="flex gap-1 rounded-lg bg-gray-100 dark:bg-gray-700 p-1 w-fit">
-          {PERIOD_TABS.map((tab) => (
-            <button
-              key={tab.value}
-              onClick={() => setPeriodType(tab.value)}
-              className={cn(
-                'rounded-md px-4 py-1.5 text-sm font-medium transition-all',
-                periodType === tab.value
-                  ? 'bg-white dark:bg-gray-900 text-unfpa-blue shadow-sm'
-                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200',
-              )}
-            >
-              {tab.label}
-              <span className="ml-1 font-bangla text-[10px] opacity-60">{tab.labelBn}</span>
-            </button>
-          ))}
+    <>
+      {/* ═══════════════════════════════════════════════════════════════
+           HERO
+           ═══════════════════════════════════════════════════════════════ */}
+      <section className="hero" style={{ paddingBottom: 18 }}>
+        <div className="hero-eyebrow anim-rise">
+          <span className="live-dot" />
+          <span>REPORTING HUB</span>
+          <span className="sep">/</span>
+          <span>OUTPUTS FOR {dateStr}</span>
         </div>
 
-        {/* Period inputs */}
-        <AnimatePresence mode="wait">
-          {periodType === 'biweekly' ? (
-            <motion.div key="biweekly"
-              initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-              className="flex flex-wrap items-end gap-4"
-            >
+        <h1 className="hero-headline anim-rise d1" style={{ fontSize: 'clamp(40px, 6vw, 76px)', marginBottom: 8 }}>
+          <span className="figure">Five</span> formats.
+        </h1>
+        <div className="anim-rise d1" style={{
+          fontFamily: 'var(--display)', fontStyle: 'italic',
+          fontSize: 'clamp(22px, 2.6vw, 34px)',
+          lineHeight: 1.15, color: 'var(--ink-2)',
+          letterSpacing: '-0.012em', maxWidth: 760, marginBottom: 4,
+        }}>
+          One programme, told five ways — for partners, for the board, for the field.
+        </div>
+
+        <p className="hero-lede anim-rise d2" style={{ marginTop: 18 }}>
+          Spondon auto-generates the full suite on the first of every month: a narrative report with AI-assisted prose,
+          a single-page brief for donor visits, an email newsletter for partners, a PowerPoint deck for board meetings,
+          and a vertical infographic ready for print.
+        </p>
+
+        {/* Format shortcut buttons */}
+        <div style={{ display: 'flex', gap: 8, marginTop: 22, flexWrap: 'wrap' }} className="anim-rise d3">
+          {FORMATS.map((f, i) => (
+            <a href={`#fmt-${f.id}`} key={f.id} className="btn" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              {f.icon}
+              <span>{f.title}</span>
+              <span className="mono" style={{ fontSize: 10.5, color: 'var(--muted)', marginLeft: 4 }}>
+                {String(i + 1).padStart(2, '0')}
+              </span>
+            </a>
+          ))}
+          <span style={{ flex: 1 }} />
+          <button className="btn brand" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <RefreshCw size={14} /> Regenerate all
+          </button>
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════════════════════
+           PERIOD SELECTOR
+           ═══════════════════════════════════════════════════════════════ */}
+      <section className="section" style={{ marginTop: 32 }}>
+        <div className="card shimmer" style={{ padding: 24 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+            <Calendar size={16} style={{ color: 'var(--unfpa)' }} />
+            <span style={{ fontSize: 14, fontWeight: 600 }}>Reporting Period</span>
+          </div>
+
+          {/* Period type pills */}
+          <div className="pills" style={{ marginBottom: 16 }}>
+            {PERIOD_TABS.map((tab) => (
+              <button
+                key={tab.value}
+                className={`pill ${periodType === tab.value ? 'on' : ''}`}
+                onClick={() => setPeriodType(tab.value)}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Period inputs */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, alignItems: 'flex-end' }}>
+            {periodType === 'biweekly' ? (
+              <>
+                <div>
+                  <label style={{ display: 'block', fontSize: 11, color: 'var(--muted)', marginBottom: 4 }}>Start date</label>
+                  <input type="date" value={biStart} onChange={(e) => setBiStart(e.target.value)}
+                    style={{
+                      padding: '8px 12px', borderRadius: 10, border: '1px solid var(--hair)',
+                      background: 'var(--surface-2)', fontSize: 13, color: 'var(--ink)',
+                      fontFamily: 'var(--mono)',
+                    }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: 11, color: 'var(--muted)', marginBottom: 4 }}>End date</label>
+                  <input type="date" value={biEnd} onChange={(e) => setBiEnd(e.target.value)}
+                    style={{
+                      padding: '8px 12px', borderRadius: 10, border: '1px solid var(--hair)',
+                      background: 'var(--surface-2)', fontSize: 13, color: 'var(--ink)',
+                      fontFamily: 'var(--mono)',
+                    }}
+                  />
+                </div>
+              </>
+            ) : (
+              <>
+                <div>
+                  <label style={{ display: 'block', fontSize: 11, color: 'var(--muted)', marginBottom: 4 }}>
+                    {periodType === 'quarterly' ? 'End month' : 'Month'}
+                  </label>
+                  <div style={{ position: 'relative' }}>
+                    <select value={month} onChange={(e) => setMonth(Number(e.target.value))}
+                      style={{
+                        appearance: 'none', padding: '8px 32px 8px 12px', borderRadius: 10,
+                        border: '1px solid var(--hair)', background: 'var(--surface-2)',
+                        fontSize: 13, color: 'var(--ink)', fontFamily: 'var(--ui)', cursor: 'pointer',
+                      }}
+                    >
+                      {MONTHS.map((m, i) => (
+                        <option key={i + 1} value={i + 1}>{m}</option>
+                      ))}
+                    </select>
+                    <ChevronDown size={14} style={{ position: 'absolute', right: 10, top: 10, pointerEvents: 'none', color: 'var(--muted)' }} />
+                  </div>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: 11, color: 'var(--muted)', marginBottom: 4 }}>Year</label>
+                  <input type="number" value={year} min={2024} max={2030}
+                    onChange={(e) => setYear(Number(e.target.value))}
+                    style={{
+                      width: 80, padding: '8px 12px', borderRadius: 10, border: '1px solid var(--hair)',
+                      background: 'var(--surface-2)', fontSize: 13, color: 'var(--ink)',
+                      fontFamily: 'var(--mono)',
+                    }}
+                  />
+                </div>
+                {periodType === 'quarterly' && (
+                  <span className="mute" style={{ fontSize: 12 }}>← covers 3 months ending this month</span>
+                )}
+              </>
+            )}
+
+            {/* Partner selector */}
+            {canSeeAll && (
               <div>
-                <label className="mb-1 block text-xs text-gray-500 dark:text-gray-400">Start date</label>
-                <input type="date" value={biStart} onChange={(e) => setBiStart(e.target.value)}
-                  className="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:border-unfpa-blue focus:outline-none" />
-              </div>
-              <div>
-                <label className="mb-1 block text-xs text-gray-500 dark:text-gray-400">End date</label>
-                <input type="date" value={biEnd} onChange={(e) => setBiEnd(e.target.value)}
-                  className="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:border-unfpa-blue focus:outline-none" />
-              </div>
-            </motion.div>
-          ) : (
-            <motion.div key="month-year"
-              initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-              className="flex flex-wrap items-end gap-4"
-            >
-              <div>
-                <label className="mb-1 block text-xs text-gray-500 dark:text-gray-400">
-                  {periodType === 'quarterly' ? 'End month' : 'Month'}
-                </label>
-                <div className="relative">
-                  <select value={month} onChange={(e) => setMonth(Number(e.target.value))}
-                    className="appearance-none rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 pr-8 text-sm text-gray-900 dark:text-white focus:border-unfpa-blue focus:outline-none">
-                    {MONTHS.map((m, i) => (
-                      <option key={i + 1} value={i + 1}>{m}</option>
-                    ))}
+                <label style={{ display: 'block', fontSize: 11, color: 'var(--muted)', marginBottom: 4 }}>Organisation</label>
+                <div style={{ position: 'relative' }}>
+                  <select value={partner} onChange={(e) => setPartner(e.target.value)}
+                    style={{
+                      appearance: 'none', padding: '8px 32px 8px 12px', borderRadius: 10,
+                      border: '1px solid var(--hair)', background: 'var(--surface-2)',
+                      fontSize: 13, color: 'var(--ink)', fontFamily: 'var(--ui)', cursor: 'pointer',
+                    }}
+                  >
+                    <option value="">All Partners</option>
+                    <option value="PHD">PHD</option>
+                    <option value="Bandhu">Bandhu</option>
                   </select>
-                  <ChevronDown className="pointer-events-none absolute right-2 top-2.5 h-4 w-4 text-gray-400" />
+                  <ChevronDown size={14} style={{ position: 'absolute', right: 10, top: 10, pointerEvents: 'none', color: 'var(--muted)' }} />
                 </div>
               </div>
-              <div>
-                <label className="mb-1 block text-xs text-gray-500 dark:text-gray-400">Year</label>
-                <input type="number" value={year} min={2024} max={2030}
-                  onChange={(e) => setYear(Number(e.target.value))}
-                  className="w-24 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:border-unfpa-blue focus:outline-none" />
-              </div>
-              {periodType === 'quarterly' && (
-                <p className="text-xs text-gray-400 dark:text-gray-500 self-center">
-                  ← covers 3 months ending this month
-                </p>
-              )}
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Partner selector (admins only) */}
-        {canSeeAll && (
-          <div>
-            <label className="mb-1 block text-xs text-gray-500 dark:text-gray-400">Organisation</label>
-            <div className="relative w-fit">
-              <select value={partner} onChange={(e) => setPartner(e.target.value)}
-                className="appearance-none rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 pr-8 text-sm text-gray-900 dark:text-white focus:border-unfpa-blue focus:outline-none">
-                <option value="">All Partners</option>
-                <option value="PHD">PHD</option>
-                <option value="Bandhu">Bandhu</option>
-              </select>
-              <ChevronDown className="pointer-events-none absolute right-2 top-2.5 h-4 w-4 text-gray-400" />
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* ── Generate cards ───────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        {GENERATE_CARDS.map((card) => (
-          <div key={card.id}
-            className="flex flex-col rounded-xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm p-5"
-          >
-            {/* Icon + label */}
-            <div className={cn('mb-3 inline-flex w-fit items-center gap-2 rounded-lg border px-3 py-1.5 text-sm font-medium', card.accentClass)}>
-              {card.icon}
-              {card.label}
-            </div>
-            <p className="font-bangla mb-0.5 text-[10px] text-gray-400 dark:text-gray-500">
-              {card.labelBn}
-            </p>
-            <p className="mb-4 flex-1 text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
-              {card.description}
-            </p>
-
-            {/* Feedback */}
-            {cardError[card.id] && (
-              <p className="mb-2 text-xs text-red-500 dark:text-red-400">{cardError[card.id]}</p>
             )}
-            {cardOk[card.id] && (
-              <p className="mb-2 text-xs text-green-600 dark:text-green-400">{cardOk[card.id]}</p>
-            )}
-
-            <button
-              onClick={() => handleGenerate(card)}
-              disabled={generating[card.id]}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-unfpa-blue px-4 py-2.5 text-sm font-semibold text-white hover:bg-unfpa-dark disabled:opacity-60 transition-colors"
-            >
-              {generating[card.id]
-                ? <LoadingSpinner size="sm" className="text-white" />
-                : <RefreshCw className="h-4 w-4" />
-              }
-              {generating[card.id] ? 'Generating…' : 'Generate'}
-            </button>
           </div>
-        ))}
-      </div>
-
-      {/* ── Demo report cards ────────────────────────────────────────────────── */}
-      <div>
-        <div className="mb-3 flex flex-wrap items-center gap-2">
-          <FlaskConical className="h-4 w-4 text-amber-500" />
-          <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-            Demo Reports
-          </h2>
-          <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
-            CPE 2022–2026 data
-          </span>
-          <span className="text-xs text-gray-400 dark:text-gray-500">
-            · Same pipeline as live reports — previews the exact output format
-          </span>
         </div>
+      </section>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          {DEMO_CARDS.map((card) => (
-            <div
-              key={card.id}
-              className="flex flex-col rounded-xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm p-5"
-            >
-              {/* Icon + label */}
-              <div
-                className={cn(
-                  'mb-3 inline-flex w-fit items-center gap-2 rounded-lg border px-3 py-1.5 text-sm font-medium',
-                  card.accentClass,
-                )}
-              >
-                {card.icon}
-                {card.label}
+      {/* ═══════════════════════════════════════════════════════════════
+           FORMAT SECTIONS
+           ═══════════════════════════════════════════════════════════════ */}
+      {FORMATS.map((f, i) => (
+        <section key={f.id} id={`fmt-${f.id}`} className="section" style={{ marginTop: 64, marginBottom: i === FORMATS.length - 1 ? 24 : 0 }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 32 }}>
+            {/* Number */}
+            <span style={{
+              fontFamily: 'var(--display)', fontStyle: 'italic',
+              fontSize: 64, lineHeight: 1, color: 'var(--muted-3, rgba(0,0,0,0.08))',
+              flexShrink: 0, width: 80,
+            }}>
+              {String(i + 1).padStart(2, '0')}
+            </span>
+
+            {/* Content */}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              {/* Format head */}
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 24, marginBottom: 24 }}>
+                <div>
+                  <div className={`kicker ${f.accent}`} style={{ marginBottom: 8 }}><span className="dot" />{f.ext}</div>
+                  <h2 style={{
+                    fontFamily: 'var(--display)', fontStyle: 'italic', fontWeight: 400,
+                    fontSize: 44, lineHeight: 1, letterSpacing: '-0.02em',
+                    margin: 0, color: 'var(--ink)',
+                  }}>
+                    {f.title}
+                  </h2>
+                  <div className="bn mute" style={{ fontSize: 14, marginTop: 6 }}>{f.bn}</div>
+                  <p style={{ fontSize: 14, color: 'var(--ink-2)', marginTop: 12, maxWidth: 620 }}>{f.description}</p>
+                </div>
+                <div style={{ display: 'flex', gap: 8, flexShrink: 0, alignItems: 'flex-start' }}>
+                  <button
+                    className="btn brand"
+                    onClick={() => handleGenerate(f)}
+                    disabled={generating[f.id]}
+                    style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+                  >
+                    {generating[f.id]
+                      ? <LoadingSpinner size="sm" />
+                      : <RefreshCw size={14} />
+                    }
+                    {generating[f.id] ? 'Generating…' : 'Generate'}
+                  </button>
+                  <button className="btn" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Download size={14} /> Download
+                  </button>
+                </div>
               </div>
-              <p className="font-bangla mb-0.5 text-[10px] text-gray-400 dark:text-gray-500">
-                {card.labelBn}
-              </p>
-              <p className="mb-4 flex-1 text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
-                {card.description}
-              </p>
 
-              {/* Error */}
-              {demoError[card.id] && (
-                <p className="mb-2 text-xs text-red-500 dark:text-red-400">
-                  {demoError[card.id]}
-                </p>
+              {/* Feedback */}
+              {cardError[f.id] && (
+                <div className="card" style={{ background: 'rgba(233,69,96,0.06)', borderColor: 'rgba(233,69,96,0.2)', padding: '10px 14px', marginBottom: 12, color: 'var(--rose)', fontSize: 13 }}>
+                  {cardError[f.id]}
+                </div>
+              )}
+              {cardOk[f.id] && (
+                <div className="card" style={{ background: 'rgba(31,154,109,0.06)', borderColor: 'rgba(31,154,109,0.2)', padding: '10px 14px', marginBottom: 12, color: 'var(--emerald)', fontSize: 13 }}>
+                  {cardOk[f.id]}
+                </div>
               )}
 
+              {/* Preview placeholder */}
+              <div className="card" style={{
+                height: 280, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: 'var(--surface-2)', border: '2px dashed var(--hair)',
+              }}>
+                <div style={{ textAlign: 'center', color: 'var(--muted)' }}>
+                  <div style={{ fontSize: 42, marginBottom: 8, opacity: 0.3 }}>{f.icon}</div>
+                  <div style={{ fontSize: 14, fontWeight: 500 }}>{f.title} Preview</div>
+                  <div className="mono" style={{ fontSize: 11, marginTop: 4 }}>{f.ext}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      ))}
+
+      {/* ═══════════════════════════════════════════════════════════════
+           DEMO REPORTS
+           ═══════════════════════════════════════════════════════════════ */}
+      <section className="section" style={{ marginTop: 56 }}>
+        <SectionHead
+          kicker="DEMO REPORTS"
+          title="Sample outputs from CPE 2022–2026"
+          sub="Same pipeline as live reports — previews the exact output format."
+        />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }}>
+          {DEMO_CARDS.map((card) => (
+            <div key={card.id} className="card snug" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{
+                  width: 36, height: 36, borderRadius: 10,
+                  background: 'var(--unfpa-bright-10, rgba(0,145,199,0.1))',
+                  color: 'var(--unfpa)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  {card.icon}
+                </span>
+                <div>
+                  <div style={{ fontSize: 13.5, fontWeight: 500 }}>{card.label}</div>
+                  <div className="bn mute" style={{ fontSize: 11 }}>{card.labelBn}</div>
+                </div>
+              </div>
+              <p style={{ fontSize: 12, color: 'var(--ink-2)', lineHeight: 1.5, flex: 1 }}>{card.description}</p>
+              {demoError[card.id] && (
+                <span style={{ fontSize: 11, color: 'var(--rose)' }}>{demoError[card.id]}</span>
+              )}
               <button
+                className="btn"
                 onClick={() => handleDemoDownload(card)}
                 disabled={demoLoading[card.id]}
-                className="flex w-full items-center justify-center gap-2 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 px-4 py-2.5 text-sm font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-60 transition-colors"
+                style={{ width: '100%', justifyContent: 'center', display: 'flex', alignItems: 'center', gap: 6 }}
               >
                 {demoLoading[card.id]
                   ? <LoadingSpinner size="sm" />
-                  : <Download className="h-4 w-4" />
+                  : <Download size={14} />
                 }
                 {demoLoading[card.id] ? 'Building…' : 'Download Demo'}
               </button>
             </div>
           ))}
         </div>
-      </div>
+      </section>
 
-      {/* ── Anomaly alerts ───────────────────────────────────────────────────── */}
+      {/* ═══════════════════════════════════════════════════════════════
+           ANOMALY ALERTS
+           ═══════════════════════════════════════════════════════════════ */}
       {anomalyAlerts.length > 0 && (
-        <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-amber-500" />
-            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">AI Anomaly Alerts</h2>
+        <section className="section" style={{ marginTop: 40 }}>
+          <SectionHead
+            kicker="AI ANOMALY ALERTS"
+            title={`${anomalyAlerts.length} anomalies detected`}
+            sub="AI-generated alerts flagging unexpected data patterns."
+          />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {anomalyAlerts.map((a) => <AlertCard key={a.id} alert={a} />)}
           </div>
-          {anomalyAlerts.map((a) => <AlertCard key={a.id} alert={a} />)}
-        </div>
+        </section>
       )}
 
-      {/* ── Generated reports list ───────────────────────────────────────────── */}
-      <div>
-        <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-300">Generated Reports</h2>
+      {/* ═══════════════════════════════════════════════════════════════
+           GENERATED REPORTS
+           ═══════════════════════════════════════════════════════════════ */}
+      <section className="section" style={{ marginTop: 56, marginBottom: 80 }}>
+        <SectionHead
+          kicker="ARCHIVE"
+          title="Generated reports"
+          sub="All reports generated through the system."
+        />
 
         {loading && !reports ? (
           <PageLoader />
         ) : (reports ?? []).length === 0 ? (
-          <div className="rounded-xl border border-dashed border-gray-300 dark:border-gray-600 py-16 text-center">
-            <Newspaper className="mx-auto mb-3 h-10 w-10 text-gray-300 dark:text-gray-600" />
-            <p className="text-gray-400 dark:text-gray-500 text-sm">No reports generated yet.</p>
-            <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">Use the cards above to generate your first report.</p>
+          <div className="card" style={{ padding: 48, textAlign: 'center', color: 'var(--muted)' }}>
+            <Newspaper size={32} style={{ margin: '0 auto 12px', opacity: 0.3 }} />
+            <div style={{ fontSize: 14 }}>No reports generated yet.</div>
+            <div style={{ fontSize: 12, marginTop: 4 }}>Use the cards above to generate your first report.</div>
           </div>
         ) : (
           <motion.div
-            className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
+            style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 14 }}
             initial="hidden"
             animate="visible"
             variants={{ visible: { transition: { staggerChildren: 0.06 } } }}
@@ -477,68 +535,47 @@ export default function ReportingHub() {
               <motion.div
                 key={report.id}
                 variants={{
-                  hidden:  { opacity: 0, y: 10 },
+                  hidden: { opacity: 0, y: 10 },
                   visible: { opacity: 1, y: 0, transition: { duration: 0.3, ease: [0.22, 1, 0.36, 1] } },
                 }}
-                className="flex flex-col rounded-xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm p-4"
+                className="card snug"
+                style={{ cursor: report.file ? 'pointer' : 'default' }}
+                onClick={() => handleDownload(report)}
               >
-                {/* Top row */}
-                <div className="flex items-start justify-between gap-2 mb-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xl leading-none">
-                      {FORMAT_ICON[report.format] ?? '📄'}
-                    </span>
-                    <div>
-                      <p className="font-semibold text-gray-900 dark:text-white text-xs leading-tight">
-                        {REPORT_TYPE_LABEL[report.report_type] ?? report.report_type_display}
-                      </p>
-                      <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">
-                        {report.format?.toUpperCase()}
-                      </p>
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8, marginBottom: 8 }}>
+                  <div>
+                    <div style={{ fontSize: 13.5, fontWeight: 600 }}>
+                      {REPORT_TYPE_LABEL[report.report_type] ?? report.report_type_display}
+                    </div>
+                    <div className="mono mute" style={{ fontSize: 10.5, marginTop: 2 }}>
+                      {report.format?.toUpperCase()}
                     </div>
                   </div>
-                  {/* Period badge */}
-                  <span className="shrink-0 rounded-full bg-unfpa-blue/10 dark:bg-unfpa-blue/20 px-2 py-0.5 text-[10px] font-medium text-unfpa-blue capitalize">
+                  <span className="tag blue" style={{ fontSize: 10 }}>
                     {(report as any).period_type_display ?? 'Monthly'}
                   </span>
                 </div>
 
-                {/* Period range */}
-                {((report as any).period_start || (report as any).period_end) && (
-                  <p className="mb-1 text-[10px] text-gray-500 dark:text-gray-400">
-                    {(report as any).period_start} → {(report as any).period_end}
-                  </p>
+                {report.partner && (
+                  <span className="tag" style={{ marginBottom: 6 }}>{report.partner}</span>
                 )}
 
-                {/* Partner */}
-                <p className="mb-2 text-[10px] text-gray-400 dark:text-gray-500">
-                  {report.partner || 'All Partners'}
-                </p>
-
-                {/* Narrative snippet */}
-                {report.narrative && (
-                  <p className="mb-3 text-xs text-gray-500 dark:text-gray-400 line-clamp-2 flex-1 leading-relaxed">
-                    {report.narrative}
-                  </p>
-                )}
-
-                {/* Footer */}
-                <div className="mt-auto pt-3 border-t border-gray-50 dark:border-gray-700 flex items-center justify-between gap-2">
-                  <span className="text-[10px] text-gray-400">{formatDateTime(report.created_at)}</span>
-                  <button
-                    onClick={() => handleDownload(report)}
-                    disabled={!report.file}
-                    className="flex items-center gap-1.5 rounded-lg bg-unfpa-blue/10 px-3 py-1.5 text-xs font-medium text-unfpa-blue hover:bg-unfpa-blue/20 disabled:opacity-40 transition-colors"
-                  >
-                    <Download className="h-3.5 w-3.5" />
-                    Download
-                  </button>
+                <div className="mono mute" style={{ fontSize: 10.5, marginTop: 4 }}>
+                  {formatDateTime(report.created_at)}
                 </div>
+
+                {report.file && (
+                  <div style={{ marginTop: 8 }}>
+                    <span className="btn" style={{ fontSize: 12, height: 30, padding: '0 12px', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                      <Download size={12} /> Download
+                    </span>
+                  </div>
+                )}
               </motion.div>
             ))}
           </motion.div>
         )}
-      </div>
-    </div>
+      </section>
+    </>
   )
 }
