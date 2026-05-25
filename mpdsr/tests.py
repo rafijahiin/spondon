@@ -60,7 +60,7 @@ class MPDSRCaseModelTest(TestCase):
         self.assertIn('-PER-', case.case_hash)
 
     def test_bondhu_hash_prefix(self):
-        case = make_case(partner='Bondhu')
+        case = make_case(partner='Bandhu')
         self.assertIn('BON', case.case_hash)
 
     def test_str_contains_case_hash(self):
@@ -133,7 +133,7 @@ class MPDSRCaseAPITest(TestCase):
     def setUp(self):
         self.client = APIClient()
         self.phd = make_user('pm@phd.org', Organisation.PHD, Role.MANAGER)
-        self.bondhu = make_user('bm@bondhu.org', Organisation.BONDHU, Role.MANAGER)
+        self.bondhu = make_user('bm@bandhu.org', Organisation.BANDHU, Role.MANAGER)
 
     def test_unauthenticated_returns_403(self):
         resp = self.client.get(BASE_URL)
@@ -141,7 +141,7 @@ class MPDSRCaseAPITest(TestCase):
 
     def test_phd_manager_sees_only_phd_cases(self):
         make_case(partner='PHD', kobo_id='a1')
-        make_case(partner='Bondhu', kobo_id='a2')
+        make_case(partner='Bandhu', kobo_id='a2')
         self.client.force_authenticate(user=self.phd)
         resp = self.client.get(BASE_URL)
         self.assertEqual(resp.status_code, 200)
@@ -224,7 +224,7 @@ class StatsEndpointTest(TestCase):
         self.assertEqual(resp.data['overdue_committee'], 1)
 
     def test_stats_org_isolated(self):
-        make_case(partner='Bondhu')
+        make_case(partner='Bandhu')
         self.client.force_authenticate(user=self.phd)
         resp = self.client.get(f'{BASE_URL}stats/')
         self.assertEqual(resp.data['total'], 0)

@@ -5,7 +5,7 @@ Period args: period_start, period_end are date objects.
 """
 from django.db.models import Q, Sum
 from programs.models import (
-    Client, ClinicVisit, HIVSTITestResult, HTCCounselling,
+    ClinicVisit, HIVSTITestResult, HTCCounselling,
     IndividualCounselling, GroupEducationSession, OutreachSession,
     GBVCase, Referral, ServiceCenter, TrainingEvent, CoordMeeting, MobileHealthCamp,
 )

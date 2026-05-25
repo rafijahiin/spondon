@@ -152,6 +152,9 @@ class ADRRecord(SubmissionBase):
     class Meta:
         ordering = ['-report_date']
 
+    def __str__(self):
+        return f'ADR {self.report_date} ({self.organisation})'
+
 
 class AutoclaveLog(SubmissionBase):
     AUTOCLAVE = 'autoclave'
@@ -181,6 +184,9 @@ class AutoclaveLog(SubmissionBase):
     class Meta:
         ordering = ['-log_date']
 
+    def __str__(self):
+        return f'{self.get_log_type_display()} log {self.log_date}'
+
 
 class AntenatalCard(SubmissionBase):
     """PHD only — Antenatal Care (ANC) visit record."""
@@ -206,3 +212,6 @@ class AntenatalCard(SubmissionBase):
 
     class Meta:
         ordering = ['-visit_date']
+
+    def __str__(self):
+        return f'ANC visit #{self.anc_visit_number} on {self.visit_date}'

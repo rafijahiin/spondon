@@ -188,7 +188,8 @@ def detect_submission_gaps(dry_run: bool = False) -> list[dict]:
 def _send_gap_telegram(partner: str, form_label: str) -> None:
     """Send a Telegram alert for a 48-hour submission gap."""
     from django.conf import settings
-    import json, urllib.request
+    import json
+    import urllib.request
 
     token   = getattr(settings, 'TELEGRAM_BOT_TOKEN', '')
     chat_id = getattr(settings, f'TELEGRAM_CHAT_ID_{partner.upper()}',

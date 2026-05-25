@@ -14,7 +14,7 @@ from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 
 from .models import User
-from .permissions import IsSuperAdmin, IsSuperAdminOrDeveloper
+from .permissions import IsSuperAdminOrDeveloper
 from .serializers import (
     AdminUserSerializer,
     LoginSerializer,

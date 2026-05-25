@@ -120,10 +120,14 @@ class GBVCase(SubmissionBase):
     @property
     def violence_types(self):
         types = []
-        if self.gbv_sexual: types.append('Sexual')
-        if self.gbv_physical: types.append('Physical')
-        if self.gbv_economic: types.append('Economic')
-        if self.gbv_psychological: types.append('Psychological')
+        if self.gbv_sexual:
+            types.append('Sexual')
+        if self.gbv_physical:
+            types.append('Physical')
+        if self.gbv_economic:
+            types.append('Economic')
+        if self.gbv_psychological:
+            types.append('Psychological')
         return types
 
 
@@ -140,3 +144,6 @@ class GBVAccessLog(models.Model):
 
     class Meta:
         ordering = ['-timestamp']
+
+    def __str__(self):
+        return f'{self.action} on GBV case at {self.timestamp:%Y-%m-%d %H:%M}'

@@ -5,6 +5,7 @@ A duplicate is defined as a survey with the same (participant_code, district, su
 that already exists in the database.  The newer record is flagged as duplicate.
 """
 import logging
+import uuid
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +20,7 @@ def flag_duplicates_for_partner(partner: str) -> int:
     # Reset existing flags so we do a clean re-scan
     BaselineSurvey.objects.filter(partner=partner).update(is_duplicate=False, duplicate_of=None)
 
-    seen: dict[tuple, uuid_val] = {}
+    seen: dict[tuple, uuid.UUID] = {}
     flagged = 0
 
     surveys = (

@@ -321,8 +321,7 @@ def build_newsletter(
         (counts.get('outreach_sessions',0), 'Outreach Sessions', colors.HexColor('#FF8B00')),
         (counts.get('gbv_cases', 0),    'GBV Cases Reported',  colors.HexColor('#DE350B')),
     ]
-    boxes = [StatBox(v, l, color=c) for v, l, c in kpi_items]
-    spacers = [Spacer(0.3*cm, 1)] * (len(boxes) - 1)
+    boxes = [StatBox(v, label, color=c) for v, label, c in kpi_items]
     row_data = []
     for i, box in enumerate(boxes):
         row_data.append(box)

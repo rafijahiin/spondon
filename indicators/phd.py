@@ -5,7 +5,7 @@ All filter on approval_status='APPROVED' only.
 from django.db.models import Q, Sum
 from programs.models import (
     Client, ClinicVisit, HIVSTITestResult, IndividualCounselling,
-    GroupEducationSession, OutreachSession, GBVCase, Referral,
+    OutreachSession, GBVCase, Referral,
     ServiceCenter, TrainingEvent, CoordMeeting, MobileHealthCamp, StockEntry,
 )
 
@@ -14,7 +14,6 @@ APPROVED = 'APPROVED'
 
 def compute_I_PHD_1_1(org, period_start, period_end):
     """FSWs receiving HIV/STI screening + FP counselling. Target: 3,484"""
-    from programs.models import Client
     fsw_clients = Client.objects.filter(
         organisation=org, target_group_code='05'
     ).values_list('id', flat=True)

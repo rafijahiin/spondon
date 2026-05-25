@@ -33,8 +33,7 @@ from .models import (
 )
 from .serializers import (
     ServiceCenterSerializer, ClientSerializer,
-    ClinicVisitSerializer, ClinicVisitApprovalSerializer,
-    HIVSTITestResultSerializer, ADRRecordSerializer,
+    ClinicVisitSerializer, HIVSTITestResultSerializer, ADRRecordSerializer,
     AutoclaveLogSerializer, AntenatalCardSerializer,
     HTCCounsellingSerializer, IndividualCounsellingSerializer, MHScreeningSerializer,
     GBVCaseSerializer, GBVCaseDetailSerializer,
@@ -341,9 +340,12 @@ def _build_summary(obj, model_type: str) -> str:
     try:
         if model_type == 'clinic_visit':
             parts = [f"Visit {obj.visit_date}"]
-            if obj.hiv_screening_done: parts.append('HIV screen')
-            if obj.sti_screening_done: parts.append('STI screen')
-            if obj.condoms_distributed: parts.append(f'Condoms: {obj.condoms_distributed}')
+            if obj.hiv_screening_done:
+                parts.append('HIV screen')
+            if obj.sti_screening_done:
+                parts.append('STI screen')
+            if obj.condoms_distributed:
+                parts.append(f'Condoms: {obj.condoms_distributed}')
             return ' · '.join(parts)
         if model_type == 'hiv_sti_result':
             return f"Test {obj.testing_date} · HIV: {obj.hiv_result} · Syphilis: {obj.syphilis_result}"
@@ -553,7 +555,7 @@ class PendingApprovalsView(views.APIView):
 
         # Telegram — notify org chat of approval/rejection
         try:
-            from .webhook import _FORM_LABELS, FORM_HANDLERS
+            from .webhook import _FORM_LABELS
             # Reverse-look up form label from model_type
             _model_to_form = {
                 'client_reg': 'spondon_client_reg_v1',

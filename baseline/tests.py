@@ -1,11 +1,9 @@
 import datetime
 
 from django.test import TestCase
-from django.utils import timezone
 from rest_framework.test import APIClient
 
 from accounts.models import Organisation, Role, User
-from submissions.models import FormType, KoboSubmission, SubmissionStatus
 from .duplicate_detector import check_new_survey, flag_duplicates_for_partner
 from .models import BaselineSurvey, SurveyType
 
@@ -82,7 +80,7 @@ class BaselineSurveyAPITest(TestCase):
     def setUp(self):
         self.client = APIClient()
         self.phd = make_user('pm@phd.org', Organisation.PHD, Role.MANAGER)
-        self.bondhu = make_user('bm@bondhu.org', Organisation.BONDHU, Role.MANAGER)
+        self.bondhu = make_user('bm@bandhu.org', Organisation.BANDHU, Role.MANAGER)
 
     def test_unauthenticated_returns_403(self):
         resp = self.client.get(BASE_URL)
@@ -90,7 +88,7 @@ class BaselineSurveyAPITest(TestCase):
 
     def test_org_isolation(self):
         make_survey(partner='PHD')
-        make_survey(partner='Bondhu')
+        make_survey(partner='Bandhu')
         self.client.force_authenticate(user=self.phd)
         resp = self.client.get(BASE_URL)
         self.assertEqual(resp.data['count'], 1)

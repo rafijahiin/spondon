@@ -199,7 +199,7 @@ class OrgMiddlewareTest(TestCase):
     def setUp(self):
         self.client = APIClient()
         self.phd_manager = make_user('m@phd.org', Organisation.PHD, Role.MANAGER)
-        self.bondhu_manager = make_user('m@bondhu.org', Organisation.BONDHU, Role.MANAGER)
+        self.bondhu_manager = make_user('m@bandhu.org', Organisation.BANDHU, Role.MANAGER)
 
     def test_phd_manager_org_in_response(self):
         self.client.force_authenticate(user=self.phd_manager)
@@ -209,7 +209,7 @@ class OrgMiddlewareTest(TestCase):
     def test_bondhu_manager_org_in_response(self):
         self.client.force_authenticate(user=self.bondhu_manager)
         r = self.client.get(reverse('me'))
-        self.assertEqual(r.data['organisation'], 'Bondhu')
+        self.assertEqual(r.data['organisation'], 'Bandhu')
 
 
 # ---------------------------------------------------------------------------

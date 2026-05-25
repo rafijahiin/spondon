@@ -2,7 +2,7 @@ import datetime
 
 from rest_framework import serializers
 
-from .models import MPDSRCase, ReviewStatus, SUB_FORM_LABELS
+from .models import MPDSRCase, SUB_FORM_LABELS
 
 
 class MPDSRCaseSerializer(serializers.ModelSerializer):

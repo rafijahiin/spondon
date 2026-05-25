@@ -5,7 +5,13 @@ from .models import IndicatorTarget
 class IndicatorTargetSerializer(serializers.ModelSerializer):
     class Meta:
         model = IndicatorTarget
-        fields = '__all__'
+        fields = [
+            'id', 'organisation', 'indicator_code', 'indicator_name',
+            'objective', 'activity_ref', 'unit',
+            'target_value', 'period_start', 'period_end',
+            'notes', 'is_active', 'created_at', 'updated_at',
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
 
 
 class IndicatorProgressSerializer(serializers.Serializer):

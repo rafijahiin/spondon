@@ -1,8 +1,6 @@
 import datetime
 
-from django.db.models import Count
 from django.utils import timezone
-from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
@@ -209,7 +207,6 @@ class ForecastView(APIView):
     permission_classes = [IsSuperAdminOrManager]
 
     def get(self, request):
-        from submissions.models import KoboSubmission, SubmissionStatus
 
         partner   = request.query_params.get('partner', '')
         form_type = request.query_params.get('form_type', FormType.MPDSR)

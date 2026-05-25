@@ -93,7 +93,6 @@ def _kicker(c, x, y, text, *, dot_color=UNFPA, size=8):
 def _draw_header_band(c, period_label: str, edition_no: int = 1):
     """Dark navy → unfpa gradient band with coral radial accent."""
     band_h = 130
-    band_top = H
     band_bottom = H - band_h
 
     # Background — layered rects to simulate gradient

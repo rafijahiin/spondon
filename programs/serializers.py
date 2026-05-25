@@ -19,13 +19,22 @@ from .models import (
 class ServiceCenterSerializer(serializers.ModelSerializer):
     class Meta:
         model = ServiceCenter
-        fields = '__all__'
+        fields = [
+            'id', 'organisation', 'name', 'name_bangla', 'code',
+            'center_type', 'district', 'upazila', 'address',
+            'latitude', 'longitude', 'is_active',
+        ]
+        read_only_fields = ['id']
 
 
 class ClientSerializer(serializers.ModelSerializer):
     class Meta:
         model = Client
-        fields = '__all__'
+        exclude = ['raw_payload']
+        read_only_fields = [
+            'id', 'approval_status', 'approved_by', 'approved_at',
+            'kobo_submission_id', 'submitted_at',
+        ]
 
 
 class ClinicVisitSerializer(serializers.ModelSerializer):

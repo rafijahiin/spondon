@@ -1,21 +1,21 @@
 import datetime
 import logging
 
-from django.db.models import Count, Q
+from django.db.models import Count
 from django.db.models.functions import TruncMonth
 from django.utils import timezone
 from rest_framework.response import Response
 from rest_framework.views import APIView
+
+from accounts.permissions import IsSuperAdmin, IsSuperAdminOrManager
+from submissions.models import FormType, KoboSubmission, SubmissionStatus
+from .utils import allowed_partners, current_month_bounds, previous_month_bounds
 
 
 def _months_ago(year: int, month: int, n: int) -> tuple[int, int]:
     """Return (year, month) that is n months before the given year/month."""
     total = (year - 1) * 12 + (month - 1) - n
     return (total // 12 + 1, total % 12 + 1)
-
-from accounts.permissions import IsSuperAdmin, IsSuperAdminOrManager
-from submissions.models import FormType, KoboSubmission, SubmissionStatus
-from .utils import allowed_partners, current_month_bounds, previous_month_bounds
 
 APPROVED = SubmissionStatus.APPROVED
 PENDING = SubmissionStatus.PENDING

@@ -94,6 +94,9 @@ class IndividualCounselling(SubmissionBase):
     class Meta:
         ordering = ['-session_date']
 
+    def __str__(self):
+        return f'Counselling {self.session_date}'
+
 
 class MHScreening(SubmissionBase):
     DEPRESSION = 'depression'
@@ -145,3 +148,6 @@ class MHScreening(SubmissionBase):
 
     class Meta:
         ordering = ['-screening_date']
+
+    def __str__(self):
+        return f'{self.get_screening_type_display()} screening {self.screening_date}'

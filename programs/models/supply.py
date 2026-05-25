@@ -145,6 +145,9 @@ class SafetyHygieneKit(SubmissionBase):
     class Meta:
         ordering = ['-distribution_date']
 
+    def __str__(self):
+        return f'Hygiene kit {self.distribution_date} ({self.organisation})'
+
 
 class StoreRequisition(TimestampedModel):
     """Store requisition form (browser-based, no GPS)."""

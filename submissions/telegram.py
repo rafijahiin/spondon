@@ -137,7 +137,6 @@ def send_gps_rejection_notice(worker_name: str, form_type: str) -> None:
         f"ফোনে লোকেশন চালু করে আবার জমা দিন।"
     )
     try:
-        from django.conf import settings
         from accounts.models import User
         managers = User.objects.filter(
             role__in=('manager', 'super_admin'),

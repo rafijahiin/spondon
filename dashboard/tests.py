@@ -1,7 +1,7 @@
 import datetime
 from unittest.mock import patch
 
-from django.test import TestCase, override_settings
+from django.test import TestCase
 from django.utils import timezone
 from rest_framework.test import APIClient
 
@@ -44,7 +44,7 @@ class KPIViewTest(TestCase):
     def setUp(self):
         self.client = APIClient()
         self.phd = make_user('pm@phd.org', Organisation.PHD, Role.MANAGER)
-        self.bondhu = make_user('bm@bondhu.org', Organisation.BONDHU, Role.MANAGER)
+        self.bondhu = make_user('bm@bandhu.org', Organisation.BANDHU, Role.MANAGER)
 
     def test_unauthenticated_returns_403(self):
         resp = self.client.get(f'{BASE_URL}kpis/')
@@ -70,7 +70,7 @@ class KPIViewTest(TestCase):
 
     def test_org_isolation_phd_does_not_count_bondhu(self):
         make_submission('PHD', FormType.MPDSR)
-        make_submission('Bondhu', FormType.MPDSR)
+        make_submission('Bandhu', FormType.MPDSR)
         self.client.force_authenticate(user=self.phd)
         resp = self.client.get(f'{BASE_URL}kpis/')
         self.assertEqual(resp.data['submissions_this_month'], 1)
@@ -144,7 +144,7 @@ class MonthlyBreakdownTest(TestCase):
 
     def test_org_isolated_from_bondhu(self):
         dt = datetime.datetime(2024, 6, 15, tzinfo=datetime.timezone.utc)
-        make_submission('Bondhu', FormType.MPDSR, submitted_at=dt)
+        make_submission('Bandhu', FormType.MPDSR, submitted_at=dt)
         self.client.force_authenticate(user=self.phd)
         resp = self.client.get(f'{BASE_URL}monthly/?year=2024')
         june = resp.data['months'][5]
@@ -178,7 +178,7 @@ class ActivityFeedTest(TestCase):
 
     def test_org_isolation(self):
         make_submission('PHD', FormType.MPDSR, worker_name='Rina')
-        make_submission('Bondhu', FormType.MPDSR, worker_name='Mita')
+        make_submission('Bandhu', FormType.MPDSR, worker_name='Mita')
         self.client.force_authenticate(user=self.phd)
         resp = self.client.get(f'{BASE_URL}activity/')
         names = [r['worker_name'] for r in resp.data['results']]
@@ -227,7 +227,7 @@ class CentresViewTest(TestCase):
         self.assertEqual(districts[0]['count'], 2)
 
     def test_org_isolation_in_centres(self):
-        make_submission('Bondhu', FormType.MPDSR, district='Dhaka')
+        make_submission('Bandhu', FormType.MPDSR, district='Dhaka')
         self.client.force_authenticate(user=self.phd)
         resp = self.client.get(f'{BASE_URL}centres/')
         self.assertEqual(len(resp.data['districts']), 0)
@@ -256,14 +256,14 @@ class PartnerSummaryTest(TestCase):
     @patch('accounts.permissions.is_verified', return_value=True)
     def test_super_admin_sees_both_partners(self, _):
         make_submission('PHD', FormType.MPDSR, kobo_id='ps1')
-        make_submission('Bondhu', FormType.MPDSR, kobo_id='ps2')
+        make_submission('Bandhu', FormType.MPDSR, kobo_id='ps2')
         self.client.force_authenticate(user=self.super_admin)
         resp = self.client.get(f'{BASE_URL}partner-summary/')
         self.assertEqual(resp.status_code, 200)
         self.assertIn('PHD', resp.data)
-        self.assertIn('Bondhu', resp.data)
+        self.assertIn('Bandhu', resp.data)
         self.assertEqual(resp.data['PHD']['submissions_this_month'], 1)
-        self.assertEqual(resp.data['Bondhu']['submissions_this_month'], 1)
+        self.assertEqual(resp.data['Bandhu']['submissions_this_month'], 1)
 
 
 # ---------------------------------------------------------------------------
@@ -285,7 +285,7 @@ class MapDataTest(TestCase):
         self.assertAlmostEqual(resp.data['results'][0]['lat'], 23.71, places=2)
 
     def test_org_isolation_map(self):
-        make_submission('Bondhu', FormType.MPDSR, lat=22.0, lng=89.0)
+        make_submission('Bandhu', FormType.MPDSR, lat=22.0, lng=89.0)
         self.client.force_authenticate(user=self.phd)
         resp = self.client.get(f'{BASE_URL}map-data/')
         self.assertEqual(len(resp.data['results']), 0)

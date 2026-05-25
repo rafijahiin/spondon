@@ -3,7 +3,6 @@ import uuid
 from django.conf import settings
 from django.db import models
 
-from submissions.models import FormType
 
 
 class ReportFormat(models.TextChoices):

@@ -8,7 +8,7 @@ from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 
 from accounts.permissions import IsSuperAdminOrManager, OrgFilterMixin
-from .models import TrainingAttendance, TrainingSession
+from .models import TrainingSession
 from .serializers import (
     TrainingAttendanceSerializer,
     TrainingSessionSerializer,

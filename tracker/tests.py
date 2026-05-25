@@ -2,7 +2,6 @@ import datetime
 from unittest.mock import patch
 
 from django.test import TestCase
-from django.utils import timezone
 from rest_framework.test import APIClient
 
 from accounts.models import Organisation, Role, User
@@ -119,7 +118,7 @@ class AlertViewTest(TestCase):
     def setUp(self):
         self.client = APIClient()
         self.phd = make_user('pm@phd.org', Organisation.PHD, Role.MANAGER)
-        self.bondhu = make_user('bm@bondhu.org', Organisation.BONDHU, Role.MANAGER)
+        self.bondhu = make_user('bm@bandhu.org', Organisation.BANDHU, Role.MANAGER)
 
     def _make_alert(self, partner='PHD'):
         return Alert.objects.create(
@@ -132,7 +131,7 @@ class AlertViewTest(TestCase):
 
     def test_phd_sees_only_phd_alerts(self):
         self._make_alert('PHD')
-        self._make_alert('Bondhu')
+        self._make_alert('Bandhu')
         self.client.force_authenticate(user=self.phd)
         resp = self.client.get(ALERTS_URL)
         self.assertEqual(resp.status_code, 200)
@@ -149,7 +148,7 @@ class AlertViewTest(TestCase):
 
     def test_filter_unacknowledged(self):
         a1 = self._make_alert('PHD')
-        a2 = self._make_alert('PHD')
+        self._make_alert('PHD')  # second alert stays unacknowledged
         a1.acknowledged = True
         a1.save()
         self.client.force_authenticate(user=self.phd)

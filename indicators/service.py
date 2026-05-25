@@ -8,7 +8,6 @@ get_indicator_progress() → returns {actual, target, pct, unit, label}
 Results are cached for 1 hour per (org, code, period_start, period_end).
 """
 import logging
-from decimal import Decimal
 from django.core.cache import cache
 
 from .bandhu import (

@@ -4,7 +4,7 @@ Word document report generator using python-docx.
 import io
 
 from docx import Document
-from docx.shared import Pt, RGBColor
+from docx.shared import RGBColor
 
 
 def build_summary_docx(title: str, rows: list[tuple], narrative: str = '') -> bytes:

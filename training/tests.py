@@ -67,7 +67,7 @@ class TrainingSessionAPITest(TestCase):
     def setUp(self):
         self.client = APIClient()
         self.phd = make_user('pm@phd.org', Organisation.PHD, Role.MANAGER)
-        self.bondhu = make_user('bm@bondhu.org', Organisation.BONDHU, Role.MANAGER)
+        self.bondhu = make_user('bm@bandhu.org', Organisation.BANDHU, Role.MANAGER)
 
     def test_unauthenticated_returns_403(self):
         resp = self.client.get(BASE_URL)
@@ -75,7 +75,7 @@ class TrainingSessionAPITest(TestCase):
 
     def test_org_isolation(self):
         make_session(partner='PHD')
-        make_session(partner='Bondhu')
+        make_session(partner='Bandhu')
         self.client.force_authenticate(user=self.phd)
         resp = self.client.get(BASE_URL)
         self.assertEqual(resp.data['count'], 1)

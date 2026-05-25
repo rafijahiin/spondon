@@ -11,4 +11,10 @@ class UserCreationForm(BaseUserCreationForm):
 class UserChangeForm(BaseUserChangeForm):
     class Meta(BaseUserChangeForm.Meta):
         model = User
-        fields = '__all__'
+        fields = (
+            'email', 'full_name', 'organisation', 'role',
+            'is_active', 'is_staff', 'is_superuser',
+            'groups', 'user_permissions',
+            'last_login', 'date_joined',
+            'password',
+        )

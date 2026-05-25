@@ -4,7 +4,6 @@ import json
 from unittest.mock import patch
 
 from django.test import TestCase, override_settings
-from django.urls import reverse
 from rest_framework.test import APIClient
 
 from accounts.models import Organisation, Role, User
@@ -103,10 +102,10 @@ class WebhookIngestTest(TestCase):
 
     @patch('submissions.views.send_submission_alert')
     def test_bondhu_partner_detected(self, _):
-        payload = mpdsr_payload(partner='Bondhu', _id='3001')
+        payload = mpdsr_payload(partner='Bandhu', _id='3001')
         resp = self.client.post(WEBHOOK_URL, data=json.dumps(payload), content_type='application/json')
         self.assertEqual(resp.status_code, 201)
-        self.assertEqual(KoboSubmission.objects.first().partner, 'Bondhu')
+        self.assertEqual(KoboSubmission.objects.first().partner, 'Bandhu')
 
     @patch('submissions.views.send_submission_alert')
     def test_geolocation_extracted(self, _):
@@ -133,7 +132,7 @@ class WebhookIngestTest(TestCase):
 @override_settings(**{**TEST_UIDS, 'KOBO_WEBHOOK_SECRET': 'testsecret'})
 class WebhookSignatureTest(TestCase):
 
-    def _signed_post(self, payload: dict) -> 'response':
+    def _signed_post(self, payload: dict):
         body = json.dumps(payload).encode()
         sig = hmac.new(b'testsecret', body, hashlib.sha256).hexdigest()
         return self.client.post(
@@ -186,7 +185,7 @@ class SubmissionApiTest(TestCase):
     def setUp(self):
         self.client = APIClient()
         self.phd_manager = make_user('pm@phd.org', Organisation.PHD, Role.MANAGER)
-        self.bondhu_manager = make_user('bm@bondhu.org', Organisation.BONDHU, Role.MANAGER)
+        self.bondhu_manager = make_user('bm@bandhu.org', Organisation.BANDHU, Role.MANAGER)
 
     def _make_submission(self, partner='PHD', form_type=FormType.MPDSR, kobo_id='sub-001'):
         return KoboSubmission.objects.create(
@@ -202,7 +201,7 @@ class SubmissionApiTest(TestCase):
 
     def test_phd_manager_sees_only_phd_submissions(self):
         self._make_submission(partner='PHD', kobo_id='s-phd')
-        self._make_submission(partner='Bondhu', kobo_id='s-bondhu')
+        self._make_submission(partner='Bandhu', kobo_id='s-bondhu')
         self.client.force_authenticate(user=self.phd_manager)
         resp = self.client.get('/api/submissions/')
         self.assertEqual(resp.status_code, 200)
@@ -287,7 +286,7 @@ class SubmissionApiTest(TestCase):
         self.assertIn('raw_data', resp.data)
 
     def test_phd_manager_cannot_approve_bondhu_submission(self):
-        sub = self._make_submission(partner='Bondhu', kobo_id='bondhu-sub')
+        sub = self._make_submission(partner='Bandhu', kobo_id='bondhu-sub')
         self.client.force_authenticate(user=self.phd_manager)
         resp = self.client.post(f'/api/submissions/{sub.id}/approve/')
         self.assertEqual(resp.status_code, 404)  # OrgFilterMixin hides it
