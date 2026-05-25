@@ -46,7 +46,7 @@ const FORMATS: FormatDef[] = [
     id: 'onepager', title: 'One-Pager Brief', bn: 'এক পাতার সারমর্ম', ext: 'PDF · A4 · print-ready',
     icon: <FileImage size={16} />, accent: 'amber',
     reportType: 'one_pager', format: 'pdf',
-    description: 'A single page for donor visits and high-stakes printing. Editorial poster format — one hero number, one map, one sentence, signed off.',
+    description: 'A single page for donor visits and high-stakes printing. Editorial poster format — one hero number, one ranked leaderboard, one sentence, signed off.',
   },
   {
     id: 'newsletter', title: 'Monthly Newsletter', bn: 'নিউজলেটার', ext: 'Responsive HTML email',
@@ -99,37 +99,6 @@ const NOW = new Date()
 function isoDate(d: Date) { return d.toISOString().slice(0, 10) }
 
 // ─── Sample data for previews ────────────────────────────────────────────────
-
-const BD_PATHS: Record<string, string> = {
-  rangpur:    'M275 50 L370 55 L380 130 L355 180 L300 175 L260 145 L255 95 Z',
-  rajshahi:   'M165 165 L260 145 L300 175 L295 245 L240 295 L185 280 L150 240 L140 195 Z',
-  mymensingh: 'M355 180 L440 175 L460 240 L420 280 L370 270 L355 215 Z',
-  sylhet:     'M460 175 L590 165 L630 220 L595 295 L520 285 L460 240 L460 195 Z',
-  dhaka:      'M295 245 L370 270 L420 280 L450 330 L420 400 L350 390 L300 360 L295 295 Z',
-  khulna:     'M150 290 L240 295 L300 360 L290 460 L230 490 L160 460 L140 380 Z',
-  barisal:    'M290 460 L350 390 L420 400 L420 470 L380 510 L320 500 L290 480 Z',
-  chittagong: 'M420 280 L520 285 L595 295 L605 360 L580 460 L545 540 L500 560 L460 530 L450 470 L420 400 Z',
-}
-
-const SAMPLE_DIVISIONS = [
-  { id: 'rangpur', name: 'Rangpur', sub: 42, cx: 320, cy: 110 },
-  { id: 'rajshahi', name: 'Rajshahi', sub: 28, cx: 220, cy: 230 },
-  { id: 'mymensingh', name: 'Mymensingh', sub: 35, cx: 410, cy: 220 },
-  { id: 'sylhet', name: 'Sylhet', sub: 51, cx: 560, cy: 220 },
-  { id: 'dhaka', name: 'Dhaka', sub: 68, cx: 380, cy: 320 },
-  { id: 'khulna', name: 'Khulna', sub: 31, cx: 250, cy: 410 },
-  { id: 'barisal', name: 'Barisal', sub: 22, cx: 350, cy: 460 },
-  { id: 'chittagong', name: 'Chittagong', sub: 156, cx: 530, cy: 410 },
-]
-
-const SAMPLE_CENTRES = [
-  { id: 'c1', x: 540, y: 480, partner: 'PHD' },
-  { id: 'c2', x: 520, y: 350, partner: 'Bondhu' },
-  { id: 'c3', x: 380, y: 300, partner: 'PHD' },
-  { id: 'c4', x: 250, y: 400, partner: 'Bondhu' },
-  { id: 'c5', x: 320, y: 120, partner: 'PHD' },
-  { id: 'c6', x: 560, y: 230, partner: 'PHD' },
-]
 
 const SAMPLE_FORMS = [
   { key: 'anc', label: 'Antenatal Care', count: 89, cat: 'Clinical' },
@@ -858,8 +827,6 @@ function NarrativePreview() {
 // ─── 02. ONE-PAGER PREVIEW — editorial poster ────────────────────────────────
 
 function OnePagerPreview() {
-  const maxSub = Math.max(...SAMPLE_DIVISIONS.map(d => d.sub))
-
   return (
     <div style={{ display: 'flex', justifyContent: 'center' }}>
       <div style={{
@@ -934,23 +901,29 @@ function OnePagerPreview() {
             ))}
           </div>
 
-          {/* Map + categories */}
+          {/* District leaderboard + categories */}
           <div style={{ display: 'grid', gridTemplateColumns: '1.05fr 1fr', gap: 16 }}>
             <div>
-              <div className="kicker" style={{ marginBottom: 6 }}><span className="dot" />WHERE THE WORK HAPPENS</div>
-              <div style={{ background: 'var(--surface-2)', border: '1px solid var(--hair)', borderRadius: 8, overflow: 'hidden', aspectRatio: '1 / 1.05' }}>
-                <svg viewBox="0 0 700 600" style={{ width: '100%', height: '100%' }}>
-                  {Object.entries(BD_PATHS).map(([k, p]) => {
-                    const div = SAMPLE_DIVISIONS.find(d => d.id === k)
-                    const intensity = div ? div.sub / maxSub : 0.1
-                    return <path key={k} d={p} fill={`rgba(0,145,199,${0.08 + intensity * 0.45})`} stroke="var(--unfpa)" strokeWidth="1.2" />
-                  })}
-                  {SAMPLE_CENTRES.map(s => (
-                    <circle key={s.id} cx={s.x} cy={s.y} r="6.5" fill={s.partner === 'Bondhu' ? 'var(--coral)' : 'var(--unfpa)'} stroke="white" strokeWidth="2" />
-                  ))}
-                  <text x="540" y="495" textAnchor="middle" style={{ fontFamily: 'var(--display)', fontStyle: 'italic', fontSize: 28, fill: 'var(--unfpa-deep, #002A3D)' }}>156</text>
-                  <text x="540" y="520" textAnchor="middle" style={{ fontFamily: 'var(--mono)', fontSize: 10, fill: 'var(--muted)', letterSpacing: '0.08em' }}>COX'S BAZAR</text>
-                </svg>
+              <div className="kicker" style={{ marginBottom: 6 }}><span className="dot" />TOP DISTRICTS</div>
+              <div style={{ background: 'var(--surface-2)', border: '1px solid var(--hair)', borderRadius: 8, padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {SAMPLE_DISTRICTS.slice(0, 6).map((d, i) => {
+                  const max = SAMPLE_DISTRICTS[0].count
+                  const pct = (d.count / max) * 100
+                  return (
+                    <div key={d.name}>
+                      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 3 }}>
+                        <span style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                          <span className="mono mute" style={{ fontSize: 9 }}>{String(i + 1).padStart(2, '0')}</span>
+                          <span style={{ fontSize: 11.5, fontWeight: 500, color: 'var(--ink)' }}>{d.name}</span>
+                        </span>
+                        <span style={{ fontFamily: 'var(--display)', fontStyle: 'italic', fontSize: 18, color: 'var(--unfpa)', lineHeight: 1 }}>{d.count}</span>
+                      </div>
+                      <div style={{ height: 3, background: 'var(--surface-3, #eee)', borderRadius: 999, overflow: 'hidden' }}>
+                        <div style={{ height: '100%', width: `${pct}%`, background: 'linear-gradient(90deg, var(--unfpa), var(--unfpa-bright, #0091C7))' }} />
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
             </div>
 
@@ -1200,33 +1173,30 @@ function DeckPreview() {
         </div>
       </SlideThumb>
 
-      {/* 05 — MAP */}
+      {/* 05 — TOP DISTRICTS */}
       <SlideThumb n={9} of={16}>
-        <div style={{ position: 'absolute', inset: 0, background: 'white', padding: '16px 18px', display: 'grid', gridTemplateColumns: '1fr 1.4fr', gap: 10 }}>
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <div className="mono" style={{ fontSize: 7.5, color: 'var(--muted)', letterSpacing: '0.14em' }}>SECTION 03 · GEOGRAPHY</div>
-            <div style={{ fontFamily: 'var(--display)', fontStyle: 'italic', fontSize: 16, lineHeight: 1.05, color: 'var(--ink)', marginTop: 3 }}>Where the work happens.</div>
-            <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', gap: 2 }}>
-              {SAMPLE_DISTRICTS.slice(0, 5).map((d, i) => (
-                <div key={d.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 8 }}>
-                  <span><span className="mono mute" style={{ marginRight: 4 }}>{String(i + 1).padStart(2, '0')}</span><b>{d.name}</b></span>
-                  <span className="mono">{d.count}</span>
+        <div style={{ position: 'absolute', inset: 0, background: 'white', padding: '16px 18px' }}>
+          <div className="mono" style={{ fontSize: 7.5, color: 'var(--muted)', letterSpacing: '0.14em' }}>SECTION 03 · GEOGRAPHY</div>
+          <div style={{ fontFamily: 'var(--display)', fontStyle: 'italic', fontSize: 16, lineHeight: 1.05, color: 'var(--ink)', marginTop: 3 }}>Where the work happens.</div>
+          <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 4 }}>
+            {SAMPLE_DISTRICTS.slice(0, 6).map((d, i) => {
+              const max = SAMPLE_DISTRICTS[0].count
+              const pct = (d.count / max) * 100
+              return (
+                <div key={d.name}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 8.5, marginBottom: 2 }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span className="mono mute" style={{ fontSize: 7 }}>{String(i + 1).padStart(2, '0')}</span>
+                      <b style={{ color: 'var(--ink)' }}>{d.name}</b>
+                    </span>
+                    <span style={{ fontFamily: 'var(--display)', fontStyle: 'italic', fontSize: 12, color: 'var(--unfpa)' }}>{d.count}</span>
+                  </div>
+                  <div style={{ height: 2, background: 'var(--surface-3, #eee)', borderRadius: 999, overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: `${pct}%`, background: 'var(--unfpa)' }} />
+                  </div>
                 </div>
-              ))}
-            </div>
-          </div>
-          <div style={{ borderRadius: 4, overflow: 'hidden', border: '1px solid var(--hair)' }}>
-            <svg viewBox="100 30 600 540" style={{ width: '100%', height: '100%' }}>
-              {Object.entries(BD_PATHS).map(([k, p]) => {
-                const div = SAMPLE_DIVISIONS.find(d => d.id === k)
-                const maxSub = Math.max(...SAMPLE_DIVISIONS.map(d => d.sub))
-                const intensity = div ? div.sub / maxSub : 0.1
-                return <path key={k} d={p} fill={`rgba(0,145,199,${0.08 + intensity * 0.42})`} stroke="var(--unfpa)" strokeWidth="1.2" />
-              })}
-              {SAMPLE_CENTRES.map(s => (
-                <circle key={s.id} cx={s.x} cy={s.y} r="4" fill={s.partner === 'Bondhu' ? 'var(--coral)' : 'var(--unfpa)'} stroke="white" strokeWidth="1.5" />
-              ))}
-            </svg>
+              )
+            })}
           </div>
         </div>
       </SlideThumb>
@@ -1249,7 +1219,6 @@ function DeckPreview() {
 
 function InfographicPreview() {
   const maxForm = Math.max(...SAMPLE_FORMS.map(f => f.count))
-  const maxSub = Math.max(...SAMPLE_DIVISIONS.map(d => d.sub))
 
   return (
     <div style={{ display: 'flex', justifyContent: 'center' }}>
@@ -1300,26 +1269,28 @@ function InfographicPreview() {
           </div>
         </div>
 
-        {/* MAP */}
+        {/* TOP DISTRICTS */}
         <div style={{ padding: '18px 22px', borderBottom: '1px solid var(--hair)' }}>
-          <div className="kicker" style={{ marginBottom: 8 }}><span className="dot" style={{ background: 'var(--amber)' }} />WHERE THE WORK HAPPENS</div>
-          <div style={{ aspectRatio: '1 / 1', borderRadius: 8, overflow: 'hidden', background: 'var(--surface-2)' }}>
-            <svg viewBox="0 0 700 600" style={{ width: '100%', height: '100%' }}>
-              {Object.entries(BD_PATHS).map(([k, p]) => {
-                const div = SAMPLE_DIVISIONS.find(d => d.id === k)
-                const intensity = div ? div.sub / maxSub : 0.1
-                return <path key={k} d={p} fill={`rgba(0,145,199,${0.06 + intensity * 0.42})`} stroke="var(--unfpa)" strokeWidth="1.2" />
-              })}
-              {SAMPLE_DIVISIONS.map(d => (
-                <g key={d.id}>
-                  <text x={d.cx} y={d.cy - 5} textAnchor="middle" style={{ fontFamily: 'var(--mono)', fontSize: 11, fill: 'var(--muted)', textTransform: 'uppercase' as const, letterSpacing: '0.04em' }}>{d.name}</text>
-                  <text x={d.cx} y={d.cy + 14} textAnchor="middle" style={{ fontFamily: 'var(--display)', fontStyle: 'italic', fontSize: 18, fill: 'var(--unfpa)' }}>{d.sub}</text>
-                </g>
-              ))}
-              {SAMPLE_CENTRES.map(s => (
-                <circle key={s.id} cx={s.x} cy={s.y} r="4.5" fill={s.partner === 'Bondhu' ? 'var(--coral)' : 'var(--unfpa)'} stroke="white" strokeWidth="1.5" />
-              ))}
-            </svg>
+          <div className="kicker" style={{ marginBottom: 10 }}><span className="dot" style={{ background: 'var(--amber)' }} />WHERE THE WORK HAPPENS</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
+            {SAMPLE_DISTRICTS.slice(0, 6).map((d, i) => {
+              const max = SAMPLE_DISTRICTS[0].count
+              const pct = (d.count / max) * 100
+              return (
+                <div key={d.name}>
+                  <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 3 }}>
+                    <span style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                      <span className="mono mute" style={{ fontSize: 10 }}>{String(i + 1).padStart(2, '0')}</span>
+                      <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--ink)' }}>{d.name}</span>
+                    </span>
+                    <span style={{ fontFamily: 'var(--display)', fontStyle: 'italic', fontSize: 20, color: 'var(--unfpa)', lineHeight: 1 }}>{d.count}</span>
+                  </div>
+                  <div style={{ height: 4, background: 'var(--surface-3, #eee)', borderRadius: 999, overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: `${pct}%`, background: 'linear-gradient(90deg, var(--unfpa), var(--unfpa-bright, #0091C7))' }} />
+                  </div>
+                </div>
+              )
+            })}
           </div>
         </div>
 

@@ -73,23 +73,36 @@ def _build_prompt(context: dict) -> str:
 
 
 def _call_groq(system: str, user_content: str, max_tokens: int = 500) -> str:
+    """
+    Direct REST call to Groq's OpenAI-compatible chat completions endpoint.
+    Avoids the SDK to dodge the httpx/proxies compatibility issue in older groq versions.
+    """
     api_key = getattr(settings, 'GROQ_API_KEY', '')
     if not api_key:
         logger.warning('GROQ_API_KEY not configured — skipping AI narrative generation.')
         return ''
     try:
-        from groq import Groq
-        client = Groq(api_key=api_key)
-        completion = client.chat.completions.create(
-            model='llama-3.3-70b-versatile',
-            messages=[
-                {'role': 'system', 'content': system},
-                {'role': 'user', 'content': user_content},
-            ],
-            max_tokens=max_tokens,
-            temperature=0.3,
+        import requests
+        response = requests.post(
+            'https://api.groq.com/openai/v1/chat/completions',
+            headers={
+                'Authorization': f'Bearer {api_key}',
+                'Content-Type': 'application/json',
+            },
+            json={
+                'model': 'llama-3.3-70b-versatile',
+                'messages': [
+                    {'role': 'system', 'content': system},
+                    {'role': 'user', 'content': user_content},
+                ],
+                'max_tokens': max_tokens,
+                'temperature': 0.3,
+            },
+            timeout=60,
         )
-        return completion.choices[0].message.content.strip()
+        response.raise_for_status()
+        payload = response.json()
+        return payload['choices'][0]['message']['content'].strip()
     except Exception as exc:
         logger.error('AI narrative generation failed: %s', exc)
         return ''
