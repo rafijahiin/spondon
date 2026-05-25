@@ -13,7 +13,7 @@ from accounts.permissions import IsSuperAdminOrManager
 from submissions.models import FormType
 from .anomaly import submission_anomalies_for_partner
 from .ai_narrative import generate_narrative, generate_newsletter_narrative
-from .models import Report, ReportFormat, ReportType, PeriodType
+from .models import Report, ReportFormat, ReportType, PeriodType, NarrativeSource
 from .serializers import GenerateReportSerializer, ReportSerializer
 from .generators.data import collect_programme_data
 
@@ -70,17 +70,18 @@ def _generate_file(
     data: dict,
     narrative: str,
     title: str,
+    narrative_source: str = 'template',
 ) -> tuple[bytes, str]:
     """Dispatch to the correct generator and return (bytes, content_type)."""
 
     if fmt == ReportFormat.PDF:
         if report_type == ReportType.ONE_PAGER:
             from .generators.one_pager import build_infographic
-            return build_infographic(data, narrative), 'application/pdf'
+            return build_infographic(data, narrative, narrative_source=narrative_source), 'application/pdf'
 
         if report_type == ReportType.NEWSLETTER:
             from .generators.newsletter import build_newsletter
-            return build_newsletter(data=data, narrative=narrative), 'application/pdf'
+            return build_newsletter(data=data, narrative=narrative, narrative_source=narrative_source), 'application/pdf'
 
         # monthly_summary
         from .generators.pdf import build_summary_pdf
@@ -98,7 +99,7 @@ def _generate_file(
     if fmt == ReportFormat.PPTX:
         from .generators.pptx import build_presentation
         return (
-            build_presentation(data, narrative),
+            build_presentation(data, narrative, narrative_source=narrative_source),
             'application/vnd.openxmlformats-officedocument.presentationml.presentation',
         )
 
@@ -154,6 +155,7 @@ class ReportViewSet(ModelViewSet):
 
         # AI narrative
         narrative = ''
+        narrative_meta: dict = {'source': NarrativeSource.AI_DISABLED, 'model': ''}
         if d.get('include_narrative', True):
             ai_context = {
                 'organisation':     prog_data['organisation'],
@@ -164,11 +166,14 @@ class ReportViewSet(ModelViewSet):
                 'mpdsr_cases':      prog_data['mpdsr_cases'],
             }
             if report_type == ReportType.NEWSLETTER:
-                narrative = generate_newsletter_narrative(ai_context)
+                narrative, narrative_meta = generate_newsletter_narrative(ai_context)
             else:
-                narrative = generate_narrative(ai_context)
+                narrative, narrative_meta = generate_narrative(ai_context)
 
-        file_bytes, content_type = _generate_file(report_type, fmt, prog_data, narrative, title)
+        file_bytes, content_type = _generate_file(
+            report_type, fmt, prog_data, narrative, title,
+            narrative_source=narrative_meta.get('source', NarrativeSource.TEMPLATE),
+        )
 
         ext      = {'pdf': 'pdf', 'docx': 'docx', 'pptx': 'pptx'}[fmt]
         filename = (
@@ -177,17 +182,19 @@ class ReportViewSet(ModelViewSet):
         )
 
         report = Report.objects.create(
-            report_type  = report_type,
-            format       = fmt,
-            partner      = partner,
-            year         = ps.year,
-            month        = ps.month,
-            period_type  = period_type,
-            period_start = ps,
-            period_end   = pe,
-            title        = title,
-            narrative    = narrative[:2000] if narrative else '',
-            generated_by = request.user,
+            report_type      = report_type,
+            format           = fmt,
+            partner          = partner,
+            year             = ps.year,
+            month            = ps.month,
+            period_type      = period_type,
+            period_start     = ps,
+            period_end       = pe,
+            title            = title,
+            narrative        = narrative or '',
+            narrative_source = narrative_meta.get('source', NarrativeSource.TEMPLATE),
+            model_used       = narrative_meta.get('model', ''),
+            generated_by     = request.user,
         )
         report.file.save(filename, ContentFile(file_bytes), save=True)
 
@@ -219,19 +226,19 @@ class ReportViewSet(ModelViewSet):
 
         if report_type == 'infographic':
             from .generators.one_pager import build_infographic
-            file_bytes   = build_infographic(data, DEMO_NARRATIVE)
+            file_bytes   = build_infographic(data, DEMO_NARRATIVE, narrative_source='hand_written_demo')
             content_type = 'application/pdf'
             filename     = 'demo_infographic_cpe2024.pdf'
 
         elif report_type == 'newsletter':
             from .generators.newsletter import build_newsletter
-            file_bytes   = build_newsletter(data=data, narrative=DEMO_NARRATIVE)
+            file_bytes   = build_newsletter(data=data, narrative=DEMO_NARRATIVE, narrative_source='hand_written_demo')
             content_type = 'application/pdf'
             filename     = 'demo_newsletter_cpe2024.pdf'
 
         elif report_type == 'presentation':
             from .generators.pptx import build_presentation
-            file_bytes   = build_presentation(data, DEMO_NARRATIVE)
+            file_bytes   = build_presentation(data, DEMO_NARRATIVE, narrative_source='hand_written_demo')
             content_type = (
                 'application/vnd.openxmlformats-officedocument'
                 '.presentationml.presentation'

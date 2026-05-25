@@ -3,9 +3,10 @@ from .models import Report
 
 
 class ReportSerializer(serializers.ModelSerializer):
-    report_type_display = serializers.CharField(source='get_report_type_display', read_only=True)
-    format_display      = serializers.CharField(source='get_format_display', read_only=True)
-    period_type_display = serializers.CharField(source='get_period_type_display', read_only=True)
+    report_type_display      = serializers.CharField(source='get_report_type_display', read_only=True)
+    format_display           = serializers.CharField(source='get_format_display', read_only=True)
+    period_type_display      = serializers.CharField(source='get_period_type_display', read_only=True)
+    narrative_source_display = serializers.CharField(source='get_narrative_source_display', read_only=True)
 
     class Meta:
         model = Report
@@ -17,10 +18,12 @@ class ReportSerializer(serializers.ModelSerializer):
             'period_type', 'period_type_display',
             'period_start', 'period_end',
             'title', 'narrative',
+            'narrative_source', 'narrative_source_display', 'model_used',
             'file', 'generated_by', 'created_at',
         ]
         read_only_fields = [
-            'id', 'narrative', 'file', 'generated_by', 'created_at',
+            'id', 'narrative', 'narrative_source', 'narrative_source_display',
+            'model_used', 'file', 'generated_by', 'created_at',
         ]
 
 

@@ -24,6 +24,17 @@ class PeriodType(models.TextChoices):
     QUARTERLY = 'quarterly', 'Quarterly'
 
 
+class NarrativeSource(models.TextChoices):
+    """How was the narrative text in this report produced?"""
+    AI                    = 'ai',                    'AI (validated)'
+    AI_VALIDATION_FAILED  = 'ai_validation_failed',  'AI (validation failed → fallback)'
+    AI_DISABLED           = 'ai_disabled',           'AI disabled by user'
+    INSUFFICIENT_DATA     = 'insufficient_data',     'Insufficient data — template used'
+    AI_API_ERROR          = 'ai_api_error',          'AI API error → fallback'
+    TEMPLATE              = 'template',              'Template only'
+    HAND_WRITTEN_DEMO     = 'hand_written_demo',     'Hand-written demo content'
+
+
 class Report(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     report_type = models.CharField(max_length=30, choices=ReportType.choices, db_index=True)
@@ -45,6 +56,14 @@ class Report(models.Model):
     title = models.CharField(max_length=300)
     narrative = models.TextField(blank=True)
     file = models.FileField(upload_to='reports/%Y/%m/', null=True, blank=True)
+
+    # Provenance — see NarrativeSource for values
+    narrative_source = models.CharField(
+        max_length=30, choices=NarrativeSource.choices,
+        default=NarrativeSource.TEMPLATE,
+        db_index=True,
+    )
+    model_used = models.CharField(max_length=80, blank=True)
 
     generated_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,

@@ -646,7 +646,18 @@ def _slide_15_forward(prs, data: dict, narrative_sections: dict):
     _section_header(slide, '05', 'Forward look', 15)
 
 
-def _slide_16_thanks(prs, data: dict):
+_PROVENANCE_PROSE = {
+    'ai':                    'AI-assisted content · figures validated against source data before distribution',
+    'ai_validation_failed':  'Template content · AI output failed figure validation this period',
+    'ai_api_error':          'Template content · AI service was unavailable at generation time',
+    'ai_disabled':           'Template content · AI-assisted generation was disabled',
+    'insufficient_data':     'Template content · insufficient activity for AI narrative this period',
+    'hand_written_demo':     'Demo content · illustrative only, not from live submissions',
+    'template':              'Template content',
+}
+
+
+def _slide_16_thanks(prs, data: dict, narrative_source: str = 'template'):
     """16 — Thank you / contact (dark)."""
     slide = prs.slides.add_slide(prs.slide_layouts[6])
     _add_rect(slide, 0, 0, SLIDE_W, SLIDE_H, NAVY)
@@ -671,8 +682,9 @@ def _slide_16_thanks(prs, data: dict):
               align=PP_ALIGN.CENTER)
 
     today = _date.today()
+    provenance = _PROVENANCE_PROSE.get(narrative_source, _PROVENANCE_PROSE['template'])
     _add_text(slide, Inches(0.7), Inches(6.5), SLIDE_W - Inches(1.4), Inches(0.3),
-              f'AI-assisted content reviewed before distribution · Generated {today.day} {today.strftime("%b %Y")}',
+              f'{provenance} · Generated {today.day} {today.strftime("%b %Y")}',
               font=MONO_FONT, size=8, color=RGBColor(0x6B, 0x77, 0x8C),
               align=PP_ALIGN.CENTER)
 
@@ -699,7 +711,7 @@ def _parse_sections(narrative: str) -> dict[str, str]:
     return sections
 
 
-def build_presentation(data: dict, narrative: str = '') -> bytes:
+def build_presentation(data: dict, narrative: str = '', narrative_source: str = 'template') -> bytes:
     """Build the editorial 16-slide PPTX matching the Board Presentation preview."""
     prs = Presentation()
     prs.slide_width = SLIDE_W
@@ -722,7 +734,7 @@ def build_presentation(data: dict, narrative: str = '') -> bytes:
     _slide_13_section_divider(prs, data)
     _slide_14_closing_quote(prs, data)
     _slide_15_forward(prs, data, sections)
-    _slide_16_thanks(prs, data)
+    _slide_16_thanks(prs, data, narrative_source=narrative_source)
 
     buf = io.BytesIO()
     prs.save(buf)

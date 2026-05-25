@@ -504,9 +504,9 @@ class OrgSummaryView(APIView):
 
         try:
             from reports.ai_narrative import generate_narrative
-            summary = generate_narrative(context)
+            summary, _meta = generate_narrative(context)
         except Exception as exc:
-            logger.error('Narrative generation error: %s', exc)
+            logger.error('narrative_generation_error', extra={'exc': str(exc)})
             summary = ''
 
         if not summary:

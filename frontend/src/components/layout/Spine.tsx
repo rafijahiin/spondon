@@ -10,7 +10,7 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import {
   Home, LayoutDashboard, BarChart2, CheckSquare, FileText,
   Activity, Bell, Search, Settings, LogOut, ExternalLink,
-  Heart, BookOpen, Users, BarChart, ClipboardList, X,
+  Heart, BookOpen, Users, BarChart, ClipboardList, X, Menu,
 } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { api } from '@/api/client'
@@ -174,9 +174,26 @@ export function Spine() {
     item.to === '/approvals' ? { ...item, badge: pendingCount } : item
   )
 
+  // Close drawer when a nav link is clicked (helpful on mobile)
+  const handleNavClick = () => setExpanded(false)
+
   return (
-    <aside ref={spineRef} className={`spine ${expanded ? 'spine-expanded' : ''}`}>
-      {/* Brand mark — toggles expand/collapse */}
+    <>
+      {/* Mobile-only hamburger toggle — fixed top-left, hidden on desktop */}
+      <button
+        className="mobile-menu-btn"
+        title={expanded ? 'Close menu' : 'Open menu'}
+        aria-label={expanded ? 'Close menu' : 'Open menu'}
+        onClick={() => setExpanded(prev => !prev)}
+      >
+        {expanded ? <X size={20} /> : <Menu size={20} />}
+      </button>
+
+      {/* Mobile backdrop — visible only when drawer open on mobile */}
+      {expanded && <div className="spine-backdrop" onClick={() => setExpanded(false)} />}
+
+      <aside ref={spineRef} className={`spine ${expanded ? 'spine-expanded' : ''}`}>
+      {/* Brand mark — toggles expand/collapse on desktop */}
       <button
         className="spine-brand"
         title={expanded ? 'Collapse menu' : 'Expand menu'}
@@ -188,7 +205,7 @@ export function Spine() {
       {/* Primary nav group */}
       <div className="spine-group">
         {primaryWithBadge.map(item => (
-          <SpineItem key={item.to} {...item} expanded={expanded} />
+          <SpineItem key={item.to} {...item} expanded={expanded} onNavigate={handleNavClick} />
         ))}
       </div>
 
@@ -197,7 +214,7 @@ export function Spine() {
       {/* Secondary nav group */}
       <div className="spine-group">
         {SECONDARY_NAV.map(item => (
-          <SpineItem key={item.to} {...item} expanded={expanded} />
+          <SpineItem key={item.to} {...item} expanded={expanded} onNavigate={handleNavClick} />
         ))}
       </div>
 
@@ -288,14 +305,16 @@ export function Spine() {
         </div>
       )}
     </aside>
+    </>
   )
 }
 
-function SpineItem({ to, label, labelBn, icon, badge, expanded }: SpineItemDef & { expanded?: boolean }) {
+function SpineItem({ to, label, labelBn, icon, badge, expanded, onNavigate }: SpineItemDef & { expanded?: boolean; onNavigate?: () => void }) {
   return (
     <NavLink
       to={to}
       end={to === '/'}
+      onClick={onNavigate}
       className={({ isActive }) => `spine-item ${isActive ? 'active' : ''}`}
     >
       {icon}

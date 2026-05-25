@@ -318,33 +318,49 @@ def _draw_editorial_quote(c, quote: str, y_top: float) -> float:
     return y_bottom
 
 
-def _draw_footer(c, period_label: str):
-    """Light footer band."""
-    foot_h = 32
+def _draw_footer(c, period_label: str, narrative_source: str = 'template'):
+    """Light footer band — provenance text reflects how the narrative was produced."""
+    foot_h = 40
     _rect(c, 0, 0, W, foot_h, SURFACE_2)
     _hairline(c, 0, foot_h, W, HAIR, 0.5)
 
     today = _date.today()
-    _text(c, 36, 12,
-          f'GENERATED {today.day:02d} {today.strftime("%b %Y").upper()} · M&E TEAM · SIGNED OFF',
+    _text(c, 36, 22,
+          f'GENERATED {today.day:02d} {today.strftime("%b %Y").upper()} · M&E TEAM',
           font='Helvetica-Bold', size=7, color=MUTED)
-    _text_right(c, W - 36, 18,
+    _text(c, 36, 10,
+          _footer_provenance_text(narrative_source).upper(),
+          font='Helvetica', size=6.5, color=MUTED_2)
+    _text_right(c, W - 36, 22,
                 period_label,
                 font='Helvetica', size=9, color=INK_2)
-    _text_right(c, W - 36, 8,
-                'SPONDON · v2.3.1',
+    _text_right(c, W - 36, 10,
+                'SPONDON · v2.4',
                 font='Helvetica-Bold', size=7, color=MUTED_2)
 
 
 # ─── Public API ──────────────────────────────────────────────────────────────
 
-def build_infographic(data: dict, narrative: str = '') -> bytes:
+def _footer_provenance_text(narrative_source: str) -> str:
+    """Honest footer text that reflects how the narrative was actually produced."""
+    return {
+        'ai':                    'AI-assisted (figures validated)',
+        'ai_validation_failed':  'Template content (AI output failed validation)',
+        'ai_api_error':          'Template content (AI service unavailable)',
+        'ai_disabled':           'Template content (AI disabled by operator)',
+        'insufficient_data':     'Template content (insufficient data for narrative)',
+        'hand_written_demo':     'Demo content — illustrative only',
+    }.get(narrative_source, 'Template content')
+
+
+def build_infographic(data: dict, narrative: str = '', narrative_source: str = 'template') -> bytes:
     """
     Build an editorial A4 one-pager / infographic PDF matching the preview.
 
     Args:
-        data:      Output of collect_programme_data() — see one_pager spec.
-        narrative: AI narrative (parsed; first NARRATIVE paragraph used as quote).
+        data:             Output of collect_programme_data() — see one_pager spec.
+        narrative:        AI narrative (parsed; first paragraph used as quote).
+        narrative_source: Provenance flag — controls the footer text.
     """
     buf = io.BytesIO()
     c = _canvas.Canvas(buf, pagesize=A4)
@@ -431,7 +447,7 @@ def build_infographic(data: dict, narrative: str = '') -> bytes:
     _draw_editorial_quote(c, quote, quote_top)
 
     # ─── FOOTER ───────────────────────────────────────────────────────────────
-    _draw_footer(c, period_label)
+    _draw_footer(c, period_label, narrative_source=narrative_source)
 
     c.showPage()
     c.save()
