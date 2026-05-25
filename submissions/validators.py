@@ -19,15 +19,20 @@ def validate_kobo_signature(request) -> bool:
        the common pattern when KoboToolbox is configured to call
        a URL that embeds the secret.
 
-    If KOBO_WEBHOOK_SECRET is empty (dev / placeholder), every
-    request passes so we can test the endpoint locally.
+    Fail-closed: if KOBO_WEBHOOK_SECRET is unset or empty, every
+    request is REJECTED. There is no "accept anything" mode — an
+    open webhook on a public host accepts arbitrary writes from the
+    internet. Set KOBO_WEBHOOK_SECRET before enabling any KoboToolbox
+    REST Service.
     """
     secret = settings.KOBO_WEBHOOK_SECRET
     if not secret:
         logger.critical(
-            'KOBO_WEBHOOK_SECRET is not set — all webhook requests are accepted without validation'
+            'KOBO_WEBHOOK_SECRET is not set — rejecting webhook request '
+            '(set the env var and configure the KoboToolbox REST service '
+            'Authorization header to enable webhook ingestion)'
         )
-        return True
+        return False
 
     auth = request.headers.get('Authorization', '')
     if auth.startswith('Token '):

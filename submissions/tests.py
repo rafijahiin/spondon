@@ -16,8 +16,15 @@ TEST_UIDS = {
     'KOBO_ASSET_UID_FISTULA': 'uid_fistula',
     'KOBO_ASSET_UID_ACTIVITY': 'uid_activity',
     'KOBO_ASSET_UID_BASELINE': 'uid_baseline',
-    'KOBO_WEBHOOK_SECRET': '',
+    # Webhook validator is fail-closed — every test that hits the webhook
+    # must authenticate. Tests that exercise the ingestion path pass this
+    # plain token in the Authorization header (see TEST_AUTH).
+    'KOBO_WEBHOOK_SECRET': 'testsecret',
 }
+
+# Every WebhookIngestTest POST needs this header. WebhookSignatureTest
+# uses a different secret per its own override_settings.
+TEST_AUTH = {'HTTP_AUTHORIZATION': 'Token testsecret'}
 
 
 def make_user(email, org, role):
@@ -53,7 +60,7 @@ class WebhookIngestTest(TestCase):
     def test_valid_payload_creates_submission(self, mock_tg):
         payload = mpdsr_payload()
         resp = self.client.post(
-            WEBHOOK_URL, data=json.dumps(payload), content_type='application/json'
+            WEBHOOK_URL, data=json.dumps(payload), content_type='application/json', **TEST_AUTH
         )
         self.assertEqual(resp.status_code, 201)
         self.assertEqual(KoboSubmission.objects.count(), 1)
@@ -68,25 +75,25 @@ class WebhookIngestTest(TestCase):
     @patch('submissions.views.send_submission_alert')
     def test_duplicate_kobo_id_is_idempotent(self, _):
         payload = mpdsr_payload()
-        self.client.post(WEBHOOK_URL, data=json.dumps(payload), content_type='application/json')
-        resp = self.client.post(WEBHOOK_URL, data=json.dumps(payload), content_type='application/json')
+        self.client.post(WEBHOOK_URL, data=json.dumps(payload), content_type='application/json', **TEST_AUTH)
+        resp = self.client.post(WEBHOOK_URL, data=json.dumps(payload), content_type='application/json', **TEST_AUTH)
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(KoboSubmission.objects.count(), 1)
 
     def test_unknown_form_uid_returns_400(self):
         payload = mpdsr_payload(_xform_id_string='uid_unknown')
-        resp = self.client.post(WEBHOOK_URL, data=json.dumps(payload), content_type='application/json')
+        resp = self.client.post(WEBHOOK_URL, data=json.dumps(payload), content_type='application/json', **TEST_AUTH)
         self.assertEqual(resp.status_code, 400)
         self.assertEqual(KoboSubmission.objects.count(), 0)
 
     def test_missing_kobo_id_returns_400(self):
         payload = mpdsr_payload()
         del payload['_id']
-        resp = self.client.post(WEBHOOK_URL, data=json.dumps(payload), content_type='application/json')
+        resp = self.client.post(WEBHOOK_URL, data=json.dumps(payload), content_type='application/json', **TEST_AUTH)
         self.assertEqual(resp.status_code, 400)
 
     def test_invalid_json_returns_400(self):
-        resp = self.client.post(WEBHOOK_URL, data='not-json', content_type='application/json')
+        resp = self.client.post(WEBHOOK_URL, data='not-json', content_type='application/json', **TEST_AUTH)
         self.assertEqual(resp.status_code, 400)
 
     def test_get_method_not_allowed(self):
@@ -96,21 +103,21 @@ class WebhookIngestTest(TestCase):
     @patch('submissions.views.send_submission_alert')
     def test_fistula_form_type_detected(self, _):
         payload = mpdsr_payload(_xform_id_string='uid_fistula', _id='2001')
-        resp = self.client.post(WEBHOOK_URL, data=json.dumps(payload), content_type='application/json')
+        resp = self.client.post(WEBHOOK_URL, data=json.dumps(payload), content_type='application/json', **TEST_AUTH)
         self.assertEqual(resp.status_code, 201)
         self.assertEqual(KoboSubmission.objects.first().form_type, FormType.FISTULA)
 
     @patch('submissions.views.send_submission_alert')
     def test_bondhu_partner_detected(self, _):
         payload = mpdsr_payload(partner='Bandhu', _id='3001')
-        resp = self.client.post(WEBHOOK_URL, data=json.dumps(payload), content_type='application/json')
+        resp = self.client.post(WEBHOOK_URL, data=json.dumps(payload), content_type='application/json', **TEST_AUTH)
         self.assertEqual(resp.status_code, 201)
         self.assertEqual(KoboSubmission.objects.first().partner, 'Bandhu')
 
     @patch('submissions.views.send_submission_alert')
     def test_geolocation_extracted(self, _):
         resp = self.client.post(
-            WEBHOOK_URL, data=json.dumps(mpdsr_payload()), content_type='application/json'
+            WEBHOOK_URL, data=json.dumps(mpdsr_payload()), content_type='application/json', **TEST_AUTH
         )
         self.assertEqual(resp.status_code, 201)
         sub = KoboSubmission.objects.first()
@@ -120,7 +127,7 @@ class WebhookIngestTest(TestCase):
     @patch('submissions.views.send_submission_alert')
     def test_raw_data_stored(self, _):
         payload = mpdsr_payload()
-        self.client.post(WEBHOOK_URL, data=json.dumps(payload), content_type='application/json')
+        self.client.post(WEBHOOK_URL, data=json.dumps(payload), content_type='application/json', **TEST_AUTH)
         sub = KoboSubmission.objects.first()
         self.assertEqual(sub.raw_data['_id'], '1001')
 
@@ -173,6 +180,47 @@ class WebhookSignatureTest(TestCase):
             content_type='application/json',
         )
         self.assertEqual(resp.status_code, 201)
+
+
+# ---------------------------------------------------------------------------
+# Webhook — fail-closed behaviour when KOBO_WEBHOOK_SECRET is unset/empty
+# ---------------------------------------------------------------------------
+
+@override_settings(**{**TEST_UIDS, 'KOBO_WEBHOOK_SECRET': ''})
+class WebhookFailClosedTest(TestCase):
+    """
+    When KOBO_WEBHOOK_SECRET is empty (env var missing or blank in
+    Railway), every webhook request must be REJECTED with 403. There
+    is no 'accept anything' mode — an open webhook on a public host
+    accepts arbitrary writes from the internet.
+    """
+
+    def _post(self, **kwargs):
+        return self.client.post(
+            WEBHOOK_URL,
+            data=json.dumps(mpdsr_payload()),
+            content_type='application/json',
+            **kwargs,
+        )
+
+    def test_no_auth_header_rejected(self):
+        self.assertEqual(self._post().status_code, 403)
+        self.assertEqual(KoboSubmission.objects.count(), 0)
+
+    def test_auth_header_with_value_still_rejected(self):
+        """Even a 'correct' header value cannot pass when secret is empty."""
+        resp = self._post(HTTP_AUTHORIZATION='Token anything')
+        self.assertEqual(resp.status_code, 403)
+        self.assertEqual(KoboSubmission.objects.count(), 0)
+
+    def test_query_token_rejected(self):
+        resp = self.client.post(
+            WEBHOOK_URL + '?token=anything',
+            data=json.dumps(mpdsr_payload()),
+            content_type='application/json',
+        )
+        self.assertEqual(resp.status_code, 403)
+        self.assertEqual(KoboSubmission.objects.count(), 0)
 
 
 # ---------------------------------------------------------------------------
