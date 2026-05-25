@@ -6,19 +6,17 @@
  * demo reports, anomaly alerts, and report history.
  */
 import { useState } from 'react'
-import { motion } from 'motion/react'
 import {
   Download, FileImage, Newspaper, Presentation,
-  RefreshCw, Calendar, ChevronDown,
-  FileText, Bell, BarChart2, Globe,
+  Calendar, ChevronDown,
+  Bell, BarChart2,
 } from 'lucide-react'
 import { api, apiErrorMessage } from '@/api/client'
 import { useAuth } from '@/context/AuthContext'
 import { usePolling } from '@/hooks/usePolling'
 import { AlertCard } from '@/components/ui/AlertCard'
-import { PageLoader, LoadingSpinner } from '@/components/ui/LoadingSpinner'
-import { formatDateTime } from '@/utils/format'
-import type { Report, Alert } from '@/types'
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
+import type { Alert } from '@/types'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type PeriodType = 'biweekly' | 'monthly' | 'quarterly'
@@ -37,34 +35,22 @@ interface FormatDef {
 
 const FORMATS: FormatDef[] = [
   {
-    id: 'narrative', title: 'Monthly Narrative', bn: 'মাসিক প্রতিবেদন', ext: 'DOCX · PDF · 12 pages',
-    icon: <FileText size={16} />, accent: 'blue',
-    reportType: 'one_pager', format: 'pdf',
-    description: 'A long-form report with AI-assisted prose. Strips PII through regex before sending aggregates to Groq for narrative generation. Embeds charts and disaggregated tables.',
-  },
-  {
     id: 'onepager', title: 'One-Pager Brief', bn: 'এক পাতার সারমর্ম', ext: 'PDF · A4 · print-ready',
     icon: <FileImage size={16} />, accent: 'amber',
     reportType: 'one_pager', format: 'pdf',
-    description: 'A single page for donor visits and high-stakes printing. Editorial poster format — one hero number, one ranked leaderboard, one sentence, signed off.',
+    description: 'A single editorial page for donor visits and high-stakes printing. One hero number, top-district leaderboard, category split, and a signed-off sentence.',
   },
   {
-    id: 'newsletter', title: 'Monthly Newsletter', bn: 'নিউজলেটার', ext: 'Responsive HTML email',
+    id: 'newsletter', title: 'Monthly Newsletter', bn: 'নিউজলেটার', ext: 'PDF · A4 · multi-page bulletin',
     icon: <Bell size={16} />, accent: 'emerald',
     reportType: 'newsletter', format: 'pdf',
-    description: 'Goes out to partners and field staff on the first Monday of each month. Bilingual, mobile-first, brand-clean.',
+    description: 'Formal programme bulletin for partners and donors. Executive summary, programme highlights, AI-assisted narrative, KPI table, and forward look.',
   },
   {
     id: 'deck', title: 'Board Presentation', bn: 'বোর্ড প্রেজেন্টেশন', ext: 'PowerPoint · 16:9 · 16 slides',
     icon: <BarChart2 size={16} />, accent: 'coral',
     reportType: 'monthly_summary', format: 'pptx',
-    description: 'For UNFPA quarterly board meetings. Conservative layouts, large numbers, photo-friendly section dividers.',
-  },
-  {
-    id: 'infographic', title: 'Programme Infographic', bn: 'ইনফোগ্রাফিক', ext: 'PNG · 2400×3600 · print-ready',
-    icon: <Globe size={16} />, accent: 'violet',
-    reportType: 'one_pager', format: 'pdf',
-    description: 'Wall-poster format. Designed to print at A2 or share as a single image. Bold typography, single editorial voice.',
+    description: 'For UNFPA quarterly board meetings. 16 editorial slides: cover, agenda, KPI dashboard, category breakdown, top districts, partner split, closing quote, forward look.',
   },
 ]
 
@@ -90,25 +76,11 @@ const PERIOD_TABS: { value: PeriodType; label: string }[] = [
   { value: 'quarterly', label: 'Quarterly' },
 ]
 
-const REPORT_TYPE_LABEL: Record<string, string> = {
-  one_pager: 'Infographic', newsletter: 'Newsletter', monthly_summary: 'Presentation',
-}
-
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
 const NOW = new Date()
 function isoDate(d: Date) { return d.toISOString().slice(0, 10) }
 
 // ─── Sample data for previews ────────────────────────────────────────────────
-
-const SAMPLE_FORMS = [
-  { key: 'anc', label: 'Antenatal Care', count: 89, cat: 'Clinical' },
-  { key: 'clinic', label: 'Clinic Visits', count: 76, cat: 'Clinical' },
-  { key: 'hiv', label: 'HIV/STI Testing', count: 41, cat: 'Clinical' },
-  { key: 'outreach', label: 'Community Outreach', count: 64, cat: 'Community' },
-  { key: 'edu', label: 'Group Education', count: 52, cat: 'Community' },
-  { key: 'counsel', label: 'Peer Counselling', count: 38, cat: 'Community' },
-  { key: 'train', label: 'Staff Training', count: 18, cat: 'Operations' },
-]
 
 const SAMPLE_DISTRICTS = [
   { name: "Cox's Bazar", count: 156 },
@@ -121,11 +93,9 @@ const SAMPLE_DISTRICTS = [
 
 // Format-to-preview mapping
 const PREVIEW_MAP: Record<string, React.FC> = {
-  narrative: NarrativePreview,
   onepager: OnePagerPreview,
   newsletter: NewsletterPreview,
   deck: DeckPreview,
-  infographic: InfographicPreview,
 }
 
 // ─── SectionHead ──────────────────────────────────────────────────────────────
@@ -156,20 +126,13 @@ export default function ReportingHub() {
   const [biEnd, setBiEnd] = useState(isoDate(NOW))
   const [partner, setPartner] = useState(canSeeAll ? '' : (user?.organisation ?? ''))
 
-  // Per-card generating state
-  const [generating, setGenerating] = useState<Record<string, boolean>>({})
+  // Per-card download state
+  const [downloading, setDownloading] = useState<Record<string, boolean>>({})
   const [cardError, setCardError] = useState<Record<string, string>>({})
-  const [cardOk, setCardOk] = useState<Record<string, string>>({})
 
   // Demo card state
   const [demoLoading, setDemoLoading] = useState<Record<string, boolean>>({})
   const [demoError, setDemoError] = useState<Record<string, string>>({})
-
-  const { data: reports, loading, refetch } = usePolling<Report[]>({
-    fetcher: () =>
-      api.get('/reports/').then((r) => (Array.isArray(r.data) ? r.data : r.data.results ?? [])),
-    interval: 60_000,
-  })
 
   const { data: alerts } = usePolling<Alert[]>({
     fetcher: () =>
@@ -192,30 +155,10 @@ export default function ReportingHub() {
     return { ...base, year, month }
   }
 
-  const handleGenerate = async (card: FormatDef) => {
-    setGenerating((p) => ({ ...p, [card.id]: true }))
-    setCardError((p) => ({ ...p, [card.id]: '' }))
-    setCardOk((p) => ({ ...p, [card.id]: '' }))
-    try {
-      await api.post('/reports/generate/', buildPayload(card))
-      setCardOk((p) => ({ ...p, [card.id]: `${card.title} generated — see below.` }))
-      setTimeout(refetch, 3000)
-    } catch (err) {
-      setCardError((p) => ({ ...p, [card.id]: apiErrorMessage(err) }))
-    } finally {
-      setGenerating((p) => ({ ...p, [card.id]: false }))
-    }
-  }
-
-  const handleDownload = (report: Report) => {
-    if (report.file) { window.open(report.file, '_blank') }
-  }
-
-  /** Generate-and-download in one click for the format card. */
+  /** Generate the report on the server, then download it in one click. */
   const handleCardDownload = async (card: FormatDef) => {
-    setGenerating((p) => ({ ...p, [card.id]: true }))
+    setDownloading((p) => ({ ...p, [card.id]: true }))
     setCardError((p) => ({ ...p, [card.id]: '' }))
-    setCardOk((p) => ({ ...p, [card.id]: '' }))
     try {
       const createResp = await api.post('/reports/generate/', buildPayload(card))
       const reportId = createResp.data?.id
@@ -242,13 +185,11 @@ export default function ReportingHub() {
       anchor.click()
       document.body.removeChild(anchor)
       URL.revokeObjectURL(blobUrl)
-      setCardOk((p) => ({ ...p, [card.id]: `${card.title} downloaded.` }))
-      setTimeout(refetch, 1000)
     } catch (err) {
       const msg = err instanceof Error ? err.message : apiErrorMessage(err, 'Download failed.')
       setCardError((p) => ({ ...p, [card.id]: msg }))
     } finally {
-      setGenerating((p) => ({ ...p, [card.id]: false }))
+      setDownloading((p) => ({ ...p, [card.id]: false }))
     }
   }
 
@@ -333,10 +274,6 @@ export default function ReportingHub() {
               </span>
             </a>
           ))}
-          <span style={{ flex: 1 }} />
-          <button className="btn brand" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <RefreshCw size={14} /> Regenerate all
-          </button>
         </div>
       </section>
 
@@ -486,23 +423,15 @@ export default function ReportingHub() {
                   <div style={{ display: 'flex', gap: 8, flexShrink: 0, alignItems: 'flex-start' }}>
                     <button
                       className="btn brand"
-                      onClick={() => handleGenerate(f)}
-                      disabled={generating[f.id]}
-                      style={{ display: 'flex', alignItems: 'center', gap: 6 }}
-                    >
-                      {generating[f.id]
-                        ? <LoadingSpinner size="sm" />
-                        : <RefreshCw size={14} />
-                      }
-                      {generating[f.id] ? 'Generating…' : 'Generate'}
-                    </button>
-                    <button
-                      className="btn"
                       onClick={() => handleCardDownload(f)}
-                      disabled={generating[f.id]}
+                      disabled={downloading[f.id]}
                       style={{ display: 'flex', alignItems: 'center', gap: 6 }}
                     >
-                      <Download size={14} /> Download
+                      {downloading[f.id]
+                        ? <LoadingSpinner size="sm" />
+                        : <Download size={14} />
+                      }
+                      {downloading[f.id] ? 'Building…' : 'Download'}
                     </button>
                   </div>
                 </div>
@@ -511,11 +440,6 @@ export default function ReportingHub() {
                 {cardError[f.id] && (
                   <div className="card" style={{ background: 'rgba(233,69,96,0.06)', borderColor: 'rgba(233,69,96,0.2)', padding: '10px 14px', marginBottom: 12, color: 'var(--rose)', fontSize: 13 }}>
                     {cardError[f.id]}
-                  </div>
-                )}
-                {cardOk[f.id] && (
-                  <div className="card" style={{ background: 'rgba(31,154,109,0.06)', borderColor: 'rgba(31,154,109,0.2)', padding: '10px 14px', marginBottom: 12, color: 'var(--emerald)', fontSize: 13 }}>
-                    {cardOk[f.id]}
                   </div>
                 )}
 
@@ -590,76 +514,7 @@ export default function ReportingHub() {
         </section>
       )}
 
-      {/* ═══════════════════════════════════════════════════════════════
-           GENERATED REPORTS
-           ═══════════════════════════════════════════════════════════════ */}
-      <section className="section" style={{ marginTop: 56, marginBottom: 80 }}>
-        <SectionHead
-          kicker="ARCHIVE"
-          title="Generated reports"
-          sub="All reports generated through the system."
-        />
-
-        {loading && !reports ? (
-          <PageLoader />
-        ) : (reports ?? []).length === 0 ? (
-          <div className="card" style={{ padding: 48, textAlign: 'center', color: 'var(--muted)' }}>
-            <Newspaper size={32} style={{ margin: '0 auto 12px', opacity: 0.3 }} />
-            <div style={{ fontSize: 14 }}>No reports generated yet.</div>
-            <div style={{ fontSize: 12, marginTop: 4 }}>Use the cards above to generate your first report.</div>
-          </div>
-        ) : (
-          <motion.div
-            style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 14 }}
-            initial="hidden"
-            animate="visible"
-            variants={{ visible: { transition: { staggerChildren: 0.06 } } }}
-          >
-            {(reports ?? []).map((report) => (
-              <motion.div
-                key={report.id}
-                variants={{
-                  hidden: { opacity: 0, y: 10 },
-                  visible: { opacity: 1, y: 0, transition: { duration: 0.3, ease: [0.22, 1, 0.36, 1] } },
-                }}
-                className="card snug"
-                style={{ cursor: report.file ? 'pointer' : 'default' }}
-                onClick={() => handleDownload(report)}
-              >
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8, marginBottom: 8 }}>
-                  <div>
-                    <div style={{ fontSize: 13.5, fontWeight: 600 }}>
-                      {REPORT_TYPE_LABEL[report.report_type] ?? report.report_type_display}
-                    </div>
-                    <div className="mono mute" style={{ fontSize: 10.5, marginTop: 2 }}>
-                      {report.format?.toUpperCase()}
-                    </div>
-                  </div>
-                  <span className="tag blue" style={{ fontSize: 10 }}>
-                    {((report as unknown as Record<string, unknown>).period_type_display as string) ?? 'Monthly'}
-                  </span>
-                </div>
-
-                {report.partner && (
-                  <span className="tag" style={{ marginBottom: 6 }}>{report.partner}</span>
-                )}
-
-                <div className="mono mute" style={{ fontSize: 10.5, marginTop: 4 }}>
-                  {formatDateTime(report.created_at)}
-                </div>
-
-                {report.file && (
-                  <div style={{ marginTop: 8 }}>
-                    <span className="btn" style={{ fontSize: 12, height: 30, padding: '0 12px', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                      <Download size={12} /> Download
-                    </span>
-                  </div>
-                )}
-              </motion.div>
-            ))}
-          </motion.div>
-        )}
-      </section>
+      <div style={{ marginBottom: 80 }} />
     </>
   )
 }
@@ -668,207 +523,6 @@ export default function ReportingHub() {
    PREVIEW COMPONENTS — magazine-style sample output previews
    ══════════════════════════════════════════════════════════════════════════════ */
 
-// ─── 01. NARRATIVE PREVIEW — magazine spread ─────────────────────────────────
-
-function NarPage({ children, style, edge }: { children: React.ReactNode; style?: React.CSSProperties; edge?: 'left' | 'right' }) {
-  return (
-    <div style={{
-      ...style,
-      background: 'white',
-      borderRadius: edge === 'left' ? '0 8px 8px 0' : edge === 'right' ? '8px 0 0 8px' : 8,
-      boxShadow: edge === 'left'
-        ? '-6px 0 16px rgba(20,32,43,0.08), 0 12px 36px rgba(20,32,43,0.10)'
-        : edge === 'right'
-        ? '6px 0 16px rgba(20,32,43,0.08), 0 12px 36px rgba(20,32,43,0.10)'
-        : '0 12px 36px rgba(20,32,43,0.12), 0 2px 6px rgba(20,32,43,0.06)',
-      border: '1px solid var(--hair)',
-      position: 'relative',
-      overflow: 'hidden',
-    }}>
-      {children}
-    </div>
-  )
-}
-
-function NarPageHeader({ page, section }: { page: string; section: string }) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, paddingBottom: 8, borderBottom: '1px solid var(--hair)' }}>
-      <div className="mono" style={{ fontSize: 9, color: 'var(--muted)', letterSpacing: '0.12em' }}>SPONDON · MAY 2026</div>
-      <div className="mono" style={{ fontSize: 9, color: 'var(--muted)', letterSpacing: '0.06em' }}>{section.toUpperCase()} · {page}</div>
-    </div>
-  )
-}
-
-function NarrativePreview() {
-  const A4: React.CSSProperties = { width: 460, aspectRatio: '210 / 297' }
-
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 32, alignItems: 'center' }}>
-
-      {/* COVER */}
-      <div style={{ display: 'flex', justifyContent: 'center', gap: 4 }}>
-        <NarPage style={A4}>
-          <div style={{ height: '100%', display: 'flex', flexDirection: 'column', padding: '44px 40px 32px', position: 'relative' }}>
-            {/* Top accent line */}
-            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: 'linear-gradient(90deg, var(--unfpa) 0%, var(--coral) 50%, var(--amber) 100%)' }} />
-
-            {/* Header marks */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 36 }}>
-              <div className="mono" style={{ fontSize: 9, letterSpacing: '0.14em', color: 'var(--muted)' }}>SPONDON IDMS</div>
-              <div className="mono" style={{ fontSize: 9, letterSpacing: '0.14em', color: 'var(--muted)' }}>VOL. 02 · ISSUE 05</div>
-            </div>
-
-            {/* Title */}
-            <div style={{ marginTop: 'auto' }}>
-              <div className="kicker" style={{ marginBottom: 14 }}><span className="dot" />CIPRB · UNFPA BANGLADESH</div>
-              <div style={{
-                fontFamily: 'var(--display)', fontStyle: 'italic', fontWeight: 400,
-                fontSize: 56, lineHeight: 0.95, letterSpacing: '-0.025em', color: 'var(--ink)',
-              }}>Programme<br />Monitoring<br />Report</div>
-              <div className="bn" style={{ fontSize: 15, color: 'var(--muted)', marginTop: 14 }}>
-                মে ২০২৬ · মাসিক প্রতিবেদন
-              </div>
-            </div>
-
-            {/* Pulled stat */}
-            <div style={{ marginTop: 28, padding: '18px 0', borderTop: '1px solid var(--hair)', borderBottom: '1px solid var(--hair)' }}>
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 20 }}>
-                <div>
-                  <div className="mono" style={{ fontSize: 9, color: 'var(--muted)', letterSpacing: '0.12em' }}>THIS MONTH</div>
-                  <div style={{ fontFamily: 'var(--display)', fontStyle: 'italic', fontSize: 50, lineHeight: 1, color: 'var(--unfpa)', letterSpacing: '-0.025em' }}>476</div>
-                  <div className="mono" style={{ fontSize: 10, color: 'var(--muted)', letterSpacing: '0.06em' }}>SUBMISSIONS · +8.4% MoM</div>
-                </div>
-                <div style={{ flex: 1, textAlign: 'right' }}>
-                  <div className="mono" style={{ fontSize: 9, color: 'var(--muted)', letterSpacing: '0.12em' }}>EDITION</div>
-                  <div style={{ fontFamily: 'var(--display)', fontStyle: 'italic', fontSize: 32, lineHeight: 1, color: 'var(--ink)' }}>May 2026</div>
-                  <div className="mono" style={{ fontSize: 10, color: 'var(--muted)' }}>GENERATED 01 JUN 2026</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Authors */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 20 }}>
-              <div className="mono" style={{ fontSize: 9.5, color: 'var(--muted)', letterSpacing: '0.06em' }}>
-                AUTHORS · M&E TEAM
-              </div>
-              <div className="mono" style={{ fontSize: 8.5, color: 'var(--muted-2, #aaa)', letterSpacing: '0.06em', textAlign: 'right' }}>
-                AI-ASSISTED NARRATIVE<br />SIGNED OFF BY M&E
-              </div>
-            </div>
-          </div>
-        </NarPage>
-      </div>
-
-      {/* 2-PAGE EDITORIAL SPREAD */}
-      <div style={{ display: 'flex', justifyContent: 'center', gap: 4 }}>
-        <NarPage style={A4} edge="right">
-          <div style={{ height: '100%', padding: '40px 32px 32px', display: 'flex', flexDirection: 'column', position: 'relative' }}>
-            <NarPageHeader page="2" section="Introduction" />
-            <div className="kicker" style={{ marginBottom: 12 }}><span className="dot" />SECTION 01</div>
-            <h3 style={{ fontFamily: 'var(--display)', fontStyle: 'italic', fontWeight: 400, fontSize: 34, lineHeight: 1, letterSpacing: '-0.015em', margin: 0 }}>
-              The month in three numbers.
-            </h3>
-
-            <div style={{ marginTop: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
-              {[
-                { n: '476', lab: 'SUBMISSIONS', sub: '+8.4% vs April, the highest monthly total of the year.', color: 'var(--unfpa)' },
-                { n: '38', lab: 'ACTIVE WORKERS', sub: 'across 10 service centres in 5 divisions.', color: 'var(--coral)' },
-                { n: '12', lab: 'ANC REFERRALS', sub: "From Cox's Bazar — 24% above the rolling average.", color: 'var(--amber)' },
-              ].map(({ n, lab, sub, color }) => (
-                <div key={lab} style={{ display: 'flex', gap: 14, alignItems: 'flex-start', borderTop: '1px solid var(--hair)', paddingTop: 14 }}>
-                  <div style={{ fontFamily: 'var(--display)', fontStyle: 'italic', fontSize: 46, lineHeight: 0.9, color, letterSpacing: '-0.025em', flexShrink: 0, minWidth: 80 }}>{n}</div>
-                  <div style={{ flex: 1, marginTop: 4 }}>
-                    <div className="mono" style={{ fontSize: 9, color: 'var(--muted)', letterSpacing: '0.12em', marginBottom: 4 }}>{lab}</div>
-                    <div style={{ fontSize: 11.5, lineHeight: 1.5, color: 'var(--ink-2)' }}>{sub}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div style={{ marginTop: 'auto', paddingTop: 16, borderTop: '1px solid var(--hair)' }}>
-              <div className="mono" style={{ fontSize: 9, color: 'var(--muted)', letterSpacing: '0.1em' }}>→ CONTINUED ON FACING PAGE</div>
-            </div>
-          </div>
-        </NarPage>
-
-        <NarPage style={A4} edge="left">
-          <div style={{ height: '100%', padding: '40px 32px 32px', display: 'flex', flexDirection: 'column', position: 'relative' }}>
-            <NarPageHeader page="3" section="Introduction" />
-
-            <div style={{ position: 'relative', marginTop: 8 }}>
-              <span style={{
-                float: 'left', fontFamily: 'var(--display)', fontStyle: 'italic', fontWeight: 400,
-                fontSize: 76, lineHeight: 0.85, color: 'var(--unfpa)',
-                marginRight: 10, marginTop: 2, marginBottom: -4, letterSpacing: '-0.04em',
-              }}>I</span>
-              <p style={{ fontSize: 12, lineHeight: 1.65, color: 'var(--ink-2)', margin: 0, textAlign: 'justify' }}>
-                n May 2026, the Spondon programme recorded its strongest monthly performance since launch — 476
-                field submissions across PHD and Bondhu, an 8.4% rise on the previous month. The growth was
-                uneven: antenatal registration climbed sharply, group education held steady, while operations slipped.
-              </p>
-            </div>
-
-            <p style={{ fontSize: 12, lineHeight: 1.65, color: 'var(--ink-2)', margin: '10px 0 0', textAlign: 'justify' }}>
-              Two stories deserve attention. First, the GBV referral loop from intake to support — a 24-hour pathway that
-              held in every recorded case. Second, a dip in ANC follow-up at Ukhiya, now flagged in two consecutive alerts.
-            </p>
-
-            {/* Pull quote */}
-            <div style={{ marginTop: 20, padding: '14px 0', borderTop: '1px solid var(--ink)', borderBottom: '1px solid var(--ink)' }}>
-              <div style={{ fontFamily: 'var(--display)', fontStyle: 'italic', fontWeight: 400, fontSize: 20, lineHeight: 1.2, color: 'var(--ink)', letterSpacing: '-0.012em' }}>
-                "The numbers held; the system responded. Both matter."
-              </div>
-              <div className="mono" style={{ fontSize: 9, color: 'var(--muted)', marginTop: 8, letterSpacing: '0.08em' }}>
-                — DR. SHAHIN BEGUM · PHD FOCAL POINT
-              </div>
-            </div>
-
-            <p style={{ fontSize: 12, lineHeight: 1.65, color: 'var(--ink-2)', margin: '14px 0 0', textAlign: 'justify' }}>
-              Section two unpacks the activity profile by category. Section three reports geography. Section four
-              addresses the alerts opened this month and how each was resolved.
-            </p>
-          </div>
-        </NarPage>
-      </div>
-
-      {/* CLOSING */}
-      <div style={{ display: 'flex', justifyContent: 'center', gap: 4 }}>
-        <NarPage style={A4}>
-          <div style={{ height: '100%', padding: '44px 40px 32px', position: 'relative', display: 'flex', flexDirection: 'column' }}>
-            <NarPageHeader page="12" section="Closing" />
-            <div className="kicker" style={{ marginBottom: 14 }}><span className="dot" style={{ background: 'var(--coral)' }} />CLOSING REMARKS</div>
-
-            <div style={{ marginTop: 'auto' }}>
-              <div style={{
-                fontFamily: 'var(--display)', fontStyle: 'italic', fontWeight: 400,
-                fontSize: 30, lineHeight: 1.15, letterSpacing: '-0.015em', color: 'var(--ink)',
-              }}>
-                "Every submission is one woman, one visit, one record of care. The numbers are the consequence of
-                a system that worked this month."
-              </div>
-
-              <div style={{ marginTop: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-                <div>
-                  <div style={{ fontSize: 11, fontWeight: 500 }}>Rafia Ahmed</div>
-                  <div className="mono mute" style={{ fontSize: 9.5, marginTop: 2 }}>M&E LEAD · CIPRB</div>
-                </div>
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: 11, fontWeight: 500 }}>UNFPA Bangladesh</div>
-                  <div className="mono mute" style={{ fontSize: 9.5, marginTop: 2 }}>SIGNED 01 JUN 2026</div>
-                </div>
-              </div>
-            </div>
-
-            <div style={{ marginTop: 28, padding: '14px 0', borderTop: '1px solid var(--hair)', display: 'flex', justifyContent: 'space-between' }}>
-              <div className="mono" style={{ fontSize: 9, color: 'var(--muted)', letterSpacing: '0.1em' }}>SPONDON IDMS · MAY 2026 · END</div>
-              <div className="mono" style={{ fontSize: 9, color: 'var(--muted)' }}>12 / 12</div>
-            </div>
-          </div>
-        </NarPage>
-      </div>
-    </div>
-  )
-}
 
 // ─── 02. ONE-PAGER PREVIEW — editorial poster ────────────────────────────────
 
@@ -1261,121 +915,3 @@ function DeckPreview() {
   )
 }
 
-// ─── 05. INFOGRAPHIC PREVIEW — vertical poster ──────────────────────────────
-
-function InfographicPreview() {
-  const maxForm = Math.max(...SAMPLE_FORMS.map(f => f.count))
-
-  return (
-    <div style={{ display: 'flex', justifyContent: 'center' }}>
-      <div style={{
-        width: 440, background: 'white', borderRadius: 8,
-        boxShadow: '0 20px 60px rgba(20, 32, 43, 0.15)',
-        border: '1px solid var(--hair)', overflow: 'hidden', position: 'relative',
-      }}>
-        {/* HEADER */}
-        <div style={{
-          padding: '32px 32px 22px',
-          background: 'linear-gradient(180deg, #003B53 0%, #00658C 100%)',
-          color: 'white', position: 'relative', overflow: 'hidden',
-        }}>
-          <div style={{ position: 'absolute', top: -40, right: -40, width: 200, height: 200, borderRadius: '50%', background: 'radial-gradient(circle, rgba(242,106,79,0.4), transparent 60%)' }} />
-          <div className="mono" style={{ fontSize: 10, letterSpacing: '0.14em', color: 'rgba(255,255,255,0.65)' }}>SPONDON IDMS · INFOGRAPHIC</div>
-          <div style={{ fontFamily: 'var(--display)', fontStyle: 'italic', fontSize: 42, lineHeight: 1, marginTop: 12, letterSpacing: '-0.025em' }}>May,<br />in numbers.</div>
-          <div className="bn" style={{ fontSize: 13, marginTop: 8, color: 'rgba(255,255,255,0.7)' }}>মে মাসের কর্মসূচি, এক নজরে।</div>
-        </div>
-
-        {/* BIG NUMBER */}
-        <div style={{ padding: '26px 32px', textAlign: 'center', borderBottom: '1px solid var(--hair)' }}>
-          <div style={{ fontFamily: 'var(--display)', fontStyle: 'italic', fontSize: 96, lineHeight: 1, color: 'var(--unfpa)', letterSpacing: '-0.03em' }}>476</div>
-          <div className="mono" style={{ fontSize: 10, color: 'var(--muted)', letterSpacing: '0.12em', marginTop: 6 }}>FIELD SUBMISSIONS · ALL OF MAY 2026</div>
-          <div style={{ marginTop: 8, fontFamily: 'var(--mono)', fontSize: 13 }}>
-            <span className="emerald" style={{ fontWeight: 600 }}>+8.4%</span>
-            <span className="mute" style={{ marginLeft: 6 }}>vs April · 439</span>
-          </div>
-        </div>
-
-        {/* PHD / BONDHU SPLIT */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', borderBottom: '1px solid var(--hair)' }}>
-          <div style={{ padding: '18px 20px', borderRight: '1px solid var(--hair)' }}>
-            <div className="kicker"><span className="dot" />PHD</div>
-            <div style={{ fontFamily: 'var(--display)', fontStyle: 'italic', fontSize: 42, lineHeight: 1, color: 'var(--unfpa)', marginTop: 4 }}>369</div>
-            <div className="mono mute" style={{ fontSize: 10, marginTop: 2 }}>SUBMISSIONS</div>
-            <div style={{ marginTop: 8, fontSize: 11, color: 'var(--ink-2)', lineHeight: 1.45 }}>
-              Driven by clinic visits and antenatal cards in Cox's Bazar.
-            </div>
-          </div>
-          <div style={{ padding: '18px 20px' }}>
-            <div className="kicker"><span className="dot" style={{ background: 'var(--coral)' }} />BONDHU</div>
-            <div style={{ fontFamily: 'var(--display)', fontStyle: 'italic', fontSize: 42, lineHeight: 1, color: 'var(--coral)', marginTop: 4 }}>287</div>
-            <div className="mono mute" style={{ fontSize: 10, marginTop: 2 }}>SUBMISSIONS</div>
-            <div style={{ marginTop: 8, fontSize: 11, color: 'var(--ink-2)', lineHeight: 1.45 }}>
-              Outreach and counselling at Chattogram and Daulatdia.
-            </div>
-          </div>
-        </div>
-
-        {/* TOP DISTRICTS */}
-        <div style={{ padding: '18px 22px', borderBottom: '1px solid var(--hair)' }}>
-          <div className="kicker" style={{ marginBottom: 10 }}><span className="dot" style={{ background: 'var(--amber)' }} />WHERE THE WORK HAPPENS</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
-            {SAMPLE_DISTRICTS.slice(0, 6).map((d, i) => {
-              const max = SAMPLE_DISTRICTS[0].count
-              const pct = (d.count / max) * 100
-              return (
-                <div key={d.name}>
-                  <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 3 }}>
-                    <span style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-                      <span className="mono mute" style={{ fontSize: 10 }}>{String(i + 1).padStart(2, '0')}</span>
-                      <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--ink)' }}>{d.name}</span>
-                    </span>
-                    <span style={{ fontFamily: 'var(--display)', fontStyle: 'italic', fontSize: 20, color: 'var(--unfpa)', lineHeight: 1 }}>{d.count}</span>
-                  </div>
-                  <div style={{ height: 4, background: 'var(--surface-3, #eee)', borderRadius: 999, overflow: 'hidden' }}>
-                    <div style={{ height: '100%', width: `${pct}%`, background: 'linear-gradient(90deg, var(--unfpa), var(--unfpa-bright, #0091C7))' }} />
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-
-        {/* FORM BARS */}
-        <div style={{ padding: '18px 22px', borderBottom: '1px solid var(--hair)' }}>
-          <div className="kicker" style={{ marginBottom: 10 }}><span className="dot" style={{ background: 'var(--violet, #8B5CF6)' }} />WHAT WE LOGGED MOST</div>
-          {SAMPLE_FORMS.slice(0, 6).sort((a, b) => b.count - a.count).map(f => {
-            const barColor = f.cat === 'Clinical'
-              ? 'linear-gradient(90deg, var(--unfpa), var(--unfpa-bright, #0091C7))'
-              : f.cat === 'Community'
-              ? 'linear-gradient(90deg, var(--coral), #FBAF98)'
-              : 'linear-gradient(90deg, var(--amber), #FBCC6B)'
-            return (
-              <div key={f.key} style={{ marginBottom: 8 }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-                  <span style={{ fontSize: 12, fontWeight: 500 }}>{f.label}</span>
-                  <span style={{ fontFamily: 'var(--display)', fontStyle: 'italic', fontSize: 16, color: 'var(--ink)' }}>{f.count}</span>
-                </div>
-                <div style={{ height: 5, background: 'var(--surface-3, #eee)', borderRadius: 999, overflow: 'hidden' }}>
-                  <div style={{ height: '100%', width: `${(f.count / maxForm) * 100}%`, background: barColor, borderRadius: 999 }} />
-                </div>
-              </div>
-            )
-          })}
-        </div>
-
-        {/* CLOSING QUOTE */}
-        <div style={{ padding: '22px 28px', background: 'var(--paper-2, #F5F0E8)' }}>
-          <div style={{ fontFamily: 'var(--display)', fontStyle: 'italic', fontSize: 20, lineHeight: 1.25, color: 'var(--ink)', letterSpacing: '-0.01em' }}>
-            "Every submission is one woman, one visit, one record of care."
-          </div>
-          <div className="mono mute" style={{ fontSize: 10, marginTop: 8, letterSpacing: '0.08em' }}>— SPONDON M&E TEAM</div>
-        </div>
-
-        <div style={{ padding: '12px 28px', borderTop: '1px solid var(--hair)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div className="mono" style={{ fontSize: 9, color: 'var(--muted)', letterSpacing: '0.1em' }}>CIPRB · UNFPA BANGLADESH</div>
-          <div className="mono" style={{ fontSize: 9, color: 'var(--muted)' }}>SPONDON.GOV.BD</div>
-        </div>
-      </div>
-    </div>
-  )
-}

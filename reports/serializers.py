@@ -27,7 +27,7 @@ class ReportSerializer(serializers.ModelSerializer):
 class GenerateReportSerializer(serializers.Serializer):
     report_type  = serializers.ChoiceField(choices=['monthly_summary', 'one_pager', 'newsletter'])
     format       = serializers.ChoiceField(choices=['pdf', 'docx', 'pptx'])
-    partner      = serializers.CharField(max_length=20, required=False, default='')
+    partner      = serializers.CharField(max_length=20, required=False, default='', allow_blank=True)
 
     # Period selection
     period_type  = serializers.ChoiceField(
