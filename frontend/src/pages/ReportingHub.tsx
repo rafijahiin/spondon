@@ -211,6 +211,47 @@ export default function ReportingHub() {
     if (report.file) { window.open(report.file, '_blank') }
   }
 
+  /** Generate-and-download in one click for the format card. */
+  const handleCardDownload = async (card: FormatDef) => {
+    setGenerating((p) => ({ ...p, [card.id]: true }))
+    setCardError((p) => ({ ...p, [card.id]: '' }))
+    setCardOk((p) => ({ ...p, [card.id]: '' }))
+    try {
+      const createResp = await api.post('/reports/generate/', buildPayload(card))
+      const reportId = createResp.data?.id
+      if (!reportId) throw new Error('Report was created but no id returned.')
+
+      const fileResp = await api.get(`/reports/${reportId}/download/`, { responseType: 'blob' })
+      const blob = fileResp.data as Blob
+      if (blob.type && blob.type.includes('application/json')) {
+        const text = await blob.text()
+        try { throw new Error(JSON.parse(text).detail || 'Server error.') }
+        catch (e) {
+          if (e instanceof SyntaxError) throw new Error('Server returned an unexpected response.')
+          throw e
+        }
+      }
+      const mime = card.format === 'pptx'
+        ? 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+        : 'application/pdf'
+      const blobUrl = URL.createObjectURL(new Blob([blob], { type: mime }))
+      const anchor = document.createElement('a')
+      anchor.href = blobUrl
+      anchor.download = `${card.id}_${Date.now()}.${card.format}`
+      document.body.appendChild(anchor)
+      anchor.click()
+      document.body.removeChild(anchor)
+      URL.revokeObjectURL(blobUrl)
+      setCardOk((p) => ({ ...p, [card.id]: `${card.title} downloaded.` }))
+      setTimeout(refetch, 1000)
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : apiErrorMessage(err, 'Download failed.')
+      setCardError((p) => ({ ...p, [card.id]: msg }))
+    } finally {
+      setGenerating((p) => ({ ...p, [card.id]: false }))
+    }
+  }
+
   const handleDemoDownload = async (card: DemoCard) => {
     setDemoLoading((p) => ({ ...p, [card.id]: true }))
     setDemoError((p) => ({ ...p, [card.id]: '' }))
@@ -455,7 +496,12 @@ export default function ReportingHub() {
                       }
                       {generating[f.id] ? 'Generating…' : 'Generate'}
                     </button>
-                    <button className="btn" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <button
+                      className="btn"
+                      onClick={() => handleCardDownload(f)}
+                      disabled={generating[f.id]}
+                      style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+                    >
                       <Download size={14} /> Download
                     </button>
                   </div>
