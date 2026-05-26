@@ -4,14 +4,16 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
-from accounts.permissions import IsSuperAdminOrManager, OrgFilterMixin
+from accounts.permissions import CanAccessMPDSR, OrgFilterMixin
 from .models import DeathType, MPDSRCase, ReviewStatus
 from .serializers import MPDSRCaseSerializer, MPDSRCaseUpdateSerializer
 
 
 class MPDSRCaseViewSet(OrgFilterMixin, ModelViewSet):
     queryset = MPDSRCase.objects.select_related('submission', 'created_by').all()
-    permission_classes = [IsSuperAdminOrManager]
+    # MPDSR is CIPRB-owned per the IDMS handoff. PHD + Bandhu managers
+    # lose access here; only Dev, Supervisor, and CIPRB Org Lead see records.
+    permission_classes = [CanAccessMPDSR]
     http_method_names = ['get', 'head', 'options', 'patch']
     org_field = 'partner'
 

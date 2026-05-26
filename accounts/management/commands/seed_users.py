@@ -37,7 +37,7 @@ from django.core.management.base import BaseCommand
 # either here or in Railway.
 USERS = [
     # Order matches the authoritative Admin Panel sequence.
-    # ── Developer (CIPRB, can_see_all_orgs=True via Role.DEVELOPER) ────────
+    # ── Developer (system maintenance — Rafi) ─────────────────────────────
     {
         'email':        'rafijahiin@gmail.com',
         'full_name':    'Rafi Jahin',
@@ -45,30 +45,31 @@ USERS = [
         'role':         'developer',
         'password_env': 'DEV_PASSWORD',
     },
-    # ── CIPRB super admin (can_see_all_orgs=True via Role.SUPER_ADMIN) ────
+    # ── CIPRB Org Lead (full CIPRB access incl. Fistula + MPDSR + Baseline,
+    #    read-only on PHD/Bandhu, can set CIPRB targets) ──────────────────
     {
         'email':        'sayeed@ciprb.org',
         'full_name':    'Dr. Abu Sayeed Md. Abdullah',
         'organisation': 'CIPRB',
-        'role':         'super_admin',
+        'role':         'org_lead',
         'password_env': 'CIPRB_SAYEED_PASSWORD',
     },
-    # ── UNFPA super admins (can_see_all_orgs=True via Role.SUPER_ADMIN) ───
+    # ── UNFPA Supervisors (full system, target config) ────────────────────
     {
         'email':        'animesh@unfpa.org',
         'full_name':    'Dr. Animesh Biswas',
         'organisation': 'UNFPA',
-        'role':         'super_admin',
+        'role':         'supervisor',
         'password_env': 'UNFPA_ANIMESH_PASSWORD',
     },
     {
         'email':        'rokhsana@unfpa.org',
         'full_name':    'Rokhsana',
         'organisation': 'UNFPA',
-        'role':         'super_admin',
+        'role':         'supervisor',
         'password_env': 'UNFPA_ROKHSANA_PASSWORD',
     },
-    # ── Org managers (can_see_all_orgs=False — role-based queryset clamp) ─
+    # ── Wellness Center Managers (own-org approval + Outreach entry) ──────
     {
         'email':        'manager@bandhu.org',
         'full_name':    'Bandhu Manager',
@@ -82,6 +83,30 @@ USERS = [
         'organisation': 'PHD',
         'role':         'manager',
         'password_env': 'PHD_MANAGER_PASSWORD',
+    },
+    # ── Focal Persons (view-only on own org page, no entry, no approval) ──
+    # Only seeded when their password env var is set in Railway.
+    {
+        'email':        'focal@phd.org',
+        'full_name':    'PHD Focal Person',
+        'organisation': 'PHD',
+        'role':         'focal',
+        'password_env': 'PHD_FOCAL_PASSWORD',
+    },
+    {
+        'email':        'focal@bandhu.org',
+        'full_name':    'Bandhu Focal Person',
+        'organisation': 'Bandhu',
+        'role':         'focal',
+        'password_env': 'BANDHU_FOCAL_PASSWORD',
+    },
+    # ── CIPRB Baseline (Baseline Assessment tab only, self-approving) ────
+    {
+        'email':        'baseline@ciprb.org',
+        'full_name':    'CIPRB Baseline Entry',
+        'organisation': 'CIPRB',
+        'role':         'ciprb_baseline',
+        'password_env': 'CIPRB_BASELINE_PASSWORD',
     },
 ]
 
@@ -125,13 +150,18 @@ class Command(BaseCommand):
                 skipped_no_password += 1
                 continue
 
-            # Managers must NOT receive Django superuser flags. create_user
-            # leaves is_staff and is_superuser at their model defaults (False).
-            # Developer + super_admin get create_superuser so they can reach
-            # /admin and django.contrib.admin for emergency maintenance.
+            # Only roles with system-wide responsibility get is_staff=True
+            # (for Django /admin/ emergency maintenance):
+            #   developer  — Rafi only
+            #   supervisor — UNFPA (Animesh, Rokhsana)
+            #   org_lead   — CIPRB (Sayeed)
+            # All other roles (manager, field_staff, ciprb_baseline, focal)
+            # get is_staff=False so they cannot reach /admin/, even though
+            # their email/password remain valid via the React app login.
+            ADMIN_ROLES = ('developer', 'supervisor', 'org_lead', 'super_admin')
             create = (
                 User.objects.create_superuser
-                if u['role'] in ('developer', 'super_admin')
+                if u['role'] in ADMIN_ROLES
                 else User.objects.create_user
             )
             create(

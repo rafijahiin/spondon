@@ -245,7 +245,7 @@ class PartnerSummaryTest(TestCase):
     def setUp(self):
         self.client = APIClient()
         self.phd_mgr = make_user('pm@phd.org', Organisation.PHD, Role.MANAGER)
-        self.super_admin = make_user('sa@ciprb.org', Organisation.CIPRB, Role.SUPER_ADMIN)
+        self.super_admin = make_user('sa@ciprb.org', Organisation.CIPRB, Role.SUPERVISOR)
 
     def test_manager_cannot_access(self):
         self.client.force_authenticate(user=self.phd_mgr)

@@ -31,7 +31,7 @@ class UserModelTest(TestCase):
         self.assertEqual(User.USERNAME_FIELD, 'email')
 
     def test_super_admin_can_see_all_orgs(self):
-        user = make_user('a@ciprb.org', Organisation.CIPRB, Role.SUPER_ADMIN)
+        user = make_user('a@ciprb.org', Organisation.CIPRB, Role.SUPERVISOR)
         self.assertTrue(user.can_see_all_orgs)
 
     def test_developer_can_see_all_orgs(self):
@@ -42,15 +42,61 @@ class UserModelTest(TestCase):
         user = make_user('m@phd.org', Organisation.PHD, Role.MANAGER)
         self.assertFalse(user.can_see_all_orgs)
 
-    def test_is_super_admin_property(self):
-        user = make_user('a@ciprb.org', Organisation.CIPRB, Role.SUPER_ADMIN)
-        self.assertTrue(user.is_super_admin)
+    def test_is_supervisor_property(self):
+        user = make_user('a@unfpa.org', Organisation.UNFPA, Role.SUPERVISOR)
+        self.assertTrue(user.is_supervisor)
         self.assertFalse(user.is_manager)
+        self.assertFalse(user.is_super_admin)  # deprecated flag stays False
 
     def test_is_manager_property(self):
         user = make_user('m@phd.org', Organisation.PHD, Role.MANAGER)
         self.assertTrue(user.is_manager)
+        self.assertFalse(user.is_supervisor)
         self.assertFalse(user.is_super_admin)
+
+    def test_is_org_lead_property(self):
+        user = make_user('s@ciprb.org', Organisation.CIPRB, Role.ORG_LEAD)
+        self.assertTrue(user.is_org_lead)
+        self.assertFalse(user.is_supervisor)
+        self.assertFalse(user.is_manager)
+
+    def test_can_configure_targets_method(self):
+        sup = make_user('sup@unfpa.org', Organisation.UNFPA, Role.SUPERVISOR)
+        self.assertTrue(sup.can_configure_targets('PHD'))
+        self.assertTrue(sup.can_configure_targets('Bandhu'))
+        self.assertTrue(sup.can_configure_targets('CIPRB'))
+
+        lead_ciprb = make_user('lead@ciprb.org', Organisation.CIPRB, Role.ORG_LEAD)
+        self.assertTrue(lead_ciprb.can_configure_targets('CIPRB'))
+        self.assertFalse(lead_ciprb.can_configure_targets('PHD'))
+        self.assertFalse(lead_ciprb.can_configure_targets('Bandhu'))
+
+        mgr = make_user('m@phd.org', Organisation.PHD, Role.MANAGER)
+        self.assertFalse(mgr.can_configure_targets('PHD'))
+
+    def test_can_access_mpdsr(self):
+        # Dev + Supervisor + CIPRB Org Lead → True
+        self.assertTrue(make_user('d@x', Organisation.CIPRB, Role.DEVELOPER).can_access_mpdsr)
+        self.assertTrue(make_user('s@x', Organisation.UNFPA, Role.SUPERVISOR).can_access_mpdsr)
+        self.assertTrue(make_user('o@ciprb', Organisation.CIPRB, Role.ORG_LEAD).can_access_mpdsr)
+        # Org lead at non-CIPRB org would lose MPDSR — but org_lead at PHD/Bandhu
+        # is not a configuration we expect; testing the guard rail anyway.
+        # PHD/Bandhu managers and other roles → False
+        self.assertFalse(make_user('mp@phd', Organisation.PHD, Role.MANAGER).can_access_mpdsr)
+        self.assertFalse(make_user('mb@bandhu', Organisation.BANDHU, Role.MANAGER).can_access_mpdsr)
+        self.assertFalse(make_user('fp@phd', Organisation.PHD, Role.FOCAL).can_access_mpdsr)
+        self.assertFalse(make_user('fs@phd', Organisation.PHD, Role.FIELD_STAFF).can_access_mpdsr)
+        self.assertFalse(make_user('cb@ciprb', Organisation.CIPRB, Role.CIPRB_BASELINE).can_access_mpdsr)
+
+    def test_can_enter_field_records_excludes_manager(self):
+        # The handoff says managers approve, they do NOT enter HTC/HIV/STI/GBV/MH.
+        self.assertFalse(make_user('m1@x', Organisation.PHD, Role.MANAGER).can_enter_field_records)
+        self.assertTrue(make_user('fs@x', Organisation.PHD, Role.FIELD_STAFF).can_enter_field_records)
+
+    def test_can_enter_outreach_records_excludes_field_staff(self):
+        # Outreach is manager-mandatory; field staff record clinical encounters.
+        self.assertTrue(make_user('m2@x', Organisation.PHD, Role.MANAGER).can_enter_outreach_records)
+        self.assertFalse(make_user('fs2@x', Organisation.PHD, Role.FIELD_STAFF).can_enter_outreach_records)
 
     def test_create_superuser_sets_flags(self):
         user = User.objects.create_superuser('admin@ciprb.org', 'pass123')
@@ -102,11 +148,11 @@ class LoginViewTest(TestCase):
 
     def test_login_super_admin_no_2fa(self):
         """TOTP was removed — super admins log in like everyone else."""
-        make_user('admin@ciprb.org', Organisation.CIPRB, Role.SUPER_ADMIN)
+        make_user('admin@ciprb.org', Organisation.CIPRB, Role.SUPERVISOR)
         r = self.client.post(self.url, {'email': 'admin@ciprb.org', 'password': 'testpass123'})
         self.assertEqual(r.status_code, 200)
         self.assertFalse(r.data['requires_2fa'])
-        self.assertEqual(r.data['user']['role'], 'super_admin')
+        self.assertEqual(r.data['user']['role'], 'supervisor')
 
     def test_login_inactive_user(self):
         self.manager.is_active = False

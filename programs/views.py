@@ -20,6 +20,9 @@ from rest_framework import viewsets, views, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from accounts.permissions import (
+    CanWriteFieldRecord, CanWriteOutreach,
+)
 
 from .models import (
     ServiceCenter, Client,
@@ -111,11 +114,13 @@ class OrgFilteredViewSet(viewsets.ModelViewSet):
             except Exception:
                 return Response({'detail': 'Record not found.'}, status=status.HTTP_404_NOT_FOUND)
 
-            can_approve = (
-                user.role in ('super_admin', 'developer') or
-                (user.role == 'manager' and obj.organisation == user.organisation)
-            )
-            if not can_approve:
+            # Capability layer — checks role bucket (manager/org_lead/supervisor/dev).
+            # Plus an org-scoping gate so a manager can't approve another org's
+            # row even if the URL is guessed (defence-in-depth alongside the
+            # queryset filter, which would have 404'd already).
+            if not user.can_approve_submissions:
+                return Response({'detail': 'Not authorised.'}, status=status.HTTP_403_FORBIDDEN)
+            if not user.can_see_all_orgs and obj.organisation != user.organisation:
                 return Response({'detail': 'Not authorised.'}, status=status.HTTP_403_FORBIDDEN)
 
             if obj.approval_status != 'PENDING':
@@ -180,6 +185,7 @@ class ClientViewSet(viewsets.ModelViewSet):
 class ClinicVisitViewSet(OrgFilteredViewSet):
     queryset = ClinicVisit.objects.select_related('client', 'center', 'approved_by').all()
     serializer_class = ClinicVisitSerializer
+    permission_classes = [CanWriteFieldRecord]  # Clinic visit is field-staff data
 
     def get_queryset(self):
         qs = ClinicVisit.objects.select_related('client', 'center', 'approved_by').all()
@@ -193,11 +199,13 @@ class ClinicVisitViewSet(OrgFilteredViewSet):
 class HIVSTITestResultViewSet(OrgFilteredViewSet):
     queryset = HIVSTITestResult.objects.select_related('client', 'center').all()
     serializer_class = HIVSTITestResultSerializer
+    permission_classes = [CanWriteFieldRecord]
 
 
 class ADRRecordViewSet(OrgFilteredViewSet):
     queryset = ADRRecord.objects.select_related('client', 'center').all()
     serializer_class = ADRRecordSerializer
+    permission_classes = [CanWriteFieldRecord]
 
 
 class AutoclaveLogViewSet(OrgFilteredViewSet):
@@ -215,22 +223,26 @@ class AntenatalCardViewSet(OrgFilteredViewSet):
 class HTCCounsellingViewSet(OrgFilteredViewSet):
     queryset = HTCCounselling.objects.select_related('client', 'center').all()
     serializer_class = HTCCounsellingSerializer
+    permission_classes = [CanWriteFieldRecord]  # Field-staff write; manager blocked
 
 
 class IndividualCounsellingViewSet(OrgFilteredViewSet):
     queryset = IndividualCounselling.objects.select_related('client', 'center').all()
     serializer_class = IndividualCounsellingSerializer
+    permission_classes = [CanWriteFieldRecord]
 
 
 class MHScreeningViewSet(OrgFilteredViewSet):
     queryset = MHScreening.objects.select_related('client', 'center').all()
     serializer_class = MHScreeningSerializer
+    permission_classes = [CanWriteFieldRecord]
 
 
 # ─── GBV ───────────────────────────────────────────────────────────────────────
 
 class GBVCaseViewSet(OrgFilteredViewSet):
     queryset = GBVCase.objects.select_related('client', 'center', 'approved_by').all()
+    permission_classes = [CanWriteFieldRecord]  # GBV is field-staff data
 
     def get_serializer_class(self):
         user = self.request.user
@@ -254,11 +266,13 @@ class GBVCaseViewSet(OrgFilteredViewSet):
 class OutreachSessionViewSet(OrgFilteredViewSet):
     queryset = OutreachSession.objects.select_related('center').all()
     serializer_class = OutreachSessionSerializer
+    permission_classes = [CanWriteOutreach]  # Manager-only write per handoff
 
 
 class GroupEducationSessionViewSet(OrgFilteredViewSet):
     queryset = GroupEducationSession.objects.select_related('center').all()
     serializer_class = GroupEducationSessionSerializer
+    permission_classes = [CanWriteOutreach]  # Community session — manager-only
 
 
 # ─── Referrals ─────────────────────────────────────────────────────────────────
@@ -322,6 +336,7 @@ class CoordMeetingViewSet(OrgFilteredViewSet):
 class MobileHealthCampViewSet(OrgFilteredViewSet):
     queryset = MobileHealthCamp.objects.select_related('center').all()
     serializer_class = MobileHealthCampSerializer
+    permission_classes = [CanWriteOutreach]  # Mobile camp = community outreach
 
 
 class VisitorRegisterViewSet(viewsets.ModelViewSet):
@@ -527,11 +542,9 @@ class PendingApprovalsView(views.APIView):
                 return Response({'detail': 'Record not found.'}, status=status.HTTP_404_NOT_FOUND)
 
             user = request.user
-            can_approve = (
-                user.role in ('super_admin', 'developer') or
-                (user.role == 'manager' and obj.organisation == user.organisation)
-            )
-            if not can_approve:
+            if not user.can_approve_submissions:
+                return Response({'detail': 'Not authorised.'}, status=status.HTTP_403_FORBIDDEN)
+            if not user.can_see_all_orgs and obj.organisation != user.organisation:
                 return Response({'detail': 'Not authorised.'}, status=status.HTTP_403_FORBIDDEN)
 
             if obj.approval_status != 'PENDING':

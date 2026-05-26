@@ -52,7 +52,7 @@ class OrgIsolationSmokeTest(TestCase):
     def setUpTestData(cls):
         cls.phd_mgr     = _make_user('mgr@phd.org',    Organisation.PHD,    Role.MANAGER)
         cls.bandhu_mgr  = _make_user('mgr@bandhu.org', Organisation.BANDHU, Role.MANAGER)
-        cls.super_admin = _make_user('sa@ciprb.org',   Organisation.CIPRB,  Role.SUPER_ADMIN)
+        cls.super_admin = _make_user('sa@ciprb.org',   Organisation.CIPRB,  Role.SUPERVISOR)
 
         # Two ServiceCenters, one per org.
         cls.phd_center    = _make_center('PHD',    'PHD Center 1',    'PHD-001')

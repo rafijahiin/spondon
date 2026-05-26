@@ -75,7 +75,7 @@ class MonthlyTargetViewTest(TestCase):
     def setUp(self):
         self.client = APIClient()
         self.manager = make_user('pm@phd.org', Organisation.PHD, Role.MANAGER)
-        self.super_admin = make_user('sa@ciprb.org', Organisation.CIPRB, Role.SUPER_ADMIN)
+        self.super_admin = make_user('sa@ciprb.org', Organisation.CIPRB, Role.SUPERVISOR)
 
     def test_super_admin_can_create_target(self):
         self.client.force_authenticate(user=self.super_admin)
