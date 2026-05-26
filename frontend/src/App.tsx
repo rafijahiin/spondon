@@ -17,6 +17,7 @@ const BaselineEndline = lazy(() => import('@/pages/BaselineEndline'))
 const TrainingLog = lazy(() => import('@/pages/TrainingLog'))
 const ProgressTracker = lazy(() => import('@/pages/ProgressTracker'))
 const AdminPanel = lazy(() => import('@/pages/AdminPanel'))
+const TargetConfig = lazy(() => import('@/pages/TargetConfig'))
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth()
@@ -29,6 +30,17 @@ function RequireSupervisorOrDeveloper({ children }: { children: React.ReactNode 
   // Admin Panel = user management. Gated to system-level roles only.
   const { user } = useAuth()
   if (!user || !isAdminRole(user.role)) {
+    return <Navigate to="/" replace />
+  }
+  return <>{children}</>
+}
+
+function RequireTargetConfig({ children }: { children: React.ReactNode }) {
+  // Target Config (/admin/targets) accepts dev/supervisor for any partner
+  // plus org_lead (whose write scope is enforced server-side to own org).
+  const { user } = useAuth()
+  if (!user) return <Navigate to="/login" replace />
+  if (!isAdminRole(user.role) && user.role !== 'org_lead') {
     return <Navigate to="/" replace />
   }
   return <>{children}</>
@@ -96,6 +108,14 @@ export default function App() {
                 <RequireSupervisorOrDeveloper>
                   <AdminPanel />
                 </RequireSupervisorOrDeveloper>
+              }
+            />
+            <Route
+              path="admin/targets"
+              element={
+                <RequireTargetConfig>
+                  <TargetConfig />
+                </RequireTargetConfig>
               }
             />
           </Route>

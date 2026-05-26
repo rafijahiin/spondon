@@ -11,6 +11,7 @@ import {
   Home, LayoutDashboard, BarChart2, CheckSquare, FileText,
   Activity, Bell, Search, Settings, LogOut, ExternalLink,
   Heart, BookOpen, Users, BarChart, ClipboardList, X, Menu,
+  Target,
 } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { api } from '@/api/client'
@@ -272,6 +273,16 @@ export function Spine() {
 
       {/* Footer */}
       <div className="spine-foot">
+        {user && (isAdminRole(user.role) || user.role === 'org_lead') && (
+          <NavLink
+            to="/admin/targets"
+            className={({ isActive }) => `spine-item ${isActive ? 'active' : ''}`}
+            title="Target Config"
+          >
+            <Target size={18} />
+            {expanded ? <span className="spine-label">Target Config</span> : <span className="spine-tip">Target Config</span>}
+          </NavLink>
+        )}
         {user && isAdminRole(user.role) ? (
           <NavLink
             to="/admin"

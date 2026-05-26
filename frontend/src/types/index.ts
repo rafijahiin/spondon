@@ -23,6 +23,40 @@ export function canReadOtherOrgs(role: Role): boolean {
   return isAdminRole(role) || role === 'org_lead'
 }
 export type FormType = 'mpdsr' | 'fistula' | 'activity' | 'baseline'
+
+// ─── Partner registry (Step 2) ────────────────────────────────────────────
+// Mirrors partners/serializers.py.PartnerSerializer.
+export interface Partner {
+  id: string
+  code: 'CIPRB' | 'Bandhu' | 'PHD'
+  name: string
+  name_bangla: string
+  color_hex: string
+  is_active: boolean
+}
+
+// ─── Indicator Targets (Step 2) ───────────────────────────────────────────
+// Mirrors indicators/serializers.py.IndicatorTargetSerializer.
+export interface IndicatorTarget {
+  id: string
+  partner: string                     // FK uuid (write)
+  partner_code: 'CIPRB' | 'Bandhu' | 'PHD'  // denormalised (read-only)
+  partner_color: string               // hex color from partner (read-only)
+  objective_number: number            // 0 = overall, 1/2/3/4 per SIDA
+  activity_code: string               // e.g. '1.1' or '1.5a' or 'OVERALL'
+  activity_label: string
+  indicator_label: string
+  target_value: string | null         // DRF DecimalField — comes as string. Null = "Not Set".
+  unit: string
+  source_form: string | null
+  source_form_slug: string | null
+  notes: string
+  is_active: boolean
+  created_at: string
+  updated_at: string
+  updated_by: string | null
+  updated_by_email: string | null
+}
 export type SubmissionStatus = 'pending' | 'approved' | 'rejected'
 
 export interface User {
