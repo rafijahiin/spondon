@@ -133,11 +133,17 @@ def get_indicator_progress(
 
     actual = get_indicator_value(org, code, period_start, period_end)
 
+    # Step 2 IndicatorTarget restructure: lookup is now (partner__code,
+    # activity_code). Step 3 will reconcile the BND_1_1 → 1.1 mismatch
+    # between the compute registry's codes and the new activity_code
+    # values. Until then this lookup returns no match for legacy codes
+    # and the progress endpoint returns target=null rows — but it does
+    # NOT crash on the renamed fields.
     target_obj = IndicatorTarget.objects.filter(
-        organisation=org,
-        indicator_code=code,
+        partner__code=org,
+        activity_code=code,
         is_active=True,
-    ).order_by('-period_start').first()
+    ).first()
 
     if target_obj is None:
         return {
@@ -150,11 +156,8 @@ def get_indicator_progress(
             'on_track': None,
         }
 
-    target = float(target_obj.target_value)
-    pct = round((actual / target) * 100, 1) if target > 0 else None
-
-    # "on track" = ≥ 80% of period elapsed → ≥ 80% of target achieved
-    # Simple threshold: pct ≥ 75 = on track
+    target = float(target_obj.target_value) if target_obj.target_value is not None else None
+    pct = round((actual / target) * 100, 1) if target and target > 0 else None
     on_track = (pct >= 75) if pct is not None else None
 
     return {
@@ -163,7 +166,7 @@ def get_indicator_progress(
         'target': target,
         'pct': pct,
         'unit': target_obj.unit,
-        'label': target_obj.indicator_name,
+        'label': target_obj.indicator_label,
         'on_track': on_track,
     }
 
@@ -172,16 +175,21 @@ def get_all_indicators_for_org(org: str, period_start, period_end) -> list[dict]
     """
     Returns get_indicator_progress() for every indicator belonging to this org.
     Used by Bandhu/PHD dashboard pages.
+
+    NOTE: After the Step 2 restructure, this iterates IndicatorTarget rows by
+    partner code and uses activity_code as the lookup key. Step 3 will wire
+    bandhu.py/phd.py compute functions to the new activity_code values so
+    the actual numbers populate properly.
     """
     from .models import IndicatorTarget
 
     targets = IndicatorTarget.objects.filter(
-        organisation=org, is_active=True
-    ).order_by('indicator_code')
+        partner__code=org, is_active=True
+    ).order_by('objective_number', 'activity_code')
 
     results = []
     for t in targets:
-        code = t.indicator_code
+        code = t.activity_code
         is_org_only = code in _ORG_ONLY_CODES
         result = get_indicator_progress(
             org=org,
@@ -189,8 +197,11 @@ def get_all_indicators_for_org(org: str, period_start, period_end) -> list[dict]
             period_start=None if is_org_only else period_start,
             period_end=None if is_org_only else period_end,
         )
-        result['objective'] = t.objective
-        result['activity_ref'] = t.activity_ref
+        # New shape on the progress dict — surface objective_number and
+        # activity_code so the frontend can group rows under the right
+        # objective accordion (including PHD obj=0 "Overall").
+        result['objective'] = str(t.objective_number)
+        result['activity_ref'] = t.activity_code
         results.append(result)
 
     return results

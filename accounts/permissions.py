@@ -106,8 +106,16 @@ class CanConfigureTargets(BasePermission):
         u = request.user
         if request.method in SAFE_METHODS:
             return True
-        partner = getattr(obj, 'partner', '') or getattr(obj, 'organisation', '')
-        return u.can_configure_targets(partner)
+        # `obj.partner` may be a Partner FK instance (new IndicatorTarget
+        # shape) or a raw string (legacy models). Normalise to the code.
+        partner_obj = getattr(obj, 'partner', None)
+        if partner_obj is None:
+            partner_code = getattr(obj, 'organisation', '')
+        elif hasattr(partner_obj, 'code'):
+            partner_code = partner_obj.code
+        else:
+            partner_code = partner_obj   # already a string
+        return u.can_configure_targets(partner_code)
 
 
 class CanWriteFieldRecord(BasePermission):

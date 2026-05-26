@@ -27,6 +27,7 @@ INSTALLED_APPS = [
     'training',
     'programs',
     'indicators',
+    'partners',
 ]
 
 MIDDLEWARE = [
