@@ -99,9 +99,7 @@ class CanConfigureTargets(BasePermission):
         # If not specified on a write, fall through to per-object check
         if not partner:
             # Detail actions (PATCH /targets/<id>/) — check via object below.
-            return u.role in (
-                Role.DEVELOPER, Role.SUPERVISOR, Role.ORG_LEAD, Role.SUPER_ADMIN,
-            )
+            return u.role in (Role.DEVELOPER, Role.SUPERVISOR, Role.ORG_LEAD)
         return u.can_configure_targets(partner)
 
     def has_object_permission(self, request, view, obj):
@@ -158,39 +156,33 @@ class CanAccessMPDSR(BasePermission):
         return u.is_authenticated and u.can_access_mpdsr
 
 
-# ── Backward-compat aliases (DO NOT add new uses; deprecate in follow-up) ─────
+# ── Backward-compat aliases (deprecated names, still imported by some
+#    views — kept until every call site is migrated to the capability
+#    classes above) ─────────────────────────────────────────────────────────
 
 class IsSuperAdmin(BasePermission):
-    """Deprecated. Use IsSupervisor for UNFPA-style access, IsOrgLead for
-    CIPRB-style. Retained so the data migration can land before every view
-    is updated."""
+    """Deprecated. Accepts SUPERVISOR + ORG_LEAD. Prefer IsSupervisor or
+    a capability class."""
     def has_permission(self, request, view):
         u = request.user
-        return u.is_authenticated and u.role in (
-            Role.SUPER_ADMIN, Role.SUPERVISOR, Role.ORG_LEAD,
-        )
+        return u.is_authenticated and u.role in (Role.SUPERVISOR, Role.ORG_LEAD)
 
 
 class IsSuperAdminOrManager(BasePermission):
-    """Deprecated. Most read-only dashboard views accept this. New code should
-    use a specific capability class (CanApproveSubmissions, CanWriteOutreach,
-    etc.) or rely on the queryset's org filter alone."""
+    """Deprecated. Use a specific capability class instead."""
     def has_permission(self, request, view):
         u = request.user
         return u.is_authenticated and u.role in (
-            Role.SUPER_ADMIN, Role.SUPERVISOR, Role.ORG_LEAD,
+            Role.SUPERVISOR, Role.ORG_LEAD,
             Role.MANAGER, Role.DEVELOPER, Role.FIELD_STAFF,
         )
 
 
 class IsSuperAdminOrDeveloper(BasePermission):
-    """Deprecated. User management endpoint protector. Only DEV and
-    SUPERVISOR retain this level post-migration."""
+    """Deprecated. User management endpoint protector."""
     def has_permission(self, request, view):
         u = request.user
-        return u.is_authenticated and u.role in (
-            Role.DEVELOPER, Role.SUPERVISOR, Role.SUPER_ADMIN,
-        )
+        return u.is_authenticated and u.role in (Role.DEVELOPER, Role.SUPERVISOR)
 
 
 # ── OrgFilterMixin (unchanged from the old file) ──────────────────────────────

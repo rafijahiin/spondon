@@ -52,7 +52,7 @@ export function AIProgrammeOfficer() {
   const inputRef = useRef<HTMLInputElement>(null)
 
   // Determine partner scope for the API call
-  const canSeeAll = ['super_admin', 'developer'].includes(user?.role ?? '')
+  const canSeeAll = ['developer', 'supervisor'].includes(user?.role ?? '')
   const partner   = canSeeAll ? '' : (user?.organisation ?? '')
 
   // Scroll to bottom whenever messages change

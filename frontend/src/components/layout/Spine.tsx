@@ -39,10 +39,10 @@ const PRIMARY_NAV: SpineItemDef[] = [
     visible: (r, o) => isAdminRole(r) || r === 'org_lead' || o === 'Bandhu' },
   // Approvals: anyone with approve rights (manager + above), no focal/field_staff/baseline.
   { to: '/approvals',label: 'Manager Approvals',  labelBn: 'অনুমোদন',           icon: <CheckSquare size={18} />,
-    visible: (r) => ['developer','supervisor','org_lead','manager','super_admin'].includes(r) },
+    visible: (r) => ['developer','supervisor','org_lead','manager'].includes(r) },
   // Reports Hub: admins + org leads + managers (org-scoped views downstream).
   { to: '/reports',  label: 'Reporting Hub',       labelBn: 'রিপোর্ট',           icon: <FileText size={18} />,
-    visible: (r) => ['developer','supervisor','org_lead','manager','super_admin'].includes(r) },
+    visible: (r) => ['developer','supervisor','org_lead','manager'].includes(r) },
 ]
 
 const SECONDARY_NAV: SpineItemDef[] = [
@@ -53,11 +53,11 @@ const SECONDARY_NAV: SpineItemDef[] = [
     visible: (r, o) => isAdminRole(r) || (r === 'org_lead' && o === 'CIPRB') },
   // Progress Tracker / Training: cross-org operational, visible to admins + managers + org_lead.
   { to: '/tracker',  label: 'Progress Tracker',   labelBn: 'অগ্রগতি',           icon: <BarChart size={18} />,
-    visible: (r) => ['developer','supervisor','org_lead','manager','super_admin'].includes(r) },
+    visible: (r) => ['developer','supervisor','org_lead','manager'].includes(r) },
   { to: '/baseline', label: 'Baseline & Endline', labelBn: 'বেসলাইন',           icon: <BookOpen size={18} />,
     visible: (r, o) => isAdminRole(r) || (r === 'org_lead' && o === 'CIPRB') || o === 'CIPRB' },
   { to: '/training', label: 'Training Log',       labelBn: 'প্রশিক্ষণ',         icon: <Users size={18} />,
-    visible: (r) => ['developer','supervisor','org_lead','manager','super_admin'].includes(r) },
+    visible: (r) => ['developer','supervisor','org_lead','manager'].includes(r) },
 ]
 
 /** Filter a nav array by the current user's role + org. */

@@ -10,10 +10,7 @@ import type { AdminUser, Organisation, Role } from '@/types'
 // AdminUser extends User with: username, is_active, last_login
 
 const ORGS: Organisation[] = ['CIPRB', 'UNFPA', 'PHD', 'Bandhu']
-// Role taxonomy per IDMS handoff. 'super_admin' omitted from the picker —
-// it's deprecated and the backend migration mapped existing rows to
-// supervisor or org_lead. Existing accounts editing their own role still
-// show the value if it happens to be on disk.
+// Role taxonomy per IDMS handoff.
 const ROLES: Role[] = [
   'developer',
   'supervisor',
@@ -33,7 +30,6 @@ const ROLE_LABELS: Record<string, string> = {
   field_staff:    'Field Staff / Lab Tech',
   ciprb_baseline: 'CIPRB Baseline Entry',
   focal:          'Focal Person (view-only)',
-  super_admin:    'Super Admin (deprecated)',
 }
 
 interface UserFormData {
@@ -207,7 +203,7 @@ export default function AdminPanel() {
           { label: 'Total Users', value: (users ?? []).length },
           { label: 'Active', value: (users ?? []).filter((u) => u.is_active).length },
           { label: 'Managers', value: (users ?? []).filter((u) => u.role === 'manager').length },
-          { label: 'Supervisors', value: (users ?? []).filter((u) => u.role === 'supervisor' || u.role === 'super_admin').length },
+          { label: 'Supervisors', value: (users ?? []).filter((u) => u.role === 'supervisor').length },
         ].map((s) => (
           <div key={s.label} className="rounded-xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm p-5">
             <p className="text-2xl font-bold text-gray-900 dark:text-white">{s.value}</p>

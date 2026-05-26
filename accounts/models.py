@@ -12,7 +12,7 @@ class Organisation(models.TextChoices):
 
 
 class Role(models.TextChoices):
-    # ── New 7-role taxonomy (per IDMS Developer Handoff, May 2026) ───────
+    """7-role taxonomy per IDMS Developer Handoff, May 2026."""
     DEVELOPER       = 'developer',       'Developer'
     SUPERVISOR      = 'supervisor',      'UNFPA / Supervisor'
     ORG_LEAD        = 'org_lead',        'Org Lead'
@@ -20,10 +20,6 @@ class Role(models.TextChoices):
     FIELD_STAFF     = 'field_staff',     'Field Staff / Lab Technician'
     CIPRB_BASELINE  = 'ciprb_baseline',  'CIPRB Baseline Entry'
     FOCAL           = 'focal',           'Focal Person (view-only)'
-    # ── Deprecated — retained only so the data migration can read the old
-    #    'super_admin' value off existing rows and remap it. To be removed
-    #    in a follow-up commit once the migration is confirmed applied.
-    SUPER_ADMIN     = 'super_admin',     'Super Admin (deprecated)'
 
 
 class UserManager(BaseUserManager):
@@ -68,11 +64,6 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     # ── Role identity helpers ─────────────────────────────────────────────
     @property
-    def is_super_admin(self):
-        """Deprecated alias retained for backwards compat. Prefer is_supervisor."""
-        return self.role == Role.SUPER_ADMIN
-
-    @property
     def is_developer(self):
         return self.role == Role.DEVELOPER
 
@@ -104,16 +95,13 @@ class User(AbstractBaseUser, PermissionsMixin):
     @property
     def can_see_all_orgs(self):
         """Full cross-org dashboard access. UNFPA + system maintenance only."""
-        # SUPER_ADMIN included for grace period until data migration runs.
-        return self.role in (Role.DEVELOPER, Role.SUPERVISOR, Role.SUPER_ADMIN)
+        return self.role in (Role.DEVELOPER, Role.SUPERVISOR)
 
     @property
     def can_read_other_orgs(self):
         """Read-only visibility into other orgs' aggregated dashboards.
         Includes ORG_LEAD (CIPRB Sayeed-style — full own org, read-only others)."""
-        return self.role in (
-            Role.DEVELOPER, Role.SUPERVISOR, Role.ORG_LEAD, Role.SUPER_ADMIN,
-        )
+        return self.role in (Role.DEVELOPER, Role.SUPERVISOR, Role.ORG_LEAD)
 
     @property
     def can_approve_submissions(self):
@@ -121,13 +109,13 @@ class User(AbstractBaseUser, PermissionsMixin):
         Managers approve their own center's submissions; Supervisor/Dev/OrgLead
         approve broader. Field staff, focal, baseline — never."""
         return self.role in (
-            Role.DEVELOPER, Role.SUPERVISOR, Role.ORG_LEAD, Role.MANAGER, Role.SUPER_ADMIN,
+            Role.DEVELOPER, Role.SUPERVISOR, Role.ORG_LEAD, Role.MANAGER,
         )
 
     def can_configure_targets(self, partner: str) -> bool:
         """Edit IndicatorTarget rows. Supervisor + Developer for any partner;
         Org Lead only for their own org. Everyone else: never."""
-        if self.role in (Role.DEVELOPER, Role.SUPERVISOR, Role.SUPER_ADMIN):
+        if self.role in (Role.DEVELOPER, Role.SUPERVISOR):
             return True
         if self.role == Role.ORG_LEAD:
             return partner == self.organisation
@@ -139,7 +127,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         Field staff (own center) only — managers are explicitly excluded.
         Dev/Supervisor/OrgLead retain write for admin/seed scenarios."""
         return self.role in (
-            Role.DEVELOPER, Role.SUPERVISOR, Role.ORG_LEAD, Role.FIELD_STAFF, Role.SUPER_ADMIN,
+            Role.DEVELOPER, Role.SUPERVISOR, Role.ORG_LEAD, Role.FIELD_STAFF,
         )
 
     @property
@@ -148,14 +136,14 @@ class User(AbstractBaseUser, PermissionsMixin):
         Manager-only per the handoff (mandatory, cannot delegate).
         Dev/Supervisor/OrgLead retain write for admin scenarios."""
         return self.role in (
-            Role.DEVELOPER, Role.SUPERVISOR, Role.ORG_LEAD, Role.MANAGER, Role.SUPER_ADMIN,
+            Role.DEVELOPER, Role.SUPERVISOR, Role.ORG_LEAD, Role.MANAGER,
         )
 
     @property
     def can_access_mpdsr(self):
         """MPDSR is CIPRB-owned. Dev + Supervisor see all; Org Lead only
         if their organisation is CIPRB. Managers (PHD/Bandhu) lose access."""
-        if self.role in (Role.DEVELOPER, Role.SUPERVISOR, Role.SUPER_ADMIN):
+        if self.role in (Role.DEVELOPER, Role.SUPERVISOR):
             return True
         if self.role == Role.ORG_LEAD:
             return self.organisation == Organisation.CIPRB

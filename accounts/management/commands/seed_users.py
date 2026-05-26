@@ -158,7 +158,7 @@ class Command(BaseCommand):
             # All other roles (manager, field_staff, ciprb_baseline, focal)
             # get is_staff=False so they cannot reach /admin/, even though
             # their email/password remain valid via the React app login.
-            ADMIN_ROLES = ('developer', 'supervisor', 'org_lead', 'super_admin')
+            ADMIN_ROLES = ('developer', 'supervisor', 'org_lead')
             create = (
                 User.objects.create_superuser
                 if u['role'] in ADMIN_ROLES

@@ -46,13 +46,13 @@ class UserModelTest(TestCase):
         user = make_user('a@unfpa.org', Organisation.UNFPA, Role.SUPERVISOR)
         self.assertTrue(user.is_supervisor)
         self.assertFalse(user.is_manager)
-        self.assertFalse(user.is_super_admin)  # deprecated flag stays False
+        self.assertFalse(user.is_developer)
 
     def test_is_manager_property(self):
         user = make_user('m@phd.org', Organisation.PHD, Role.MANAGER)
         self.assertTrue(user.is_manager)
         self.assertFalse(user.is_supervisor)
-        self.assertFalse(user.is_super_admin)
+        self.assertFalse(user.is_developer)
 
     def test_is_org_lead_property(self):
         user = make_user('s@ciprb.org', Organisation.CIPRB, Role.ORG_LEAD)

@@ -246,7 +246,7 @@ class GBVCaseViewSet(OrgFilteredViewSet):
 
     def get_serializer_class(self):
         user = self.request.user
-        if user.role in ('super_admin', 'developer') or getattr(user, 'is_gbv_officer', False):
+        if user.role in ('developer', 'supervisor', 'org_lead') or getattr(user, 'is_gbv_officer', False):
             return GBVCaseDetailSerializer
         return GBVCaseSerializer
 

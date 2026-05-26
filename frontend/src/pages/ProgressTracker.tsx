@@ -321,7 +321,7 @@ function ComplianceRow({ row }: { row: ProgressRow }) {
 // ── Main page ──────────────────────────────────────────────────────────────────
 export default function ProgressTracker() {
   const { user } = useAuth()
-  const isSuperAdmin = ['super_admin', 'developer'].includes(user?.role ?? '')
+  const isSuperAdmin = ['developer', 'supervisor'].includes(user?.role ?? '')
   const canSeeAll    = isSuperAdmin
 
   const [year,           setYear]           = useState(NOW.getFullYear())

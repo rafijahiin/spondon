@@ -116,7 +116,7 @@ function SectionHead({ kicker, title, sub }: { kicker: string; title: string; su
 
 export default function ReportingHub() {
   const { user } = useAuth()
-  const canSeeAll = ['super_admin', 'developer'].includes(user?.role ?? '')
+  const canSeeAll = ['developer', 'supervisor'].includes(user?.role ?? '')
 
   // Period state
   const [periodType, setPeriodType] = useState<PeriodType>('monthly')

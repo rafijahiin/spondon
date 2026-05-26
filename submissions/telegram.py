@@ -139,7 +139,7 @@ def send_gps_rejection_notice(worker_name: str, form_type: str) -> None:
     try:
         from accounts.models import User
         managers = User.objects.filter(
-            role__in=('manager', 'super_admin'),
+            role__in=('manager', 'supervisor', 'org_lead'),
             is_active=True,
         ).exclude(telegram_chat_id='').values_list('telegram_chat_id', flat=True)
         for chat_id in managers:
