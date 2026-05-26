@@ -5,6 +5,7 @@
  */
 import { useLocation } from 'react-router-dom'
 import { RefreshCw } from 'lucide-react'
+import { LanguageToggle } from './LanguageToggle'
 
 const CRUMBS: Record<string, string[]> = {
   '/':          ['SPONDON', 'PROGRAMME OVERVIEW'],
@@ -55,6 +56,9 @@ export function Topbar() {
       <button className="top-btn" title="Refresh">
         <RefreshCw size={14} />
       </button>
+
+      {/* Global language toggle — persists to localStorage, no reload. */}
+      <LanguageToggle />
     </header>
   )
 }

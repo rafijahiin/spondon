@@ -1,5 +1,6 @@
 "use client"
 import { motion, useReducedMotion } from 'motion/react'
+import { useTranslation } from 'react-i18next'
 import { cn } from '@/utils/cn'
 import type { IndicatorProgress } from '@/types'
 
@@ -34,6 +35,7 @@ function fmt(n: number, unit: string): string {
 
 export function IndicatorCard({ indicator, delay = 0 }: Props) {
   const reduce = useReducedMotion()
+  const { t } = useTranslation()
   const { target_value, achievement, percentage, unlinked } = indicator
   const hasTarget = target_value !== null
   const ringColor = bandColour(percentage)
@@ -114,7 +116,7 @@ export function IndicatorCard({ indicator, delay = 0 }: Props) {
               className="rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase"
               style={{ backgroundColor: '#FED7AA', color: '#9A3412' }}
             >
-              Not Set
+              {t('indicator.notSet')}
             </span>
           )}
         </div>
@@ -138,9 +140,9 @@ export function IndicatorCard({ indicator, delay = 0 }: Props) {
             <span
               className="text-[10px] font-semibold uppercase tracking-wide rounded-full px-1.5 py-0.5"
               style={{ backgroundColor: '#E5E7EB', color: '#6B7280' }}
-              title="Compute function not yet wired for this activity code — module pending."
+              title={t('indicator.modulePendingTooltip')}
             >
-              Module pending
+              {t('indicator.modulePending')}
             </span>
           )}
         </div>

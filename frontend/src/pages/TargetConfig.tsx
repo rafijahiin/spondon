@@ -21,6 +21,7 @@
  *     not inside it
  */
 import { useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Check, Edit3, X, AlertCircle } from 'lucide-react'
 import { api, apiErrorMessage } from '@/api/client'
 import { useAuth } from '@/context/AuthContext'
@@ -83,9 +84,12 @@ function groupTargets(rows: IndicatorTarget[]): Grouped[] {
   return result
 }
 
-function objectiveLabel(num: number): string {
-  if (num === 0) return 'Overall'
-  return `Objective ${num}`
+/** Pick the i18n key for this objective number — keeps the row label in
+ *  sync with IndicatorGrid's group header. Bandhu's missing Obj 3 is
+ *  not auto-renumbered; an unknown number falls back to the generic key. */
+function objectiveI18nKey(num: number): string {
+  if (num >= 0 && num <= 4) return `indicator.objective${num}`
+  return 'indicator.objectiveOther'
 }
 
 interface TargetCellProps {
@@ -95,6 +99,7 @@ interface TargetCellProps {
 }
 
 function TargetCell({ row, canEdit, onSaved }: TargetCellProps) {
+  const { t } = useTranslation()
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(row.target_value ?? '')
   const [saving, setSaving] = useState(false)
@@ -136,7 +141,7 @@ function TargetCell({ row, canEdit, onSaved }: TargetCellProps) {
           title={canEdit ? 'Click to set target' : 'Read-only — no permission to edit'}
         >
           <AlertCircle className="h-3 w-3" />
-          Not Set
+          {t('targetConfig.notSetPill')}
         </button>
       )
     }
@@ -171,7 +176,7 @@ function TargetCell({ row, canEdit, onSaved }: TargetCellProps) {
         onClick={handleSave}
         disabled={saving}
         className="rounded p-1 text-green-600 hover:bg-green-50 disabled:opacity-50"
-        title="Save (Enter)"
+        title={t('targetConfig.save')}
       >
         <Check className="h-4 w-4" />
       </button>
@@ -179,7 +184,7 @@ function TargetCell({ row, canEdit, onSaved }: TargetCellProps) {
         onClick={handleCancel}
         disabled={saving}
         className="rounded p-1 text-gray-500 hover:bg-gray-50"
-        title="Cancel (Esc)"
+        title={t('targetConfig.cancel')}
       >
         <X className="h-4 w-4" />
       </button>
@@ -190,6 +195,7 @@ function TargetCell({ row, canEdit, onSaved }: TargetCellProps) {
 
 export default function TargetConfig() {
   const { user } = useAuth()
+  const { t } = useTranslation()
   const [rows, setRows] = useState<IndicatorTarget[] | null>(null)
   const [error, setError] = useState('')
 
@@ -223,15 +229,13 @@ export default function TargetConfig() {
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Target Configuration</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('targetConfig.title')}</h1>
         <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-          Edit indicator targets for each partner. Click a value to edit. Empty values
-          show as <span className="inline-flex items-center gap-1 rounded-full bg-orange-50 px-2 py-0.5 text-xs text-orange-700 ring-1 ring-orange-300"><AlertCircle className="h-3 w-3" />Not Set</span> until a value is entered.
+          {t('targetConfig.subtitle')}
         </p>
         {user?.role === 'org_lead' && (
           <p className="mt-2 rounded-md bg-blue-50 px-3 py-2 text-xs text-blue-800 dark:bg-blue-900/20 dark:text-blue-200">
-            You can edit targets only for your own organisation ({user.organisation}).
-            Other partners&apos; rows are visible but read-only.
+            {t('targetConfig.scopeBannerOrgLead', { org: user.organisation })}
           </p>
         )}
       </div>
@@ -260,17 +264,17 @@ export default function TargetConfig() {
             {g.objectives.map(obj => (
               <div key={obj.number} className="mb-6 last:mb-0">
                 <h3 className="mb-2 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                  {objectiveLabel(obj.number)}
+                  {t(objectiveI18nKey(obj.number), { n: obj.number })}
                 </h3>
                 <div className="overflow-x-auto rounded-lg border border-gray-100 dark:border-gray-700">
                   <table className="min-w-full divide-y divide-gray-100 dark:divide-gray-700">
                     <thead className="bg-gray-50/60 dark:bg-gray-900/40">
                       <tr>
-                        <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Code</th>
-                        <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Indicator</th>
-                        <th className="px-3 py-2 text-right text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Target</th>
-                        <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Unit</th>
-                        <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Updated</th>
+                        <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t('targetConfig.tableActivity')}</th>
+                        <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t('targetConfig.tableIndicator')}</th>
+                        <th className="px-3 py-2 text-right text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t('targetConfig.tableTarget')}</th>
+                        <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t('targetConfig.tableUnit')}</th>
+                        <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t('targetConfig.tableLastUpdated')}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50 dark:divide-gray-700/50">

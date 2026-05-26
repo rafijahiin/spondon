@@ -9,16 +9,18 @@
  * will be re-introduced after the 3–4 June 2026 validation workshop.
  */
 import { Lock, BookOpen } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 export default function BaselineEndline() {
+  const { t } = useTranslation()
   return (
     <>
       <section className="hero" style={{ paddingBottom: 24 }}>
         <div className="hero-eyebrow anim-rise">
           <span className="live-dot" />
-          <span>CIPRB · BASELINE / ENDLINE</span>
+          <span>{t('baseline.heroEyebrow')}</span>
           <span className="sep">/</span>
-          <span>SURVEY INSTRUMENT</span>
+          <span>{t('baseline.heroEyebrowSub')}</span>
         </div>
         <h1
           className="hero-headline anim-rise d1"
@@ -29,13 +31,11 @@ export default function BaselineEndline() {
           }}
         >
           <span className="figure" style={{ color: 'var(--unfpa)' }}>
-            Baseline
+            {t('baseline.heroHeadline')}
           </span>
         </h1>
         <p className="hero-lede anim-rise d2" style={{ maxWidth: 680 }}>
-          CIPRB-managed baseline and endline survey instrument.
-          Placeholder until the supervisor confirms the variable list
-          at the validation workshop.
+          {t('baseline.heroLede')}
         </p>
       </section>
 
@@ -67,7 +67,7 @@ export default function BaselineEndline() {
             }}
           >
             <Lock size={12} />
-            Awaiting register variables from supervisor
+            {t('ciprb.awaitingVariables')}
           </span>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
@@ -82,7 +82,7 @@ export default function BaselineEndline() {
                 margin: 0,
               }}
             >
-              Baseline Assessment
+              {t('ciprb.tabBaseline')}
             </h2>
           </div>
 
@@ -95,8 +95,7 @@ export default function BaselineEndline() {
               textWrap: 'pretty',
             } as React.CSSProperties}
           >
-            CIPRB-managed baseline survey instrument and respondent
-            registry. Tab will be activated after validation workshop.
+            {t('ciprb.summaryBaseline')}
           </p>
 
           <div
@@ -109,10 +108,7 @@ export default function BaselineEndline() {
               maxWidth: 620,
             }}
           >
-            <b>Status:</b> placeholder. No data entry, no live records,
-            no API calls. This page will activate after the 3–4 June 2026
-            validation workshop confirms the survey variable list with
-            the CIPRB Reproductive and Child Health team.
+            {t('baseline.statusPlaceholder')}
           </div>
         </div>
       </section>

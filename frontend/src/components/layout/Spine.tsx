@@ -7,6 +7,7 @@
  */
 import { useState, useRef, useEffect } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import {
   Home, LayoutDashboard, BarChart2, CheckSquare, FileText,
   Activity, Bell, Search, Settings, LogOut, ExternalLink,
@@ -21,8 +22,8 @@ import { isAdminRole } from '@/types'
 
 interface SpineItemDef {
   to: string
-  label: string
-  labelBn: string
+  /** i18n key under the `nav.*` namespace — resolved at render time. */
+  i18nKey: string
   icon: React.ReactNode
   badge?: number | null
   /** Per-item visibility predicate. If omitted, item is visible to all
@@ -31,33 +32,27 @@ interface SpineItemDef {
 }
 
 const PRIMARY_NAV: SpineItemDef[] = [
-  { to: '/',         label: 'Programme Overview', labelBn: 'হোম',               icon: <Home size={18} /> },
-  // PHD Dashboard: visible to admins, org_lead, and PHD-org users.
-  { to: '/phd',      label: 'PHD Dashboard',      labelBn: 'PHD ড্যাশবোর্ড',    icon: <LayoutDashboard size={18} />,
+  { to: '/',         i18nKey: 'nav.programmeOverview', icon: <Home size={18} /> },
+  { to: '/phd',      i18nKey: 'nav.phdDashboard',      icon: <LayoutDashboard size={18} />,
     visible: (r, o) => isAdminRole(r) || r === 'org_lead' || o === 'PHD' },
-  // Bandhu Dashboard: same shape for Bandhu-org users.
-  { to: '/bondhu',   label: 'Bandhu Dashboard',   labelBn: 'বন্ধু ড্যাশবোর্ড',  icon: <BarChart2 size={18} />,
+  { to: '/bondhu',   i18nKey: 'nav.bondhuDashboard',   icon: <BarChart2 size={18} />,
     visible: (r, o) => isAdminRole(r) || r === 'org_lead' || o === 'Bandhu' },
-  // Approvals: anyone with approve rights (manager + above), no focal/field_staff/baseline.
-  { to: '/approvals',label: 'Manager Approvals',  labelBn: 'অনুমোদন',           icon: <CheckSquare size={18} />,
+  { to: '/approvals',i18nKey: 'nav.managerApprovals',  icon: <CheckSquare size={18} />,
     visible: (r) => ['developer','supervisor','org_lead','manager'].includes(r) },
-  // Reports Hub: admins + org leads + managers (org-scoped views downstream).
-  { to: '/reports',  label: 'Reporting Hub',       labelBn: 'রিপোর্ট',           icon: <FileText size={18} />,
+  { to: '/reports',  i18nKey: 'nav.reportingHub',      icon: <FileText size={18} />,
     visible: (r) => ['developer','supervisor','org_lead','manager'].includes(r) },
 ]
 
 const SECONDARY_NAV: SpineItemDef[] = [
-  // Fistula / MPDSR / Baseline: CIPRB-owned. Visible to admins + CIPRB users only.
-  { to: '/fistula',  label: 'Fistula Tracker',    labelBn: 'ফিস্টুলা',          icon: <Heart size={18} />,
+  { to: '/fistula',  i18nKey: 'nav.fistulaTracker',   icon: <Heart size={18} />,
     visible: (r, o) => isAdminRole(r) || (r === 'org_lead' && o === 'CIPRB') || o === 'CIPRB' },
-  { to: '/mpdsr',    label: 'MPDSR Tracker',      labelBn: 'MPDSR',             icon: <Activity size={18} />,
+  { to: '/mpdsr',    i18nKey: 'nav.mpdsrTracker',     icon: <Activity size={18} />,
     visible: (r, o) => isAdminRole(r) || (r === 'org_lead' && o === 'CIPRB') },
-  // Progress Tracker / Training: cross-org operational, visible to admins + managers + org_lead.
-  { to: '/tracker',  label: 'Progress Tracker',   labelBn: 'অগ্রগতি',           icon: <BarChart size={18} />,
+  { to: '/tracker',  i18nKey: 'nav.progressTracker',  icon: <BarChart size={18} />,
     visible: (r) => ['developer','supervisor','org_lead','manager'].includes(r) },
-  { to: '/baseline', label: 'Baseline & Endline', labelBn: 'বেসলাইন',           icon: <BookOpen size={18} />,
+  { to: '/baseline', i18nKey: 'nav.baselineEndline',  icon: <BookOpen size={18} />,
     visible: (r, o) => isAdminRole(r) || (r === 'org_lead' && o === 'CIPRB') || o === 'CIPRB' },
-  { to: '/training', label: 'Training Log',       labelBn: 'প্রশিক্ষণ',         icon: <Users size={18} />,
+  { to: '/training', i18nKey: 'nav.trainingLog',      icon: <Users size={18} />,
     visible: (r) => ['developer','supervisor','org_lead','manager'].includes(r) },
 ]
 
@@ -126,6 +121,7 @@ const KOBO_GROUPS: KoboGroup[] = [
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export function Spine() {
+  const { t } = useTranslation()
   const { user, logout } = useAuth()
   const navigate = useNavigate()
   const [expanded, setExpanded] = useState(false)
@@ -254,20 +250,20 @@ export function Spine() {
         {/* KoboToolbox form links */}
         <button
           className={`spine-item ${koboOpen ? 'active' : ''}`}
-          title="KoboToolbox Forms"
+          title={t('nav.koboForms')}
           onClick={() => setKoboOpen(p => !p)}
         >
           <ClipboardList size={18} />
-          {expanded ? <span className="spine-label">Kobo Forms</span> : <span className="spine-tip">KoboToolbox Forms</span>}
+          {expanded ? <span className="spine-label">{t('nav.koboForms')}</span> : <span className="spine-tip">{t('nav.koboForms')}</span>}
         </button>
 
-        <button className="spine-item" title="Search">
+        <button className="spine-item" title={t('nav.search')}>
           <Search size={18} />
-          {expanded ? <span className="spine-label">Search</span> : <span className="spine-tip">Search</span>}
+          {expanded ? <span className="spine-label">{t('nav.search')}</span> : <span className="spine-tip">{t('nav.search')}</span>}
         </button>
-        <button className="spine-item" title="Notifications">
+        <button className="spine-item" title={t('nav.notifications')}>
           <Bell size={18} />
-          {expanded ? <span className="spine-label">Notifications</span> : <span className="spine-tip">Notifications</span>}
+          {expanded ? <span className="spine-label">{t('nav.notifications')}</span> : <span className="spine-tip">{t('nav.notifications')}</span>}
         </button>
       </div>
 
@@ -277,30 +273,30 @@ export function Spine() {
           <NavLink
             to="/admin/targets"
             className={({ isActive }) => `spine-item ${isActive ? 'active' : ''}`}
-            title="Target Config"
+            title={t('nav.targetConfig')}
           >
             <Target size={18} />
-            {expanded ? <span className="spine-label">Target Config</span> : <span className="spine-tip">Target Config</span>}
+            {expanded ? <span className="spine-label">{t('nav.targetConfig')}</span> : <span className="spine-tip">{t('nav.targetConfig')}</span>}
           </NavLink>
         )}
         {user && isAdminRole(user.role) ? (
           <NavLink
             to="/admin"
             className={({ isActive }) => `spine-item ${isActive ? 'active' : ''}`}
-            title="Admin Panel"
+            title={t('nav.adminPanel')}
           >
             <Settings size={18} />
-            {expanded ? <span className="spine-label">Admin Panel</span> : <span className="spine-tip">Admin Panel</span>}
+            {expanded ? <span className="spine-label">{t('nav.adminPanel')}</span> : <span className="spine-tip">{t('nav.adminPanel')}</span>}
           </NavLink>
         ) : (
-          <button className="spine-item" title="Settings">
+          <button className="spine-item" title={t('nav.settings')}>
             <Settings size={18} />
-            {expanded ? <span className="spine-label">Settings</span> : <span className="spine-tip">Settings</span>}
+            {expanded ? <span className="spine-label">{t('nav.settings')}</span> : <span className="spine-tip">{t('nav.settings')}</span>}
           </button>
         )}
-        <button className="spine-item" onClick={handleLogout} title="Logout">
+        <button className="spine-item" onClick={handleLogout} title={t('nav.logout')}>
           <LogOut size={18} />
-          {expanded ? <span className="spine-label">Logout</span> : <span className="spine-tip">Logout</span>}
+          {expanded ? <span className="spine-label">{t('nav.logout')}</span> : <span className="spine-tip">{t('nav.logout')}</span>}
         </button>
         <div className="spine-avatar" title={user?.full_name || user?.email || ''}>
           {initials}
@@ -348,7 +344,9 @@ export function Spine() {
   )
 }
 
-function SpineItem({ to, label, labelBn, icon, badge, expanded, onNavigate }: SpineItemDef & { expanded?: boolean; onNavigate?: () => void }) {
+function SpineItem({ to, i18nKey, icon, badge, expanded, onNavigate }: SpineItemDef & { expanded?: boolean; onNavigate?: () => void }) {
+  const { t } = useTranslation()
+  const label = t(i18nKey)
   return (
     <NavLink
       to={to}
@@ -359,13 +357,9 @@ function SpineItem({ to, label, labelBn, icon, badge, expanded, onNavigate }: Sp
       {icon}
       {badge != null && badge > 0 && <span className="badge">{badge}</span>}
       {expanded ? (
-        <span className="spine-label">
-          {label} <small className="bn" style={{ color: 'var(--muted)', fontSize: 10, marginLeft: 4 }}>{labelBn}</small>
-        </span>
+        <span className="spine-label">{label}</span>
       ) : (
-        <span className="spine-tip">
-          {label} <small>{labelBn}</small>
-        </span>
+        <span className="spine-tip">{label}</span>
       )}
     </NavLink>
   )

@@ -12,6 +12,7 @@
  * tab labels stay stable so muscle memory survives.
  */
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react'
 import { ClipboardList, Megaphone, BookOpen, Lock } from 'lucide-react'
 
@@ -19,46 +20,44 @@ type TabKey = 'corner' | 'campaign' | 'baseline'
 
 interface TabDef {
   key: TabKey
-  label: string
-  labelBn: string
+  /** Tab label key under `ciprb.*` for the English title. */
+  labelKey: string
+  /** Tab label key under `ciprb.*` for the Bengali sub-label rendered as <small>. */
+  labelBnKey: string
   icon: React.ReactNode
-  summary: string
+  /** Translation key under `ciprb.*` for the body summary. */
+  summaryKey: string
 }
 
 const TABS: TabDef[] = [
   {
     key: 'corner',
-    label: 'Fistula Corner',
-    labelBn: 'ফিস্টুলা কর্নার',
+    labelKey: 'ciprb.tabCorner',
+    labelBnKey: 'ciprb.tabCornerBn',
     icon: <ClipboardList size={16} />,
-    summary:
-      'District Hospital register of women diagnosed with obstetric fistula. ' +
-      'Tab will be activated after validation workshop.',
+    summaryKey: 'ciprb.summaryCorner',
   },
   {
     key: 'campaign',
-    label: 'Fistula Campaign',
-    labelBn: 'ফিস্টুলা ক্যাম্পেইন',
+    labelKey: 'ciprb.tabCampaign',
+    labelBnKey: 'ciprb.tabCampaignBn',
     icon: <Megaphone size={16} />,
-    summary:
-      'House-to-house screening campaign register and referral chain. ' +
-      'Tab will be activated after validation workshop.',
+    summaryKey: 'ciprb.summaryCampaign',
   },
   {
     key: 'baseline',
-    label: 'Baseline Assessment',
-    labelBn: 'বেসলাইন সমীক্ষা',
+    labelKey: 'ciprb.tabBaseline',
+    labelBnKey: 'ciprb.tabBaselineBn',
     icon: <BookOpen size={16} />,
-    summary:
-      'CIPRB-managed baseline survey instrument and respondent registry. ' +
-      'Tab will be activated after validation workshop.',
+    summaryKey: 'ciprb.summaryBaseline',
   },
 ]
 
 export default function FistulaTracker() {
+  const { t } = useTranslation()
   const [active, setActive] = useState<TabKey>('corner')
   const reduce = useReducedMotion()
-  const activeTab = TABS.find((t) => t.key === active)!
+  const activeTab = TABS.find((tab) => tab.key === active)!
 
   return (
     <>
@@ -66,9 +65,9 @@ export default function FistulaTracker() {
       <section className="hero" style={{ paddingBottom: 24 }}>
         <div className="hero-eyebrow anim-rise">
           <span className="live-dot" />
-          <span>CIPRB · IMPLEMENTING PARTNER</span>
+          <span>{t('ciprb.heroEyebrow')}</span>
           <span className="sep">/</span>
-          <span>RCH PROGRAMME REGISTERS</span>
+          <span>{t('ciprb.heroEyebrowSub')}</span>
         </div>
         <h1
           className="hero-headline anim-rise d1"
@@ -78,13 +77,10 @@ export default function FistulaTracker() {
             letterSpacing: '-0.035em',
           }}
         >
-          <span className="figure" style={{ color: 'var(--unfpa)' }}>CIPRB</span>
+          <span className="figure" style={{ color: 'var(--unfpa)' }}>{t('ciprb.heroHeadline')}</span>
         </h1>
         <p className="hero-lede anim-rise d2" style={{ maxWidth: 720 }}>
-          The three registers below are the CIPRB-owned surveillance
-          surfaces under the IDMS programme. Each tab is held in a
-          placeholder state until the supervisor signs off the
-          register variables at the 3–4 June validation workshop.
+          {t('ciprb.heroLede')}
         </p>
       </section>
 
@@ -103,14 +99,14 @@ export default function FistulaTracker() {
             marginBottom: 24,
           }}
         >
-          {TABS.map((t) => {
-            const isActive = active === t.key
+          {TABS.map((tab) => {
+            const isActive = active === tab.key
             return (
               <button
-                key={t.key}
+                key={tab.key}
                 role="tab"
                 aria-selected={isActive}
-                onClick={() => setActive(t.key)}
+                onClick={() => setActive(tab.key)}
                 style={{
                   display: 'inline-flex', alignItems: 'center', gap: 8,
                   padding: '8px 14px',
@@ -125,8 +121,8 @@ export default function FistulaTracker() {
                   transitionDuration: '180ms',
                 }}
               >
-                {t.icon}
-                <span>{t.label}</span>
+                {tab.icon}
+                <span>{t(tab.labelKey)}</span>
                 <small
                   className="bn"
                   style={{
@@ -134,7 +130,7 @@ export default function FistulaTracker() {
                     color: isActive ? 'rgba(255,255,255,0.7)' : 'var(--muted)',
                   }}
                 >
-                  {t.labelBn}
+                  {t(tab.labelBnKey)}
                 </small>
               </button>
             )
@@ -163,6 +159,7 @@ export default function FistulaTracker() {
 // ─── Placeholder panel ─────────────────────────────────────────────────────
 
 function PlaceholderPanel({ tab }: { tab: TabDef }) {
+  const { t } = useTranslation()
   return (
     <div
       className="card shimmer"
@@ -191,7 +188,7 @@ function PlaceholderPanel({ tab }: { tab: TabDef }) {
         }}
       >
         <Lock size={12} />
-        Awaiting register variables from supervisor
+        {t('ciprb.awaitingVariables')}
       </span>
 
       <div>
@@ -205,13 +202,13 @@ function PlaceholderPanel({ tab }: { tab: TabDef }) {
             margin: 0,
           }}
         >
-          {tab.label}
+          {t(tab.labelKey)}
         </h2>
         <div
           className="bn"
           style={{ fontSize: 14, color: 'var(--muted)', marginTop: 4 }}
         >
-          {tab.labelBn}
+          {t(tab.labelBnKey)}
         </div>
       </div>
 
@@ -224,7 +221,7 @@ function PlaceholderPanel({ tab }: { tab: TabDef }) {
           textWrap: 'pretty',
         } as React.CSSProperties}
       >
-        {tab.summary}
+        {t(tab.summaryKey)}
       </p>
 
       <div
@@ -237,10 +234,7 @@ function PlaceholderPanel({ tab }: { tab: TabDef }) {
           maxWidth: 620,
         }}
       >
-        <b>Status:</b> placeholder. No data entry, no live records,
-        no API calls. This tab will activate after the 3–4 June 2026
-        validation workshop confirms the register variable list with
-        the CIPRB Reproductive and Child Health team.
+        {t('ciprb.statusPlaceholder')}
       </div>
     </div>
   )

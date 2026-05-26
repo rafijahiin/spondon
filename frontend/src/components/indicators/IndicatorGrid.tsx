@@ -1,5 +1,6 @@
 "use client"
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react'
 import { RefreshCw } from 'lucide-react'
 import { api } from '@/api/client'
@@ -12,12 +13,11 @@ interface Props {
   periodEnd?: string
 }
 
-const OBJECTIVE_LABELS: Record<number, string> = {
-  0: 'Overall',
-  1: 'Objective 1 — Service Delivery',
-  2: 'Objective 2 — Capacity Building',
-  3: 'Objective 3 — Community Awareness',
-  4: 'Objective 4 — SBCC / IEC',
+/** Resolve an objective_number to an i18n key under `indicator.*`.
+ *  Unknown objective numbers fall back to `indicator.objectiveOther`. */
+function objectiveI18nKey(n: number): string {
+  if (n >= 0 && n <= 4) return `indicator.objective${n}`
+  return 'indicator.objectiveOther'
 }
 
 function groupByObjective(indicators: IndicatorProgress[]): Map<number, IndicatorProgress[]> {
@@ -33,6 +33,7 @@ function groupByObjective(indicators: IndicatorProgress[]): Map<number, Indicato
 }
 
 export function IndicatorGrid({ org, periodStart = '2026-05-21', periodEnd = '2026-11-20' }: Props) {
+  const { t } = useTranslation()
   const reduce = useReducedMotion()
   const [indicators, setIndicators] = useState<IndicatorProgress[]>([])
   const [loading, setLoading] = useState(true)
@@ -49,7 +50,7 @@ export function IndicatorGrid({ org, periodStart = '2026-05-21', periodEnd = '20
       setIndicators(res.data)
       setLastRefresh(new Date())
     } catch {
-      setError('Could not load indicator data.')
+      setError(t('indicator.loadError'))
     } finally {
       setLoading(false)
     }
@@ -83,10 +84,10 @@ export function IndicatorGrid({ org, periodStart = '2026-05-21', periodEnd = '20
       <div className="flex items-center justify-between">
         <div>
           <h2 className="font-semibold text-gray-900 dark:text-white">
-            M&amp;E Indicator Progress
+            {t('indicator.title')}
           </h2>
           <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-            Programme period: {periodStart} → {periodEnd}
+            {t('indicator.programmePeriod', { start: periodStart, end: periodEnd })}
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -95,21 +96,21 @@ export function IndicatorGrid({ org, periodStart = '2026-05-21', periodEnd = '20
             <div className="hidden sm:flex items-center gap-2">
               {avgPct !== null && (
                 <span className="rounded-full bg-unfpa-blue/10 px-3 py-1 text-xs font-semibold text-unfpa-blue dark:bg-unfpa-blue/20 dark:text-blue-300 tabular-nums">
-                  Avg {avgPct}%
+                  {t('indicator.avg', { pct: avgPct })}
                 </span>
               )}
               <span
                 className="rounded-full px-3 py-1 text-xs font-semibold tabular-nums"
                 style={{ backgroundColor: '#D1FAE5', color: '#065F46' }}
               >
-                {onTrackCount} on track
+                {t('indicator.onTrack', { count: onTrackCount })}
               </span>
               {behindCount > 0 && (
                 <span
                   className="rounded-full px-3 py-1 text-xs font-semibold tabular-nums"
                   style={{ backgroundColor: '#FEE2E2', color: '#991B1B' }}
                 >
-                  {behindCount} behind
+                  {t('indicator.behind', { count: behindCount })}
                 </span>
               )}
             </div>
@@ -118,7 +119,7 @@ export function IndicatorGrid({ org, periodStart = '2026-05-21', periodEnd = '20
             onClick={fetchIndicators}
             disabled={loading}
             className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 dark:border-gray-700 text-gray-500 hover:text-unfpa-blue hover:border-unfpa-blue/50 transition-colors disabled:opacity-40"
-            title="Refresh indicators"
+            title={t('indicator.refresh')}
           >
             <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
           </button>
@@ -159,7 +160,7 @@ export function IndicatorGrid({ org, periodStart = '2026-05-21', periodEnd = '20
       {!loading && indicators.length > 0 && [...grouped.entries()].map(([objNum, rows]) => (
         <div key={objNum} className="space-y-3">
           <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
-            {OBJECTIVE_LABELS[objNum] ?? `Objective ${objNum}`}
+            {t(objectiveI18nKey(objNum), { n: objNum })}
           </h3>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {rows.map((ind, idx) => (
@@ -176,7 +177,7 @@ export function IndicatorGrid({ org, periodStart = '2026-05-21', periodEnd = '20
       {/* Last refresh */}
       {lastRefresh && (
         <p className="text-[10px] text-gray-400 dark:text-gray-600">
-          Last refreshed {lastRefresh.toLocaleTimeString('en-GB')} · Cached 1h
+          {t('indicator.lastRefreshed', { time: lastRefresh.toLocaleTimeString('en-GB') })}
         </p>
       )}
     </div>

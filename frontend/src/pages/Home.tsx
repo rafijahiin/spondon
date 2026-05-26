@@ -16,6 +16,7 @@
  */
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { motion, useReducedMotion } from 'motion/react'
 import { ArrowRight } from 'lucide-react'
 
@@ -73,6 +74,7 @@ function rollupPartner(partner: PartnerCode, rows: IndicatorProgress[]): Partner
 export default function Home() {
   const navigate = useNavigate()
   const reduce = useReducedMotion()
+  const { t } = useTranslation()
   const [progress, setProgress] = useState<IndicatorProgress[] | null>(null)
   const [loadError, setLoadError] = useState(false)
 
@@ -100,11 +102,11 @@ export default function Home() {
       <section className="hero" style={{ paddingBottom: 28 }}>
         <div className="hero-eyebrow anim-rise">
           <span className="live-dot" />
-          <span>CIPRB · UNFPA BANGLADESH</span>
+          <span>{t('home.eyebrowOrg')}</span>
           <span className="sep">/</span>
-          <span>INTEGRATED DIGITAL M&amp;E SYSTEM</span>
+          <span>{t('home.eyebrowSystem')}</span>
           <span className="sep">/</span>
-          <span>2026–2027</span>
+          <span>{t('home.eyebrowPeriod')}</span>
         </div>
 
         <h1
@@ -115,7 +117,7 @@ export default function Home() {
             letterSpacing: '-0.035em',
           }}
         >
-          <span className="figure">SPONDON</span>
+          <span className="figure">{t('home.headline')}</span>
         </h1>
 
         <div
@@ -128,22 +130,15 @@ export default function Home() {
             textWrap: 'pretty',
           } as React.CSSProperties}
         >
-          <p style={{ margin: 0 }}>
-            Spondon is the Integrated Digital M&amp;E System for the CIPRB / UNFPA
-            Reproductive and Child Health programme. It consolidates field
-            submissions from <b>three implementing partners</b> — CIPRB,
-            Bandhu Social Welfare Society and the Public Health Department —
-            into one live dashboard.
-          </p>
+          <p style={{ margin: 0 }}>{t('home.briefP1')}</p>
           <p style={{ marginTop: 14 }}>
             <span
               className="tag amber"
               style={{ fontSize: 10, marginRight: 8, verticalAlign: 'middle' }}
             >
-              Placeholder copy
+              {t('home.briefPlaceholderBadge')}
             </span>
-            Final programme brief is confirmed at the validation workshop on
-            3–4 June 2026 — this text will be replaced after sign-off.
+            {t('home.briefP2')}
           </p>
         </div>
       </section>
@@ -155,14 +150,10 @@ export default function Home() {
         <div className="section-head">
           <div>
             <div className="kicker" style={{ marginBottom: 8 }}>
-              <span className="dot" />COVERAGE
+              <span className="dot" />{t('home.coverageKicker')}
             </div>
-            <h2 className="section-title">Partner footprint by district</h2>
-            <p className="section-sub">
-              Each colour shows where one or more partners operate. Click a
-              district to jump to that partner's page. Overlap shading
-              flags districts where two or three partners overlap.
-            </p>
+            <h2 className="section-title">{t('home.coverageTitle')}</h2>
+            <p className="section-sub">{t('home.coverageSubtitle')}</p>
           </div>
         </div>
         <div className="card shimmer" style={{ padding: 16 }}>
@@ -177,13 +168,10 @@ export default function Home() {
         <div className="section-head">
           <div>
             <div className="kicker" style={{ marginBottom: 8 }}>
-              <span className="dot" />PROGRESS SUMMARY
+              <span className="dot" />{t('home.rollupKicker')}
             </div>
-            <h2 className="section-title">Aggregate progress by partner</h2>
-            <p className="section-sub">
-              Sum of achievement against the sum of all set targets,
-              across every indicator in that partner's SIDA framework.
-            </p>
+            <h2 className="section-title">{t('home.rollupTitle')}</h2>
+            <p className="section-sub">{t('home.rollupSubtitle')}</p>
           </div>
         </div>
         <div
@@ -202,7 +190,7 @@ export default function Home() {
         </div>
         {loadError && (
           <p style={{ marginTop: 12, fontSize: 12.5, color: 'var(--coral)' }}>
-            Could not reach /api/indicators/progress/ — showing empty rollups.
+            {t('home.rollupLoadError')}
           </p>
         )}
       </section>
@@ -214,9 +202,9 @@ export default function Home() {
         <div className="section-head">
           <div>
             <div className="kicker" style={{ marginBottom: 8 }}>
-              <span className="dot" />JUMP TO
+              <span className="dot" />{t('home.jumpToKicker')}
             </div>
-            <h2 className="section-title">Partner pages</h2>
+            <h2 className="section-title">{t('home.jumpToTitle')}</h2>
           </div>
         </div>
         <div
@@ -246,6 +234,7 @@ export default function Home() {
 function RollupCard({
   rollup, reduce, delay,
 }: { rollup: PartnerRollup; reduce: boolean | null; delay: number }) {
+  const { t } = useTranslation()
   const { partner, totalAchievement, totalTarget, percentage,
     totalRows, unlinkedRows } = rollup
   const color = PARTNER_COLORS[partner]
@@ -302,7 +291,7 @@ function RollupCard({
             className="tag amber"
             style={{ fontSize: 10, fontWeight: 600 }}
           >
-            Not Set
+            {t('targetConfig.notSetPill')}
           </span>
         )}
       </div>
@@ -318,8 +307,8 @@ function RollupCard({
         </span>
         <span style={{ fontSize: 13, color: 'var(--muted)' }}>
           {isNotSet
-            ? 'no targets confirmed yet'
-            : <>of {totalTarget!.toLocaleString()} cumulative</>}
+            ? t('home.rollupCardNoTargets')
+            : t('home.rollupCardCumulative', { target: totalTarget!.toLocaleString() })}
         </span>
       </div>
 
@@ -345,10 +334,10 @@ function RollupCard({
           paddingTop: 6, borderTop: '1px solid var(--hair)',
         }}
       >
-        <span>{totalRows} indicators</span>
+        <span>{t('home.rollupCardIndicators', { count: totalRows })}</span>
         {unlinkedRows > 0 && (
-          <span title="Compute function not yet wired for these rows.">
-            {unlinkedRows} module pending
+          <span title={t('indicator.modulePendingTooltip')}>
+            {t('home.rollupCardModulePending', { count: unlinkedRows })}
           </span>
         )}
       </div>
@@ -366,6 +355,7 @@ function NavTile({
   reduce: boolean | null
   delay: number
 }) {
+  const { t } = useTranslation()
   const color = PARTNER_COLORS[partner]
   const names = PARTNER_NAMES[partner]
 
@@ -427,7 +417,7 @@ function NavTile({
           fontSize: 13, fontWeight: 600,
         }}
       >
-        Open partner page
+        {t('home.tileCta')}
         <ArrowRight size={16} />
       </div>
     </motion.button>

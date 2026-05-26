@@ -17,6 +17,7 @@
 import { useEffect, useState } from 'react'
 import { MapContainer, TileLayer, GeoJSON } from 'react-leaflet'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import type { Layer, PathOptions } from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 
@@ -35,6 +36,7 @@ interface Props {
 
 export function PartnerOverlapMap({ className, height = 360 }: Props) {
   const navigate = useNavigate()
+  const { t } = useTranslation()
   const [geoData, setGeoData] = useState<GeoJSON.FeatureCollection | null>(null)
   const [error, setError] = useState(false)
   const coverage = buildCoverageMap()
@@ -134,11 +136,11 @@ export function PartnerOverlapMap({ className, height = 360 }: Props) {
         <LegendSwatch color={PARTNER_COLORS.CIPRB}  label="CIPRB" />
         <LegendSwatch color={PARTNER_COLORS.Bandhu} label="Bandhu" />
         <LegendSwatch color={PARTNER_COLORS.PHD}    label="PHD" />
-        <LegendSwatch color={OVERLAP_TWO_ORGS}      label="2-org overlap" />
-        <LegendSwatch color={OVERLAP_THREE_ORGS}    label="3-org overlap" />
-        <LegendSwatch color={NO_COVERAGE}           label="No coverage" />
+        <LegendSwatch color={OVERLAP_TWO_ORGS}      label={t('home.legendTwoOrgs')} />
+        <LegendSwatch color={OVERLAP_THREE_ORGS}    label={t('home.legendThreeOrgs')} />
+        <LegendSwatch color={NO_COVERAGE}           label={t('home.legendNoCoverage')} />
         <span style={{ marginLeft: 'auto', color: 'var(--muted)', fontStyle: 'italic' }}>
-          Placeholder districts — confirmed at workshop
+          {t('home.coveragePlaceholderNote')}
         </span>
       </div>
     </div>
