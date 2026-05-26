@@ -45,6 +45,17 @@ i18n
     },
   })
 
+/** Mirror i18n state onto <html lang="…"> so font fallback rules and
+ *  screen readers pick up the right language. Called once on init and
+ *  on every successful changeLanguage(). */
+function syncHtmlLang(lang: string) {
+  if (typeof document !== 'undefined') {
+    document.documentElement.lang = lang
+  }
+}
+syncHtmlLang(detectLang())
+i18n.on('languageChanged', syncHtmlLang)
+
 /** Persist language to localStorage and switch i18next without reload. */
 export function setLanguage(lang: Lang) {
   if (typeof window !== 'undefined') {

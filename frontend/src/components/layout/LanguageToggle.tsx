@@ -13,7 +13,11 @@ const OPTIONS: { code: Lang; label: string }[] = [
 
 export function LanguageToggle() {
   const { i18n, t } = useTranslation()
-  const current = (i18n.resolvedLanguage as Lang) ?? 'en'
+  // i18n.language reflects the active selection synchronously after
+  // changeLanguage(); i18n.resolvedLanguage lags by one render under
+  // some fallback configurations and made the active-state visual
+  // appear stuck on the previous language.
+  const current = ((i18n.language || 'en').split('-')[0] as Lang)
 
   return (
     <div
