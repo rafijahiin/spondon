@@ -395,17 +395,21 @@ export interface ProgramsSummary {
 
 // ─── Indicator types (programs / indicators apps) ────────────────────────────
 
+// Step 3 progress shape — one entry per IndicatorTarget row.
+// Emitted by /api/indicators/progress/ via IndicatorProgressSerializer.
 export interface IndicatorProgress {
-  code: string
-  label: string
-  actual: number
-  target: number | null
-  pct: number | null
+  activity_code: string          // e.g. '1.4a', 'OVERALL'
+  objective_number: number       // 0 (PHD overall), 1, 2, 3, 4 — no Bandhu 3
+  activity_label: string
+  indicator_label: string
+  target_value: number | null    // null = "Not Set"
   unit: string
-  on_track: boolean | null
-  objective?: string
-  activity_ref?: string
-  organisation?: string
+  achievement: number            // always a number; 0 if no records yet
+  percentage: number | null      // null when target_value is null
+                                 // 0 when target > 0 and achievement = 0
+                                 // round(achievement / target * 100, 1) otherwise
+  unlinked: boolean              // true if no compute fn yet for this code
+  organisation?: string          // added by the view layer on the all-orgs roll-up
 }
 
 export interface ServiceCenter {

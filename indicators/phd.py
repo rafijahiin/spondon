@@ -135,11 +135,33 @@ def compute_I_PHD_1_9(org):
 
 
 def compute_I_PHD_2_1(org, period_start, period_end):
-    """DGFP managers + GOB district staff oriented. Target: 33 + 140"""
+    """DGFP managers + GOB district staff oriented. Combined legacy
+    function — kept for back-compat. New code paths split into 2.1a / 2.1b
+    below to match the SIDA fixture (target 33 + 140 = two separate rows)."""
     return TrainingEvent.objects.filter(
         organisation=org, approval_status=APPROVED,
         event_date__range=(period_start, period_end),
         participant_type__in=['HM', 'GOB'],
+        event_type='orientation',
+    ).aggregate(t=Sum('total_participants'))['t'] or 0
+
+
+def compute_I_PHD_2_1A(org, period_start, period_end):
+    """DGFP managers oriented (HM participants only). Target: 33."""
+    return TrainingEvent.objects.filter(
+        organisation=org, approval_status=APPROVED,
+        event_date__range=(period_start, period_end),
+        participant_type='HM',
+        event_type='orientation',
+    ).aggregate(t=Sum('total_participants'))['t'] or 0
+
+
+def compute_I_PHD_2_1B(org, period_start, period_end):
+    """District / Upazila GOB staff oriented. Target: 140."""
+    return TrainingEvent.objects.filter(
+        organisation=org, approval_status=APPROVED,
+        event_date__range=(period_start, period_end),
+        participant_type='GOB',
         event_type='orientation',
     ).aggregate(t=Sum('total_participants'))['t'] or 0
 
@@ -169,3 +191,49 @@ def compute_I_PHD_2_4(org, period_start, period_end):
         organisation=org, approval_status=APPROVED,
         meeting_date__range=(period_start, period_end),
     ).count()
+
+
+def compute_phd_overall(org):
+    """PHD obj=0 'Brothels covered' overall indicator.
+
+    Per Step 3 spec: a static count of ServiceCenter rows where
+    organisation='PHD' and is_active=True. Not a Kobo form count — this
+    reflects the centre registry the supervisor maintains directly.
+    """
+    return ServiceCenter.objects.filter(organisation=org, is_active=True).count()
+
+
+# ─── Activity-code registry ──────────────────────────────────────────────────
+#
+# Maps the canonical `activity_code` values from the IndicatorTarget fixture
+# (data migration 0004_load_target_fixtures) to compute functions above.
+#
+# UNLINKED codes (no compute function yet — surface as achievement=0,
+# unlinked=True via the service layer; do NOT crash):
+#   3.1a, 3.1b, 3.1c, 3.1d  — IEC materials (message boards / posters /
+#   signboards / billboards). The IEC Materials Log module is on the
+#   post-workshop build list.
+
+ACTIVITY_REGISTRY = {
+    'OVERALL': compute_phd_overall,    # org-only, no period
+    '1.1':  compute_I_PHD_1_1,
+    '1.2':  compute_I_PHD_1_2,
+    '1.3':  compute_I_PHD_1_3,
+    '1.4':  compute_I_PHD_1_4,
+    '1.5a': compute_I_PHD_1_5A,
+    '1.5b': compute_I_PHD_1_5B,
+    '1.5c': compute_I_PHD_1_5C,
+    '1.5d': compute_I_PHD_1_5D,
+    '1.5e': compute_I_PHD_1_5E,
+    '1.6':  compute_I_PHD_1_6,
+    '1.7':  compute_I_PHD_1_7,         # org-only, no period
+    '1.8':  compute_I_PHD_1_8,
+    '2.1a': compute_I_PHD_2_1A,
+    '2.1b': compute_I_PHD_2_1B,
+    '2.2':  compute_I_PHD_2_2,
+    '2.3':  compute_I_PHD_2_3,
+    '2.4':  compute_I_PHD_2_4,
+}
+
+# Codes whose compute function takes only (org) — no period args.
+ORG_ONLY_CODES = {'OVERALL', '1.7'}

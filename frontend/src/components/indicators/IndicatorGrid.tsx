@@ -7,29 +7,29 @@ import { IndicatorCard } from './IndicatorCard'
 import type { IndicatorProgress } from '@/types'
 
 interface Props {
-  org: 'PHD' | 'Bandhu'
+  org: 'PHD' | 'Bandhu' | 'CIPRB'
   periodStart?: string
   periodEnd?: string
 }
 
-type GroupedIndicators = Record<string, IndicatorProgress[]>
-
-const OBJECTIVE_LABELS: Record<string, string> = {
-  O1: 'Objective 1 — Service Delivery',
-  O2: 'Objective 2 — Capacity Building',
-  O3: 'Objective 3 — Governance',
-  O4: 'Objective 4 — SBCC / IEC',
-  '': 'Other Indicators',
+const OBJECTIVE_LABELS: Record<number, string> = {
+  0: 'Overall',
+  1: 'Objective 1 — Service Delivery',
+  2: 'Objective 2 — Capacity Building',
+  3: 'Objective 3 — Community Awareness',
+  4: 'Objective 4 — SBCC / IEC',
 }
 
-function groupByObjective(indicators: IndicatorProgress[]): GroupedIndicators {
-  const groups: GroupedIndicators = {}
+function groupByObjective(indicators: IndicatorProgress[]): Map<number, IndicatorProgress[]> {
+  const groups = new Map<number, IndicatorProgress[]>()
   for (const ind of indicators) {
-    const key = ind.objective ?? ''
-    if (!groups[key]) groups[key] = []
-    groups[key].push(ind)
+    const key = ind.objective_number
+    if (!groups.has(key)) groups.set(key, [])
+    groups.get(key)!.push(ind)
   }
-  return groups
+  // Numeric sort that naturally renders PHD 0 → 1 → 2 and Bandhu 1 → 2 → 4
+  // (no auto-renumbering of the missing Bandhu Obj 3).
+  return new Map([...groups.entries()].sort((a, b) => a[0] - b[0]))
 }
 
 export function IndicatorGrid({ org, periodStart = '2026-05-21', periodEnd = '2026-11-20' }: Props) {
@@ -60,22 +60,20 @@ export function IndicatorGrid({ org, periodStart = '2026-05-21', periodEnd = '20
     // Refresh every 15 minutes
     const timer = setInterval(fetchIndicators, 15 * 60 * 1000)
     return () => clearInterval(timer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [org, periodStart, periodEnd])
 
   const grouped = groupByObjective(indicators)
-  const objectiveKeys = Object.keys(grouped).sort()
 
-  // Aggregate stats
-  const onTrackCount = indicators.filter(i => i.on_track === true).length
-  const behindCount = indicators.filter(i => i.on_track === false).length
-  const totalWithTargets = indicators.filter(i => i.target !== null).length
+  // Aggregate stats — Step 3 colour bands.
+  const withTargets = indicators.filter(i => i.target_value !== null)
+  const onTrackCount = withTargets.filter(i => (i.percentage ?? 0) >= 75).length
+  const behindCount = withTargets.filter(i => (i.percentage ?? 0) < 40).length
+  const totalWithTargets = withTargets.length
   const avgPct =
     totalWithTargets > 0
       ? Math.round(
-          indicators
-            .filter(i => i.pct !== null)
-            .reduce((sum, i) => sum + (i.pct ?? 0), 0) /
-            indicators.filter(i => i.pct !== null).length
+          withTargets.reduce((sum, i) => sum + (i.percentage ?? 0), 0) / totalWithTargets
         )
       : null
 
@@ -100,11 +98,17 @@ export function IndicatorGrid({ org, periodStart = '2026-05-21', periodEnd = '20
                   Avg {avgPct}%
                 </span>
               )}
-              <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700 dark:bg-green-900/30 dark:text-green-400 tabular-nums">
+              <span
+                className="rounded-full px-3 py-1 text-xs font-semibold tabular-nums"
+                style={{ backgroundColor: '#D1FAE5', color: '#065F46' }}
+              >
                 {onTrackCount} on track
               </span>
               {behindCount > 0 && (
-                <span className="rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-700 dark:bg-red-900/30 dark:text-red-400 tabular-nums">
+                <span
+                  className="rounded-full px-3 py-1 text-xs font-semibold tabular-nums"
+                  style={{ backgroundColor: '#FEE2E2', color: '#991B1B' }}
+                >
                   {behindCount} behind
                 </span>
               )}
@@ -150,16 +154,17 @@ export function IndicatorGrid({ org, periodStart = '2026-05-21', periodEnd = '20
         </div>
       )}
 
-      {/* Grouped by objective */}
-      {!loading && indicators.length > 0 && objectiveKeys.map((objKey) => (
-        <div key={objKey} className="space-y-3">
+      {/* Grouped by objective_number — natural sort preserves Bandhu's
+          1 → 2 → 4 ordering without auto-filling a placeholder Obj 3. */}
+      {!loading && indicators.length > 0 && [...grouped.entries()].map(([objNum, rows]) => (
+        <div key={objNum} className="space-y-3">
           <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
-            {OBJECTIVE_LABELS[objKey] ?? objKey}
+            {OBJECTIVE_LABELS[objNum] ?? `Objective ${objNum}`}
           </h3>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            {grouped[objKey].map((ind, idx) => (
+            {rows.map((ind, idx) => (
               <IndicatorCard
-                key={ind.code}
+                key={ind.activity_code}
                 indicator={ind}
                 delay={reduce ? 0 : idx * 0.05}
               />

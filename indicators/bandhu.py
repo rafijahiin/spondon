@@ -183,3 +183,40 @@ def compute_I_BND_4_1(org, period_start, period_end):
     ).aggregate(t=Sum('condoms_distributed'))['t'] or 0
 
     return outreach + clinic
+
+
+# ─── Activity-code registry ──────────────────────────────────────────────────
+#
+# Maps the canonical `activity_code` from IndicatorTarget rows (set by data
+# migration 0004_load_target_fixtures) to the compute function above.
+#
+# Codes absent from this registry are treated as UNLINKED by the service
+# layer — the row still renders on the org page with achievement=0 and a
+# small "module not built yet" badge, never a crash.
+#
+# Currently UNLINKED for Bandhu:
+#   2.6  — Day observance events (no event-observance tracker yet)
+#   4.3  — E-billboards at district/upazila hospitals (no e-billboard log)
+
+ACTIVITY_REGISTRY = {
+    '1.1':  compute_I_BND_1_1,
+    '1.2':  compute_I_BND_1_2,
+    '1.3':  compute_I_BND_1_3,
+    '1.4a': compute_I_BND_1_4A,
+    '1.4b': compute_I_BND_1_4B,
+    '1.5a': compute_I_BND_1_5_centers,  # org-only, no period
+    '1.5b': compute_I_BND_1_5,
+    '1.6':  compute_I_BND_1_6,          # org-only, no period
+    '1.7':  compute_I_BND_1_7,
+    '1.8':  compute_I_BND_1_8,          # org-only, no period
+    '1.9':  compute_I_BND_1_9,
+    '2.1':  compute_I_BND_2_1,
+    '2.2':  compute_I_BND_2_2,
+    '2.3':  compute_I_BND_2_3,
+    '2.4':  compute_I_BND_2_4,
+    '2.5':  compute_I_BND_2_5,
+    '4.1':  compute_I_BND_4_1,
+}
+
+# Codes whose compute function takes only (org) — no period args.
+ORG_ONLY_CODES = {'1.5a', '1.6', '1.8'}

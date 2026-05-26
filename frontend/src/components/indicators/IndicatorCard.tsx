@@ -8,8 +8,25 @@ interface Props {
   delay?: number
 }
 
+// Step 3 spec colour bands.
+//   ≥ 75       → green  #00B050
+//   40 .. 74.9 → yellow #FFC000
+//   <  40      → red    #FF0000
+//   null target → grey "Not Set"
+const COLOUR_GREEN = '#00B050'
+const COLOUR_YELLOW = '#FFC000'
+const COLOUR_RED = '#FF0000'
+const COLOUR_GREY = '#9CA3AF'
+
+function bandColour(percentage: number | null): string {
+  if (percentage === null) return COLOUR_GREY
+  if (percentage >= 75) return COLOUR_GREEN
+  if (percentage >= 40) return COLOUR_YELLOW
+  return COLOUR_RED
+}
+
 function fmt(n: number, unit: string): string {
-  if (unit === 'pieces' || unit === 'individuals') {
+  if (unit === 'pcs' || unit === 'individuals' || unit === 'materials') {
     return n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n)
   }
   return String(n)
@@ -17,21 +34,16 @@ function fmt(n: number, unit: string): string {
 
 export function IndicatorCard({ indicator, delay = 0 }: Props) {
   const reduce = useReducedMotion()
-  const pct = indicator.pct ?? 0
-  const hasTarget = indicator.target !== null
-
-  // Colour: green ≥ 75 · amber 40–75 · red < 40
-  const ringColor =
-    !hasTarget ? '#6b7280'
-    : pct >= 75 ? '#16a34a'
-    : pct >= 40 ? '#d97706'
-    : '#dc2626'
+  const { target_value, achievement, percentage, unlinked } = indicator
+  const hasTarget = target_value !== null
+  const ringColor = bandColour(percentage)
+  const displayPct = percentage ?? 0
 
   const size = 80
   const strokeWidth = 7
   const radius = (size - strokeWidth) / 2
   const circumference = 2 * Math.PI * radius
-  const offset = circumference * (1 - Math.min(pct / 100, 1))
+  const offset = circumference * (1 - Math.min(displayPct / 100, 1))
 
   return (
     <motion.div
@@ -59,22 +71,24 @@ export function IndicatorCard({ indicator, delay = 0 }: Props) {
             strokeWidth={strokeWidth}
             className="text-gray-100 dark:text-gray-700"
           />
-          <circle
-            cx={size / 2} cy={size / 2} r={radius}
-            fill="none" stroke={ringColor}
-            strokeWidth={strokeWidth}
-            strokeDasharray={circumference}
-            strokeDashoffset={offset}
-            strokeLinecap="round"
-            style={{ transition: 'stroke-dashoffset 0.8s ease' }}
-          />
+          {hasTarget && (
+            <circle
+              cx={size / 2} cy={size / 2} r={radius}
+              fill="none" stroke={ringColor}
+              strokeWidth={strokeWidth}
+              strokeDasharray={circumference}
+              strokeDashoffset={offset}
+              strokeLinecap="round"
+              style={{ transition: 'stroke-dashoffset 0.8s ease' }}
+            />
+          )}
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
           <span
             className="text-sm font-bold leading-none tabular-nums"
             style={{ color: ringColor }}
           >
-            {hasTarget ? `${Math.round(pct)}%` : '–'}
+            {hasTarget ? `${Math.round(displayPct)}%` : '–'}
           </span>
         </div>
       </div>
@@ -85,15 +99,22 @@ export function IndicatorCard({ indicator, delay = 0 }: Props) {
           className="text-xs font-medium text-gray-700 dark:text-gray-300 leading-snug"
           style={{ textWrap: 'pretty' } as React.CSSProperties}
         >
-          {indicator.label}
+          {indicator.indicator_label}
         </p>
-        <div className="mt-1.5 flex items-baseline gap-1.5">
+        <div className="mt-1.5 flex items-baseline gap-1.5 flex-wrap">
           <span className="text-lg font-bold tabular-nums text-gray-900 dark:text-white leading-none">
-            {fmt(indicator.actual, indicator.unit)}
+            {fmt(achievement, indicator.unit)}
           </span>
-          {hasTarget && (
+          {hasTarget ? (
             <span className="text-xs text-gray-400 dark:text-gray-500 tabular-nums">
-              / {fmt(indicator.target!, indicator.unit)} {indicator.unit}
+              / {fmt(target_value!, indicator.unit)} {indicator.unit}
+            </span>
+          ) : (
+            <span
+              className="rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase"
+              style={{ backgroundColor: '#FED7AA', color: '#9A3412' }}
+            >
+              Not Set
             </span>
           )}
         </div>
@@ -104,29 +125,26 @@ export function IndicatorCard({ indicator, delay = 0 }: Props) {
               className="h-1 rounded-full"
               style={{ backgroundColor: ringColor }}
               initial={{ width: 0 }}
-              animate={{ width: `${Math.min(pct, 100)}%` }}
+              animate={{ width: `${Math.min(displayPct, 100)}%` }}
               transition={{ duration: 0.8, delay: reduce ? 0 : delay + 0.1, ease: [0.22, 1, 0.36, 1] }}
             />
           </div>
         )}
-        {indicator.activity_ref && (
-          <p className="mt-1.5 text-[10px] text-gray-400 dark:text-gray-600">
-            {indicator.activity_ref}
-          </p>
-        )}
-      </div>
-
-      {/* On-track badge */}
-      {indicator.on_track !== null && hasTarget && (
-        <div className={cn(
-          'ml-auto shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold',
-          indicator.on_track
-            ? 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-            : 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400',
-        )}>
-          {indicator.on_track ? 'On track' : 'Behind'}
+        <div className="mt-1.5 flex items-center gap-2">
+          <span className="text-[10px] text-gray-400 dark:text-gray-600 font-mono">
+            {indicator.activity_code}
+          </span>
+          {unlinked && (
+            <span
+              className="text-[10px] font-semibold uppercase tracking-wide rounded-full px-1.5 py-0.5"
+              style={{ backgroundColor: '#E5E7EB', color: '#6B7280' }}
+              title="Compute function not yet wired for this activity code — module pending."
+            >
+              Module pending
+            </span>
+          )}
         </div>
-      )}
+      </div>
     </motion.div>
   )
 }

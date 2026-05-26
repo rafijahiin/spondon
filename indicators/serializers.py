@@ -53,15 +53,32 @@ class IndicatorTargetSerializer(serializers.ModelSerializer):
 
 
 class IndicatorProgressSerializer(serializers.Serializer):
-    """Read-only serializer for computed indicator progress.
-    Unchanged from the previous shape — service layer still emits the
-    same dict structure for the live progress endpoints."""
-    code = serializers.CharField()
-    label = serializers.CharField()
-    actual = serializers.FloatField()
-    target = serializers.FloatField(allow_null=True)
-    pct = serializers.FloatField(allow_null=True)
+    """Read-only serializer for computed indicator progress (Step 3 shape).
+
+    Emitted by `service.get_partner_indicator_progress` — one dict per
+    IndicatorTarget row for the requested partner. Fields:
+
+      activity_code     canonical fixture code, e.g. '1.4a' / 'OVERALL'
+      objective_number  0–4 (0 = PHD overall, no Bandhu 3)
+      activity_label    long-form activity description from the fixture
+      indicator_label   one-line indicator wording
+      target_value      float or null (null = "Not Set")
+      unit              'individuals' / 'sessions' / 'pcs' / ...
+      achievement       always a number; 0 if no records yet
+      percentage        null if target null; 0 if achievement=0 vs target>0;
+                        else round(achievement / target * 100, 1)
+      unlinked          True if no compute function exists yet for this
+                        activity_code (module not built) — UI still renders
+                        the row, badged "Module pending"
+      organisation      added by the view layer for the all-orgs roll-up
+    """
+    activity_code = serializers.CharField()
+    objective_number = serializers.IntegerField()
+    activity_label = serializers.CharField(allow_blank=True)
+    indicator_label = serializers.CharField()
+    target_value = serializers.FloatField(allow_null=True)
     unit = serializers.CharField()
-    on_track = serializers.BooleanField(allow_null=True)
-    objective = serializers.CharField(required=False, allow_blank=True)
-    activity_ref = serializers.CharField(required=False, allow_blank=True)
+    achievement = serializers.FloatField()
+    percentage = serializers.FloatField(allow_null=True)
+    unlinked = serializers.BooleanField()
+    organisation = serializers.CharField(required=False, allow_blank=True)

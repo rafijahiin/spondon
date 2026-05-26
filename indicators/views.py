@@ -29,7 +29,7 @@ from .serializers import (
     IndicatorTargetSerializer,
     KoboFormMappingSerializer,
 )
-from .service import get_all_indicators_for_org, get_indicator_progress
+from .service import get_partner_indicator_progress, get_indicator_progress
 
 logger = logging.getLogger(__name__)
 
@@ -124,13 +124,16 @@ class IndicatorProgressView(views.APIView):
 
         if org is None:
             results = []
-            for o in ('Bandhu', 'PHD'):
-                rows = get_all_indicators_for_org(o, period_start, period_end)
+            # Iterate all three partners so the homepage roll-up can pull
+            # the same shape and aggregate. CIPRB rows are all unlinked
+            # for now (no compute functions) but still surface.
+            for o in ('CIPRB', 'Bandhu', 'PHD'):
+                rows = get_partner_indicator_progress(o, period_start, period_end)
                 for r in rows:
                     r['organisation'] = o
                 results.extend(rows)
         else:
-            results = get_all_indicators_for_org(org, period_start, period_end)
+            results = get_partner_indicator_progress(org, period_start, period_end)
             for r in results:
                 r['organisation'] = org
 

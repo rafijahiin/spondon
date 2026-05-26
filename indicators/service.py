@@ -1,213 +1,207 @@
 """
-Indicator compute service.
+Indicator compute service — Step 3 wired contract.
 
-INDICATOR_REGISTRY maps each indicator_code to its compute function.
-get_indicator_value()    → runs the function, returns raw number
-get_indicator_progress() → returns {actual, target, pct, unit, label}
+Two public entry points:
 
-Results are cached for 1 hour per (org, code, period_start, period_end).
+  get_partner_indicator_progress(partner_code, period_start, period_end)
+      → list of progress dicts, one per IndicatorTarget row for that
+        partner. Used by the org dashboard pages + the homepage roll-up.
+
+  get_indicator_progress(org, code, period_start, period_end)
+      → single-row variant for the legacy SingleIndicatorProgressView
+        endpoint at /api/indicators/progress/<code>/.
+
+Each dict has the Step 3 shape:
+
+  {
+      activity_code:    str,         # canonical fixture code, e.g. '1.4a'
+      objective_number: int,         # 0, 1, 2, 3, 4
+      activity_label:   str,
+      indicator_label:  str,
+      target_value:     float | None,
+      unit:             str,
+      achievement:      int | float, # always a number — 0 if no records
+      percentage:       float | None,# null if target is null (Not Set)
+                                     # 0 if target > 0 and achievement = 0
+                                     # rounded to 1 decimal otherwise
+      unlinked:         bool,        # True if no compute function exists
+                                     # yet for this activity_code (module
+                                     # not built) — UI shows a small
+                                     # "Module pending" tag
+  }
+
+Colour-band assignment (for the progress bar) lives in the frontend:
+  >= 75      → green  #00B050
+  40 .. 74.9 → yellow #FFC000
+  <  40      → red    #FF0000
+  None       → grey "Not Set"
 """
 import logging
 from django.core.cache import cache
 
-from .bandhu import (
-    compute_I_BND_1_1, compute_I_BND_1_2, compute_I_BND_1_3,
-    compute_I_BND_1_4A, compute_I_BND_1_4B, compute_I_BND_1_5,
-    compute_I_BND_1_5_centers, compute_I_BND_1_6, compute_I_BND_1_7,
-    compute_I_BND_1_8, compute_I_BND_1_9, compute_I_BND_2_1,
-    compute_I_BND_2_2, compute_I_BND_2_3, compute_I_BND_2_4,
-    compute_I_BND_2_5, compute_I_BND_4_1,
-)
-from .phd import (
-    compute_I_PHD_1_1, compute_I_PHD_1_2, compute_I_PHD_1_3,
-    compute_I_PHD_1_4, compute_I_PHD_1_5A, compute_I_PHD_1_5B,
-    compute_I_PHD_1_5C, compute_I_PHD_1_5D, compute_I_PHD_1_5E,
-    compute_I_PHD_1_6, compute_I_PHD_1_7, compute_I_PHD_1_8,
-    compute_I_PHD_1_9, compute_I_PHD_2_1, compute_I_PHD_2_2,
-    compute_I_PHD_2_3, compute_I_PHD_2_4,
-)
+from . import bandhu, phd
 
 logger = logging.getLogger(__name__)
 
 CACHE_TTL = 3600  # 1 hour
 
-# Functions that take only (org) — no period args
-_ORG_ONLY_CODES = {
-    'BND_1_5_centers', 'BND_1_6', 'BND_1_8',
-    'PHD_1_7', 'PHD_1_9',
-}
-
-# ─── Registry ──────────────────────────────────────────────────────────────────
-
-INDICATOR_REGISTRY: dict[str, callable] = {
-    # Bandhu
-    'BND_1_1':        compute_I_BND_1_1,
-    'BND_1_2':        compute_I_BND_1_2,
-    'BND_1_3':        compute_I_BND_1_3,
-    'BND_1_4A':       compute_I_BND_1_4A,
-    'BND_1_4B':       compute_I_BND_1_4B,
-    'BND_1_5':        compute_I_BND_1_5,
-    'BND_1_5_centers': compute_I_BND_1_5_centers,
-    'BND_1_6':        compute_I_BND_1_6,
-    'BND_1_7':        compute_I_BND_1_7,
-    'BND_1_8':        compute_I_BND_1_8,
-    'BND_1_9':        compute_I_BND_1_9,
-    'BND_2_1':        compute_I_BND_2_1,
-    'BND_2_2':        compute_I_BND_2_2,
-    'BND_2_3':        compute_I_BND_2_3,
-    'BND_2_4':        compute_I_BND_2_4,
-    'BND_2_5':        compute_I_BND_2_5,
-    'BND_4_1':        compute_I_BND_4_1,
-    # PHD
-    'PHD_1_1':        compute_I_PHD_1_1,
-    'PHD_1_2':        compute_I_PHD_1_2,
-    'PHD_1_3':        compute_I_PHD_1_3,
-    'PHD_1_4':        compute_I_PHD_1_4,
-    'PHD_1_5A':       compute_I_PHD_1_5A,
-    'PHD_1_5B':       compute_I_PHD_1_5B,
-    'PHD_1_5C':       compute_I_PHD_1_5C,
-    'PHD_1_5D':       compute_I_PHD_1_5D,
-    'PHD_1_5E':       compute_I_PHD_1_5E,
-    'PHD_1_6':        compute_I_PHD_1_6,
-    'PHD_1_7':        compute_I_PHD_1_7,
-    'PHD_1_8':        compute_I_PHD_1_8,
-    'PHD_1_9':        compute_I_PHD_1_9,
-    'PHD_2_1':        compute_I_PHD_2_1,
-    'PHD_2_2':        compute_I_PHD_2_2,
-    'PHD_2_3':        compute_I_PHD_2_3,
-    'PHD_2_4':        compute_I_PHD_2_4,
+# Per-partner compute-function registries. CIPRB has none for now —
+# Fistula Corner / Fistula Campaign / Baseline modules are post-workshop.
+_REGISTRIES: dict[str, tuple[dict, set]] = {
+    'Bandhu': (bandhu.ACTIVITY_REGISTRY, bandhu.ORG_ONLY_CODES),
+    'PHD':    (phd.ACTIVITY_REGISTRY,    phd.ORG_ONLY_CODES),
+    'CIPRB':  ({},                       set()),
 }
 
 
-def _cache_key(org: str, code: str, period_start, period_end) -> str:
-    return f'indicator:{org}:{code}:{period_start}:{period_end}'
+def _cache_key(partner_code: str, activity_code: str, period_start, period_end) -> str:
+    return f'indicator-v3:{partner_code}:{activity_code}:{period_start}:{period_end}'
 
 
-def get_indicator_value(org: str, code: str, period_start=None, period_end=None) -> int | float:
+def _compute_achievement(partner_code: str, activity_code: str, period_start, period_end):
+    """Return (achievement, unlinked) for a single (partner, code) pair.
+
+    Always returns a numeric achievement (never None). On unlinked codes
+    returns (0, True). On compute errors, logs and returns (0, False) —
+    the failure is silent at the row level so the page still renders.
     """
-    Compute and return the raw indicator value.
-    Caches for CACHE_TTL seconds.
-    Returns 0 on error (logged).
-    """
-    fn = INDICATOR_REGISTRY.get(code)
+    registry, org_only = _REGISTRIES.get(partner_code, ({}, set()))
+    fn = registry.get(activity_code)
     if fn is None:
-        logger.warning('Unknown indicator code: %s', code)
-        return 0
+        return 0, True
 
-    cache_key = _cache_key(org, code, period_start, period_end)
+    cache_key = _cache_key(partner_code, activity_code, period_start, period_end)
     cached = cache.get(cache_key)
     if cached is not None:
-        return cached
+        return cached, False
 
     try:
-        if code in _ORG_ONLY_CODES:
-            value = fn(org)
+        if activity_code in org_only:
+            value = fn(partner_code)
         else:
             if period_start is None or period_end is None:
-                raise ValueError(f'period_start and period_end required for {code}')
-            value = fn(org, period_start, period_end)
+                # Defensive — should not happen for non-org-only codes.
+                logger.warning(
+                    'Missing period args for non-org-only code %s/%s — returning 0',
+                    partner_code, activity_code,
+                )
+                return 0, False
+            value = fn(partner_code, period_start, period_end)
     except Exception:
-        logger.exception('Error computing indicator %s for org %s', code, org)
-        value = 0
+        logger.exception(
+            'Error computing achievement for %s/%s', partner_code, activity_code,
+        )
+        return 0, False
 
     cache.set(cache_key, value, CACHE_TTL)
-    return value
+    return value, False
 
 
-def get_indicator_progress(
-    org: str, code: str, period_start=None, period_end=None
-) -> dict:
+def _percentage(achievement, target_value) -> float | None:
+    """Step 3 percentage rules.
+
+    - target None         → None (UI renders grey "Not Set" pill)
+    - target > 0          → round(achievement / target * 100, 1)
+                             (achievement=0 yields 0.0)
+    - target == 0         → 0    (defensive; should not occur in fixture)
     """
-    Returns a progress dict:
-    {
-        'code':        str,
-        'actual':      int | float,
-        'target':      float | None,
-        'pct':         float | None,      # 0–100+
-        'unit':        str,
-        'label':       str,
-        'on_track':    bool | None,
-    }
-    """
-    from .models import IndicatorTarget
+    if target_value is None:
+        return None
+    if target_value > 0:
+        return round((float(achievement) / float(target_value)) * 100, 1)
+    return 0.0
 
-    actual = get_indicator_value(org, code, period_start, period_end)
 
-    # Step 2 IndicatorTarget restructure: lookup is now (partner__code,
-    # activity_code). Step 3 will reconcile the BND_1_1 → 1.1 mismatch
-    # between the compute registry's codes and the new activity_code
-    # values. Until then this lookup returns no match for legacy codes
-    # and the progress endpoint returns target=null rows — but it does
-    # NOT crash on the renamed fields.
-    target_obj = IndicatorTarget.objects.filter(
-        partner__code=org,
-        activity_code=code,
-        is_active=True,
-    ).first()
-
-    if target_obj is None:
-        return {
-            'code': code,
-            'actual': actual,
-            'target': None,
-            'pct': None,
-            'unit': 'count',
-            'label': code,
-            'on_track': None,
-        }
-
-    target = float(target_obj.target_value) if target_obj.target_value is not None else None
-    pct = round((actual / target) * 100, 1) if target and target > 0 else None
-    on_track = (pct >= 75) if pct is not None else None
-
+def _row_dict(target_row, achievement, unlinked: bool) -> dict:
+    """Convert an IndicatorTarget ORM row + computed achievement into the
+    Step 3 progress dict shape."""
+    target_val = float(target_row.target_value) if target_row.target_value is not None else None
     return {
-        'code': code,
-        'actual': actual,
-        'target': target,
-        'pct': pct,
-        'unit': target_obj.unit,
-        'label': target_obj.indicator_label,
-        'on_track': on_track,
+        'activity_code':    target_row.activity_code,
+        'objective_number': target_row.objective_number,
+        'activity_label':   target_row.activity_label,
+        'indicator_label':  target_row.indicator_label,
+        'target_value':     target_val,
+        'unit':             target_row.unit,
+        'achievement':      achievement,
+        'percentage':       _percentage(achievement, target_val),
+        'unlinked':         unlinked,
     }
 
 
-def get_all_indicators_for_org(org: str, period_start, period_end) -> list[dict]:
-    """
-    Returns get_indicator_progress() for every indicator belonging to this org.
-    Used by Bandhu/PHD dashboard pages.
+# ─── Public API ───────────────────────────────────────────────────────────────
 
-    NOTE: After the Step 2 restructure, this iterates IndicatorTarget rows by
-    partner code and uses activity_code as the lookup key. Step 3 will wire
-    bandhu.py/phd.py compute functions to the new activity_code values so
-    the actual numbers populate properly.
+def get_partner_indicator_progress(partner_code: str, period_start, period_end) -> list[dict]:
+    """Return progress dicts for every active IndicatorTarget under this partner.
+
+    Rows are ordered by objective_number then activity_code so the frontend
+    can render groups directly. Bandhu's missing Objective 3 is *not*
+    auto-renumbered — that gap is intentional and the UI respects it.
     """
     from .models import IndicatorTarget
 
-    targets = IndicatorTarget.objects.filter(
-        partner__code=org, is_active=True
-    ).order_by('objective_number', 'activity_code')
+    targets = (
+        IndicatorTarget.objects
+        .filter(partner__code=partner_code, is_active=True)
+        .order_by('objective_number', 'activity_code')
+    )
 
     results = []
     for t in targets:
-        code = t.activity_code
-        is_org_only = code in _ORG_ONLY_CODES
-        result = get_indicator_progress(
-            org=org,
-            code=code,
-            period_start=None if is_org_only else period_start,
-            period_end=None if is_org_only else period_end,
+        achievement, unlinked = _compute_achievement(
+            partner_code, t.activity_code, period_start, period_end,
         )
-        # New shape on the progress dict — surface objective_number and
-        # activity_code so the frontend can group rows under the right
-        # objective accordion (including PHD obj=0 "Overall").
-        result['objective'] = str(t.objective_number)
-        result['activity_ref'] = t.activity_code
-        results.append(result)
-
+        results.append(_row_dict(t, achievement, unlinked))
     return results
 
 
-def invalidate_indicator_cache(org: str, code: str, period_start=None, period_end=None):
-    """Call this after a manager approves a submission."""
-    key = _cache_key(org, code, period_start, period_end)
+def get_indicator_progress(partner_code: str, activity_code: str,
+                           period_start=None, period_end=None) -> dict:
+    """Single-row variant for /api/indicators/progress/<code>/.
+
+    Looks up the IndicatorTarget row by (partner_code, activity_code) and
+    returns the same Step 3 progress dict. If no matching target row
+    exists, returns a degenerate dict with target_value=None, unlinked=True
+    so the endpoint still 200s (the legacy contract).
+    """
+    from .models import IndicatorTarget
+
+    target_obj = IndicatorTarget.objects.filter(
+        partner__code=partner_code,
+        activity_code=activity_code,
+        is_active=True,
+    ).first()
+
+    achievement, unlinked = _compute_achievement(
+        partner_code, activity_code, period_start, period_end,
+    )
+
+    if target_obj is None:
+        return {
+            'activity_code':    activity_code,
+            'objective_number': 0,
+            'activity_label':   '',
+            'indicator_label':  activity_code,
+            'target_value':     None,
+            'unit':             'count',
+            'achievement':      achievement,
+            'percentage':       None,
+            'unlinked':         True,
+        }
+    return _row_dict(target_obj, achievement, unlinked)
+
+
+def invalidate_indicator_cache(partner_code: str, activity_code: str,
+                               period_start=None, period_end=None) -> None:
+    """Call this after a manager approves a submission that may affect
+    the achievement count for an indicator."""
+    key = _cache_key(partner_code, activity_code, period_start, period_end)
     cache.delete(key)
+
+
+# ─── Legacy alias ─────────────────────────────────────────────────────────────
+
+# Older callers (programs/views.py, dashboard/views.py) may still import
+# `get_all_indicators_for_org`. Keep the name as a thin alias to preserve
+# import compatibility until those callers are updated.
+get_all_indicators_for_org = get_partner_indicator_progress
