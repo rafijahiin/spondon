@@ -198,12 +198,38 @@ class StoreRequisitionSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+def _validate_photo_under_2mb(uploaded_file):
+    """Serializer-level photo size check. Mirrors the model's
+    validate_photo_size() so the gate holds regardless of code path."""
+    if uploaded_file in (None, ''):
+        return uploaded_file
+    size = getattr(uploaded_file, 'size', None)
+    max_bytes = 2 * 1024 * 1024
+    if size is not None and size > max_bytes:
+        raise serializers.ValidationError(
+            f'Photo too large ({size / 1024 / 1024:.2f} MiB). '
+            f'Maximum allowed is 2 MiB.'
+        )
+    return uploaded_file
+
+
 class TrainingEventSerializer(serializers.ModelSerializer):
     class Meta:
         model = TrainingEvent
         exclude = ['raw_payload']
         read_only_fields = ['approval_status', 'approved_by', 'approved_at',
                             'kobo_submission_id', 'submitted_at']
+
+    def validate_report_file(self, value):
+        """Step 5 hard gate: training report upload is mandatory."""
+        if not value:
+            raise serializers.ValidationError(
+                'A training report file is required.'
+            )
+        return value
+
+    def validate_photo(self, value):
+        return _validate_photo_under_2mb(value)
 
 
 class CoordMeetingSerializer(serializers.ModelSerializer):
@@ -212,6 +238,21 @@ class CoordMeetingSerializer(serializers.ModelSerializer):
         exclude = ['raw_payload']
         read_only_fields = ['approval_status', 'approved_by', 'approved_at',
                             'kobo_submission_id', 'submitted_at']
+
+    def validate_meeting_notes(self, value):
+        """Step 5 hard gate: meeting notes upload is mandatory.
+
+        Blocks PATCH/POST when the file is missing or empty, with a
+        clear, user-facing error. Never silently accepts a meeting
+        record without supporting documentation."""
+        if not value:
+            raise serializers.ValidationError(
+                'A meeting notes file is required.'
+            )
+        return value
+
+    def validate_photo(self, value):
+        return _validate_photo_under_2mb(value)
 
 
 class MobileHealthCampSerializer(serializers.ModelSerializer):

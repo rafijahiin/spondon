@@ -237,3 +237,147 @@ class OrgIsolationSmokeTest(TestCase):
         if isinstance(data, dict) and 'results' in data:
             return data['results']
         return data
+
+
+# ─── Step 5: meeting / training mandatory upload gate ────────────────────────
+
+import io
+from datetime import date as _date
+from django.core.exceptions import ValidationError
+from django.core.files.uploadedfile import SimpleUploadedFile
+from programs.models import (
+    CoordMeeting, TrainingEvent, ServiceCenter,
+)
+from programs.serializers import CoordMeetingSerializer, TrainingEventSerializer
+
+
+def _tiny_file(name='notes.pdf', content=b'%PDF-1.4\n%fake\n'):
+    """Build a small in-memory file safe for serializer / model validation."""
+    return SimpleUploadedFile(name, content, content_type='application/pdf')
+
+
+def _oversize_photo(name='big.jpg', size_mb=3):
+    """JPEG-ish payload over the 2 MiB cap."""
+    content = b'\xff\xd8\xff\xe0' + b'\x00' * (size_mb * 1024 * 1024)
+    return SimpleUploadedFile(name, content, content_type='image/jpeg')
+
+
+def _under_photo(name='small.jpg', size_kb=512):
+    content = b'\xff\xd8\xff\xe0' + b'\x00' * (size_kb * 1024)
+    return SimpleUploadedFile(name, content, content_type='image/jpeg')
+
+
+class CoordMeetingUploadGateTest(TestCase):
+    """The meeting_notes upload is enforced at every layer."""
+
+    def setUp(self):
+        self.center = ServiceCenter.objects.create(
+            organisation='Bandhu', name='Dhaka KP Clinic', code='BAN-001',
+            center_type='DIC', district='Dhaka', upazila='Dhanmondi',
+        )
+
+    def _base_payload(self):
+        return {
+            'organisation': 'Bandhu',
+            'center': self.center.id,
+            'meeting_date': str(_date.today()),
+            'meeting_type': CoordMeeting.GOB,
+            'location_text': 'Civil Surgeon Office',
+            'participant_count': 12,
+            'agenda': 'Quarterly review',
+        }
+
+    def test_serializer_rejects_missing_meeting_notes(self):
+        ser = CoordMeetingSerializer(data=self._base_payload())
+        self.assertFalse(ser.is_valid())
+        self.assertIn('meeting_notes', ser.errors)
+
+    def test_serializer_accepts_meeting_notes(self):
+        data = self._base_payload()
+        data['meeting_notes'] = _tiny_file()
+        ser = CoordMeetingSerializer(data=data)
+        self.assertTrue(ser.is_valid(), msg=str(ser.errors))
+
+    def test_serializer_rejects_oversize_photo(self):
+        data = self._base_payload()
+        data['meeting_notes'] = _tiny_file()
+        data['photo'] = _oversize_photo(size_mb=3)
+        ser = CoordMeetingSerializer(data=data)
+        self.assertFalse(ser.is_valid())
+        self.assertIn('photo', ser.errors)
+
+    def test_serializer_under_2mb_photo_not_rejected_for_size(self):
+        data = self._base_payload()
+        data['meeting_notes'] = _tiny_file()
+        data['photo'] = _under_photo(size_kb=512)
+        ser = CoordMeetingSerializer(data=data)
+        # Pillow's image-content check may still reject the synthetic
+        # JPEG — for the size gate we only assert no size-related error
+        # message fires.
+        ser.is_valid()
+        for err in ser.errors.get('photo', []):
+            self.assertNotIn(
+                'too large', str(err),
+                msg=f'2 MiB gate should not trip on <2MiB photo: {err}',
+            )
+
+    def test_model_clean_raises_without_meeting_notes(self):
+        m = CoordMeeting(
+            organisation='Bandhu', center=self.center,
+            meeting_date=_date.today(), meeting_type=CoordMeeting.GOB,
+            participant_count=10,
+        )
+        with self.assertRaises(ValidationError) as cm:
+            m.full_clean()
+        self.assertIn('meeting_notes', cm.exception.message_dict)
+
+
+class TrainingEventUploadGateTest(TestCase):
+    """The training-event report_file upload is enforced at every layer."""
+
+    def setUp(self):
+        self.center = ServiceCenter.objects.create(
+            organisation='PHD', name='Daulatdia Brothel Centre', code='PHD-001',
+            center_type='BROTHEL', district='Rajbari', upazila='Goalondo',
+        )
+
+    def _base_payload(self):
+        return {
+            'organisation': 'PHD',
+            'center': self.center.id,
+            'event_date': str(_date.today()),
+            'event_type': TrainingEvent.TRAINING,
+            'participant_type': TrainingEvent.MW,
+            'topic': 'Safe motherhood — refresher',
+            'total_participants': 8,
+        }
+
+    def test_serializer_rejects_missing_report_file(self):
+        ser = TrainingEventSerializer(data=self._base_payload())
+        self.assertFalse(ser.is_valid())
+        self.assertIn('report_file', ser.errors)
+
+    def test_serializer_accepts_report_file(self):
+        data = self._base_payload()
+        data['report_file'] = _tiny_file('report.pdf')
+        ser = TrainingEventSerializer(data=data)
+        self.assertTrue(ser.is_valid(), msg=str(ser.errors))
+
+    def test_model_clean_raises_without_report_file(self):
+        e = TrainingEvent(
+            organisation='PHD', center=self.center,
+            event_date=_date.today(), event_type=TrainingEvent.TRAINING,
+            participant_type=TrainingEvent.MW, topic='X',
+            total_participants=5,
+        )
+        with self.assertRaises(ValidationError) as cm:
+            e.full_clean()
+        self.assertIn('report_file', cm.exception.message_dict)
+
+    def test_oversize_photo_rejected_at_serializer(self):
+        data = self._base_payload()
+        data['report_file'] = _tiny_file('report.pdf')
+        data['photo'] = _oversize_photo(size_mb=3)
+        ser = TrainingEventSerializer(data=data)
+        self.assertFalse(ser.is_valid())
+        self.assertIn('photo', ser.errors)

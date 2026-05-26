@@ -28,6 +28,7 @@ INSTALLED_APPS = [
     'programs',
     'indicators',
     'partners',
+    'pharmacy',
 ]
 
 MIDDLEWARE = [

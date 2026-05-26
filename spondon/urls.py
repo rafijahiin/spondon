@@ -37,6 +37,7 @@ urlpatterns = [
     path('api/programs/', include('programs.urls')),
     path('api/indicators/', include('indicators.urls')),
     path('api/partners/',   include('partners.urls')),
+    path('api/pharmacy/',   include('pharmacy.urls')),
     path('webhook/kobo/', include('submissions.webhook_urls')),
     path('webhook/programs/', include('programs.webhook_urls')),
     re_path(r'^.*$', react_app),

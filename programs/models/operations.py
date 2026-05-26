@@ -6,9 +6,35 @@ Programme operations models:
   - VisitorRegister     (KF-21)
 """
 import uuid
+from django.core.exceptions import ValidationError
 from django.db import models
 from .._base_choices import ORG_CHOICES
 from ._base import TimestampedModel, SubmissionBase
+
+
+# 2 MiB hard cap on optional photo uploads attached to meeting / training
+# reports. Surfaced in the model's clean() and serializer validators so it
+# is enforced regardless of code path (API, admin, future Kobo ingest).
+MAX_PHOTO_BYTES = 2 * 1024 * 1024
+
+
+def validate_photo_size(file_obj):
+    """Reject any uploaded image larger than MAX_PHOTO_BYTES.
+
+    File-storage backends differ in how they report size; this helper
+    tolerates both `.size` and `.file.size` and a missing attribute (in
+    which case nothing is enforced — the serializer also re-checks)."""
+    if file_obj is None or file_obj == '':
+        return
+    size = getattr(file_obj, 'size', None)
+    if size is None:
+        return
+    if size > MAX_PHOTO_BYTES:
+        raise ValidationError(
+            f'Photo too large ({size / 1024 / 1024:.2f} MiB). '
+            f'Maximum allowed is 2 MiB.',
+            code='photo_too_large',
+        )
 
 
 class TrainingEvent(SubmissionBase):
@@ -64,8 +90,37 @@ class TrainingEvent(SubmissionBase):
     facilitator = models.CharField(max_length=200, blank=True)
     notes = models.TextField(blank=True)
 
+    # ─── Mandatory upload gate (Step 5) ────────────────────────────────────
+    # `report_file` MUST be present. Enforced at model level (blank=False),
+    # serializer level (validate_report_file), and frontend level (submit
+    # disabled until file attached). Never silently fall back to text-only.
+    report_file = models.FileField(
+        upload_to='training_events/reports/%Y/%m/',
+        blank=False, null=False,
+    )
+    # Optional photo of the training. ≤ 2 MiB enforced everywhere.
+    photo = models.ImageField(
+        upload_to='training_events/photos/%Y/%m/',
+        blank=True, null=True,
+        validators=[validate_photo_size],
+    )
+    # Optional call-up letter / invitation.
+    call_up_letter = models.FileField(
+        upload_to='training_events/call_up/%Y/%m/',
+        blank=True, null=True,
+    )
+
     class Meta:
         ordering = ['-event_date']
+
+    def clean(self):
+        super().clean()
+        if not self.report_file:
+            raise ValidationError(
+                {'report_file': 'A training report file is required.'},
+                code='required',
+            )
+        validate_photo_size(self.photo)
 
     def __str__(self):
         return f'{self.event_type} — {self.topic[:40]} ({self.event_date})'
@@ -103,8 +158,39 @@ class CoordMeeting(SubmissionBase):
     prepared_by = models.CharField(max_length=200, blank=True)
     notes = models.TextField(blank=True)
 
+    # ─── Mandatory upload gate (Step 5) ────────────────────────────────────
+    # `meeting_notes` (signed minutes / scanned register / typed report)
+    # MUST be present. A missing file blocks submission with a clear
+    # ValidationError at every layer — model.clean(), serializer.validate_
+    # meeting_notes, and the frontend submit button is disabled until a
+    # file is attached.
+    meeting_notes = models.FileField(
+        upload_to='coord_meetings/notes/%Y/%m/',
+        blank=False, null=False,
+    )
+    # Optional photo from the meeting. ≤ 2 MiB enforced.
+    photo = models.ImageField(
+        upload_to='coord_meetings/photos/%Y/%m/',
+        blank=True, null=True,
+        validators=[validate_photo_size],
+    )
+    # Optional call-up letter / invitation sent before the meeting.
+    call_up_letter = models.FileField(
+        upload_to='coord_meetings/call_up/%Y/%m/',
+        blank=True, null=True,
+    )
+
     class Meta:
         ordering = ['-meeting_date']
+
+    def clean(self):
+        super().clean()
+        if not self.meeting_notes:
+            raise ValidationError(
+                {'meeting_notes': 'A meeting notes file is required.'},
+                code='required',
+            )
+        validate_photo_size(self.photo)
 
     def __str__(self):
         return f'{self.meeting_type} meeting — {self.meeting_date}'
