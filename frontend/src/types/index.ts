@@ -1,7 +1,31 @@
 // Mirrors backend DRF serializers. Keep in sync with the corresponding *.py files.
 
 export type Organisation = 'CIPRB' | 'UNFPA' | 'PHD' | 'Bandhu'
-export type Role = 'super_admin' | 'manager' | 'developer'
+
+// Role taxonomy per IDMS Developer Handoff (May 2026).
+// 'super_admin' is kept in the union only for one release of backward
+// compatibility with cached frontend builds — backend no longer issues
+// new users with this value.
+export type Role =
+  | 'developer'
+  | 'supervisor'
+  | 'org_lead'
+  | 'manager'
+  | 'field_staff'
+  | 'ciprb_baseline'
+  | 'focal'
+  | 'super_admin'   // deprecated
+
+/** True for the roles that see cross-org dashboards / can manage users. */
+export function isAdminRole(role: Role): boolean {
+  return role === 'developer' || role === 'supervisor' || role === 'super_admin'
+}
+
+/** True for roles that have read access to other orgs' aggregated dashboards.
+ *  Includes org_lead (CIPRB-style — full own org, read-only on others). */
+export function canReadOtherOrgs(role: Role): boolean {
+  return isAdminRole(role) || role === 'org_lead'
+}
 export type FormType = 'mpdsr' | 'fistula' | 'activity' | 'baseline'
 export type SubmissionStatus = 'pending' | 'approved' | 'rejected'
 

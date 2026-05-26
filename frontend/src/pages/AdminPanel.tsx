@@ -10,7 +10,31 @@ import type { AdminUser, Organisation, Role } from '@/types'
 // AdminUser extends User with: username, is_active, last_login
 
 const ORGS: Organisation[] = ['CIPRB', 'UNFPA', 'PHD', 'Bandhu']
-const ROLES: Role[] = ['super_admin', 'manager', 'developer']
+// Role taxonomy per IDMS handoff. 'super_admin' omitted from the picker —
+// it's deprecated and the backend migration mapped existing rows to
+// supervisor or org_lead. Existing accounts editing their own role still
+// show the value if it happens to be on disk.
+const ROLES: Role[] = [
+  'developer',
+  'supervisor',
+  'org_lead',
+  'manager',
+  'field_staff',
+  'ciprb_baseline',
+  'focal',
+]
+
+// Human-readable labels for the role dropdown.
+const ROLE_LABELS: Record<string, string> = {
+  developer:      'Developer',
+  supervisor:     'UNFPA / Supervisor',
+  org_lead:       'Org Lead',
+  manager:        'Wellness Center Manager',
+  field_staff:    'Field Staff / Lab Tech',
+  ciprb_baseline: 'CIPRB Baseline Entry',
+  focal:          'Focal Person (view-only)',
+  super_admin:    'Super Admin (deprecated)',
+}
 
 interface UserFormData {
   username: string
@@ -115,7 +139,7 @@ function UserModal({
                 className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-white focus:border-unfpa-blue focus:outline-none"
               >
                 {ROLES.map((r) => (
-                  <option key={r} value={r}>{r.replace('_', ' ')}</option>
+                  <option key={r} value={r}>{ROLE_LABELS[r] ?? r}</option>
                 ))}
               </select>
             </div>
@@ -183,7 +207,7 @@ export default function AdminPanel() {
           { label: 'Total Users', value: (users ?? []).length },
           { label: 'Active', value: (users ?? []).filter((u) => u.is_active).length },
           { label: 'Managers', value: (users ?? []).filter((u) => u.role === 'manager').length },
-          { label: 'Super Admins', value: (users ?? []).filter((u) => u.role === 'super_admin').length },
+          { label: 'Supervisors', value: (users ?? []).filter((u) => u.role === 'supervisor' || u.role === 'super_admin').length },
         ].map((s) => (
           <div key={s.label} className="rounded-xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm p-5">
             <p className="text-2xl font-bold text-gray-900 dark:text-white">{s.value}</p>
@@ -228,7 +252,7 @@ export default function AdminPanel() {
                       {user.organisation}
                     </td>
                     <td className="px-4 py-3 capitalize text-gray-700 dark:text-gray-300">
-                      {user.role.replace('_', ' ')}
+                      {ROLE_LABELS[user.role] ?? user.role.replace('_', ' ')}
                     </td>
                     <td className="px-4 py-3">
                       <StatusBadge status={user.is_active ? 'approved' : 'rejected'} overrideLabel={user.is_active ? 'Active' : 'Inactive'} />

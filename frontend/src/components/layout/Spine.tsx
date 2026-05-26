@@ -15,29 +15,56 @@ import {
 import { useAuth } from '@/context/AuthContext'
 import { api } from '@/api/client'
 
+import type { Role, Organisation } from '@/types'
+import { isAdminRole } from '@/types'
+
 interface SpineItemDef {
   to: string
   label: string
   labelBn: string
   icon: React.ReactNode
   badge?: number | null
+  /** Per-item visibility predicate. If omitted, item is visible to all
+   *  authenticated users. Receives current role+org for fine-grained gating. */
+  visible?: (role: Role, organisation: Organisation) => boolean
 }
 
 const PRIMARY_NAV: SpineItemDef[] = [
   { to: '/',         label: 'Programme Overview', labelBn: 'হোম',               icon: <Home size={18} /> },
-  { to: '/phd',      label: 'PHD Dashboard',      labelBn: 'PHD ড্যাশবোর্ড',    icon: <LayoutDashboard size={18} /> },
-  { to: '/bondhu',   label: 'Bondhu Dashboard',   labelBn: 'বন্ধু ড্যাশবোর্ড',  icon: <BarChart2 size={18} /> },
-  { to: '/approvals',label: 'Manager Approvals',  labelBn: 'অনুমোদন',           icon: <CheckSquare size={18} /> },
-  { to: '/reports',  label: 'Reporting Hub',       labelBn: 'রিপোর্ট',           icon: <FileText size={18} /> },
+  // PHD Dashboard: visible to admins, org_lead, and PHD-org users.
+  { to: '/phd',      label: 'PHD Dashboard',      labelBn: 'PHD ড্যাশবোর্ড',    icon: <LayoutDashboard size={18} />,
+    visible: (r, o) => isAdminRole(r) || r === 'org_lead' || o === 'PHD' },
+  // Bandhu Dashboard: same shape for Bandhu-org users.
+  { to: '/bondhu',   label: 'Bandhu Dashboard',   labelBn: 'বন্ধু ড্যাশবোর্ড',  icon: <BarChart2 size={18} />,
+    visible: (r, o) => isAdminRole(r) || r === 'org_lead' || o === 'Bandhu' },
+  // Approvals: anyone with approve rights (manager + above), no focal/field_staff/baseline.
+  { to: '/approvals',label: 'Manager Approvals',  labelBn: 'অনুমোদন',           icon: <CheckSquare size={18} />,
+    visible: (r) => ['developer','supervisor','org_lead','manager','super_admin'].includes(r) },
+  // Reports Hub: admins + org leads + managers (org-scoped views downstream).
+  { to: '/reports',  label: 'Reporting Hub',       labelBn: 'রিপোর্ট',           icon: <FileText size={18} />,
+    visible: (r) => ['developer','supervisor','org_lead','manager','super_admin'].includes(r) },
 ]
 
 const SECONDARY_NAV: SpineItemDef[] = [
-  { to: '/fistula',  label: 'Fistula Tracker',    labelBn: 'ফিস্টুলা',          icon: <Heart size={18} /> },
-  { to: '/mpdsr',    label: 'MPDSR Tracker',      labelBn: 'MPDSR',             icon: <Activity size={18} /> },
-  { to: '/tracker',  label: 'Progress Tracker',   labelBn: 'অগ্রগতি',           icon: <BarChart size={18} /> },
-  { to: '/baseline', label: 'Baseline & Endline', labelBn: 'বেসলাইন',           icon: <BookOpen size={18} /> },
-  { to: '/training', label: 'Training Log',       labelBn: 'প্রশিক্ষণ',         icon: <Users size={18} /> },
+  // Fistula / MPDSR / Baseline: CIPRB-owned. Visible to admins + CIPRB users only.
+  { to: '/fistula',  label: 'Fistula Tracker',    labelBn: 'ফিস্টুলা',          icon: <Heart size={18} />,
+    visible: (r, o) => isAdminRole(r) || (r === 'org_lead' && o === 'CIPRB') || o === 'CIPRB' },
+  { to: '/mpdsr',    label: 'MPDSR Tracker',      labelBn: 'MPDSR',             icon: <Activity size={18} />,
+    visible: (r, o) => isAdminRole(r) || (r === 'org_lead' && o === 'CIPRB') },
+  // Progress Tracker / Training: cross-org operational, visible to admins + managers + org_lead.
+  { to: '/tracker',  label: 'Progress Tracker',   labelBn: 'অগ্রগতি',           icon: <BarChart size={18} />,
+    visible: (r) => ['developer','supervisor','org_lead','manager','super_admin'].includes(r) },
+  { to: '/baseline', label: 'Baseline & Endline', labelBn: 'বেসলাইন',           icon: <BookOpen size={18} />,
+    visible: (r, o) => isAdminRole(r) || (r === 'org_lead' && o === 'CIPRB') || o === 'CIPRB' },
+  { to: '/training', label: 'Training Log',       labelBn: 'প্রশিক্ষণ',         icon: <Users size={18} />,
+    visible: (r) => ['developer','supervisor','org_lead','manager','super_admin'].includes(r) },
 ]
+
+/** Filter a nav array by the current user's role + org. */
+function filterByVisibility(items: SpineItemDef[], user: { role: Role; organisation: Organisation } | null) {
+  if (!user) return [] as SpineItemDef[]
+  return items.filter((i) => (i.visible ? i.visible(user.role, user.organisation as Organisation) : true))
+}
 
 // ─── KoboToolbox form links ──────────────────────────────────────────────────
 
@@ -169,10 +196,11 @@ export function Spine() {
         .toUpperCase()
     : '?'
 
-  // Build nav with live badge
-  const primaryWithBadge = PRIMARY_NAV.map(item =>
-    item.to === '/approvals' ? { ...item, badge: pendingCount } : item
-  )
+  // Filter nav arrays by role + organisation, then attach the live
+  // approval-queue badge to the Approvals item if it survived the filter.
+  const visiblePrimary = filterByVisibility(PRIMARY_NAV, user)
+    .map(item => item.to === '/approvals' ? { ...item, badge: pendingCount } : item)
+  const visibleSecondary = filterByVisibility(SECONDARY_NAV, user)
 
   // Close drawer when a nav link is clicked (helpful on mobile)
   const handleNavClick = () => setExpanded(false)
@@ -204,7 +232,7 @@ export function Spine() {
 
       {/* Primary nav group */}
       <div className="spine-group">
-        {primaryWithBadge.map(item => (
+        {visiblePrimary.map(item => (
           <SpineItem key={item.to} {...item} expanded={expanded} onNavigate={handleNavClick} />
         ))}
       </div>
@@ -213,7 +241,7 @@ export function Spine() {
 
       {/* Secondary nav group */}
       <div className="spine-group">
-        {SECONDARY_NAV.map(item => (
+        {visibleSecondary.map(item => (
           <SpineItem key={item.to} {...item} expanded={expanded} onNavigate={handleNavClick} />
         ))}
       </div>
@@ -244,7 +272,7 @@ export function Spine() {
 
       {/* Footer */}
       <div className="spine-foot">
-        {user?.role === 'super_admin' || user?.role === 'developer' ? (
+        {user && isAdminRole(user.role) ? (
           <NavLink
             to="/admin"
             className={({ isActive }) => `spine-item ${isActive ? 'active' : ''}`}

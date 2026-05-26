@@ -3,6 +3,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { Shell } from '@/components/layout/Shell'
 import { PageLoader } from '@/components/ui/LoadingSpinner'
 import { useAuth } from '@/context/AuthContext'
+import { isAdminRole } from '@/types'
 
 const Login = lazy(() => import('@/pages/Login'))
 const Home = lazy(() => import('@/pages/Home'))
@@ -24,9 +25,29 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
-function RequireSuperAdmin({ children }: { children: React.ReactNode }) {
+function RequireSupervisorOrDeveloper({ children }: { children: React.ReactNode }) {
+  // Admin Panel = user management. Gated to system-level roles only.
   const { user } = useAuth()
-  if (!user || !['super_admin', 'developer'].includes(user.role)) {
+  if (!user || !isAdminRole(user.role)) {
+    return <Navigate to="/" replace />
+  }
+  return <>{children}</>
+}
+
+/** Restrict a route to users whose `user.organisation` is in `allow` —
+ *  bypassed entirely for cross-org admin roles (dev / supervisor). Used to
+ *  block a Bandhu manager from typing the /phd URL and reaching the page. */
+function RequireOrg({
+  allow,
+  children,
+}: {
+  allow: ('PHD' | 'Bandhu' | 'CIPRB')[]
+  children: React.ReactNode
+}) {
+  const { user } = useAuth()
+  if (!user) return <Navigate to="/login" replace />
+  if (isAdminRole(user.role) || user.role === 'org_lead') return <>{children}</>
+  if (!allow.includes(user.organisation as 'PHD' | 'Bandhu' | 'CIPRB')) {
     return <Navigate to="/" replace />
   }
   return <>{children}</>
@@ -46,8 +67,22 @@ export default function App() {
             }
           >
             <Route index element={<Home />} />
-            <Route path="phd" element={<PHDDashboard />} />
-            <Route path="bondhu" element={<BondhuDashboard />} />
+            <Route
+              path="phd"
+              element={
+                <RequireOrg allow={['PHD']}>
+                  <PHDDashboard />
+                </RequireOrg>
+              }
+            />
+            <Route
+              path="bondhu"
+              element={
+                <RequireOrg allow={['Bandhu']}>
+                  <BondhuDashboard />
+                </RequireOrg>
+              }
+            />
             <Route path="approvals" element={<ManagerApprovals />} />
             <Route path="fistula" element={<FistulaTracker />} />
             <Route path="mpdsr" element={<MPDSRTracker />} />
@@ -58,9 +93,9 @@ export default function App() {
             <Route
               path="admin"
               element={
-                <RequireSuperAdmin>
+                <RequireSupervisorOrDeveloper>
                   <AdminPanel />
-                </RequireSuperAdmin>
+                </RequireSupervisorOrDeveloper>
               }
             />
           </Route>
