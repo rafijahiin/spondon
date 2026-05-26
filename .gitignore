@@ -39,3 +39,4 @@ Thumbs.db
 .railway/
 mediafiles/
 secrets-to-scrub.txt
+_handoff_*.txt
