@@ -58,6 +58,10 @@ class WebhookIngestTest(TestCase):
 
     @patch('submissions.views.send_submission_alert')
     def test_valid_payload_creates_submission(self, mock_tg):
+        # MPDSR, FISTULA, BASELINE are surveillance forms — webhook
+        # auto-approves them on arrival (they bypass the manager queue
+        # via the _AUTO_APPROVE set in views.py). Activity-form arrivals
+        # land as PENDING; see test_activity_form_lands_pending below.
         payload = mpdsr_payload()
         resp = self.client.post(
             WEBHOOK_URL, data=json.dumps(payload), content_type='application/json', **TEST_AUTH
@@ -69,7 +73,7 @@ class WebhookIngestTest(TestCase):
         self.assertEqual(sub.partner, 'PHD')
         self.assertEqual(sub.worker_name, 'Rina Akter')
         self.assertEqual(sub.district, 'Dhaka')
-        self.assertEqual(sub.status, SubmissionStatus.PENDING)
+        self.assertEqual(sub.status, SubmissionStatus.APPROVED)
         mock_tg.assert_called_once()
 
     @patch('submissions.views.send_submission_alert')
@@ -253,7 +257,8 @@ class SubmissionApiTest(TestCase):
         self.client.force_authenticate(user=self.phd_manager)
         resp = self.client.get('/api/submissions/')
         self.assertEqual(resp.status_code, 200)
-        results = resp.data['results']
+        # No global pagination — endpoint returns a plain list.
+        results = resp.data if isinstance(resp.data, list) else resp.data['results']
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0]['partner'], 'PHD')
 
@@ -262,7 +267,8 @@ class SubmissionApiTest(TestCase):
         self.client.force_authenticate(user=self.bondhu_manager)
         resp = self.client.get('/api/submissions/')
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(len(resp.data['results']), 0)
+        results = resp.data if isinstance(resp.data, list) else resp.data['results']
+        self.assertEqual(len(results), 0)
 
     def test_unauthenticated_returns_403(self):
         resp = self.client.get('/api/submissions/')

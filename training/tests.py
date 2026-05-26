@@ -78,7 +78,8 @@ class TrainingSessionAPITest(TestCase):
         make_session(partner='Bandhu')
         self.client.force_authenticate(user=self.phd)
         resp = self.client.get(BASE_URL)
-        self.assertEqual(resp.data['count'], 1)
+        rows = resp.data if isinstance(resp.data, list) else resp.data['results']
+        self.assertEqual(len(rows), 1)
 
     def test_create_session(self):
         self.client.force_authenticate(user=self.phd)

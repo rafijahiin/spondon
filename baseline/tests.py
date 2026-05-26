@@ -7,7 +7,7 @@ from accounts.models import Organisation, Role, User
 from .duplicate_detector import check_new_survey, flag_duplicates_for_partner
 from .models import BaselineSurvey, SurveyType
 
-BASE_URL = '/api/baseline/'
+BASE_URL = '/api/baseline/surveys/'
 
 
 def make_user(email, org, role):
@@ -26,9 +26,17 @@ def make_survey(partner='PHD', survey_type=SurveyType.BASELINE,
         region='Dhaka',
         survey_type=survey_type,
         participant_code=participant_code,
-        date_conducted=date,
+        survey_date=date,
         raw_data={},
     )
+
+
+def _rows(resp):
+    """Return list of rows whether the response is paginated or a plain list."""
+    data = resp.data
+    if isinstance(data, dict) and 'results' in data:
+        return data['results']
+    return data
 
 
 # ---------------------------------------------------------------------------
@@ -91,14 +99,14 @@ class BaselineSurveyAPITest(TestCase):
         make_survey(partner='Bandhu')
         self.client.force_authenticate(user=self.phd)
         resp = self.client.get(BASE_URL)
-        self.assertEqual(resp.data['count'], 1)
+        self.assertEqual(len(_rows(resp)), 1)
 
     def test_filter_by_survey_type(self):
         make_survey(partner='PHD', survey_type=SurveyType.BASELINE, participant_code='P1')
         make_survey(partner='PHD', survey_type=SurveyType.ENDLINE, participant_code='P2')
         self.client.force_authenticate(user=self.phd)
         resp = self.client.get(f'{BASE_URL}?survey_type=endline')
-        self.assertEqual(resp.data['count'], 1)
+        self.assertEqual(len(_rows(resp)), 1)
 
     def test_stats_endpoint(self):
         make_survey(partner='PHD', survey_type=SurveyType.BASELINE, participant_code='P1')

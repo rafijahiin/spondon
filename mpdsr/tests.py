@@ -8,7 +8,7 @@ from accounts.models import Organisation, Role, User
 from submissions.models import FormType, KoboSubmission, SubmissionStatus
 from .models import DeathType, MPDSRCase, ReviewStatus
 
-BASE_URL = '/api/mpdsr/'
+BASE_URL = '/api/mpdsr/cases/'
 
 
 def make_user(email, org, role):
@@ -17,7 +17,19 @@ def make_user(email, org, role):
     )
 
 
+def _rows(resp):
+    """Return list of rows whether the response is paginated or a plain list."""
+    data = resp.data
+    if isinstance(data, dict) and 'results' in data:
+        return data['results']
+    return data
+
+
 def make_submission(partner='PHD', kobo_id='m001', death_type='maternal'):
+    # MPDSR sub-form raw_data keys are F1–F6 specific (see
+    # MPDSRCaseManager.get_or_create_from_submission). Use the F2 form
+    # shape so the manager populates cause_of_death + age_years from
+    # the right keys.
     return KoboSubmission.objects.create(
         kobo_id=kobo_id,
         form_type=FormType.MPDSR,
@@ -26,7 +38,12 @@ def make_submission(partner='PHD', kobo_id='m001', death_type='maternal'):
         district='Dhaka',
         region='Dhaka',
         submitted_at=timezone.now(),
-        raw_data={'death_type': death_type, 'cause_of_death': 'Hemorrhage', 'age_years': '28'},
+        raw_data={
+            'form_type': 'f2',
+            'f2_death_type': death_type,
+            'f2_cause_of_death': 'Hemorrhage',
+            'f2_mother_age': '28',
+        },
         status=SubmissionStatus.PENDING,
     )
 
@@ -129,34 +146,44 @@ class FromSubmissionTest(TestCase):
 # ---------------------------------------------------------------------------
 
 class MPDSRCaseAPITest(TestCase):
+    """MPDSR is CIPRB-owned per the IDMS handoff — PHD/Bandhu managers
+    receive 403 from CanAccessMPDSR. Tests that exercise the read/write
+    paths therefore use a UNFPA supervisor (full cross-org access)."""
 
     def setUp(self):
         self.client = APIClient()
-        self.phd = make_user('pm@phd.org', Organisation.PHD, Role.MANAGER)
-        self.bondhu = make_user('bm@bandhu.org', Organisation.BANDHU, Role.MANAGER)
+        self.supervisor = make_user('s@unfpa.org', Organisation.UNFPA, Role.SUPERVISOR)
+        self.phd_mgr = make_user('pm@phd.org', Organisation.PHD, Role.MANAGER)
+        self.bondhu_mgr = make_user('bm@bandhu.org', Organisation.BANDHU, Role.MANAGER)
 
     def test_unauthenticated_returns_403(self):
         resp = self.client.get(BASE_URL)
         self.assertEqual(resp.status_code, 403)
 
-    def test_phd_manager_sees_only_phd_cases(self):
+    def test_phd_manager_blocked_from_mpdsr(self):
+        # MPDSR is CIPRB-owned — partner managers get 403.
+        make_case(partner='PHD', kobo_id='a1')
+        self.client.force_authenticate(user=self.phd_mgr)
+        resp = self.client.get(BASE_URL)
+        self.assertEqual(resp.status_code, 403)
+
+    def test_bondhu_manager_blocked_from_mpdsr(self):
+        self.client.force_authenticate(user=self.bondhu_mgr)
+        resp = self.client.get(BASE_URL)
+        self.assertEqual(resp.status_code, 403)
+
+    def test_supervisor_sees_all_cases(self):
         make_case(partner='PHD', kobo_id='a1')
         make_case(partner='Bandhu', kobo_id='a2')
-        self.client.force_authenticate(user=self.phd)
+        self.client.force_authenticate(user=self.supervisor)
         resp = self.client.get(BASE_URL)
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.data['count'], 1)
-        self.assertEqual(resp.data['results'][0]['partner'], 'PHD')
-
-    def test_bondhu_cannot_see_phd_cases(self):
-        make_case(partner='PHD')
-        self.client.force_authenticate(user=self.bondhu)
-        resp = self.client.get(BASE_URL)
-        self.assertEqual(resp.data['count'], 0)
+        rows = _rows(resp)
+        self.assertEqual(len(rows), 2)
 
     def test_patch_updates_status(self):
         case = make_case(partner='PHD')
-        self.client.force_authenticate(user=self.phd)
+        self.client.force_authenticate(user=self.supervisor)
         resp = self.client.patch(
             f'{BASE_URL}{case.id}/',
             {'status': ReviewStatus.UNDER_REVIEW},
@@ -169,7 +196,7 @@ class MPDSRCaseAPITest(TestCase):
     def test_patch_past_committee_date_rejected(self):
         case = make_case(partner='PHD')
         yesterday = str(datetime.date.today() - datetime.timedelta(days=1))
-        self.client.force_authenticate(user=self.phd)
+        self.client.force_authenticate(user=self.supervisor)
         resp = self.client.patch(
             f'{BASE_URL}{case.id}/',
             {'committee_date': yesterday},
@@ -178,13 +205,13 @@ class MPDSRCaseAPITest(TestCase):
         self.assertEqual(resp.status_code, 400)
 
     def test_post_not_allowed(self):
-        self.client.force_authenticate(user=self.phd)
+        self.client.force_authenticate(user=self.supervisor)
         resp = self.client.post(BASE_URL, {}, format='json')
         self.assertEqual(resp.status_code, 405)
 
     def test_delete_not_allowed(self):
         case = make_case(partner='PHD')
-        self.client.force_authenticate(user=self.phd)
+        self.client.force_authenticate(user=self.supervisor)
         resp = self.client.delete(f'{BASE_URL}{case.id}/')
         self.assertEqual(resp.status_code, 405)
 
@@ -194,13 +221,15 @@ class MPDSRCaseAPITest(TestCase):
 # ---------------------------------------------------------------------------
 
 class StatsEndpointTest(TestCase):
+    """MPDSR is CIPRB-owned (CanAccessMPDSR). Stats endpoint is exercised
+    via a UNFPA supervisor with cross-org visibility."""
 
     def setUp(self):
         self.client = APIClient()
-        self.phd = make_user('pm@phd.org', Organisation.PHD, Role.MANAGER)
+        self.supervisor = make_user('s@unfpa.org', Organisation.UNFPA, Role.SUPERVISOR)
 
     def test_stats_keys_present(self):
-        self.client.force_authenticate(user=self.phd)
+        self.client.force_authenticate(user=self.supervisor)
         resp = self.client.get(f'{BASE_URL}stats/')
         self.assertEqual(resp.status_code, 200)
         for key in ('total', 'by_status', 'by_death_type', 'overdue_committee', 'this_month'):
@@ -216,7 +245,7 @@ class StatsEndpointTest(TestCase):
             committee_date=yesterday,
             kobo_id='s3',
         )
-        self.client.force_authenticate(user=self.phd)
+        self.client.force_authenticate(user=self.supervisor)
         resp = self.client.get(f'{BASE_URL}stats/')
         self.assertEqual(resp.data['total'], 3)
         self.assertEqual(resp.data['by_status']['reported'], 1)
@@ -224,7 +253,9 @@ class StatsEndpointTest(TestCase):
         self.assertEqual(resp.data['overdue_committee'], 1)
 
     def test_stats_org_isolated(self):
+        # Supervisor has cross-org access — applying ?partner=PHD filter
+        # restricts the dataset; a Bandhu-only record is excluded.
         make_case(partner='Bandhu')
-        self.client.force_authenticate(user=self.phd)
-        resp = self.client.get(f'{BASE_URL}stats/')
+        self.client.force_authenticate(user=self.supervisor)
+        resp = self.client.get(f'{BASE_URL}stats/?partner=PHD')
         self.assertEqual(resp.data['total'], 0)

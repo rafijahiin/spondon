@@ -75,11 +75,17 @@ class KPIViewTest(TestCase):
         self.assertEqual(resp.data['submissions_this_month'], 1)
 
     def test_pending_counted_separately(self):
+        # Per the current KPI contract (_base_qs in dashboard/views.py),
+        # `submissions_this_month` counts every received submission
+        # — both PENDING and APPROVED — because submissions become
+        # visible on dashboards the moment they arrive via webhook.
+        # `submissions_pending` is the *additional* counter that only
+        # counts unreviewed items.
         make_submission('PHD', FormType.MPDSR, status=SubmissionStatus.PENDING)
         make_submission('PHD', FormType.MPDSR, status=SubmissionStatus.APPROVED)
         self.client.force_authenticate(user=self.phd)
         resp = self.client.get(f'{BASE_URL}kpis/')
-        self.assertEqual(resp.data['submissions_this_month'], 1)
+        self.assertEqual(resp.data['submissions_this_month'], 2)
         self.assertEqual(resp.data['submissions_pending'], 1)
 
     def test_fistula_count(self):

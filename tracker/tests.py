@@ -132,7 +132,8 @@ class AlertViewTest(TestCase):
         self.client.force_authenticate(user=self.phd)
         resp = self.client.get(ALERTS_URL)
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.data['count'], 1)
+        rows = resp.data if isinstance(resp.data, list) else resp.data['results']
+        self.assertEqual(len(rows), 1)
 
     def test_acknowledge_alert(self):
         alert = self._make_alert('PHD')
@@ -150,7 +151,8 @@ class AlertViewTest(TestCase):
         a1.save()
         self.client.force_authenticate(user=self.phd)
         resp = self.client.get(f'{ALERTS_URL}?acknowledged=false')
-        self.assertEqual(resp.data['count'], 1)
+        rows = resp.data if isinstance(resp.data, list) else resp.data['results']
+        self.assertEqual(len(rows), 1)
 
 
 # ---------------------------------------------------------------------------

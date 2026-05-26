@@ -1,3 +1,17 @@
+"""
+Tests for the fistula app — refactored to match the current
+FistulaCampaign aggregate model.
+
+The previous test file targeted a now-removed FistulaCase model (with
+encrypted patient PII, per-case status workflow, and an overdue follow-up
+flow). Migration 0002_fistulacampaign_delete_fistulacase_and_more
+replaced that with a campaign-session aggregate model — no PII at the
+row level, no per-case workflow, just one record per outreach/screening
+session with aggregated reach + referral + surgery counts.
+
+The encryption helpers (fistula/encryption.py) are still in the codebase
+for re-use by other modules; tests in EncryptionTest stay.
+"""
 import datetime
 
 from cryptography.fernet import Fernet
@@ -9,21 +23,31 @@ from accounts.models import Organisation, Role, User
 from submissions.models import FormType, KoboSubmission, SubmissionStatus
 
 from .encryption import decrypt, encrypt
-from .models import CaseStatus, FistulaCase
+from .models import FistulaCampaign
 
 TEST_KEY = Fernet.generate_key().decode()
-BASE_URL = '/api/fistula/'
+BASE_URL = '/api/fistula/cases/'
 
 
 def make_user(email, org, role):
     return User.objects.create_user(
-        email=email, password='pass', full_name='Test', organisation=org, role=role,
+        email=email, password='pass', full_name='Test',
+        organisation=org, role=role,
     )
 
 
+def _rows(resp):
+    """Return list of rows whether the response is paginated or a plain list."""
+    data = resp.data
+    if isinstance(data, dict) and 'results' in data:
+        return data['results']
+    return data
+
+
 def make_submission(partner='PHD', kobo_id='k001'):
-    # Use PENDING so the post_save signal does not auto-create the FistulaCase;
-    # FromSubmissionTest tests the manager method directly.
+    # PENDING so the post_save signal does not auto-create the
+    # FistulaCampaign; the manager-method test exercises the
+    # creation path directly.
     return KoboSubmission.objects.create(
         kobo_id=kobo_id,
         form_type=FormType.FISTULA,
@@ -32,33 +56,33 @@ def make_submission(partner='PHD', kobo_id='k001'):
         district='Dhaka',
         region='Dhaka',
         submitted_at=timezone.now(),
-        raw_data={'patient_name': 'Fatema Begum', 'patient_id': 'NID-001', 'age': '32'},
+        raw_data={
+            'district': 'Dhaka',
+            'upazila': 'Dhanmondi',
+            'women_screened': '40',
+            'confirmed_fistula_cases': '3',
+            'cases_referred': '2',
+        },
         status=SubmissionStatus.PENDING,
     )
 
 
-@override_settings(FERNET_KEY=TEST_KEY)
-def make_case(partner='PHD', status=CaseStatus.IDENTIFIED, follow_up_date=None,
-              date_identified=None, kobo_id='k001'):
-    from .encryption import encrypt as enc
-    if date_identified is None:
-        date_identified = datetime.date.today()
-    return FistulaCase.objects.create(
+def make_campaign(partner='PHD', district='Dhaka', campaign_date=None,
+                  women_screened=0, confirmed=0, referred=0):
+    if campaign_date is None:
+        campaign_date = datetime.date.today()
+    return FistulaCampaign.objects.create(
         partner=partner,
-        district='Dhaka',
+        district=district,
         region='Dhaka',
-        date_identified=date_identified,
-        patient_name_enc=enc('Fatema Begum'),
-        patient_id_enc=enc('NID-001'),
-        age=32,
-        status=status,
-        follow_up_date=follow_up_date,
+        campaign_date=campaign_date,
+        women_screened=women_screened,
+        confirmed_fistula_cases=confirmed,
+        cases_referred=referred,
     )
 
 
-# ---------------------------------------------------------------------------
-# Encryption helpers
-# ---------------------------------------------------------------------------
+# ─── Encryption helpers ──────────────────────────────────────────────────────
 
 @override_settings(FERNET_KEY=TEST_KEY)
 class EncryptionTest(TestCase):
@@ -84,243 +108,98 @@ class EncryptionTest(TestCase):
         self.assertEqual(decrypt('not-valid-ciphertext'), '')
 
 
-# ---------------------------------------------------------------------------
-# Model
-# ---------------------------------------------------------------------------
+# ─── FistulaCampaign model ───────────────────────────────────────────────────
 
-@override_settings(FERNET_KEY=TEST_KEY)
-class FistulaCaseModelTest(TestCase):
+class FistulaCampaignModelTest(TestCase):
 
     def test_case_hash_auto_generated(self):
-        case = make_case()
-        self.assertTrue(case.case_hash.startswith('FIS-PHD-'))
+        camp = make_campaign()
+        self.assertTrue(camp.case_hash.startswith('FST-PHD-'))
 
-    def test_case_hash_sequential(self):
-        c1 = make_case(kobo_id='k1')
-        c2 = make_case(kobo_id='k2')
-        self.assertNotEqual(c1.case_hash, c2.case_hash)
+    def test_bandhu_hash_prefix(self):
+        camp = make_campaign(partner='Bandhu')
+        self.assertIn('BON', camp.case_hash)
 
-    def test_bondhu_hash_prefix(self):
-        case = make_case(partner='Bandhu')
-        self.assertIn('BON', case.case_hash)
-
-    def test_patient_name_decrypted_via_property(self):
-        from .encryption import encrypt as enc
-        case = FistulaCase.objects.create(
-            partner='PHD', district='Dhaka', region='Dhaka',
-            date_identified=datetime.date.today(),
-            patient_name_enc=enc('Nasrin Akter'),
-            patient_id_enc=enc('NID-999'),
-            age=28,
-            status=CaseStatus.IDENTIFIED,
-        )
-        self.assertEqual(case.patient_name, 'Nasrin Akter')
-        self.assertEqual(case.patient_id, 'NID-999')
-
-    def test_is_overdue_past_date_non_completed(self):
-        yesterday = datetime.date.today() - datetime.timedelta(days=1)
-        case = make_case(status=CaseStatus.FOLLOWUP_PENDING, follow_up_date=yesterday)
-        self.assertTrue(case.is_overdue)
-
-    def test_is_overdue_future_date(self):
-        tomorrow = datetime.date.today() + datetime.timedelta(days=1)
-        case = make_case(follow_up_date=tomorrow)
-        self.assertFalse(case.is_overdue)
-
-    def test_is_overdue_referral_completed_never_overdue(self):
-        yesterday = datetime.date.today() - datetime.timedelta(days=1)
-        case = make_case(
-            status=CaseStatus.REFERRAL_COMPLETED,
-            follow_up_date=yesterday,
-        )
-        self.assertFalse(case.is_overdue)
-
-    def test_is_overdue_no_follow_up_date(self):
-        case = make_case(follow_up_date=None)
-        self.assertFalse(case.is_overdue)
-
-    def test_str(self):
-        case = make_case()
-        self.assertIn('PHD', str(case))
-        self.assertIn('FIS-', str(case))
+    def test_str_contains_case_hash(self):
+        camp = make_campaign()
+        self.assertIn('FST-', str(camp))
 
 
-# ---------------------------------------------------------------------------
-# get_or_create_from_submission
-# ---------------------------------------------------------------------------
+# ─── get_or_create_from_submission ───────────────────────────────────────────
 
-@override_settings(FERNET_KEY=TEST_KEY)
 class FromSubmissionTest(TestCase):
 
-    def test_creates_case_from_submission(self):
+    def test_creates_campaign_from_submission(self):
         sub = make_submission()
-        case, created = FistulaCase.objects.get_or_create_from_submission(sub)
+        camp, created = FistulaCampaign.objects.get_or_create_from_submission(sub)
         self.assertTrue(created)
-        self.assertEqual(case.partner, 'PHD')
-        self.assertEqual(case.district, 'Dhaka')
-        self.assertEqual(case.status, CaseStatus.IDENTIFIED)
-        self.assertEqual(case.patient_name, 'Fatema Begum')
-        self.assertEqual(case.patient_id, 'NID-001')
-        self.assertEqual(case.age, 32)
+        self.assertEqual(camp.partner, 'PHD')
+        self.assertEqual(camp.district, 'Dhaka')
+        self.assertEqual(camp.women_screened, 40)
+        self.assertEqual(camp.confirmed_fistula_cases, 3)
+        self.assertEqual(camp.cases_referred, 2)
 
     def test_idempotent_get_or_create(self):
-        sub = make_submission()
-        _, c1 = FistulaCase.objects.get_or_create_from_submission(sub)
-        _, c2 = FistulaCase.objects.get_or_create_from_submission(sub)
+        sub = make_submission(kobo_id='k002')
+        _, c1 = FistulaCampaign.objects.get_or_create_from_submission(sub)
+        _, c2 = FistulaCampaign.objects.get_or_create_from_submission(sub)
         self.assertTrue(c1)
         self.assertFalse(c2)
-        self.assertEqual(FistulaCase.objects.count(), 1)
+        self.assertEqual(FistulaCampaign.objects.count(), 1)
 
-    def test_missing_pii_fields_handled(self):
-        sub = make_submission(kobo_id='k002')
-        sub.raw_data = {}  # no patient_name, patient_id, age
+    def test_missing_aggregate_fields_default_to_zero(self):
+        sub = make_submission(kobo_id='k003')
+        sub.raw_data = {}
         sub.save()
-        case, _ = FistulaCase.objects.get_or_create_from_submission(sub)
-        self.assertEqual(case.patient_name, '')
-        self.assertIsNone(case.age)
+        camp, _ = FistulaCampaign.objects.get_or_create_from_submission(sub)
+        self.assertEqual(camp.women_screened, 0)
+        self.assertEqual(camp.confirmed_fistula_cases, 0)
 
 
-# ---------------------------------------------------------------------------
-# API — list and org isolation
-# ---------------------------------------------------------------------------
+# ─── API — list, org isolation, write methods blocked ────────────────────────
 
-@override_settings(FERNET_KEY=TEST_KEY)
-class FistulaCaseAPITest(TestCase):
+class FistulaCampaignAPITest(TestCase):
 
     def setUp(self):
         self.client = APIClient()
         self.phd = make_user('pm@phd.org', Organisation.PHD, Role.MANAGER)
-        self.bondhu = make_user('bm@bandhu.org', Organisation.BANDHU, Role.MANAGER)
+        self.bandhu = make_user('bm@bandhu.org', Organisation.BANDHU, Role.MANAGER)
 
     def test_unauthenticated_returns_403(self):
         resp = self.client.get(BASE_URL)
         self.assertEqual(resp.status_code, 403)
 
-    def test_phd_manager_sees_only_phd_cases(self):
-        make_case(partner='PHD', kobo_id='k1')
-        make_case(partner='Bandhu', kobo_id='k2')
+    def test_phd_manager_sees_only_phd_campaigns(self):
+        make_campaign(partner='PHD')
+        make_campaign(partner='Bandhu')
         self.client.force_authenticate(user=self.phd)
         resp = self.client.get(BASE_URL)
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.data['count'], 1)
-        self.assertEqual(resp.data['results'][0]['partner'], 'PHD')
+        rows = _rows(resp)
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]['partner'], 'PHD')
 
-    def test_bondhu_cannot_see_phd_cases(self):
-        make_case(partner='PHD')
-        self.client.force_authenticate(user=self.bondhu)
+    def test_bandhu_cannot_see_phd_campaigns(self):
+        make_campaign(partner='PHD')
+        self.client.force_authenticate(user=self.bandhu)
         resp = self.client.get(BASE_URL)
-        self.assertEqual(resp.data['count'], 0)
-
-    def test_detail_includes_patient_name(self):
-        case = make_case(partner='PHD')
-        self.client.force_authenticate(user=self.phd)
-        resp = self.client.get(f'{BASE_URL}{case.id}/')
-        self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.data['patient_name'], 'Fatema Begum')
-
-    def test_bondhu_cannot_access_phd_detail(self):
-        case = make_case(partner='PHD')
-        self.client.force_authenticate(user=self.bondhu)
-        resp = self.client.get(f'{BASE_URL}{case.id}/')
-        self.assertEqual(resp.status_code, 404)
-
-    def test_patch_updates_status(self):
-        case = make_case(partner='PHD')
-        self.client.force_authenticate(user=self.phd)
-        resp = self.client.patch(
-            f'{BASE_URL}{case.id}/',
-            {'status': CaseStatus.ACTION_REQUIRED},
-            format='json',
-        )
-        self.assertEqual(resp.status_code, 200)
-        case.refresh_from_db()
-        self.assertEqual(case.status, CaseStatus.ACTION_REQUIRED)
-
-    def test_patch_follow_up_date(self):
-        case = make_case(partner='PHD')
-        future = str(datetime.date.today() + datetime.timedelta(days=7))
-        self.client.force_authenticate(user=self.phd)
-        resp = self.client.patch(
-            f'{BASE_URL}{case.id}/',
-            {'follow_up_date': future},
-            format='json',
-        )
-        self.assertEqual(resp.status_code, 200)
-        case.refresh_from_db()
-        self.assertEqual(str(case.follow_up_date), future)
-
-    def test_patch_past_follow_up_date_rejected(self):
-        case = make_case(partner='PHD')
-        yesterday = str(datetime.date.today() - datetime.timedelta(days=1))
-        self.client.force_authenticate(user=self.phd)
-        resp = self.client.patch(
-            f'{BASE_URL}{case.id}/',
-            {'follow_up_date': yesterday},
-            format='json',
-        )
-        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(len(_rows(resp)), 0)
 
     def test_post_not_allowed(self):
+        # Viewset is read-only — http_method_names = ['get', 'head', 'options']
         self.client.force_authenticate(user=self.phd)
         resp = self.client.post(BASE_URL, {}, format='json')
         self.assertEqual(resp.status_code, 405)
 
     def test_delete_not_allowed(self):
-        case = make_case(partner='PHD')
+        camp = make_campaign(partner='PHD')
         self.client.force_authenticate(user=self.phd)
-        resp = self.client.delete(f'{BASE_URL}{case.id}/')
+        resp = self.client.delete(f'{BASE_URL}{camp.id}/')
         self.assertEqual(resp.status_code, 405)
 
 
-# ---------------------------------------------------------------------------
-# Overdue endpoint
-# ---------------------------------------------------------------------------
+# ─── Stats endpoint ──────────────────────────────────────────────────────────
 
-@override_settings(FERNET_KEY=TEST_KEY)
-class OverdueEndpointTest(TestCase):
-
-    def setUp(self):
-        self.client = APIClient()
-        self.phd = make_user('pm@phd.org', Organisation.PHD, Role.MANAGER)
-
-    def test_overdue_returns_only_overdue_cases(self):
-        yesterday = datetime.date.today() - datetime.timedelta(days=1)
-        tomorrow = datetime.date.today() + datetime.timedelta(days=1)
-        make_case(partner='PHD', follow_up_date=yesterday, status=CaseStatus.FOLLOWUP_PENDING, kobo_id='k1')
-        make_case(partner='PHD', follow_up_date=tomorrow, kobo_id='k2')
-        self.client.force_authenticate(user=self.phd)
-        resp = self.client.get(f'{BASE_URL}overdue/')
-        self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.data['count'], 1)
-
-    def test_completed_cases_not_overdue(self):
-        yesterday = datetime.date.today() - datetime.timedelta(days=1)
-        make_case(
-            partner='PHD',
-            follow_up_date=yesterday,
-            status=CaseStatus.REFERRAL_COMPLETED,
-        )
-        self.client.force_authenticate(user=self.phd)
-        resp = self.client.get(f'{BASE_URL}overdue/')
-        self.assertEqual(resp.data['count'], 0)
-
-    def test_overdue_org_isolated(self):
-        yesterday = datetime.date.today() - datetime.timedelta(days=1)
-        make_case(
-            partner='Bandhu',
-            follow_up_date=yesterday,
-            status=CaseStatus.FOLLOWUP_PENDING,
-        )
-        self.client.force_authenticate(user=self.phd)
-        resp = self.client.get(f'{BASE_URL}overdue/')
-        self.assertEqual(resp.data['count'], 0)
-
-
-# ---------------------------------------------------------------------------
-# Stats endpoint
-# ---------------------------------------------------------------------------
-
-@override_settings(FERNET_KEY=TEST_KEY)
 class StatsEndpointTest(TestCase):
 
     def setUp(self):
@@ -331,28 +210,32 @@ class StatsEndpointTest(TestCase):
         self.client.force_authenticate(user=self.phd)
         resp = self.client.get(f'{BASE_URL}stats/')
         self.assertEqual(resp.status_code, 200)
-        for key in ('total', 'by_status', 'overdue', 'this_month'):
+        for key in (
+            'total_sessions',
+            'this_month_sessions',
+            'this_month_women_screened',
+            'this_month_confirmed_cases',
+            'this_month_cases_referred',
+            'this_month_surgery_completed',
+        ):
             self.assertIn(key, resp.data)
 
-    def test_stats_counts_correctly(self):
-        yesterday = datetime.date.today() - datetime.timedelta(days=1)
-        make_case(partner='PHD', status=CaseStatus.IDENTIFIED, kobo_id='k1')
-        make_case(partner='PHD', status=CaseStatus.REFERRAL_COMPLETED, kobo_id='k2')
-        make_case(
-            partner='PHD',
-            status=CaseStatus.FOLLOWUP_PENDING,
-            follow_up_date=yesterday,
-            kobo_id='k3',
-        )
+    def test_stats_aggregates_this_month(self):
+        today = datetime.date.today()
+        make_campaign(partner='PHD', campaign_date=today,
+                      women_screened=50, confirmed=4, referred=2)
+        make_campaign(partner='PHD', campaign_date=today,
+                      women_screened=30, confirmed=2, referred=1)
         self.client.force_authenticate(user=self.phd)
         resp = self.client.get(f'{BASE_URL}stats/')
-        self.assertEqual(resp.data['total'], 3)
-        self.assertEqual(resp.data['by_status']['identified'], 1)
-        self.assertEqual(resp.data['by_status']['referral_completed'], 1)
-        self.assertEqual(resp.data['overdue'], 1)
+        self.assertEqual(resp.data['total_sessions'], 2)
+        self.assertEqual(resp.data['this_month_sessions'], 2)
+        self.assertEqual(resp.data['this_month_women_screened'], 80)
+        self.assertEqual(resp.data['this_month_confirmed_cases'], 6)
+        self.assertEqual(resp.data['this_month_cases_referred'], 3)
 
     def test_stats_org_isolated(self):
-        make_case(partner='Bandhu')
+        make_campaign(partner='Bandhu')
         self.client.force_authenticate(user=self.phd)
         resp = self.client.get(f'{BASE_URL}stats/')
-        self.assertEqual(resp.data['total'], 0)
+        self.assertEqual(resp.data['total_sessions'], 0)
