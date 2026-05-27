@@ -6,12 +6,13 @@
  * S logo toggles expanded/collapsed. Includes KoboToolbox form links panel.
  */
 import { useState, useRef, useEffect } from 'react'
-import { NavLink, useNavigate } from 'react-router-dom'
+import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
-  Home, LayoutDashboard, BarChart2, CheckSquare, FileText,
-  Activity, Bell, Search, Settings, LogOut, ExternalLink,
-  Heart, BookOpen, Users, BarChart, ClipboardList, X, Menu,
+  Home, Building2, HeartHandshake, ClipboardCheck, FileBarChart2,
+  ShieldAlert, Bell, Search, LogOut, ExternalLink,
+  HeartPulse, ClipboardList, GraduationCap, Smartphone,
+  Target, Settings, UserCog, X, Menu,
 } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { api } from '@/api/client'
@@ -41,28 +42,28 @@ const PRIMARY_NAV: SpineItemDef[] = [
   // (default redirect handled in App.tsx).
   { to: '/',         i18nKey: 'nav.programmeOverview', icon: <Home size={18} />,
     visible: (r) => notManager(r) },
-  { to: '/phd',      i18nKey: 'nav.phdDashboard',      icon: <LayoutDashboard size={18} />,
+  { to: '/phd',      i18nKey: 'nav.phdDashboard',      icon: <Building2 size={18} />,
     visible: (r, o) => isAdminRole(r) || r === 'org_lead' || (notManager(r) && o === 'PHD') },
-  { to: '/bondhu',   i18nKey: 'nav.bondhuDashboard',   icon: <BarChart2 size={18} />,
+  { to: '/bondhu',   i18nKey: 'nav.bondhuDashboard',   icon: <HeartHandshake size={18} />,
     visible: (r, o) => isAdminRole(r) || r === 'org_lead' || (notManager(r) && o === 'Bandhu') },
   // Approvals: managers + above. This is the ONLY nav item a manager sees.
-  { to: '/approvals',i18nKey: 'nav.managerApprovals',  icon: <CheckSquare size={18} />,
+  { to: '/approvals',i18nKey: 'nav.managerApprovals',  icon: <ClipboardCheck size={18} />,
     visible: (r) => ['developer','supervisor','org_lead','manager'].includes(r) },
-  { to: '/reports',  i18nKey: 'nav.reportingHub',      icon: <FileText size={18} />,
+  { to: '/reports',  i18nKey: 'nav.reportingHub',      icon: <FileBarChart2 size={18} />,
     visible: (r) => ['developer','supervisor','org_lead'].includes(r) },
 ]
 
 const SECONDARY_NAV: SpineItemDef[] = [
-  { to: '/fistula',  i18nKey: 'nav.fistulaTracker',   icon: <Heart size={18} />,
+  { to: '/fistula',  i18nKey: 'nav.fistulaTracker',   icon: <HeartPulse size={18} />,
     visible: (r, o) => isAdminRole(r) || (r === 'org_lead' && o === 'CIPRB') || (notManager(r) && o === 'CIPRB') },
-  { to: '/mpdsr',    i18nKey: 'nav.mpdsrTracker',     icon: <Activity size={18} />,
+  { to: '/mpdsr',    i18nKey: 'nav.mpdsrTracker',     icon: <ShieldAlert size={18} />,
     visible: (r, o) => isAdminRole(r) || (r === 'org_lead' && o === 'CIPRB') },
   // Tracker (now hosts both Programme Targets and Submission Compliance tabs).
-  { to: '/tracker',  i18nKey: 'nav.progressTracker',  icon: <BarChart size={18} />,
+  { to: '/tracker',  i18nKey: 'nav.progressTracker',  icon: <Target size={18} />,
     visible: (r) => ['developer','supervisor','org_lead'].includes(r) },
-  { to: '/baseline', i18nKey: 'nav.baselineEndline',  icon: <BookOpen size={18} />,
+  { to: '/baseline', i18nKey: 'nav.baselineEndline',  icon: <ClipboardList size={18} />,
     visible: (r, o) => isAdminRole(r) || (r === 'org_lead' && o === 'CIPRB') || (notManager(r) && o === 'CIPRB') },
-  { to: '/training', i18nKey: 'nav.trainingLog',      icon: <Users size={18} />,
+  { to: '/training', i18nKey: 'nav.trainingLog',      icon: <GraduationCap size={18} />,
     visible: (r) => ['developer','supervisor','org_lead'].includes(r) },
 ]
 
@@ -130,46 +131,35 @@ const KOBO_GROUPS: KoboGroup[] = [
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
-// Two expand sources: a sticky "pinned" state (toggled by the S logo,
-// persisted to localStorage) and a transient "hover-expanded" state
-// (auto-engages after 350ms of hover, auto-collapses 250ms after leave).
-// `expanded = pinned || hoverExpanded` so the rail behaves naturally
-// regardless of how the user reached the expanded view.
-const PIN_KEY = 'spinePinned'
-
+// Expand mechanism — hover-only.
+//
+// Previously the rail had a "pinned" state toggled by clicking the S
+// brand. That broke logo convention (top-left logo should go home) and
+// the pin/unpin model wasn't worth the complexity for a sidebar that's
+// fundamentally browse-by-icon. Now the S routes home and the rail
+// expands transiently on hover (350ms in, 250ms out), Linear/Notion-
+// style. The transient state is local — no localStorage.
+//
+// The mobile hamburger still flips the rail open as a drawer; that one
+// stays click-driven because hover has no meaning on touch.
 export function Spine() {
   const { t } = useTranslation()
   const { user, logout } = useAuth()
   const navigate = useNavigate()
-  const [pinned, setPinned] = useState<boolean>(() => {
-    if (typeof window === 'undefined') return false
-    return window.localStorage.getItem(PIN_KEY) === 'true'
-  })
-  const [hoverExpanded, setHoverExpanded] = useState(false)
-  const expanded = pinned || hoverExpanded
+  const [expanded, setExpanded] = useState(false)
   const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [koboOpen, setKoboOpen] = useState(false)
   const [pendingCount, setPendingCount] = useState<number>(0)
   const panelRef = useRef<HTMLDivElement>(null)
   const spineRef = useRef<HTMLElement>(null)
 
-  const togglePinned = () => {
-    setPinned((prev) => {
-      const next = !prev
-      try { window.localStorage.setItem(PIN_KEY, String(next)) } catch {}
-      return next
-    })
-  }
-
   const handleSpineMouseEnter = () => {
-    if (pinned) return
     if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current)
-    hoverTimerRef.current = setTimeout(() => setHoverExpanded(true), 350)
+    hoverTimerRef.current = setTimeout(() => setExpanded(true), 350)
   }
   const handleSpineMouseLeave = () => {
-    if (pinned) return
     if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current)
-    hoverTimerRef.current = setTimeout(() => setHoverExpanded(false), 250)
+    hoverTimerRef.current = setTimeout(() => setExpanded(false), 250)
   }
 
   const handleLogout = async () => {
@@ -202,31 +192,24 @@ export function Spine() {
     return () => document.removeEventListener('mousedown', handler)
   }, [koboOpen])
 
-  // Close expanded spine on outside click — but only when pinned. Hover-
-  // expand collapses naturally on mouseleave; outside-click should not
-  // unpin a user-pinned rail.
+  // Close expanded spine on outside click (mobile drawer use-case).
   useEffect(() => {
-    if (!pinned) return
+    if (!expanded) return
     const handler = (e: MouseEvent) => {
       if (spineRef.current && !spineRef.current.contains(e.target as Node)) {
-        setPinned(false)
-        try { window.localStorage.setItem(PIN_KEY, 'false') } catch {}
+        setExpanded(false)
       }
     }
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
-  }, [pinned])
+  }, [expanded])
 
-  // Close on Escape — collapses both pinned and hover states.
+  // Close on Escape.
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         if (koboOpen) setKoboOpen(false)
-        else if (expanded) {
-          setPinned(false)
-          setHoverExpanded(false)
-          try { window.localStorage.setItem(PIN_KEY, 'false') } catch {}
-        }
+        else if (expanded) setExpanded(false)
       }
     }
     window.addEventListener('keydown', handler)
@@ -249,47 +232,50 @@ export function Spine() {
   const visibleSecondary = filterByVisibility(SECONDARY_NAV, user)
 
   // Close drawer when a nav link is clicked (helpful on mobile)
-  const handleNavClick = () => {
-    setPinned(false)
-    setHoverExpanded(false)
-    try { window.localStorage.setItem(PIN_KEY, 'false') } catch {}
-  }
+  const handleNavClick = () => setExpanded(false)
 
   return (
     <>
-      {/* Mobile-only hamburger toggle — fixed top-left, hidden on desktop.
-          On mobile, hamburger toggles pinned state (no hover concept). */}
+      {/* Mobile-only hamburger toggle — fixed top-left, hidden on desktop. */}
       <button
         className="mobile-menu-btn"
         title={expanded ? 'Close menu' : 'Open menu'}
         aria-label={expanded ? 'Close menu' : 'Open menu'}
-        onClick={togglePinned}
+        onClick={() => setExpanded(prev => !prev)}
       >
         {expanded ? <X size={20} /> : <Menu size={20} />}
       </button>
 
       {/* Mobile backdrop — visible only when drawer open on mobile */}
-      {expanded && <div className="spine-backdrop" onClick={() => {
-        setPinned(false); setHoverExpanded(false)
-        try { window.localStorage.setItem(PIN_KEY, 'false') } catch {}
-      }} />}
+      {expanded && <div className="spine-backdrop" onClick={() => setExpanded(false)} />}
 
       <aside
         ref={spineRef}
-        className={`spine ${expanded ? 'spine-expanded' : ''} ${pinned ? 'spine-pinned' : ''}`}
+        className={`spine ${expanded ? 'spine-expanded' : ''}`}
         onMouseEnter={handleSpineMouseEnter}
         onMouseLeave={handleSpineMouseLeave}
       >
-      {/* Brand mark — clicking toggles the PINNED state. Hover-expand
-          remains transient; the pin makes the expanded view sticky so
-          users can keep labels visible while they work. */}
-      <button
-        className="spine-brand"
-        title={pinned ? 'Unpin menu' : 'Pin menu open'}
-        onClick={togglePinned}
-      >
-        <span>S</span>
-      </button>
+      {/* Brand mark — clicking goes HOME (universal logo convention).
+          The previous click-to-toggle behaviour was confusing because
+          users expect a top-left logo to route home. Expanding the
+          rail is now exclusively via hover (see handleSpineMouseEnter).
+          Managers don't get a home page, so for them the brand is a
+          non-interactive mark to avoid silently routing to /approvals
+          on an "S logo" click. */}
+      {user && user.role !== 'manager' ? (
+        <Link
+          to="/"
+          className="spine-brand"
+          title={t('nav.programmeOverview')}
+          aria-label={t('nav.programmeOverview')}
+        >
+          <span>S</span>
+        </Link>
+      ) : (
+        <div className="spine-brand" aria-hidden="true">
+          <span>S</span>
+        </div>
+      )}
 
       {/* Primary nav group */}
       <div className="spine-group">
@@ -317,7 +303,7 @@ export function Spine() {
           title={t('nav.koboForms')}
           onClick={() => setKoboOpen(p => !p)}
         >
-          <ClipboardList size={18} />
+          <Smartphone size={18} />
           {expanded ? <span className="spine-label">{t('nav.koboForms')}</span> : <span className="spine-tip">{t('nav.koboForms')}</span>}
         </button>
 
@@ -339,7 +325,7 @@ export function Spine() {
             className={({ isActive }) => `spine-item ${isActive ? 'active' : ''}`}
             title={t('nav.adminPanel')}
           >
-            <Settings size={18} />
+            <UserCog size={18} />
             {expanded ? <span className="spine-label">{t('nav.adminPanel')}</span> : <span className="spine-tip">{t('nav.adminPanel')}</span>}
           </NavLink>
         ) : (
