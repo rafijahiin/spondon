@@ -23,6 +23,7 @@ import { ArrowRight } from 'lucide-react'
 import { api } from '@/api/client'
 import { PageLoader } from '@/components/ui/LoadingSpinner'
 import { PartnerOverlapMap } from '@/components/maps/PartnerOverlapMap'
+import { ExecutiveBento } from '@/components/home/ExecutiveBento'
 import {
   PARTNER_COLORS, PARTNER_NAMES, PARTNER_ROUTES,
   type PartnerCode,
@@ -195,6 +196,13 @@ export default function Home() {
           }
         }
       `}</style>
+
+      {/* ═══════════════════════════════════════════════════════════════
+           EXECUTIVE SUMMARY (BENTO GRID)
+           — sits between hero and partner rollup
+           — answers "what's happening across the whole programme right now"
+           ═══════════════════════════════════════════════════════════════ */}
+      <ExecutiveBento progress={progress} />
 
       {/* ═══════════════════════════════════════════════════════════════
            PARTNER ROLL-UP CARDS

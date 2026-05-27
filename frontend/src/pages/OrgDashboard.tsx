@@ -26,6 +26,7 @@ import { usePolling } from '@/hooks/usePolling'
 import { PageLoader } from '@/components/ui/LoadingSpinner'
 import { BangladeshMap } from '@/components/maps/BangladeshMap'
 import { IndicatorGrid } from '@/components/indicators/IndicatorGrid'
+import { LiveMonitoring } from '@/components/org/LiveMonitoring'
 import { formatDate } from '@/utils/format'
 import type { PartnerKPIs, CentresResponse, Alert, ProgramsSummary } from '@/types'
 import {
@@ -479,6 +480,13 @@ export function OrgDashboard({ partner }: Props) {
           </div>
         </section>
       )}
+
+      {/* ═══════════════════════════════════════════════════════════════
+           LIVE FIELD MONITORING
+           — sits between forms grid and the M&E indicator progress
+           — pulse + 14-day trend + system health + anomaly callouts
+           ═══════════════════════════════════════════════════════════════ */}
+      <LiveMonitoring partner={partner} />
 
       {/* ═══════════════════════════════════════════════════════════════
            M&E INDICATOR PROGRESS
