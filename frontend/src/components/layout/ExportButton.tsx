@@ -67,60 +67,60 @@ export function ExportButton() {
    * an export. Saves ~250 KB on initial load.
    */
   /**
-   * Two-tier capture strategy:
-   *   1. First attempt: full <main>, map included. Works when Leaflet
-   *      tiles are CORS-clean (the default after the crossOrigin prop
-   *      was added to TileLayer).
-   *   2. Fallback: if the canvas gets tainted anyway (stale cached
-   *      tiles from a tab opened pre-fix, or some other CORS gotcha),
-   *      retry with .leaflet-container/.leaflet-pane ignored. The map
-   *      area shows as a blank rectangle but the rest of the page
-   *      still exports cleanly, and `mapSkipped` flips so the caller
-   *      can notify the user that the map didn't fit in the snapshot.
+   * Capture <main> as a canvas. Primary engine is modern-screenshot,
+   * which handles CSS variables in SVG `<stopColor>` and `<pattern>`
+   * elements correctly — html2canvas crashed on those with
+   * "createPattern ... canvas with width or height of 0" when recharts
+   * gradients in the OrgDashboard area chart were on screen.
+   *
+   * Two-tier capture:
+   *   1. First attempt: full <main>, map included.
+   *   2. Fallback: if anything throws a tainted-canvas / CORS error
+   *      (stale cached Leaflet tiles from before the crossOrigin prop
+   *      was added), retry skipping the leaflet container. The map
+   *      area shows as a blank rectangle; mapSkipped flips so the
+   *      caller can notify the user.
    */
   const captureMain = async (): Promise<{ canvas: HTMLCanvasElement; mapSkipped: boolean }> => {
-    const html2canvas = (await import('html2canvas')).default
+    const { domToCanvas } = await import('modern-screenshot')
     const target = document.querySelector('main') as HTMLElement
     if (!target) throw new Error('main element not found')
 
+    const bg = getComputedStyle(document.documentElement)
+      .getPropertyValue('--paper').trim() || '#EFF1F7'
+
     const baseOpts = {
-      backgroundColor: getComputedStyle(document.documentElement)
-        .getPropertyValue('--paper').trim() || '#EFF1F7',
+      backgroundColor: bg,
       scale: 1.5,
-      useCORS: true,
-      logging: false,
-      imageTimeout: 8000,
-      removeContainer: true,
-    } as const
+      // Skip our chrome controls + iframes during the capture.
+      filter: (node: Node) => {
+        if (!(node instanceof Element)) return true
+        if (node.classList.contains('no-export')) return false
+        if (node.tagName === 'IFRAME') return false
+        return true
+      },
+    }
 
     // Attempt 1 — include the map.
     try {
-      const canvas = await html2canvas(target, {
-        ...baseOpts,
-        ignoreElements: (el: Element) => {
-          if (el.classList.contains('no-export')) return true
-          if (el.tagName === 'IFRAME') return true
-          return false
-        },
-      })
-      // Force-touch the canvas to confirm it isn't tainted. toBlob
-      // would throw later anyway; this surfaces it now so the catch
-      // below can hit the fallback path.
+      const canvas = await domToCanvas(target, baseOpts)
+      // Force-touch to surface any taint NOW rather than at toBlob time.
       canvas.toDataURL()
       return { canvas, mapSkipped: false }
     } catch (e) {
       const msg = (e as Error)?.message?.toLowerCase() ?? ''
       const tainted = msg.includes('tainted') || msg.includes('cors') || msg.includes('security')
       if (!tainted) throw e
-      // Attempt 2 — skip the map.
-      const canvas = await html2canvas(target, {
+      // Attempt 2 — skip Leaflet entirely.
+      const canvas = await domToCanvas(target, {
         ...baseOpts,
-        ignoreElements: (el: Element) => {
-          if (el.classList.contains('no-export')) return true
-          if (el.classList.contains('leaflet-container')) return true
-          if (el.classList.contains('leaflet-pane')) return true
-          if (el.tagName === 'IFRAME') return true
-          return false
+        filter: (node: Node) => {
+          if (!(node instanceof Element)) return true
+          if (node.classList.contains('no-export')) return false
+          if (node.classList.contains('leaflet-container')) return false
+          if (node.classList.contains('leaflet-pane')) return false
+          if (node.tagName === 'IFRAME') return false
+          return true
         },
       })
       return { canvas, mapSkipped: true }
