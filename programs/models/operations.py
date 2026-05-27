@@ -23,10 +23,19 @@ def validate_photo_size(file_obj):
 
     File-storage backends differ in how they report size; this helper
     tolerates both `.size` and `.file.size` and a missing attribute (in
-    which case nothing is enforced — the serializer also re-checks)."""
-    if file_obj is None or file_obj == '':
+    which case nothing is enforced — the serializer also re-checks).
+    An unattached FieldFile (model field with no file set yet) is also
+    skipped — Django's FieldFile.size raises ValueError when no file is
+    associated, which used to bubble out of clean() on partial saves."""
+    # Falsy includes None, '', and unattached FieldFile (bool() returns False
+    # when .name is empty).
+    if not file_obj:
         return
-    size = getattr(file_obj, 'size', None)
+    # Some FieldFile variants raise on .size when nothing is attached.
+    try:
+        size = file_obj.size
+    except (ValueError, AttributeError):
+        return
     if size is None:
         return
     if size > MAX_PHOTO_BYTES:
@@ -87,6 +96,16 @@ class TrainingEvent(SubmissionBase):
     female_participants = models.PositiveIntegerField(default=0)
     tg_participants = models.PositiveIntegerField(default=0)
 
+    # ─── Audit FIX 7.7 — Doctor/Nurse/Midwife separate counts ──────────────
+    # total_participants is auto-populated from the sub-counts on save when
+    # any sub-count is set, so the indicator pipeline keeps reading a single
+    # number while the Kobo form can capture the breakdown.
+    participants_doctors        = models.PositiveSmallIntegerField(default=0)
+    participants_nurses         = models.PositiveSmallIntegerField(default=0)
+    participants_midwives       = models.PositiveSmallIntegerField(default=0)
+    participants_other          = models.PositiveSmallIntegerField(default=0)
+    participants_other_label    = models.CharField(max_length=200, blank=True)
+
     facilitator = models.CharField(max_length=200, blank=True)
     notes = models.TextField(blank=True)
 
@@ -113,6 +132,18 @@ class TrainingEvent(SubmissionBase):
     class Meta:
         ordering = ['-event_date']
 
+    @property
+    def auto_total_participants(self) -> int:
+        """Audit FIX 7.7 — sum of category sub-counts. Returns 0 when none
+        of the sub-counts are set, which leaves total_participants as the
+        sole source for legacy rows."""
+        return (
+            (self.participants_doctors  or 0)
+            + (self.participants_nurses   or 0)
+            + (self.participants_midwives or 0)
+            + (self.participants_other    or 0)
+        )
+
     def clean(self):
         super().clean()
         if not self.report_file:
@@ -121,6 +152,26 @@ class TrainingEvent(SubmissionBase):
                 code='required',
             )
         validate_photo_size(self.photo)
+
+        # Audit FIX 7.7 — if any sub-count is set, the total must agree.
+        auto = self.auto_total_participants
+        any_sub = auto > 0
+        if any_sub and self.total_participants and self.total_participants != auto:
+            raise ValidationError(
+                {'total_participants':
+                    f'total_participants ({self.total_participants}) must equal '
+                    f'the sum of doctor + nurse + midwife + other counts '
+                    f'({auto}). Clear the sub-counts or correct the total — '
+                    f'the total is auto-calculated when sub-counts are present.'},
+                code='total_participants_mismatch',
+            )
+
+    def save(self, *args, **kwargs):
+        # Audit FIX 7.7 — auto-populate total when sub-counts are set.
+        auto = self.auto_total_participants
+        if auto > 0:
+            self.total_participants = auto
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f'{self.event_type} — {self.topic[:40]} ({self.event_date})'

@@ -85,16 +85,49 @@ class GBVCase(SubmissionBase):
     survivor_gender_identity = models.CharField(max_length=50, blank=True)
     survivor_disability = models.BooleanField(default=False)
 
-    # Violence type (multi-select)
+    # Violence type — top-level booleans kept for backward compatibility
+    # with existing rows and existing dashboard queries (gbv_sexual /
+    # gbv_physical etc.). The new sub-type fields below (audit FIX 7.3)
+    # carry the granular breakdown required by the validation spec.
     gbv_sexual = models.BooleanField(default=False)
     gbv_physical = models.BooleanField(default=False)
     gbv_economic = models.BooleanField(default=False)
     gbv_psychological = models.BooleanField(default=False)
 
+    # ─── Sexual violence sub-types (audit FIX 7.3) ─────────────────────────
+    gbv_rape                   = models.BooleanField(default=False)
+    gbv_sexual_harassment      = models.BooleanField(default=False)
+    gbv_forced_gender_identity = models.BooleanField(default=False)
+    gbv_forced_pregnancy       = models.BooleanField(default=False)
+    gbv_genital_mutilation     = models.BooleanField(default=False)
+    gbv_forced_sex_work        = models.BooleanField(default=False)
+
+    # ─── Physical violence sub-types ───────────────────────────────────────
+    gbv_assault            = models.BooleanField(default=False)
+    gbv_beating            = models.BooleanField(default=False)
+    gbv_acid_attack        = models.BooleanField(default=False)
+    gbv_forced_labour      = models.BooleanField(default=False)
+    gbv_domestic_violence  = models.BooleanField(default=False)
+    gbv_confinement        = models.BooleanField(default=False)
+
+    # ─── Economic violence sub-types ───────────────────────────────────────
+    gbv_denied_work        = models.BooleanField(default=False)
+    gbv_denied_education   = models.BooleanField(default=False)
+    gbv_denied_inheritance = models.BooleanField(default=False)
+
+    # ─── Mental / psychological violence sub-types ─────────────────────────
+    gbv_verbal_abuse     = models.BooleanField(default=False)
+    gbv_threats          = models.BooleanField(default=False)
+    gbv_blackmail        = models.BooleanField(default=False)
+    gbv_family_rejection = models.BooleanField(default=False)
+
     # Perpetrator info (non-PII)
-    perpetrator_count = models.PositiveSmallIntegerField(default=1)
-    perpetrator_gender = models.CharField(max_length=20, blank=True)
+    perpetrator_count        = models.PositiveSmallIntegerField(default=1)
+    perpetrator_gender       = models.CharField(max_length=20, blank=True)
     perpetrator_relationship = models.CharField(max_length=100, blank=True)
+    # ─── Perpetrator profile extras (audit FIX 7.3) ────────────────────────
+    perpetrator_age          = models.PositiveSmallIntegerField(null=True, blank=True)
+    perpetrator_occupation   = models.CharField(max_length=200, blank=True)
 
     # Prior reporting
     prior_reporting = models.BooleanField(default=False)

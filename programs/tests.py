@@ -381,3 +381,181 @@ class TrainingEventUploadGateTest(TestCase):
         ser = TrainingEventSerializer(data=data)
         self.assertFalse(ser.is_valid())
         self.assertIn('photo', ser.errors)
+
+
+# ---------------------------------------------------------------------------
+# Commit 2 model fixes — HTC consent, MH scoring, Training auto-total
+# ---------------------------------------------------------------------------
+
+class Commit2ModelFixesTest(TestCase):
+    """One-liner tests per audit FIX 7.1 / 7.2 / 7.3 / 7.4 / 7.6 / 7.7 / 12.2."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.center = ServiceCenter.objects.create(
+            organisation='PHD', name='C', code='C-IEC-1',
+            center_type=ServiceCenter.DIC, district='Dhaka',
+        )
+        cls.client_obj = Client.objects.create(
+            organisation='PHD', center=cls.center,
+            client_id='PHD-HTC-1', name='Test',
+        )
+
+    # FIX 7.1 — HTC consent blocks save
+    def test_htc_consent_required(self):
+        from programs.models import HTCCounselling
+        from django.core.exceptions import ValidationError
+        h = HTCCounselling(
+            organisation='PHD', center=self.center, client=self.client_obj,
+            session_type=HTCCounselling.PRE, session_date=date(2026, 5, 1),
+            client_consented=False,
+        )
+        with self.assertRaises(ValidationError):
+            h.full_clean()
+
+    def test_htc_consent_true_passes(self):
+        from programs.models import HTCCounselling
+        h = HTCCounselling(
+            organisation='PHD', center=self.center, client=self.client_obj,
+            session_type=HTCCounselling.PRE, session_date=date(2026, 5, 1),
+            client_consented=True, visit_number=2,
+            needle_sharing=False, blood_transfusion=False, client_pregnant=False,
+        )
+        h.full_clean()  # must not raise
+
+    # FIX 7.2 — HIV/STI new fields exist
+    def test_hiv_sti_has_target_group_and_test_name(self):
+        from programs.models import HIVSTITestResult
+        t = HIVSTITestResult(
+            organisation='PHD', center=self.center, client=self.client_obj,
+            testing_date=date(2026, 5, 1),
+            target_group=HIVSTITestResult.TG_FSW,
+            test_name=HIVSTITestResult.TN_HIV,
+            referred=True, drug_prescribed='Tenofovir',
+        )
+        t.full_clean()
+        t.save()
+        self.assertEqual(t.target_group, 'FSW')
+        self.assertTrue(t.referred)
+
+    # FIX 7.3 — GBV sub-types persist
+    def test_gbv_subtype_fields_persist(self):
+        from programs.models import GBVCase
+        g = GBVCase.objects.create(
+            organisation='PHD', center=self.center,
+            interview_date=date(2026, 5, 1), incident_date=date(2026, 4, 15),
+            gbv_sexual=True, gbv_rape=True, gbv_acid_attack=True,
+            perpetrator_age=35, perpetrator_occupation='trader',
+        )
+        g.refresh_from_db()
+        self.assertTrue(g.gbv_rape)
+        self.assertTrue(g.gbv_acid_attack)
+        self.assertEqual(g.perpetrator_age, 35)
+
+    # FIX 7.4 — Depression auto-calc + band + cutoff
+    def test_depression_auto_calc_and_band(self):
+        from programs.models import MHScreening
+        # 30 items × 4 = 120 → 'Moderate' (115-123), exceeds 93.5 cutoff
+        responses = {f'q{i}': 4 for i in range(1, 31)}
+        m = MHScreening.objects.create(
+            organisation='PHD', center=self.center, client=self.client_obj,
+            screening_type=MHScreening.DEPRESSION,
+            screening_date=date(2026, 5, 1),
+            item_responses=responses,
+        )
+        self.assertEqual(float(m.total_score), 120.0)
+        self.assertEqual(m.depression_band, 'Moderate')
+        self.assertTrue(m.depression_cutoff_exceeded)
+
+    def test_depression_override_blocked(self):
+        from programs.models import MHScreening
+        from django.core.exceptions import ValidationError
+        responses = {f'q{i}': 3 for i in range(1, 31)}  # sum = 90
+        m = MHScreening(
+            organisation='PHD', center=self.center, client=self.client_obj,
+            screening_type=MHScreening.DEPRESSION,
+            screening_date=date(2026, 5, 1),
+            item_responses=responses,
+            total_score=145,  # forbidden override
+        )
+        with self.assertRaises(ValidationError):
+            m.full_clean()
+
+    # FIX 7.5 — PTSD bands
+    def test_ptsd_band_severe(self):
+        from programs.models import MHScreening
+        responses = {f'q{i}': 5 for i in range(1, 16)}  # sum = 75
+        m = MHScreening.objects.create(
+            organisation='PHD', center=self.center, client=self.client_obj,
+            screening_type=MHScreening.PTSD,
+            screening_date=date(2026, 5, 1),
+            item_responses=responses,
+        )
+        self.assertEqual(float(m.total_score), 75.0)
+        self.assertEqual(m.ptsd_band, 'Severe Anxiety')
+        self.assertTrue(m.ptsd_cutoff_exceeded)
+
+    # FIX 7.6 — OutreachSession movement register fields
+    def test_outreach_movement_fields_exist(self):
+        from programs.models import OutreachSession
+        from datetime import time
+        o = OutreachSession.objects.create(
+            organisation='PHD', center=self.center,
+            session_date=date(2026, 5, 1),
+            peer_educator_name='Rina',
+            out_time=time(9, 0), return_time=time(13, 0),
+            purpose='Outreach in Banani brothel',
+            manager_endorsement=False,
+            session_variant=OutreachSession.MOBILE_CAMP,
+        )
+        o.refresh_from_db()
+        self.assertEqual(o.out_time.hour, 9)
+        self.assertEqual(o.return_time.hour, 13)
+        self.assertFalse(o.manager_endorsement)
+        self.assertEqual(o.session_variant, 'mobile_camp')
+
+    # FIX 7.7 — Training auto-total + mismatch block
+    def test_training_auto_total_populated(self):
+        from programs.models import TrainingEvent
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        e = TrainingEvent(
+            organisation='PHD',
+            event_date=date(2026, 5, 1), event_type=TrainingEvent.TRAINING,
+            participant_type=TrainingEvent.MW, topic='Auto-total test',
+            participants_doctors=2, participants_nurses=3, participants_midwives=4,
+            report_file=SimpleUploadedFile('r.pdf', b'data'),
+        )
+        e.save()
+        self.assertEqual(e.total_participants, 9)
+
+    def test_training_total_mismatch_blocked(self):
+        from programs.models import TrainingEvent
+        from django.core.exceptions import ValidationError
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        e = TrainingEvent(
+            organisation='PHD',
+            event_date=date(2026, 5, 1), event_type=TrainingEvent.TRAINING,
+            participant_type=TrainingEvent.MW, topic='Mismatch',
+            total_participants=100,  # mismatch
+            participants_doctors=2, participants_nurses=3,
+            report_file=SimpleUploadedFile('r.pdf', b'data'),
+        )
+        with self.assertRaises(ValidationError):
+            e.full_clean()
+
+    # FIX 12.2 — IECMaterial model exists with required fields
+    def test_iec_material_creates(self):
+        from programs.models import IECMaterial
+        from partners.models import Partner
+        partner = Partner.objects.get(code='PHD')
+        i = IECMaterial.objects.create(
+            partner=partner, center=self.center, organisation='PHD',
+            material_type=IECMaterial.BILLBOARD,
+            quantity=11, date_distributed=date(2026, 5, 1),
+            district='Cox\'s Bazar',
+        )
+        self.assertEqual(i.material_type, 'billboard')
+        self.assertEqual(i.quantity, 11)
+        # Audit FIX 2.7 — IEC distribution is not surveillance; defaults
+        # to PENDING and must go through manager approval.
+        self.assertEqual(i.approval_status, IECMaterial.PENDING)

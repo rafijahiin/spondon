@@ -45,7 +45,7 @@ class SubmissionBase(TimestampedModel):
     latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     submitted_by_kobo_user = models.CharField(max_length=100, blank=True)
-    raw_payload = models.JSONField(default=dict)
+    raw_payload = models.JSONField(default=dict, blank=True)
 
     class Meta:
         abstract = True

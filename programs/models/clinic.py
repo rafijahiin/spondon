@@ -89,6 +89,11 @@ class ClinicVisit(SubmissionBase):
 
 
 class HIVSTITestResult(SubmissionBase):
+    """Audit FIX 7.2 — adds target_group, test_name, referred, drug_prescribed
+    on top of the existing per-test result columns. The existing per-test
+    columns (hiv_result / syphilis_result / hep_b_result / hep_c_result)
+    stay so the same row can capture a multi-test panel."""
+
     POSITIVE = 'positive'
     NEGATIVE = 'negative'
     INDETERMINATE = 'indeterminate'
@@ -98,6 +103,35 @@ class HIVSTITestResult(SubmissionBase):
         (NEGATIVE, 'Negative'),
         (INDETERMINATE, 'Indeterminate'),
         (NOT_DONE, 'Not Done'),
+    ]
+
+    # Target-group of the tested individual (matches programs.Client
+    # TG_CHOICES short names — duplicated here to avoid a cross-import
+    # because Client uses numeric codes).
+    TG_MSM    = 'MSM'
+    TG_MSW    = 'MSW'
+    TG_TG     = 'TG'
+    TG_FSW    = 'FSW'
+    TG_OTHERS = 'OTHERS'
+    TARGET_GROUP_CHOICES = [
+        (TG_MSM,    'MSM'),
+        (TG_MSW,    'MSW / Kothi'),
+        (TG_TG,     'Transgender / Hijra'),
+        (TG_FSW,    'FSW'),
+        (TG_OTHERS, 'Others'),
+    ]
+
+    # Single-test label (for forms that record one test per row rather
+    # than a panel). Kept alongside the per-test result columns.
+    TN_HIV      = 'HIV'
+    TN_SYPHILIS = 'SYPHILIS'
+    TN_HEP_B    = 'HEP_B'
+    TN_HEP_C    = 'HEP_C'
+    TEST_NAME_CHOICES = [
+        (TN_HIV,      'HIV'),
+        (TN_SYPHILIS, 'Syphilis'),
+        (TN_HEP_B,    'Hepatitis B'),
+        (TN_HEP_C,    'Hepatitis C'),
     ]
 
     organisation = models.CharField(max_length=20, choices=ORG_CHOICES, db_index=True)
@@ -113,6 +147,17 @@ class HIVSTITestResult(SubmissionBase):
 
     testing_date = models.DateField(db_index=True)
     lab_id = models.CharField(max_length=100, blank=True)
+
+    # ─── Audit FIX 7.2 new fields ──────────────────────────────────────────
+    target_group = models.CharField(
+        max_length=10, choices=TARGET_GROUP_CHOICES, blank=True, db_index=True,
+    )
+    test_name = models.CharField(
+        max_length=20, choices=TEST_NAME_CHOICES, blank=True,
+    )
+    referred = models.BooleanField(default=False)
+    drug_prescribed = models.CharField(max_length=200, blank=True)
+    # ───────────────────────────────────────────────────────────────────────
 
     hiv_result = models.CharField(max_length=20, choices=RESULT_CHOICES, default=NOT_DONE)
     syphilis_result = models.CharField(max_length=20, choices=RESULT_CHOICES, default=NOT_DONE)

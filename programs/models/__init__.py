@@ -3,6 +3,7 @@ from .client import Client
 from .clinic import ClinicVisit, HIVSTITestResult, ADRRecord, AutoclaveLog, AntenatalCard
 from .counselling import HTCCounselling, IndividualCounselling, MHScreening
 from .gbv import GBVCase, GBVAccessLog
+from .iec import IECMaterial
 from .outreach import OutreachSession, GroupEducationSession
 from .referral import Referral
 from .supply import StockEntry, TemperatureLog, SafetyHygieneKit, StoreRequisition
@@ -13,6 +14,7 @@ __all__ = [
     'ClinicVisit', 'HIVSTITestResult', 'ADRRecord', 'AutoclaveLog', 'AntenatalCard',
     'HTCCounselling', 'IndividualCounselling', 'MHScreening',
     'GBVCase', 'GBVAccessLog',
+    'IECMaterial',
     'OutreachSession', 'GroupEducationSession',
     'Referral',
     'StockEntry', 'TemperatureLog', 'SafetyHygieneKit', 'StoreRequisition',

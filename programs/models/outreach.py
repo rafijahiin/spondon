@@ -12,7 +12,23 @@ class OutreachSession(SubmissionBase):
     """
     Daily outreach session submitted by CO / Peer Educator.
     individual_contacts feeds directly into indicator I_BND_1_4B / I_PHD_1_4.
+
+    Audit FIX 7.6 — Outreach Movement Register fields added (out_time,
+    return_time, purpose, manager_endorsement). Manager endorsement acts
+    as a soft approval gate: rows with manager_endorsement=False stay in
+    SubmissionBase PENDING and are not counted toward the indicator until
+    the manager flips the flag.
     """
+
+    # Audit FIX 12.3 (Commit 3 also touches this — variant flag) — fixed-site
+    # vs mobile camp. Bandhu 1.9 indicator counts mobile-camp variants only.
+    FIXED_SITE  = 'fixed_site'
+    MOBILE_CAMP = 'mobile_camp'
+    SESSION_VARIANT_CHOICES = [
+        (FIXED_SITE,  'Fixed Site'),
+        (MOBILE_CAMP, 'Mobile Camp'),
+    ]
+
     organisation = models.CharField(max_length=20, choices=ORG_CHOICES, db_index=True)
     center = models.ForeignKey(
         'programs.ServiceCenter', on_delete=models.PROTECT, related_name='outreach_sessions'
@@ -21,6 +37,20 @@ class OutreachSession(SubmissionBase):
     session_date = models.DateField(db_index=True)
     peer_educator_name = models.CharField(max_length=200)
     spot_name = models.CharField(max_length=200, blank=True)
+
+    # ─── Audit FIX 7.6 — Outreach Movement Register fields ─────────────────
+    out_time = models.TimeField(null=True, blank=True)
+    return_time = models.TimeField(null=True, blank=True)
+    purpose = models.TextField(blank=True)
+    # Manager endorsement gate. False = stays unapproved; manager flips
+    # to True when accepting the outreach record.
+    manager_endorsement = models.BooleanField(default=False)
+
+    # Audit FIX 12.3 — fixed-site vs mobile-camp variant.
+    session_variant = models.CharField(
+        max_length=20, choices=SESSION_VARIANT_CHOICES, default=FIXED_SITE,
+        db_index=True,
+    )
 
     individual_contacts = models.PositiveIntegerField(default=0)
     individual_health_edu_count = models.PositiveIntegerField(default=0)
