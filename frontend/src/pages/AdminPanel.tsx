@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Plus, Pencil, UserX, UserCheck } from 'lucide-react'
 import { api, apiErrorMessage } from '@/api/client'
 import { usePolling } from '@/hooks/usePolling'
@@ -158,6 +159,7 @@ function UserModal({
 }
 
 export default function AdminPanel() {
+  const { t } = useTranslation()
   const [modal, setModal] = useState<{ open: boolean; user?: AdminUser }>({ open: false })
 
   const { data: users, loading, refetch } = usePolling<AdminUser[]>({
@@ -183,9 +185,9 @@ export default function AdminPanel() {
       {/* Heading */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Admin Panel</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('admin.title', { defaultValue: 'Admin Panel' })}</h1>
           <p className="font-bangla mt-1 text-sm text-gray-500 dark:text-gray-400">
-            ব্যবহারকারী ব্যবস্থাপনা · User Management
+            {t('admin.subtitle', { defaultValue: 'User Management' })}
           </p>
         </div>
         <button
@@ -193,17 +195,17 @@ export default function AdminPanel() {
           className="flex items-center gap-2 rounded-xl bg-unfpa-blue px-4 py-2.5 text-sm font-semibold text-white hover:bg-unfpa-dark transition-colors"
         >
           <Plus className="h-4 w-4" />
-          Add User
+          {t('admin.addUser', { defaultValue: 'Add User' })}
         </button>
       </div>
 
       {/* Stats row */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         {[
-          { label: 'Total Users', value: (users ?? []).length },
-          { label: 'Active', value: (users ?? []).filter((u) => u.is_active).length },
-          { label: 'Managers', value: (users ?? []).filter((u) => u.role === 'manager').length },
-          { label: 'Supervisors', value: (users ?? []).filter((u) => u.role === 'supervisor').length },
+          { label: t('admin.totalUsers', { defaultValue: 'Total Users' }), value: (users ?? []).length },
+          { label: t('admin.active', { defaultValue: 'Active' }), value: (users ?? []).filter((u) => u.is_active).length },
+          { label: t('admin.managers', { defaultValue: 'Managers' }), value: (users ?? []).filter((u) => u.role === 'manager').length },
+          { label: t('admin.supervisors', { defaultValue: 'Supervisors' }), value: (users ?? []).filter((u) => u.role === 'supervisor').length },
         ].map((s) => (
           <div key={s.label} className="rounded-xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm p-5">
             <p className="text-2xl font-bold text-gray-900 dark:text-white">{s.value}</p>
@@ -221,7 +223,14 @@ export default function AdminPanel() {
             <table className="w-full text-sm">
               <thead className="border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/40">
                 <tr>
-                  {['User', 'Organisation', 'Role', 'Status', 'Last Login', 'Actions'].map((h) => (
+                  {[
+                    t('admin.thUser', { defaultValue: 'User' }),
+                    t('admin.thOrg', { defaultValue: 'Organisation' }),
+                    t('admin.thRole', { defaultValue: 'Role' }),
+                    t('admin.thStatus', { defaultValue: 'Status' }),
+                    t('admin.thLastLogin', { defaultValue: 'Last Login' }),
+                    t('admin.thActions', { defaultValue: 'Actions' }),
+                  ].map((h) => (
                     <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
                       {h}
                     </th>
@@ -251,17 +260,17 @@ export default function AdminPanel() {
                       {ROLE_LABELS[user.role] ?? user.role.replace('_', ' ')}
                     </td>
                     <td className="px-4 py-3">
-                      <StatusBadge status={user.is_active ? 'approved' : 'rejected'} overrideLabel={user.is_active ? 'Active' : 'Inactive'} />
+                      <StatusBadge status={user.is_active ? 'approved' : 'rejected'} overrideLabel={user.is_active ? t('admin.statusActive', { defaultValue: 'Active' }) : t('admin.statusInactive', { defaultValue: 'Inactive' })} />
                     </td>
                     <td className="px-4 py-3 text-xs text-gray-500 dark:text-gray-400">
-                      {formatDateTime(user.last_login) || 'Never'}
+                      {formatDateTime(user.last_login) || t('admin.never', { defaultValue: 'Never' })}
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => setModal({ open: true, user })}
                           className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-unfpa-blue transition-colors"
-                          title="Edit"
+                          title={t('admin.edit', { defaultValue: 'Edit' })}
                         >
                           <Pencil className="h-4 w-4" />
                         </button>
@@ -273,7 +282,7 @@ export default function AdminPanel() {
                               ? 'text-gray-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-500'
                               : 'text-gray-400 hover:bg-green-50 dark:hover:bg-green-900/20 hover:text-green-500'
                           )}
-                          title={user.is_active ? 'Deactivate' : 'Activate'}
+                          title={user.is_active ? t('admin.deactivate', { defaultValue: 'Deactivate' }) : t('admin.activate', { defaultValue: 'Activate' })}
                         >
                           {user.is_active ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}
                         </button>
@@ -283,7 +292,7 @@ export default function AdminPanel() {
                 ))}
                 {!(users ?? []).length && (
                   <tr>
-                    <td colSpan={6} className="py-12 text-center text-sm text-gray-400">No users found.</td>
+                    <td colSpan={6} className="py-12 text-center text-sm text-gray-400">{t('admin.empty', { defaultValue: 'No users found.' })}</td>
                   </tr>
                 )}
               </tbody>

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Clock, MapPin } from 'lucide-react'
 import { api } from '@/api/client'
 import { usePolling } from '@/hooks/usePolling'
@@ -128,6 +129,7 @@ type PartnerFilter = 'all' | 'PHD' | 'Bandhu'
 type CauseFilter = 'all' | string
 
 export default function MPDSRTracker() {
+  const { t } = useTranslation()
   const [partnerFilter, setPartnerFilter] = useState<PartnerFilter>('all')
   const [causeFilter, setCauseFilter] = useState<CauseFilter>('all')
   const [selectedCase, setSelectedCase] = useState<MPDSRCase | null>(null)
@@ -157,9 +159,9 @@ export default function MPDSRTracker() {
     <div className="space-y-6">
       {/* Heading */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">MPDSR Tracker</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('mpdsr.title', { defaultValue: 'MPDSR Tracker' })}</h1>
         <p className="font-bangla mt-1 text-sm text-gray-500 dark:text-gray-400">
-          মাতৃমৃত্যু পর্যালোচনা · Maternal & Perinatal Death Surveillance
+          {t('mpdsr.subtitle', { defaultValue: 'Maternal & Perinatal Death Surveillance' })}
         </p>
       </div>
 
@@ -211,7 +213,7 @@ export default function MPDSRTracker() {
                 : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300'
             )}
           >
-            {p === 'all' ? 'All Partners' : p}
+            {p === 'all' ? t('mpdsr.allPartners', { defaultValue: 'All Partners' }) : p}
           </button>
         ))}
       </div>
@@ -225,7 +227,16 @@ export default function MPDSRTracker() {
             <table className="w-full text-sm">
               <thead className="border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/40">
                 <tr>
-                  {['Case ID', 'Form', 'Partner', 'District', 'Date', 'Type', 'Status', 'Audit'].map((h) => (
+                  {[
+                    t('mpdsr.thCaseId', { defaultValue: 'Case ID' }),
+                    t('mpdsr.thForm', { defaultValue: 'Form' }),
+                    t('mpdsr.thPartner', { defaultValue: 'Partner' }),
+                    t('mpdsr.thDistrict', { defaultValue: 'District' }),
+                    t('mpdsr.thDate', { defaultValue: 'Date' }),
+                    t('mpdsr.thType', { defaultValue: 'Type' }),
+                    t('mpdsr.thStatus', { defaultValue: 'Status' }),
+                    t('mpdsr.thAudit', { defaultValue: 'Audit' }),
+                  ].map((h) => (
                     <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
                       {h}
                     </th>
@@ -256,14 +267,14 @@ export default function MPDSRTracker() {
                         onClick={() => setSelectedCase(c)}
                         className="text-xs font-medium text-unfpa-blue hover:text-unfpa-dark underline"
                       >
-                        View ({(c.audit_trail ?? []).length})
+                        {t('mpdsr.view', { defaultValue: 'View' })} ({(c.audit_trail ?? []).length})
                       </button>
                     </td>
                   </tr>
                 ))}
                 {!(cases ?? []).length && (
                   <tr>
-                    <td colSpan={8} className="py-12 text-center text-sm text-gray-400">No MPDSR cases found.</td>
+                    <td colSpan={8} className="py-12 text-center text-sm text-gray-400">{t('mpdsr.empty', { defaultValue: 'No MPDSR cases found.' })}</td>
                   </tr>
                 )}
               </tbody>
