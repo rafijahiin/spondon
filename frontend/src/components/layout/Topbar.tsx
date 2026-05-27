@@ -7,6 +7,7 @@ import { Link, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { RefreshCw } from 'lucide-react'
 import { LanguageToggle } from './LanguageToggle'
+import { DarkModeToggle } from './DarkModeToggle'
 
 /** Each crumb is { i18nKey, to }. `to: null` means non-clickable
  *  (currently used for category labels like "DASHBOARDS" that don't
@@ -76,6 +77,9 @@ export function Topbar() {
       <button className="top-btn" title={t('topbar.refresh')}>
         <RefreshCw size={14} />
       </button>
+
+      {/* Dark mode — persisted in ThemeContext localStorage */}
+      <DarkModeToggle />
 
       {/* Global language toggle — persists to localStorage, no reload. */}
       <LanguageToggle />

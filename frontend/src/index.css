@@ -109,6 +109,58 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* ─── Dark mode tokens ──────────────────────────────────────────────────
+   Applied when ThemeContext sets <html class="dark">. The UNFPA brand
+   kit explicitly designs for both light and dark — the same orange
+   highlight (#F96000) works against both foundations, so the brand
+   identity stays consistent across modes.
+
+   Surface ramp inverts to UNFPA Black → progressively lighter grays
+   for elevated cards/panels. Text ramp inverts the same way: off-white
+   primary → progressively dimmer for secondary / muted. Hairlines
+   re-anchor on white at low alpha so dividers are still visible on
+   dark backgrounds.                                                       */
+html.dark {
+  /* Surfaces — UNFPA Black foundation, ascending elevation. */
+  --paper:     #131619;  /* UNFPA Black — page background */
+  --paper-2:   #181B1F;
+  --surface:   #1C2024;  /* default card */
+  --surface-2: #23282E;  /* nested card / muted block */
+  --surface-3: #2A2F35;  /* highlighted card */
+
+  /* Text — off-white primary, ascending dimness. */
+  --ink:    #EFF1F7;     /* UNFPA Off-white — primary text */
+  --ink-2:  #C9CDD5;
+  --ink-3:  #9CA1A9;
+  --muted:  #686A6C;     /* UNFPA Ash — works in both modes */
+  --muted-2:#4B4E51;
+  --muted-3:#33363A;
+
+  /* Lines — white at low alpha so dividers stay visible on dark bg. */
+  --hair:   rgba(239, 241, 247, 0.08);
+  --hair-2: rgba(239, 241, 247, 0.14);
+  --hair-3: rgba(239, 241, 247, 0.22);
+
+  /* Shadows — deeper black + orange glow so depth still reads. */
+  --sh-1: 0 1px 2px rgba(0, 0, 0, 0.32),
+          0 2px 4px rgba(0, 0, 0, 0.24);
+  --sh-2: 0 1px 2px rgba(0, 0, 0, 0.32),
+          0 4px 12px rgba(0, 0, 0, 0.28),
+          0 12px 32px rgba(0, 0, 0, 0.22);
+  --sh-3: 0 1px 2px rgba(0, 0, 0, 0.32),
+          0 8px 20px rgba(0, 0, 0, 0.30),
+          0 24px 56px rgba(0, 0, 0, 0.28);
+}
+html.dark body {
+  background: var(--paper);
+  color: var(--ink);
+}
+/* The atmospheric mesh layer needs to mute on dark or it competes with
+   the foreground. Atmosphere component picks up these vars. */
+html.dark .atm-mesh { opacity: 0.35; }
+/* Selection: keep on-brand orange highlight in both modes. */
+html.dark ::selection { background: rgba(249, 96, 0, 0.30); color: var(--ink); }
+
 * { box-sizing: border-box; }
 
 @layer base {

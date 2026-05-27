@@ -2,7 +2,7 @@
  * Manager Approvals — editorial light console.
  *
  * Queue spine (left) + focus panel (right) layout.
- * Keyboard: J/K to navigate, Enter to approve, X to reject.
+ * Click to select; click Approve/Reject buttons to act.
  * Preserves both Programs and Legacy API flows.
  */
 import { useState, useEffect, useCallback } from 'react'
@@ -42,10 +42,10 @@ function CountUp({ value, dur }: { value: number; dur?: number }) {
   return <>{useCountUp(value, dur).toLocaleString()}</>
 }
 
-// (KBD helper was used for inline shortcut hints in the hero / actions
-// strip. The i18n migration moved those hints into a single translatable
-// sentence under approvals.shortcuts / approvals.shortcutsLine so the
-// helper is no longer referenced.)
+// Keyboard shortcuts were retired entirely — click-only interactions
+// across the queue. Removing keyboard handlers means no surprise
+// destructive actions (Enter = approve) when a manager focuses an
+// element near the queue.
 
 // ─── Stat block ───────────────────────────────────────────────────────────────
 
@@ -277,29 +277,8 @@ export default function ManagerApprovals() {
 
   // ── Keyboard navigation ─────────────────────────────────────────────────────
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (!selected) return
-      // Don't capture when typing in a textarea
-      if ((e.target as HTMLElement).tagName === 'TEXTAREA') return
-      const ix = filtered.findIndex(x => x.id === selected.id)
-      if (e.key === 'j' || e.key === 'ArrowDown') {
-        e.preventDefault()
-        if (ix < filtered.length - 1) setSelectedId(filtered[ix + 1].id)
-      } else if (e.key === 'k' || e.key === 'ArrowUp') {
-        e.preventDefault()
-        if (ix > 0) setSelectedId(filtered[ix - 1].id)
-      } else if (e.key === 'Enter') {
-        e.preventDefault()
-        decide(selected, 'approve')
-      } else if (e.key === 'x' || e.key === 'X') {
-        e.preventDefault()
-        decide(selected, 'reject')
-      }
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [selected, filtered, decide])
+  // Keyboard shortcuts removed — click-only interactions only. See the
+  // comment block above for the rationale.
 
   const loading = programsLoading && legacyLoading && !programsData && !submissions
 
@@ -334,9 +313,6 @@ export default function ManagerApprovals() {
               lineHeight: 1.1, color: 'var(--ink-2)',
               letterSpacing: '-0.012em', marginBottom: 16,
             }}>{t('approvals.headlineSub')}</div>
-            <p className="hero-lede" style={{ marginTop: 6 }}>
-              {t('approvals.shortcuts')}
-            </p>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, auto)', gap: 24, flexShrink: 0 }}>
             <Stat label={t('approvals.statQueue')}    value={allItems.length}                 sub={t('approvals.statQueueSub',    { count: filtered.length })} />
@@ -596,10 +572,7 @@ export default function ManagerApprovals() {
                 </div>
 
                 {/* Actions */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 20 }}>
-                  <div className="mono mute" style={{ fontSize: 11.5 }}>
-                    {t('approvals.shortcutsLine')}
-                  </div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingTop: 20 }}>
                   <div style={{ display: 'flex', gap: 8 }}>
                     <button
                       className="btn danger lg"

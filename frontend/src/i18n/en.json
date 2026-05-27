@@ -69,7 +69,6 @@
     "eyebrowQueueItems": "QUEUE · {{count}} ITEMS",
     "headlineSuffix": "submissions",
     "headlineSub": "waiting for your review",
-    "shortcuts": "Use J / K to move through the queue, Enter to approve, X to reject.",
     "statQueue": "Queue",
     "statQueueSub": "{{count}} visible",
     "statPrograms": "Programs",
@@ -93,7 +92,6 @@
     "tagUrgent": "URGENT",
     "reviewerNote": "REVIEWER NOTE — OPTIONAL",
     "reviewerPlaceholder": "Context for the field team…",
-    "shortcutsLine": "↵ approve   X reject   J/K next/prev",
     "btnReject": "Reject",
     "btnApprove": "Approve & log"
   },

@@ -69,7 +69,6 @@
     "eyebrowQueueItems": "কিউ · {{count}} টি",
     "headlineSuffix": "জমা",
     "headlineSub": "পর্যালোচনার অপেক্ষায়",
-    "shortcuts": "কিউতে চলাচলের জন্য J / K, অনুমোদনের জন্য Enter, এবং প্রত্যাখ্যানের জন্য X চাপুন।",
     "statQueue": "কিউ",
     "statQueueSub": "{{count}} টি দৃশ্যমান",
     "statPrograms": "প্রোগ্রাম",
@@ -93,7 +92,6 @@
     "tagUrgent": "জরুরি",
     "reviewerNote": "রিভিউয়ার নোট — ঐচ্ছিক",
     "reviewerPlaceholder": "মাঠ দলের জন্য প্রসঙ্গ…",
-    "shortcutsLine": "↵ অনুমোদন   X প্রত্যাখ্যান   J/K পরবর্তী/পূর্ববর্তী",
     "btnReject": "প্রত্যাখ্যান",
     "btnApprove": "অনুমোদন ও লগ"
   },
