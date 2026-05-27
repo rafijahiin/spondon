@@ -16,10 +16,10 @@
  *   - Hidden during capture: the Topbar's controls (refresh / dark /
  *     language / AI / export buttons themselves), via a .no-export class.
  */
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useLocation } from 'react-router-dom'
-import { Download, ChevronDown, FileText, Image as ImageIcon } from 'lucide-react'
+import { Download, ChevronDown, FileText, Image as ImageIcon, AlertCircle, X } from 'lucide-react'
 import { motion, AnimatePresence } from 'motion/react'
 
 // Slug-friendly page name from route.
@@ -40,6 +40,14 @@ export function ExportButton() {
   const { pathname } = useLocation()
   const [open, setOpen] = useState(false)
   const [busy, setBusy] = useState<null | 'pdf' | 'png'>(null)
+  const [errMsg, setErrMsg] = useState<string | null>(null)
+
+  // Auto-dismiss error toast after 6s so it doesn't linger.
+  useEffect(() => {
+    if (!errMsg) return
+    const id = setTimeout(() => setErrMsg(null), 6000)
+    return () => clearTimeout(id)
+  }, [errMsg])
 
   const filenameBase = `spondon-${pageNameFromPath(pathname)}-${todayStamp()}`
 
@@ -58,12 +66,45 @@ export function ExportButton() {
       scale: 1.5,             // crisp without exploding file size
       useCORS: true,
       logging: false,
-      ignoreElements: (el) => el.classList.contains('no-export'),
+      ignoreElements: (el) => {
+        // 1. Topbar controls (export button, language, dark mode, etc.)
+        if (el.classList.contains('no-export')) return true
+        // 2. Leaflet maps — tile images are cross-origin and taint the
+        //    canvas, causing toDataURL/toBlob to throw a SecurityError.
+        //    We skip the whole map container; the export shows a blank
+        //    rectangle where the map was. (A future enhancement could
+        //    swap in a snapshotted PNG of the map first.)
+        if (el.classList.contains('leaflet-container')) return true
+        if (el.classList.contains('leaflet-pane')) return true
+        // 3. iframes (recharts uses inline SVG, no iframes, but defensive).
+        if (el.tagName === 'IFRAME') return true
+        return false
+      },
     })
+  }
+
+  /** Convert any thrown export error into a short, user-readable line. */
+  const friendlyError = (e: unknown): string => {
+    if (e instanceof Error) {
+      const msg = e.message.toLowerCase()
+      if (msg.includes('tainted') || msg.includes('cors') || msg.includes('security')) {
+        return t('export.errCors', {
+          defaultValue: 'Some images on this page block export. The map area will be skipped — please try again.',
+        })
+      }
+      if (msg.includes('oklch') || msg.includes('color') || msg.includes('parse')) {
+        return t('export.errColor', {
+          defaultValue: 'Browser color parsing failed during export. Try toggling dark mode off and retry.',
+        })
+      }
+      return e.message || t('export.errGeneric', { defaultValue: 'Export failed.' })
+    }
+    return t('export.errGeneric', { defaultValue: 'Export failed.' })
   }
 
   const exportPNG = async () => {
     setBusy('png')
+    setErrMsg(null)
     try {
       const canvas = await captureMain()
       const blob = await new Promise<Blob | null>((res) =>
@@ -76,17 +117,18 @@ export function ExportButton() {
       a.download = `${filenameBase}.png`
       a.click()
       URL.revokeObjectURL(url)
+      setOpen(false)
     } catch (e) {
       console.error('PNG export failed', e)
-      alert(t('export.error', { defaultValue: 'Export failed. See console for details.' }))
+      setErrMsg(friendlyError(e))
     } finally {
       setBusy(null)
-      setOpen(false)
     }
   }
 
   const exportPDF = async () => {
     setBusy('pdf')
+    setErrMsg(null)
     try {
       const { jsPDF } = await import('jspdf')
       const canvas = await captureMain()
@@ -95,27 +137,24 @@ export function ExportButton() {
       const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' })
       const pageW = pdf.internal.pageSize.getWidth()
       const pageH = pdf.internal.pageSize.getHeight()
-      // Scale image proportionally to page width with a small margin.
       const margin = 8
       const imgW = pageW - margin * 2
       const imgH = (canvas.height * imgW) / canvas.width
       if (imgH <= pageH - margin * 2) {
-        // Fits on one page.
         pdf.addImage(imgData, 'PNG', margin, margin, imgW, imgH)
       } else {
-        // Tall content — scale down to fit a single page.
         const scaled = pageH - margin * 2
         const scaledW = (canvas.width * scaled) / canvas.height
         const offsetX = (pageW - scaledW) / 2
         pdf.addImage(imgData, 'PNG', offsetX, margin, scaledW, scaled)
       }
       pdf.save(`${filenameBase}.pdf`)
+      setOpen(false)
     } catch (e) {
       console.error('PDF export failed', e)
-      alert(t('export.error', { defaultValue: 'Export failed. See console for details.' }))
+      setErrMsg(friendlyError(e))
     } finally {
       setBusy(null)
-      setOpen(false)
     }
   }
 
@@ -182,6 +221,51 @@ export function ExportButton() {
               />
             </motion.div>
           </>
+        )}
+      </AnimatePresence>
+
+      {/* Inline error toast — replaces the prior generic alert() with
+          an on-brand, dismissible card carrying the actual reason. */}
+      <AnimatePresence mode="wait">
+        {errMsg && (
+          <motion.div
+            key="export-err"
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0, transition: { duration: 0.16 } }}
+            exit={{ opacity: 0, y: -4, transition: { duration: 0.12 } }}
+            role="alert"
+            aria-live="polite"
+            style={{
+              position: 'absolute', top: 'calc(100% + 6px)', right: 0,
+              width: 320, padding: '12px 14px', borderRadius: 10,
+              background: 'rgba(241, 15, 69, 0.06)',
+              border: '1px solid rgba(241, 15, 69, 0.20)',
+              boxShadow: 'var(--sh-2)',
+              zIndex: 110,
+              display: 'flex', alignItems: 'flex-start', gap: 10,
+              fontSize: 12.5, color: 'var(--ink)',
+              lineHeight: 1.45,
+            }}
+          >
+            <AlertCircle size={15} style={{ color: '#9A1131', flexShrink: 0, marginTop: 1 }} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontWeight: 600, marginBottom: 2 }}>
+                {t('export.errTitle', { defaultValue: 'Export failed' })}
+              </div>
+              <div style={{ color: 'var(--ink-3)' }}>{errMsg}</div>
+            </div>
+            <button
+              onClick={() => setErrMsg(null)}
+              aria-label={t('export.dismissError', { defaultValue: 'Dismiss' })}
+              style={{
+                background: 'transparent', border: 'none',
+                color: 'var(--ink-3)', cursor: 'pointer',
+                padding: 0, lineHeight: 0,
+              }}
+            >
+              <X size={14} />
+            </button>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>
