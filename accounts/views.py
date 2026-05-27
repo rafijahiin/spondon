@@ -7,7 +7,7 @@ from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 
 from .models import User
-from .permissions import IsSuperAdminOrDeveloper
+from .permissions import IsDeveloperOnly
 from .serializers import (
     AdminUserSerializer,
     LoginSerializer,
@@ -64,9 +64,13 @@ class PasswordChangeView(APIView):
 
 
 class UserViewSet(ModelViewSet):
-    """User management — super admins and developers."""
+    """User management — DEVELOPER only.
+
+    Per IDMS handoff (audit FIX 1.4): supervisors retain all other access
+    but cannot manage users. Only the developer (Rafi) can create / modify
+    / deactivate user accounts."""
     queryset = User.objects.all().order_by('organisation', 'full_name')
-    permission_classes = [IsSuperAdminOrDeveloper]
+    permission_classes = [IsDeveloperOnly]
 
     def get_serializer_class(self):
         if self.action == 'create':

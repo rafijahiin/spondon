@@ -135,11 +135,16 @@ class CoordMeeting(SubmissionBase):
     CBO = 'CBO'
     INTERNAL = 'internal'
     MULTI = 'multi'
+    DAY_OBSERVANCE = 'day_observance'
     MEETING_TYPE_CHOICES = [
         (GOB, 'GOB / Health Staff'),
         (CBO, 'CBO / Community Network'),
         (INTERNAL, 'Internal'),
         (MULTI, 'Multi-Stakeholder'),
+        # Audit FIX 12.4 — covers Bandhu indicator 2.6 "Support day observances"
+        # (e.g. World AIDS Day, Human Rights Day, Hijra Pride). Counted toward
+        # the 2-event annual target.
+        (DAY_OBSERVANCE, 'Day Observance / Awareness Event'),
     ]
 
     organisation = models.CharField(max_length=20, choices=ORG_CHOICES, db_index=True)

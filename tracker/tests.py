@@ -75,10 +75,10 @@ class MonthlyTargetViewTest(TestCase):
     def setUp(self):
         self.client = APIClient()
         self.manager = make_user('pm@phd.org', Organisation.PHD, Role.MANAGER)
-        self.super_admin = make_user('sa@ciprb.org', Organisation.CIPRB, Role.SUPERVISOR)
+        self.supervisor = make_user('sa@ciprb.org', Organisation.CIPRB, Role.SUPERVISOR)
 
-    def test_super_admin_can_create_target(self):
-        self.client.force_authenticate(user=self.super_admin)
+    def test_supervisor_can_create_target(self):
+        self.client.force_authenticate(user=self.supervisor)
         resp = self.client.post(TARGETS_URL, {
             'partner': 'PHD',
             'form_type': FormType.MPDSR,
@@ -98,7 +98,7 @@ class MonthlyTargetViewTest(TestCase):
         self.assertEqual(resp.status_code, 403)
 
     def test_invalid_month_rejected(self):
-        self.client.force_authenticate(user=self.super_admin)
+        self.client.force_authenticate(user=self.supervisor)
         resp = self.client.post(TARGETS_URL, {
             'partner': 'PHD', 'form_type': FormType.MPDSR,
             'year': 2025, 'month': 13, 'target': 50,
@@ -175,3 +175,47 @@ class ForecastViewTest(TestCase):
     def test_unauthenticated_returns_403(self):
         resp = self.client.get(FORECAST_URL)
         self.assertEqual(resp.status_code, 403)
+
+
+# ---------------------------------------------------------------------------
+# Progress endpoint — audit FIX 13.1 (CIPRB included) + 13.3 (exclusives)
+# ---------------------------------------------------------------------------
+
+PROGRESS_URL = '/api/tracker/progress/'
+
+
+class ProgressViewExclusiveTest(TestCase):
+    """Confirms the tracker default org list contains all three partners
+    (FIX 13.1) and that partner-exclusive form types (Autoclave → PHD only,
+    MPDSR/Fistula → CIPRB only) are filtered (FIX 13.3)."""
+
+    def setUp(self):
+        self.client = APIClient()
+        self.supervisor = make_user('sup@unfpa.org', Organisation.UNFPA, Role.SUPERVISOR)
+
+    def test_default_orgs_include_ciprb(self):
+        """No ?partner query → response must include CIPRB rows."""
+        self.client.force_authenticate(user=self.supervisor)
+        resp = self.client.get(PROGRESS_URL)
+        self.assertEqual(resp.status_code, 200)
+        rows = resp.data['results']
+        partners = {row['partner'] for row in rows}
+        self.assertIn('CIPRB', partners)
+        self.assertIn('PHD', partners)
+        self.assertIn('Bandhu', partners)
+
+    def test_autoclave_excluded_for_non_phd(self):
+        """Autoclave rows must not appear for CIPRB or Bandhu (PHD-only form)."""
+        self.client.force_authenticate(user=self.supervisor)
+        resp = self.client.get(PROGRESS_URL)
+        for row in resp.data['results']:
+            if row.get('form_type') == 'autoclave_log':
+                self.assertEqual(row['partner'], 'PHD')
+
+    def test_mpdsr_excluded_for_phd_and_bandhu(self):
+        """MPDSR rows must only appear for CIPRB."""
+        self.client.force_authenticate(user=self.supervisor)
+        resp = self.client.get(PROGRESS_URL)
+        for row in resp.data['results']:
+            if row.get('form_type') == 'mpdsr':
+                self.assertEqual(row['partner'], 'CIPRB')

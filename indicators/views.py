@@ -158,3 +158,105 @@ class SingleIndicatorProgressView(views.APIView):
         result = get_indicator_progress(org, code, period_start, period_end)
         result['organisation'] = org
         return Response(result)
+
+
+class IndicatorRecordsView(views.APIView):
+    """
+    GET /api/indicators/records/?partner=PHD&activity_code=1.1
+
+    Per-indicator record drill-down for the /records page (audit FIX 6.5).
+    Returns approved records that contribute to this indicator's achievement
+    count, paginated and ordered newest-first.
+
+    Forbidden for field_staff, focal, and ciprb_baseline (UI guards the route
+    too — defence-in-depth). Org-scoped users see only own partner's data.
+
+    Until KoboFormMapping → IndicatorTarget links are seeded at the workshop,
+    the underlying compute function may not expose a record-level queryset.
+    In that case we return an empty list + a `module_pending` flag so the UI
+    can render a "wired at workshop" notice instead of an error.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        u = request.user
+        # Defence-in-depth — field staff / focal / baseline get 403.
+        from accounts.models import Role
+        if u.role in (Role.FIELD_STAFF, Role.FOCAL, Role.CIPRB_BASELINE):
+            return Response(
+                {'detail': 'Forbidden — your role does not have record-list access.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        partner_code = request.query_params.get('partner', '').strip()
+        activity_code = request.query_params.get('activity_code', '').strip()
+        if not partner_code or not activity_code:
+            return Response(
+                {'detail': 'partner and activity_code query params are required.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Org isolation — non-cross-org users can only query their own partner.
+        if not u.can_read_other_orgs and partner_code != u.organisation:
+            return Response(
+                {'detail': 'Forbidden — cannot query another partner.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        # Look up the indicator definition.
+        try:
+            target = (
+                IndicatorTarget.objects
+                .select_related('partner', 'source_form')
+                .get(partner__code=partner_code, activity_code=activity_code)
+            )
+        except IndicatorTarget.DoesNotExist:
+            return Response(
+                {'detail': f'No indicator at {partner_code}/{activity_code}.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        # Module-pending = no compute function wired yet, or source_form
+        # not set. Return empty list with metadata so UI can show the
+        # "wired at workshop" state instead of erroring.
+        from .service import _REGISTRIES
+        registry, _org_only = _REGISTRIES.get(partner_code, ({}, set()))
+        has_compute = activity_code in registry
+        if not has_compute:
+            return Response({
+                'partner':         partner_code,
+                'activity_code':   activity_code,
+                'activity_label':  target.activity_label,
+                'indicator_label': target.indicator_label,
+                'target_value':    target.target_value,
+                'unit':            target.unit,
+                'module_pending':  True,
+                'count':           0,
+                'results':         [],
+            })
+
+        # Compute function exists — but the unified record-list contract isn't
+        # standardised across all activity codes yet. For Step 8 we return the
+        # achievement total (computed via the existing compute function) and
+        # an empty `results` array with `awaiting_workshop_wiring=True`. The
+        # workshop will confirm which model rows roll up into each indicator;
+        # at that point a per-activity-code records adapter can be wired here
+        # without a new endpoint.
+        result = get_indicator_progress(
+            partner_code, activity_code,
+            DEFAULT_PERIOD_START, DEFAULT_PERIOD_END,
+        )
+        return Response({
+            'partner':                  partner_code,
+            'activity_code':            activity_code,
+            'activity_label':           target.activity_label,
+            'indicator_label':          target.indicator_label,
+            'target_value':             target.target_value,
+            'unit':                     target.unit,
+            'achievement':              result.get('achievement', 0),
+            'percentage':               result.get('percentage'),
+            'module_pending':           False,
+            'awaiting_workshop_wiring': True,
+            'count':                    0,
+            'results':                  [],
+        })

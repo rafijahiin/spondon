@@ -1,5 +1,6 @@
 "use client"
 import { motion, useReducedMotion } from 'motion/react'
+import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { cn } from '@/utils/cn'
 import { bnIndicatorLabel, bnUnit } from '@/data/indicatorLabelsBn'
@@ -38,8 +39,30 @@ function fmt(n: number, unit: string): string {
 
 export function IndicatorCard({ indicator, partner, delay = 0 }: Props) {
   const reduce = useReducedMotion()
+  const navigate = useNavigate()
   const { t, i18n } = useTranslation()
   const { target_value, achievement, percentage, unlinked } = indicator
+
+  // Audit FIX 6.5 — click navigates to the record drill-down for this
+  // (partner, activity_code) pair. Module-pending rows aren't navigable
+  // (no records exist yet for unlinked indicators).
+  const handleClick = () => {
+    if (unlinked) return
+    const p = partner ?? (indicator as { organisation?: string }).organisation
+    if (!p) return
+    const params = new URLSearchParams({
+      partner: p,
+      activity_code: indicator.activity_code,
+    })
+    navigate(`/records?${params.toString()}`)
+  }
+  const interactive = Boolean(!unlinked && (partner ?? (indicator as { organisation?: string }).organisation))
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      handleClick()
+    }
+  }
 
   // Bengali overlay — falls back to the DB English label when no
   // Bengali variant exists or when the language is English.
@@ -63,11 +86,17 @@ export function IndicatorCard({ indicator, partner, delay = 0 }: Props) {
       initial={{ opacity: 0, y: reduce ? 0 : 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, delay: reduce ? 0 : delay, ease: [0.22, 1, 0.36, 1] }}
+      role={interactive ? 'button' : undefined}
+      tabIndex={interactive ? 0 : undefined}
+      onClick={interactive ? handleClick : undefined}
+      onKeyDown={interactive ? onKeyDown : undefined}
+      aria-label={interactive ? `View records for ${displayLabel}` : undefined}
       className={cn(
         'flex items-center gap-4 rounded-xl border p-4 shadow-sm transition-colors',
         'bg-white dark:bg-gray-800',
         'border-gray-100 dark:border-gray-700',
         'hover:border-unfpa-blue/30 dark:hover:border-unfpa-blue/40',
+        interactive && 'cursor-pointer focus-visible:outline-2 focus-visible:outline-unfpa-blue',
       )}
     >
       {/* Mini progress ring */}

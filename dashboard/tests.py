@@ -251,17 +251,17 @@ class PartnerSummaryTest(TestCase):
     def setUp(self):
         self.client = APIClient()
         self.phd_mgr = make_user('pm@phd.org', Organisation.PHD, Role.MANAGER)
-        self.super_admin = make_user('sa@ciprb.org', Organisation.CIPRB, Role.SUPERVISOR)
+        self.supervisor = make_user('sa@ciprb.org', Organisation.CIPRB, Role.SUPERVISOR)
 
     def test_manager_cannot_access(self):
         self.client.force_authenticate(user=self.phd_mgr)
         resp = self.client.get(f'{BASE_URL}partner-summary/')
         self.assertEqual(resp.status_code, 403)
 
-    def test_super_admin_sees_both_partners(self):
+    def test_supervisor_sees_both_partners(self):
         make_submission('PHD', FormType.MPDSR, kobo_id='ps1')
         make_submission('Bandhu', FormType.MPDSR, kobo_id='ps2')
-        self.client.force_authenticate(user=self.super_admin)
+        self.client.force_authenticate(user=self.supervisor)
         resp = self.client.get(f'{BASE_URL}partner-summary/')
         self.assertEqual(resp.status_code, 200)
         self.assertIn('PHD', resp.data)

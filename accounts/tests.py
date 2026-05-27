@@ -30,7 +30,7 @@ class UserModelTest(TestCase):
     def test_email_is_username_field(self):
         self.assertEqual(User.USERNAME_FIELD, 'email')
 
-    def test_super_admin_can_see_all_orgs(self):
+    def test_supervisor_can_see_all_orgs(self):
         user = make_user('a@ciprb.org', Organisation.CIPRB, Role.SUPERVISOR)
         self.assertTrue(user.can_see_all_orgs)
 
@@ -146,8 +146,8 @@ class LoginViewTest(TestCase):
         r = self.client.post(self.url, {'email': 'manager@phd.org'})
         self.assertEqual(r.status_code, 400)
 
-    def test_login_super_admin_no_2fa(self):
-        """TOTP was removed — super admins log in like everyone else."""
+    def test_login_supervisor_no_2fa(self):
+        """TOTP was removed — supervisors log in like everyone else."""
         make_user('admin@ciprb.org', Organisation.CIPRB, Role.SUPERVISOR)
         r = self.client.post(self.url, {'email': 'admin@ciprb.org', 'password': 'testpass123'})
         self.assertEqual(r.status_code, 200)
@@ -260,16 +260,37 @@ class OrgMiddlewareTest(TestCase):
 
 
 # ---------------------------------------------------------------------------
-# User management (super admin only)
+# User management (developer-only — audit FIX 1.4)
 # ---------------------------------------------------------------------------
 
 class UserViewSetTest(TestCase):
     def setUp(self):
         self.client = APIClient()
+        self.developer = make_user('dev@ciprb.org', Organisation.CIPRB, Role.DEVELOPER)
+        self.supervisor = make_user('sup@unfpa.org', Organisation.UNFPA, Role.SUPERVISOR)
+        self.org_lead = make_user('lead@ciprb.org', Organisation.CIPRB, Role.ORG_LEAD)
         self.manager = make_user('m@phd.org', Organisation.PHD, Role.MANAGER)
 
     def test_manager_cannot_list_users(self):
         self.client.force_authenticate(user=self.manager)
         r = self.client.get('/api/accounts/users/')
-        # 403 — IsSuperAdmin rejects non-super-admin
+        # 403 — IsDeveloperOnly rejects non-developer (audit FIX 1.4)
         self.assertEqual(r.status_code, 403)
+
+    def test_supervisor_cannot_list_users(self):
+        """Audit FIX 1.4 — supervisor no longer has user-mgmt access."""
+        self.client.force_authenticate(user=self.supervisor)
+        r = self.client.get('/api/accounts/users/')
+        self.assertEqual(r.status_code, 403)
+
+    def test_org_lead_cannot_list_users(self):
+        """Audit FIX 1.4 — org_lead never had user-mgmt access, double-check."""
+        self.client.force_authenticate(user=self.org_lead)
+        r = self.client.get('/api/accounts/users/')
+        self.assertEqual(r.status_code, 403)
+
+    def test_developer_can_list_users(self):
+        """Audit FIX 1.4 — developer is the only role that manages users."""
+        self.client.force_authenticate(user=self.developer)
+        r = self.client.get('/api/accounts/users/')
+        self.assertEqual(r.status_code, 200)

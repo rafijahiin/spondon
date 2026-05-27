@@ -12,7 +12,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
-from accounts.permissions import IsSuperAdminOrManager, OrgFilterMixin
+from accounts.permissions import IsSupervisorOrManager, OrgFilterMixin
 from .models import FormType, KoboSubmission, SubmissionStatus
 from .serializers import KoboSubmissionDetailSerializer, KoboSubmissionSerializer, RejectSerializer
 from .telegram import send_approval_confirmation, send_rejection_notification, send_submission_alert
@@ -145,10 +145,12 @@ def kobo_webhook(request):
             status=400,
         )
 
-    # Surveillance forms (MPDSR, Fistula, Baseline) are auto-approved on arrival:
-    # they bypass the manager approval queue and go straight to the tracker pages
-    # via the post_save signal in submissions/signals.py.
-    _AUTO_APPROVE = {FormType.MPDSR, FormType.FISTULA, FormType.BASELINE}
+    # Audit FIX 2.7 — only BASELINE auto-approves (ciprb_baseline self-approves
+    # per spec). MPDSR + Fistula now go through the same PENDING → manager
+    # approval workflow as every other field record. Auto-approval here was
+    # overbroad and bypassed the supervisor approval queue for surveillance
+    # data that needs review before reaching the tracker.
+    _AUTO_APPROVE = {FormType.BASELINE}
     initial_status = SubmissionStatus.APPROVED if form_type in _AUTO_APPROVE else SubmissionStatus.PENDING
 
     submission = KoboSubmission.objects.create(
@@ -187,7 +189,7 @@ def kobo_webhook(request):
 
 class KoboSubmissionViewSet(OrgFilterMixin, ModelViewSet):
     queryset = KoboSubmission.objects.select_related('reviewed_by').all()
-    permission_classes = [IsSuperAdminOrManager]
+    permission_classes = [IsSupervisorOrManager]
     http_method_names = ['get', 'head', 'options', 'post']
     org_field = 'partner'
 

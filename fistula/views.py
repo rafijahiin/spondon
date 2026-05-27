@@ -4,14 +4,14 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
-from accounts.permissions import IsSuperAdminOrManager, OrgFilterMixin
+from accounts.permissions import IsSupervisorOrManager, OrgFilterMixin
 from .models import FistulaCampaign
 from .serializers import FistulaCampaignSerializer
 
 
 class FistulaCampaignViewSet(OrgFilterMixin, ModelViewSet):
     queryset = FistulaCampaign.objects.select_related('submission', 'created_by').all()
-    permission_classes = [IsSuperAdminOrManager]
+    permission_classes = [IsSupervisorOrManager]
     http_method_names = ['get', 'head', 'options']
     org_field = 'partner'
 

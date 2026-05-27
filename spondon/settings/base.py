@@ -167,5 +167,13 @@ KOBO_ASSET_UID_BASELINE = os.environ.get('KOBO_ASSET_UID_BASELINE', 'placeholder
 KOBO_ASSET_UID_CLIENT_REG = os.environ.get('KOBO_ASSET_UID_CLIENT_REG', '')
 KOBO_SERVER_URL = os.environ.get('KOBO_SERVER_URL', 'https://kobo.humanitarianresponse.info')
 
+# KOBO_API_TOKEN: reserved for future pull-based sync. The current
+# IDMS architecture uses webhook-push via KOBO_ASSET_UID_* vars — see
+# submissions/views.py and programs/webhook.py for the ingestion path.
+# This setting is read so deployments can stage the token before any
+# pull-sync feature lands, but nothing in the current codebase invokes
+# it. Audit FIX 16.3.
+KOBO_API_TOKEN = os.environ.get('KOBO_API_TOKEN', '')
+
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'mediafiles'

@@ -9,7 +9,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
-from accounts.permissions import IsSuperAdminOrManager
+from accounts.permissions import IsSupervisorOrManager
 from submissions.models import FormType
 from .anomaly import submission_anomalies_for_partner
 from .ai_narrative import generate_narrative, generate_newsletter_narrative
@@ -109,7 +109,7 @@ def _generate_file(
 class ReportViewSet(ModelViewSet):
     queryset = Report.objects.all()
     serializer_class = ReportSerializer
-    permission_classes = [IsSuperAdminOrManager]
+    permission_classes = [IsSupervisorOrManager]
     http_method_names = ['get', 'head', 'options', 'post', 'delete']
 
     def get_queryset(self):

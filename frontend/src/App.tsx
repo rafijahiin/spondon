@@ -17,6 +17,8 @@ const BaselineEndline = lazy(() => import('@/pages/BaselineEndline'))
 const TrainingLog = lazy(() => import('@/pages/TrainingLog'))
 const ProgressTracker = lazy(() => import('@/pages/ProgressTracker'))
 const AdminPanel = lazy(() => import('@/pages/AdminPanel'))
+const TargetConfig = lazy(() => import('@/pages/TargetConfig'))
+const RecordList = lazy(() => import('@/pages/RecordList'))
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth()
@@ -29,6 +31,29 @@ function RequireSupervisorOrDeveloper({ children }: { children: React.ReactNode 
   // Admin Panel = user management. Gated to system-level roles only.
   const { user } = useAuth()
   if (!user || !isAdminRole(user.role)) {
+    return <Navigate to="/" replace />
+  }
+  return <>{children}</>
+}
+
+/** Guard for the Target Config screen (audit FIX 4.1 restored standalone
+ *  route). Accepts developer + supervisor + org_lead. Other roles bounce
+ *  to home. Server enforces the same rules on the API (CanConfigureTargets). */
+function RequireTargetConfigAccess({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth()
+  if (!user) return <Navigate to="/login" replace />
+  if (!['developer', 'supervisor', 'org_lead'].includes(user.role)) {
+    return <Navigate to="/" replace />
+  }
+  return <>{children}</>
+}
+
+/** Guard for the per-indicator record drill-down (audit FIX 6.5).
+ *  Field staff and focal are denied — they don't browse approved aggregates. */
+function RequireRecordListAccess({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth()
+  if (!user) return <Navigate to="/login" replace />
+  if (['field_staff', 'focal', 'ciprb_baseline'].includes(user.role)) {
     return <Navigate to="/" replace />
   }
   return <>{children}</>
@@ -111,8 +136,26 @@ export default function App() {
                 </RequireSupervisorOrDeveloper>
               }
             />
-            {/* Legacy /admin/targets URL — redirect to the merged tracker. */}
-            <Route path="admin/targets" element={<Navigate to="/tracker" replace />} />
+            {/* Standalone Target Config route (audit FIX 4.1 restored — the
+                merged tracker tab also routes here; both paths render the
+                same screen). */}
+            <Route
+              path="admin/targets"
+              element={
+                <RequireTargetConfigAccess>
+                  <TargetConfig />
+                </RequireTargetConfigAccess>
+              }
+            />
+            {/* Record drill-down per indicator (audit FIX 6.5). */}
+            <Route
+              path="records"
+              element={
+                <RequireRecordListAccess>
+                  <RecordList />
+                </RequireRecordListAccess>
+              }
+            />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

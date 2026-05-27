@@ -107,14 +107,14 @@ const NAV_GROUPS: NavGroup[] = [
     id: 'admin',
     heading: 'Admin',
     headingBn: 'অ্যাডমিন',
-    roles: ['super_admin', 'developer'],
+    roles: ['supervisor', 'developer'],
     items: [
       {
         to: '/admin',
         label: 'Admin Panel',
         labelBn: 'অ্যাডমিন',
         icon: <Settings className="h-4 w-4" />,
-        roles: ['super_admin', 'developer'],
+        roles: ['supervisor', 'developer'],
       },
     ],
   },

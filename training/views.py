@@ -7,7 +7,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 
-from accounts.permissions import IsSuperAdminOrManager, OrgFilterMixin
+from accounts.permissions import IsSupervisorOrManager, OrgFilterMixin
 from .models import TrainingSession
 from .serializers import (
     TrainingAttendanceSerializer,
@@ -18,7 +18,7 @@ from .serializers import (
 
 class TrainingSessionViewSet(OrgFilterMixin, ModelViewSet):
     queryset = TrainingSession.objects.prefetch_related('attendances').all()
-    permission_classes = [IsSuperAdminOrManager]
+    permission_classes = [IsSupervisorOrManager]
     org_field = 'partner'
 
     def get_queryset(self):
@@ -67,7 +67,7 @@ class TrainingSummaryPDFView(APIView):
     GET /api/training/summary-pdf/
     Downloads a PDF summary table of all training sessions visible to this user.
     """
-    permission_classes = [IsSuperAdminOrManager]
+    permission_classes = [IsSupervisorOrManager]
 
     def get(self, request):
         from reportlab.lib import colors

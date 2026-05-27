@@ -7,7 +7,7 @@ from django.utils import timezone
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from accounts.permissions import IsSuperAdmin, IsSuperAdminOrManager
+from accounts.permissions import IsSupervisorOrOrgLead, IsSupervisorOrManager
 from submissions.models import FormType, KoboSubmission, SubmissionStatus
 from .utils import allowed_partners, current_month_bounds, previous_month_bounds
 
@@ -50,7 +50,7 @@ class KPIView(APIView):
     Returns programme-wide KPI card data for the current month.
     Refreshed by the frontend every 30 seconds.
     """
-    permission_classes = [IsSuperAdminOrManager]
+    permission_classes = [IsSupervisorOrManager]
 
     def get(self, request):
         now = timezone.now()
@@ -113,7 +113,7 @@ class MonthlyBreakdownView(APIView):
     GET /api/dashboard/monthly/?year=2024
     Returns month-by-month approved submission counts split by form type.
     """
-    permission_classes = [IsSuperAdminOrManager]
+    permission_classes = [IsSupervisorOrManager]
 
     def get(self, request):
         try:
@@ -227,7 +227,7 @@ class ActivityFeedView(APIView):
     Most recent approved submissions for the live feed.
     Merges legacy KoboSubmission records with new programs model submissions.
     """
-    permission_classes = [IsSuperAdminOrManager]
+    permission_classes = [IsSupervisorOrManager]
 
     def get(self, request):
         try:
@@ -282,7 +282,7 @@ class CentresView(APIView):
     GET /api/dashboard/centres/
     Approved submissions this month grouped by district, ranked by count.
     """
-    permission_classes = [IsSuperAdminOrManager]
+    permission_classes = [IsSupervisorOrManager]
 
     def get(self, request):
         month_start, month_end = current_month_bounds()
@@ -324,7 +324,7 @@ class PartnerSummaryView(APIView):
     GET /api/dashboard/partner-summary/
     Side-by-side PHD vs Bandhu KPIs — super admin / developer only.
     """
-    permission_classes = [IsSuperAdmin]
+    permission_classes = [IsSupervisorOrOrgLead]
 
     def get(self, request):
         month_start, month_end = current_month_bounds()
@@ -365,7 +365,7 @@ class MapDataView(APIView):
     Lat/lng of recent approved submissions for the animated map.
     Only returns submissions with valid coordinates.
     """
-    permission_classes = [IsSuperAdminOrManager]
+    permission_classes = [IsSupervisorOrManager]
 
     def get(self, request):
         points = (
@@ -406,7 +406,7 @@ class PartnerKPIsView(APIView):
     GET /api/dashboard/partner-kpis/?partner=PHD
     Single-partner KPI card data. Mirrors KPIView but scoped to one partner.
     """
-    permission_classes = [IsSuperAdminOrManager]
+    permission_classes = [IsSupervisorOrManager]
 
     def get(self, request):
         partner = request.query_params.get('partner', '')
@@ -444,7 +444,7 @@ class DashboardAlertsView(APIView):
     GET /api/dashboard/alerts/?partner=PHD&acknowledged=false
     Surfaces tracker alerts to dashboard pages without requiring a separate API call.
     """
-    permission_classes = [IsSuperAdminOrManager]
+    permission_classes = [IsSupervisorOrManager]
 
     def get(self, request):
         from tracker.models import Alert
@@ -476,7 +476,7 @@ class OrgSummaryView(APIView):
     AI-generated weekly narrative summary for the partner's OrgDashboard page.
     Falls back to a plain-text summary when Groq is not configured.
     """
-    permission_classes = [IsSuperAdminOrManager]
+    permission_classes = [IsSupervisorOrManager]
 
     def get(self, request):
         partner = request.query_params.get('partner', '')
@@ -535,7 +535,7 @@ class ProgrammeSummaryView(APIView):
     three partners (CIPRB + Bandhu + PHD) without them having to open
     each org page in turn. Permissions: developer, supervisor, org_lead.
     """
-    permission_classes = [IsSuperAdminOrManager]
+    permission_classes = [IsSupervisorOrManager]
 
     def get(self, request):
         # Only cross-org roles get the programme-wide view. Single-org
@@ -611,7 +611,7 @@ class ProgramsSummaryView(APIView):
     Returns per-form-type counts from programs models for one partner/month,
     plus category totals, a 6-month trend, and previous-month comparison.
     """
-    permission_classes = [IsSuperAdminOrManager]
+    permission_classes = [IsSupervisorOrManager]
 
     def get(self, request):
         from tracker.programs_query import PROGRAMS_REGISTRY, ORG_FORM_TYPES, count_programs
@@ -719,7 +719,7 @@ class ChatView(APIView):
     Gathers live programme data as context and answers natural-language
     questions via Groq / LLaMA 3.3 70B.
     """
-    permission_classes = [IsSuperAdminOrManager]
+    permission_classes = [IsSupervisorOrManager]
 
     def post(self, request):
         question = (request.data.get('question') or '').strip()

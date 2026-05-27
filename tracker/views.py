@@ -6,7 +6,7 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.views import APIView
 
-from accounts.permissions import IsSuperAdmin, IsSuperAdminOrManager, OrgFilterMixin
+from accounts.permissions import IsSupervisorOrOrgLead, IsSupervisorOrManager, OrgFilterMixin
 from submissions.models import FormType
 from .forecasting import attainment_percent, linear_forecast
 from .models import Alert, MonthlyTarget
@@ -20,10 +20,10 @@ from .programs_query import (
 
 
 class MonthlyTargetViewSet(ModelViewSet):
-    """CRUD for monthly targets — super admins only."""
+    """CRUD for monthly targets — supervisors + org leads."""
     queryset = MonthlyTarget.objects.all()
     serializer_class = MonthlyTargetSerializer
-    permission_classes = [IsSuperAdmin]
+    permission_classes = [IsSupervisorOrOrgLead]
 
     def get_queryset(self):
         qs = super().get_queryset()
@@ -49,7 +49,7 @@ class AlertViewSet(OrgFilterMixin, ModelViewSet):
     """List and acknowledge alerts."""
     queryset = Alert.objects.all()
     serializer_class = AlertSerializer
-    permission_classes = [IsSuperAdminOrManager]
+    permission_classes = [IsSupervisorOrManager]
     http_method_names = ['get', 'head', 'options', 'patch', 'post']
     org_field = 'partner'
 
@@ -81,7 +81,7 @@ class ProgressView(APIView):
     plus gap detection for the last 48 hours.
     Covers both programs models and legacy KoboSubmission.
     """
-    permission_classes = [IsSuperAdminOrManager]
+    permission_classes = [IsSupervisorOrManager]
 
     def get(self, request):
         now = timezone.now()
@@ -106,13 +106,38 @@ class ProgressView(APIView):
         # Build lookup: (partner, form_type) → target value
         target_map = {(t.partner, t.form_type): t.target for t in targets_qs}
 
-        # Determine which (partner, form_type) combinations to report
-        orgs = [partner_filter] if partner_filter else ['PHD', 'Bandhu']
+        # Determine which (partner, form_type) combinations to report.
+        # Audit FIX 13.1 — CIPRB added to default org list (was PHD+Bandhu only).
+        orgs = [partner_filter] if partner_filter else ['PHD', 'Bandhu', 'CIPRB']
+
+        # Audit FIX 13.3 — partner-exclusive form filtering. Keys NOT listed
+        # here are assumed available to all three partners. Values are the
+        # allowed-org tuples for that form_type.
+        EXCLUSIVE_TO: dict[str, tuple[str, ...]] = {
+            # PHD-only operations
+            'autoclave_log':            ('PHD',),
+            'incinerator_log':          ('PHD',),
+            'antenatal_card':           ('PHD',),
+            'mobile_health_camp':       ('PHD',),
+            # CIPRB-only surveillance
+            'mpdsr':                    ('CIPRB',),
+            'fistula':                  ('CIPRB',),
+            'fistula_corner':           ('CIPRB',),
+            'fistula_campaign':         ('CIPRB',),
+            'baseline':                 ('CIPRB',),
+        }
+
+        def _form_allowed_for(form_type_key: str, org: str) -> bool:
+            allowed = EXCLUSIVE_TO.get(form_type_key)
+            return True if allowed is None else (org in allowed)
+
         rows = []
 
         for form_type_key, reg in PROGRAMS_REGISTRY.items():
             model_name, label_en, label_bn, category = reg
             for org in orgs:
+                if not _form_allowed_for(form_type_key, org):
+                    continue
                 target   = target_map.get((org, form_type_key))
                 actual   = count_programs(form_type_key, org, year, month)
                 has_gap  = not has_recent_programs(form_type_key, org, cutoff_48h)
@@ -147,6 +172,8 @@ class ProgressView(APIView):
         # Legacy form types with targets
         for form_type_key, (label_en, label_bn, category) in LEGACY_REGISTRY.items():
             for org in orgs:
+                if not _form_allowed_for(form_type_key, org):
+                    continue
                 target   = target_map.get((org, form_type_key))
                 actual   = count_legacy(form_type_key, org, year, month)
                 has_gap  = not has_recent_legacy(form_type_key, org, cutoff_48h)
@@ -216,7 +243,7 @@ class AnomaliesView(APIView):
           count: int,
           generated_at: ISO datetime }
     """
-    permission_classes = [IsSuperAdminOrManager]
+    permission_classes = [IsSupervisorOrManager]
 
     def get(self, request):
         from .anomalies import detect_all
@@ -241,7 +268,7 @@ class ForecastView(APIView):
     GET /api/tracker/forecast/?partner=PHD&form_type=mpdsr&periods=3
     Returns last 6 months actual counts + N-period linear-trend forecast.
     """
-    permission_classes = [IsSuperAdminOrManager]
+    permission_classes = [IsSupervisorOrManager]
 
     def get(self, request):
 
@@ -297,7 +324,7 @@ class ComplianceView(APIView):
     Legacy endpoint: GET /api/tracker/compliance/
     Kept for backward compat — use /progress/ for the full tracker view.
     """
-    permission_classes = [IsSuperAdminOrManager]
+    permission_classes = [IsSupervisorOrManager]
 
     def get(self, request):
         now = timezone.now()

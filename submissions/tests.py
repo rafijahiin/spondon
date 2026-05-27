@@ -58,10 +58,9 @@ class WebhookIngestTest(TestCase):
 
     @patch('submissions.views.send_submission_alert')
     def test_valid_payload_creates_submission(self, mock_tg):
-        # MPDSR, FISTULA, BASELINE are surveillance forms — webhook
-        # auto-approves them on arrival (they bypass the manager queue
-        # via the _AUTO_APPROVE set in views.py). Activity-form arrivals
-        # land as PENDING; see test_activity_form_lands_pending below.
+        # Audit FIX 2.7 — only BASELINE auto-approves (ciprb_baseline
+        # self-approves per spec). MPDSR now follows the same PENDING →
+        # manager approval path as every other field record.
         payload = mpdsr_payload()
         resp = self.client.post(
             WEBHOOK_URL, data=json.dumps(payload), content_type='application/json', **TEST_AUTH
@@ -73,7 +72,7 @@ class WebhookIngestTest(TestCase):
         self.assertEqual(sub.partner, 'PHD')
         self.assertEqual(sub.worker_name, 'Rina Akter')
         self.assertEqual(sub.district, 'Dhaka')
-        self.assertEqual(sub.status, SubmissionStatus.APPROVED)
+        self.assertEqual(sub.status, SubmissionStatus.PENDING)
         mock_tg.assert_called_once()
 
     @patch('submissions.views.send_submission_alert')
@@ -110,6 +109,22 @@ class WebhookIngestTest(TestCase):
         resp = self.client.post(WEBHOOK_URL, data=json.dumps(payload), content_type='application/json', **TEST_AUTH)
         self.assertEqual(resp.status_code, 201)
         self.assertEqual(KoboSubmission.objects.first().form_type, FormType.FISTULA)
+
+    @patch('submissions.views.send_submission_alert')
+    def test_fistula_lands_pending(self, _):
+        """Audit FIX 2.7 — fistula no longer auto-approves."""
+        payload = mpdsr_payload(_xform_id_string='uid_fistula', _id='2002')
+        resp = self.client.post(WEBHOOK_URL, data=json.dumps(payload), content_type='application/json', **TEST_AUTH)
+        self.assertEqual(resp.status_code, 201)
+        self.assertEqual(KoboSubmission.objects.first().status, SubmissionStatus.PENDING)
+
+    @patch('submissions.views.send_submission_alert')
+    def test_baseline_auto_approves(self, _):
+        """Audit FIX 2.7 — baseline still auto-approves (ciprb_baseline self-approves)."""
+        payload = mpdsr_payload(_xform_id_string='uid_baseline', _id='2003')
+        resp = self.client.post(WEBHOOK_URL, data=json.dumps(payload), content_type='application/json', **TEST_AUTH)
+        self.assertEqual(resp.status_code, 201)
+        self.assertEqual(KoboSubmission.objects.first().status, SubmissionStatus.APPROVED)
 
     @patch('submissions.views.send_submission_alert')
     def test_bondhu_partner_detected(self, _):

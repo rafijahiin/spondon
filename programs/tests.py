@@ -52,7 +52,7 @@ class OrgIsolationSmokeTest(TestCase):
     def setUpTestData(cls):
         cls.phd_mgr     = _make_user('mgr@phd.org',    Organisation.PHD,    Role.MANAGER)
         cls.bandhu_mgr  = _make_user('mgr@bandhu.org', Organisation.BANDHU, Role.MANAGER)
-        cls.super_admin = _make_user('sa@ciprb.org',   Organisation.CIPRB,  Role.SUPERVISOR)
+        cls.supervisor = _make_user('sa@ciprb.org',   Organisation.CIPRB,  Role.SUPERVISOR)
 
         # Two ServiceCenters, one per org.
         cls.phd_center    = _make_center('PHD',    'PHD Center 1',    'PHD-001')
@@ -131,8 +131,8 @@ class OrgIsolationSmokeTest(TestCase):
         self.assertEqual(len(rows), 1)
         self.assertEqual(rows[0]['organisation'], 'Bandhu')
 
-    def test_centers_super_admin_sees_both(self):
-        self.client.force_authenticate(user=self.super_admin)
+    def test_centers_supervisor_sees_both(self):
+        self.client.force_authenticate(user=self.supervisor)
         resp = self.client.get('/api/programs/centers/')
         self.assertEqual(resp.status_code, 200)
         orgs = {r['organisation'] for r in self._rows(resp)}
@@ -220,8 +220,8 @@ class OrgIsolationSmokeTest(TestCase):
         orgs = {item['organisation'] for item in resp.data['items']}
         self.assertNotIn('PHD', orgs)
 
-    def test_pending_approvals_super_admin_sees_both(self):
-        self.client.force_authenticate(user=self.super_admin)
+    def test_pending_approvals_supervisor_sees_both(self):
+        self.client.force_authenticate(user=self.supervisor)
         resp = self.client.get('/api/programs/pending-approvals/')
         self.assertEqual(resp.status_code, 200)
         orgs = {item['organisation'] for item in resp.data['items']}

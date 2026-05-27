@@ -3,6 +3,7 @@ from rest_framework.routers import DefaultRouter
 
 from .views import (
     IndicatorProgressView,
+    IndicatorRecordsView,
     IndicatorTargetViewSet,
     KoboFormMappingViewSet,
     SingleIndicatorProgressView,
@@ -16,4 +17,5 @@ urlpatterns = [
     path('', include(router.urls)),
     path('progress/', IndicatorProgressView.as_view(), name='indicator-progress'),
     path('progress/<str:code>/', SingleIndicatorProgressView.as_view(), name='indicator-progress-single'),
+    path('records/', IndicatorRecordsView.as_view(), name='indicator-records'),
 ]

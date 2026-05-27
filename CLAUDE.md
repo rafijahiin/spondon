@@ -96,10 +96,10 @@ Complete and confirm each app before starting the next. Ask Rafi before moving f
 - React app scaffolded with Vite + TypeScript + Tailwind in `/frontend`
 
 ### 2. `accounts` — Auth and Roles
-- Custom user model: `organisation` (CIPRB/UNFPA/PHD/Bondhu), `role` (super_admin/manager/developer)
+- Custom user model: `organisation` (CIPRB/UNFPA/PHD/Bandhu), `role` (7-role taxonomy: `developer`, `supervisor`, `org_lead`, `manager`, `field_staff`, `ciprb_baseline`, `focal`)
 - Login, logout, password change views
-- TOTP 2FA for super admin (django-otp)
 - Middleware: every request filtered by `request.user.organisation`
+- User management restricted to `developer` only (FIX 1.4 — supervisors lost user-mgmt write access)
 
 ### 3. `submissions` — KoboToolbox Webhook
 - POST `/webhook/kobo/` — receives webhook, validates HMAC, stores submission
@@ -216,6 +216,9 @@ KOBO_ASSET_UID_FISTULA=placeholder
 KOBO_ASSET_UID_ACTIVITY=placeholder
 KOBO_ASSET_UID_BASELINE=placeholder
 KOBO_SERVER_URL=https://kobo.humanitarianresponse.info
+# Reserved for future pull-based sync. Current architecture uses
+# webhook-push via KOBO_ASSET_UID_* vars. Read but unused today.
+KOBO_API_TOKEN=
 ```
 
 ---

@@ -2,12 +2,14 @@
 Programs API views.
 
 Organisation filtering:
-  - super_admin / developer (can_see_all_orgs) → no org filter
-  - manager → filtered to their own org
+  - developer / supervisor (can_see_all_orgs) → no org filter
+  - org_lead (can_read_other_orgs) → no filter (read-only on other partners)
+  - manager / field_staff → filtered to their own org
 
 Approval:
   POST /<model>/<pk>/approve/  or  POST /<model>/<pk>/reject/
-  Only managers (of the same org) and super_admins can approve/reject.
+  Only managers (of the same org), supervisors, developers, and org_leads
+  (own partner only) can approve/reject.
 """
 import json
 import logging

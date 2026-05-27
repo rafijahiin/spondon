@@ -323,8 +323,8 @@ function ComplianceRow({ row }: { row: ProgressRow }) {
 // ── Main page ──────────────────────────────────────────────────────────────────
 function SubmissionComplianceTab() {
   const { user } = useAuth()
-  const isSuperAdmin = ['developer', 'supervisor'].includes(user?.role ?? '')
-  const canSeeAll    = isSuperAdmin
+  const isCrossOrg = ['developer', 'supervisor'].includes(user?.role ?? '')
+  const canSeeAll  = isCrossOrg
 
   const [year,           setYear]           = useState(NOW.getFullYear())
   const [month,          setMonth]          = useState(NOW.getMonth() + 1)
@@ -407,7 +407,7 @@ function SubmissionComplianceTab() {
           </div>
         )}
         <div className="flex-1" />
-        {isSuperAdmin && (
+        {isCrossOrg && (
           <button onClick={() => setShowConfig(true)}
             className="flex items-center gap-2 rounded-xl border border-gray-300 dark:border-gray-600 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
             <Settings className="h-4 w-4" />

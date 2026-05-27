@@ -164,20 +164,30 @@ class CanAccessMPDSR(BasePermission):
         return u.is_authenticated and u.can_access_mpdsr
 
 
-# ── Backward-compat aliases (deprecated names, still imported by some
-#    views — kept until every call site is migrated to the capability
-#    classes above) ─────────────────────────────────────────────────────────
+# ── Cross-org / multi-role membership classes ────────────────────────────────
+#
+# The legacy `IsSuperAdmin*` names have been removed entirely (audit FIX 1.2).
+# The new names below carry the same membership rules but read accurately
+# against the 7-role taxonomy — no role called "super admin" ever existed
+# in the new taxonomy, and the rename eliminates a class of bugs where the
+# reader assumed Sayeed (ORG_LEAD) had only narrow access.
 
-class IsSuperAdmin(BasePermission):
-    """Deprecated. Accepts SUPERVISOR + ORG_LEAD. Prefer IsSupervisor or
-    a capability class."""
+class IsSupervisorOrOrgLead(BasePermission):
+    """Cross-org read/write — accepts SUPERVISOR + ORG_LEAD.
+
+    Replaces the deprecated `IsSuperAdmin`. CIPRB org lead (Sayeed) retains
+    his full-CIPRB access plus read-only-others through this class."""
     def has_permission(self, request, view):
         u = request.user
         return u.is_authenticated and u.role in (Role.SUPERVISOR, Role.ORG_LEAD)
 
 
-class IsSuperAdminOrManager(BasePermission):
-    """Deprecated. Use a specific capability class instead."""
+class IsSupervisorOrManager(BasePermission):
+    """Generic authenticated-app-user gate — accepts everyone except FOCAL
+    and CIPRB_BASELINE on the write path. Used by dashboard and tracker
+    endpoints that every operational role consumes.
+
+    Replaces the deprecated `IsSuperAdminOrManager`."""
     def has_permission(self, request, view):
         u = request.user
         return u.is_authenticated and u.role in (
@@ -186,11 +196,23 @@ class IsSuperAdminOrManager(BasePermission):
         )
 
 
-class IsSuperAdminOrDeveloper(BasePermission):
-    """Deprecated. User management endpoint protector."""
+class IsSupervisorOrDeveloper(BasePermission):
+    """Cross-org admin gate — accepts DEVELOPER + SUPERVISOR.
+
+    Used where Rafi + Animesh + Rokhsana need access but not org leads."""
     def has_permission(self, request, view):
         u = request.user
         return u.is_authenticated and u.role in (Role.DEVELOPER, Role.SUPERVISOR)
+
+
+class IsDeveloperOnly(BasePermission):
+    """Developer-only gate — used by user-management endpoints (audit FIX 1.4).
+
+    Supervisor retains all other access, but cannot manage users. Only
+    Rafi (DEVELOPER) can create / modify / deactivate user accounts."""
+    def has_permission(self, request, view):
+        u = request.user
+        return u.is_authenticated and u.role == Role.DEVELOPER
 
 
 # ── OrgFilterMixin (unchanged from the old file) ──────────────────────────────
