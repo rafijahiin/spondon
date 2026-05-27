@@ -130,15 +130,47 @@ const KOBO_GROUPS: KoboGroup[] = [
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
+// Two expand sources: a sticky "pinned" state (toggled by the S logo,
+// persisted to localStorage) and a transient "hover-expanded" state
+// (auto-engages after 350ms of hover, auto-collapses 250ms after leave).
+// `expanded = pinned || hoverExpanded` so the rail behaves naturally
+// regardless of how the user reached the expanded view.
+const PIN_KEY = 'spinePinned'
+
 export function Spine() {
   const { t } = useTranslation()
   const { user, logout } = useAuth()
   const navigate = useNavigate()
-  const [expanded, setExpanded] = useState(false)
+  const [pinned, setPinned] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false
+    return window.localStorage.getItem(PIN_KEY) === 'true'
+  })
+  const [hoverExpanded, setHoverExpanded] = useState(false)
+  const expanded = pinned || hoverExpanded
+  const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [koboOpen, setKoboOpen] = useState(false)
   const [pendingCount, setPendingCount] = useState<number>(0)
   const panelRef = useRef<HTMLDivElement>(null)
   const spineRef = useRef<HTMLElement>(null)
+
+  const togglePinned = () => {
+    setPinned((prev) => {
+      const next = !prev
+      try { window.localStorage.setItem(PIN_KEY, String(next)) } catch {}
+      return next
+    })
+  }
+
+  const handleSpineMouseEnter = () => {
+    if (pinned) return
+    if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current)
+    hoverTimerRef.current = setTimeout(() => setHoverExpanded(true), 350)
+  }
+  const handleSpineMouseLeave = () => {
+    if (pinned) return
+    if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current)
+    hoverTimerRef.current = setTimeout(() => setHoverExpanded(false), 250)
+  }
 
   const handleLogout = async () => {
     await logout()
@@ -170,24 +202,31 @@ export function Spine() {
     return () => document.removeEventListener('mousedown', handler)
   }, [koboOpen])
 
-  // Close expanded spine on outside click
+  // Close expanded spine on outside click — but only when pinned. Hover-
+  // expand collapses naturally on mouseleave; outside-click should not
+  // unpin a user-pinned rail.
   useEffect(() => {
-    if (!expanded) return
+    if (!pinned) return
     const handler = (e: MouseEvent) => {
       if (spineRef.current && !spineRef.current.contains(e.target as Node)) {
-        setExpanded(false)
+        setPinned(false)
+        try { window.localStorage.setItem(PIN_KEY, 'false') } catch {}
       }
     }
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
-  }, [expanded])
+  }, [pinned])
 
-  // Close on Escape
+  // Close on Escape — collapses both pinned and hover states.
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         if (koboOpen) setKoboOpen(false)
-        else if (expanded) setExpanded(false)
+        else if (expanded) {
+          setPinned(false)
+          setHoverExpanded(false)
+          try { window.localStorage.setItem(PIN_KEY, 'false') } catch {}
+        }
       }
     }
     window.addEventListener('keydown', handler)
@@ -210,29 +249,44 @@ export function Spine() {
   const visibleSecondary = filterByVisibility(SECONDARY_NAV, user)
 
   // Close drawer when a nav link is clicked (helpful on mobile)
-  const handleNavClick = () => setExpanded(false)
+  const handleNavClick = () => {
+    setPinned(false)
+    setHoverExpanded(false)
+    try { window.localStorage.setItem(PIN_KEY, 'false') } catch {}
+  }
 
   return (
     <>
-      {/* Mobile-only hamburger toggle — fixed top-left, hidden on desktop */}
+      {/* Mobile-only hamburger toggle — fixed top-left, hidden on desktop.
+          On mobile, hamburger toggles pinned state (no hover concept). */}
       <button
         className="mobile-menu-btn"
         title={expanded ? 'Close menu' : 'Open menu'}
         aria-label={expanded ? 'Close menu' : 'Open menu'}
-        onClick={() => setExpanded(prev => !prev)}
+        onClick={togglePinned}
       >
         {expanded ? <X size={20} /> : <Menu size={20} />}
       </button>
 
       {/* Mobile backdrop — visible only when drawer open on mobile */}
-      {expanded && <div className="spine-backdrop" onClick={() => setExpanded(false)} />}
+      {expanded && <div className="spine-backdrop" onClick={() => {
+        setPinned(false); setHoverExpanded(false)
+        try { window.localStorage.setItem(PIN_KEY, 'false') } catch {}
+      }} />}
 
-      <aside ref={spineRef} className={`spine ${expanded ? 'spine-expanded' : ''}`}>
-      {/* Brand mark — toggles expand/collapse on desktop */}
+      <aside
+        ref={spineRef}
+        className={`spine ${expanded ? 'spine-expanded' : ''} ${pinned ? 'spine-pinned' : ''}`}
+        onMouseEnter={handleSpineMouseEnter}
+        onMouseLeave={handleSpineMouseLeave}
+      >
+      {/* Brand mark — clicking toggles the PINNED state. Hover-expand
+          remains transient; the pin makes the expanded view sticky so
+          users can keep labels visible while they work. */}
       <button
         className="spine-brand"
-        title={expanded ? 'Collapse menu' : 'Expand menu'}
-        onClick={() => setExpanded(prev => !prev)}
+        title={pinned ? 'Unpin menu' : 'Pin menu open'}
+        onClick={togglePinned}
       >
         <span>S</span>
       </button>

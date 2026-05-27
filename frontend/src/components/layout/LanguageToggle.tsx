@@ -41,9 +41,14 @@ export function LanguageToggle() {
             onClick={() => setLanguage(o.code)}
             title={t('language.switchTo', { lang: o.label })}
             aria-pressed={active}
+            // Inner padding sized so the rendered pill is ≥32px tall +
+            // each button is ≥36px wide. Hit-area then expands to 44pt
+            // via the .lang-toggle-btn :focus-visible / hit-area CSS
+            // (see index.css). Meets §2 touch-target-size on mobile.
+            className="lang-toggle-btn"
             style={{
-              padding: '4px 10px',
-              fontSize: 11.5,
+              padding: '6px 12px',
+              fontSize: 12,
               fontWeight: active ? 600 : 500,
               lineHeight: 1.2,
               color: active ? '#fff' : 'var(--ink-2)',
@@ -51,8 +56,10 @@ export function LanguageToggle() {
               border: 'none',
               borderRadius: 999,
               cursor: active ? 'default' : 'pointer',
-              transitionProperty: 'background-color, color',
+              transitionProperty: 'background-color, color, box-shadow',
               transitionDuration: '150ms',
+              minHeight: 32,
+              minWidth: 36,
             }}
           >
             {o.label}

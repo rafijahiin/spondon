@@ -21,20 +21,37 @@ const CENTER_COLORS: Record<string, string> = {
   MOBILE: '#d97706',
 }
 
+// Per-partner choropleth tints — matches the homepage PartnerOverlapMap
+// palette so partner identity stays consistent across surfaces.
+const PARTNER_TINTS: Record<string, { active: string; cp10: string; stroke: string }> = {
+  PHD:    { active: '#ED7D31', cp10: '#FFCB9A', stroke: '#7A3F12' },
+  Bandhu: { active: '#00B050', cp10: '#A6E1B8', stroke: '#015A28' },
+  CIPRB:  { active: '#0072BC', cp10: '#A8D2EC', stroke: '#003E66' },
+}
+
 interface Props {
   activityFeed: ActivityItem[]
   centers?: ServiceCenter[]
   className?: string
+  /** Partner code — colours the choropleth in that partner's brand
+   *  hue instead of the default UNFPA blue. Falls back to UNFPA blue
+   *  when omitted (homepage / cross-org dashboards). */
+  partner?: 'PHD' | 'Bandhu' | 'CIPRB'
 }
 
 function normalize(name: string) {
   return name.toLowerCase().replace(/[^a-z]/g, '')
 }
 
-export function BangladeshMap({ activityFeed, centers = [], className }: Props) {
+export function BangladeshMap({ activityFeed, centers = [], className, partner }: Props) {
   const [geoData, setGeoData] = useState<GeoJSON.FeatureCollection | null>(null)
   const [error, setError] = useState(false)
   const geoJsonRef = useRef<L.GeoJSON | null>(null)
+
+  // Resolve tint from partner prop; default to UNFPA blue.
+  const tint = (partner && PARTNER_TINTS[partner]) || {
+    active: '#00658C', cp10: '#f59e0b', stroke: '#004A66',
+  }
 
   // Count submissions per district
   const districtCounts: Record<string, number> = {}
@@ -56,9 +73,18 @@ export function BangladeshMap({ activityFeed, centers = [], className }: Props) 
   }, [])
 
   function districtStyle(name: string, count: number): PathOptions {
-    if (count > 0) return { fillColor: '#00658C', fillOpacity: 0.3 + (count / maxCount) * 0.6, color: '#004A66', weight: 0.5 }
-    if (CP10_DISTRICTS.has(name)) return { fillColor: '#f59e0b', fillOpacity: 0.25, color: '#004A66', weight: 0.5 }
-    return { fillColor: '#94a3b8', fillOpacity: 0.08, color: '#004A66', weight: 0.5 }
+    if (count > 0) {
+      return {
+        fillColor: tint.active,
+        fillOpacity: 0.3 + (count / maxCount) * 0.6,
+        color: tint.stroke,
+        weight: 0.5,
+      }
+    }
+    if (CP10_DISTRICTS.has(name)) {
+      return { fillColor: tint.cp10, fillOpacity: 0.45, color: tint.stroke, weight: 0.5 }
+    }
+    return { fillColor: '#94a3b8', fillOpacity: 0.08, color: tint.stroke, weight: 0.5 }
   }
 
   // Re-style when activityFeed changes

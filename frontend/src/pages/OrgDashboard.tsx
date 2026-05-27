@@ -329,7 +329,7 @@ export function OrgDashboard({ partner }: Props) {
           {usingMock && (
             <>
               <span className="sep">/</span>
-              <span className="tag amber" style={{ marginLeft: 4, fontSize: 9 }}>
+              <span className="tag amber" style={{ marginLeft: 4, fontSize: 10.5 }}>
                 <Info size={10} style={{ marginRight: 3 }} />{t('org.demoData')}
               </span>
             </>
@@ -384,7 +384,7 @@ export function OrgDashboard({ partner }: Props) {
 
           <div className="hero-right anim-rise d4">
             <div className="map-frame" style={{ height: '100%', minHeight: 320, position: 'relative' }}>
-              <BangladeshMap activityFeed={[]} className="leaflet-org-map" />
+              <BangladeshMap activityFeed={[]} className="leaflet-org-map" partner={partner} />
             </div>
           </div>
         </div>

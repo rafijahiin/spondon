@@ -142,9 +142,16 @@ export default function FistulaTracker() {
           <motion.div
             key={activeTab.key}
             initial={{ opacity: 0, y: reduce ? 0 : 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: reduce ? 0 : -6 }}
-            transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+            animate={{
+              opacity: 1, y: 0,
+              transition: { duration: 0.25, ease: [0.22, 1, 0.36, 1] },
+            }}
+            // Exit ~65% of enter — feels responsive when user tab-swaps
+            // rapidly (§7 exit-faster-than-enter).
+            exit={{
+              opacity: 0, y: reduce ? 0 : -6,
+              transition: { duration: 0.16, ease: [0.4, 0, 1, 1] },
+            }}
           >
             <PlaceholderPanel tab={activeTab} />
           </motion.div>

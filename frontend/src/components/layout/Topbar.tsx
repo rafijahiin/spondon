@@ -3,31 +3,34 @@
  *
  * Sticky, frosted-glass background, mono typography.
  */
-import { useLocation } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { RefreshCw } from 'lucide-react'
 import { LanguageToggle } from './LanguageToggle'
 
-/** Each pathname maps to an array of i18n keys. The last one renders
- *  bold (current page). All resolve under the `topbar.*` namespace. */
-const CRUMB_KEYS: Record<string, string[]> = {
-  '/':          ['topbar.brand', 'topbar.programmeOverview'],
-  '/phd':       ['topbar.brand', 'topbar.dashboards', 'topbar.phd'],
-  '/bondhu':    ['topbar.brand', 'topbar.dashboards', 'topbar.bondhu'],
-  '/approvals': ['topbar.brand', 'topbar.managerApprovals'],
-  '/reports':   ['topbar.brand', 'topbar.reportingHub'],
-  '/fistula':   ['topbar.brand', 'topbar.trackers', 'topbar.fistula'],
-  '/mpdsr':     ['topbar.brand', 'topbar.trackers', 'topbar.mpdsr'],
-  '/tracker':   ['topbar.brand', 'topbar.trackers', 'topbar.progress'],
-  '/baseline':  ['topbar.brand', 'topbar.reports',  'topbar.baseline'],
-  '/training':  ['topbar.brand', 'topbar.reports',  'topbar.training'],
-  '/admin':     ['topbar.brand', 'topbar.adminPanel'],
+/** Each crumb is { i18nKey, to }. `to: null` means non-clickable
+ *  (currently used for category labels like "DASHBOARDS" that don't
+ *  have their own page). Last crumb is always the current page and
+ *  rendered bold + non-clickable. */
+interface Crumb { key: string; to: string | null }
+const CRUMB_KEYS: Record<string, Crumb[]> = {
+  '/':          [{ key: 'topbar.brand', to: '/' }, { key: 'topbar.programmeOverview', to: null }],
+  '/phd':       [{ key: 'topbar.brand', to: '/' }, { key: 'topbar.dashboards', to: null }, { key: 'topbar.phd', to: null }],
+  '/bondhu':    [{ key: 'topbar.brand', to: '/' }, { key: 'topbar.dashboards', to: null }, { key: 'topbar.bondhu', to: null }],
+  '/approvals': [{ key: 'topbar.brand', to: '/' }, { key: 'topbar.managerApprovals', to: null }],
+  '/reports':   [{ key: 'topbar.brand', to: '/' }, { key: 'topbar.reportingHub', to: null }],
+  '/fistula':   [{ key: 'topbar.brand', to: '/' }, { key: 'topbar.trackers', to: null }, { key: 'topbar.fistula', to: null }],
+  '/mpdsr':     [{ key: 'topbar.brand', to: '/' }, { key: 'topbar.trackers', to: null }, { key: 'topbar.mpdsr', to: null }],
+  '/tracker':   [{ key: 'topbar.brand', to: '/' }, { key: 'topbar.trackers', to: null }, { key: 'topbar.progress', to: null }],
+  '/baseline':  [{ key: 'topbar.brand', to: '/' }, { key: 'topbar.reports',  to: null }, { key: 'topbar.baseline', to: null }],
+  '/training':  [{ key: 'topbar.brand', to: '/' }, { key: 'topbar.reports',  to: null }, { key: 'topbar.training', to: null }],
+  '/admin':     [{ key: 'topbar.brand', to: '/' }, { key: 'topbar.adminPanel', to: null }],
 }
 
 export function Topbar() {
   const { t, i18n } = useTranslation()
   const { pathname } = useLocation()
-  const crumbs = CRUMB_KEYS[pathname] || ['topbar.brand']
+  const crumbs: Crumb[] = CRUMB_KEYS[pathname] ?? [{ key: 'topbar.brand', to: '/' }]
 
   // Format the date using the active language's locale so বাং shows
   // Bengali numerals + month name.
@@ -41,12 +44,22 @@ export function Topbar() {
   return (
     <header className="topbar">
       <div className="crumb">
-        {crumbs.map((key, i) => (
-          <span key={key}>
-            {i > 0 && <span className="crumb-sep"> / </span>}
-            {i === crumbs.length - 1 ? <b>{t(key)}</b> : <span>{t(key)}</span>}
-          </span>
-        ))}
+        {crumbs.map((c, i) => {
+          const isLast = i === crumbs.length - 1
+          const label = t(c.key)
+          return (
+            <span key={c.key}>
+              {i > 0 && <span className="crumb-sep"> / </span>}
+              {isLast ? (
+                <b>{label}</b>
+              ) : c.to ? (
+                <Link to={c.to} className="crumb-link">{label}</Link>
+              ) : (
+                <span>{label}</span>
+              )}
+            </span>
+          )
+        })}
       </div>
 
       <div className="top-spacer" />

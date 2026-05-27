@@ -129,7 +129,10 @@ export default function Home() {
               className="hero-headline anim-rise d1"
               style={{
                 marginBottom: 18,
-                fontSize: 'clamp(56px, 8vw, 116px)',
+                // Reduced from clamp(56,8vw,116) — at ~800px viewports the
+                // old size pushed the brief down too far and left a tall
+                // blank gap to the right of "SPONDON".
+                fontSize: 'clamp(40px, 6vw, 88px)',
                 letterSpacing: '-0.035em',
               }}
             >
@@ -176,16 +179,17 @@ export default function Home() {
               {t('home.coverageSubtitle')}
             </p>
             <div className="card shimmer" style={{ padding: 12 }}>
-              <PartnerOverlapMap height={380} />
+              <PartnerOverlapMap height={320} />
             </div>
           </div>
         </div>
       </section>
 
-      {/* Responsive: collapse the hero to a single column on narrow viewports
-          so the map drops beneath the brief instead of crushing both sides. */}
+      {/* Responsive: only collapse to single column on truly narrow viewports
+          (≤ 880px). Above that the brief + map sit side-by-side, eliminating
+          the blank space the user flagged at ~800-1100px laptop widths. */}
       <style>{`
-        @media (max-width: 1100px) {
+        @media (max-width: 880px) {
           .home-hero-grid {
             grid-template-columns: 1fr !important;
           }
