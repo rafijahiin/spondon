@@ -9,6 +9,7 @@ import { RefreshCw } from 'lucide-react'
 import { LanguageToggle } from './LanguageToggle'
 import { DarkModeToggle } from './DarkModeToggle'
 import { AIInsightsDrawer } from './AIInsightsDrawer'
+import { ExportButton } from './ExportButton'
 
 /** Each crumb is { i18nKey, to }. `to: null` means non-clickable
  *  (currently used for category labels like "DASHBOARDS" that don't
@@ -75,19 +76,23 @@ export function Topbar() {
         <span>{dateStr}</span>
       </div>
 
-      <button className="top-btn" title={t('topbar.refresh')}>
+      <button className="top-btn no-export" title={t('topbar.refresh')}>
         <RefreshCw size={14} />
       </button>
 
+      {/* Export current view as PDF/PNG. Self-marked .no-export so the
+          button + dropdown don't appear in the captured image. */}
+      <ExportButton />
+
       {/* AI Insights — slide-out drawer; only appears on routes
           with AI context (home, /phd, /bondhu). */}
-      <AIInsightsDrawer />
+      <div className="no-export"><AIInsightsDrawer /></div>
 
       {/* Dark mode — persisted in ThemeContext localStorage */}
-      <DarkModeToggle />
+      <div className="no-export"><DarkModeToggle /></div>
 
       {/* Global language toggle — persists to localStorage, no reload. */}
-      <LanguageToggle />
+      <div className="no-export"><LanguageToggle /></div>
     </header>
   )
 }

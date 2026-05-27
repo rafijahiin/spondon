@@ -41,15 +41,22 @@ function MiniArea({ data, color, w = 280, h = 48 }: {
 }) {
   if (!data || data.length < 2) return null
   const max = Math.max(...data, 1)
+  const min = Math.min(...data)
+  const last = data[data.length - 1]
   const pts = data
     .map((v, i) => [(i / (data.length - 1)) * w, h - (v / max) * (h - 6) - 3])
   const line = 'M ' + pts.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' L ')
   const area = line + ` L ${w},${h} L 0,${h} Z`
   const gradId = `live-area-${color.replace(/[^a-z0-9]/gi, '')}`
+  const summary = `14-day submission trend: range ${min}-${max}, today ${last}.`
   return (
-    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`}
+    <svg
+      width={w} height={h} viewBox={`0 0 ${w} ${h}`}
       style={{ display: 'block', width: '100%', height: h }}
-      preserveAspectRatio="none" aria-hidden="true">
+      preserveAspectRatio="none"
+      role="img" aria-label={summary}
+    >
+      <title>{summary}</title>
       <defs>
         <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor={color} stopOpacity={0.32} />
@@ -59,11 +66,20 @@ function MiniArea({ data, color, w = 280, h = 48 }: {
       <path d={area} fill={`url(#${gradId})`} />
       <path d={line} fill="none" stroke={color}
         strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" />
+      {/* visible terminal dot */}
       <circle
         cx={pts[pts.length - 1][0]}
         cy={pts[pts.length - 1][1]}
         r={3} fill={color}
       />
+      {/* hit-area expansion for touch/keyboard */}
+      <circle
+        cx={pts[pts.length - 1][0]}
+        cy={pts[pts.length - 1][1]}
+        r={12} fill="transparent" pointerEvents="all"
+      >
+        <title>{`Today: ${last}`}</title>
+      </circle>
     </svg>
   )
 }
@@ -93,7 +109,7 @@ function StatusPill({ label, ok, icon }: {
 // ─── Main ────────────────────────────────────────────────────────────────────
 
 export function LiveMonitoring({ partner }: Props) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const reduce = useReducedMotion()
   const tint = PARTNER_TINT[partner]
   const [kpis, setKpis] = useState<PartnerKPIs | null>(null)
@@ -200,7 +216,7 @@ export function LiveMonitoring({ partner }: Props) {
             lineHeight: 1, letterSpacing: '-0.025em', color: 'var(--ink)',
             fontVariantNumeric: 'tabular-nums', marginBottom: 14,
           }}>
-            {today.toLocaleString()}
+            {today.toLocaleString(i18n.language?.startsWith("bn") ? "bn-BD" : "en-US")}
           </div>
           <MiniArea data={last14} color={tint} h={56} />
           <div style={{

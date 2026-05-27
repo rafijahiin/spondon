@@ -40,24 +40,39 @@ interface Props {
 
 // ─── Sparkline (transform-only, CLS-safe) ────────────────────────────────────
 
-function Sparkline({ data, color = 'var(--unfpa)', w = 96, h = 24 }: {
-  data: number[]; color?: string; w?: number; h?: number
+function Sparkline({ data, color = 'var(--unfpa)', w = 96, h = 24, ariaLabel }: {
+  data: number[]; color?: string; w?: number; h?: number; ariaLabel?: string
 }) {
   if (!data || data.length < 2) return null
   const max = Math.max(...data, 1)
+  const min = Math.min(...data)
+  const last = data[data.length - 1]
   const pts = data
     .map((v, i) => `${(i / (data.length - 1)) * w},${h - (v / max) * (h - 4) - 2}`)
     .join(' ')
+  // §10 screen-reader-summary: SVG carries a <title> describing the
+  // trend in human terms; SR users hear it via aria-labelledby.
+  const summary = ariaLabel ?? `Trend: ${data.length} points, range ${min}-${max}, current ${last}.`
   return (
-    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`}
-      style={{ overflow: 'visible' }} aria-hidden="true">
+    <svg
+      width={w} height={h} viewBox={`0 0 ${w} ${h}`}
+      style={{ overflow: 'visible' }}
+      role="img" aria-label={summary}
+    >
+      <title>{summary}</title>
       <polyline points={pts} fill="none" stroke={color}
         strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" />
-      {/* terminal dot — UNFPA orange */}
+      {/* terminal dot — UNFPA orange, in a 12px hit target for touch */}
       <circle
-        cx={w} cy={h - (data[data.length - 1] / max) * (h - 4) - 2}
+        cx={w} cy={h - (last / max) * (h - 4) - 2}
         r={2.5} fill={color}
       />
+      <circle
+        cx={w} cy={h - (last / max) * (h - 4) - 2}
+        r={8} fill="transparent" pointerEvents="all"
+      >
+        <title>{`Current: ${last}`}</title>
+      </circle>
     </svg>
   )
 }
@@ -158,9 +173,14 @@ function Card({
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 export function ExecutiveBento({ progress }: Props) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const [kpis, setKpis] = useState<KPIs | null>(null)
   const [now, setNow] = useState(new Date())
+
+  // Locale-aware number formatting — Bengali numerals when i18n.language
+  // is bn, Latin numerals otherwise (§10 number-formatting).
+  const fmtNum = (n: number) =>
+    n.toLocaleString(i18n.language?.startsWith('bn') ? 'bn-BD' : 'en-US')
 
   useEffect(() => {
     api.get<KPIs>('/dashboard/kpis/')
@@ -234,10 +254,10 @@ export function ExecutiveBento({ progress }: Props) {
         {/* HEADLINE — submissions this month, with 12-pt sparkline */}
         <Card
           kicker={t('bento.submissionsMtd', { defaultValue: 'SUBMISSIONS · THIS MONTH' })}
-          value={(kpis?.submissions_this_month ?? 0).toLocaleString()}
+          value={fmtNum(kpis?.submissions_this_month ?? 0)}
           sub={t('bento.vsLastMonth', {
             defaultValue: 'vs {{prev}} last month',
-            prev: (kpis?.previous_month_submissions ?? 0).toLocaleString(),
+            prev: fmtNum(kpis?.previous_month_submissions ?? 0),
           })}
           trend={kpis?.mom_change_percent ?? null}
           icon={<FileText size={12} />}
@@ -249,14 +269,14 @@ export function ExecutiveBento({ progress }: Props) {
 
         <Card
           kicker={t('bento.pending', { defaultValue: 'AWAITING REVIEW' })}
-          value={(kpis?.submissions_pending ?? 0).toLocaleString()}
+          value={fmtNum(kpis?.submissions_pending ?? 0)}
           sub={t('bento.pendingSub', { defaultValue: 'manager queue' })}
           icon={<Clock size={12} />}
           delay={0.05}
         />
         <Card
           kicker={t('bento.activeWorkers', { defaultValue: 'ACTIVE WORKERS' })}
-          value={(kpis?.active_workers ?? 0).toLocaleString()}
+          value={fmtNum(kpis?.active_workers ?? 0)}
           sub={t('bento.workersSub', { defaultValue: '≤ 30 days' })}
           icon={<Users size={12} />}
           delay={0.1}
@@ -264,14 +284,14 @@ export function ExecutiveBento({ progress }: Props) {
 
         <Card
           kicker={t('bento.fistula', { defaultValue: 'FISTULA · THIS MONTH' })}
-          value={(kpis?.fistula_cases_this_month ?? 0).toLocaleString()}
+          value={fmtNum(kpis?.fistula_cases_this_month ?? 0)}
           sub={t('bento.fistulaSub', { defaultValue: 'CIPRB campaigns' })}
           icon={<Heart size={12} />}
           delay={0.15}
         />
         <Card
           kicker={t('bento.mpdsr', { defaultValue: 'MPDSR · THIS MONTH' })}
-          value={(kpis?.mpdsr_cases_this_month ?? 0).toLocaleString()}
+          value={fmtNum(kpis?.mpdsr_cases_this_month ?? 0)}
           sub={t('bento.mpdsrSub', { defaultValue: 'CIPRB reviews' })}
           icon={<Activity size={12} />}
           delay={0.2}
