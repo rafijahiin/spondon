@@ -257,10 +257,22 @@ def _common_choices():
 
 
 def _center_choices():
-    """Generate choices for all active ServiceCenters."""
+    """Generate choices for all active ServiceCenters.
+
+    Emits a placeholder row when the DB has no active centers — XLSForm
+    rejects forms whose select_one list is empty ("List name not in
+    choices sheet"). The placeholder is replaced by real center_code
+    values once ServiceCenter rows are seeded for the partner.
+    """
     rows = []
     for center in ServiceCenter.objects.filter(is_active=True).order_by('organisation', 'name'):
         rows.append(_choice('center_code', center.code, center.name, center.name_bangla or center.name))
+    if not rows:
+        rows.append(_choice(
+            'center_code', 'PLACEHOLDER',
+            'Placeholder — seed ServiceCenters before deployment',
+            'প্লেসহোল্ডার — প্রকৃত কেন্দ্র যোগ করুন',
+        ))
     return rows
 
 
