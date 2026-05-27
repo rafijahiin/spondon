@@ -27,6 +27,7 @@ import { PageLoader } from '@/components/ui/LoadingSpinner'
 import { BangladeshMap } from '@/components/maps/BangladeshMap'
 import { IndicatorGrid } from '@/components/indicators/IndicatorGrid'
 import { LiveMonitoring } from '@/components/org/LiveMonitoring'
+import { AnomalyCards } from '@/components/anomalies/AnomalyCards'
 import { formatDate } from '@/utils/format'
 import type { PartnerKPIs, CentresResponse, Alert, ProgramsSummary } from '@/types'
 import {
@@ -484,9 +485,13 @@ export function OrgDashboard({ partner }: Props) {
       {/* ═══════════════════════════════════════════════════════════════
            LIVE FIELD MONITORING
            — sits between forms grid and the M&E indicator progress
-           — pulse + 14-day trend + system health + anomaly callouts
+           — pulse + 14-day trend + system health
            ═══════════════════════════════════════════════════════════════ */}
       <LiveMonitoring partner={partner} />
+
+      {/* Anomaly findings — partner-filtered. Quiet "all clear" pill
+          when nothing's wrong; severity-banded cards otherwise. */}
+      <AnomalyCards partner={partner} />
 
       {/* ═══════════════════════════════════════════════════════════════
            M&E INDICATOR PROGRESS

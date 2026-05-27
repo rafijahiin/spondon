@@ -199,6 +199,43 @@ class ProgressView(APIView):
         })
 
 
+class AnomaliesView(APIView):
+    """
+    GET /api/tracker/anomalies/?partner=PHD (optional)
+
+    Runs every detector in tracker.anomalies and returns a flat list of
+    findings ordered by severity. Findings are computed on demand — no
+    persistence — so they always reflect the current state of the DB.
+
+    Permissions: cross-org users see all partners; single-org users
+    (managers / focal / etc.) get only their own partner's findings.
+
+    Response shape:
+        { results: [ {type, severity, partner, indicator, title,
+                      message, value, baseline, detected_at}, ... ],
+          count: int,
+          generated_at: ISO datetime }
+    """
+    permission_classes = [IsSuperAdminOrManager]
+
+    def get(self, request):
+        from .anomalies import detect_all
+
+        # Single-org users force-scoped to their own partner regardless
+        # of the ?partner query param.
+        if not getattr(request.user, 'can_read_other_orgs', False):
+            partner = request.user.organisation
+        else:
+            partner = request.query_params.get('partner') or None
+
+        findings = detect_all(partner)
+        return Response({
+            'count':        len(findings),
+            'results':      findings,
+            'generated_at': timezone.now().isoformat(),
+        })
+
+
 class ForecastView(APIView):
     """
     GET /api/tracker/forecast/?partner=PHD&form_type=mpdsr&periods=3

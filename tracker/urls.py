@@ -10,4 +10,5 @@ urlpatterns = router.urls + [
     path('forecast/',   views.ForecastView.as_view(),   name='tracker-forecast'),
     path('compliance/', views.ComplianceView.as_view(), name='tracker-compliance'),
     path('progress/',   views.ProgressView.as_view(),   name='tracker-progress'),
+    path('anomalies/',  views.AnomaliesView.as_view(),  name='tracker-anomalies'),
 ]
