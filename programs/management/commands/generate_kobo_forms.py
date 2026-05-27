@@ -228,11 +228,8 @@ def _common_choices():
         _choice('delivery_outcome', 'SB',  'Still Birth', 'মৃত জন্ম'),
         _choice('delivery_outcome', 'UNK', 'Unknown',     'অজানা'),
     ]
-    # yes_no for from_haor + similar
-    rows += [
-        _choice('yes_no', 'yes', 'Yes', 'হ্যাঁ'),
-        _choice('yes_no', 'no',  'No',  'না'),
-    ]
+    # (yes_no choices already defined at the top of this function — fistula
+    # forms reuse them; no duplicate entry needed.)
     # gender
     rows += [
         _choice('gender', '02', 'Female', 'মহিলা'),
