@@ -228,6 +228,8 @@
     "tableTarget": "Target",
     "tableUnit": "Unit",
     "tableLastUpdated": "Last updated",
+    "tableSource": "Source Form",
+    "notKoboSourced": "Computed from registry / stock — no Kobo form",
     "notSetPill": "Not Set",
     "save": "Save",
     "cancel": "Cancel"

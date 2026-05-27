@@ -15,6 +15,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react'
 import { ClipboardList, Megaphone, BookOpen, Lock } from 'lucide-react'
+import { FistulaCornerPanel, FistulaCampaignPanel } from '@/components/fistula/FistulaPanels'
 
 type TabKey = 'corner' | 'campaign' | 'baseline'
 
@@ -137,7 +138,11 @@ export default function FistulaTracker() {
           })}
         </div>
 
-        {/* ───────────── Tab body (placeholder) ───────────── */}
+        {/* ───────────── Tab body ─────────────
+            Corner + Campaign now have real entry panels backed by the
+            FistulaCornerCase / FistulaCampaignVisit models. Baseline
+            stays as a placeholder until the supervisor confirms the
+            survey instrument at the validation workshop. */}
         <AnimatePresence mode="wait">
           <motion.div
             key={activeTab.key}
@@ -153,7 +158,9 @@ export default function FistulaTracker() {
               transition: { duration: 0.16, ease: [0.4, 0, 1, 1] },
             }}
           >
-            <PlaceholderPanel tab={activeTab} />
+            {activeTab.key === 'corner'   ? <FistulaCornerPanel /> :
+             activeTab.key === 'campaign' ? <FistulaCampaignPanel /> :
+                                            <PlaceholderPanel tab={activeTab} />}
           </motion.div>
         </AnimatePresence>
       </section>

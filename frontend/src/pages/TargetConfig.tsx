@@ -278,6 +278,7 @@ function TargetConfig() {
                         <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t('targetConfig.tableIndicator')}</th>
                         <th className="px-3 py-2 text-right text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t('targetConfig.tableTarget')}</th>
                         <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t('targetConfig.tableUnit')}</th>
+                        <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t('targetConfig.tableSource', { defaultValue: 'Source Form' })}</th>
                         <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t('targetConfig.tableLastUpdated')}</th>
                       </tr>
                     </thead>
@@ -305,6 +306,18 @@ function TargetConfig() {
                             </td>
                             <td className="px-3 py-2 text-sm text-gray-600 dark:text-gray-400">
                               {isBn ? bnUnit(row.unit) : row.unit}
+                            </td>
+                            <td className="px-3 py-2 text-[11px] font-mono text-gray-600 dark:text-gray-400">
+                              {row.source_form_slug ? (
+                                <span
+                                  title={row.source_form_slug}
+                                  className="inline-block max-w-[180px] truncate rounded bg-gray-100 px-1.5 py-0.5 dark:bg-gray-700"
+                                >
+                                  {row.source_form_slug.replace(/^spondon_/, '').replace(/_v\d+$/, '')}
+                                </span>
+                              ) : (
+                                <span className="text-gray-400" title={t('targetConfig.notKoboSourced', { defaultValue: 'Computed from registry / stock — no Kobo form' })}>—</span>
+                              )}
                             </td>
                             <td className="px-3 py-2 text-xs text-gray-500">
                               {row.updated_by_email ? (

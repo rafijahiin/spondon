@@ -7,6 +7,7 @@ from .views import (
     AutoclaveLogViewSet, AntenatalCardViewSet,
     HTCCounsellingViewSet, IndividualCounsellingViewSet, MHScreeningViewSet,
     GBVCaseViewSet,
+    IECMaterialViewSet,
     OutreachSessionViewSet, GroupEducationSessionViewSet,
     ReferralViewSet,
     StockEntryViewSet, TemperatureLogViewSet,
@@ -28,6 +29,7 @@ router.register('htc-counselling',     HTCCounsellingViewSet,         basename='
 router.register('individual-counselling', IndividualCounsellingViewSet, basename='individual-counselling')
 router.register('mh-screening',        MHScreeningViewSet,            basename='mh-screening')
 router.register('gbv-cases',           GBVCaseViewSet,                basename='gbv-case')
+router.register('iec-materials',       IECMaterialViewSet,            basename='iec-material')
 router.register('outreach-sessions',   OutreachSessionViewSet,        basename='outreach-session')
 router.register('group-education',     GroupEducationSessionViewSet,  basename='group-education')
 router.register('referrals',           ReferralViewSet,               basename='referral')

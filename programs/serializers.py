@@ -9,6 +9,7 @@ from .models import (
     ClinicVisit, HIVSTITestResult, ADRRecord, AutoclaveLog, AntenatalCard,
     HTCCounselling, IndividualCounselling, MHScreening,
     GBVCase,
+    IECMaterial,
     OutreachSession, GroupEducationSession,
     Referral,
     StockEntry, TemperatureLog, SafetyHygieneKit, StoreRequisition,
@@ -267,3 +268,17 @@ class VisitorRegisterSerializer(serializers.ModelSerializer):
     class Meta:
         model = VisitorRegister
         fields = '__all__'
+
+
+class IECMaterialSerializer(serializers.ModelSerializer):
+    """IEC/SBCC distribution record. Feeds PHD 3.1a-d and Bandhu 4.1/4.3
+    indicators. partner FK + organisation discriminator both required so
+    queryset filters (OrgFilterMixin) work."""
+
+    class Meta:
+        model = IECMaterial
+        exclude = ['raw_payload', 'submitted_by_kobo_user', 'rejected_reason']
+        read_only_fields = ['id', 'created_at', 'updated_at',
+                            'approved_by', 'approved_at',
+                            'kobo_submission_id', 'submitted_by',
+                            'latitude', 'longitude']

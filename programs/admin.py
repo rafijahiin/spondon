@@ -4,6 +4,7 @@ from .models import (
     ClinicVisit, HIVSTITestResult, ADRRecord, AutoclaveLog, AntenatalCard,
     HTCCounselling, IndividualCounselling, MHScreening,
     GBVCase, GBVAccessLog,
+    IECMaterial,
     OutreachSession, GroupEducationSession,
     Referral,
     StockEntry, TemperatureLog, SafetyHygieneKit, StoreRequisition,
@@ -221,3 +222,15 @@ class VisitorRegisterAdmin(admin.ModelAdmin):
     list_filter = ['organisation', 'iec_bcc_distributed']
     date_hierarchy = 'visit_date'
     search_fields = ['visitor_name']
+
+
+@admin.register(IECMaterial)
+class IECMaterialAdmin(admin.ModelAdmin):
+    """Audit FIX 12.2 — IEC/SBCC distribution log. Feeds PHD 3.1a-d and
+    Bandhu 4.1 / 4.3 indicators."""
+    list_display = ['partner', 'organisation', 'material_type', 'quantity',
+                    'date_distributed', 'district', 'approval_status']
+    list_filter = ['organisation', 'material_type', 'approval_status']
+    date_hierarchy = 'date_distributed'
+    search_fields = ['district', 'notes']
+    raw_id_fields = ['center', 'submitted_by', 'approved_by']

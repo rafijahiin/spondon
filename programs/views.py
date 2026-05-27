@@ -33,6 +33,7 @@ from .models import (
     GBVCase, GBVAccessLog,
     OutreachSession, GroupEducationSession,
     Referral,
+    IECMaterial,
     StockEntry, TemperatureLog, SafetyHygieneKit, StoreRequisition,
     TrainingEvent, CoordMeeting, MobileHealthCamp, VisitorRegister,
 )
@@ -42,6 +43,7 @@ from .serializers import (
     AutoclaveLogSerializer, AntenatalCardSerializer,
     HTCCounsellingSerializer, IndividualCounsellingSerializer, MHScreeningSerializer,
     GBVCaseSerializer, GBVCaseDetailSerializer,
+    IECMaterialSerializer,
     OutreachSessionSerializer, GroupEducationSessionSerializer,
     ReferralSerializer, ReferralOutcomeSerializer,
     StockEntrySerializer, TemperatureLogSerializer,
@@ -288,6 +290,28 @@ class GroupEducationSessionViewSet(OrgFilteredViewSet):
     queryset = GroupEducationSession.objects.select_related('center').all()
     serializer_class = GroupEducationSessionSerializer
     permission_classes = [CanWriteOutreach]  # Community session — manager-only
+
+
+# ─── IEC / SBCC materials ──────────────────────────────────────────────────────
+#
+# Feeds PHD 3.1a-d + Bandhu 4.1 / 4.3 indicators. CanWriteOutreach is the
+# right permission class — IEC distribution is a community-facing activity
+# the manager owns. Field staff get read-only via OrgFilterMixin filter.
+
+class IECMaterialViewSet(OrgFilteredViewSet):
+    queryset = IECMaterial.objects.select_related('center', 'partner').all()
+    serializer_class = IECMaterialSerializer
+    permission_classes = [CanWriteOutreach]
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        material_type = self.request.query_params.get('material_type')
+        if material_type:
+            qs = qs.filter(material_type=material_type)
+        return qs.order_by('-date_distributed', '-created_at')
+
+    def perform_create(self, serializer):
+        serializer.save(submitted_by=self.request.user)
 
 
 # ─── Referrals ─────────────────────────────────────────────────────────────────

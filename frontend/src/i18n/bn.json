@@ -228,6 +228,8 @@
     "tableTarget": "লক্ষ্যমাত্রা",
     "tableUnit": "একক",
     "tableLastUpdated": "সর্বশেষ আপডেট",
+    "tableSource": "সোর্স ফর্ম",
+    "notKoboSourced": "রেজিস্ট্রি / স্টক থেকে গণনা — কোনো কোবো ফর্ম নেই",
     "notSetPill": "নির্ধারিত নয়",
     "save": "সংরক্ষণ (Enter)",
     "cancel": "বাতিল (Esc)"
