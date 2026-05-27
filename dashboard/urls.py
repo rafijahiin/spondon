@@ -11,6 +11,7 @@ urlpatterns = [
     path('partner-kpis/', views.PartnerKPIsView.as_view(), name='dashboard-partner-kpis'),
     path('alerts/', views.DashboardAlertsView.as_view(), name='dashboard-alerts'),
     path('org-summary/', views.OrgSummaryView.as_view(), name='dashboard-org-summary'),
+    path('programme-summary/', views.ProgrammeSummaryView.as_view(), name='dashboard-programme-summary'),
     path('map-data/', views.MapDataView.as_view(), name='dashboard-map-data'),
     path('programs-summary/', views.ProgramsSummaryView.as_view(), name='dashboard-programs-summary'),
     path('chat/', views.ChatView.as_view(), name='dashboard-chat'),

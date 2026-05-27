@@ -526,6 +526,80 @@ class OrgSummaryView(APIView):
         })
 
 
+class ProgrammeSummaryView(APIView):
+    """
+    GET /api/dashboard/programme-summary/
+
+    Programme-wide AI narrative. Used by the homepage AI Insights drawer
+    to give senior management a single-paragraph read on the state of all
+    three partners (CIPRB + Bandhu + PHD) without them having to open
+    each org page in turn. Permissions: developer, supervisor, org_lead.
+    """
+    permission_classes = [IsSuperAdminOrManager]
+
+    def get(self, request):
+        # Only cross-org roles get the programme-wide view. Single-org
+        # managers stay on their org's summary.
+        if not request.user.can_read_other_orgs:
+            return Response({'detail': 'Cross-org access required.'}, status=403)
+
+        now = timezone.now()
+        month_start, month_end = current_month_bounds()
+
+        # Aggregate across all three partners.
+        all_sub = KoboSubmission.objects.filter(status__in=[APPROVED, PENDING])
+        this_month = all_sub.filter(submitted_at__gte=month_start, submitted_at__lt=month_end)
+        per_partner = {}
+        for p in ('CIPRB', 'Bandhu', 'PHD'):
+            p_qs = this_month.filter(partner=p)
+            per_partner[p] = {
+                'total':   p_qs.count(),
+                'mpdsr':   p_qs.filter(form_type=FormType.MPDSR).count(),
+                'fistula': p_qs.filter(form_type=FormType.FISTULA).count(),
+            }
+
+        pending = KoboSubmission.objects.filter(status=PENDING).count()
+
+        context = {
+            'Period':                now.strftime('%B %Y'),
+            'Total submissions':     this_month.count(),
+            'CIPRB submissions':     per_partner['CIPRB']['total'],
+            'Bandhu submissions':    per_partner['Bandhu']['total'],
+            'PHD submissions':       per_partner['PHD']['total'],
+            'MPDSR cases (CIPRB)':   per_partner['CIPRB']['mpdsr'],
+            'Fistula cases (CIPRB)': per_partner['CIPRB']['fistula'],
+            'Pending review (all)':  pending,
+        }
+
+        summary = ''
+        meta = {}
+        try:
+            from reports.ai_narrative import generate_narrative
+            summary, meta = generate_narrative(context)
+        except Exception as exc:
+            logger.error('programme_narrative_error', extra={'exc': str(exc)})
+
+        if not summary:
+            summary = (
+                f'Programme update for {now.strftime("%B %Y")}: '
+                f'{context["Total submissions"]} submissions received across '
+                f'all three partners — CIPRB {context["CIPRB submissions"]}, '
+                f'Bandhu {context["Bandhu submissions"]}, '
+                f'PHD {context["PHD submissions"]}. '
+                f'{context["MPDSR cases (CIPRB)"]} MPDSR cases and '
+                f'{context["Fistula cases (CIPRB)"]} fistula cases under CIPRB. '
+                f'{pending} submission{"s" if pending != 1 else ""} pending review.'
+            )
+
+        return Response({
+            'scope': 'programme',
+            'period': now.strftime('%B %Y'),
+            'ai_summary': summary,
+            'narrative_source': meta.get('narrative_source', 'template'),
+            'generated_at': now.isoformat(),
+        })
+
+
 # ---------------------------------------------------------------------------
 # Programs summary — counts from programs models (16 form types)
 # ---------------------------------------------------------------------------
