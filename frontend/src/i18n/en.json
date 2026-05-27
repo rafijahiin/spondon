@@ -290,6 +290,7 @@
     "empty": "No users found."
   },
   "mpdsr": {
+    "eyebrow": "TRACKER · MPDSR",
     "title": "MPDSR Tracker",
     "subtitle": "Maternal & Perinatal Death Surveillance",
     "allPartners": "All Partners",

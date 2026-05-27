@@ -1,12 +1,25 @@
+/**
+ * MPDSR Tracker — Maternal & Perinatal Death Surveillance.
+ *
+ * Rewritten to consume the editorial design tokens (var(--surface),
+ * var(--ink), var(--hair), var(--unfpa)) instead of Tailwind dark-mode
+ * utilities, which were rendering a teal-tinted slate-blue panel that
+ * clashed with the rest of the site in dark mode. Now matches FistulaTracker
+ * / OrgDashboard / ManagerApprovals visually.
+ *
+ * Access (per audit FIX 1.9):
+ *   developer + supervisor + (org_lead AND organisation=CIPRB) → 200
+ *   manager / field_staff / focal                              → 403 (server)
+ *                                                              → bounced (client)
+ */
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Clock, MapPin } from 'lucide-react'
+import { Clock, MapPin, X } from 'lucide-react'
 import { api } from '@/api/client'
 import { usePolling } from '@/hooks/usePolling'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { PageLoader } from '@/components/ui/LoadingSpinner'
 import { formatDate, formatDateTime } from '@/utils/format'
-import { cn } from '@/utils/cn'
 import type { MPDSRCase, AuditEntry } from '@/types/index'
 
 const CAUSE_LABELS: Record<string, string> = {
@@ -23,97 +36,150 @@ const PLACE_LABELS: Record<string, string> = {
   in_transit: 'In Transit',
 }
 
+// ─── Audit drawer ─────────────────────────────────────────────────────────────
+
 function AuditDrawer({ kase, onClose }: { kase: MPDSRCase; onClose: () => void }) {
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-black/40" onClick={onClose}>
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 50,
+        display: 'flex', justifyContent: 'flex-end',
+        background: 'rgba(0,0,0,0.4)',
+        backdropFilter: 'blur(8px)',
+        WebkitBackdropFilter: 'blur(8px)',
+      }}
+    >
       <div
-        className="h-full w-full max-w-md overflow-y-auto bg-white dark:bg-gray-900 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
+        style={{
+          height: '100%', width: '100%', maxWidth: 440,
+          overflowY: 'auto',
+          background: 'var(--surface)',
+          borderLeft: '1px solid var(--hair)',
+          boxShadow: 'var(--sh-3)',
+        }}
       >
-        <div className="sticky top-0 flex items-center justify-between border-b border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-900 px-5 py-4">
+        <div
+          style={{
+            position: 'sticky', top: 0,
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '16px 20px',
+            background: 'var(--surface)',
+            borderBottom: '1px solid var(--hair)',
+            zIndex: 1,
+          }}
+        >
           <div>
-            <h2 className="font-bold text-gray-900 dark:text-white">Audit Trail</h2>
-            <p className="text-xs text-gray-400 dark:text-gray-500">Case {kase.case_hash.slice(0, 8)}…</p>
+            <h2 style={{ fontWeight: 700, color: 'var(--ink)', fontSize: 15, margin: 0 }}>
+              Audit Trail
+            </h2>
+            <p style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>
+              Case {kase.case_hash.slice(0, 8)}…
+            </p>
           </div>
           <button
             onClick={onClose}
-            className="rounded-lg p-2 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400"
+            aria-label="Close"
+            className="lang-toggle-btn"
+            style={{
+              width: 32, height: 32, borderRadius: 999,
+              background: 'var(--surface-2)',
+              border: '1px solid var(--hair)',
+              color: 'var(--ink-3)', cursor: 'pointer',
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            }}
           >
-            ✕
+            <X size={14} />
           </button>
         </div>
 
-        <div className="p-5 space-y-4">
+        <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
           {/* Case summary */}
-          <div className="rounded-xl bg-gray-50 dark:bg-gray-800 p-4 space-y-2 text-sm">
-            <div className="grid grid-cols-2 gap-2">
-              <div className="col-span-2">
-                <p className="text-xs text-gray-400">Form</p>
-                <p className="font-medium text-gray-900 dark:text-white">{kase.sub_form_label || kase.sub_form_type}</p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-400">Type</p>
-                <p className="font-medium text-gray-900 dark:text-white">{kase.death_type_display}</p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-400">Place</p>
-                <p className="font-medium text-gray-900 dark:text-white">{PLACE_LABELS[kase.place_of_death] ?? kase.place_of_death}</p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-400">District</p>
-                <p className="font-medium text-gray-900 dark:text-white">{kase.district}</p>
-              </div>
-              {kase.upazila && (
-                <div>
-                  <p className="text-xs text-gray-400">Upazila</p>
-                  <p className="font-medium text-gray-900 dark:text-white">{kase.upazila}</p>
-                </div>
-              )}
-              {kase.facility_name && (
-                <div className="col-span-2">
-                  <p className="text-xs text-gray-400">Facility</p>
-                  <p className="font-medium text-gray-900 dark:text-white">{kase.facility_name}</p>
-                </div>
-              )}
-              <div>
-                <p className="text-xs text-gray-400">Date of Death</p>
-                <p className="font-medium text-gray-900 dark:text-white">{formatDate(kase.date_of_death)}</p>
-              </div>
-              {kase.age_years != null && (
-                <div>
-                  <p className="text-xs text-gray-400">Age</p>
-                  <p className="font-medium text-gray-900 dark:text-white">{kase.age_years} yrs</p>
-                </div>
-              )}
+          <div
+            className="card"
+            style={{ padding: 16, background: 'var(--surface-2)', fontSize: 13 }}
+          >
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <SummaryRow label="Form" value={kase.sub_form_label || kase.sub_form_type} span={2} />
+              <SummaryRow label="Type"     value={kase.death_type_display} />
+              <SummaryRow label="Place"    value={PLACE_LABELS[kase.place_of_death] ?? kase.place_of_death} />
+              <SummaryRow label="District" value={kase.district} />
+              {kase.upazila && <SummaryRow label="Upazila" value={kase.upazila} />}
+              {kase.facility_name && <SummaryRow label="Facility" value={kase.facility_name} span={2} />}
+              <SummaryRow label="Date of Death" value={formatDate(kase.date_of_death) || '—'} />
+              {kase.age_years != null && <SummaryRow label="Age" value={`${kase.age_years} yrs`} />}
               {kase.cause_of_death && (
-                <div className="col-span-2">
-                  <p className="text-xs text-gray-400">Cause / ICD-10</p>
-                  <p className="font-medium text-gray-900 dark:text-white break-words">{kase.cause_of_death.replace(/ /g, ', ')}</p>
-                </div>
+                <SummaryRow
+                  label="Cause / ICD-10"
+                  value={kase.cause_of_death.replace(/ /g, ', ')}
+                  span={2}
+                />
               )}
             </div>
           </div>
 
           {/* Audit timeline */}
           <div>
-            <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-3">Timeline</h3>
+            <div className="kicker" style={{ marginBottom: 12 }}>
+              <span className="dot" />Timeline
+            </div>
             {(kase.audit_trail ?? []).length === 0 && (
-              <p className="text-sm text-gray-400">No audit entries yet.</p>
+              <p style={{ fontSize: 13, color: 'var(--muted)' }}>No audit entries yet.</p>
             )}
-            <div className="relative space-y-4 before:absolute before:left-4 before:top-2 before:bottom-2 before:w-px before:bg-gray-200 dark:before:bg-gray-700">
+            <div
+              style={{
+                position: 'relative',
+                display: 'flex', flexDirection: 'column', gap: 16,
+              }}
+            >
+              <span
+                aria-hidden
+                style={{
+                  position: 'absolute', left: 15, top: 6, bottom: 6,
+                  width: 1, background: 'var(--hair-2)',
+                }}
+              />
               {(kase.audit_trail ?? []).map((entry: AuditEntry, i: number) => (
-                <div key={i} className="flex gap-4 pl-10 relative">
-                  <span className="absolute left-2.5 top-1.5 h-3 w-3 rounded-full bg-unfpa-blue ring-2 ring-white dark:ring-gray-900" />
-                  <div className="flex-1">
-                    <div className="flex items-start justify-between gap-2">
-                      <p className="text-sm font-medium text-gray-900 dark:text-white">{entry.action}</p>
-                      <span className="flex-shrink-0 flex items-center gap-1 text-[10px] text-gray-400">
-                        <Clock className="h-3 w-3" />
+                <div
+                  key={i}
+                  style={{ display: 'flex', gap: 14, paddingLeft: 36, position: 'relative' }}
+                >
+                  <span
+                    style={{
+                      position: 'absolute', left: 10, top: 6,
+                      height: 11, width: 11, borderRadius: 999,
+                      background: 'var(--unfpa)',
+                      boxShadow: '0 0 0 2px var(--surface)',
+                    }}
+                  />
+                  <div style={{ flex: 1 }}>
+                    <div style={{
+                      display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8,
+                    }}>
+                      <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--ink)', margin: 0 }}>
+                        {entry.action}
+                      </p>
+                      <span style={{
+                        flexShrink: 0,
+                        display: 'inline-flex', alignItems: 'center', gap: 4,
+                        fontSize: 10, color: 'var(--muted)',
+                      }}>
+                        <Clock size={11} />
                         {formatDateTime(entry.timestamp)}
                       </span>
                     </div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">{entry.user}</p>
-                    {entry.notes && <p className="mt-1 text-xs text-gray-600 dark:text-gray-400 italic">{entry.notes}</p>}
+                    <p style={{ fontSize: 11.5, color: 'var(--muted)', marginTop: 2 }}>
+                      {entry.user}
+                    </p>
+                    {entry.notes && (
+                      <p style={{
+                        marginTop: 4, fontSize: 12, color: 'var(--ink-3)',
+                        fontStyle: 'italic',
+                      }}>
+                        {entry.notes}
+                      </p>
+                    )}
                   </div>
                 </div>
               ))}
@@ -124,6 +190,22 @@ function AuditDrawer({ kase, onClose }: { kase: MPDSRCase; onClose: () => void }
     </div>
   )
 }
+
+function SummaryRow({ label, value, span = 1 }: { label: string; value: string; span?: 1 | 2 }) {
+  return (
+    <div style={{ gridColumn: span === 2 ? 'span 2' : undefined }}>
+      <p style={{ fontSize: 11, color: 'var(--muted)', margin: 0 }}>{label}</p>
+      <p style={{
+        fontSize: 13, fontWeight: 500, color: 'var(--ink)', marginTop: 2,
+        wordBreak: 'break-word',
+      }}>
+        {value}
+      </p>
+    </div>
+  )
+}
+
+// ─── Main page ────────────────────────────────────────────────────────────────
 
 type PartnerFilter = 'all' | 'PHD' | 'Bandhu'
 type CauseFilter = 'all' | string
@@ -155,133 +237,237 @@ export default function MPDSRTracker() {
     placeCounts[c.place_of_death] = (placeCounts[c.place_of_death] ?? 0) + 1
   }
 
+  const hasCases = (cases ?? []).length > 0
+
   return (
-    <div className="space-y-6">
-      {/* Heading */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('mpdsr.title', { defaultValue: 'MPDSR Tracker' })}</h1>
-        <p className="font-bangla mt-1 text-sm text-gray-500 dark:text-gray-400">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
+      {/* ───────────────── Hero ───────────────── */}
+      <section className="hero" style={{ paddingBottom: 8 }}>
+        <div className="hero-eyebrow">
+          <span className="live-dot" />
+          <span>{t('mpdsr.eyebrow', { defaultValue: 'TRACKER · MPDSR' })}</span>
+        </div>
+        <h1
+          className="hero-headline"
+          style={{
+            fontSize: 'clamp(40px, 5.5vw, 64px)',
+            letterSpacing: '-0.03em',
+            marginBottom: 10,
+          }}
+        >
+          {t('mpdsr.title', { defaultValue: 'MPDSR Tracker' })}
+        </h1>
+        <p className="hero-lede" style={{ maxWidth: 640 }}>
           {t('mpdsr.subtitle', { defaultValue: 'Maternal & Perinatal Death Surveillance' })}
         </p>
-      </div>
+      </section>
 
-      {/* Disaggregation cards */}
-      {(cases ?? []).length > 0 && (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-          {Object.entries(CAUSE_LABELS).map(([key, label]) => (
-            <button
-              key={key}
-              onClick={() => setCauseFilter(causeFilter === key ? 'all' : key)}
-              className={cn(
-                'rounded-xl border p-4 text-left transition-all',
-                causeFilter === key
-                  ? 'border-unfpa-blue bg-unfpa-blue/10 dark:bg-unfpa-blue/20'
-                  : 'border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-unfpa-blue/50'
-              )}
-            >
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{causeCounts[key] ?? 0}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{label}</p>
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* Place of death summary */}
-      {(cases ?? []).length > 0 && (
-        <div className="flex flex-wrap gap-4">
-          {Object.entries(PLACE_LABELS).map(([key, label]) => (
-            <div key={key} className="flex items-center gap-2 text-sm">
-              <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-unfpa-blue/15 text-[10px] font-bold text-unfpa-blue">
-                {placeCounts[key] ?? 0}
-              </span>
-              <span className="text-gray-600 dark:text-gray-400">{label}</span>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Partner filter */}
-      <div className="flex gap-2">
-        {(['all', 'PHD', 'Bandhu'] as PartnerFilter[]).map((p) => (
-          <button
-            key={p}
-            onClick={() => setPartnerFilter(p)}
-            className={cn(
-              'rounded-full px-4 py-1.5 text-sm font-medium transition-colors',
-              partnerFilter === p
-                ? 'bg-unfpa-blue text-white'
-                : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300'
-            )}
+      {/* ───────────────── Disaggregation cards ───────────────── */}
+      {hasCases && (
+        <section className="section">
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+              gap: 12,
+            }}
           >
-            {p === 'all' ? t('mpdsr.allPartners', { defaultValue: 'All Partners' }) : p}
-          </button>
-        ))}
-      </div>
-
-      {/* Table */}
-      {loading && !cases ? (
-        <PageLoader />
-      ) : (
-        <div className="rounded-xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/40">
-                <tr>
-                  {[
-                    t('mpdsr.thCaseId', { defaultValue: 'Case ID' }),
-                    t('mpdsr.thForm', { defaultValue: 'Form' }),
-                    t('mpdsr.thPartner', { defaultValue: 'Partner' }),
-                    t('mpdsr.thDistrict', { defaultValue: 'District' }),
-                    t('mpdsr.thDate', { defaultValue: 'Date' }),
-                    t('mpdsr.thType', { defaultValue: 'Type' }),
-                    t('mpdsr.thStatus', { defaultValue: 'Status' }),
-                    t('mpdsr.thAudit', { defaultValue: 'Audit' }),
-                  ].map((h) => (
-                    <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50 dark:divide-gray-700/50">
-                {(cases ?? []).map((c) => (
-                  <tr key={c.id} className={cn('hover:bg-gray-50 dark:hover:bg-gray-700/30', c.is_overdue_committee && 'bg-amber-50/50 dark:bg-amber-900/10')}>
-                    <td className="px-4 py-3 font-mono text-xs text-gray-500 dark:text-gray-400">
-                      {c.case_hash.slice(0, 12)}…
-                    </td>
-                    <td className="px-4 py-3 text-xs text-gray-600 dark:text-gray-400 max-w-[140px] truncate" title={c.sub_form_label}>
-                      {c.sub_form_label || c.sub_form_type || '—'}
-                    </td>
-                    <td className="px-4 py-3 font-medium text-unfpa-blue">{c.partner}</td>
-                    <td className="px-4 py-3">
-                      <span className="flex items-center gap-1 text-gray-700 dark:text-gray-300">
-                        <MapPin className="h-3 w-3 text-gray-400" />
-                        {c.district}{c.upazila ? `, ${c.upazila}` : ''}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{formatDate(c.date_of_death)}</td>
-                    <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{c.death_type_display}</td>
-                    <td className="px-4 py-3"><StatusBadge status={c.status} /></td>
-                    <td className="px-4 py-3">
-                      <button
-                        onClick={() => setSelectedCase(c)}
-                        className="text-xs font-medium text-unfpa-blue hover:text-unfpa-dark underline"
-                      >
-                        {t('mpdsr.view', { defaultValue: 'View' })} ({(c.audit_trail ?? []).length})
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-                {!(cases ?? []).length && (
-                  <tr>
-                    <td colSpan={8} className="py-12 text-center text-sm text-gray-400">{t('mpdsr.empty', { defaultValue: 'No MPDSR cases found.' })}</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+            {Object.entries(CAUSE_LABELS).map(([key, label]) => {
+              const active = causeFilter === key
+              return (
+                <button
+                  key={key}
+                  onClick={() => setCauseFilter(active ? 'all' : key)}
+                  className="card"
+                  style={{
+                    padding: 16,
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                    background: active ? 'rgba(249,96,0,0.08)' : 'var(--surface)',
+                    borderColor: active ? 'var(--unfpa)' : 'var(--hair)',
+                    transition: 'border-color var(--dur-q), background var(--dur-q)',
+                  }}
+                >
+                  <div style={{
+                    fontSize: 26, fontWeight: 700, color: 'var(--ink)',
+                    fontVariantNumeric: 'tabular-nums', lineHeight: 1,
+                  }}>
+                    {causeCounts[key] ?? 0}
+                  </div>
+                  <div style={{
+                    fontSize: 11.5, color: 'var(--muted)', marginTop: 4,
+                    letterSpacing: '0.02em',
+                  }}>
+                    {label}
+                  </div>
+                </button>
+              )
+            })}
           </div>
-        </div>
+        </section>
       )}
+
+      {/* ───────────────── Place of death pills ───────────────── */}
+      {hasCases && (
+        <section className="section" style={{ marginTop: -16 }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16 }}>
+            {Object.entries(PLACE_LABELS).map(([key, label]) => (
+              <div
+                key={key}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 13,
+                }}
+              >
+                <span
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                    width: 22, height: 22, borderRadius: 999,
+                    background: 'rgba(249,96,0,0.10)',
+                    color: 'var(--unfpa)',
+                    fontSize: 11, fontWeight: 700,
+                    fontVariantNumeric: 'tabular-nums',
+                  }}
+                >
+                  {placeCounts[key] ?? 0}
+                </span>
+                <span style={{ color: 'var(--ink-3)' }}>{label}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* ───────────────── Partner filter ───────────────── */}
+      <section className="section" style={{ marginTop: hasCases ? 0 : -8 }}>
+        <div
+          role="tablist"
+          aria-label="Partner filter"
+          style={{
+            display: 'inline-flex', gap: 4,
+            padding: 4,
+            background: 'var(--surface-2)',
+            border: '1px solid var(--hair)',
+            borderRadius: 999,
+          }}
+        >
+          {(['all', 'PHD', 'Bandhu'] as PartnerFilter[]).map((p) => {
+            const active = partnerFilter === p
+            return (
+              <button
+                key={p}
+                role="tab"
+                aria-selected={active}
+                onClick={() => setPartnerFilter(p)}
+                style={{
+                  padding: '6px 14px',
+                  borderRadius: 999,
+                  fontSize: 13, fontWeight: 500,
+                  border: 'none', cursor: 'pointer',
+                  background: active ? 'var(--unfpa)' : 'transparent',
+                  color: active ? '#fff' : 'var(--ink-3)',
+                  transition: 'background var(--dur-q), color var(--dur-q)',
+                }}
+              >
+                {p === 'all' ? t('mpdsr.allPartners', { defaultValue: 'All Partners' }) : p}
+              </button>
+            )
+          })}
+        </div>
+      </section>
+
+      {/* ───────────────── Cases table ───────────────── */}
+      <section className="section" style={{ marginTop: 0, marginBottom: 48 }}>
+        {loading && !cases ? (
+          <PageLoader />
+        ) : (
+          <div className="card flush" style={{ overflow: 'hidden' }}>
+            <div style={{ overflowX: 'auto' }}>
+              <table className="tbl">
+                <thead>
+                  <tr>
+                    {[
+                      t('mpdsr.thCaseId',   { defaultValue: 'Case ID' }),
+                      t('mpdsr.thForm',     { defaultValue: 'Form' }),
+                      t('mpdsr.thPartner',  { defaultValue: 'Partner' }),
+                      t('mpdsr.thDistrict', { defaultValue: 'District' }),
+                      t('mpdsr.thDate',     { defaultValue: 'Date' }),
+                      t('mpdsr.thType',     { defaultValue: 'Type' }),
+                      t('mpdsr.thStatus',   { defaultValue: 'Status' }),
+                      t('mpdsr.thAudit',    { defaultValue: 'Audit' }),
+                    ].map((h) => (
+                      <th key={h}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {(cases ?? []).map((c) => (
+                    <tr
+                      key={c.id}
+                      style={c.is_overdue_committee
+                        ? { background: 'rgba(251,144,77,0.06)' }
+                        : undefined}
+                    >
+                      <td>
+                        <span className="mono" style={{ fontSize: 11.5, color: 'var(--muted)' }}>
+                          {c.case_hash.slice(0, 12)}…
+                        </span>
+                      </td>
+                      <td
+                        style={{
+                          maxWidth: 160, overflow: 'hidden',
+                          textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                          color: 'var(--ink-3)', fontSize: 12.5,
+                        }}
+                        title={c.sub_form_label}
+                      >
+                        {c.sub_form_label || c.sub_form_type || '—'}
+                      </td>
+                      <td style={{ fontWeight: 500, color: 'var(--unfpa)' }}>{c.partner}</td>
+                      <td>
+                        <span style={{
+                          display: 'inline-flex', alignItems: 'center', gap: 4,
+                          color: 'var(--ink-3)',
+                        }}>
+                          <MapPin size={12} style={{ color: 'var(--muted)' }} />
+                          {c.district}{c.upazila ? `, ${c.upazila}` : ''}
+                        </span>
+                      </td>
+                      <td style={{ color: 'var(--ink-3)' }}>{formatDate(c.date_of_death)}</td>
+                      <td style={{ color: 'var(--ink-3)' }}>{c.death_type_display}</td>
+                      <td><StatusBadge status={c.status} /></td>
+                      <td>
+                        <button
+                          onClick={() => setSelectedCase(c)}
+                          style={{
+                            fontSize: 12, fontWeight: 500,
+                            color: 'var(--unfpa)',
+                            background: 'transparent', border: 'none',
+                            padding: 0, cursor: 'pointer',
+                            textDecoration: 'underline', textUnderlineOffset: 2,
+                          }}
+                        >
+                          {t('mpdsr.view', { defaultValue: 'View' })} ({(c.audit_trail ?? []).length})
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {!hasCases && (
+                    <tr>
+                      <td colSpan={8} style={{
+                        textAlign: 'center',
+                        padding: '48px 16px',
+                        fontSize: 13, color: 'var(--muted)',
+                      }}>
+                        {t('mpdsr.empty', { defaultValue: 'No MPDSR cases found.' })}
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </section>
 
       {selectedCase && (
         <AuditDrawer kase={selectedCase} onClose={() => setSelectedCase(null)} />
