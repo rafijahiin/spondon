@@ -525,82 +525,26 @@ html.dark ::selection { background: rgba(249, 96, 0, 0.30); color: var(--ink); }
   margin: 0 auto;
 }
 
-/* ─── Atmosphere ─────────────────────────────────────────────────────── */
-
+/* ─── Atmosphere — UNFPA brand cleanroom ─────────────────────────────────
+   Replaces the previous orbs + aurora + topo + grain + grid composition.
+   Per the kit ("white providing clean, open spaces") the background is
+   intentionally quiet — a single, near-invisible orange dot pattern at
+   ~4% alpha. On dark mode it auto-mutes via .atm-mesh's opacity rule.   */
 .atmosphere {
   position: fixed;
   inset: 0;
   pointer-events: none;
   overflow: hidden;
   z-index: 0;
+  background: var(--paper);
 }
-
-.orb {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(60px);
-  mix-blend-mode: multiply;
-  opacity: 0.55;
-  will-change: transform;
-}
-.orb.blue   { background: radial-gradient(circle, #B6DDF0 0%, transparent 70%); }
-.orb.coral  { background: radial-gradient(circle, #FCD7CC 0%, transparent 70%); }
-.orb.amber  { background: radial-gradient(circle, #FBE5B5 0%, transparent 70%); }
-.orb.violet { background: radial-gradient(circle, #D9CCF2 0%, transparent 70%); }
-.orb.mint   { background: radial-gradient(circle, #C1E8D4 0%, transparent 70%); }
-
-.grain {
-  position: absolute;
-  inset: 0;
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.08 0 0 0 0 0.10 0 0 0 0 0.14 0 0 0 0.6 0'/></filter><rect width='160' height='160' filter='url(%23n)'/></svg>");
-  opacity: 0.32;
-  mix-blend-mode: multiply;
-}
-
-.aurora {
-  position: absolute;
-  top: -20%;
-  left: 50%;
-  width: 160vw;
-  height: 160vw;
-  max-width: 2400px;
-  max-height: 2400px;
-  transform: translateX(-50%);
-  background:
-    conic-gradient(
-      from 0deg,
-      transparent 0deg,
-      rgba(249, 96, 0, 0.10) 30deg,
-      transparent 90deg,
-      rgba(242, 106, 79, 0.10) 150deg,
-      transparent 210deg,
-      rgba(139, 92, 246, 0.08) 270deg,
-      transparent 330deg
-    );
-  filter: blur(80px);
-  pointer-events: none;
-  mix-blend-mode: multiply;
-  opacity: 0.45;
-}
-
-.topo-svg {
-  position: absolute;
-  top: -6%;
-  right: -8%;
-  width: 90vw;
-  height: 110vh;
-  opacity: 0.075;
-  pointer-events: none;
-}
-
-.grid-overlay {
+.atm-mesh {
   position: absolute;
   inset: 0;
   background-image:
-    linear-gradient(rgba(20,32,43,0.025) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(20,32,43,0.025) 1px, transparent 1px);
-  background-size: 56px 56px;
-  background-position: -1px -1px;
+    radial-gradient(circle at 1px 1px, rgba(249, 96, 0, 0.06) 1px, transparent 0);
+  background-size: 32px 32px;
+  opacity: 0.85;
 }
 
 /* ─── Cards ──────────────────────────────────────────────────────────── */
@@ -1211,62 +1155,9 @@ html.dark ::selection { background: rgba(249, 96, 0, 0.30); color: var(--ink); }
     100% { transform: scale(4); opacity: 0; }
   }
 
-  .orb.drift-1 { animation: drift1 28s ease-in-out infinite; }
-  .orb.drift-2 { animation: drift2 36s ease-in-out infinite; }
-  .orb.drift-3 { animation: drift3 44s ease-in-out infinite; }
-  .orb.drift-4 { animation: drift4 32s ease-in-out infinite; }
-  .orb.drift-5 { animation: drift5 40s ease-in-out infinite; }
-
-  .aurora {
-    animation: auroraSpin 60s linear infinite, auroraBreath 14s ease-in-out infinite;
-  }
-  @keyframes auroraSpin {
-    from { transform: translateX(-50%) rotate(0deg); }
-    to   { transform: translateX(-50%) rotate(360deg); }
-  }
-  @keyframes auroraBreath {
-    0%, 100% { filter: blur(80px); opacity: 0.45; }
-    50%      { filter: blur(110px); opacity: 0.6; }
-  }
-
-  .topo-svg {
-    animation: topoBreath 18s ease-in-out infinite;
-  }
-  @keyframes topoBreath {
-    0%, 100% { opacity: 0.06; transform: scale(1); }
-    50%      { opacity: 0.10; transform: scale(1.015); }
-  }
-
-  .pulse-ring.p1 { animation: ringPulse 6s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
-  .pulse-ring.p2 { animation: ringPulse 6s ease-in-out 1.5s infinite; transform-box: fill-box; transform-origin: center; }
-  .pulse-ring.p3 { animation: ringPulse 6s ease-in-out 3s infinite; transform-box: fill-box; transform-origin: center; }
-  @keyframes ringPulse {
-    0%, 100% { opacity: 0.15; transform: scale(1); }
-    50%      { opacity: 0.55; transform: scale(1.04); }
-  }
-
-  @keyframes drift1 {
-    0%, 100% { transform: translate(0,0) scale(1); }
-    33%      { transform: translate(60px,-40px) scale(1.08); }
-    66%      { transform: translate(-30px,40px) scale(0.95); }
-  }
-  @keyframes drift2 {
-    0%, 100% { transform: translate(0,0) scale(1); }
-    50%      { transform: translate(-80px,30px) scale(1.12); }
-  }
-  @keyframes drift3 {
-    0%, 100% { transform: translate(0,0) scale(1); }
-    40%      { transform: translate(40px,60px) scale(0.9); }
-    70%      { transform: translate(-60px,-20px) scale(1.05); }
-  }
-  @keyframes drift4 {
-    0%, 100% { transform: translate(0,0) scale(1); }
-    50%      { transform: translate(70px,-50px) scale(1.1); }
-  }
-  @keyframes drift5 {
-    0%, 100% { transform: translate(0,0) scale(1); }
-    50%      { transform: translate(-40px,50px) scale(0.95); }
-  }
+  /* Orb / aurora / topo / pulse-ring animations retired with the
+     UNFPA brand re-tint — the atmosphere is now a quiet dot pattern.
+     See .atmosphere + .atm-mesh above. */
 
   .tile:hover .tile-num { transform: translateY(-1px); }
   .tile-num { transition: transform var(--dur) var(--ease); }

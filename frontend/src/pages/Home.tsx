@@ -25,7 +25,7 @@ import { PageLoader } from '@/components/ui/LoadingSpinner'
 import { PartnerOverlapMap } from '@/components/maps/PartnerOverlapMap'
 import { ExecutiveBento } from '@/components/home/ExecutiveBento'
 import {
-  PARTNER_COLORS, PARTNER_NAMES, PARTNER_ROUTES,
+  PARTNER_NAMES, PARTNER_ROUTES,
   type PartnerCode,
 } from '@/data/partnerDistricts'
 import type { IndicatorProgress } from '@/types'
@@ -105,14 +105,11 @@ export default function Home() {
            below that.
            ═══════════════════════════════════════════════════════════════ */}
       <section className="hero" style={{ paddingBottom: 28 }}>
-        <div className="hero-eyebrow anim-rise">
-          <span className="live-dot" />
-          <span>{t('home.eyebrowOrg')}</span>
-          <span className="sep">/</span>
-          <span>{t('home.eyebrowSystem')}</span>
-          <span className="sep">/</span>
-          <span>{t('home.eyebrowPeriod')}</span>
-        </div>
+        {/* Hero eyebrow removed — the three-segment line (CIPRB · UNFPA
+            BANGLADESH / INTEGRATED DIGITAL M&E SYSTEM / 2026–2027) read
+            as redundant chrome. The SPONDON headline now leads cleanly,
+            and the breadcrumb in the Topbar (SPONDON / Programme
+            Overview) already provides the same orientation. */}
 
         <div
           className="home-hero-grid"
@@ -280,16 +277,17 @@ function RollupCard({
   const { t } = useTranslation()
   const { partner, totalAchievement, totalTarget, percentage,
     totalRows, unlinkedRows } = rollup
-  const color = PARTNER_COLORS[partner]
   const nameEn = PARTNER_NAMES[partner].en
   const isNotSet = totalTarget === null
 
-  // Band colour per Step 3 spec.
+  // Band colour per Step 3 spec — kept on the progress bar + percentage
+  // number because that IS data viz (status semantics), per the UNFPA
+  // kit's data-viz palette. The CARD chrome is now monochrome.
   const bandColor =
-    isNotSet ? '#9CA3AF'
-    : (percentage ?? 0) >= 75 ? '#00B050'
-    : (percentage ?? 0) >= 40 ? '#FFC000'
-    : '#FF0000'
+    isNotSet ? 'var(--muted)'
+    : (percentage ?? 0) >= 75 ? '#58968A'   // UNFPA pastel green (data-viz)
+    : (percentage ?? 0) >= 40 ? '#FB904D'   // UNFPA pastel orange
+    : '#F10F45'                              // UNFPA red
 
   return (
     <motion.div
@@ -302,7 +300,6 @@ function RollupCard({
       className="card"
       style={{
         padding: 22,
-        borderTop: `4px solid ${color}`,
         display: 'flex',
         flexDirection: 'column',
         gap: 14,
@@ -312,9 +309,9 @@ function RollupCard({
         <div>
           <div
             className="kicker"
-            style={{ marginBottom: 4, color, fontWeight: 600 }}
+            style={{ marginBottom: 4, color: 'var(--ink-3)', fontWeight: 600 }}
           >
-            <span className="dot" style={{ background: color }} />
+            <span className="dot" style={{ background: 'var(--unfpa)' }} />
             {partner.toUpperCase()}
           </div>
           <div style={{ fontSize: 13.5, color: 'var(--ink-2)' }}>{nameEn}</div>
@@ -399,7 +396,7 @@ function NavTile({
   delay: number
 }) {
   const { t } = useTranslation()
-  const color = PARTNER_COLORS[partner]
+  // Brand colours retired from nav tiles — see RollupCard rationale.
   const names = PARTNER_NAMES[partner]
 
   return (
@@ -413,28 +410,26 @@ function NavTile({
       }}
       whileHover={{ y: reduce ? 0 : -2 }}
       whileTap={{ scale: 0.985 }}
-      className="card"
+      className="card nav-tile"
       style={{
         position: 'relative',
         padding: '28px 24px',
-        background: `linear-gradient(135deg, ${color} 0%, ${color}E0 100%)`,
-        color: '#fff',
-        border: 'none',
+        background: 'var(--surface)',
+        color: 'var(--ink)',
         cursor: 'pointer',
         textAlign: 'left',
         minHeight: 160,
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
-        boxShadow: `0 6px 24px ${color}33`,
-        transitionProperty: 'transform, box-shadow',
+        transitionProperty: 'transform, box-shadow, border-color',
       }}
     >
       <div>
         <div
           style={{
-            fontSize: 11, fontWeight: 600, letterSpacing: '0.12em',
-            opacity: 0.75, textTransform: 'uppercase',
+            fontSize: 11, fontWeight: 700, letterSpacing: '0.12em',
+            color: 'var(--unfpa)', textTransform: 'uppercase',
           }}
         >
           {partner}
@@ -443,13 +438,14 @@ function NavTile({
           style={{
             fontSize: 26, fontWeight: 700, marginTop: 6,
             lineHeight: 1.15, letterSpacing: '-0.02em',
+            color: 'var(--ink)',
           }}
         >
           {names.en}
         </div>
         <div
           className="bn"
-          style={{ fontSize: 13, opacity: 0.85, marginTop: 4 }}
+          style={{ fontSize: 13, color: 'var(--muted)', marginTop: 4 }}
         >
           {names.bn}
         </div>
@@ -458,6 +454,7 @@ function NavTile({
         style={{
           display: 'flex', alignItems: 'center', gap: 8,
           fontSize: 13, fontWeight: 600,
+          color: 'var(--unfpa)',
         }}
       >
         {t('home.tileCta')}
