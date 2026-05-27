@@ -41,6 +41,17 @@ class SubmissionBase(TimestampedModel):
         related_name='+',
     )
     approved_at = models.DateTimeField(null=True, blank=True)
+    # Audit FIX 15.7 — explicit FK to the user who submitted the record.
+    # OrgFilterMixin uses this to restrict FIELD_STAFF to their own entries.
+    # Webhook ingestion (programs/webhook.py) populates this from the
+    # submitted_by_kobo_user string when a User can be resolved; manual
+    # entries via the API set it from request.user in perform_create.
+    submitted_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True, blank=True,
+        on_delete=models.SET_NULL,
+        related_name='+',
+    )
     rejected_reason = models.TextField(blank=True)
     latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)

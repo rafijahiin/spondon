@@ -559,3 +559,69 @@ class Commit2ModelFixesTest(TestCase):
         # Audit FIX 2.7 — IEC distribution is not surveillance; defaults
         # to PENDING and must go through manager approval.
         self.assertEqual(i.approval_status, IECMaterial.PENDING)
+
+
+# ---------------------------------------------------------------------------
+# Commit 3 cleanup fixes — naming convention + field_staff scope
+# ---------------------------------------------------------------------------
+
+class Commit3CleanupFixesTest(TestCase):
+    """Tests for audit FIX 10.4/10.5 (center naming) and 15.7 (field staff
+    own-entries filter). FIX 12.3 (mobile outreach variant) covered in
+    Commit2ModelFixesTest. FIX 14.2 is documentation-only."""
+
+    # FIX 10.4 + 10.5 — naming convention property
+    def test_phd_center_naming_compliant(self):
+        c = ServiceCenter.objects.create(
+            organisation='PHD', name="Daulatdia Brothel (PHD)", code='PHD-NC-1',
+            center_type=ServiceCenter.BROTHEL, district='Rajbari',
+        )
+        self.assertTrue(c.naming_compliant)
+
+    def test_phd_center_naming_non_compliant_warns(self):
+        c = ServiceCenter.objects.create(
+            organisation='PHD', name="Some Center", code='PHD-NC-2',
+            center_type=ServiceCenter.BROTHEL, district='X',
+        )
+        self.assertFalse(c.naming_compliant)
+        self.assertIn('PHD convention', c.naming_convention_hint)
+
+    def test_bandhu_center_naming_compliant(self):
+        c = ServiceCenter.objects.create(
+            organisation='Bandhu',
+            name="Wellness Center Dhaka (Bandhu)", code='BAN-NC-1',
+            center_type=ServiceCenter.DIC, district='Dhaka',
+        )
+        self.assertTrue(c.naming_compliant)
+
+    # FIX 15.7 — field staff own-entries filter (via OrgFilterMixin)
+    def test_field_staff_sees_only_own_referrals(self):
+        from programs.models import Referral, Client
+        from rest_framework.test import APIClient as DRFAPIClient
+        center = ServiceCenter.objects.create(
+            organisation='PHD', name='C2', code='C2-FS',
+            center_type=ServiceCenter.DIC, district='Dhaka',
+        )
+        client = Client.objects.create(
+            organisation='PHD', center=center, client_id='PHD-FS-1', name='X',
+        )
+        fs_a = _make_user('fs-a@phd.org', Organisation.PHD, Role.FIELD_STAFF)
+        fs_b = _make_user('fs-b@phd.org', Organisation.PHD, Role.FIELD_STAFF)
+        # Both referrals live in PHD; A submitted one, B submitted the other.
+        Referral.objects.create(
+            organisation='PHD', center=center, client=client,
+            referral_date=date(2026, 5, 1), referral_type=Referral.HIV,
+            submitted_by=fs_a,
+        )
+        Referral.objects.create(
+            organisation='PHD', center=center, client=client,
+            referral_date=date(2026, 5, 2), referral_type=Referral.TB,
+            submitted_by=fs_b,
+        )
+        api = DRFAPIClient()
+        api.force_authenticate(user=fs_a)
+        resp = api.get('/api/programs/referrals/')
+        self.assertEqual(resp.status_code, 200)
+        rows = resp.data if isinstance(resp.data, list) else resp.data.get('results', [])
+        # fs_a should see exactly 1 row (their own submission)
+        self.assertEqual(len(rows), 1)

@@ -215,20 +215,48 @@ class IsDeveloperOnly(BasePermission):
         return u.is_authenticated and u.role == Role.DEVELOPER
 
 
-# ── OrgFilterMixin (unchanged from the old file) ──────────────────────────────
+# ── OrgFilterMixin ────────────────────────────────────────────────────────────
 
 class OrgFilterMixin:
     """
     DRF ViewSet mixin enforcing org-level queryset isolation.
-    Super admins, supervisors, developers, and org leads see all rows (org
-    leads see other-org rows read-only — write blocked at the permission
-    layer). Managers / field staff / focal see only rows where `org_field`
-    matches their organisation.
+    Supervisors, developers, and org leads see all rows (org leads see
+    other-org rows read-only — write blocked at the permission layer).
+    Managers / focal see only rows where `org_field` matches their org.
+
+    Audit FIX 15.7 — field staff see only their OWN entries on top of the
+    org filter. The mixin probes the model for an `approved_by` /
+    `submitted_by` / `created_by` field (whichever exists, in that order)
+    and adds a per-user filter when the user is FIELD_STAFF. Models without
+    any such field fall back to plain org isolation (no leak — just a
+    less-strict scope than the spec demands).
     """
     org_field = 'partner'
 
+    # Candidate per-row owner fields, in priority order. The first one
+    # that exists on the model is used.
+    OWNER_FIELDS = ('submitted_by', 'created_by', 'approved_by', 'prescribed_by')
+
+    def _owner_field_for(self, model):
+        for fname in self.OWNER_FIELDS:
+            if any(f.name == fname for f in model._meta.get_fields()):
+                return fname
+        return None
+
     def get_queryset(self):
         qs = super().get_queryset()
-        if self.request.user.can_see_all_orgs or self.request.user.can_read_other_orgs:
+        user = self.request.user
+        if user.can_see_all_orgs or user.can_read_other_orgs:
             return qs
-        return qs.filter(**{self.org_field: self.request.user.organisation})
+
+        # Org scope.
+        qs = qs.filter(**{self.org_field: user.organisation})
+
+        # Audit FIX 15.7 — field staff additionally restricted to own entries.
+        from .models import Role
+        if user.role == Role.FIELD_STAFF:
+            owner = self._owner_field_for(qs.model)
+            if owner is not None:
+                qs = qs.filter(**{owner: user})
+
+        return qs

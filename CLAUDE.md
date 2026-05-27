@@ -161,7 +161,13 @@ Build a clean, production-grade React frontend. This is a portfolio piece and wi
 ### Design Rules — Non-Negotiable
 - Mobile-first — managers approve on phone
 - Bangla text: **Hind Siliguri** or **Noto Sans Bengali** — never system fonts
-- Primary colour: UNFPA blue `#00658C`
+- Primary colour: UNFPA orange `#F96000` (post brand-kit refresh, May 2026)
+  - Partner accents: CIPRB `#0072BC` (UNFPA blue), Bandhu `#00B050`, PHD `#ED7D31`
+  - The old "UNFPA primary blue `#009EDB`" and "dark navy `#1A3A5C`" referenced in
+    early specs are not in use anywhere in the codebase. The brand kit applied
+    after the May 2026 workshop uses orange as the primary and reserves blue
+    `#0072BC` for the CIPRB partner accent. Audit FIX 14.2 — documented, no
+    code change pending UNFPA brand confirmation from Rafi.
 - Status colours: traffic-light red/amber/green
 - Progress rings for target vs actual — not bar charts
 - Sparklines inside data tables

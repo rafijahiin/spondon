@@ -94,10 +94,23 @@ def _send_approval_telegram(org: str, form_label: str, reviewer_name: str, appro
 
 
 def _org_filter(queryset, request):
-    """Apply organisation filter based on user permissions."""
+    """Apply organisation filter based on user permissions.
+
+    Audit FIX 15.7 — field staff additionally restricted to own entries
+    via the submitted_by FK on SubmissionBase. Models without a
+    submitted_by field (ServiceCenter / Client) fall back to plain org
+    isolation, which is correct — those are reference tables, not
+    field-submitted records."""
+    from accounts.models import Role
     user = request.user
-    if not user.can_see_all_orgs:
-        queryset = queryset.filter(organisation=user.organisation)
+    if user.can_see_all_orgs or user.can_read_other_orgs:
+        return queryset
+    queryset = queryset.filter(organisation=user.organisation)
+    if user.role == Role.FIELD_STAFF:
+        # Probe the model for submitted_by before filtering — keeps the
+        # filter a no-op on reference tables that don't carry the FK.
+        if any(f.name == 'submitted_by' for f in queryset.model._meta.get_fields()):
+            queryset = queryset.filter(submitted_by=user)
     return queryset
 
 
