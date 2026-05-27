@@ -86,6 +86,7 @@ function Card({
     <motion.div
       initial={{ opacity: 0, y: reduce ? 0 : 12 }}
       animate={{ opacity: 1, y: 0 }}
+      whileHover={reduce ? undefined : { scale: 1.012 }}
       transition={{
         duration: 0.4, delay: reduce ? 0 : delay,
         ease: [0.22, 1, 0.36, 1],

@@ -207,7 +207,21 @@ function Toast({ action, item, onClose }: {
 export default function ManagerApprovals() {
   const { t } = useTranslation()
   const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [filter, setFilter] = useState<'all' | 'urgent' | 'phd' | 'bondhu'>('all')
+  // Filter state persisted to localStorage so navigating away and
+  // back restores the user's last selected filter (§9 state-preservation).
+  const FILTER_KEY = 'approvals.filter'
+  type FilterKey = 'all' | 'urgent' | 'phd' | 'bondhu'
+  const [filter, setFilter] = useState<FilterKey>(() => {
+    if (typeof window === 'undefined') return 'all'
+    const stored = window.localStorage.getItem(FILTER_KEY)
+    if (stored === 'all' || stored === 'urgent' || stored === 'phd' || stored === 'bondhu') {
+      return stored
+    }
+    return 'all'
+  })
+  useEffect(() => {
+    try { window.localStorage.setItem(FILTER_KEY, filter) } catch {}
+  }, [filter])
   const [error, setError] = useState('')
   const [approving, setApproving] = useState(false)
   const [rejecting, setRejecting] = useState(false)

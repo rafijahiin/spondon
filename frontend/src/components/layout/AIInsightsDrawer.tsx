@@ -129,7 +129,12 @@ export function AIInsightsDrawer() {
               onClick={() => setOpen(false)}
               style={{
                 position: 'fixed', inset: 0, zIndex: 200,
-                background: 'rgba(19, 22, 25, 0.4)',
+                background: 'rgba(19, 22, 25, 0.35)',
+                // Targeted glassmorphism — backdrop-blur on the scrim
+                // only, never on content. Stays within the UNFPA kit
+                // (foundation is open/white; this is the OVERLAY).
+                backdropFilter: 'blur(8px) saturate(1.1)',
+                WebkitBackdropFilter: 'blur(8px) saturate(1.1)',
               }}
             />
 
