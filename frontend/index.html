@@ -3,14 +3,23 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!--
+      Fonts — UNFPA Brand Kit (visual-identity/fonts/font-types/) mandates
+      Atkinson Hyperlegible for Latin script and Noto Sans for non-Latin
+      (incl. Bengali). Atkinson was designed by the Braille Institute for
+      maximum legibility — purpose-built for accessible UI like an M&E
+      surveillance dashboard. Bengali typography uses Noto Sans Bengali.
+
+      Previous font stack (Geist + Instrument Serif + Hind Siliguri) is
+      retired with the brand re-tint commit. font-display:swap keeps
+      initial paint fast even on cold cache.
+    -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Hind+Siliguri:wght@400;500;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&family=Noto+Sans+Bengali:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/geist@1.3.1/dist/fonts/geist-sans/style.min.css" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/geist@1.3.1/dist/fonts/geist-mono/style.min.css" />
     <title>Spondon — CIPRB / UNFPA M&amp;E System</title>
   </head>
   <body>

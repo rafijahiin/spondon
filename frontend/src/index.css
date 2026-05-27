@@ -7,42 +7,63 @@
 @tailwind utilities;
 
 :root {
-  /* Brand */
-  --unfpa: #00658C;
-  --unfpa-bright: #0091C7;
-  --unfpa-deep: #003B53;
-  --coral: #F26A4F;
-  --coral-deep: #C94327;
-  --amber: #E9970A;
-  --emerald: #1F9A6D;
-  --rose: #E94560;
-  --violet: #8B5CF6;
+  /* ─── UNFPA Brand Kit palette ────────────────────────────────────────
+     Sourced from https://unfpa.brandkit.host/visual-identity/colour/colour-codes/
+     Primary (must dominate): orange + black + off-white + white.
+     Accents (one per design, never dominant): red, purple, blue.
+     Data-viz pastels live in their own block below.
+     ──────────────────────────────────────────────────────────────────── */
 
-  /* Paper / surface (warm off-white) */
-  --paper: #F7F4EE;
-  --paper-2: #EFEBE3;
-  --surface: #FFFFFF;
-  --surface-2: #FAF8F4;
-  --surface-3: #F2EEE7;
+  /* Brand — primary highlight */
+  --unfpa:        #F96000;  /* UNFPA Orange (Pantone Orange 021 C) */
+  --unfpa-bright: #FB904D;  /* Pastel Orange — data-viz friendly */
+  --unfpa-deep:   #C44E00;  /* Computed: hover/pressed state for orange */
 
-  /* Ink */
-  --ink: #14202B;
-  --ink-2: #2E3D4E;
-  --ink-3: #4C5A6D;
-  --muted: #6E7B8E;
-  --muted-2: #97A1B0;
-  --muted-3: #BDC4CE;
+  /* Accent — use only ONE per design */
+  --unfpa-red:    #F10F45;
+  --unfpa-purple: #9C1ED6;
+  --unfpa-blue:   #2171EC;
 
-  /* Lines */
-  --hair: rgba(20, 32, 43, 0.08);
-  --hair-2: rgba(20, 32, 43, 0.14);
-  --hair-3: rgba(20, 32, 43, 0.22);
+  /* Legacy aliases kept so component-level hardcoded references still work
+     without a sweep. New code should use the semantic tokens above. */
+  --coral:        #F10F45;  /* alias → unfpa-red */
+  --coral-deep:   #B30A33;
+  --amber:        #FB904D;  /* alias → pastel orange (brand-aligned amber) */
+  --emerald:      #58968A;  /* alias → pastel green (charts only!) */
+  --rose:         #F10F45;  /* alias → unfpa-red */
+  --violet:       #9C1ED6;  /* alias → unfpa-purple */
 
-  /* Type */
-  --display: "Instrument Serif", "Times New Roman", serif;
-  --ui: "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
-  --bn: "Hind Siliguri", "Geist", sans-serif;
+  /* Surface — UNFPA Off-white / White foundation */
+  --paper:     #EFF1F7;  /* UNFPA Off-white (digital) */
+  --paper-2:   #E3E7F0;  /* slightly deeper for layered panels */
+  --surface:   #FFFFFF;
+  --surface-2: #F6F8FC;  /* between white and off-white */
+  --surface-3: #EFF1F7;  /* same as paper for nested cards */
+
+  /* Ink — UNFPA Black ramp */
+  --ink:    #131619;   /* UNFPA Black */
+  --ink-2:  #2A2F35;
+  --ink-3:  #4A5159;
+  --muted:  #686A6C;   /* UNFPA Ash (from data-viz palette) */
+  --muted-2:#9CA1A9;
+  --muted-3:#D9DBE1;   /* UNFPA Silver (from data-viz palette) */
+
+  /* Lines — UNFPA Black at low opacity */
+  --hair:   rgba(19, 22, 25, 0.08);
+  --hair-2: rgba(19, 22, 25, 0.14);
+  --hair-3: rgba(19, 22, 25, 0.22);
+
+  /* ─── Type — UNFPA Brand Kit fonts ──────────────────────────────────
+     Atkinson Hyperlegible (Latin) + Noto Sans Bengali (Bengali).
+     Both Google Fonts, loaded in index.html. Atkinson is the same
+     typeface used for hero headlines, body, and italic emphasis —
+     differentiation is by weight (700 for display, 400 for body)
+     and italic, not a separate display face. JetBrains Mono replaces
+     Geist Mono for tabular figures.                                     */
+  --display: "Atkinson Hyperlegible", "Atkinson Hyperlegible Next", system-ui, sans-serif;
+  --ui:      "Atkinson Hyperlegible", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --mono:    "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --bn:      "Noto Sans Bengali", "Atkinson Hyperlegible", sans-serif;
 
   /* Radii */
   --r-xs: 4px;
@@ -75,10 +96,11 @@
   --spine: 64px;
   --topbar: 56px;
 
-  /* Accent (default UNFPA blue) */
+  /* Accent — defaults to UNFPA Orange. Glow values updated to match
+     the new primary so focus rings and hover halos read as on-brand. */
   --accent: var(--unfpa);
-  --accent-glow-1: rgba(0, 145, 199, 0.22);
-  --accent-glow-2: rgba(0, 145, 199, 0.10);
+  --accent-glow-1: rgba(249, 96, 0, 0.22);
+  --accent-glow-2: rgba(249, 96, 0, 0.10);
 
   /* Base typographic defaults */
   font-synthesis: none;
@@ -100,7 +122,7 @@
     line-height: 1.5;
     font-feature-settings: "ss01" 1, "cv11" 1;
   }
-  ::selection { background: rgba(0, 145, 199, 0.22); color: var(--ink); }
+  ::selection { background: rgba(249, 96, 0, 0.22); color: var(--ink); }
   a { color: inherit; text-decoration: none; }
 }
 
@@ -151,35 +173,11 @@
 .spine-expanded .spine-foot { align-items: flex-start; width: 100%; }
 .spine-expanded .spine-avatar { margin-left: 4px; }
 
-.spine-brand {
-  width: 34px;
-  height: 34px;
-  border-radius: 9px;
-  background: linear-gradient(135deg, var(--unfpa) 0%, var(--unfpa-bright) 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-family: var(--display);
-  font-style: italic;
-  font-size: 18px;
-  font-weight: 400;
-  margin-bottom: 24px;
-  box-shadow: var(--sh-1), inset 0 1px 0 rgba(255,255,255,0.4);
-  position: relative;
-  cursor: pointer;
-  border: 0;
-  padding: 0;
-}
-.spine-brand::after {
-  content: "";
-  position: absolute;
-  inset: -2px;
-  border-radius: 11px;
-  background: linear-gradient(135deg, rgba(0,145,199,0.3), transparent);
-  z-index: -1;
-  filter: blur(8px);
-}
+/* spine-brand retired — UNFPA kit forbids re-using the UNFPA logo on a
+   third-party programme. Top space of the rail is now a simple
+   24px spacer so the first nav item has breathing room from the
+   rail's top edge. */
+.spine-top-spacer { height: 24px; flex-shrink: 0; }
 
 .spine-group {
   display: flex;
@@ -212,7 +210,7 @@
 .spine-item:hover { color: var(--ink); background: var(--surface-3); }
 .spine-item.active {
   color: var(--unfpa);
-  background: rgba(0,145,199,0.08);
+  background: rgba(249,96,0,0.08);
 }
 /* Language toggle accessibility — visible focus ring + expanded hit
    area on mobile so the pill meets §2 touch-target-size (44pt) without
@@ -244,7 +242,7 @@
   width: 3px;
   border-radius: 2px;
   background: var(--unfpa-bright);
-  box-shadow: 0 0 8px rgba(0, 145, 199, 0.35);
+  box-shadow: 0 0 8px rgba(249, 96, 0, 0.35);
 }
 .spine-item .badge {
   position: absolute;
@@ -392,7 +390,7 @@
 }
 .crumb-link:hover {
   color: var(--unfpa-bright);
-  background: rgba(0, 145, 199, 0.06);
+  background: rgba(249, 96, 0, 0.06);
 }
 .crumb-link:focus-visible {
   outline: none;
@@ -520,7 +518,7 @@
     conic-gradient(
       from 0deg,
       transparent 0deg,
-      rgba(0, 145, 199, 0.10) 30deg,
+      rgba(249, 96, 0, 0.10) 30deg,
       transparent 90deg,
       rgba(242, 106, 79, 0.10) 150deg,
       transparent 210deg,
@@ -658,7 +656,7 @@
   color: var(--ink-3);
   border: 1px solid var(--hair);
 }
-.tag.blue    { background: rgba(0,145,199,0.10); color: var(--unfpa); border-color: rgba(0,145,199,0.20); }
+.tag.blue    { background: rgba(249,96,0,0.10); color: var(--unfpa); border-color: rgba(249,96,0,0.20); }
 .tag.coral   { background: rgba(242,106,79,0.10); color: var(--coral-deep); border-color: rgba(242,106,79,0.24); }
 .tag.amber   { background: rgba(233,151,10,0.10); color: var(--amber); border-color: rgba(233,151,10,0.26); }
 .tag.emerald { background: rgba(31,154,109,0.10); color: var(--emerald); border-color: rgba(31,154,109,0.24); }
@@ -743,8 +741,8 @@
 .hero-headline .figure {
   color: var(--accent, var(--unfpa));
   text-shadow:
-    0 0 40px var(--accent-glow-1, rgba(0, 145, 199, 0.22)),
-    0 0 80px var(--accent-glow-2, rgba(0, 145, 199, 0.10));
+    0 0 40px var(--accent-glow-1, rgba(249, 96, 0, 0.22)),
+    0 0 80px var(--accent-glow-2, rgba(249, 96, 0, 0.10));
 }
 
 .hero-lede {
@@ -844,7 +842,7 @@
   top: -40px; right: -40px;
   width: 160px; height: 160px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(0,145,199,0.10), transparent 70%);
+  background: radial-gradient(circle, rgba(249,96,0,0.10), transparent 70%);
   pointer-events: none;
 }
 .tile.coral .corner  { background: radial-gradient(circle, rgba(242,106,79,0.12), transparent 70%); }
@@ -864,7 +862,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0,145,199,0.10);
+  background: rgba(249,96,0,0.10);
   color: var(--unfpa);
 }
 .tile.coral .tile-ico   { background: rgba(242,106,79,0.10); color: var(--coral-deep); }
@@ -951,7 +949,7 @@
   background: var(--surface-3);
   border: 1px solid var(--hair);
 }
-.stream-avatar.blue    { background: rgba(0,145,199,0.10); color: var(--unfpa); border-color: rgba(0,145,199,0.22); }
+.stream-avatar.blue    { background: rgba(249,96,0,0.10); color: var(--unfpa); border-color: rgba(249,96,0,0.22); }
 .stream-avatar.coral   { background: rgba(242,106,79,0.10); color: var(--coral-deep); border-color: rgba(242,106,79,0.24); }
 .stream-avatar.amber   { background: rgba(233,151,10,0.10); color: var(--amber); border-color: rgba(233,151,10,0.26); }
 .stream-avatar.emerald { background: rgba(31,154,109,0.10); color: var(--emerald); border-color: rgba(31,154,109,0.24); }
@@ -1065,15 +1063,15 @@
 .map-svg { position: absolute; inset: 0; width: 100%; height: 100%; }
 
 .bd-region {
-  fill: rgba(0, 145, 199, 0.04);
-  stroke: rgba(0, 145, 199, 0.32);
+  fill: rgba(249, 96, 0, 0.04);
+  stroke: rgba(249, 96, 0, 0.32);
   stroke-width: 1;
   transition: fill var(--dur) var(--ease), stroke var(--dur) var(--ease);
   cursor: pointer;
 }
-.bd-region:hover { fill: rgba(0, 145, 199, 0.14); stroke: var(--unfpa); }
-.bd-region.active { fill: rgba(0, 145, 199, 0.16); stroke: var(--unfpa); }
-.bd-region.dim    { fill: rgba(0, 145, 199, 0.02); stroke: rgba(0, 145, 199, 0.16); }
+.bd-region:hover { fill: rgba(249, 96, 0, 0.14); stroke: var(--unfpa); }
+.bd-region.active { fill: rgba(249, 96, 0, 0.16); stroke: var(--unfpa); }
+.bd-region.dim    { fill: rgba(249, 96, 0, 0.02); stroke: rgba(249, 96, 0, 0.16); }
 
 .bd-region-label {
   font-family: var(--mono);
@@ -1145,7 +1143,7 @@
     animation: stream-in 600ms var(--ease) backwards;
   }
   @keyframes stream-in {
-    from { opacity: 0; transform: translateX(-12px); background: rgba(0,145,199,0.06); }
+    from { opacity: 0; transform: translateX(-12px); background: rgba(249,96,0,0.06); }
     to   { opacity: 1; transform: translateX(0); }
   }
 

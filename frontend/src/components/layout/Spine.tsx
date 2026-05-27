@@ -6,7 +6,7 @@
  * S logo toggles expanded/collapsed. Includes KoboToolbox form links panel.
  */
 import { useState, useRef, useEffect } from 'react'
-import { Link, NavLink, useNavigate } from 'react-router-dom'
+import { NavLink, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
   Home, Building2, HeartHandshake, ClipboardCheck, FileBarChart2,
@@ -255,27 +255,14 @@ export function Spine() {
         onMouseEnter={handleSpineMouseEnter}
         onMouseLeave={handleSpineMouseLeave}
       >
-      {/* Brand mark — clicking goes HOME (universal logo convention).
-          The previous click-to-toggle behaviour was confusing because
-          users expect a top-left logo to route home. Expanding the
-          rail is now exclusively via hover (see handleSpineMouseEnter).
-          Managers don't get a home page, so for them the brand is a
-          non-interactive mark to avoid silently routing to /approvals
-          on an "S logo" click. */}
-      {user && user.role !== 'manager' ? (
-        <Link
-          to="/"
-          className="spine-brand"
-          title={t('nav.programmeOverview')}
-          aria-label={t('nav.programmeOverview')}
-        >
-          <span>S</span>
-        </Link>
-      ) : (
-        <div className="spine-brand" aria-hidden="true">
-          <span>S</span>
-        </div>
-      )}
+      {/* No logo per UNFPA brand kit — using the UNFPA logo for a
+          third-party programme would violate the kit (logo cannot be
+          altered or combined with other taglines). The "Spondon"
+          wordmark lives in the Topbar breadcrumb, which is a Link
+          back to home. The spine's top space stays clean — just a
+          modest vertical gap so the first nav item doesn't crash
+          into the rail edge. */}
+      <div className="spine-top-spacer" aria-hidden="true" />
 
       {/* Primary nav group */}
       <div className="spine-group">
