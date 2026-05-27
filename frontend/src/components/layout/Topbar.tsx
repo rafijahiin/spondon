@@ -4,28 +4,35 @@
  * Sticky, frosted-glass background, mono typography.
  */
 import { useLocation } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { RefreshCw } from 'lucide-react'
 import { LanguageToggle } from './LanguageToggle'
 
-const CRUMBS: Record<string, string[]> = {
-  '/':          ['SPONDON', 'PROGRAMME OVERVIEW'],
-  '/phd':       ['SPONDON', 'DASHBOARDS', 'PHD'],
-  '/bondhu':    ['SPONDON', 'DASHBOARDS', 'BONDHU'],
-  '/approvals': ['SPONDON', 'MANAGER APPROVALS'],
-  '/reports':   ['SPONDON', 'REPORTING HUB'],
-  '/fistula':   ['SPONDON', 'TRACKERS', 'FISTULA'],
-  '/mpdsr':     ['SPONDON', 'TRACKERS', 'MPDSR'],
-  '/tracker':   ['SPONDON', 'TRACKERS', 'PROGRESS'],
-  '/baseline':  ['SPONDON', 'REPORTS', 'BASELINE & ENDLINE'],
-  '/training':  ['SPONDON', 'REPORTS', 'TRAINING LOG'],
-  '/admin':     ['SPONDON', 'ADMIN PANEL'],
+/** Each pathname maps to an array of i18n keys. The last one renders
+ *  bold (current page). All resolve under the `topbar.*` namespace. */
+const CRUMB_KEYS: Record<string, string[]> = {
+  '/':          ['topbar.brand', 'topbar.programmeOverview'],
+  '/phd':       ['topbar.brand', 'topbar.dashboards', 'topbar.phd'],
+  '/bondhu':    ['topbar.brand', 'topbar.dashboards', 'topbar.bondhu'],
+  '/approvals': ['topbar.brand', 'topbar.managerApprovals'],
+  '/reports':   ['topbar.brand', 'topbar.reportingHub'],
+  '/fistula':   ['topbar.brand', 'topbar.trackers', 'topbar.fistula'],
+  '/mpdsr':     ['topbar.brand', 'topbar.trackers', 'topbar.mpdsr'],
+  '/tracker':   ['topbar.brand', 'topbar.trackers', 'topbar.progress'],
+  '/baseline':  ['topbar.brand', 'topbar.reports',  'topbar.baseline'],
+  '/training':  ['topbar.brand', 'topbar.reports',  'topbar.training'],
+  '/admin':     ['topbar.brand', 'topbar.adminPanel'],
 }
 
 export function Topbar() {
+  const { t, i18n } = useTranslation()
   const { pathname } = useLocation()
-  const crumbs = CRUMBS[pathname] || ['SPONDON']
+  const crumbs = CRUMB_KEYS[pathname] || ['topbar.brand']
 
-  const dateStr = new Date().toLocaleDateString('en-GB', {
+  // Format the date using the active language's locale so বাং shows
+  // Bengali numerals + month name.
+  const localeForDate = i18n.language?.startsWith('bn') ? 'bn-BD' : 'en-GB'
+  const dateStr = new Date().toLocaleDateString(localeForDate, {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
@@ -34,10 +41,10 @@ export function Topbar() {
   return (
     <header className="topbar">
       <div className="crumb">
-        {crumbs.map((c, i) => (
-          <span key={i}>
+        {crumbs.map((key, i) => (
+          <span key={key}>
             {i > 0 && <span className="crumb-sep"> / </span>}
-            {i === crumbs.length - 1 ? <b>{c}</b> : <span>{c}</span>}
+            {i === crumbs.length - 1 ? <b>{t(key)}</b> : <span>{t(key)}</span>}
           </span>
         ))}
       </div>
@@ -46,14 +53,14 @@ export function Topbar() {
 
       <div className="top-pill hide-md">
         <span className="live-dot" />
-        <span>SYNC LIVE</span>
+        <span>{t('topbar.syncLive')}</span>
       </div>
 
       <div className="top-pill hide-md">
         <span>{dateStr}</span>
       </div>
 
-      <button className="top-btn" title="Refresh">
+      <button className="top-btn" title={t('topbar.refresh')}>
         <RefreshCw size={14} />
       </button>
 

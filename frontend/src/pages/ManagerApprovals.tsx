@@ -10,6 +10,7 @@ import {
   X, Check, AlertTriangle,
 } from 'lucide-react'
 import { useReducedMotion } from 'motion/react'
+import { useTranslation } from 'react-i18next'
 import { api, apiErrorMessage } from '@/api/client'
 import { usePolling } from '@/hooks/usePolling'
 import { PageLoader, LoadingSpinner } from '@/components/ui/LoadingSpinner'
@@ -41,21 +42,10 @@ function CountUp({ value, dur }: { value: number; dur?: number }) {
   return <>{useCountUp(value, dur).toLocaleString()}</>
 }
 
-// ─── Keyboard shortcut badge ──────────────────────────────────────────────────
-
-function KBD({ children }: { children: React.ReactNode }) {
-  return (
-    <kbd style={{
-      fontFamily: 'var(--mono)', fontSize: 10.5, fontWeight: 500,
-      background: 'var(--surface-3)', color: 'var(--ink)',
-      padding: '2px 6px', borderRadius: 4,
-      border: '1px solid var(--hair-2)', borderBottomWidth: 2,
-      margin: '0 1px',
-    }}>
-      {children}
-    </kbd>
-  )
-}
+// (KBD helper was used for inline shortcut hints in the hero / actions
+// strip. The i18n migration moved those hints into a single translatable
+// sentence under approvals.shortcuts / approvals.shortcutsLine so the
+// helper is no longer referenced.)
 
 // ─── Stat block ───────────────────────────────────────────────────────────────
 
@@ -215,6 +205,7 @@ function Toast({ action, item, onClose }: {
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function ManagerApprovals() {
+  const { t } = useTranslation()
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [filter, setFilter] = useState<'all' | 'urgent' | 'phd' | 'bondhu'>('all')
   const [error, setError] = useState('')
@@ -324,9 +315,9 @@ export default function ManagerApprovals() {
       <section className="hero" style={{ paddingBottom: 28 }}>
         <div className="hero-eyebrow anim-rise">
           <span className="live-dot" />
-          <span>APPROVAL CONSOLE</span>
+          <span>{t('approvals.eyebrowConsole')}</span>
           <span className="sep">/</span>
-          <span>QUEUE · {allItems.length} ITEMS</span>
+          <span>{t('approvals.eyebrowQueueItems', { count: allItems.length })}</span>
           <span className="sep">/</span>
           <span>{dateStr} GMT+6</span>
         </div>
@@ -335,22 +326,22 @@ export default function ManagerApprovals() {
           <div>
             <h1 className="hero-headline" style={{ fontSize: 'clamp(40px, 6vw, 76px)', marginBottom: 6 }}>
               <span className="figure"><CountUp value={allItems.length} /></span>{' '}
-              <span>submissions</span>
+              <span>{t('approvals.headlineSuffix')}</span>
             </h1>
             <div style={{
               fontFamily: 'var(--display)', fontStyle: 'italic',
               fontSize: 'clamp(22px, 2.6vw, 34px)',
               lineHeight: 1.1, color: 'var(--ink-2)',
               letterSpacing: '-0.012em', marginBottom: 16,
-            }}>waiting for your review</div>
+            }}>{t('approvals.headlineSub')}</div>
             <p className="hero-lede" style={{ marginTop: 6 }}>
-              Use <KBD>J</KBD> <KBD>K</KBD> to move through the queue, <KBD>Enter</KBD> to approve, <KBD>X</KBD> to reject.
+              {t('approvals.shortcuts')}
             </p>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, auto)', gap: 24, flexShrink: 0 }}>
-            <Stat label="Queue" value={allItems.length} sub={`${filtered.length} visible`} />
-            <Stat label="Programs" value={programsData?.total ?? 0} sub="pending approval" />
-            <Stat label="Legacy" value={(submissions ?? []).filter(s => s.status === 'pending').length} sub="legacy forms" />
+            <Stat label={t('approvals.statQueue')}    value={allItems.length}                 sub={t('approvals.statQueueSub',    { count: filtered.length })} />
+            <Stat label={t('approvals.statPrograms')} value={programsData?.total ?? 0}        sub={t('approvals.statProgramsSub')} />
+            <Stat label={t('approvals.statLegacy')}   value={(submissions ?? []).filter(s => s.status === 'pending').length} sub={t('approvals.statLegacySub')} />
           </div>
         </div>
       </section>
@@ -369,7 +360,7 @@ export default function ManagerApprovals() {
           <button onClick={() => setError('')} style={{
             background: 'none', border: 'none', color: 'var(--rose)',
             cursor: 'pointer', textDecoration: 'underline', fontSize: 12,
-          }}>Dismiss</button>
+          }}>{t('approvals.dismissError')}</button>
         </div>
       )}
 
@@ -383,15 +374,15 @@ export default function ManagerApprovals() {
           <div className="card flush" style={{ position: 'sticky', top: 76 }}>
             <div className="card-head" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 10, paddingBottom: 10 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div className="card-title" style={{ fontSize: 14, fontWeight: 600 }}>Queue</div>
-                <span className="mono mute" style={{ fontSize: 11 }}>{filtered.length} of {allItems.length}</span>
+                <div className="card-title" style={{ fontSize: 14, fontWeight: 600 }}>{t('approvals.queueHeading')}</div>
+                <span className="mono mute" style={{ fontSize: 11 }}>{t('approvals.queueCount', { visible: filtered.length, total: allItems.length })}</span>
               </div>
               <div className="pills">
                 {([
-                  { key: 'all' as const, label: 'All', count: allItems.length },
-                  { key: 'urgent' as const, label: 'Urgent', count: allItems.filter(x => x.urgent).length },
-                  { key: 'phd' as const, label: 'PHD', count: allItems.filter(x => x.organisation === 'PHD').length },
-                  { key: 'bondhu' as const, label: 'Bondhu', count: allItems.filter(x => x.organisation === 'Bandhu' || x.organisation === 'Bondhu').length },
+                  { key: 'all'    as const, label: t('approvals.filterAll'),    count: allItems.length },
+                  { key: 'urgent' as const, label: t('approvals.filterUrgent'), count: allItems.filter(x => x.urgent).length },
+                  { key: 'phd'    as const, label: t('approvals.filterPHD'),    count: allItems.filter(x => x.organisation === 'PHD').length },
+                  { key: 'bondhu' as const, label: t('approvals.filterBondhu'), count: allItems.filter(x => x.organisation === 'Bandhu' || x.organisation === 'Bondhu').length },
                 ]).map(f => (
                   <button
                     key={f.key}
@@ -419,7 +410,7 @@ export default function ManagerApprovals() {
                   }}>
                     <Check size={18} />
                   </div>
-                  Queue clear.
+                  {t('approvals.queueClear')}
                 </div>
               )}
               {filtered.map((it, i) => (
@@ -481,8 +472,8 @@ export default function ManagerApprovals() {
                         {selected.organisation}
                       </span>
                       <span className="tag">{selected.model_label}</span>
-                      {selected.kind === 'legacy' && <span className="tag amber">Legacy</span>}
-                      {selected.urgent && <span className="tag coral">URGENT</span>}
+                      {selected.kind === 'legacy' && <span className="tag amber">{t('approvals.tagLegacy')}</span>}
+                      {selected.urgent && <span className="tag coral">{t('approvals.tagUrgent')}</span>}
                     </div>
                     <h2 style={{
                       fontFamily: 'var(--display)', fontStyle: 'italic', fontWeight: 400,
@@ -496,7 +487,7 @@ export default function ManagerApprovals() {
                     </p>
                   </div>
                   <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                    <div className="kicker"><span className="dot" />SUBMITTED</div>
+                    <div className="kicker"><span className="dot" />{t('approvals.submittedAt')}</div>
                     <div className="mono" style={{ fontSize: 13, marginTop: 4 }}>
                       {formatDateTime(selected.created_at)}
                     </div>
@@ -511,13 +502,13 @@ export default function ManagerApprovals() {
                   borderBottom: '1px solid var(--hair)',
                 }}>
                   <div>
-                    <div className="kicker" style={{ marginBottom: 8 }}><span className="dot" />SUBMITTED BY</div>
+                    <div className="kicker" style={{ marginBottom: 8 }}><span className="dot" />{t('approvals.submittedBy')}</div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       <div className="stream-avatar blue" style={{ width: 40, height: 40, fontSize: 13 }}>
                         {(selected.submitted_by || '?').split(' ').map(p => p[0]).join('').slice(0, 2)}
                       </div>
                       <div>
-                        <div style={{ fontSize: 14, fontWeight: 500 }}>{selected.submitted_by || 'Unknown'}</div>
+                        <div style={{ fontSize: 14, fontWeight: 500 }}>{selected.submitted_by || t('approvals.unknownUser')}</div>
                         <div className="mute" style={{ fontSize: 11.5 }}>{selected.organisation}</div>
                       </div>
                     </div>
@@ -592,9 +583,9 @@ export default function ManagerApprovals() {
 
                 {/* Reviewer note */}
                 <div style={{ padding: '22px 0', borderBottom: '1px solid var(--hair)' }}>
-                  <div className="kicker" style={{ marginBottom: 10 }}><span className="dot" />REVIEWER NOTE — OPTIONAL</div>
+                  <div className="kicker" style={{ marginBottom: 10 }}><span className="dot" />{t('approvals.reviewerNote')}</div>
                   <textarea
-                    placeholder="Context for the field team…"
+                    placeholder={t('approvals.reviewerPlaceholder')}
                     style={{
                       width: '100%', minHeight: 64, padding: '10px 12px',
                       border: '1px solid var(--hair)', borderRadius: 10,
@@ -607,7 +598,7 @@ export default function ManagerApprovals() {
                 {/* Actions */}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 20 }}>
                   <div className="mono mute" style={{ fontSize: 11.5 }}>
-                    <KBD>↵</KBD> approve &nbsp; <KBD>X</KBD> reject &nbsp; <KBD>J</KBD>/<KBD>K</KBD> next/prev
+                    {t('approvals.shortcutsLine')}
                   </div>
                   <div style={{ display: 'flex', gap: 8 }}>
                     <button
@@ -616,7 +607,7 @@ export default function ManagerApprovals() {
                       disabled={rejecting}
                       style={{ display: 'flex', alignItems: 'center', gap: 6 }}
                     >
-                      {rejecting ? <LoadingSpinner size="sm" /> : <><X size={14} /> Reject</>}
+                      {rejecting ? <LoadingSpinner size="sm" /> : <><X size={14} /> {t('approvals.btnReject')}</>}
                     </button>
                     <button
                       className="btn success lg"
@@ -624,7 +615,7 @@ export default function ManagerApprovals() {
                       disabled={approving}
                       style={{ display: 'flex', alignItems: 'center', gap: 6 }}
                     >
-                      {approving ? <LoadingSpinner size="sm" /> : <><Check size={14} /> Approve &amp; log</>}
+                      {approving ? <LoadingSpinner size="sm" /> : <><Check size={14} /> {t('approvals.btnApprove')}</>}
                     </button>
                   </div>
                 </div>
@@ -633,9 +624,9 @@ export default function ManagerApprovals() {
           ) : (
             <div className="card" style={{ padding: 40, textAlign: 'center', color: 'var(--muted)' }}>
               <div style={{ fontSize: 18, color: 'var(--ink)', fontFamily: 'var(--display)', fontStyle: 'italic' }}>
-                The queue is clear.
+                {t('approvals.queueClearMain')}
               </div>
-              <p style={{ marginTop: 6 }}>Field workers will fill it again shortly.</p>
+              <p style={{ marginTop: 6 }}>{t('approvals.queueClearSub')}</p>
             </div>
           )}
         </div>

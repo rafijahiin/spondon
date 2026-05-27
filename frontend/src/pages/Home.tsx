@@ -97,7 +97,11 @@ export default function Home() {
   return (
     <>
       {/* ═══════════════════════════════════════════════════════════════
-           HERO — project brief (placeholder until supervisor confirms)
+           HERO — project brief + coverage map side-by-side.
+           Previous layout left a large blank column to the right of the
+           project brief; the coverage map (formerly a separate section)
+           now fills it on >1100px viewports and stacks beneath the text
+           below that.
            ═══════════════════════════════════════════════════════════════ */}
       <section className="hero" style={{ paddingBottom: 28 }}>
         <div className="hero-eyebrow anim-rise">
@@ -109,57 +113,84 @@ export default function Home() {
           <span>{t('home.eyebrowPeriod')}</span>
         </div>
 
-        <h1
-          className="hero-headline anim-rise d1"
+        <div
+          className="home-hero-grid"
           style={{
-            marginBottom: 18,
-            fontSize: 'clamp(56px, 9vw, 132px)',
-            letterSpacing: '-0.035em',
+            display: 'grid',
+            gridTemplateColumns: 'minmax(0, 1.05fr) minmax(0, 1fr)',
+            gap: 36,
+            alignItems: 'start',
+            marginTop: 6,
           }}
         >
-          <span className="figure">{t('home.headline')}</span>
-        </h1>
-
-        <div
-          className="anim-rise d2"
-          style={{
-            maxWidth: 760,
-            fontSize: 'clamp(16px, 1.5vw, 19px)',
-            lineHeight: 1.6,
-            color: 'var(--ink-2)',
-            textWrap: 'pretty',
-          } as React.CSSProperties}
-        >
-          <p style={{ margin: 0 }}>{t('home.briefP1')}</p>
-          <p style={{ marginTop: 14 }}>
-            <span
-              className="tag amber"
-              style={{ fontSize: 10, marginRight: 8, verticalAlign: 'middle' }}
-            >
-              {t('home.briefPlaceholderBadge')}
-            </span>
-            {t('home.briefP2')}
-          </p>
-        </div>
-      </section>
-
-      {/* ═══════════════════════════════════════════════════════════════
-           COVERAGE MAP
-           ═══════════════════════════════════════════════════════════════ */}
-      <section className="section" style={{ marginTop: 16 }}>
-        <div className="section-head">
+          {/* ── Left column: headline + brief ────────────────────────── */}
           <div>
+            <h1
+              className="hero-headline anim-rise d1"
+              style={{
+                marginBottom: 18,
+                fontSize: 'clamp(56px, 8vw, 116px)',
+                letterSpacing: '-0.035em',
+              }}
+            >
+              <span className="figure">{t('home.headline')}</span>
+            </h1>
+
+            <div
+              className="anim-rise d2"
+              style={{
+                fontSize: 'clamp(15px, 1.3vw, 18px)',
+                lineHeight: 1.6,
+                color: 'var(--ink-2)',
+                textWrap: 'pretty',
+              } as React.CSSProperties}
+            >
+              <p style={{ margin: 0 }}>{t('home.briefP1')}</p>
+              <p style={{ marginTop: 14 }}>
+                <span
+                  className="tag amber"
+                  style={{ fontSize: 10, marginRight: 8, verticalAlign: 'middle' }}
+                >
+                  {t('home.briefPlaceholderBadge')}
+                </span>
+                {t('home.briefP2')}
+              </p>
+            </div>
+          </div>
+
+          {/* ── Right column: coverage map + caption ─────────────────── */}
+          <div className="anim-rise d3">
             <div className="kicker" style={{ marginBottom: 8 }}>
               <span className="dot" />{t('home.coverageKicker')}
             </div>
-            <h2 className="section-title">{t('home.coverageTitle')}</h2>
-            <p className="section-sub">{t('home.coverageSubtitle')}</p>
+            <h2
+              className="section-title"
+              style={{ fontSize: 'clamp(20px, 1.8vw, 26px)', marginBottom: 6 }}
+            >
+              {t('home.coverageTitle')}
+            </h2>
+            <p
+              className="section-sub"
+              style={{ marginBottom: 14, fontSize: 12.5 }}
+            >
+              {t('home.coverageSubtitle')}
+            </p>
+            <div className="card shimmer" style={{ padding: 12 }}>
+              <PartnerOverlapMap height={380} />
+            </div>
           </div>
         </div>
-        <div className="card shimmer" style={{ padding: 16 }}>
-          <PartnerOverlapMap height={420} />
-        </div>
       </section>
+
+      {/* Responsive: collapse the hero to a single column on narrow viewports
+          so the map drops beneath the brief instead of crushing both sides. */}
+      <style>{`
+        @media (max-width: 1100px) {
+          .home-hero-grid {
+            grid-template-columns: 1fr !important;
+          }
+        }
+      `}</style>
 
       {/* ═══════════════════════════════════════════════════════════════
            PARTNER ROLL-UP CARDS

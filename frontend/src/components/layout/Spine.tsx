@@ -12,7 +12,6 @@ import {
   Home, LayoutDashboard, BarChart2, CheckSquare, FileText,
   Activity, Bell, Search, Settings, LogOut, ExternalLink,
   Heart, BookOpen, Users, BarChart, ClipboardList, X, Menu,
-  Target,
 } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { api } from '@/api/client'
@@ -31,29 +30,40 @@ interface SpineItemDef {
   visible?: (role: Role, organisation: Organisation) => boolean
 }
 
+// Manager role is approvals-only per the IDMS handoff. They never see
+// dashboards, the tracker, reports hub, MPDSR, baseline, or training —
+// only the Approvals queue. Helper below makes the visibility predicate
+// explicit and short.
+const notManager = (r: Role) => r !== 'manager'
+
 const PRIMARY_NAV: SpineItemDef[] = [
-  { to: '/',         i18nKey: 'nav.programmeOverview', icon: <Home size={18} /> },
+  // Home: every role except manager. Managers land directly on /approvals
+  // (default redirect handled in App.tsx).
+  { to: '/',         i18nKey: 'nav.programmeOverview', icon: <Home size={18} />,
+    visible: (r) => notManager(r) },
   { to: '/phd',      i18nKey: 'nav.phdDashboard',      icon: <LayoutDashboard size={18} />,
-    visible: (r, o) => isAdminRole(r) || r === 'org_lead' || o === 'PHD' },
+    visible: (r, o) => isAdminRole(r) || r === 'org_lead' || (notManager(r) && o === 'PHD') },
   { to: '/bondhu',   i18nKey: 'nav.bondhuDashboard',   icon: <BarChart2 size={18} />,
-    visible: (r, o) => isAdminRole(r) || r === 'org_lead' || o === 'Bandhu' },
+    visible: (r, o) => isAdminRole(r) || r === 'org_lead' || (notManager(r) && o === 'Bandhu') },
+  // Approvals: managers + above. This is the ONLY nav item a manager sees.
   { to: '/approvals',i18nKey: 'nav.managerApprovals',  icon: <CheckSquare size={18} />,
     visible: (r) => ['developer','supervisor','org_lead','manager'].includes(r) },
   { to: '/reports',  i18nKey: 'nav.reportingHub',      icon: <FileText size={18} />,
-    visible: (r) => ['developer','supervisor','org_lead','manager'].includes(r) },
+    visible: (r) => ['developer','supervisor','org_lead'].includes(r) },
 ]
 
 const SECONDARY_NAV: SpineItemDef[] = [
   { to: '/fistula',  i18nKey: 'nav.fistulaTracker',   icon: <Heart size={18} />,
-    visible: (r, o) => isAdminRole(r) || (r === 'org_lead' && o === 'CIPRB') || o === 'CIPRB' },
+    visible: (r, o) => isAdminRole(r) || (r === 'org_lead' && o === 'CIPRB') || (notManager(r) && o === 'CIPRB') },
   { to: '/mpdsr',    i18nKey: 'nav.mpdsrTracker',     icon: <Activity size={18} />,
     visible: (r, o) => isAdminRole(r) || (r === 'org_lead' && o === 'CIPRB') },
+  // Tracker (now hosts both Programme Targets and Submission Compliance tabs).
   { to: '/tracker',  i18nKey: 'nav.progressTracker',  icon: <BarChart size={18} />,
-    visible: (r) => ['developer','supervisor','org_lead','manager'].includes(r) },
+    visible: (r) => ['developer','supervisor','org_lead'].includes(r) },
   { to: '/baseline', i18nKey: 'nav.baselineEndline',  icon: <BookOpen size={18} />,
-    visible: (r, o) => isAdminRole(r) || (r === 'org_lead' && o === 'CIPRB') || o === 'CIPRB' },
+    visible: (r, o) => isAdminRole(r) || (r === 'org_lead' && o === 'CIPRB') || (notManager(r) && o === 'CIPRB') },
   { to: '/training', i18nKey: 'nav.trainingLog',      icon: <Users size={18} />,
-    visible: (r) => ['developer','supervisor','org_lead','manager'].includes(r) },
+    visible: (r) => ['developer','supervisor','org_lead'].includes(r) },
 ]
 
 /** Filter a nav array by the current user's role + org. */
@@ -269,16 +279,6 @@ export function Spine() {
 
       {/* Footer */}
       <div className="spine-foot">
-        {user && (isAdminRole(user.role) || user.role === 'org_lead') && (
-          <NavLink
-            to="/admin/targets"
-            className={({ isActive }) => `spine-item ${isActive ? 'active' : ''}`}
-            title={t('nav.targetConfig')}
-          >
-            <Target size={18} />
-            {expanded ? <span className="spine-label">{t('nav.targetConfig')}</span> : <span className="spine-tip">{t('nav.targetConfig')}</span>}
-          </NavLink>
-        )}
         {user && isAdminRole(user.role) ? (
           <NavLink
             to="/admin"

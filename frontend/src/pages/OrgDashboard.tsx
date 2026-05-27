@@ -10,6 +10,7 @@
  */
 import { useState, useEffect } from 'react'
 import { useReducedMotion } from 'motion/react'
+import { useTranslation } from 'react-i18next'
 import {
   AreaChart, Area,
   ResponsiveContainer, Tooltip, XAxis, YAxis,
@@ -228,6 +229,7 @@ interface Props {
 
 export function OrgDashboard({ partner }: Props) {
   const isPHD = partner === 'PHD'
+  const { t } = useTranslation()
 
   // ── Real API data ──────────────────────────────────────────────────────────
 
@@ -298,15 +300,15 @@ export function OrgDashboard({ partner }: Props) {
   // ── KPI tiles ─────────────────────────────────────────────────────────────
 
   const orgKpis: TileProps[] = isPHD ? [
-    { label: 'Submissions', sub: 'this month', value: totalSubmissions, delta: momChange, color: 'unfpa-bright', icon: <FileText size={16} />, spark: sparkClinical.length > 1 ? sparkClinical : [0, 10, 20, 30, 40, totalSubmissions] },
-    { label: 'ANC Visits', sub: 'registered', value: categories.Clinical ?? 0, delta: undefined, color: 'coral', icon: <Heart size={16} />, spark: sparkClinical },
-    { label: 'Active Workers', sub: 'PHD field', value: displayKpis.active_workers, delta: undefined, color: 'emerald', icon: <Activity size={16} />, spark: sparkCommunity },
-    { label: 'Fistula Cases', sub: 'YTD', value: displayKpis.fistula_cases, delta: undefined, color: 'amber', icon: <Heart size={16} /> },
+    { label: t('org.kpiSubmissions'),   sub: t('org.kpiSubmissionsSub'),    value: totalSubmissions, delta: momChange, color: 'unfpa-bright', icon: <FileText size={16} />, spark: sparkClinical.length > 1 ? sparkClinical : [0, 10, 20, 30, 40, totalSubmissions] },
+    { label: t('org.kpiAnc'),           sub: t('org.kpiAncSub'),            value: categories.Clinical ?? 0, delta: undefined, color: 'coral', icon: <Heart size={16} />, spark: sparkClinical },
+    { label: t('org.kpiActiveWorkers'), sub: t('org.kpiActiveWorkersPhd'),  value: displayKpis.active_workers, delta: undefined, color: 'emerald', icon: <Activity size={16} />, spark: sparkCommunity },
+    { label: t('org.kpiFistula'),       sub: t('org.kpiFistulaSub'),        value: displayKpis.fistula_cases, delta: undefined, color: 'amber', icon: <Heart size={16} /> },
   ] : [
-    { label: 'Submissions', sub: 'this month', value: totalSubmissions, delta: momChange, color: 'violet', icon: <FileText size={16} />, spark: sparkClinical.length > 1 ? sparkClinical : [0, 10, 20, 30, 40, totalSubmissions] },
-    { label: 'Outreach', sub: 'sessions', value: categories.Community ?? 0, delta: undefined, color: 'coral', icon: <Megaphone size={16} />, spark: sparkCommunity },
-    { label: 'Active Workers', sub: 'Bondhu field', value: displayKpis.active_workers, delta: undefined, color: 'emerald', icon: <Activity size={16} /> },
-    { label: 'GBV Supported', sub: 'open cases', value: displayKpis.fistula_cases, delta: undefined, color: 'rose', icon: <HeartHandshake size={16} /> },
+    { label: t('org.kpiSubmissions'),   sub: t('org.kpiSubmissionsSub'),     value: totalSubmissions, delta: momChange, color: 'violet', icon: <FileText size={16} />, spark: sparkClinical.length > 1 ? sparkClinical : [0, 10, 20, 30, 40, totalSubmissions] },
+    { label: t('org.kpiOutreach'),      sub: t('org.kpiOutreachSub'),        value: categories.Community ?? 0, delta: undefined, color: 'coral', icon: <Megaphone size={16} />, spark: sparkCommunity },
+    { label: t('org.kpiActiveWorkers'), sub: t('org.kpiActiveWorkersBondhu'),value: displayKpis.active_workers, delta: undefined, color: 'emerald', icon: <Activity size={16} /> },
+    { label: t('org.kpiGbv'),           sub: t('org.kpiGbvSub'),             value: displayKpis.fistula_cases, delta: undefined, color: 'rose', icon: <HeartHandshake size={16} /> },
   ]
 
   const dateStr = new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' }).toUpperCase()
@@ -319,16 +321,16 @@ export function OrgDashboard({ partner }: Props) {
       <section className="hero" style={{ paddingBottom: 20 }}>
         <div className="hero-eyebrow anim-rise">
           <span className="live-dot" />
-          <span>IMPLEMENTING PARTNER</span>
+          <span>{t('org.eyebrowImplementingPartner')}</span>
           <span className="sep">/</span>
-          <span>{isPHD ? 'PUBLIC HEALTH DEPARTMENT' : 'BONDHU SOCIAL WELFARE SOCIETY'}</span>
+          <span>{isPHD ? t('org.eyebrowPhdFull') : t('org.eyebrowBondhuFull')}</span>
           <span className="sep">/</span>
           <span>{dateStr}</span>
           {usingMock && (
             <>
               <span className="sep">/</span>
               <span className="tag amber" style={{ marginLeft: 4, fontSize: 9 }}>
-                <Info size={10} style={{ marginRight: 3 }} />DEMO DATA
+                <Info size={10} style={{ marginRight: 3 }} />{t('org.demoData')}
               </span>
             </>
           )}
@@ -363,19 +365,19 @@ export function OrgDashboard({ partner }: Props) {
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, marginTop: 28 }} className="anim-rise d4">
               <Meta
-                label="Focal point"
+                label={t('org.metaFocalPoint')}
                 value={isPHD ? 'Dr. Shahin Begum' : 'Dr. Tanvir Ahmed'}
                 sub={isPHD ? 's.begum@phd.gov.bd' : 'td.ahmed@bondhu.org'}
               />
               <Meta
-                label="Agreement"
+                label={t('org.metaAgreement')}
                 value={isPHD ? 'UNFPA-PHD-MOU' : 'UNFPA-BWS-2024-A'}
-                sub="active · until 31 Dec 2027"
+                sub={t('org.metaAgreementActive')}
               />
               <Meta
-                label="Submission mode"
-                value="KoboToolbox · weekly"
-                sub="last sync · live"
+                label={t('org.metaSubmissionMode')}
+                value={t('org.metaKoboWeekly')}
+                sub={t('org.metaSyncLive')}
               />
             </div>
           </div>
@@ -404,16 +406,16 @@ export function OrgDashboard({ partner }: Props) {
            ═══════════════════════════════════════════════════════════════ */}
       <section className="section" style={{ marginTop: 56 }}>
         <SectionHead
-          kicker={`${partner} · 12 MONTHS`}
-          title="Programme delivery"
-          sub="Stacked by category. The line for each category tells the story; the band beneath shows breadth."
+          kicker={`${partner} · ${t('org.sectionTrendKicker')}`}
+          title={t('org.sectionTrendTitle')}
+          sub={t('org.sectionTrendSub')}
         />
         <div className="card shimmer">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
             <div style={{ display: 'flex', gap: 16 }}>
-              <LegendDot color="var(--unfpa-bright)" label="Clinical" />
-              <LegendDot color="var(--coral)" label="Community" />
-              <LegendDot color="var(--amber)" label="Operations" />
+              <LegendDot color="var(--unfpa-bright)" label={t('org.legendClinical')} />
+              <LegendDot color="var(--coral)" label={t('org.legendCommunity')} />
+              <LegendDot color="var(--amber)" label={t('org.legendOperations')} />
             </div>
             <span className="tag">stacked</span>
           </div>
@@ -466,9 +468,9 @@ export function OrgDashboard({ partner }: Props) {
       {topForms.length > 0 && (
         <section className="section" style={{ marginTop: 56 }}>
           <SectionHead
-            kicker="FORMS"
-            title="What's being submitted"
-            sub="Each form type the partner is filing this month."
+            kicker={t('org.sectionFormsKicker')}
+            title={t('org.sectionFormsTitle')}
+            sub={t('org.sectionFormsSub')}
           />
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 14 }}>
             {topForms.map((f) => (
@@ -483,9 +485,9 @@ export function OrgDashboard({ partner }: Props) {
            ═══════════════════════════════════════════════════════════════ */}
       <section className="section" style={{ marginTop: 56 }}>
         <SectionHead
-          kicker="M&E FRAMEWORK"
-          title="Indicator progress"
-          sub="Progress against the UNFPA programme M&E framework indicators."
+          kicker={t('org.sectionIndicatorKicker')}
+          title={t('org.sectionIndicatorTitle')}
+          sub={t('org.sectionIndicatorSub')}
         />
         <div className="card shimmer">
           <IndicatorGrid
@@ -501,12 +503,12 @@ export function OrgDashboard({ partner }: Props) {
            ═══════════════════════════════════════════════════════════════ */}
       <section className="section" style={{ marginTop: 56, marginBottom: 80 }}>
         <SectionHead
-          kicker="CENTRES"
-          title={`${displayCentres.districts?.length ?? 0} active districts`}
-          sub={`Where ${partner} workers are submitting from.`}
+          kicker={t('org.sectionCentresKicker')}
+          title={t('org.sectionCentresTitle', { count: displayCentres.districts?.length ?? 0 })}
+          sub={t('org.sectionCentresSub', { partner })}
           right={
             <button className="btn">
-              <Download size={14} /> Export
+              <Download size={14} /> {t('org.exportCta')}
             </button>
           }
         />
@@ -514,11 +516,11 @@ export function OrgDashboard({ partner }: Props) {
           <table className="tbl">
             <thead>
               <tr>
-                <th>Rank</th>
-                <th>District</th>
-                <th style={{ width: 200 }}>14-day trend</th>
-                <th style={{ textAlign: 'right' }}>This month</th>
-                <th>Status</th>
+                <th>{t('org.thRank')}</th>
+                <th>{t('org.thDistrict')}</th>
+                <th style={{ width: 200 }}>{t('org.thTrend14d')}</th>
+                <th style={{ textAlign: 'right' }}>{t('org.thThisMonth')}</th>
+                <th>{t('org.thStatus')}</th>
               </tr>
             </thead>
             <tbody>
@@ -553,13 +555,13 @@ export function OrgDashboard({ partner }: Props) {
                   <td className="num-display" style={{ textAlign: 'right', fontSize: 22, fontFamily: 'var(--display)', fontStyle: 'italic' }}>
                     {d.count}
                   </td>
-                  <td><span className="tag emerald">live</span></td>
+                  <td><span className="tag emerald">{t('org.tagLive')}</span></td>
                 </tr>
               ))}
               {!displayCentres.districts?.length && (
                 <tr>
                   <td colSpan={5} style={{ padding: 24, textAlign: 'center', color: 'var(--muted)' }}>
-                    No district data yet.
+                    {t('org.noDistrictData')}
                   </td>
                 </tr>
               )}
@@ -579,7 +581,7 @@ export function OrgDashboard({ partner }: Props) {
           }}>
             <div className="kicker" style={{ color: 'rgba(255,255,255,0.7)', marginBottom: 8 }}>
               <span className="dot" style={{ background: 'rgba(255,255,255,0.5)' }} />
-              AI-GENERATED WEEKLY SUMMARY · {summary.period}
+              {t('org.aiSummaryEyebrow')} · {summary.period}
             </div>
             <p style={{
               fontSize: 14, lineHeight: 1.65,
@@ -589,7 +591,7 @@ export function OrgDashboard({ partner }: Props) {
               {summary.ai_summary}
             </p>
             <p style={{ marginTop: 12, fontSize: 10.5, color: 'rgba(255,255,255,0.5)' }}>
-              Generated {formatDate(summary.generated_at)} · AI-assisted narrative using Groq / LLaMA 3.3 70B
+              {t('org.aiSummaryFooter', { when: formatDate(summary.generated_at) })}
             </p>
           </div>
         </section>

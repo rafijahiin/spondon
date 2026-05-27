@@ -51,10 +51,15 @@ export const PARTNER_ROUTES: Record<PartnerCode, string> = {
   PHD:    '/phd',
 }
 
+// Partner display names. Sources:
+//   PHD    — phd-bd.com  → "Partners in Health and Development"
+//   Bandhu — bdplatform4sdgs.net → "Bandhu Social Welfare Society"
+//   CIPRB  — Centre for Injury Prevention and Research, Bangladesh
+// Keep these in sync with i18n org.eyebrow*Full and any hero copy.
 export const PARTNER_NAMES: Record<PartnerCode, { en: string; bn: string }> = {
-  CIPRB:  { en: 'CIPRB',                          bn: 'সিআইপিআরবি' },
-  Bandhu: { en: 'Bandhu Social Welfare Society',  bn: 'বন্ধু সোশ্যাল ওয়েলফেয়ার' },
-  PHD:    { en: 'Public Health Department',       bn: 'পাবলিক হেলথ ডিপার্টমেন্ট' },
+  CIPRB:  { en: 'CIPRB',                              bn: 'সিআইপিআরবি' },
+  Bandhu: { en: 'Bandhu Social Welfare Society',      bn: 'বন্ধু সোশ্যাল ওয়েলফেয়ার সোসাইটি' },
+  PHD:    { en: 'Partners in Health and Development', bn: 'পার্টনার্স ইন হেলথ অ্যান্ড ডেভেলপমেন্ট' },
 }
 
 /** Normalise a district name for matching against GeoJSON shapeName. */

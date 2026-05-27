@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
+import { useTranslation } from 'react-i18next'
 import {
   AlertTriangle, CheckCircle2, ChevronDown, Circle,
   Clock, Settings, X, Save, RefreshCw,
@@ -9,6 +10,7 @@ import { useAuth } from '@/context/AuthContext'
 import { usePolling } from '@/hooks/usePolling'
 import { LoadingSpinner, PageLoader } from '@/components/ui/LoadingSpinner'
 import { cn } from '@/utils/cn'
+import { ProgrammeTargetsTab } from './TargetConfig'
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 type TrafficLight = 'on_track' | 'behind' | 'critical' | 'no_target'
@@ -319,7 +321,7 @@ function ComplianceRow({ row }: { row: ProgressRow }) {
 }
 
 // ── Main page ──────────────────────────────────────────────────────────────────
-export default function ProgressTracker() {
+function SubmissionComplianceTab() {
   const { user } = useAuth()
   const isSuperAdmin = ['developer', 'supervisor'].includes(user?.role ?? '')
   const canSeeAll    = isSuperAdmin
@@ -519,6 +521,74 @@ export default function ProgressTracker() {
           />
         )}
       </AnimatePresence>
+    </div>
+  )
+}
+
+
+// ─── Tabbed wrapper — Step 9 follow-up ─────────────────────────────────────────
+//
+// /tracker now hosts both:
+//   Tab 1: Programme Targets    (SIDA framework target editor — was /admin/targets)
+//   Tab 2: Submission Compliance (per-form monthly compliance — original /tracker)
+//
+// Routing collapse: /admin/targets is gone. Permissions are still enforced at
+// the API layer (CanConfigureTargets vs CanApproveSubmissions); the UI just
+// stops splitting them across two pages.
+
+type TabKey = 'targets' | 'compliance'
+
+export default function ProgressTracker() {
+  const { t } = useTranslation()
+  const [active, setActive] = useState<TabKey>('compliance')
+
+  const TABS: { key: TabKey; labelKey: string }[] = [
+    { key: 'compliance', labelKey: 'tracker.tabCompliance' },
+    { key: 'targets',    labelKey: 'tracker.tabProgrammeTargets' },
+  ]
+
+  return (
+    <div className="mx-auto max-w-7xl px-4 pt-6 sm:px-6 lg:px-8">
+      {/* Tab pill bar — same visual treatment as the CIPRB hub tabs */}
+      <div
+        role="tablist"
+        aria-label="Progress tracker views"
+        style={{
+          display: 'inline-flex', gap: 6, padding: 4,
+          background: 'var(--surface-2)',
+          border: '1px solid var(--hair)',
+          borderRadius: 12,
+          marginBottom: 24,
+        }}
+      >
+        {TABS.map((tab) => {
+          const isActive = active === tab.key
+          return (
+            <button
+              key={tab.key}
+              role="tab"
+              aria-selected={isActive}
+              onClick={() => setActive(tab.key)}
+              style={{
+                padding: '7px 14px',
+                fontSize: 13,
+                fontWeight: isActive ? 600 : 500,
+                color: isActive ? '#fff' : 'var(--ink-2)',
+                background: isActive ? 'var(--unfpa)' : 'transparent',
+                border: 'none',
+                borderRadius: 8,
+                cursor: 'pointer',
+                transitionProperty: 'background-color, color',
+                transitionDuration: '150ms',
+              }}
+            >
+              {t(tab.labelKey)}
+            </button>
+          )
+        })}
+      </div>
+
+      {active === 'compliance' ? <SubmissionComplianceTab /> : <ProgrammeTargetsTab />}
     </div>
   )
 }

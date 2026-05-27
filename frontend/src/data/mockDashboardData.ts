@@ -120,7 +120,7 @@ export const MOCK_PHD_CENTRES: MockCentresResponse = {
   ],
 }
 
-// ─── Bondhu: Bondhu Social Welfare Society ────────────────────────────────────
+// ─── Bandhu: Bandhu Social Welfare Society ────────────────────────────────────
 // Focus: key populations (FSW, transgender, MSM), HIV/STI, GBV, urban outreach
 // Areas: Dhaka, Chittagong, Sylhet, Narayanganj, Comilla
 

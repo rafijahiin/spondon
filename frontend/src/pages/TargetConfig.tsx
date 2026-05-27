@@ -193,7 +193,9 @@ function TargetCell({ row, canEdit, onSaved }: TargetCellProps) {
   )
 }
 
-export default function TargetConfig() {
+export { TargetConfig as default, TargetConfig as ProgrammeTargetsTab }
+
+function TargetConfig() {
   const { user } = useAuth()
   const { t } = useTranslation()
   const [rows, setRows] = useState<IndicatorTarget[] | null>(null)

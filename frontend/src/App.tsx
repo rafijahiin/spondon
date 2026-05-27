@@ -17,7 +17,6 @@ const BaselineEndline = lazy(() => import('@/pages/BaselineEndline'))
 const TrainingLog = lazy(() => import('@/pages/TrainingLog'))
 const ProgressTracker = lazy(() => import('@/pages/ProgressTracker'))
 const AdminPanel = lazy(() => import('@/pages/AdminPanel'))
-const TargetConfig = lazy(() => import('@/pages/TargetConfig'))
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth()
@@ -35,14 +34,12 @@ function RequireSupervisorOrDeveloper({ children }: { children: React.ReactNode 
   return <>{children}</>
 }
 
-function RequireTargetConfig({ children }: { children: React.ReactNode }) {
-  // Target Config (/admin/targets) accepts dev/supervisor for any partner
-  // plus org_lead (whose write scope is enforced server-side to own org).
+/** Managers' only authorised surface is /approvals. Block them from any
+ *  other route by redirecting back to /approvals. */
+function RequireNotManager({ children }: { children: React.ReactNode }) {
   const { user } = useAuth()
   if (!user) return <Navigate to="/login" replace />
-  if (!isAdminRole(user.role) && user.role !== 'org_lead') {
-    return <Navigate to="/" replace />
-  }
+  if (user.role === 'manager') return <Navigate to="/approvals" replace />
   return <>{children}</>
 }
 
@@ -78,30 +75,34 @@ export default function App() {
               </RequireAuth>
             }
           >
-            <Route index element={<Home />} />
+            <Route index element={<RequireNotManager><Home /></RequireNotManager>} />
             <Route
               path="phd"
               element={
-                <RequireOrg allow={['PHD']}>
-                  <PHDDashboard />
-                </RequireOrg>
+                <RequireNotManager>
+                  <RequireOrg allow={['PHD']}>
+                    <PHDDashboard />
+                  </RequireOrg>
+                </RequireNotManager>
               }
             />
             <Route
               path="bondhu"
               element={
-                <RequireOrg allow={['Bandhu']}>
-                  <BondhuDashboard />
-                </RequireOrg>
+                <RequireNotManager>
+                  <RequireOrg allow={['Bandhu']}>
+                    <BondhuDashboard />
+                  </RequireOrg>
+                </RequireNotManager>
               }
             />
             <Route path="approvals" element={<ManagerApprovals />} />
-            <Route path="fistula" element={<FistulaTracker />} />
-            <Route path="mpdsr" element={<MPDSRTracker />} />
-            <Route path="reports" element={<ReportingHub />} />
-            <Route path="baseline" element={<BaselineEndline />} />
-            <Route path="training" element={<TrainingLog />} />
-            <Route path="tracker" element={<ProgressTracker />} />
+            <Route path="fistula"  element={<RequireNotManager><FistulaTracker /></RequireNotManager>} />
+            <Route path="mpdsr"    element={<RequireNotManager><MPDSRTracker /></RequireNotManager>} />
+            <Route path="reports"  element={<RequireNotManager><ReportingHub /></RequireNotManager>} />
+            <Route path="baseline" element={<RequireNotManager><BaselineEndline /></RequireNotManager>} />
+            <Route path="training" element={<RequireNotManager><TrainingLog /></RequireNotManager>} />
+            <Route path="tracker"  element={<RequireNotManager><ProgressTracker /></RequireNotManager>} />
             <Route
               path="admin"
               element={
@@ -110,14 +111,8 @@ export default function App() {
                 </RequireSupervisorOrDeveloper>
               }
             />
-            <Route
-              path="admin/targets"
-              element={
-                <RequireTargetConfig>
-                  <TargetConfig />
-                </RequireTargetConfig>
-              }
-            />
+            {/* Legacy /admin/targets URL — redirect to the merged tracker. */}
+            <Route path="admin/targets" element={<Navigate to="/tracker" replace />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
