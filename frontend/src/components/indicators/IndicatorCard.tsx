@@ -2,10 +2,13 @@
 import { motion, useReducedMotion } from 'motion/react'
 import { useTranslation } from 'react-i18next'
 import { cn } from '@/utils/cn'
+import { bnIndicatorLabel, bnUnit } from '@/data/indicatorLabelsBn'
 import type { IndicatorProgress } from '@/types'
 
 interface Props {
   indicator: IndicatorProgress
+  /** Partner code used to resolve the Bengali label overlay. */
+  partner?: 'PHD' | 'Bandhu' | 'CIPRB'
   delay?: number
 }
 
@@ -33,10 +36,18 @@ function fmt(n: number, unit: string): string {
   return String(n)
 }
 
-export function IndicatorCard({ indicator, delay = 0 }: Props) {
+export function IndicatorCard({ indicator, partner, delay = 0 }: Props) {
   const reduce = useReducedMotion()
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const { target_value, achievement, percentage, unlinked } = indicator
+
+  // Bengali overlay — falls back to the DB English label when no
+  // Bengali variant exists or when the language is English.
+  const isBn = i18n.language?.startsWith('bn')
+  const displayLabel = (isBn && partner)
+    ? bnIndicatorLabel(partner, indicator.activity_code, indicator.indicator_label)
+    : indicator.indicator_label
+  const displayUnit = isBn ? bnUnit(indicator.unit) : indicator.unit
   const hasTarget = target_value !== null
   const ringColor = bandColour(percentage)
   const displayPct = percentage ?? 0
@@ -101,7 +112,7 @@ export function IndicatorCard({ indicator, delay = 0 }: Props) {
           className="text-xs font-medium text-gray-700 dark:text-gray-300 leading-snug"
           style={{ textWrap: 'pretty' } as React.CSSProperties}
         >
-          {indicator.indicator_label}
+          {displayLabel}
         </p>
         <div className="mt-1.5 flex items-baseline gap-1.5 flex-wrap">
           <span className="text-lg font-bold tabular-nums text-gray-900 dark:text-white leading-none">
@@ -109,7 +120,7 @@ export function IndicatorCard({ indicator, delay = 0 }: Props) {
           </span>
           {hasTarget ? (
             <span className="text-xs text-gray-400 dark:text-gray-500 tabular-nums">
-              / {fmt(target_value!, indicator.unit)} {indicator.unit}
+              / {fmt(target_value!, indicator.unit)} {displayUnit}
             </span>
           ) : (
             <span

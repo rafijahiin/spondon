@@ -167,6 +167,7 @@ export function IndicatorGrid({ org, periodStart = '2026-05-21', periodEnd = '20
               <IndicatorCard
                 key={ind.activity_code}
                 indicator={ind}
+                partner={org}
                 delay={reduce ? 0 : idx * 0.05}
               />
             ))}

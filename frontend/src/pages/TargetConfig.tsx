@@ -26,6 +26,7 @@ import { Check, Edit3, X, AlertCircle } from 'lucide-react'
 import { api, apiErrorMessage } from '@/api/client'
 import { useAuth } from '@/context/AuthContext'
 import { PageLoader } from '@/components/ui/LoadingSpinner'
+import { bnIndicatorLabel, bnActivityLabel, bnUnit } from '@/data/indicatorLabelsBn'
 import type { IndicatorTarget } from '@/types'
 
 interface Grouped {
@@ -197,7 +198,8 @@ export { TargetConfig as default, TargetConfig as ProgrammeTargetsTab }
 
 function TargetConfig() {
   const { user } = useAuth()
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
+  const isBn = i18n.language?.startsWith('bn')
   const [rows, setRows] = useState<IndicatorTarget[] | null>(null)
   const [error, setError] = useState('')
 
@@ -289,15 +291,21 @@ function TargetConfig() {
                             <td className="px-3 py-2 text-sm text-gray-900 dark:text-gray-100">
                               {idx === 0 && (
                                 <div className="text-[11px] font-medium uppercase tracking-wide text-gray-500 mb-0.5">
-                                  {act.label}
+                                  {isBn
+                                    ? bnActivityLabel(row.partner_code, row.activity_code, act.label)
+                                    : act.label}
                                 </div>
                               )}
-                              {row.indicator_label}
+                              {isBn
+                                ? bnIndicatorLabel(row.partner_code, row.activity_code, row.indicator_label)
+                                : row.indicator_label}
                             </td>
                             <td className="px-3 py-2 text-right">
                               <TargetCell row={row} canEdit={canEditRow(row)} onSaved={handleRowSaved} />
                             </td>
-                            <td className="px-3 py-2 text-sm text-gray-600 dark:text-gray-400">{row.unit}</td>
+                            <td className="px-3 py-2 text-sm text-gray-600 dark:text-gray-400">
+                              {isBn ? bnUnit(row.unit) : row.unit}
+                            </td>
                             <td className="px-3 py-2 text-xs text-gray-500">
                               {row.updated_by_email ? (
                                 <>

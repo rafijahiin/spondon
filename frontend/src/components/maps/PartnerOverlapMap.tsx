@@ -104,9 +104,14 @@ export function PartnerOverlapMap({ className, height = 360 }: Props) {
       <MapContainer
         center={[23.7, 90.4]}
         zoom={6}
-        scrollWheelZoom={false}
+        minZoom={5}
+        maxZoom={10}
+        // Scroll-wheel zoom enabled — but bound (5-10) so users can't
+        // tunnel into useless tile detail or zoom out past country level.
+        scrollWheelZoom={true}
+        // Built-in +/- buttons, top-right (further from the spine).
+        zoomControl={true}
         style={{ height, width: '100%', borderRadius: 12 }}
-        zoomControl={false}
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'

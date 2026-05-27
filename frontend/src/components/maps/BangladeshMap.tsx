@@ -129,9 +129,11 @@ export function BangladeshMap({ activityFeed, centers = [], className, partner }
           <MapContainer
             center={[23.7, 90.4]}
             zoom={6}
-            scrollWheelZoom={false}
+            minZoom={5}
+            maxZoom={10}
+            scrollWheelZoom={true}
+            zoomControl={true}
             className="h-80 w-full rounded-xl"
-            zoomControl={false}
           >
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
