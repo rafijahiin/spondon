@@ -64,8 +64,45 @@ class KPIView(APIView):
         this_month_qs = approved.filter(submitted_at__gte=month_start, submitted_at__lt=month_end)
         prev_month_qs = approved.filter(submitted_at__gte=prev_start, submitted_at__lt=prev_end)
 
+        # Legacy KoboSubmission counts (MPDSR / Fistula / Baseline / Activity).
         this_month_count = this_month_qs.count()
         prev_month_count = prev_month_qs.count()
+
+        # Programs-models contribution — sum across every SubmissionBase
+        # subclass. The Bento KPI previously read only KoboSubmission,
+        # so PHD/Bandhu Outreach / ClinicVisit / HTC / etc. that landed
+        # via /webhook/programs/form/<slug>/ were invisible on the home
+        # page. Add their created_at counts to the same buckets.
+        try:
+            from programs.models import (
+                ClinicVisit, HIVSTITestResult, ADRRecord, AutoclaveLog, AntenatalCard,
+                HTCCounselling, IndividualCounselling, MHScreening,
+                GBVCase, OutreachSession, GroupEducationSession, Referral,
+                SafetyHygieneKit, TrainingEvent, CoordMeeting, MobileHealthCamp,
+                IECMaterial,
+            )
+            _PROGRAMS_MODELS = [
+                ClinicVisit, HIVSTITestResult, ADRRecord, AutoclaveLog, AntenatalCard,
+                HTCCounselling, IndividualCounselling, MHScreening,
+                GBVCase, OutreachSession, GroupEducationSession, Referral,
+                SafetyHygieneKit, TrainingEvent, CoordMeeting, MobileHealthCamp,
+                IECMaterial,
+            ]
+            for Model in _PROGRAMS_MODELS:
+                qs = Model.objects.filter(approval_status='APPROVED')
+                # Org isolation parity with the legacy queryset.
+                if not request.user.can_see_all_orgs:
+                    qs = qs.filter(organisation=request.user.organisation)
+                this_month_count += qs.filter(
+                    created_at__gte=month_start, created_at__lt=month_end,
+                ).count()
+                prev_month_count += qs.filter(
+                    created_at__gte=prev_start, created_at__lt=prev_end,
+                ).count()
+        except Exception:
+            # Programs app not loaded in some test contexts — fall through
+            # with legacy-only counts so the endpoint still responds.
+            pass
         pending_count = pending.count()
         active_workers = (
             approved

@@ -51,6 +51,8 @@ const PRIMARY_NAV: SpineItemDef[] = [
     visible: (r) => ['developer','supervisor','org_lead','manager'].includes(r) },
   { to: '/reports',  i18nKey: 'nav.reportingHub',      icon: <FileBarChart2 size={18} />,
     visible: (r) => ['developer','supervisor','org_lead'].includes(r) },
+  { to: '/infographics', i18nKey: 'nav.infographics',  icon: <FileBarChart2 size={18} />,
+    visible: (r) => ['developer','supervisor','org_lead','manager'].includes(r) },
 ]
 
 const SECONDARY_NAV: SpineItemDef[] = [

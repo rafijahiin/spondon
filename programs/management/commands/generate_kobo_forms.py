@@ -201,6 +201,37 @@ def _common_choices():
         _choice('meeting_type', 'CBO', 'CBO / Community Network', 'সিবিও / সম্প্রদায় নেটওয়ার্ক'),
         _choice('meeting_type', 'internal', 'Internal', 'অভ্যন্তরীণ'),
         _choice('meeting_type', 'multi', 'Multi-Stakeholder', 'বহু-অংশীদার'),
+        _choice('meeting_type', 'day_observance', 'Day Observance / Awareness Event', 'দিবস পালন / সচেতনতা অনুষ্ঠান'),
+    ]
+    # fistula_type — V.V.F / R.V.F / both / other (FistulaCornerCase)
+    rows += [
+        _choice('fistula_type', 'VVF',   'V.V.F (Vesico-Vaginal)',          'ভি.ভি.এফ'),
+        _choice('fistula_type', 'RVF',   'R.V.F (Recto-Vaginal)',           'আর.ভি.এফ'),
+        _choice('fistula_type', 'BOTH',  'V.V.F + R.V.F (Combined)',         'ভি.ভি.এফ + আর.ভি.এফ'),
+        _choice('fistula_type', 'OTHER', 'Other',                            'অন্যান্য'),
+    ]
+    # surgery_performed tri-state
+    rows += [
+        _choice('surgery_performed', 'yes',     'Yes',     'হ্যাঁ'),
+        _choice('surgery_performed', 'no',      'No',      'না'),
+        _choice('surgery_performed', 'pending', 'Pending', 'অপেক্ষমাণ'),
+    ]
+    # delivery_mode (campaign visit)
+    rows += [
+        _choice('delivery_mode', 'home',     'Home',     'বাড়িতে'),
+        _choice('delivery_mode', 'facility', 'Facility', 'প্রতিষ্ঠানে'),
+        _choice('delivery_mode', 'other',    'Other',    'অন্যান্য'),
+    ]
+    # delivery_outcome (campaign visit)
+    rows += [
+        _choice('delivery_outcome', 'LB',  'Live Birth',  'জীবিত জন্ম'),
+        _choice('delivery_outcome', 'SB',  'Still Birth', 'মৃত জন্ম'),
+        _choice('delivery_outcome', 'UNK', 'Unknown',     'অজানা'),
+    ]
+    # yes_no for from_haor + similar
+    rows += [
+        _choice('yes_no', 'yes', 'Yes', 'হ্যাঁ'),
+        _choice('yes_no', 'no',  'No',  'না'),
     ]
     # gender
     rows += [
@@ -729,6 +760,101 @@ def _form_coord_meeting():
     return rows
 
 
+def _form_fistula_corner():
+    """CIPRB Fistula Corner — District Hospital diagnostic register.
+
+    Mirrors the Bengali paper register handed over by Rafi (প্রসবজনিত
+    ফিস্টুলা রেজিস্ট্রার). PII fields are plaintext on submission; the
+    backend's EncryptedCharField swaps them for Fernet ciphertext at rest.
+    Field staff at District Hospital fill this for every diagnosed case.
+    """
+    rows = _common_metadata_rows()
+    rows += [
+        # Patient PII
+        _survey_row('text',    'patient_name',  'Patient Name',        'রোগীর নাম', required='yes'),
+        _survey_row('text',    'husband_name',  "Husband's Name",      'স্বামীর নাম'),
+        _survey_row('text',    'mobile_number', 'Mobile Number',       'মোবাইল নম্বর'),
+        _survey_row('integer', 'age_years',     'Age (years)',         'বয়স (বছর)'),
+        # Address
+        _survey_row('text', 'village',  'Village',  'গ্রাম'),
+        _survey_row('text', 'union',    'Union',    'ইউনিয়ন'),
+        _survey_row('text', 'upazila',  'Upazila',  'উপজেলা'),
+        _survey_row('text', 'district', 'District', 'জেলা', required='yes'),
+        # Dates
+        _survey_row('date', 'suspected_date',      'Suspected Date',      'সাসপেক্টেড তারিখ'),
+        _survey_row('date', 'identification_date', 'Identification Date', 'সনাক্তকরণ তারিখ'),
+        _survey_row('date', 'diagnosis_date',      'Diagnosis Date',      'ডায়াগনোসিস তারিখ', required='yes'),
+        # Informant
+        _survey_row('text', 'informant_name',        'Informant Name',        'তথ্যদাতার নাম'),
+        _survey_row('text', 'informant_designation', 'Informant Designation', 'তথ্যদাতার পদবী'),
+        # Clinical
+        _survey_row('text', 'suffering_duration', 'Duration of Suffering',
+                    'ভোগান্তির সময়কাল',
+                    hint='Free-text — e.g. "3 years", "8 months"'),
+        _survey_row('text', 'fistula_cause', 'Cause of Fistula',
+                    'ফিস্টুলার কারণ', appearance='multiline',
+                    hint='e.g. "prolonged labour" / "দীর্ঘ সময়ের প্রসব"'),
+        _survey_row('select_one fistula_type', 'fistula_type',
+                    'Fistula Type', 'ফিস্টুলার ধরন', required='yes'),
+        # Service provider
+        _survey_row('text', 'service_provider_name',        'Service Provider Name',        'সেবা প্রদানকারীর নাম'),
+        _survey_row('text', 'service_provider_designation', 'Service Provider Designation', 'সেবা প্রদানকারীর পদবী'),
+        # Referral chain
+        _survey_row('date', 'referral_date',  'Referral Date',  'রেফারেল তারিখ'),
+        _survey_row('text', 'referral_place', 'Referral Place', 'রেফারেল স্থান'),
+        _survey_row('select_one surgery_performed', 'surgery_performed',
+                    'Surgery Performed?', 'অপারেশন হয়েছে?'),
+        _survey_row('text', 'referral_outcome', 'Referral Outcome / Result',
+                    'রেফারেল ফলাফল', appearance='multiline'),
+        # Remarks
+        _survey_row('text', 'remarks', 'Remarks', 'মন্তব্য', appearance='multiline'),
+    ]
+    return rows
+
+
+def _form_fistula_campaign_visit():
+    """CIPRB Fistula Campaign — house-to-house screening register.
+
+    Mirrors the Sunamganj campaign xlsx individual sheet. One row per
+    suspected fistula case identified during the campaign sweep. PII
+    encrypted at rest via the same EncryptedCharField pattern.
+    """
+    rows = _common_metadata_rows()
+    rows += [
+        _survey_row('date', 'visit_date', 'Visit Date', 'ভিজিটের তারিখ', required='yes'),
+        # Patient PII
+        _survey_row('text',    'patient_name',   'Patient Name',     'রোগীর নাম', required='yes'),
+        _survey_row('text',    'husband_name',   "Husband's Name",   'স্বামীর নাম'),
+        _survey_row('text',    'contact_number', 'Contact Number',   'যোগাযোগ নম্বর'),
+        _survey_row('integer', 'age_years',      'Age (years)',      'বয়স (বছর)'),
+        # Patient demographics
+        _survey_row('text', 'education',          'Education',           'শিক্ষাগত যোগ্যতা'),
+        _survey_row('text', 'profession',         'Profession',          'পেশা'),
+        _survey_row('text', 'husband_profession', "Husband's Profession", 'স্বামীর পেশা'),
+        # Address
+        _survey_row('text', 'village',  'Village',  'গ্রাম'),
+        _survey_row('text', 'union',    'Union',    'ইউনিয়ন'),
+        _survey_row('text', 'upazila',  'Upazila',  'উপজেলা'),
+        _survey_row('text', 'district', 'District', 'জেলা', required='yes'),
+        _survey_row('select_one yes_no', 'from_haor',
+                    'From Haor (wetland)?', 'হাওর এলাকা থেকে?'),
+        # Obstetric history
+        _survey_row('select_one delivery_mode', 'delivery_mode',
+                    'Mode of Last Delivery', 'শেষ প্রসবের মাধ্যম'),
+        _survey_row('select_one delivery_outcome', 'delivery_outcome',
+                    'Delivery Outcome', 'প্রসবের ফলাফল'),
+        _survey_row('text', 'suffering_duration', 'Duration of Suffering',
+                    'ভোগান্তির সময়কাল',
+                    hint='Free-text — e.g. "30 years", "8 months"'),
+        _survey_row('text', 'info_source', 'Source of Information',
+                    'তথ্যের উৎস',
+                    hint='DRC / FWA / Midwife / Self'),
+        # Remarks
+        _survey_row('text', 'remarks', 'Remarks', 'মন্তব্য', appearance='multiline'),
+    ]
+    return rows
+
+
 def _form_mobile_camp():
     """KF-18: Mobile Health Camp (PHD only)."""
     rows = _common_metadata_rows()
@@ -855,6 +981,22 @@ FORMS = [
         'id': 'spondon_antenatal_card_v1',
         'title': 'Spondon — Antenatal Card (PHD)',
         'survey_fn': _form_antenatal_card,
+    },
+    # CIPRB fistula forms — backend models + handlers landed in
+    # fistula.0003 + programs.webhook.FORM_HANDLERS. Schema confirmed
+    # from the Bengali Fistula Corner register photo + Sunamganj
+    # campaign xlsx Rafi handed over.
+    {
+        'filename': 'KF-Fistula_Corner.xlsx',
+        'id': 'spondon_fistula_corner_v1',
+        'title': 'Spondon — Fistula Corner (CIPRB District Hospital)',
+        'survey_fn': _form_fistula_corner,
+    },
+    {
+        'filename': 'KF-Fistula_Campaign_Visit.xlsx',
+        'id': 'spondon_fistula_campaign_v1',
+        'title': 'Spondon — Fistula Campaign Visit (CIPRB House Screening)',
+        'survey_fn': _form_fistula_campaign_visit,
     },
 ]
 

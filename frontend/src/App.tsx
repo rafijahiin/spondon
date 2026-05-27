@@ -19,6 +19,7 @@ const ProgressTracker = lazy(() => import('@/pages/ProgressTracker'))
 const AdminPanel = lazy(() => import('@/pages/AdminPanel'))
 const TargetConfig = lazy(() => import('@/pages/TargetConfig'))
 const RecordList = lazy(() => import('@/pages/RecordList'))
+const Infographics = lazy(() => import('@/pages/Infographics'))
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth()
@@ -153,6 +154,16 @@ export default function App() {
               element={
                 <RequireRecordListAccess>
                   <RecordList />
+                </RequireRecordListAccess>
+              }
+            />
+            {/* Shareable indicator infographic cards (one PNG-export
+                per row). Same access as RecordList — managers and up. */}
+            <Route
+              path="infographics"
+              element={
+                <RequireRecordListAccess>
+                  <Infographics />
                 </RequireRecordListAccess>
               }
             />
