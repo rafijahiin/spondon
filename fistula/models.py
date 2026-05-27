@@ -12,6 +12,55 @@ def _safe_int(value, default=0):
         return default
 
 
+# ─── PII encryption helpers ──────────────────────────────────────────────────
+# Same Fernet pattern programs.models.gbv uses — survivor name, husband name
+# and mobile are encrypted at rest. FERNET_KEY env var (set in Step B Railway
+# block) drives the cipher. When the key is absent the field passes through
+# as plaintext so dev/test environments don't crash.
+
+def _encrypt(value: str) -> str:
+    if not value:
+        return ''
+    try:
+        from cryptography.fernet import Fernet
+        key = settings.FERNET_KEY
+        if not key:
+            return value
+        return Fernet(key.encode() if isinstance(key, str) else key).encrypt(
+            value.encode()
+        ).decode()
+    except Exception:
+        return value
+
+
+def _decrypt(value: str) -> str:
+    if not value:
+        return ''
+    try:
+        from cryptography.fernet import Fernet
+        key = settings.FERNET_KEY
+        if not key:
+            return value
+        return Fernet(key.encode() if isinstance(key, str) else key).decrypt(
+            value.encode()
+        ).decode()
+    except Exception:
+        return value
+
+
+class EncryptedCharField(models.TextField):
+    """Transparent Fernet-encrypt on save, decrypt on access."""
+
+    def from_db_value(self, value, expression, connection):
+        return _decrypt(value) if value else value
+
+    def pre_save(self, model_instance, add):
+        value = super().pre_save(model_instance, add)
+        encrypted = _encrypt(value)
+        setattr(model_instance, self.attname, encrypted)
+        return encrypted
+
+
 class FistulaCampaignManager(models.Manager):
     def get_or_create_from_submission(self, submission):
         raw = submission.raw_data
@@ -157,3 +206,247 @@ class FistulaCampaign(models.Model):
 
     def __str__(self):
         return f'{self.case_hash} — {self.district} ({self.campaign_date})'
+
+
+# ────────────────────────────────────────────────────────────────────────────
+#  FistulaCornerCase — per-patient diagnosis at District Hospital Fistula Corner
+#  Source: প্রসবজনিত ফিস্টুলা রেজিস্ট্রার (Bengali register photo)
+#  Activity code: F.C
+# ────────────────────────────────────────────────────────────────────────────
+
+class FistulaCornerCase(models.Model):
+    """
+    One row per woman diagnosed with obstetric fistula at a District Hospital
+    Fistula Corner. Mirrors the paper register: patient + address + clinical
+    findings + referral chain. PII (name, husband name, mobile) encrypted
+    at rest via Fernet — same pattern as programs.GBVCase.
+    """
+
+    # Fistula types — V.V.F most common, also R.V.F and combined.
+    VVF = 'VVF'
+    RVF = 'RVF'
+    BOTH = 'BOTH'
+    OTHER = 'OTHER'
+    FISTULA_TYPE_CHOICES = [
+        (VVF,   'V.V.F (Vesico-Vaginal Fistula)'),
+        (RVF,   'R.V.F (Recto-Vaginal Fistula)'),
+        (BOTH,  'V.V.F + R.V.F (Combined)'),
+        (OTHER, 'Other'),
+    ]
+
+    # Surgery outcome on referral.
+    SURGERY_YES = 'yes'
+    SURGERY_NO = 'no'
+    SURGERY_PENDING = 'pending'
+    SURGERY_CHOICES = [
+        (SURGERY_YES,     'Yes'),
+        (SURGERY_NO,      'No'),
+        (SURGERY_PENDING, 'Pending'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    case_hash = models.CharField(max_length=30, unique=True, blank=True, db_index=True)
+
+    submission = models.OneToOneField(
+        'submissions.KoboSubmission',
+        null=True, blank=True,
+        on_delete=models.SET_NULL,
+        related_name='fistula_corner_case',
+    )
+
+    # ─── Patient PII (encrypted) ─────────────────────────────────────────
+    patient_name = EncryptedCharField(blank=True)
+    husband_name = EncryptedCharField(blank=True)
+    mobile_number = EncryptedCharField(blank=True)
+
+    # ─── Patient non-PII ─────────────────────────────────────────────────
+    age_years = models.PositiveSmallIntegerField(null=True, blank=True)
+
+    # ─── Address ─────────────────────────────────────────────────────────
+    village  = models.CharField(max_length=200, blank=True)
+    union    = models.CharField(max_length=100, blank=True)
+    upazila  = models.CharField(max_length=100, blank=True)
+    district = models.CharField(max_length=100, blank=True, db_index=True)
+
+    # ─── Dates ───────────────────────────────────────────────────────────
+    suspected_date     = models.DateField(null=True, blank=True)
+    identification_date = models.DateField(null=True, blank=True)
+    diagnosis_date     = models.DateField(null=True, blank=True, db_index=True)
+
+    # ─── Informant ───────────────────────────────────────────────────────
+    informant_name      = models.CharField(max_length=200, blank=True)
+    informant_designation = models.CharField(max_length=200, blank=True)
+
+    # ─── Clinical ────────────────────────────────────────────────────────
+    suffering_duration = models.CharField(
+        max_length=100, blank=True,
+        help_text='Free-text duration — e.g. "৩ বছর", "8 মাস".',
+    )
+    fistula_cause = models.CharField(
+        max_length=300, blank=True,
+        help_text='Free-text — e.g. "দীর্ঘ সময়ের প্রসব" (prolonged labour).',
+    )
+    fistula_type = models.CharField(
+        max_length=10, choices=FISTULA_TYPE_CHOICES, blank=True,
+        help_text='V.V.F / R.V.F / Combined / Other.',
+    )
+
+    # ─── Service provider ────────────────────────────────────────────────
+    service_provider_name        = models.CharField(max_length=200, blank=True)
+    service_provider_designation = models.CharField(max_length=200, blank=True)
+
+    # ─── Referral chain ──────────────────────────────────────────────────
+    referral_date     = models.DateField(null=True, blank=True)
+    referral_place    = models.CharField(max_length=200, blank=True)
+    surgery_performed = models.CharField(
+        max_length=10, choices=SURGERY_CHOICES, blank=True,
+    )
+    referral_outcome  = models.TextField(blank=True)
+
+    # ─── Remarks ─────────────────────────────────────────────────────────
+    remarks = models.TextField(blank=True)
+
+    # ─── Provenance ──────────────────────────────────────────────────────
+    latitude  = models.DecimalField(max_digits=10, decimal_places=7, null=True, blank=True)
+    longitude = models.DecimalField(max_digits=10, decimal_places=7, null=True, blank=True)
+    submitted_by_kobo_user = models.CharField(max_length=100, blank=True)
+    submitted_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True, blank=True,
+        on_delete=models.SET_NULL,
+        related_name='+',
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-diagnosis_date', '-created_at']
+        verbose_name = 'Fistula Corner Case'
+        verbose_name_plural = 'Fistula Corner Cases'
+        indexes = [
+            models.Index(fields=['district', '-diagnosis_date']),
+            models.Index(fields=['fistula_type']),
+        ]
+
+    def save(self, *args, **kwargs):
+        if not self.case_hash:
+            year = (self.diagnosis_date or self.suspected_date or timezone.now().date()).year
+            count = FistulaCornerCase.objects.filter(
+                diagnosis_date__year=year,
+            ).count() + 1
+            self.case_hash = f'FC-{year}-{count:04d}'
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f'{self.case_hash} — {self.district} ({self.fistula_type or "?"})'
+
+
+# ────────────────────────────────────────────────────────────────────────────
+#  FistulaCampaignVisit — per-suspected-patient house-visit screening record
+#  Source: xlsx individual sheet ("Sunamganj_Individual")
+#  Activity code: F.Camp
+# ────────────────────────────────────────────────────────────────────────────
+
+class FistulaCampaignVisit(models.Model):
+    """
+    One row per woman identified as a suspected fistula case during the
+    house-to-house screening campaign. Different from the aggregate
+    FistulaCampaign model (which captures daily roll-ups).
+
+    The xlsx "Sunamganj_Individual" sheet maps directly here.
+    """
+
+    DELIVERY_LB = 'LB'   # Live Birth
+    DELIVERY_SB = 'SB'   # Still Birth
+    DELIVERY_UNKNOWN = 'UNK'
+    DELIVERY_OUTCOME_CHOICES = [
+        (DELIVERY_LB,      'Live Birth'),
+        (DELIVERY_SB,      'Still Birth'),
+        (DELIVERY_UNKNOWN, 'Unknown'),
+    ]
+
+    MODE_HOME = 'home'
+    MODE_FACILITY = 'facility'
+    MODE_OTHER = 'other'
+    DELIVERY_MODE_CHOICES = [
+        (MODE_HOME,     'Home'),
+        (MODE_FACILITY, 'Facility'),
+        (MODE_OTHER,    'Other'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    case_hash = models.CharField(max_length=30, unique=True, blank=True, db_index=True)
+
+    submission = models.OneToOneField(
+        'submissions.KoboSubmission',
+        null=True, blank=True,
+        on_delete=models.SET_NULL,
+        related_name='fistula_campaign_visit',
+    )
+
+    visit_date = models.DateField(db_index=True)
+
+    # ─── Patient PII (encrypted) ─────────────────────────────────────────
+    patient_name  = EncryptedCharField(blank=True)
+    husband_name  = EncryptedCharField(blank=True)
+    contact_number = EncryptedCharField(blank=True)
+
+    # ─── Patient non-PII ─────────────────────────────────────────────────
+    age_years          = models.PositiveSmallIntegerField(null=True, blank=True)
+    education          = models.CharField(max_length=100, blank=True)
+    profession         = models.CharField(max_length=200, blank=True)
+    husband_profession = models.CharField(max_length=200, blank=True)
+
+    # ─── Address ─────────────────────────────────────────────────────────
+    village  = models.CharField(max_length=200, blank=True)
+    union    = models.CharField(max_length=100, blank=True)
+    upazila  = models.CharField(max_length=100, blank=True)
+    district = models.CharField(max_length=100, blank=True, db_index=True)
+    from_haor = models.BooleanField(null=True, blank=True,
+        help_text='Patient lives in a Haor (wetland) area.')
+
+    # ─── Clinical / obstetric history ────────────────────────────────────
+    delivery_mode    = models.CharField(max_length=20, choices=DELIVERY_MODE_CHOICES, blank=True)
+    delivery_outcome = models.CharField(max_length=10, choices=DELIVERY_OUTCOME_CHOICES, blank=True)
+    suffering_duration = models.CharField(
+        max_length=100, blank=True,
+        help_text='Free-text — e.g. "30 years", "8 years".',
+    )
+    info_source = models.CharField(
+        max_length=100, blank=True,
+        help_text='Who reported the suspected case — DRC / FWA / Midwife / Self.',
+    )
+
+    remarks = models.TextField(blank=True)
+
+    # ─── Provenance ──────────────────────────────────────────────────────
+    latitude  = models.DecimalField(max_digits=10, decimal_places=7, null=True, blank=True)
+    longitude = models.DecimalField(max_digits=10, decimal_places=7, null=True, blank=True)
+    submitted_by_kobo_user = models.CharField(max_length=100, blank=True)
+    submitted_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True, blank=True,
+        on_delete=models.SET_NULL,
+        related_name='+',
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-visit_date', '-created_at']
+        verbose_name = 'Fistula Campaign Visit'
+        verbose_name_plural = 'Fistula Campaign Visits'
+        indexes = [
+            models.Index(fields=['district', '-visit_date']),
+            models.Index(fields=['union', '-visit_date']),
+        ]
+
+    def save(self, *args, **kwargs):
+        if not self.case_hash:
+            year = (self.visit_date or timezone.now().date()).year
+            count = FistulaCampaignVisit.objects.filter(visit_date__year=year).count() + 1
+            self.case_hash = f'FCAMP-{year}-{count:04d}'
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f'{self.case_hash} — {self.district} ({self.visit_date})'

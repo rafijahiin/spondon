@@ -39,18 +39,19 @@ Colour-band assignment (for the progress bar) lives in the frontend:
 import logging
 from django.core.cache import cache
 
-from . import bandhu, phd
+from . import bandhu, ciprb, phd
 
 logger = logging.getLogger(__name__)
 
 CACHE_TTL = 3600  # 1 hour
 
-# Per-partner compute-function registries. CIPRB has none for now —
-# Fistula Corner / Fistula Campaign / Baseline modules are post-workshop.
+# Per-partner compute-function registries. CIPRB activities (F.C, F.Camp, B)
+# now have compute fns backed by fistula.FistulaCornerCase,
+# fistula.FistulaCampaignVisit, and baseline.BaselineSurvey respectively.
 _REGISTRIES: dict[str, tuple[dict, set]] = {
     'Bandhu': (bandhu.ACTIVITY_REGISTRY, bandhu.ORG_ONLY_CODES),
     'PHD':    (phd.ACTIVITY_REGISTRY,    phd.ORG_ONLY_CODES),
-    'CIPRB':  ({},                       set()),
+    'CIPRB':  (ciprb.ACTIVITY_REGISTRY,  ciprb.ORG_ONLY_CODES),
 }
 
 

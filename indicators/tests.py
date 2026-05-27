@@ -194,10 +194,12 @@ class PartnerProgressShapeTest(TestCase):
         rows = get_partner_indicator_progress('Bandhu', P_START, P_END)
         self.assertEqual(len(rows), 19)
 
-    def test_ciprb_returns_3_rows_all_unlinked(self):
+    def test_ciprb_returns_3_rows_all_linked(self):
+        # Migration 0007 + indicators.ciprb wired all 3 CIPRB rows
+        # (F.C, F.Camp, B) to fistula and baseline backings.
         rows = get_partner_indicator_progress('CIPRB', P_START, P_END)
         self.assertEqual(len(rows), 3)
-        self.assertTrue(all(r['unlinked'] for r in rows))
+        self.assertTrue(all(not r['unlinked'] for r in rows))
 
     def test_every_row_has_step3_keys(self):
         rows = get_partner_indicator_progress('PHD', P_START, P_END)
@@ -247,12 +249,15 @@ class PartnerProgressShapeTest(TestCase):
             self.assertFalse(rows[code]['unlinked'])
             self.assertEqual(rows[code]['achievement'], 0)
 
-    def test_ciprb_rows_still_unlinked(self):
-        # CIPRB compute functions remain workshop-pending.
+    def test_ciprb_rows_now_linked_and_returning_zero(self):
+        # CIPRB compute functions (indicators.ciprb) wire all 3 rows.
+        # With no FistulaCornerCase / FistulaCampaignVisit / BaselineSurvey
+        # in the test DB they correctly return achievement=0 and
+        # unlinked=False (linked, just no data yet).
         rows = {r['activity_code']: r for r in get_partner_indicator_progress('CIPRB', P_START, P_END)}
         for code in ('F.C', 'F.Camp', 'B'):
             self.assertIn(code, rows)
-            self.assertTrue(rows[code]['unlinked'])
+            self.assertFalse(rows[code]['unlinked'])
             self.assertEqual(rows[code]['achievement'], 0)
 
     def test_phd_overall_row_ordered_first(self):
@@ -282,11 +287,11 @@ class SingleIndicatorProgressTest(TestCase):
         self.assertEqual(r['achievement'], 0)
         self.assertFalse(r['unlinked'])
 
-    def test_ciprb_workshop_pending_returns_unlinked(self):
-        # CIPRB F.C / F.Camp / B remain unlinked until the workshop confirms
-        # register variables. Used to be PHD 3.1c here — that's now wired.
+    def test_ciprb_fistula_corner_now_linked(self):
+        # F.C wired to FistulaCornerCase by migration 0007. No fixture
+        # rows in test DB so achievement is 0, but the row is linked.
         r = get_indicator_progress('CIPRB', 'F.C', P_START, P_END)
-        self.assertTrue(r['unlinked'])
+        self.assertFalse(r['unlinked'])
         self.assertEqual(r['achievement'], 0)
 
     def test_unknown_code_does_not_crash(self):
@@ -336,13 +341,19 @@ class KoboFormMappingWiringTest(TestCase):
     IndicatorTarget.source_form FK for every activity that has a Kobo form
     backing it. Reference-table-driven indicators correctly stay NULL."""
 
-    def test_18_form_mappings_seeded(self):
+    def test_21_form_mappings_seeded(self):
         from indicators.models import KoboFormMapping
-        # 17 generated forms + 1 IEC mapping waiting on its XLSForm.
-        self.assertEqual(KoboFormMapping.objects.count(), 18)
+        # 17 generated programs forms (migration 0006)
+        # + spondon_iec_material_v1 (0006)
+        # + spondon_fistula_corner_v1 + spondon_fistula_campaign_v1 (0007)
+        # + spondon_baseline_v1 (0007 — added retroactively for CIPRB B wiring)
+        # = 21 total.
+        self.assertEqual(KoboFormMapping.objects.count(), 21)
         slugs = set(KoboFormMapping.objects.values_list('form_slug', flat=True))
         self.assertIn('spondon_clinic_visit_v1', slugs)
         self.assertIn('spondon_iec_material_v1', slugs)
+        self.assertIn('spondon_fistula_corner_v1', slugs)
+        self.assertIn('spondon_fistula_campaign_v1', slugs)
 
     def test_partner_exclusive_forms_have_partner_fk(self):
         from indicators.models import KoboFormMapping
@@ -397,12 +408,19 @@ class KoboFormMappingWiringTest(TestCase):
             self.assertIsNone(row.source_form,
                               msg=f'{partner}/{code} should have source_form=NULL')
 
-    def test_ciprb_indicators_workshop_pending(self):
-        # CIPRB rows stay unwired until the workshop confirms register variables.
-        ciprb = IndicatorTarget.objects.filter(partner__code='CIPRB')
-        for row in ciprb:
-            self.assertIsNone(row.source_form,
-                              msg=f'CIPRB/{row.activity_code} should be workshop-pending')
+    def test_ciprb_indicators_wired_to_fistula_and_baseline(self):
+        # Migration 0007 wired all 3 CIPRB rows after the Fistula register
+        # photo + Sunamganj campaign xlsx confirmed the schema.
+        expected = {
+            'F.C':    'spondon_fistula_corner_v1',
+            'F.Camp': 'spondon_fistula_campaign_v1',
+            'B':      'spondon_baseline_v1',
+        }
+        for code, slug in expected.items():
+            row = IndicatorTarget.objects.get(partner__code='CIPRB', activity_code=code)
+            self.assertIsNotNone(row.source_form, msg=f'CIPRB/{code} should be wired')
+            self.assertEqual(row.source_form.form_slug, slug,
+                             msg=f'CIPRB/{code} wrong source_form')
 
 
 # ─── New compute functions (Commit 2 IEC + day-observance) ───────────────────
