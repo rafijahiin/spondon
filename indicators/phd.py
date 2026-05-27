@@ -7,6 +7,7 @@ from programs.models import (
     Client, ClinicVisit, HIVSTITestResult, IndividualCounselling,
     OutreachSession, GBVCase, Referral,
     ServiceCenter, TrainingEvent, CoordMeeting, MobileHealthCamp, StockEntry,
+    IECMaterial,
 )
 
 APPROVED = 'APPROVED'
@@ -203,16 +204,49 @@ def compute_phd_overall(org):
     return ServiceCenter.objects.filter(organisation=org, is_active=True).count()
 
 
+# ─── Objective 3 — Community Awareness (IEC materials) ────────────────────────
+#
+# All four obj-3 indicators count IECMaterial rows filtered by material_type.
+# IECMaterial (audit FIX 12.2) is partner-scoped via the partner FK; this
+# compute filters by `organisation='PHD'` for parity with the rest of the
+# file. Quantity column is summed because the targets are in pcs.
+
+def _compute_iec_by_type(org, period_start, period_end, mat_type: str) -> int:
+    return IECMaterial.objects.filter(
+        organisation=org, approval_status=APPROVED,
+        date_distributed__range=(period_start, period_end),
+        material_type=mat_type,
+    ).aggregate(t=Sum('quantity'))['t'] or 0
+
+
+def compute_I_PHD_3_1A(org, period_start, period_end):
+    """Message boards installed. Target: 66 pcs."""
+    return _compute_iec_by_type(org, period_start, period_end, IECMaterial.MESSAGE_BOARD)
+
+
+def compute_I_PHD_3_1B(org, period_start, period_end):
+    """Posters installed. Target: 200 pcs."""
+    return _compute_iec_by_type(org, period_start, period_end, IECMaterial.POSTER)
+
+
+def compute_I_PHD_3_1C(org, period_start, period_end):
+    """Signboards installed. Target: 11 pcs."""
+    return _compute_iec_by_type(org, period_start, period_end, IECMaterial.SIGNBOARD)
+
+
+def compute_I_PHD_3_1D(org, period_start, period_end):
+    """Billboards installed. Target: 11 pcs."""
+    return _compute_iec_by_type(org, period_start, period_end, IECMaterial.BILLBOARD)
+
+
 # ─── Activity-code registry ──────────────────────────────────────────────────
 #
 # Maps the canonical `activity_code` values from the IndicatorTarget fixture
 # (data migration 0004_load_target_fixtures) to compute functions above.
 #
-# UNLINKED codes (no compute function yet — surface as achievement=0,
-# unlinked=True via the service layer; do NOT crash):
-#   3.1a, 3.1b, 3.1c, 3.1d  — IEC materials (message boards / posters /
-#   signboards / billboards). The IEC Materials Log module is on the
-#   post-workshop build list.
+# Every PHD indicator now has a compute function — the previous gaps at
+# 3.1a-d (IEC materials) closed when the IECMaterial model landed in
+# Commit 2. Quantity is summed per material_type for the four obj-3 rows.
 
 ACTIVITY_REGISTRY = {
     'OVERALL': compute_phd_overall,    # org-only, no period
@@ -233,6 +267,10 @@ ACTIVITY_REGISTRY = {
     '2.2':  compute_I_PHD_2_2,
     '2.3':  compute_I_PHD_2_3,
     '2.4':  compute_I_PHD_2_4,
+    '3.1a': compute_I_PHD_3_1A,
+    '3.1b': compute_I_PHD_3_1B,
+    '3.1c': compute_I_PHD_3_1C,
+    '3.1d': compute_I_PHD_3_1D,
 }
 
 # Codes whose compute function takes only (org) — no period args.

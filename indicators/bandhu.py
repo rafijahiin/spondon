@@ -8,6 +8,7 @@ from programs.models import (
     ClinicVisit, HIVSTITestResult, HTCCounselling,
     IndividualCounselling, GroupEducationSession, OutreachSession,
     GBVCase, Referral, ServiceCenter, TrainingEvent, CoordMeeting, MobileHealthCamp,
+    IECMaterial,
 )
 
 ORG = 'Bandhu'
@@ -170,8 +171,35 @@ def compute_I_BND_2_5(org, period_start, period_end):
     ).aggregate(t=Sum('total_participants'))['t'] or 0
 
 
+def compute_I_BND_2_6(org, period_start, period_end):
+    """Day-observance / awareness events supported. Target: 2.
+
+    Counts CoordMeeting rows of type DAY_OBSERVANCE (added in audit FIX 12.4).
+    World AIDS Day, Hijra Pride, Human Rights Day, etc. all flow through
+    this single meeting_type so the indicator has one clean source."""
+    return CoordMeeting.objects.filter(
+        organisation=org, approval_status=APPROVED,
+        meeting_date__range=(period_start, period_end),
+        meeting_type=CoordMeeting.DAY_OBSERVANCE,
+    ).count()
+
+
 def compute_I_BND_4_1(org, period_start, period_end):
-    """IEC/SBCC materials distributed. Target: 50,000"""
+    """IEC/SBCC materials distributed. Target: 50,000.
+
+    Now reads from IECMaterial (audit FIX 12.2 added the model) plus the
+    legacy outreach/clinic counts so historical rows from before the
+    workshop still contribute. The IECMaterial path is the canonical one
+    going forward."""
+    iec = IECMaterial.objects.filter(
+        organisation=org, approval_status=APPROVED,
+        date_distributed__range=(period_start, period_end),
+        material_type__in=[
+            IECMaterial.LEAFLET, IECMaterial.POSTER, IECMaterial.MESSAGE_BOARD,
+            IECMaterial.SIGNBOARD, IECMaterial.OTHER,
+        ],
+    ).aggregate(t=Sum('quantity'))['t'] or 0
+
     outreach = OutreachSession.objects.filter(
         organisation=org, approval_status=APPROVED,
         session_date__range=(period_start, period_end),
@@ -182,7 +210,20 @@ def compute_I_BND_4_1(org, period_start, period_end):
         visit_date__range=(period_start, period_end),
     ).aggregate(t=Sum('condoms_distributed'))['t'] or 0
 
-    return outreach + clinic
+    return iec + outreach + clinic
+
+
+def compute_I_BND_4_3(org, period_start, period_end):
+    """E-billboards / digital displays installed at hospitals. Target: 4.
+
+    Filters IECMaterial by material_type=DIGITAL — covers the Bandhu
+    e-billboard rollout. Counts installations (rows), not units (sum of
+    quantity) because the indicator unit is 'installations'."""
+    return IECMaterial.objects.filter(
+        organisation=org, approval_status=APPROVED,
+        date_distributed__range=(period_start, period_end),
+        material_type=IECMaterial.DIGITAL,
+    ).count()
 
 
 # ─── Activity-code registry ──────────────────────────────────────────────────
@@ -194,9 +235,10 @@ def compute_I_BND_4_1(org, period_start, period_end):
 # layer — the row still renders on the org page with achievement=0 and a
 # small "module not built yet" badge, never a crash.
 #
-# Currently UNLINKED for Bandhu:
-#   2.6  — Day observance events (no event-observance tracker yet)
-#   4.3  — E-billboards at district/upazila hospitals (no e-billboard log)
+# Every Bandhu indicator now has a compute function — the previous gaps
+# at 2.6 (day observance) and 4.3 (e-billboards) closed when the
+# DAY_OBSERVANCE meeting type and IECMaterial model landed in Commits 1
+# and 2 respectively.
 
 ACTIVITY_REGISTRY = {
     '1.1':  compute_I_BND_1_1,
@@ -215,7 +257,9 @@ ACTIVITY_REGISTRY = {
     '2.3':  compute_I_BND_2_3,
     '2.4':  compute_I_BND_2_4,
     '2.5':  compute_I_BND_2_5,
+    '2.6':  compute_I_BND_2_6,
     '4.1':  compute_I_BND_4_1,
+    '4.3':  compute_I_BND_4_3,
 }
 
 # Codes whose compute function takes only (org) — no period args.

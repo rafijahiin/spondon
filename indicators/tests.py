@@ -152,26 +152,30 @@ class ActivityRegistryShapeTest(TestCase):
     """Both partner registries must cover every fixture row that has a
     'real' (i.e. not deliberately unlinked) module, and no others."""
 
-    def test_phd_unlinked_codes_are_3_1x(self):
+    def test_phd_all_codes_wired(self):
+        """After the IECMaterial compute landed (Commit 2 model + migration
+        0006 wiring), every PHD fixture code has a compute function.
+        Replaces the old test that asserted 3.1a-d were unlinked."""
         codes_in_fixture = set(
             IndicatorTarget.objects
             .filter(partner__code='PHD', is_active=True)
             .values_list('activity_code', flat=True)
         )
         unlinked = codes_in_fixture - set(phd.ACTIVITY_REGISTRY)
-        # Step 3 spec: IEC materials (3.1a–d) is the only deliberately
-        # unlinked group on PHD.
-        self.assertEqual(unlinked, {'3.1a', '3.1b', '3.1c', '3.1d'})
+        self.assertEqual(unlinked, set())
 
-    def test_bandhu_unlinked_codes_are_2_6_and_4_3(self):
+    def test_bandhu_all_codes_wired(self):
+        """After DAY_OBSERVANCE (Commit 1) + IECMaterial (Commit 2) +
+        migration 0006, every Bandhu fixture code resolves to a compute
+        function. 2.6 (day observance) and 4.3 (e-billboards) used to
+        be unlinked; both are now live."""
         codes_in_fixture = set(
             IndicatorTarget.objects
             .filter(partner__code='Bandhu', is_active=True)
             .values_list('activity_code', flat=True)
         )
         unlinked = codes_in_fixture - set(bandhu.ACTIVITY_REGISTRY)
-        # 2.6 = day observance events, 4.3 = e-billboards — both pending.
-        self.assertEqual(unlinked, {'2.6', '4.3'})
+        self.assertEqual(unlinked, set())
 
     def test_phd_overall_is_registered(self):
         self.assertIn('OVERALL', phd.ACTIVITY_REGISTRY)
@@ -233,10 +237,20 @@ class PartnerProgressShapeTest(TestCase):
                 msg=f"{r['activity_code']} achievement={r['achievement']} target={r['target_value']}",
             )
 
-    def test_unlinked_rows_still_present_and_not_crashing(self):
-        # PHD 3.1a–d must appear with unlinked=True, achievement=0.
+    def test_iec_rows_now_linked_and_returning_zero(self):
+        # PHD 3.1a–d used to be unlinked. Migration 0006 + the IECMaterial
+        # compute functions wire them; with no IECMaterial rows in the
+        # test DB they correctly return achievement=0 and unlinked=False.
         rows = {r['activity_code']: r for r in get_partner_indicator_progress('PHD', P_START, P_END)}
         for code in ('3.1a', '3.1b', '3.1c', '3.1d'):
+            self.assertIn(code, rows)
+            self.assertFalse(rows[code]['unlinked'])
+            self.assertEqual(rows[code]['achievement'], 0)
+
+    def test_ciprb_rows_still_unlinked(self):
+        # CIPRB compute functions remain workshop-pending.
+        rows = {r['activity_code']: r for r in get_partner_indicator_progress('CIPRB', P_START, P_END)}
+        for code in ('F.C', 'F.Camp', 'B'):
             self.assertIn(code, rows)
             self.assertTrue(rows[code]['unlinked'])
             self.assertEqual(rows[code]['achievement'], 0)
@@ -268,8 +282,10 @@ class SingleIndicatorProgressTest(TestCase):
         self.assertEqual(r['achievement'], 0)
         self.assertFalse(r['unlinked'])
 
-    def test_unlinked_code_returns_row_with_flag(self):
-        r = get_indicator_progress('PHD', '3.1c', P_START, P_END)
+    def test_ciprb_workshop_pending_returns_unlinked(self):
+        # CIPRB F.C / F.Camp / B remain unlinked until the workshop confirms
+        # register variables. Used to be PHD 3.1c here — that's now wired.
+        r = get_indicator_progress('CIPRB', 'F.C', P_START, P_END)
         self.assertTrue(r['unlinked'])
         self.assertEqual(r['achievement'], 0)
 
@@ -311,3 +327,158 @@ class ProgressEndpointTest(TestCase):
         orgs = {row['organisation'] for row in r.data}
         self.assertEqual(orgs, {'CIPRB', 'Bandhu', 'PHD'})
         self.assertEqual(len(r.data), 44)
+
+
+# ─── KoboFormMapping wiring (migration 0006) ─────────────────────────────────
+
+class KoboFormMappingWiringTest(TestCase):
+    """Verifies migration 0006 seeded the form catalogue and wired the
+    IndicatorTarget.source_form FK for every activity that has a Kobo form
+    backing it. Reference-table-driven indicators correctly stay NULL."""
+
+    def test_18_form_mappings_seeded(self):
+        from indicators.models import KoboFormMapping
+        # 17 generated forms + 1 IEC mapping waiting on its XLSForm.
+        self.assertEqual(KoboFormMapping.objects.count(), 18)
+        slugs = set(KoboFormMapping.objects.values_list('form_slug', flat=True))
+        self.assertIn('spondon_clinic_visit_v1', slugs)
+        self.assertIn('spondon_iec_material_v1', slugs)
+
+    def test_partner_exclusive_forms_have_partner_fk(self):
+        from indicators.models import KoboFormMapping
+        self.assertEqual(
+            KoboFormMapping.objects.get(form_slug='spondon_hygiene_kit_v1').partner.code,
+            'Bandhu',
+        )
+        self.assertEqual(
+            KoboFormMapping.objects.get(form_slug='spondon_autoclave_log_v1').partner.code,
+            'PHD',
+        )
+        self.assertEqual(
+            KoboFormMapping.objects.get(form_slug='spondon_antenatal_card_v1').partner.code,
+            'PHD',
+        )
+
+    def test_cross_partner_forms_have_null_partner(self):
+        from indicators.models import KoboFormMapping
+        self.assertIsNone(
+            KoboFormMapping.objects.get(form_slug='spondon_clinic_visit_v1').partner,
+        )
+        self.assertIsNone(
+            KoboFormMapping.objects.get(form_slug='spondon_coord_meeting_v1').partner,
+        )
+
+    def test_phd_indicators_source_form_wired(self):
+        row = IndicatorTarget.objects.get(partner__code='PHD', activity_code='1.1')
+        self.assertEqual(row.source_form.form_slug, 'spondon_clinic_visit_v1')
+
+        row = IndicatorTarget.objects.get(partner__code='PHD', activity_code='3.1a')
+        self.assertEqual(row.source_form.form_slug, 'spondon_iec_material_v1')
+
+    def test_bandhu_indicators_source_form_wired(self):
+        row = IndicatorTarget.objects.get(partner__code='Bandhu', activity_code='2.6')
+        self.assertEqual(row.source_form.form_slug, 'spondon_coord_meeting_v1')
+
+        row = IndicatorTarget.objects.get(partner__code='Bandhu', activity_code='4.3')
+        self.assertEqual(row.source_form.form_slug, 'spondon_iec_material_v1')
+
+    def test_reference_table_indicators_remain_null(self):
+        # ServiceCenter-driven rows must not be wired to a Kobo form.
+        for partner, code in [
+            ('PHD',    'OVERALL'),
+            ('PHD',    '1.7'),       # ServiceCenter count
+            ('PHD',    '1.5b'),      # StockEntry
+            ('PHD',    '1.5e'),
+            ('Bandhu', '1.5a'),      # ServiceCenter
+            ('Bandhu', '1.6'),       # Dhaka KP clinic registry
+            ('Bandhu', '1.8'),       # DICs registry
+        ]:
+            row = IndicatorTarget.objects.get(partner__code=partner, activity_code=code)
+            self.assertIsNone(row.source_form,
+                              msg=f'{partner}/{code} should have source_form=NULL')
+
+    def test_ciprb_indicators_workshop_pending(self):
+        # CIPRB rows stay unwired until the workshop confirms register variables.
+        ciprb = IndicatorTarget.objects.filter(partner__code='CIPRB')
+        for row in ciprb:
+            self.assertIsNone(row.source_form,
+                              msg=f'CIPRB/{row.activity_code} should be workshop-pending')
+
+
+# ─── New compute functions (Commit 2 IEC + day-observance) ───────────────────
+
+class NewComputeFunctionsTest(TestCase):
+    """compute_I_BND_2_6 + compute_I_PHD_3_1A-D + compute_I_BND_4_1 / 4_3
+    were unwired before migration 0006. These tests exercise them with
+    minimal fixtures and assert non-crash + correct count from the new
+    IECMaterial and CoordMeeting (DAY_OBSERVANCE) backings."""
+
+    def setUp(self):
+        from programs.models import ServiceCenter
+        self.phd_center = ServiceCenter.objects.create(
+            organisation='PHD', name='C-IECTEST', code='IECTEST-1',
+            center_type=ServiceCenter.BROTHEL, district='Dhaka',
+        )
+
+    def test_phd_3_1a_counts_message_boards(self):
+        from programs.models import IECMaterial
+        from partners.models import Partner
+        from indicators.phd import compute_I_PHD_3_1A
+        from datetime import date
+        partner = Partner.objects.get(code='PHD')
+        IECMaterial.objects.create(
+            partner=partner, center=self.phd_center, organisation='PHD',
+            material_type=IECMaterial.MESSAGE_BOARD,
+            quantity=10, date_distributed=date(2026, 6, 1),
+            approval_status=IECMaterial.APPROVED,
+        )
+        IECMaterial.objects.create(
+            partner=partner, center=self.phd_center, organisation='PHD',
+            material_type=IECMaterial.POSTER,   # different type
+            quantity=99, date_distributed=date(2026, 6, 1),
+            approval_status=IECMaterial.APPROVED,
+        )
+        result = compute_I_PHD_3_1A('PHD', date(2026, 5, 21), date(2026, 11, 20))
+        self.assertEqual(result, 10)
+
+    def test_bandhu_2_6_counts_day_observance(self):
+        from programs.models import CoordMeeting
+        from indicators.bandhu import compute_I_BND_2_6
+        from datetime import date
+        CoordMeeting.objects.create(
+            organisation='Bandhu',
+            meeting_date=date(2026, 6, 1),
+            meeting_type=CoordMeeting.DAY_OBSERVANCE,
+            meeting_notes='dummy.pdf',  # blank=False on the field
+            approval_status=CoordMeeting.APPROVED,
+        )
+        CoordMeeting.objects.create(
+            organisation='Bandhu',
+            meeting_date=date(2026, 6, 2),
+            meeting_type=CoordMeeting.GOB,  # different type
+            meeting_notes='dummy.pdf',
+            approval_status=CoordMeeting.APPROVED,
+        )
+        result = compute_I_BND_2_6('Bandhu', date(2026, 5, 21), date(2026, 11, 20))
+        self.assertEqual(result, 1)
+
+    def test_bandhu_4_3_counts_digital_iec(self):
+        from programs.models import IECMaterial
+        from partners.models import Partner
+        from indicators.bandhu import compute_I_BND_4_3
+        from datetime import date
+        partner = Partner.objects.get(code='Bandhu')
+        IECMaterial.objects.create(
+            partner=partner, organisation='Bandhu',
+            material_type=IECMaterial.DIGITAL,
+            quantity=1, date_distributed=date(2026, 6, 1),
+            approval_status=IECMaterial.APPROVED,
+        )
+        IECMaterial.objects.create(
+            partner=partner, organisation='Bandhu',
+            material_type=IECMaterial.DIGITAL,
+            quantity=1, date_distributed=date(2026, 7, 1),
+            approval_status=IECMaterial.APPROVED,
+        )
+        result = compute_I_BND_4_3('Bandhu', date(2026, 5, 21), date(2026, 11, 20))
+        self.assertEqual(result, 2)  # count of installations, not sum(quantity)
