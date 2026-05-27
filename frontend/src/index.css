@@ -55,6 +55,10 @@
   --hair-2: rgba(19, 22, 25, 0.14);
   --hair-3: rgba(19, 22, 25, 0.22);
 
+  /* Topbar frosted strip — light-mode cream that matches the page paper
+     plus a translucent layer for the blur. Overridden in html.dark. */
+  --topbar-bg: rgba(247, 244, 238, 0.78);
+
   /* ─── Type — UNFPA Brand Kit fonts ──────────────────────────────────
      Atkinson Hyperlegible (Latin) + Noto Sans Bengali (Bengali).
      Both Google Fonts, loaded in index.html. Atkinson is the same
@@ -62,9 +66,12 @@
      differentiation is by weight (700 for display, 400 for body)
      and italic, not a separate display face. JetBrains Mono replaces
      Geist Mono for tabular figures.                                     */
-  --display: "Atkinson Hyperlegible", "Atkinson Hyperlegible Next", system-ui, sans-serif;
-  --ui:      "Atkinson Hyperlegible", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --mono:    "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  /* Bengali fallback in every UI/display stack so বাং digits (০-৯) and
+     mixed-script labels render with Noto Sans Bengali instead of falling
+     back to a system Bengali font where ০ looks like a Latin O. */
+  --display: "Atkinson Hyperlegible", "Atkinson Hyperlegible Next", "Noto Sans Bengali", system-ui, sans-serif;
+  --ui:      "Atkinson Hyperlegible", "Noto Sans Bengali", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --mono:    "JetBrains Mono", ui-monospace, "SF Mono", Menlo, "Noto Sans Bengali", monospace;
   --bn:      "Noto Sans Bengali", "Atkinson Hyperlegible", sans-serif;
 
   /* Radii */
@@ -142,6 +149,10 @@ html.dark {
   --hair:   rgba(239, 241, 247, 0.08);
   --hair-2: rgba(239, 241, 247, 0.14);
   --hair-3: rgba(239, 241, 247, 0.22);
+
+  /* Topbar frosted strip — matches the dark page background instead of
+     keeping the light-mode cream that used to leak through. */
+  --topbar-bg: rgba(19, 22, 25, 0.78);
 
   /* Shadows — deeper black + orange glow so depth still reads. */
   --sh-1: 0 1px 2px rgba(0, 0, 0, 0.32),
@@ -414,7 +425,9 @@ html.dark ::selection { background: rgba(249, 96, 0, 0.30); color: var(--ink); }
   padding: 0 24px;
   gap: 14px;
   border-bottom: 1px solid var(--hair);
-  background: rgba(247, 244, 238, 0.78);
+  /* --topbar-bg is defined in :root + html.dark so the frosted strip
+     follows the active theme instead of staying cream in dark mode. */
+  background: var(--topbar-bg);
   backdrop-filter: saturate(180%) blur(14px);
   -webkit-backdrop-filter: saturate(180%) blur(14px);
   position: sticky;

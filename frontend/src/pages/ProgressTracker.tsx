@@ -56,24 +56,30 @@ const MONTHS = [
   'July','August','September','October','November','December',
 ]
 
-const TRAFFIC_CONFIG: Record<TrafficLight, { label: string; cls: string; icon: React.ReactNode }> = {
+// Status pill colour configs. Labels are resolved via i18n at render time
+// so Bengali mode shows "লক্ষ্যে আছে / পিছিয়ে / সংকটাপন্ন / লক্ষ্য নেই".
+const TRAFFIC_CONFIG: Record<TrafficLight, { labelKey: string; defaultLabel: string; cls: string; icon: React.ReactNode }> = {
   on_track: {
-    label: 'On Track',
+    labelKey: 'tracker.statusOnTrack',
+    defaultLabel: 'On Track',
     cls: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400',
     icon: <CheckCircle2 className="h-3.5 w-3.5" />,
   },
   behind: {
-    label: 'Behind',
+    labelKey: 'tracker.statusBehind',
+    defaultLabel: 'Behind',
     cls: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400',
     icon: <AlertTriangle className="h-3.5 w-3.5" />,
   },
   critical: {
-    label: 'Critical',
+    labelKey: 'tracker.statusCritical',
+    defaultLabel: 'Critical',
     cls: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
     icon: <AlertTriangle className="h-3.5 w-3.5" />,
   },
   no_target: {
-    label: 'No Target',
+    labelKey: 'tracker.statusNoTarget',
+    defaultLabel: 'No Target',
     cls: 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400',
     icon: <Circle className="h-3.5 w-3.5" />,
   },
@@ -268,8 +274,18 @@ function ConfigureModal({
 }
 
 // ── Row component ──────────────────────────────────────────────────────────────
+// Partner chip accent picked per-partner instead of the old PHD-blue/Bandhu-green
+// binary. Matches the partner palette used everywhere else.
+const PARTNER_ACCENT: Record<string, string> = {
+  CIPRB:  '#0072BC',
+  PHD:    '#ED7D31',
+  Bandhu: '#00B050',
+}
+
 function ComplianceRow({ row }: { row: ProgressRow }) {
+  const { t } = useTranslation()
   const cfg = TRAFFIC_CONFIG[row.status]
+  const accent = PARTNER_ACCENT[row.partner] ?? 'var(--unfpa)'
   return (
     <div className="grid grid-cols-[1fr_60px_80px_140px_110px_72px] items-center gap-3 py-2.5 px-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
       {/* Form name */}
@@ -278,13 +294,11 @@ function ComplianceRow({ row }: { row: ProgressRow }) {
         <p className="font-bangla truncate text-[10px] text-gray-400">{row.form_label_bn}</p>
       </div>
 
-      {/* Partner chip */}
-      <span className={cn(
-        'inline-flex w-fit items-center rounded-full px-2 py-0.5 text-[10px] font-medium',
-        row.partner === 'PHD'
-          ? 'bg-unfpa-blue/10 text-unfpa-blue'
-          : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400',
-      )}>
+      {/* Partner chip — coloured by partner identity */}
+      <span
+        className="inline-flex w-fit items-center rounded-full px-2 py-0.5 text-[10px] font-medium"
+        style={{ background: `${accent}1A`, color: accent }}
+      >
         {row.partner}
       </span>
 
@@ -302,14 +316,14 @@ function ComplianceRow({ row }: { row: ProgressRow }) {
       {/* Traffic light badge */}
       <span className={cn('inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-medium', cfg.cls)}>
         {cfg.icon}
-        {cfg.label}
+        {t(cfg.labelKey, { defaultValue: cfg.defaultLabel })}
       </span>
 
       {/* Last submission / gap */}
       <div className="text-right">
         {row.has_gap && (
           <span className="inline-flex items-center gap-0.5 rounded-full bg-red-100 px-1.5 py-0.5 text-[9px] font-medium text-red-700 dark:bg-red-900/20 dark:text-red-400">
-            <Clock className="h-2.5 w-2.5" /> 48h gap
+            <Clock className="h-2.5 w-2.5" /> {t('tracker.gap48h', { defaultValue: '48h gap' })}
           </span>
         )}
         {!row.has_gap && (
@@ -322,6 +336,7 @@ function ComplianceRow({ row }: { row: ProgressRow }) {
 
 // ── Main page ──────────────────────────────────────────────────────────────────
 function SubmissionComplianceTab() {
+  const { t } = useTranslation()
   const { user } = useAuth()
   const isCrossOrg = ['developer', 'supervisor'].includes(user?.role ?? '')
   const canSeeAll  = isCrossOrg
@@ -374,9 +389,11 @@ function SubmissionComplianceTab() {
     <div className="space-y-5">
       {/* Title */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Reporting Progress Tracker</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+          {t('tracker.title', { defaultValue: 'Reporting Progress Tracker' })}
+        </h1>
         <p className="font-bangla mt-1 text-sm text-gray-500 dark:text-gray-400">
-          প্রতিবেদন অগ্রগতি ট্র্যাকার · Submission compliance by form type
+          {t('tracker.subtitle', { defaultValue: 'Submission compliance by form type' })}
         </p>
       </div>
 
@@ -399,9 +416,10 @@ function SubmissionComplianceTab() {
           <div className="relative">
             <select value={partner} onChange={(e) => setPartner(e.target.value)}
               className="appearance-none rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 pr-8 text-sm text-gray-900 dark:text-white focus:border-unfpa-blue focus:outline-none">
-              <option value="">All Partners</option>
+              <option value="">{t('tracker.allPartners', { defaultValue: 'All Partners' })}</option>
               <option value="PHD">PHD</option>
               <option value="Bandhu">Bandhu</option>
+              <option value="CIPRB">CIPRB</option>
             </select>
             <ChevronDown className="pointer-events-none absolute right-2 top-2.5 h-4 w-4 text-gray-400" />
           </div>
@@ -411,7 +429,7 @@ function SubmissionComplianceTab() {
           <button onClick={() => setShowConfig(true)}
             className="flex items-center gap-2 rounded-xl border border-gray-300 dark:border-gray-600 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
             <Settings className="h-4 w-4" />
-            Configure Targets
+            {t('tracker.configureTargets', { defaultValue: 'Configure Targets' })}
           </button>
         )}
       </div>
@@ -420,11 +438,11 @@ function SubmissionComplianceTab() {
       {summary && (
         <div className="flex flex-wrap gap-2">
           {[
-            { key: 'on_track',  label: 'On Track',  cls: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400' },
-            { key: 'behind',    label: 'Behind',    cls: 'bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400' },
-            { key: 'critical',  label: 'Critical',  cls: 'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400' },
-            { key: 'no_target', label: 'No Target', cls: 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400' },
-            { key: 'with_gap',  label: '48h Gap',   cls: 'bg-orange-50 text-orange-700 dark:bg-orange-900/20 dark:text-orange-400' },
+            { key: 'on_track',  label: t('tracker.statusOnTrack',  { defaultValue: 'On Track' }),  cls: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400' },
+            { key: 'behind',    label: t('tracker.statusBehind',   { defaultValue: 'Behind' }),    cls: 'bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400' },
+            { key: 'critical',  label: t('tracker.statusCritical', { defaultValue: 'Critical' }),  cls: 'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400' },
+            { key: 'no_target', label: t('tracker.statusNoTarget', { defaultValue: 'No Target' }), cls: 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400' },
+            { key: 'with_gap',  label: t('tracker.gap48h',         { defaultValue: '48h Gap' }),   cls: 'bg-orange-50 text-orange-700 dark:bg-orange-900/20 dark:text-orange-400' },
           ].map(({ key, label, cls }) => (
             <span key={key} className={cn('rounded-full px-3 py-1 text-xs font-semibold tabular-nums', cls)}>
               {(summary as any)[key]} {label}
@@ -442,7 +460,10 @@ function SubmissionComplianceTab() {
           >
             <p className="text-xs font-semibold uppercase tracking-wider text-red-600 dark:text-red-400 flex items-center gap-1.5">
               <AlertTriangle className="h-3.5 w-3.5" />
-              {unackedAlerts.length} Unacknowledged Alert{unackedAlerts.length > 1 ? 's' : ''}
+              {t('tracker.unackedAlerts', {
+                defaultValue: '{{count}} Unacknowledged Alert',
+                count: unackedAlerts.length,
+              })}
             </p>
             {unackedAlerts.map((a) => (
               <div key={a.id} className="flex items-start justify-between gap-3">
@@ -454,7 +475,7 @@ function SubmissionComplianceTab() {
                   onClick={() => handleAcknowledge(a.id)}
                   className="shrink-0 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 px-3 py-1 text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                 >
-                  Acknowledge
+                  {t('tracker.acknowledge', { defaultValue: 'Acknowledge' })}
                 </button>
               </div>
             ))}
@@ -477,13 +498,24 @@ function SubmissionComplianceTab() {
             >
               {/* Category header */}
               <div className="bg-gray-50 dark:bg-gray-800/80 border-b border-gray-100 dark:border-gray-700 px-4 py-2.5 flex items-center justify-between">
-                <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-400">{cat}</p>
-                <p className="text-[10px] text-gray-400">{grouped[cat].length} form types</p>
+                <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-400">
+                  {t(`tracker.cat${cat}`, { defaultValue: cat })}
+                </p>
+                <p className="text-[10px] text-gray-400">
+                  {t('tracker.formTypesCount', { defaultValue: '{{count}} form types', count: grouped[cat].length })}
+                </p>
               </div>
 
               {/* Column headers */}
               <div className="grid grid-cols-[1fr_60px_80px_140px_110px_72px] items-center gap-3 px-4 py-1.5 border-b border-gray-50 dark:border-gray-700/50">
-                {['Form Type', 'Org', 'Count', 'Progress', 'Status', 'Last Sub'].map((h) => (
+                {[
+                  t('tracker.thFormType', { defaultValue: 'Form Type' }),
+                  t('tracker.thOrg',      { defaultValue: 'Org' }),
+                  t('tracker.thCount',    { defaultValue: 'Count' }),
+                  t('tracker.thProgress', { defaultValue: 'Progress' }),
+                  t('tracker.thStatus',   { defaultValue: 'Status' }),
+                  t('tracker.thLastSub',  { defaultValue: 'Last Sub' }),
+                ].map((h) => (
                   <p key={h} className="text-[9px] font-semibold uppercase tracking-wider text-gray-400">{h}</p>
                 ))}
               </div>
@@ -500,9 +532,13 @@ function SubmissionComplianceTab() {
           {!progress?.results?.length && (
             <div className="rounded-xl border border-dashed border-gray-300 dark:border-gray-600 py-16 text-center">
               <RefreshCw className="mx-auto mb-3 h-10 w-10 text-gray-300 dark:text-gray-600" />
-              <p className="text-gray-400 dark:text-gray-500 text-sm">No data for this period.</p>
+              <p className="text-gray-400 dark:text-gray-500 text-sm">
+                {t('tracker.noData', { defaultValue: 'No data for this period.' })}
+              </p>
               <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
-                Use Configure Targets to set monthly targets, then run <code>seed_targets</code>.
+                {t('tracker.noDataHint', {
+                  defaultValue: 'Use Configure Targets to set monthly targets, then re-run the seed.',
+                })}
               </p>
             </div>
           )}

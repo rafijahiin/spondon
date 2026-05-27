@@ -184,11 +184,55 @@ def _get_or_create_client(payload: dict, center, org: str):
     return client
 
 
+def _resolve_submitter(payload: dict):
+    """Resolve the Kobo collector username to a local User row, or None.
+
+    Order of attempts:
+      1. payload['_submitted_by'] matched against User.email
+      2. same value matched against full_name (case-insensitive)
+      3. payload['enumerator_email'] (if a form passes it explicitly)
+
+    Returning None means the record will land with submitted_by=NULL —
+    which is fine for org-level visibility but means field staff won't
+    see it through the FIX 15.7 own-entries filter until the user is
+    eventually matched in a later run. Lookup is best-effort and never
+    blocks ingestion."""
+    try:
+        from accounts.models import User
+    except Exception:
+        return None
+    raw = (
+        payload.get('_submitted_by')
+        or payload.get('enumerator_email')
+        or payload.get('collector_email')
+        or ''
+    )
+    raw = str(raw).strip()
+    if not raw:
+        return None
+    # Case-insensitive email match first — Kobo usernames are commonly
+    # email-shaped or coincide with the local-part of email.
+    qs = User.objects.filter(is_active=True)
+    user = qs.filter(email__iexact=raw).first()
+    if user:
+        return user
+    user = qs.filter(email__istartswith=f'{raw}@').first()
+    if user:
+        return user
+    user = qs.filter(full_name__iexact=raw).first()
+    return user
+
+
 def _base_kwargs(payload: dict, lat, lng) -> dict:
     """Fields common to every SubmissionBase create() call."""
     return {
         'kobo_submission_id': str(payload.get('_id', '')),
         'submitted_by_kobo_user': _str(payload.get('_submitted_by')),
+        # Audit FIX 15.7 — populate the FK so field staff can see their own
+        # entries through the OrgFilterMixin per-user filter. None when the
+        # collector_name can't be resolved to a User; the org filter still
+        # applies as a safety net.
+        'submitted_by': _resolve_submitter(payload),
         'latitude': lat,
         'longitude': lng,
         'raw_payload': payload,

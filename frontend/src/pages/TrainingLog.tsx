@@ -1,109 +1,164 @@
+/**
+ * Training Log — session and attendance records.
+ *
+ * Rewritten to consume the editorial design tokens, matching the chrome
+ * used on /mpdsr, /admin, /phd, /bondhu, and /fistula.
+ */
 import { useState } from 'react'
-import { Download, Users } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
+import { Download, Users, ChevronDown } from 'lucide-react'
 import { api } from '@/api/client'
 import { usePolling } from '@/hooks/usePolling'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { PageLoader } from '@/components/ui/LoadingSpinner'
 import { formatDate } from '@/utils/format'
-import { cn } from '@/utils/cn'
 import type { TrainingSession, TrainingAttendance } from '@/types'
 
 const TOPIC_LABELS: Record<string, string> = {
-  'dashboard_navigation': 'Dashboard Navigation',
-  'kobo_entry': 'KoboToolbox Data Entry',
-  'report_review': 'Report Review',
+  dashboard_navigation: 'Dashboard Navigation',
+  kobo_entry:           'KoboToolbox Data Entry',
+  report_review:        'Report Review',
 }
 
-function AttendanceTable({ session }: { session: TrainingSession }) {
+const PARTNER_ACCENT: Record<string, string> = {
+  CIPRB:  '#0072BC',
+  PHD:    '#ED7D31',
+  Bandhu: '#00B050',
+}
+
+// ─── Session row + attendance accordion ──────────────────────────────────────
+
+function SessionRow({ session }: { session: TrainingSession }) {
+  const { t } = useTranslation()
   const [open, setOpen] = useState(false)
+  const accent = PARTNER_ACCENT[session.partner] ?? 'var(--unfpa)'
+  const rate = session.attendance_rate
+  const rateColor =
+    rate == null            ? 'var(--muted)' :
+    rate >= 80              ? '#015A28' :
+    rate >= 60              ? '#9A3412' :
+                              '#9A1131'
 
   return (
-    <div className="rounded-xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
-      {/* Session row */}
+    <div className="card flush" style={{ overflow: 'hidden' }}>
       <button
         onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center gap-4 px-5 py-4 text-left hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors"
+        style={{
+          display: 'flex', alignItems: 'center', gap: 16,
+          width: '100%', padding: '16px 20px', textAlign: 'left',
+          background: 'transparent', border: 'none', cursor: 'pointer',
+          color: 'var(--ink)',
+          transition: 'background var(--dur-q)',
+        }}
       >
-        <div className="flex-1 min-w-0">
-          <div className="flex flex-wrap items-center gap-2 mb-1">
-            <span className="font-semibold text-gray-900 dark:text-white text-sm">
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{
+            display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 10,
+            marginBottom: 6,
+          }}>
+            <span style={{ fontWeight: 600, color: 'var(--ink)', fontSize: 14 }}>
               {TOPIC_LABELS[session.topic] ?? session.topic}
             </span>
-            <span className={cn(
-              'inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium',
-              'bg-unfpa-blue/10 text-unfpa-blue dark:bg-unfpa-blue/20'
-            )}>
+            <span style={{
+              display: 'inline-flex', alignItems: 'center',
+              borderRadius: 999, padding: '2px 8px',
+              fontSize: 10, fontWeight: 600,
+              background: `${accent}1A`, color: accent,
+              letterSpacing: '0.02em',
+            }}>
               {session.partner}
             </span>
           </div>
-          <div className="flex flex-wrap gap-3 text-xs text-gray-500 dark:text-gray-400">
+          <div style={{
+            display: 'flex', flexWrap: 'wrap', gap: 10,
+            fontSize: 11.5, color: 'var(--muted)',
+            fontVariantNumeric: 'tabular-nums',
+          }}>
             <span>{formatDate(session.date)}</span>
             <span>·</span>
             <span>{session.region}</span>
             <span>·</span>
-            <span className="flex items-center gap-1">
-              <Users className="h-3 w-3" />
-              {session.actual_participants} / {session.expected_participants} attended
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+              <Users size={11} />
+              {session.actual_participants} / {session.expected_participants}{' '}
+              {t('training.attended', { defaultValue: 'attended' })}
             </span>
-            {session.attendance_rate !== null && (
+            {rate != null && (
               <>
                 <span>·</span>
-                <span className={cn(
-                  'font-medium',
-                  (session.attendance_rate ?? 0) >= 80 ? 'text-status-on_track' : 'text-status-critical'
-                )}>
-                  {session.attendance_rate?.toFixed(0)}% rate
+                <span style={{ fontWeight: 500, color: rateColor }}>
+                  {rate.toFixed(0)}% {t('training.rate', { defaultValue: 'rate' })}
                 </span>
               </>
             )}
           </div>
         </div>
-        <div className="flex items-center gap-3 flex-shrink-0">
-          {/* Attendance count */}
-          <div className="text-right">
-            <p className="text-xs text-gray-400">Attended</p>
-            <p className="font-bold text-gray-900 dark:text-white tabular-nums">
+
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 14, flexShrink: 0 }}>
+          <div style={{ textAlign: 'right' }}>
+            <p style={{ fontSize: 11, color: 'var(--muted)', margin: 0 }}>
+              {t('training.colAttended', { defaultValue: 'Attended' })}
+            </p>
+            <p style={{
+              fontWeight: 700, color: 'var(--ink)', margin: 0,
+              fontVariantNumeric: 'tabular-nums', fontSize: 16,
+            }}>
               {session.actual_participants}
-              <span className="text-xs font-normal text-gray-400">/{session.expected_participants}</span>
+              <span style={{ fontSize: 11, fontWeight: 400, color: 'var(--muted)' }}>
+                /{session.expected_participants}
+              </span>
             </p>
           </div>
-          <svg
-            className={cn('h-4 w-4 text-gray-400 transition-transform', open && 'rotate-180')}
-            fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-          </svg>
+          <ChevronDown
+            size={16}
+            style={{
+              color: 'var(--muted)',
+              transform: open ? 'rotate(180deg)' : 'rotate(0deg)',
+              transition: 'transform var(--dur-q)',
+            }}
+          />
         </div>
       </button>
 
-      {/* Attendance table */}
       {open && (
-        <div className="border-t border-gray-100 dark:border-gray-700">
+        <div style={{ borderTop: '1px solid var(--hair)' }}>
           {(session.attendances ?? []).length === 0 ? (
-            <p className="px-5 py-4 text-sm text-gray-400">No attendance records.</p>
+            <p style={{ padding: '14px 20px', fontSize: 13, color: 'var(--muted)', margin: 0 }}>
+              {t('training.noAttendance', { defaultValue: 'No attendance records.' })}
+            </p>
           ) : (
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 dark:bg-gray-700/40">
+            <table className="tbl">
+              <thead>
                 <tr>
-                  {['Name', 'Role', 'Attended', 'Result'].map((h) => (
-                    <th key={h} className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-                      {h}
-                    </th>
-                  ))}
+                  {[
+                    t('training.thName',     { defaultValue: 'Name' }),
+                    t('training.thRole',     { defaultValue: 'Role' }),
+                    t('training.thAttended', { defaultValue: 'Attended' }),
+                    t('training.thResult',   { defaultValue: 'Result' }),
+                  ].map((h) => <th key={h}>{h}</th>)}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-50 dark:divide-gray-700/50">
+              <tbody>
                 {(session.attendances ?? []).map((a: TrainingAttendance) => (
-                  <tr key={a.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/30">
-                    <td className="px-4 py-2.5 font-medium text-gray-900 dark:text-white">{a.participant_name}</td>
-                    <td className="px-4 py-2.5 text-gray-500 dark:text-gray-400 text-xs">{a.role_display}</td>
-                    <td className="px-4 py-2.5">
-                      <span className={cn('text-xs font-medium', a.attended ? 'text-status-on_track' : 'text-gray-400')}>
-                        {a.attended ? '✓ Yes' : '✗ No'}
+                  <tr key={a.id}>
+                    <td style={{ fontWeight: 500, color: 'var(--ink)' }}>
+                      {a.participant_name}
+                    </td>
+                    <td style={{ fontSize: 12, color: 'var(--muted)' }}>{a.role_display}</td>
+                    <td>
+                      <span style={{
+                        fontSize: 12, fontWeight: 500,
+                        color: a.attended ? '#015A28' : 'var(--muted)',
+                      }}>
+                        {a.attended
+                          ? `✓ ${t('training.yes', { defaultValue: 'Yes' })}`
+                          : `✗ ${t('training.no',  { defaultValue: 'No' })}`}
                       </span>
                     </td>
-                    <td className="px-4 py-2.5">
-                      {a.attended ? <StatusBadge status="pass" /> : <span className="text-xs text-gray-400">—</span>}
+                    <td>
+                      {a.attended
+                        ? <StatusBadge status="pass" />
+                        : <span style={{ fontSize: 11, color: 'var(--muted)' }}>—</span>}
                     </td>
                   </tr>
                 ))}
@@ -116,10 +171,16 @@ function AttendanceTable({ session }: { session: TrainingSession }) {
   )
 }
 
+// ─── Main ────────────────────────────────────────────────────────────────────
+
 type PartnerFilter = 'all' | 'PHD' | 'Bandhu'
 
 export default function TrainingLog() {
+  const { t, i18n } = useTranslation()
   const [partnerFilter, setPartnerFilter] = useState<PartnerFilter>('all')
+
+  const fmtNum = (n: number) =>
+    n.toLocaleString(i18n.language?.startsWith('bn') ? 'bn-BD' : 'en-US')
 
   const { data: sessions, loading } = usePolling<TrainingSession[]>({
     fetcher: () =>
@@ -148,75 +209,152 @@ export default function TrainingLog() {
     }
   }
 
+  const stats = [
+    { label: t('training.statSessions',  { defaultValue: 'Sessions' }),       value: fmtNum((sessions ?? []).length) },
+    { label: t('training.statAttended',  { defaultValue: 'Total Attended' }), value: fmtNum(totalAttended) },
+    { label: t('training.statExpected',  { defaultValue: 'Expected' }),       value: fmtNum(totalExpected) },
+    {
+      label: t('training.statAvgRate', { defaultValue: 'Avg Rate' }),
+      value: totalExpected > 0 ? `${((totalAttended / totalExpected) * 100).toFixed(0)}%` : '—',
+    },
+  ]
+
   return (
-    <div className="space-y-6">
-      {/* Heading */}
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Training Log</h1>
-          <p className="font-bangla mt-1 text-sm text-gray-500 dark:text-gray-400">
-            প্রশিক্ষণ লগ · Session Records &amp; Attendance
-          </p>
-        </div>
-        <button
-          onClick={handleDownloadPDF}
-          className="flex items-center gap-2 rounded-xl bg-unfpa-blue px-4 py-2.5 text-sm font-semibold text-white hover:bg-unfpa-dark transition-colors"
-        >
-          <Download className="h-4 w-4" />
-          Download PDF
-        </button>
-      </div>
-
-      {/* Summary stats */}
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        {[
-          { label: 'Sessions', value: (sessions ?? []).length },
-          { label: 'Total Attended', value: totalAttended },
-          { label: 'Expected', value: totalExpected },
-          {
-            label: 'Avg Rate',
-            value: totalExpected > 0 ? `${((totalAttended / totalExpected) * 100).toFixed(0)}%` : '—',
-          },
-        ].map((s) => (
-          <div key={s.label} className="rounded-xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm p-5">
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">{s.value}</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{s.label}</p>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
+      {/* ───── Hero ───── */}
+      <section className="hero" style={{ paddingBottom: 8 }}>
+        <div style={{
+          display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between',
+          flexWrap: 'wrap', gap: 16,
+        }}>
+          <div>
+            <div className="hero-eyebrow">
+              <span className="live-dot" />
+              <span>{t('training.eyebrow', { defaultValue: 'CAPACITY · TRAINING' })}</span>
+            </div>
+            <h1
+              className="hero-headline"
+              style={{
+                fontSize: 'clamp(40px, 5.5vw, 64px)',
+                letterSpacing: '-0.03em',
+                marginBottom: 10,
+              }}
+            >
+              {t('training.title', { defaultValue: 'Training Log' })}
+            </h1>
+            <p className="hero-lede" style={{ maxWidth: 640 }}>
+              {t('training.subtitle', {
+                defaultValue: 'Session records and participant attendance across all three partners.',
+              })}
+            </p>
           </div>
-        ))}
-      </div>
-
-      {/* Partner filter */}
-      <div className="flex gap-2">
-        {(['all', 'PHD', 'Bandhu'] as PartnerFilter[]).map((p) => (
           <button
-            key={p}
-            onClick={() => setPartnerFilter(p)}
-            className={cn(
-              'rounded-full px-4 py-1.5 text-sm font-medium transition-colors',
-              partnerFilter === p
-                ? 'bg-unfpa-blue text-white'
-                : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300'
-            )}
+            onClick={handleDownloadPDF}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 8,
+              borderRadius: 999,
+              border: '1px solid var(--hair-2)',
+              background: 'var(--surface)',
+              color: 'var(--ink)',
+              padding: '10px 18px',
+              fontSize: 13, fontWeight: 500,
+              cursor: 'pointer',
+            }}
           >
-            {p === 'all' ? 'All Partners' : p}
+            <Download size={14} />
+            {t('training.downloadPdf', { defaultValue: 'Download PDF' })}
           </button>
-        ))}
-      </div>
-
-      {/* Sessions list */}
-      {loading && !sessions ? (
-        <PageLoader />
-      ) : (sessions ?? []).length === 0 ? (
-        <div className="rounded-xl border border-dashed border-gray-300 dark:border-gray-600 py-16 text-center">
-          <p className="text-gray-400 dark:text-gray-500">No training sessions recorded.</p>
         </div>
-      ) : (
-        <div className="space-y-3">
-          {(sessions ?? []).map((session) => (
-            <AttendanceTable key={session.id} session={session} />
+      </section>
+
+      {/* ───── Stats grid ───── */}
+      <section className="section" style={{ marginTop: -8 }}>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+          gap: 12,
+        }}>
+          {stats.map((s) => (
+            <div key={s.label} className="card" style={{ padding: 18 }}>
+              <p style={{
+                fontSize: 30, fontWeight: 700, color: 'var(--ink)',
+                fontVariantNumeric: 'tabular-nums', lineHeight: 1, margin: 0,
+              }}>
+                {s.value}
+              </p>
+              <p style={{
+                fontSize: 11.5, color: 'var(--muted)', marginTop: 6,
+                letterSpacing: '0.02em',
+              }}>
+                {s.label}
+              </p>
+            </div>
           ))}
         </div>
-      )}
+      </section>
+
+      {/* ───── Partner filter ───── */}
+      <section className="section" style={{ marginTop: 0 }}>
+        <div
+          role="tablist"
+          aria-label="Partner filter"
+          style={{
+            display: 'inline-flex', gap: 4,
+            padding: 4,
+            background: 'var(--surface-2)',
+            border: '1px solid var(--hair)',
+            borderRadius: 999,
+          }}
+        >
+          {(['all', 'PHD', 'Bandhu'] as PartnerFilter[]).map((p) => {
+            const active = partnerFilter === p
+            return (
+              <button
+                key={p}
+                role="tab"
+                aria-selected={active}
+                onClick={() => setPartnerFilter(p)}
+                style={{
+                  padding: '6px 14px',
+                  borderRadius: 999,
+                  fontSize: 13, fontWeight: 500,
+                  border: 'none', cursor: 'pointer',
+                  background: active ? 'var(--unfpa)' : 'transparent',
+                  color: active ? '#fff' : 'var(--ink-3)',
+                  transition: 'background var(--dur-q), color var(--dur-q)',
+                }}
+              >
+                {p === 'all' ? t('training.allPartners', { defaultValue: 'All Partners' }) : p}
+              </button>
+            )
+          })}
+        </div>
+      </section>
+
+      {/* ───── Sessions list ───── */}
+      <section className="section" style={{ marginTop: 0, marginBottom: 48 }}>
+        {loading && !sessions ? (
+          <PageLoader />
+        ) : (sessions ?? []).length === 0 ? (
+          <div
+            className="card"
+            style={{
+              padding: '48px 16px', textAlign: 'center',
+              borderStyle: 'dashed', borderColor: 'var(--hair-2)',
+            }}
+          >
+            <p style={{ color: 'var(--muted)', fontSize: 13, margin: 0 }}>
+              {t('training.empty', { defaultValue: 'No training sessions recorded.' })}
+            </p>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {(sessions ?? []).map((session) => (
+              <SessionRow key={session.id} session={session} />
+            ))}
+          </div>
+        )}
+      </section>
     </div>
   )
 }
