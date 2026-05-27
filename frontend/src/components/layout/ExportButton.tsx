@@ -41,6 +41,16 @@ export function ExportButton() {
   const [open, setOpen] = useState(false)
   const [busy, setBusy] = useState<null | 'pdf' | 'png'>(null)
   const [errMsg, setErrMsg] = useState<string | null>(null)
+  // Non-fatal notice when the export succeeded but had to skip the
+  // map area due to stale cached tiles. Shown in the same slot as
+  // errMsg, styled as info rather than error.
+  const [noticeMsg, setNoticeMsg] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!noticeMsg) return
+    const id = setTimeout(() => setNoticeMsg(null), 6000)
+    return () => clearTimeout(id)
+  }, [noticeMsg])
 
   // Auto-dismiss error toast after 6s so it doesn't linger.
   useEffect(() => {
@@ -56,31 +66,65 @@ export function ExportButton() {
    * They land in their own chunk only when the user actually triggers
    * an export. Saves ~250 KB on initial load.
    */
-  const captureMain = async (): Promise<HTMLCanvasElement> => {
+  /**
+   * Two-tier capture strategy:
+   *   1. First attempt: full <main>, map included. Works when Leaflet
+   *      tiles are CORS-clean (the default after the crossOrigin prop
+   *      was added to TileLayer).
+   *   2. Fallback: if the canvas gets tainted anyway (stale cached
+   *      tiles from a tab opened pre-fix, or some other CORS gotcha),
+   *      retry with .leaflet-container/.leaflet-pane ignored. The map
+   *      area shows as a blank rectangle but the rest of the page
+   *      still exports cleanly, and `mapSkipped` flips so the caller
+   *      can notify the user that the map didn't fit in the snapshot.
+   */
+  const captureMain = async (): Promise<{ canvas: HTMLCanvasElement; mapSkipped: boolean }> => {
     const html2canvas = (await import('html2canvas')).default
     const target = document.querySelector('main') as HTMLElement
     if (!target) throw new Error('main element not found')
-    return html2canvas(target, {
+
+    const baseOpts = {
       backgroundColor: getComputedStyle(document.documentElement)
         .getPropertyValue('--paper').trim() || '#EFF1F7',
-      scale: 1.5,             // crisp without exploding file size
+      scale: 1.5,
       useCORS: true,
       logging: false,
-      ignoreElements: (el) => {
-        // 1. Topbar controls (export button, language, dark mode, etc.)
-        if (el.classList.contains('no-export')) return true
-        // 2. Leaflet maps — tile images are cross-origin and taint the
-        //    canvas, causing toDataURL/toBlob to throw a SecurityError.
-        //    We skip the whole map container; the export shows a blank
-        //    rectangle where the map was. (A future enhancement could
-        //    swap in a snapshotted PNG of the map first.)
-        if (el.classList.contains('leaflet-container')) return true
-        if (el.classList.contains('leaflet-pane')) return true
-        // 3. iframes (recharts uses inline SVG, no iframes, but defensive).
-        if (el.tagName === 'IFRAME') return true
-        return false
-      },
-    })
+      imageTimeout: 8000,
+      removeContainer: true,
+    } as const
+
+    // Attempt 1 — include the map.
+    try {
+      const canvas = await html2canvas(target, {
+        ...baseOpts,
+        ignoreElements: (el: Element) => {
+          if (el.classList.contains('no-export')) return true
+          if (el.tagName === 'IFRAME') return true
+          return false
+        },
+      })
+      // Force-touch the canvas to confirm it isn't tainted. toBlob
+      // would throw later anyway; this surfaces it now so the catch
+      // below can hit the fallback path.
+      canvas.toDataURL()
+      return { canvas, mapSkipped: false }
+    } catch (e) {
+      const msg = (e as Error)?.message?.toLowerCase() ?? ''
+      const tainted = msg.includes('tainted') || msg.includes('cors') || msg.includes('security')
+      if (!tainted) throw e
+      // Attempt 2 — skip the map.
+      const canvas = await html2canvas(target, {
+        ...baseOpts,
+        ignoreElements: (el: Element) => {
+          if (el.classList.contains('no-export')) return true
+          if (el.classList.contains('leaflet-container')) return true
+          if (el.classList.contains('leaflet-pane')) return true
+          if (el.tagName === 'IFRAME') return true
+          return false
+        },
+      })
+      return { canvas, mapSkipped: true }
+    }
   }
 
   /** Convert any thrown export error into a short, user-readable line. */
@@ -102,11 +146,16 @@ export function ExportButton() {
     return t('export.errGeneric', { defaultValue: 'Export failed.' })
   }
 
+  const mapSkippedNotice = () => t('export.mapSkipped', {
+    defaultValue: 'Saved without the map — your cached tiles loaded before CORS was enabled. Hard refresh the page (Ctrl+Shift+R) and the map will appear in the next export.',
+  })
+
   const exportPNG = async () => {
     setBusy('png')
     setErrMsg(null)
+    setNoticeMsg(null)
     try {
-      const canvas = await captureMain()
+      const { canvas, mapSkipped } = await captureMain()
       const blob = await new Promise<Blob | null>((res) =>
         canvas.toBlob(res, 'image/png'),
       )
@@ -118,6 +167,7 @@ export function ExportButton() {
       a.click()
       URL.revokeObjectURL(url)
       setOpen(false)
+      if (mapSkipped) setNoticeMsg(mapSkippedNotice())
     } catch (e) {
       console.error('PNG export failed', e)
       setErrMsg(friendlyError(e))
@@ -129,11 +179,11 @@ export function ExportButton() {
   const exportPDF = async () => {
     setBusy('pdf')
     setErrMsg(null)
+    setNoticeMsg(null)
     try {
       const { jsPDF } = await import('jspdf')
-      const canvas = await captureMain()
+      const { canvas, mapSkipped } = await captureMain()
       const imgData = canvas.toDataURL('image/png')
-      // A4 portrait: 210 × 297 mm.
       const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' })
       const pageW = pdf.internal.pageSize.getWidth()
       const pageH = pdf.internal.pageSize.getHeight()
@@ -150,6 +200,7 @@ export function ExportButton() {
       }
       pdf.save(`${filenameBase}.pdf`)
       setOpen(false)
+      if (mapSkipped) setNoticeMsg(mapSkippedNotice())
     } catch (e) {
       console.error('PDF export failed', e)
       setErrMsg(friendlyError(e))
@@ -221,6 +272,46 @@ export function ExportButton() {
               />
             </motion.div>
           </>
+        )}
+      </AnimatePresence>
+
+      {/* Non-fatal map-skipped notice. Same slot as the error toast
+          but blue-tinted (info, not error). */}
+      <AnimatePresence mode="wait">
+        {noticeMsg && !errMsg && (
+          <motion.div
+            key="export-notice"
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0, transition: { duration: 0.16 } }}
+            exit={{ opacity: 0, y: -4, transition: { duration: 0.12 } }}
+            role="status"
+            aria-live="polite"
+            style={{
+              position: 'absolute', top: 'calc(100% + 6px)', right: 0,
+              width: 320, padding: '12px 14px', borderRadius: 10,
+              background: 'rgba(33, 113, 236, 0.06)',
+              border: '1px solid rgba(33, 113, 236, 0.20)',
+              boxShadow: 'var(--sh-2)',
+              zIndex: 110,
+              display: 'flex', alignItems: 'flex-start', gap: 10,
+              fontSize: 12.5, color: 'var(--ink)',
+              lineHeight: 1.45,
+            }}
+          >
+            <AlertCircle size={15} style={{ color: '#1E3A8A', flexShrink: 0, marginTop: 1 }} />
+            <div style={{ flex: 1, minWidth: 0, color: 'var(--ink-2)' }}>{noticeMsg}</div>
+            <button
+              onClick={() => setNoticeMsg(null)}
+              aria-label={t('export.dismissError', { defaultValue: 'Dismiss' })}
+              style={{
+                background: 'transparent', border: 'none',
+                color: 'var(--ink-3)', cursor: 'pointer',
+                padding: 0, lineHeight: 0,
+              }}
+            >
+              <X size={14} />
+            </button>
+          </motion.div>
         )}
       </AnimatePresence>
 

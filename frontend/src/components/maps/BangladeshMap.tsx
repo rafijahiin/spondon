@@ -139,6 +139,10 @@ export function BangladeshMap({ activityFeed, centers = [], className, partner }
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               opacity={0.35}
+              // crossOrigin lets html2canvas read tile pixels for PDF export
+              // (OSM sends Access-Control-Allow-Origin:*). Without this the
+              // tiles taint the canvas and toDataURL fails.
+              crossOrigin="anonymous"
             />
             {geoData && (
               <GeoJSON

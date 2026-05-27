@@ -117,6 +117,11 @@ export function PartnerOverlapMap({ className, height = 360 }: Props) {
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           opacity={0.32}
+          // crossOrigin lets html2canvas read tile pixels without tainting
+          // the canvas. OSM serves Access-Control-Allow-Origin:* so this
+          // works for /tile.openstreetmap.org/ — required for PDF export
+          // to capture the map area instead of a blank rectangle.
+          crossOrigin="anonymous"
         />
         {geoData && (
           <GeoJSON
