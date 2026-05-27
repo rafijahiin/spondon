@@ -18,7 +18,7 @@ import {
 import {
   Activity, TrendingUp, TrendingDown,
   Stethoscope, HeartHandshake, Megaphone,
-  Download, FileText, Heart,
+  FileText, Heart,
   Info,
 } from 'lucide-react'
 import { api } from '@/api/client'
@@ -26,7 +26,6 @@ import { usePolling } from '@/hooks/usePolling'
 import { PageLoader } from '@/components/ui/LoadingSpinner'
 import { BangladeshMap } from '@/components/maps/BangladeshMap'
 import { IndicatorGrid } from '@/components/indicators/IndicatorGrid'
-import { LiveMonitoring } from '@/components/org/LiveMonitoring'
 import { AnomalyCards } from '@/components/anomalies/AnomalyCards'
 import { formatDate } from '@/utils/format'
 import type { PartnerKPIs, CentresResponse, Alert, ProgramsSummary } from '@/types'
@@ -482,15 +481,11 @@ export function OrgDashboard({ partner }: Props) {
         </section>
       )}
 
-      {/* ═══════════════════════════════════════════════════════════════
-           LIVE FIELD MONITORING
-           — sits between forms grid and the M&E indicator progress
-           — pulse + 14-day trend + system health
-           ═══════════════════════════════════════════════════════════════ */}
-      <LiveMonitoring partner={partner} />
-
-      {/* Anomaly findings — partner-filtered. Quiet "all clear" pill
-          when nothing's wrong; severity-banded cards otherwise. */}
+      {/* LiveMonitoring removed — it duplicated info from the headline
+          KPI tiles above (submissions count + sparkline) and the topbar
+          SYNC LIVE pill, while its "system health" pills were hardcoded
+          green checkmarks not tied to real probes. AnomalyCards remains
+          as the single source of truth for system signal on this page. */}
       <AnomalyCards partner={partner} />
 
       {/* ═══════════════════════════════════════════════════════════════
@@ -519,11 +514,6 @@ export function OrgDashboard({ partner }: Props) {
           kicker={t('org.sectionCentresKicker')}
           title={t('org.sectionCentresTitle', { count: displayCentres.districts?.length ?? 0 })}
           sub={t('org.sectionCentresSub', { partner })}
-          right={
-            <button className="btn">
-              <Download size={14} /> {t('org.exportCta')}
-            </button>
-          }
         />
         <div className="card flush">
           <table className="tbl">

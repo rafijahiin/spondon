@@ -24,14 +24,16 @@
   --unfpa-purple: #9C1ED6;
   --unfpa-blue:   #2171EC;
 
-  /* Legacy aliases kept so component-level hardcoded references still work
-     without a sweep. New code should use the semantic tokens above. */
-  --coral:        #F10F45;  /* alias → unfpa-red */
-  --coral-deep:   #B30A33;
+  /* Atomic pastel data-viz palette — soft category colors that work on
+     both light and dark surfaces without reading as alarm states. The
+     saturated UNFPA red (#F10F45) is reserved for true error / critical
+     states; category coloring uses the softer pastel pink below. */
+  --coral:        #ED5B7E;  /* pastel pink — Community / outreach category */
+  --coral-deep:   #B83655;
   --amber:        #FB904D;  /* alias → pastel orange (brand-aligned amber) */
-  --emerald:      #58968A;  /* alias → pastel green (charts only!) */
-  --rose:         #F10F45;  /* alias → unfpa-red */
-  --violet:       #9C1ED6;  /* alias → unfpa-purple */
+  --emerald:      #58968A;  /* pastel teal-green — used in charts only */
+  --rose:         #ED5B7E;  /* alias → pastel pink */
+  --violet:       #BA61E2;  /* softened from #9C1ED6 — atomic pastel */
 
   /* Surface — UNFPA Off-white / White foundation */
   --paper:     #EFF1F7;  /* UNFPA Off-white (digital) */

@@ -240,24 +240,6 @@
     "clearTitle": "All systems clear",
     "clearSub": "No anomalies detected. Submissions, indicator pace, and approval queues are healthy."
   },
-  "live": {
-    "kicker": "LIVE FIELD MONITORING",
-    "title": "Real-time programme pulse",
-    "lastSync": "last sync",
-    "justNow": "just now",
-    "secondsAgo": "{{n}}s ago",
-    "minutesAgo": "{{n}}m ago",
-    "thisMonth": "SUBMISSIONS · THIS MONTH",
-    "14dStart": "14 days ago",
-    "today": "today",
-    "systemHealth": "SYSTEM HEALTH",
-    "webhook": "Webhook",
-    "database": "Database",
-    "aiNarrative": "AI narrative",
-    "anomalyTitle": "Anomaly detected",
-    "anomalyMessage": "Fistula case rate this month is below the expected baseline. Review with the field team.",
-    "footerNote": "Counts refresh every 60s. Sync stamp updates every second."
-  },
   "export": {
     "title": "Export current view",
     "pdf": "Save as PDF (A4)",
