@@ -135,7 +135,7 @@ const KOBO_GROUPS: KoboGroup[] = [
     heading: 'Clinical',
     forms: [
       { url: 'https://ee.kobotoolbox.org/x/J1WaMhw9', label: 'KF-01 Client Reg.',   labelBn: 'ক্লায়েন্ট নিবন্ধন',  icon: <UserPlus className="h-3.5 w-3.5" /> },
-      { url: 'https://ee.kobotoolbox.org/x/bRmo6yVq', label: 'KF-02 Clinic Visit',  labelBn: 'ক্লিনিক পরিদর্শন',   icon: <Stethoscope className="h-3.5 w-3.5" /> },
+      { url: 'https://ee.kobotoolbox.org/x/TAxdHQQu', label: 'KF-02 Clinic Visit',  labelBn: 'ক্লিনিক পরিদর্শন',   icon: <Stethoscope className="h-3.5 w-3.5" /> },
       { url: 'https://ee.kobotoolbox.org/x/svhvZM4N', label: 'KF-03 HIV/STI Test',  labelBn: 'এইচআইভি/এসটিআই',    icon: <TestTube2 className="h-3.5 w-3.5" /> },
       { url: 'https://ee.kobotoolbox.org/x/ut3WZTdw', label: 'KF-04 HTC Counsell.', labelBn: 'এইচটিসি পরামর্শ',    icon: <HeartHandshake className="h-3.5 w-3.5" /> },
       { url: 'https://ee.kobotoolbox.org/x/hVfZFf66', label: 'KF-05/06 MH Screen.', labelBn: 'মানসিক স্বাস্থ্য',   icon: <Brain className="h-3.5 w-3.5" /> },
