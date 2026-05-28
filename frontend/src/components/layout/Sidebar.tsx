@@ -126,9 +126,11 @@ const KOBO_GROUPS: KoboGroup[] = [
   {
     heading: 'Legacy Forms',
     forms: [
-      { url: 'https://ee.kobotoolbox.org/x/ZOBX0pKd', label: 'MPDSR Form',        labelBn: 'মাতৃমৃত্যু ফর্ম',    icon: <Activity className="h-3.5 w-3.5" /> },
-      { url: 'https://ee.kobotoolbox.org/x/MHkEKfzl', label: 'Fistula Campaign',   labelBn: 'ফিস্টুলা ফর্ম',      icon: <Heart className="h-3.5 w-3.5" /> },
-      { url: 'https://ee.kobotoolbox.org/x/MTvoZ3Hz', label: 'Baseline / Endline', labelBn: 'বেসলাইন ফর্ম',       icon: <BookOpen className="h-3.5 w-3.5" /> },
+      { url: 'https://ee.kobotoolbox.org/x/ZOBX0pKd', label: 'MPDSR Form',           labelBn: 'মাতৃমৃত্যু ফর্ম',         icon: <Activity className="h-3.5 w-3.5" /> },
+      { url: 'https://ee.kobotoolbox.org/x/MHkEKfzl', label: 'Fistula Campaign',      labelBn: 'ফিস্টুলা ফর্ম',           icon: <Heart className="h-3.5 w-3.5" /> },
+      { url: 'https://ee.kobotoolbox.org/x/7bMvJPU4', label: 'Fistula Campaign Visit', labelBn: 'ফিস্টুলা ক্যাম্পেইন ভিজিট', icon: <Heart className="h-3.5 w-3.5" /> },
+      { url: 'https://ee.kobotoolbox.org/x/2EemD80H', label: 'Fistula Corner',         labelBn: 'ফিস্টুলা কর্নার',          icon: <Heart className="h-3.5 w-3.5" /> },
+      { url: 'https://ee.kobotoolbox.org/x/MTvoZ3Hz', label: 'Baseline / Endline',    labelBn: 'বেসলাইন ফর্ম',            icon: <BookOpen className="h-3.5 w-3.5" /> },
     ],
   },
   {

@@ -31,8 +31,9 @@ Map of which Kobo form belongs to which worker type. Use this when a focal asks 
 | Form | Slug | Enketo URL | Typical submitter |
 |---|---|---|---|
 | MPDSR | spondon_mpdsr_v1 | https://ee.kobotoolbox.org/x/ZOBX0pKd | Hospital focal |
-| Fistula Campaign | spondon_fistula_campaign_v1 | https://ee.kobotoolbox.org/x/MHkEKfzl | Campaign visit team |
-| Fistula Corner Case | spondon_fistula_corner_v1 | (via dashboard `/fistula` tab) | CIPRB clinical |
+| Fistula Campaign (legacy) | spondon_fistula_campaign_v0 | https://ee.kobotoolbox.org/x/MHkEKfzl | Campaign visit team — legacy entry retained |
+| Fistula Campaign Visit (house screening) | spondon_fistula_campaign_v1 | https://ee.kobotoolbox.org/x/7bMvJPU4 | CIPRB campaign team |
+| Fistula Corner Case | spondon_fistula_corner_v1 | https://ee.kobotoolbox.org/x/2EemD80H | CIPRB district hospital clinical staff |
 | Baseline / Endline | spondon_baseline_v1 | https://ee.kobotoolbox.org/x/MTvoZ3Hz | Survey enumerator |
 | KF-01 Client Registration | spondon_kf01_client_v1 | https://ee.kobotoolbox.org/x/J1WaMhw9 | Clinic reception |
 | KF-02 Clinic Visit | spondon_kf02_visit_v1 | https://ee.kobotoolbox.org/x/TAxdHQQu | Medical assistant |
