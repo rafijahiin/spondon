@@ -5,10 +5,12 @@ import 'leaflet/dist/leaflet.css'
 import type { ActivityItem, ServiceCenter } from '@/types'
 import { useState } from 'react'
 import { FitToData } from './FitToData'
+import { PARTNER_DISTRICTS, normaliseDistrict, type PartnerCode } from '@/data/partnerDistricts'
 
 // GeoJSON bundled in frontend/public — avoids GitHub LFS CDN CORS issues
 const GEOJSON_URL = '/bangladesh-adm2.geojson'
 
+// Fallback highlight set (CIPRB CP10) when no partner is specified.
 const CP10_DISTRICTS = new Set([
   'coxsbazar', 'bandarban', 'noakhali', 'dhaka',
   'sirajganj', 'jamalpur', 'gaibandha', 'patuakhali',
@@ -54,6 +56,14 @@ export function BangladeshMap({ activityFeed, centers = [], className, partner }
     active: '#00658C', cp10: '#f59e0b', stroke: '#004A66',
   }
 
+  // The set of districts to highlight: this partner's own coverage when a
+  // partner is given (so PHD's map shows PHD's districts, not CIPRB's), else
+  // the CIPRB CP10 fallback.
+  const highlightSet: Set<string> =
+    partner && PARTNER_DISTRICTS[partner as PartnerCode]
+      ? new Set(PARTNER_DISTRICTS[partner as PartnerCode].map(normaliseDistrict))
+      : CP10_DISTRICTS
+
   // Count submissions per district
   const districtCounts: Record<string, number> = {}
   for (const item of activityFeed) {
@@ -79,17 +89,21 @@ export function BangladeshMap({ activityFeed, centers = [], className, partner }
     // country silhouette breaks apart. White hairline strokes draw the
     // district + national outline crisply.
     if (count > 0) {
+      // Activity intensity — strong, fully opaque at the top of the range.
       return {
         fillColor: tint.active,
-        fillOpacity: 0.4 + (count / maxCount) * 0.55,
+        fillOpacity: 0.55 + (count / maxCount) * 0.45,
         color: '#ffffff',
-        weight: 0.8,
+        weight: 1,
       }
     }
-    if (CP10_DISTRICTS.has(name)) {
-      return { fillColor: tint.cp10, fillOpacity: 0.6, color: '#ffffff', weight: 0.8 }
+    if (highlightSet.has(name)) {
+      // This partner's coverage districts — bold, solid brand colour so
+      // they clearly stand out from the rest of the country.
+      return { fillColor: tint.active, fillOpacity: 0.85, color: '#ffffff', weight: 1 }
     }
-    return { fillColor: '#cbd5e1', fillOpacity: 0.45, color: '#ffffff', weight: 0.8 }
+    // Rest of the country — neutral body so the national silhouette holds.
+    return { fillColor: '#d4dae2', fillOpacity: 0.7, color: '#ffffff', weight: 0.8 }
   }
 
   // Re-style when activityFeed changes
@@ -123,7 +137,7 @@ export function BangladeshMap({ activityFeed, centers = [], className, partner }
   )
 
   return (
-    <div className={className}>
+    <div className={className} style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       {error && (
         <div className="flex h-80 items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-400 text-sm">
           Map unavailable — check internet connection
@@ -139,10 +153,10 @@ export function BangladeshMap({ activityFeed, centers = [], className, partner }
             zoomControl={true}
             attributionControl={false}
             // No tile basemap — keeps the view to Bangladesh only, so the
-            // border never mixes with India. Background fills around the
-            // country shape.
-            className="h-80 w-full rounded-xl"
-            style={{ background: 'var(--surface-2, #eef1f4)' }}
+            // border never mixes with India. Fills its frame (was a fixed
+            // 320px box leaving a large empty band below).
+            className="w-full rounded-xl"
+            style={{ background: 'var(--surface-2, #eef1f4)', flex: 1, minHeight: 340 }}
           >
             {geoData && (
               <>
