@@ -16,15 +16,20 @@
  */
 export type PartnerCode = 'CIPRB' | 'Bandhu' | 'PHD'
 
+// Org identity colours — kept in their distinct hue lanes (blue / green /
+// orange) so the coverage map legend stays readable, but softened to the same
+// calm, low-saturation register as the home-page charts (no neon green, no hard
+// blue) so partner cards, bento dots and the map all read as one palette.
 export const PARTNER_COLORS: Record<PartnerCode, string> = {
-  CIPRB:  '#0072BC',   // UNFPA blue
-  Bandhu: '#00B050',   // green
-  PHD:    '#ED7D31',   // orange
+  CIPRB:  '#3E83B5',   // calm blue
+  Bandhu: '#4FA882',   // calm green
+  PHD:    '#F2994A',   // warm orange (brand-aligned)
 }
 
-// Overlap shading per the Step 3 Part B spec.
-export const OVERLAP_TWO_ORGS = '#FFC000'    // yellow
-export const OVERLAP_THREE_ORGS = '#FF0000'  // red
+// Overlap shading per the Step 3 Part B spec — softened to sit in the same
+// palette as the partner colours above while staying clearly distinct.
+export const OVERLAP_TWO_ORGS = '#F2B544'    // gold
+export const OVERLAP_THREE_ORGS = '#E5484D'  // soft red
 export const NO_COVERAGE = '#E5E7EB'         // light grey
 
 export const PARTNER_DISTRICTS: Record<PartnerCode, string[]> = {

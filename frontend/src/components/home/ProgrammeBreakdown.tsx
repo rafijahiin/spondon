@@ -18,10 +18,14 @@ import type { IndicatorProgress } from '@/types'
 
 const PARTNERS: PartnerCode[] = ['PHD', 'Bandhu', 'CIPRB']
 
+// Three distinct hues from the warm UNFPA palette already used across the home
+// page — orange (primary), coral (Community accent), gold (a true amber, kept
+// clearly lighter/yellower than the orange so the donut slices never read as
+// the same colour). No blue, no collision with the green/red status bands.
 const CATEGORY_COLORS: Record<string, string> = {
-  Clinical: 'var(--unfpa-bright, #0091C7)',
-  Community: 'var(--coral, #ED5B7E)',
-  Operations: 'var(--amber, #E9970A)',
+  Clinical: '#F96000',   // --unfpa (programme primary, red-orange)
+  Community: '#ED5B7E',  // --coral (pink)
+  Operations: '#F2B544', // warm gold — distinct from the orange above
 }
 
 // ── Partner attainment (from already-loaded progress) ─────────────────────────
