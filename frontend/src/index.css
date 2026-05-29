@@ -218,7 +218,7 @@ html.dark ::selection { background: rgba(249, 96, 0, 0.30); color: var(--ink); }
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 14px 0;
+  padding: 8px 0;
   z-index: 60;
   transition: width 0.25s cubic-bezier(0.22, 1, 0.36, 1);
   overflow: visible;
@@ -232,6 +232,10 @@ html.dark ::selection { background: rgba(249, 96, 0, 0.30); color: var(--ink); }
   box-shadow: 8px 0 32px rgba(20, 32, 43, 0.08);
   align-items: flex-start;
   padding: 14px 12px;
+  /* Short-screen safety net: the expanded drawer shows inline labels (no
+     rightward hover tooltips to clip), so it can scroll if the nav list is
+     taller than the viewport — guaranteeing Logout is always reachable. */
+  overflow-y: auto;
 }
 .spine-expanded .spine-brand { margin-left: 3px; }
 .spine-expanded .spine-sep { width: 100%; }
@@ -242,7 +246,7 @@ html.dark ::selection { background: rgba(249, 96, 0, 0.30); color: var(--ink); }
    third-party programme. Top space of the rail is now a simple
    24px spacer so the first nav item has breathing room from the
    rail's top edge. */
-.spine-top-spacer { height: 24px; flex-shrink: 0; }
+.spine-top-spacer { height: 6px; flex-shrink: 0; }
 
 .spine-group {
   display: flex;
@@ -254,12 +258,12 @@ html.dark ::selection { background: rgba(249, 96, 0, 0.30); color: var(--ink); }
   width: 22px;
   height: 1px;
   background: var(--hair);
-  margin: 10px 0;
+  margin: 5px 0;
 }
 
 .spine-item {
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   border-radius: 10px;
   display: flex;
   align-items: center;
@@ -395,9 +399,9 @@ html.dark ::selection { background: rgba(249, 96, 0, 0.30); color: var(--ink); }
   border: none;
 }
 
-.spine-foot { margin-top: auto; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.spine-foot { margin-top: auto; display: flex; flex-direction: column; align-items: center; gap: 6px; padding-top: 6px; }
 .spine-avatar {
-  width: 32px; height: 32px;
+  width: 30px; height: 30px;
   border-radius: 50%;
   background: linear-gradient(135deg, #C4A8E2, #F2A09B);
   display: flex; align-items: center; justify-content: center;
