@@ -114,12 +114,12 @@ export default function Home() {
         </p>
       )}
 
-      {/* ── PROGRAMME BREAKDOWN — activity-by-category donut + month-on-month
-           submissions trend ──────────────────────────────────────────── */}
-      <ProgrammeBreakdown />
-
       {/* ── PROGRAMME-WIDE HEALTH (bento) ────────────────────────────────── */}
       <ExecutiveBento progress={progress} />
+
+      {/* ── PROGRAMME BREAKDOWN — activity-by-category donut. Sits with the
+           executive summary, lower on the page. ─────────────────────────── */}
+      <ProgrammeBreakdown />
 
       {/* ── ANOMALY DETECTION — silent unless something needs attention ──── */}
       <AnomalyCards />

@@ -227,19 +227,6 @@ _CATEGORY_OF = {
     'TrainingEvent': 'Operations', 'CoordMeeting': 'Operations', 'MobileHealthCamp': 'Operations',
 }
 
-# Human-readable service-type label per programs model — for the homepage
-# "top service types" ranked list.
-_SERVICE_LABEL = {
-    'ClinicVisit': 'Clinic visits', 'HIVSTITestResult': 'HIV / STI tests',
-    'ADRRecord': 'ADR records', 'AutoclaveLog': 'Autoclave logs',
-    'AntenatalCard': 'Antenatal cards', 'HTCCounselling': 'HTC counselling',
-    'MHScreening': 'Mental-health screening', 'GBVCase': 'GBV cases',
-    'OutreachSession': 'Outreach sessions', 'GroupEducationSession': 'Group education',
-    'Referral': 'Referrals', 'SafetyHygieneKit': 'Safety / hygiene kits',
-    'IndividualCounselling': 'Individual counselling', 'IECMaterial': 'IEC materials',
-    'TrainingEvent': 'Training events', 'CoordMeeting': 'Coordination meetings',
-    'MobileHealthCamp': 'Mobile health camps',
-}
 
 
 class ActivityBreakdownView(APIView):
@@ -254,7 +241,6 @@ class ActivityBreakdownView(APIView):
     def get(self, request):
         partners = allowed_partners(request.user)
         categories = {'Clinical': 0, 'Community': 0, 'Operations': 0}
-        services: list[dict] = []
 
         try:
             from programs.models import (
@@ -281,20 +267,13 @@ class ActivityBreakdownView(APIView):
                         .count()
                     )
                     categories[cat] += n
-                    if n > 0:
-                        services.append({
-                            'name': _SERVICE_LABEL.get(Model.__name__, Model.__name__),
-                            'category': cat,
-                            'count': n,
-                        })
                 except Exception:
                     continue
         except Exception:
             pass
 
-        services.sort(key=lambda s: s['count'], reverse=True)
         total = sum(categories.values())
-        return Response({'categories': categories, 'total': total, 'services': services})
+        return Response({'categories': categories, 'total': total})
 
 
 # ---------------------------------------------------------------------------
