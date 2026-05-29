@@ -15,12 +15,13 @@
  * the supervisor can revise after the workshop.
  */
 import { useEffect, useState } from 'react'
-import { MapContainer, TileLayer, GeoJSON } from 'react-leaflet'
+import { MapContainer, GeoJSON } from 'react-leaflet'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import type { Layer, PathOptions } from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 
+import { FitToData } from './FitToData'
 import {
   buildCoverageMap, fillForPartners,
   normaliseDistrict, PARTNER_ROUTES, PARTNER_NAMES,
@@ -54,11 +55,14 @@ export function PartnerOverlapMap({ className, height = 360 }: Props) {
   const styleFeature = (feature?: GeoJSON.Feature): PathOptions => {
     const key = normaliseDistrict((feature?.properties?.shapeName as string) ?? '')
     const partners = coverage.get(key)
+    // No basemap behind the choropleth, so uncovered districts still need a
+    // visible body — otherwise the country silhouette breaks up. Covered
+    // districts are bolder; the crisp stroke draws the national outline.
     return {
       fillColor: fillForPartners(partners),
-      fillOpacity: partners?.length ? 0.65 : 0.18,
-      color: '#004A66',
-      weight: 0.5,
+      fillOpacity: partners?.length ? 0.78 : 0.5,
+      color: '#ffffff',
+      weight: 0.8,
     }
   }
 
@@ -104,31 +108,27 @@ export function PartnerOverlapMap({ className, height = 360 }: Props) {
       <MapContainer
         center={[23.7, 90.4]}
         zoom={6}
-        minZoom={5}
         maxZoom={10}
-        // Scroll-wheel zoom enabled — but bound (5-10) so users can't
-        // tunnel into useless tile detail or zoom out past country level.
         scrollWheelZoom={true}
-        // Built-in +/- buttons, top-right (further from the spine).
         zoomControl={true}
-        style={{ height, width: '100%', borderRadius: 12 }}
+        attributionControl={false}
+        // No tile basemap — the choropleth IS the country, so neighbouring
+        // countries never render and the Bangladesh outline reads cleanly.
+        // Background fills the area around the country shape.
+        style={{
+          height, width: '100%', borderRadius: 12,
+          background: 'var(--surface-2)',
+        }}
       >
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          opacity={0.32}
-          // crossOrigin lets html2canvas read tile pixels without tainting
-          // the canvas. OSM serves Access-Control-Allow-Origin:* so this
-          // works for /tile.openstreetmap.org/ — required for PDF export
-          // to capture the map area instead of a blank rectangle.
-          crossOrigin="anonymous"
-        />
         {geoData && (
-          <GeoJSON
-            data={geoData}
-            style={styleFeature}
-            onEachFeature={onEachFeature}
-          />
+          <>
+            <FitToData data={geoData} />
+            <GeoJSON
+              data={geoData}
+              style={styleFeature}
+              onEachFeature={onEachFeature}
+            />
+          </>
         )}
       </MapContainer>
 

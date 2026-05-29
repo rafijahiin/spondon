@@ -1,9 +1,10 @@
 import { useEffect, useRef } from 'react'
-import { MapContainer, TileLayer, GeoJSON, CircleMarker, Popup } from 'react-leaflet'
+import { MapContainer, GeoJSON, CircleMarker, Popup } from 'react-leaflet'
 import type { Layer, PathOptions } from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import type { ActivityItem, ServiceCenter } from '@/types'
 import { useState } from 'react'
+import { FitToData } from './FitToData'
 
 // GeoJSON bundled in frontend/public — avoids GitHub LFS CDN CORS issues
 const GEOJSON_URL = '/bangladesh-adm2.geojson'
@@ -73,18 +74,22 @@ export function BangladeshMap({ activityFeed, centers = [], className, partner }
   }, [])
 
   function districtStyle(name: string, count: number): PathOptions {
+    // No basemap behind the choropleth (so the border can't bleed into
+    // India), which means every district needs a visible body or the
+    // country silhouette breaks apart. White hairline strokes draw the
+    // district + national outline crisply.
     if (count > 0) {
       return {
         fillColor: tint.active,
-        fillOpacity: 0.3 + (count / maxCount) * 0.6,
-        color: tint.stroke,
-        weight: 0.5,
+        fillOpacity: 0.4 + (count / maxCount) * 0.55,
+        color: '#ffffff',
+        weight: 0.8,
       }
     }
     if (CP10_DISTRICTS.has(name)) {
-      return { fillColor: tint.cp10, fillOpacity: 0.45, color: tint.stroke, weight: 0.5 }
+      return { fillColor: tint.cp10, fillOpacity: 0.6, color: '#ffffff', weight: 0.8 }
     }
-    return { fillColor: '#94a3b8', fillOpacity: 0.08, color: tint.stroke, weight: 0.5 }
+    return { fillColor: '#cbd5e1', fillOpacity: 0.45, color: '#ffffff', weight: 0.8 }
   }
 
   // Re-style when activityFeed changes
@@ -129,29 +134,27 @@ export function BangladeshMap({ activityFeed, centers = [], className, partner }
           <MapContainer
             center={[23.7, 90.4]}
             zoom={6}
-            minZoom={5}
             maxZoom={10}
             scrollWheelZoom={true}
             zoomControl={true}
+            attributionControl={false}
+            // No tile basemap — keeps the view to Bangladesh only, so the
+            // border never mixes with India. Background fills around the
+            // country shape.
             className="h-80 w-full rounded-xl"
+            style={{ background: 'var(--surface-2, #eef1f4)' }}
           >
-            <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              opacity={0.35}
-              // crossOrigin lets html2canvas read tile pixels for PDF export
-              // (OSM sends Access-Control-Allow-Origin:*). Without this the
-              // tiles taint the canvas and toDataURL fails.
-              crossOrigin="anonymous"
-            />
             {geoData && (
-              <GeoJSON
-                key={JSON.stringify(districtCounts)}
-                data={geoData}
-                style={styleFeature}
-                onEachFeature={onEachFeature}
-                ref={(r) => { if (r) geoJsonRef.current = r }}
-              />
+              <>
+                <FitToData data={geoData} />
+                <GeoJSON
+                  key={JSON.stringify(districtCounts)}
+                  data={geoData}
+                  style={styleFeature}
+                  onEachFeature={onEachFeature}
+                  ref={(r) => { if (r) geoJsonRef.current = r }}
+                />
+              </>
             )}
             {/* Service center markers */}
             {mappableCenters.map((c) => (
