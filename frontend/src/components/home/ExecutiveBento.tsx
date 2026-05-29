@@ -162,23 +162,27 @@ export function ExecutiveBento({ progress }: Props) {
   const fmtNum = (n: number) =>
     n.toLocaleString(i18n.language?.startsWith('bn') ? 'bn-BD' : 'en-US')
 
+  // Fetch KPIs + open-alert count, then re-poll every 30s so the cards
+  // (e.g. AWAITING REVIEW) actually stay live — matching the section's
+  // "refreshed every 30 seconds" promise. Previously this ran once on mount,
+  // so a new pending submission never appeared until a full page reload.
   useEffect(() => {
-    api.get<KPIs>('/dashboard/kpis/')
-      .then((r) => setKpis(r.data))
-      .catch(() => { /* fallback handled by ?? 0 in render */ })
-
-    api.get('/dashboard/alerts/?acknowledged=false')
-      .then((r) => {
-        const list = Array.isArray(r.data) ? r.data : (r.data?.results ?? [])
-        setOpenAlerts((list as Alert[]).length)
-      })
-      .catch(() => setOpenAlerts(null))
-  }, [])
-
-  // Ticking "last sync" — updates every 30s; doesn't fetch.
-  useEffect(() => {
-    const id = setInterval(() => setNow(new Date()), 30_000)
-    return () => clearInterval(id)
+    let cancelled = false
+    const fetchAll = () => {
+      api.get<KPIs>('/dashboard/kpis/')
+        .then((r) => { if (!cancelled) setKpis(r.data) })
+        .catch(() => { /* fallback handled by ?? 0 in render */ })
+      api.get('/dashboard/alerts/?acknowledged=false')
+        .then((r) => {
+          if (cancelled) return
+          const list = Array.isArray(r.data) ? r.data : (r.data?.results ?? [])
+          setOpenAlerts((list as Alert[]).length)
+        })
+        .catch(() => { if (!cancelled) setOpenAlerts(null) })
+    }
+    fetchAll()
+    const id = setInterval(() => { fetchAll(); setNow(new Date()) }, 30_000)
+    return () => { cancelled = true; clearInterval(id) }
   }, [])
 
   // ── Programme attainment + indicators on track (the decision metrics) ──
