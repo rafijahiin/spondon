@@ -211,6 +211,104 @@ class MonthlyBreakdownView(APIView):
 
 
 # ---------------------------------------------------------------------------
+# Programme activity trend (homepage chart) — last 6 months, stacked by
+# partner, across ALL submission models (programs + legacy KoboSubmission).
+# Efficient: one grouped TruncMonth query per model (~17 total), not the
+# per-month×per-form loops the per-partner summary uses.
+# ---------------------------------------------------------------------------
+
+class MonthlyActivityView(APIView):
+    """
+    GET /api/dashboard/monthly-activity/
+    Returns the last 6 calendar months of total submission activity, stacked
+    by partner (CIPRB / Bandhu / PHD), org-scoped to the caller. Drives the
+    homepage 'Programme activity' area chart.
+    """
+    permission_classes = [IsSupervisorOrManager]
+
+    def get(self, request):
+        from django.db.models import Count
+        from django.db.models.functions import TruncMonth
+
+        partners = allowed_partners(request.user)            # e.g. CIPRB/PHD/Bandhu
+        now = timezone.now()
+
+        # Build the 6 month buckets (oldest → newest), keyed by (year, month).
+        buckets: dict[tuple[int, int], dict[str, int]] = {}
+        order: list[tuple[int, int]] = []
+        for i in range(5, -1, -1):
+            y, m = _months_ago(now.year, now.month, i)
+            buckets[(y, m)] = {p: 0 for p in partners}
+            order.append((y, m))
+        start_y, start_m = order[0]
+        start = now.replace(year=start_y, month=start_m, day=1,
+                            hour=0, minute=0, second=0, microsecond=0)
+
+        def _add(year: int, month: int, partner: str, n: int):
+            b = buckets.get((year, month))
+            if b is not None and partner in b:
+                b[partner] += n
+
+        # Programs models — count by created_at + organisation.
+        try:
+            from programs.models import (
+                ClinicVisit, HIVSTITestResult, ADRRecord, AutoclaveLog, AntenatalCard,
+                HTCCounselling, IndividualCounselling, MHScreening, GBVCase,
+                OutreachSession, GroupEducationSession, Referral, SafetyHygieneKit,
+                TrainingEvent, CoordMeeting, MobileHealthCamp, IECMaterial,
+            )
+            models = [
+                ClinicVisit, HIVSTITestResult, ADRRecord, AutoclaveLog, AntenatalCard,
+                HTCCounselling, IndividualCounselling, MHScreening, GBVCase,
+                OutreachSession, GroupEducationSession, Referral, SafetyHygieneKit,
+                TrainingEvent, CoordMeeting, MobileHealthCamp, IECMaterial,
+            ]
+            for Model in models:
+                try:
+                    rows = (
+                        Model.objects
+                        .filter(approval_status__in=['APPROVED', 'PENDING'],
+                                created_at__gte=start, organisation__in=partners)
+                        .annotate(mo=TruncMonth('created_at'))
+                        .values('mo', 'organisation')
+                        .annotate(c=Count('id'))
+                    )
+                    for r in rows:
+                        mo = r['mo']
+                        if mo:
+                            _add(mo.year, mo.month, r['organisation'], r['c'])
+                except Exception:
+                    continue
+        except Exception:
+            pass
+
+        # Legacy KoboSubmission — count by submitted_at + partner.
+        try:
+            rows = (
+                KoboSubmission.objects
+                .filter(submitted_at__gte=start, partner__in=partners,
+                        status__in=[APPROVED, PENDING])
+                .annotate(mo=TruncMonth('submitted_at'))
+                .values('mo', 'partner')
+                .annotate(c=Count('id'))
+            )
+            for r in rows:
+                mo = r['mo']
+                if mo:
+                    _add(mo.year, mo.month, r['partner'], r['c'])
+        except Exception:
+            pass
+
+        results = []
+        for (y, m) in order:
+            row = {'month_name': MONTH_NAMES[m][:3], **buckets[(y, m)]}
+            row['total'] = sum(buckets[(y, m)].values())
+            results.append(row)
+
+        return Response({'partners': partners, 'months': results})
+
+
+# ---------------------------------------------------------------------------
 # Live activity feed
 # ---------------------------------------------------------------------------
 
