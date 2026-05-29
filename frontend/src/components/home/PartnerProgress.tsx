@@ -12,7 +12,6 @@ import { useNavigate } from 'react-router-dom'
 import { motion, useReducedMotion } from 'motion/react'
 import { ArrowRight } from 'lucide-react'
 
-import { PartnerOverlapMap } from '@/components/maps/PartnerOverlapMap'
 import {
   PARTNER_COLORS, PARTNER_NAMES, PARTNER_ROUTES, PARTNER_DISTRICTS,
   type PartnerCode,
@@ -86,7 +85,7 @@ export function PartnerProgress({ progress }: Props) {
           <h2 className="section-title">Three partners at a glance</h2>
           <p className="section-sub">
             Each partner's progress against its own targets — "on track" means an
-            indicator has reached ≥ 75% of target. Plus where they work.
+            indicator has reached ≥ 75% of target.
           </p>
         </div>
       </div>
@@ -108,16 +107,6 @@ export function PartnerProgress({ progress }: Props) {
             onClick={() => navigate(PARTNER_ROUTES[p])}
           />
         ))}
-      </div>
-
-      {/* Where they work — coverage map, full width */}
-      <div style={{ marginTop: 28 }}>
-        <div className="kicker" style={{ marginBottom: 8 }}>
-          <span className="dot" />WHERE THEY WORK
-        </div>
-        <div className="card shimmer" style={{ padding: 12 }}>
-          <PartnerOverlapMap height={420} />
-        </div>
       </div>
 
       <style>{`
