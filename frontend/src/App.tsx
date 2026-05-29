@@ -73,6 +73,19 @@ function RequireMPDSRAccess({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
+/** Guard for CIPRB-owned surfaces (fistula registers, baseline survey).
+ *  Cross-org admins (developer / supervisor) plus any CIPRB-org user may
+ *  open them; PHD/Bandhu users typing the URL are bounced home. Finer
+ *  intra-CIPRB role limits (e.g. fistula PII = org-lead+, baseline entry =
+ *  ciprb_baseline) are enforced server-side. Mirrors the nav visibility. */
+function RequireCIPRBOrg({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth()
+  if (!user) return <Navigate to="/login" replace />
+  const ok = isAdminRole(user.role) || user.organisation === 'CIPRB'
+  if (!ok) return <Navigate to="/" replace />
+  return <>{children}</>
+}
+
 /** Managers' only authorised surface is /approvals. Block them from any
  *  other route by redirecting back to /approvals. */
 function RequireNotManager({ children }: { children: React.ReactNode }) {
@@ -136,10 +149,10 @@ export default function App() {
               }
             />
             <Route path="approvals" element={<ManagerApprovals />} />
-            <Route path="fistula"  element={<RequireNotManager><FistulaTracker /></RequireNotManager>} />
+            <Route path="fistula"  element={<RequireCIPRBOrg><FistulaTracker /></RequireCIPRBOrg>} />
             <Route path="mpdsr"    element={<RequireMPDSRAccess><MPDSRTracker /></RequireMPDSRAccess>} />
             <Route path="reports"  element={<RequireNotManager><ReportingHub /></RequireNotManager>} />
-            <Route path="baseline" element={<RequireNotManager><BaselineEndline /></RequireNotManager>} />
+            <Route path="baseline" element={<RequireCIPRBOrg><BaselineEndline /></RequireCIPRBOrg>} />
             <Route path="training" element={<RequireNotManager><TrainingLog /></RequireNotManager>} />
             <Route path="tracker"  element={<RequireNotManager><ProgressTracker /></RequireNotManager>} />
             <Route
