@@ -207,12 +207,11 @@ function SummaryRow({ label, value, span = 1 }: { label: string; value: string; 
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 
-type PartnerFilter = 'all' | 'PHD' | 'Bandhu'
 type CauseFilter = 'all' | string
 
 export default function MPDSRTracker() {
   const { t } = useTranslation()
-  const [partnerFilter, setPartnerFilter] = useState<PartnerFilter>('all')
+  // MPDSR is CIPRB-only — no partner filter (removed). Cause filter stays.
   const [causeFilter, setCauseFilter] = useState<CauseFilter>('all')
   const [selectedCase, setSelectedCase] = useState<MPDSRCase | null>(null)
 
@@ -221,7 +220,6 @@ export default function MPDSRTracker() {
       api
         .get('/mpdsr/cases/', {
           params: {
-            ...(partnerFilter !== 'all' ? { partner: partnerFilter } : {}),
             ...(causeFilter !== 'all' ? { cause_of_death: causeFilter } : {}),
           },
         })
@@ -337,42 +335,21 @@ export default function MPDSRTracker() {
         </section>
       )}
 
-      {/* ───────────────── Partner filter ───────────────── */}
+      {/* MPDSR is a CIPRB-owned surveillance activity — there is no PHD /
+          Bandhu partner split, so no partner filter. A single CIPRB chip
+          makes the ownership explicit instead. */}
       <section className="section" style={{ marginTop: hasCases ? 0 : -8 }}>
-        <div
-          role="tablist"
-          aria-label="Partner filter"
+        <span
           style={{
-            display: 'inline-flex', gap: 4,
-            padding: 4,
-            background: 'var(--surface-2)',
-            border: '1px solid var(--hair)',
-            borderRadius: 999,
+            display: 'inline-flex', alignItems: 'center', gap: 8,
+            padding: '6px 14px', borderRadius: 999,
+            background: 'var(--surface-2)', border: '1px solid var(--hair)',
+            fontSize: 13, fontWeight: 500, color: 'var(--ink-2)',
           }}
         >
-          {(['all', 'PHD', 'Bandhu'] as PartnerFilter[]).map((p) => {
-            const active = partnerFilter === p
-            return (
-              <button
-                key={p}
-                role="tab"
-                aria-selected={active}
-                onClick={() => setPartnerFilter(p)}
-                style={{
-                  padding: '6px 14px',
-                  borderRadius: 999,
-                  fontSize: 13, fontWeight: 500,
-                  border: 'none', cursor: 'pointer',
-                  background: active ? 'var(--unfpa)' : 'transparent',
-                  color: active ? '#fff' : 'var(--ink-3)',
-                  transition: 'background var(--dur-q), color var(--dur-q)',
-                }}
-              >
-                {p === 'all' ? t('mpdsr.allPartners', { defaultValue: 'All Partners' }) : p}
-              </button>
-            )
-          })}
-        </div>
+          <span style={{ width: 8, height: 8, borderRadius: 2, background: '#0072BC' }} />
+          {t('mpdsr.ciprbOwned', { defaultValue: 'CIPRB — surveillance across all districts' })}
+        </span>
       </section>
 
       {/* ───────────────── Cases table ───────────────── */}

@@ -131,17 +131,28 @@ class MPDSRCaseManager(models.Manager):
             raw.get('f1_union'), raw.get('f3_union'), raw.get('f4_union'),
         )
 
+        # MPDSR is CIPRB-owned — default partner to CIPRB if the submission
+        # didn't carry one (the webhook now sets it, this is belt-and-braces).
+        partner = submission.partner or 'CIPRB'
+
+        # submitted_at is normally a datetime; guard against a date/str.
+        submitted = submission.submitted_at
+        if hasattr(submitted, 'date'):
+            date_of_death = submitted.date()
+        else:
+            date_of_death = submitted or timezone.now().date()
+
         obj, created = self.get_or_create(
             submission=submission,
             defaults={
-                'partner': submission.partner,
+                'partner': partner,
                 'district': district,
                 'region': submission.region,
                 'upazila': upazila,
                 'union': union,
                 'latitude': submission.latitude,
                 'longitude': submission.longitude,
-                'date_of_death': submission.submitted_at.date(),
+                'date_of_death': date_of_death,
                 'sub_form_type': sub,
                 'death_type': death_type,
                 'cause_of_death': cause,
@@ -223,10 +234,14 @@ class MPDSRCase(models.Model):
             models.Index(fields=['death_type', 'partner']),
         ]
 
+    # MPDSR is CIPRB-owned surveillance. The partner is normally 'CIPRB';
+    # the map keeps a sensible prefix if a legacy PHD/Bandhu row ever exists.
+    _PREFIX = {'PHD': 'PHD', 'Bandhu': 'BON', 'CIPRB': 'CIP'}
+
     def save(self, *args, **kwargs):
         if not self.case_hash:
             year = self.date_of_death.year if self.date_of_death else timezone.now().year
-            prefix = 'PHD' if self.partner == 'PHD' else 'BON'
+            prefix = self._PREFIX.get(self.partner, 'CIP')
             type_code = 'MAT' if self.death_type == DeathType.MATERNAL else 'PER'
             count = (
                 MPDSRCase.objects

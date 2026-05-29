@@ -153,11 +153,18 @@ def kobo_webhook(request):
     _AUTO_APPROVE = {FormType.BASELINE}
     initial_status = SubmissionStatus.APPROVED if form_type in _AUTO_APPROVE else SubmissionStatus.PENDING
 
+    # MPDSR and Baseline are CIPRB-owned forms — the payload partner detector
+    # only matches PHD/Bandhu, so without this they'd land with partner=''.
+    # Attribute them to CIPRB so they're scoped, counted, and shown correctly.
+    partner = _partner_from_payload(payload)
+    if not partner and form_type in (FormType.MPDSR, FormType.BASELINE):
+        partner = 'CIPRB'
+
     submission = KoboSubmission.objects.create(
         kobo_id=kobo_id,
         form_type=form_type,
         status=initial_status,
-        partner=_partner_from_payload(payload),
+        partner=partner,
         worker_name=(
             payload.get('collector_name') or
             payload.get('worker_name') or
