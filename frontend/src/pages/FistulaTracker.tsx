@@ -14,10 +14,10 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react'
-import { ClipboardList, Megaphone, BookOpen, Lock } from 'lucide-react'
+import { ClipboardList, Megaphone } from 'lucide-react'
 import { FistulaCornerPanel, FistulaCampaignPanel } from '@/components/fistula/FistulaPanels'
 
-type TabKey = 'corner' | 'campaign' | 'baseline'
+type TabKey = 'corner' | 'campaign'
 
 interface TabDef {
   key: TabKey
@@ -45,13 +45,9 @@ const TABS: TabDef[] = [
     icon: <Megaphone size={16} />,
     summaryKey: 'ciprb.summaryCampaign',
   },
-  {
-    key: 'baseline',
-    labelKey: 'ciprb.tabBaseline',
-    labelBnKey: 'ciprb.tabBaselineBn',
-    icon: <BookOpen size={16} />,
-    summaryKey: 'ciprb.summaryBaseline',
-  },
+  // Baseline removed — it is a distinct deliverable with its own dedicated
+  // page at /baseline (Baseline & Endline), not a fistula register. Keeping
+  // it here duplicated it and confused the page's purpose.
 ]
 
 export default function FistulaTracker() {
@@ -158,9 +154,9 @@ export default function FistulaTracker() {
               transition: { duration: 0.16, ease: [0.4, 0, 1, 1] },
             }}
           >
-            {activeTab.key === 'corner'   ? <FistulaCornerPanel /> :
-             activeTab.key === 'campaign' ? <FistulaCampaignPanel /> :
-                                            <PlaceholderPanel tab={activeTab} />}
+            {activeTab.key === 'corner'
+              ? <FistulaCornerPanel />
+              : <FistulaCampaignPanel />}
           </motion.div>
         </AnimatePresence>
       </section>
@@ -170,86 +166,3 @@ export default function FistulaTracker() {
   )
 }
 
-// ─── Placeholder panel ─────────────────────────────────────────────────────
-
-function PlaceholderPanel({ tab }: { tab: TabDef }) {
-  const { t } = useTranslation()
-  return (
-    <div
-      className="card shimmer"
-      style={{
-        padding: '40px 36px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 18,
-        alignItems: 'flex-start',
-        background:
-          'linear-gradient(135deg, var(--surface) 0%, var(--surface-2) 100%)',
-        border: '1px dashed var(--hair-2)',
-      }}
-    >
-      <span
-        style={{
-          display: 'inline-flex', alignItems: 'center', gap: 8,
-          padding: '6px 12px',
-          fontSize: 11,
-          fontWeight: 600,
-          letterSpacing: '0.08em',
-          textTransform: 'uppercase',
-          color: '#9A3412',
-          background: '#FED7AA',
-          borderRadius: 999,
-        }}
-      >
-        <Lock size={12} />
-        {t('ciprb.awaitingVariables')}
-      </span>
-
-      <div>
-        <h2
-          style={{
-            fontSize: 'clamp(28px, 3vw, 38px)',
-            fontWeight: 600,
-            lineHeight: 1.15,
-            color: 'var(--ink)',
-            letterSpacing: '-0.02em',
-            margin: 0,
-          }}
-        >
-          {t(tab.labelKey)}
-        </h2>
-        <div
-          className="bn"
-          style={{ fontSize: 14, color: 'var(--muted)', marginTop: 4 }}
-        >
-          {t(tab.labelBnKey)}
-        </div>
-      </div>
-
-      <p
-        style={{
-          fontSize: 15,
-          lineHeight: 1.55,
-          color: 'var(--ink-2)',
-          maxWidth: 620,
-          textWrap: 'pretty',
-        } as React.CSSProperties}
-      >
-        {t(tab.summaryKey)}
-      </p>
-
-      <div
-        style={{
-          fontSize: 12.5,
-          color: 'var(--muted)',
-          paddingTop: 18,
-          marginTop: 6,
-          borderTop: '1px solid var(--hair)',
-          maxWidth: 620,
-        }}
-      >
-        {t('ciprb.statusPlaceholder')}
-      </div>
-    </div>
-  )
-}

@@ -10,7 +10,7 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
   Home, Building2, HeartHandshake, ClipboardCheck, FileBarChart2,
-  ShieldAlert, Bell, Search, LogOut, ExternalLink,
+  ShieldAlert, LogOut, ExternalLink,
   HeartPulse, ClipboardList, GraduationCap, Smartphone,
   Target, Settings, UserCog, X, Menu,
 } from 'lucide-react'
@@ -296,14 +296,9 @@ export function Spine() {
           {expanded ? <span className="spine-label">{t('nav.koboForms')}</span> : <span className="spine-tip">{t('nav.koboForms')}</span>}
         </button>
 
-        <button className="spine-item" title={t('nav.search')}>
-          <Search size={18} />
-          {expanded ? <span className="spine-label">{t('nav.search')}</span> : <span className="spine-tip">{t('nav.search')}</span>}
-        </button>
-        <button className="spine-item" title={t('nav.notifications')}>
-          <Bell size={18} />
-          {expanded ? <span className="spine-label">{t('nav.notifications')}</span> : <span className="spine-tip">{t('nav.notifications')}</span>}
-        </button>
+        {/* Search + Notifications removed — they were dead buttons (no
+            handler, no backend). Re-add when there's a real global search
+            and a notifications feed wired to the alerts API. */}
       </div>
 
       {/* Footer */}
