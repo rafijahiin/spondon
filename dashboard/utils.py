@@ -23,7 +23,11 @@ def previous_month_bounds() -> tuple[datetime.datetime, datetime.datetime]:
 
 
 def allowed_partners(user) -> list[str]:
-    """Partners whose data this user is allowed to see."""
+    """Partners whose data this user is allowed to see.
+
+    CIPRB is included for cross-org admins — it owns the MPDSR, Baseline and
+    Fistula submissions, so omitting it hid CIPRB pending counts (e.g. the
+    Approvals badge read 0 while the queue held a CIPRB MPDSR submission)."""
     if user.can_see_all_orgs:
-        return ['PHD', 'Bandhu']
+        return ['CIPRB', 'PHD', 'Bandhu']
     return [user.organisation]
