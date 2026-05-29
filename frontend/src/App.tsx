@@ -60,6 +60,19 @@ function RequireRecordListAccess({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
+/** Guard for MPDSR — a CIPRB-owned surveillance surface. Only system roles
+ *  (developer / supervisor) and the CIPRB org lead may open it. Mirrors the
+ *  nav-item visibility and the server's CanAccessMPDSR permission, so a
+ *  PHD/Bandhu user (or CIPRB field staff) typing the /mpdsr URL is bounced
+ *  home instead of loading a page that the API will 403. */
+function RequireMPDSRAccess({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth()
+  if (!user) return <Navigate to="/login" replace />
+  const ok = isAdminRole(user.role) || (user.role === 'org_lead' && user.organisation === 'CIPRB')
+  if (!ok) return <Navigate to="/" replace />
+  return <>{children}</>
+}
+
 /** Managers' only authorised surface is /approvals. Block them from any
  *  other route by redirecting back to /approvals. */
 function RequireNotManager({ children }: { children: React.ReactNode }) {
@@ -124,7 +137,7 @@ export default function App() {
             />
             <Route path="approvals" element={<ManagerApprovals />} />
             <Route path="fistula"  element={<RequireNotManager><FistulaTracker /></RequireNotManager>} />
-            <Route path="mpdsr"    element={<RequireNotManager><MPDSRTracker /></RequireNotManager>} />
+            <Route path="mpdsr"    element={<RequireMPDSRAccess><MPDSRTracker /></RequireMPDSRAccess>} />
             <Route path="reports"  element={<RequireNotManager><ReportingHub /></RequireNotManager>} />
             <Route path="baseline" element={<RequireNotManager><BaselineEndline /></RequireNotManager>} />
             <Route path="training" element={<RequireNotManager><TrainingLog /></RequireNotManager>} />
