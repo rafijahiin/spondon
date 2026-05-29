@@ -526,18 +526,21 @@ export default function ManagerApprovals() {
                 }}>
                   <div>
                     <div className="kicker" style={{ marginBottom: 12 }}>
-                      <span className="dot" style={{ background: 'var(--emerald)' }} />VALIDATION TRACE
+                      <span className="dot" style={{ background: 'var(--emerald)' }} />CHECKS AT INGEST
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                      {[
-                        ['Schema check', true, '0ms'],
-                        ['Field-level required', true, '12ms'],
-                        ['Duplicate scan · 28d', true, '84ms'],
-                        ['GPS coherence', !!(selected.latitude && selected.longitude), '31ms'],
-                        ['Cross-org reconciliation', true, '212ms'],
-                        ['Sensitivity scan', selected.model_type !== 'gbv_case', '44ms'],
-                      ].map(([label, ok, t]) => (
-                        <div key={label as string} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13 }}>
+                      {([
+                        // Real gates the Kobo webhook enforces before a record
+                        // is created — derived from the actual submission, not
+                        // synthetic timings.
+                        ['Recognised form', true, String(selected.model_type || 'mpdsr')],
+                        ['GPS captured (mandatory)', !!(selected.latitude && selected.longitude),
+                          (selected.latitude && selected.longitude) ? 'yes' : 'missing'],
+                        ['Unique — no duplicate', !!selected.kobo_submission_id,
+                          selected.kobo_submission_id ? 'kobo id ✓' : '—'],
+                        ['Partner attributed', !!selected.organisation, String(selected.organisation || '—')],
+                      ] as [string, boolean, string][]).map(([label, ok, val]) => (
+                        <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13 }}>
                           <span style={{
                             width: 18, height: 18, borderRadius: 4,
                             background: ok ? 'rgba(31,154,109,0.10)' : 'rgba(233,151,10,0.12)',
@@ -546,8 +549,8 @@ export default function ManagerApprovals() {
                           }}>
                             {ok ? <Check size={11} /> : <AlertTriangle size={11} />}
                           </span>
-                          <span style={{ flex: 1 }}>{label as string}</span>
-                          <span className="mono mute" style={{ fontSize: 11 }}>{t as string}</span>
+                          <span style={{ flex: 1 }}>{label}</span>
+                          <span className="mono mute" style={{ fontSize: 11 }}>{val}</span>
                         </div>
                       ))}
                     </div>
