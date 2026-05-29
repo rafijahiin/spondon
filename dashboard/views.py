@@ -115,6 +115,23 @@ class KPIView(APIView):
         fistula_count = this_month_qs.filter(form_type=FormType.FISTULA).count()
         mpdsr_count = this_month_qs.filter(form_type=FormType.MPDSR).count()
 
+        # GBV cases this month — an outcome metric senior decision-makers
+        # track. Sourced from the programs GBVCase model (approved, this
+        # month, org-scoped). Wrapped so the endpoint still responds if the
+        # programs app is unavailable in a given test context.
+        gbv_count = 0
+        try:
+            from programs.models import GBVCase
+            gbv_qs = GBVCase.objects.filter(
+                approval_status='APPROVED',
+                created_at__gte=month_start, created_at__lt=month_end,
+            )
+            if not request.user.can_see_all_orgs:
+                gbv_qs = gbv_qs.filter(organisation=request.user.organisation)
+            gbv_count = gbv_qs.count()
+        except Exception:
+            pass
+
         if prev_month_count > 0:
             mom_change = round((this_month_count - prev_month_count) / prev_month_count * 100, 1)
         elif this_month_count > 0:
@@ -128,6 +145,7 @@ class KPIView(APIView):
             'active_workers': active_workers,
             'fistula_cases_this_month': fistula_count,
             'mpdsr_cases_this_month': mpdsr_count,
+            'gbv_cases_this_month': gbv_count,
             'previous_month_submissions': prev_month_count,
             'mom_change_percent': mom_change,
             'target_attainment': None,  # wired up when tracker app is complete

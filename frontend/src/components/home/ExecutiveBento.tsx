@@ -1,80 +1,46 @@
 /**
- * ExecutiveBento — homepage bento-grid summary for senior management.
+ * ExecutiveBento — homepage bento-grid summary for senior decision-makers.
  *
- * Style: editorial bento, Apple-inspired modular cards of varied sizes
- * on a 4-column grid. Picked from the ui-ux-pro-max style canon as the
- * best fit for an executive M&E dashboard (modular, scannable, dense
- * without feeling cluttered — matches Linear/Vercel/Stripe conventions).
+ * Audience: UNFPA + CIPRB leadership (Dr. Animesh, Dr. Sayeed) and partner
+ * org leads. They open this to answer one question: "is the programme on
+ * track, and is anything on fire?" — NOT to count individual submissions.
  *
- * Pulls from /api/dashboard/kpis/ + the IndicatorProgress array already
- * loaded on the homepage. Numbers are tabular-num so layout doesn't
- * shift as values tick.
+ * So the grid LEADS with programme target attainment (the decision metric),
+ * then surfaces what needs attention (open alerts, awaiting review,
+ * indicators on track), then the headline outcome counts (GBV, fistula,
+ * MPDSR) and field activity (submissions, active workers).
  *
- * Layout (4-col grid):
- *   ┌──────────────┬──────────┬──────────┐
- *   │   HEADLINE   │ Pending  │ Workers  │
- *   │  (2 × 2)     ├──────────┼──────────┤
- *   │              │ Fistula  │ MPDSR    │
- *   ├──────────────┴──────────┼──────────┤
- *   │  AVG PROGRESS (2 × 1)   │ Centres  │
- *   ├─────────────────────────┴──────────┤
- *   │  Open alerts (1 × 1) | last sync   │
- *   └────────────────────────────────────┘
+ * Everything is real:
+ *   - Attainment + indicators on track  ← IndicatorProgress (already loaded)
+ *   - Submissions / pending / workers / outcomes  ← /api/dashboard/kpis/
+ *   - Open alerts  ← /api/dashboard/alerts/?acknowledged=false
+ * No hardcoded placeholders, no synthetic sparkline.
  *
- * Collapses to a single column under 720px so phones get a vertically-
- * stacked summary that's still readable.
+ * Partner-by-partner attainment lives in the Partner Roll-up section below
+ * this component, so the Bento deliberately does NOT repeat per-partner %.
+ *
+ * Collapses to a single column under 720px.
  */
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { motion, useReducedMotion } from 'motion/react'
 import {
-  FileText, Clock, Users, Heart, Activity, MapPin, AlertTriangle,
-  TrendingUp, TrendingDown,
+  FileText, Clock, Users, Heart, Activity, AlertTriangle,
+  TrendingUp, TrendingDown, Target, ShieldAlert,
 } from 'lucide-react'
 import { api } from '@/api/client'
-import type { KPIs, IndicatorProgress } from '@/types'
+import type { KPIs, IndicatorProgress, Alert } from '@/types'
 
 interface Props {
   progress: IndicatorProgress[] | null
 }
 
-// ─── Sparkline (transform-only, CLS-safe) ────────────────────────────────────
-
-function Sparkline({ data, color = 'var(--unfpa)', w = 96, h = 24, ariaLabel }: {
-  data: number[]; color?: string; w?: number; h?: number; ariaLabel?: string
-}) {
-  if (!data || data.length < 2) return null
-  const max = Math.max(...data, 1)
-  const min = Math.min(...data)
-  const last = data[data.length - 1]
-  const pts = data
-    .map((v, i) => `${(i / (data.length - 1)) * w},${h - (v / max) * (h - 4) - 2}`)
-    .join(' ')
-  // §10 screen-reader-summary: SVG carries a <title> describing the
-  // trend in human terms; SR users hear it via aria-labelledby.
-  const summary = ariaLabel ?? `Trend: ${data.length} points, range ${min}-${max}, current ${last}.`
-  return (
-    <svg
-      width={w} height={h} viewBox={`0 0 ${w} ${h}`}
-      style={{ overflow: 'visible' }}
-      role="img" aria-label={summary}
-    >
-      <title>{summary}</title>
-      <polyline points={pts} fill="none" stroke={color}
-        strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" />
-      {/* terminal dot — UNFPA orange, in a 12px hit target for touch */}
-      <circle
-        cx={w} cy={h - (last / max) * (h - 4) - 2}
-        r={2.5} fill={color}
-      />
-      <circle
-        cx={w} cy={h - (last / max) * (h - 4) - 2}
-        r={8} fill="transparent" pointerEvents="all"
-      >
-        <title>{`Current: ${last}`}</title>
-      </circle>
-    </svg>
-  )
+// Status band colour for an attainment percentage (UNFPA data-viz palette).
+function bandColor(pct: number | null): string {
+  if (pct == null) return 'var(--muted)'
+  if (pct >= 75) return '#58968A'  // pastel green
+  if (pct >= 40) return '#FB904D'  // pastel orange
+  return '#F10F45'                 // red
 }
 
 // ─── Bento card primitive ─────────────────────────────────────────────────────
@@ -87,12 +53,15 @@ interface CardProps {
   icon?: React.ReactNode
   span?: { col?: number; row?: number }
   emphasis?: 'headline' | 'standard' | 'muted'
-  spark?: number[]
+  valueColor?: string
+  progressPct?: number | null    // headline progress bar (0–100)
+  progressColor?: string
   delay?: number
 }
 
 function Card({
-  kicker, value, sub, trend, icon, span, emphasis = 'standard', spark, delay = 0,
+  kicker, value, sub, trend, icon, span, emphasis = 'standard',
+  valueColor, progressPct, progressColor, delay = 0,
 }: CardProps) {
   const reduce = useReducedMotion()
   const isHeadline = emphasis === 'headline'
@@ -116,8 +85,6 @@ function Card({
         gap: 8,
         position: 'relative',
         background: emphasis === 'muted' ? 'var(--surface-2)' : 'var(--surface)',
-        // Subtle orange-tinted top-border on the headline card so it visually
-        // reads as the lead element of the bento.
         ...(isHeadline ? { borderTop: '3px solid var(--unfpa)' } : {}),
       }}
     >
@@ -133,7 +100,7 @@ function Card({
         fontSize: isHeadline ? 'clamp(48px, 6vw, 80px)' : 'clamp(28px, 3vw, 38px)',
         fontWeight: 700,
         lineHeight: 1,
-        color: 'var(--ink)',
+        color: valueColor ?? 'var(--ink)',
         letterSpacing: '-0.025em',
         fontVariantNumeric: 'tabular-nums',
         marginTop: isHeadline ? 4 : 2,
@@ -161,9 +128,18 @@ function Card({
           {sub && <span>{sub}</span>}
         </div>
       )}
-      {spark && spark.length > 1 && (
-        <div style={{ marginTop: 'auto', paddingTop: 12, opacity: 0.85 }}>
-          <Sparkline data={spark} w={isHeadline ? 220 : 96} h={isHeadline ? 38 : 24} />
+      {progressPct != null && (
+        <div style={{
+          marginTop: 'auto', paddingTop: 16,
+          height: 8, background: 'var(--surface-3)',
+          borderRadius: 999, overflow: 'hidden',
+        }}>
+          <motion.div
+            style={{ height: '100%', background: progressColor ?? 'var(--unfpa)', borderRadius: 999 }}
+            initial={{ width: 0 }}
+            animate={{ width: `${Math.min(progressPct, 100)}%` }}
+            transition={{ duration: 0.9, delay: reduce ? 0 : delay + 0.1, ease: [0.22, 1, 0.36, 1] }}
+          />
         </div>
       )}
     </motion.div>
@@ -175,53 +151,55 @@ function Card({
 export function ExecutiveBento({ progress }: Props) {
   const { t, i18n } = useTranslation()
   const [kpis, setKpis] = useState<KPIs | null>(null)
+  const [openAlerts, setOpenAlerts] = useState<number | null>(null)
   const [now, setNow] = useState(new Date())
 
-  // Locale-aware number formatting — Bengali numerals when i18n.language
-  // is bn, Latin numerals otherwise (§10 number-formatting).
   const fmtNum = (n: number) =>
     n.toLocaleString(i18n.language?.startsWith('bn') ? 'bn-BD' : 'en-US')
 
   useEffect(() => {
     api.get<KPIs>('/dashboard/kpis/')
       .then((r) => setKpis(r.data))
-      .catch(() => { /* surface in UI via fallback */ })
+      .catch(() => { /* fallback handled by ?? 0 in render */ })
+
+    api.get('/dashboard/alerts/?acknowledged=false')
+      .then((r) => {
+        const list = Array.isArray(r.data) ? r.data : (r.data?.results ?? [])
+        setOpenAlerts((list as Alert[]).length)
+      })
+      .catch(() => setOpenAlerts(null))
   }, [])
 
-  // Ticking "last sync" — updates every 30s. Lightweight; doesn't fetch.
+  // Ticking "last sync" — updates every 30s; doesn't fetch.
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 30_000)
     return () => clearInterval(id)
   }, [])
 
-  // Roll up indicator progress across all partners for the "indicators on
-  // track" metric. Skip nulls + unlinked.
-  const indicatorStats = (() => {
-    if (!progress) return { onTrack: 0, total: 0, avgPct: null as number | null }
+  // ── Programme attainment + indicators on track (the decision metrics) ──
+  const stats = (() => {
+    if (!progress) return { onTrack: 0, total: 0, avgPct: null as number | null, overallPct: null as number | null }
     const withTarget = progress.filter((p) => p.target_value !== null && !p.unlinked)
+    if (withTarget.length === 0) return { onTrack: 0, total: 0, avgPct: null, overallPct: null }
     const onTrack = withTarget.filter((p) => (p.percentage ?? 0) >= 75).length
-    const avgPct = withTarget.length
-      ? Math.round(withTarget.reduce((s, p) => s + (p.percentage ?? 0), 0) / withTarget.length)
-      : null
-    return { onTrack, total: withTarget.length, avgPct }
+    const avgPct = Math.round(withTarget.reduce((s, p) => s + (p.percentage ?? 0), 0) / withTarget.length)
+    const totalAch = withTarget.reduce((s, p) => s + (p.achievement ?? 0), 0)
+    const totalTgt = withTarget.reduce((s, p) => s + (p.target_value ?? 0), 0)
+    const overallPct = totalTgt > 0 ? Math.round((totalAch / totalTgt) * 1000) / 10 : null
+    return { onTrack, total: withTarget.length, avgPct, overallPct }
   })()
 
-  // Synthetic sparkline (12 points) from prev_month + this_month deltas.
-  // Real 12-month series would come from a /monthly endpoint — TODO when
-  // the supervisor confirms what monthly granularity to expose.
-  const submissionsSpark = (() => {
-    const tm = kpis?.submissions_this_month ?? 0
-    const pm = kpis?.previous_month_submissions ?? 0
-    if (!tm && !pm) return [0, 5, 10, 15, 20, 25, 30, 32, 28, 34, pm, tm]
-    return [pm * 0.4, pm * 0.55, pm * 0.7, pm * 0.65, pm * 0.8, pm * 0.85,
-            pm * 0.9, pm * 0.95, pm, tm * 0.6, tm * 0.8, tm]
-  })()
+  const hasTargets = stats.overallPct != null
+  const attainColor = bandColor(stats.overallPct)
 
   const fmtSync = (() => {
     const diff = (Date.now() - now.getTime()) / 1000
     if (diff < 60) return t('bento.syncJustNow', { defaultValue: 'just now' })
-    return t('bento.syncMinutes', { count: Math.floor(diff / 60), defaultValue: `${Math.floor(diff/60)}m ago` })
+    return t('bento.syncMinutes', { count: Math.floor(diff / 60), defaultValue: `${Math.floor(diff / 60)}m ago` })
   })()
+
+  const alertsValue = openAlerts == null ? '—' : fmtNum(openAlerts)
+  const alertsCritical = (openAlerts ?? 0) > 0
 
   return (
     <section className="section bento-section" style={{ marginTop: 36 }}>
@@ -236,7 +214,7 @@ export function ExecutiveBento({ progress }: Props) {
           </h2>
           <p className="section-sub">
             {t('bento.subtitle', {
-              defaultValue: "The headline numbers across all three partners, refreshed every 30 seconds.",
+              defaultValue: 'Is the programme on track, and does anything need attention — refreshed every 30 seconds.',
             })}
           </p>
         </div>
@@ -251,7 +229,55 @@ export function ExecutiveBento({ progress }: Props) {
           gap: 14,
         }}
       >
-        {/* HEADLINE — submissions this month, with 12-pt sparkline */}
+        {/* HEADLINE — programme target attainment (the decision metric) */}
+        <Card
+          kicker={t('bento.attainment', { defaultValue: 'PROGRAMME ATTAINMENT' })}
+          value={hasTargets ? `${stats.overallPct}%` : '—'}
+          sub={hasTargets
+            ? t('bento.attainmentSub', {
+                defaultValue: '{{onTrack}} of {{total}} indicators on track · avg {{avg}}%',
+                onTrack: stats.onTrack, total: stats.total, avg: stats.avgPct,
+              })
+            : t('bento.attainmentPending', { defaultValue: 'targets confirmed in the workshop — lights up once set' })}
+          icon={<Target size={12} />}
+          span={{ col: 2, row: 2 }}
+          emphasis="headline"
+          valueColor={hasTargets ? attainColor : 'var(--muted)'}
+          progressPct={hasTargets ? stats.overallPct : null}
+          progressColor={attainColor}
+          delay={0}
+        />
+
+        {/* What needs attention — top-right */}
+        <Card
+          kicker={t('bento.alerts', { defaultValue: 'OPEN ALERTS' })}
+          value={alertsValue}
+          sub={alertsCritical
+            ? t('bento.alertsActive', { defaultValue: 'need attention' })
+            : t('bento.alertsSteady', { defaultValue: 'all systems steady' })}
+          icon={<AlertTriangle size={12} />}
+          valueColor={alertsCritical ? '#F10F45' : undefined}
+          emphasis={alertsCritical ? 'standard' : 'muted'}
+          delay={0.05}
+        />
+        <Card
+          kicker={t('bento.pending', { defaultValue: 'AWAITING REVIEW' })}
+          value={fmtNum(kpis?.submissions_pending ?? 0)}
+          sub={t('bento.pendingSub', { defaultValue: 'manager queue' })}
+          icon={<Clock size={12} />}
+          delay={0.1}
+        />
+
+        {/* Indicators on track + submissions activity */}
+        <Card
+          kicker={t('bento.indicators', { defaultValue: 'INDICATORS ON TRACK' })}
+          value={hasTargets ? `${stats.onTrack} / ${stats.total}` : '—'}
+          sub={hasTargets
+            ? t('bento.indicatorsSub', { defaultValue: '≥ 75% of target' })
+            : t('bento.indicatorEmpty', { defaultValue: 'no targets confirmed yet' })}
+          icon={<TrendingUp size={12} />}
+          delay={0.15}
+        />
         <Card
           kicker={t('bento.submissionsMtd', { defaultValue: 'SUBMISSIONS · THIS MONTH' })}
           value={fmtNum(kpis?.submissions_this_month ?? 0)}
@@ -261,69 +287,37 @@ export function ExecutiveBento({ progress }: Props) {
           })}
           trend={kpis?.mom_change_percent ?? null}
           icon={<FileText size={12} />}
-          span={{ col: 2, row: 2 }}
-          emphasis="headline"
-          spark={submissionsSpark}
-          delay={0}
+          delay={0.2}
         />
 
+        {/* Outcome counts + field activity — bottom row */}
         <Card
-          kicker={t('bento.pending', { defaultValue: 'AWAITING REVIEW' })}
-          value={fmtNum(kpis?.submissions_pending ?? 0)}
-          sub={t('bento.pendingSub', { defaultValue: 'manager queue' })}
-          icon={<Clock size={12} />}
-          delay={0.05}
+          kicker={t('bento.gbv', { defaultValue: 'GBV CASES · THIS MONTH' })}
+          value={fmtNum(kpis?.gbv_cases_this_month ?? 0)}
+          sub={t('bento.gbvSub', { defaultValue: 'referral protocol' })}
+          icon={<ShieldAlert size={12} />}
+          delay={0.25}
         />
-        <Card
-          kicker={t('bento.activeWorkers', { defaultValue: 'ACTIVE WORKERS' })}
-          value={fmtNum(kpis?.active_workers ?? 0)}
-          sub={t('bento.workersSub', { defaultValue: '≤ 30 days' })}
-          icon={<Users size={12} />}
-          delay={0.1}
-        />
-
         <Card
           kicker={t('bento.fistula', { defaultValue: 'FISTULA · THIS MONTH' })}
           value={fmtNum(kpis?.fistula_cases_this_month ?? 0)}
           sub={t('bento.fistulaSub', { defaultValue: 'CIPRB campaigns' })}
           icon={<Heart size={12} />}
-          delay={0.15}
+          delay={0.3}
         />
         <Card
           kicker={t('bento.mpdsr', { defaultValue: 'MPDSR · THIS MONTH' })}
           value={fmtNum(kpis?.mpdsr_cases_this_month ?? 0)}
           sub={t('bento.mpdsrSub', { defaultValue: 'CIPRB reviews' })}
           icon={<Activity size={12} />}
-          delay={0.2}
-        />
-
-        {/* AVG INDICATOR PROGRESS — 2x1 spanning two cols */}
-        <Card
-          kicker={t('bento.indicators', { defaultValue: 'INDICATORS ON TRACK' })}
-          value={`${indicatorStats.onTrack} / ${indicatorStats.total}`}
-          sub={indicatorStats.avgPct != null
-            ? t('bento.avgPct', { defaultValue: 'avg {{pct}}% achieved', pct: indicatorStats.avgPct })
-            : t('bento.indicatorEmpty', { defaultValue: 'no targets confirmed yet' })}
-          icon={<TrendingUp size={12} />}
-          span={{ col: 2 }}
-          delay={0.25}
-        />
-
-        <Card
-          kicker={t('bento.centres', { defaultValue: 'ACTIVE CENTRES' })}
-          value={'—'}
-          sub={t('bento.centresSub', { defaultValue: 'awaiting registry' })}
-          icon={<MapPin size={12} />}
-          emphasis="muted"
-          delay={0.3}
-        />
-        <Card
-          kicker={t('bento.alerts', { defaultValue: 'OPEN ALERTS' })}
-          value={'0'}
-          sub={t('bento.alertsSub', { defaultValue: 'all systems steady' })}
-          icon={<AlertTriangle size={12} />}
-          emphasis="muted"
           delay={0.35}
+        />
+        <Card
+          kicker={t('bento.activeWorkers', { defaultValue: 'ACTIVE WORKERS' })}
+          value={fmtNum(kpis?.active_workers ?? 0)}
+          sub={t('bento.workersSub', { defaultValue: '≤ 30 days' })}
+          icon={<Users size={12} />}
+          delay={0.4}
         />
       </div>
 

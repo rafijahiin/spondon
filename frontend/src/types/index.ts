@@ -93,6 +93,7 @@ export interface KPIs {
   active_workers: number
   fistula_cases_this_month: number
   mpdsr_cases_this_month: number
+  gbv_cases_this_month: number
   previous_month_submissions: number
   mom_change_percent: number
   target_attainment: number | null
