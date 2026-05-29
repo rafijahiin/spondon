@@ -43,7 +43,8 @@ interface Rollup {
   achievement: number
   target: number
   onTrack: number
-  total: number
+  total: number            // indicators that have a target set
+  totalIndicators: number  // all of this partner's indicators
 }
 
 function bandColor(pct: number | null): string {
@@ -54,15 +55,20 @@ function bandColor(pct: number | null): string {
 }
 
 function rollup(partner: PartnerCode, rows: IndicatorProgress[] | null): Rollup {
-  const empty: Rollup = { hasTargets: false, percentage: null, achievement: 0, target: 0, onTrack: 0, total: 0 }
+  const empty: Rollup = {
+    hasTargets: false, percentage: null, achievement: 0, target: 0,
+    onTrack: 0, total: 0, totalIndicators: 0,
+  }
   if (!rows) return empty
-  const withTarget = rows.filter((r) => r.organisation === partner && r.target_value !== null && !r.unlinked)
-  if (withTarget.length === 0) return empty
+  const all = rows.filter((r) => r.organisation === partner && !r.unlinked)
+  const totalIndicators = all.length
+  const withTarget = all.filter((r) => r.target_value !== null)
+  if (withTarget.length === 0) return { ...empty, totalIndicators }
   const achievement = withTarget.reduce((s, r) => s + (r.achievement ?? 0), 0)
   const target = withTarget.reduce((s, r) => s + (r.target_value ?? 0), 0)
   const percentage = target > 0 ? Math.round((achievement / target) * 1000) / 10 : 0
   const onTrack = withTarget.filter((r) => (r.percentage ?? 0) >= 75).length
-  return { hasTargets: true, percentage, achievement, target, onTrack, total: withTarget.length }
+  return { hasTargets: true, percentage, achievement, target, onTrack, total: withTarget.length, totalIndicators }
 }
 
 export function PartnerProgress({ progress }: Props) {
@@ -79,7 +85,8 @@ export function PartnerProgress({ progress }: Props) {
           </div>
           <h2 className="section-title">Three partners at a glance</h2>
           <p className="section-sub">
-            Live progress against target for each partner, and where they work.
+            Each partner's progress against its own targets — "on track" means an
+            indicator has reached ≥ 75% of target. Plus where they work.
           </p>
         </div>
       </div>
@@ -210,11 +217,15 @@ function PartnerCard({
           display: 'flex', gap: 16, fontSize: 11.5, color: 'var(--ink-3)',
           fontVariantNumeric: 'tabular-nums',
         }}>
-          <span>
-            <b style={{ color: 'var(--ink)' }}>
-              {data.hasTargets ? `${data.onTrack}/${data.total}` : '—'}
-            </b> on track
-          </span>
+          {data.hasTargets ? (
+            <span>
+              <b style={{ color: 'var(--ink)' }}>{data.onTrack}/{data.total}</b> indicators on track
+            </span>
+          ) : (
+            <span>
+              <b style={{ color: 'var(--ink)' }}>{data.totalIndicators}</b> indicators · targets pending
+            </span>
+          )}
           <span><b style={{ color: 'var(--ink)' }}>{districts}</b> districts</span>
         </div>
 

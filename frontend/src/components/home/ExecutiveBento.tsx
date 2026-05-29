@@ -29,7 +29,10 @@ import {
   TrendingUp, TrendingDown, Target, ShieldAlert,
 } from 'lucide-react'
 import { api } from '@/api/client'
+import { PARTNER_COLORS, type PartnerCode } from '@/data/partnerDistricts'
 import type { KPIs, IndicatorProgress, Alert } from '@/types'
+
+const PARTNERS: PartnerCode[] = ['PHD', 'Bandhu', 'CIPRB']
 
 interface Props {
   progress: IndicatorProgress[] | null
@@ -56,12 +59,13 @@ interface CardProps {
   valueColor?: string
   progressPct?: number | null    // headline progress bar (0–100)
   progressColor?: string
+  footer?: React.ReactNode       // extra content (e.g. per-partner breakdown)
   delay?: number
 }
 
 function Card({
   kicker, value, sub, trend, icon, span, emphasis = 'standard',
-  valueColor, progressPct, progressColor, delay = 0,
+  valueColor, progressPct, progressColor, footer, delay = 0,
 }: CardProps) {
   const reduce = useReducedMotion()
   const isHeadline = emphasis === 'headline'
@@ -128,6 +132,7 @@ function Card({
           {sub && <span>{sub}</span>}
         </div>
       )}
+      {footer}
       {progressPct != null && (
         <div style={{
           marginTop: 'auto', paddingTop: 16,
@@ -189,6 +194,20 @@ export function ExecutiveBento({ progress }: Props) {
     return { onTrack, total: withTarget.length, avgPct, overallPct }
   })()
 
+  // Per-partner breakdown so "whose indicators?" is answered in place.
+  const perPartner = PARTNERS.map((code) => {
+    const rows = (progress ?? []).filter((p) => p.organisation === code && !p.unlinked)
+    const withTarget = rows.filter((p) => p.target_value !== null)
+    const onTrack = withTarget.filter((p) => (p.percentage ?? 0) >= 75).length
+    return {
+      code,
+      totalIndicators: rows.length,
+      withTarget: withTarget.length,
+      onTrack,
+      hasTargets: withTarget.length > 0,
+    }
+  })
+
   const hasTargets = stats.overallPct != null
   const attainColor = bandColor(stats.overallPct)
 
@@ -229,14 +248,16 @@ export function ExecutiveBento({ progress }: Props) {
           gap: 14,
         }}
       >
-        {/* HEADLINE — programme target attainment (the decision metric) */}
+        {/* HEADLINE — programme target attainment (all partners combined),
+            with a per-partner breakdown so "whose indicators?" is answered
+            right here. */}
         <Card
-          kicker={t('bento.attainment', { defaultValue: 'PROGRAMME ATTAINMENT' })}
+          kicker={t('bento.attainment', { defaultValue: 'PROGRAMME ATTAINMENT · ALL PARTNERS' })}
           value={hasTargets ? `${stats.overallPct}%` : '—'}
           sub={hasTargets
             ? t('bento.attainmentSub', {
-                defaultValue: '{{onTrack}} of {{total}} indicators on track · avg {{avg}}%',
-                onTrack: stats.onTrack, total: stats.total, avg: stats.avgPct,
+                defaultValue: '{{onTrack}} of {{total}} indicators ≥ 75% of target',
+                onTrack: stats.onTrack, total: stats.total,
               })
             : t('bento.attainmentPending', { defaultValue: 'targets confirmed in the workshop — lights up once set' })}
           icon={<Target size={12} />}
@@ -245,6 +266,27 @@ export function ExecutiveBento({ progress }: Props) {
           valueColor={hasTargets ? attainColor : 'var(--muted)'}
           progressPct={hasTargets ? stats.overallPct : null}
           progressColor={attainColor}
+          footer={
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 7, marginTop: 14 }}>
+              {perPartner.map((p) => (
+                <div key={p.code} style={{
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  fontSize: 12.5, color: 'var(--ink-2)',
+                }}>
+                  <span style={{
+                    width: 8, height: 8, borderRadius: 2, flexShrink: 0,
+                    background: PARTNER_COLORS[p.code],
+                  }} />
+                  <span style={{ fontWeight: 600, minWidth: 54, color: 'var(--ink)' }}>{p.code}</span>
+                  <span style={{ fontVariantNumeric: 'tabular-nums' }}>
+                    {p.hasTargets
+                      ? `${p.onTrack} / ${p.withTarget} indicators on track`
+                      : `${p.totalIndicators} indicators · targets pending`}
+                  </span>
+                </div>
+              ))}
+            </div>
+          }
           delay={0}
         />
 
