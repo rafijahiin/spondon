@@ -211,45 +211,36 @@ class MonthlyBreakdownView(APIView):
 
 
 # ---------------------------------------------------------------------------
-# Programme activity trend (homepage chart) — last 6 months, stacked by
-# partner, across ALL submission models (programs + legacy KoboSubmission).
-# Efficient: one grouped TruncMonth query per model (~17 total), not the
-# per-month×per-form loops the per-partner summary uses.
+# Activity-by-category breakdown (homepage donut). Counts every programs
+# submission grouped into Clinical / Community / Operations, org-scoped.
+# One light .count() per model (~17) — no per-month loops.
 # ---------------------------------------------------------------------------
 
-class MonthlyActivityView(APIView):
+# Which service category each programs model rolls up into.
+_CATEGORY_OF = {
+    'ClinicVisit': 'Clinical', 'HIVSTITestResult': 'Clinical', 'ADRRecord': 'Clinical',
+    'AutoclaveLog': 'Clinical', 'AntenatalCard': 'Clinical', 'HTCCounselling': 'Clinical',
+    'MHScreening': 'Clinical',
+    'GBVCase': 'Community', 'OutreachSession': 'Community', 'GroupEducationSession': 'Community',
+    'Referral': 'Community', 'SafetyHygieneKit': 'Community', 'IndividualCounselling': 'Community',
+    'IECMaterial': 'Community',
+    'TrainingEvent': 'Operations', 'CoordMeeting': 'Operations', 'MobileHealthCamp': 'Operations',
+}
+
+
+class ActivityBreakdownView(APIView):
     """
-    GET /api/dashboard/monthly-activity/
-    Returns the last 6 calendar months of total submission activity, stacked
-    by partner (CIPRB / Bandhu / PHD), org-scoped to the caller. Drives the
-    homepage 'Programme activity' area chart.
+    GET /api/dashboard/activity-breakdown/
+    Approved + pending programme submissions grouped by service category
+    (Clinical / Community / Operations), org-scoped. Drives the homepage
+    activity-by-category donut.
     """
     permission_classes = [IsSupervisorOrManager]
 
     def get(self, request):
-        from django.db.models import Count
-        from django.db.models.functions import TruncMonth
+        partners = allowed_partners(request.user)
+        categories = {'Clinical': 0, 'Community': 0, 'Operations': 0}
 
-        partners = allowed_partners(request.user)            # e.g. CIPRB/PHD/Bandhu
-        now = timezone.now()
-
-        # Build the 6 month buckets (oldest → newest), keyed by (year, month).
-        buckets: dict[tuple[int, int], dict[str, int]] = {}
-        order: list[tuple[int, int]] = []
-        for i in range(5, -1, -1):
-            y, m = _months_ago(now.year, now.month, i)
-            buckets[(y, m)] = {p: 0 for p in partners}
-            order.append((y, m))
-        start_y, start_m = order[0]
-        start = now.replace(year=start_y, month=start_m, day=1,
-                            hour=0, minute=0, second=0, microsecond=0)
-
-        def _add(year: int, month: int, partner: str, n: int):
-            b = buckets.get((year, month))
-            if b is not None and partner in b:
-                b[partner] += n
-
-        # Programs models — count by created_at + organisation.
         try:
             from programs.models import (
                 ClinicVisit, HIVSTITestResult, ADRRecord, AutoclaveLog, AntenatalCard,
@@ -264,48 +255,24 @@ class MonthlyActivityView(APIView):
                 TrainingEvent, CoordMeeting, MobileHealthCamp, IECMaterial,
             ]
             for Model in models:
+                cat = _CATEGORY_OF.get(Model.__name__)
+                if not cat:
+                    continue
                 try:
-                    rows = (
+                    n = (
                         Model.objects
                         .filter(approval_status__in=['APPROVED', 'PENDING'],
-                                created_at__gte=start, organisation__in=partners)
-                        .annotate(mo=TruncMonth('created_at'))
-                        .values('mo', 'organisation')
-                        .annotate(c=Count('id'))
+                                organisation__in=partners)
+                        .count()
                     )
-                    for r in rows:
-                        mo = r['mo']
-                        if mo:
-                            _add(mo.year, mo.month, r['organisation'], r['c'])
+                    categories[cat] += n
                 except Exception:
                     continue
         except Exception:
             pass
 
-        # Legacy KoboSubmission — count by submitted_at + partner.
-        try:
-            rows = (
-                KoboSubmission.objects
-                .filter(submitted_at__gte=start, partner__in=partners,
-                        status__in=[APPROVED, PENDING])
-                .annotate(mo=TruncMonth('submitted_at'))
-                .values('mo', 'partner')
-                .annotate(c=Count('id'))
-            )
-            for r in rows:
-                mo = r['mo']
-                if mo:
-                    _add(mo.year, mo.month, r['partner'], r['c'])
-        except Exception:
-            pass
-
-        results = []
-        for (y, m) in order:
-            row = {'month_name': MONTH_NAMES[m][:3], **buckets[(y, m)]}
-            row['total'] = sum(buckets[(y, m)].values())
-            results.append(row)
-
-        return Response({'partners': partners, 'months': results})
+        total = sum(categories.values())
+        return Response({'categories': categories, 'total': total})
 
 
 # ---------------------------------------------------------------------------

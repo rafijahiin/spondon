@@ -15,7 +15,7 @@ import { api } from '@/api/client'
 import { PageLoader } from '@/components/ui/LoadingSpinner'
 import { ExecutiveBento } from '@/components/home/ExecutiveBento'
 import { PartnerProgress } from '@/components/home/PartnerProgress'
-import { ProgrammeActivityChart } from '@/components/home/ProgrammeActivityChart'
+import { ProgrammeBreakdown } from '@/components/home/ProgrammeBreakdown'
 import { PartnerOverlapMap } from '@/components/maps/PartnerOverlapMap'
 import { AnomalyCards } from '@/components/anomalies/AnomalyCards'
 import type { IndicatorProgress } from '@/types'
@@ -114,8 +114,9 @@ export default function Home() {
         </p>
       )}
 
-      {/* ── ACTIVITY OVER TIME — programme-wide trend, stacked by partner ── */}
-      <ProgrammeActivityChart />
+      {/* ── PROGRAMME BREAKDOWN — activity-by-category donut + partner
+           attainment bars ────────────────────────────────────────────── */}
+      <ProgrammeBreakdown progress={progress} />
 
       {/* ── PROGRAMME-WIDE HEALTH (bento) ────────────────────────────────── */}
       <ExecutiveBento progress={progress} />
