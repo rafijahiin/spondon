@@ -15,18 +15,16 @@
  *    partner palette.
  */
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { motion, useReducedMotion } from 'motion/react'
-import { ArrowRight } from 'lucide-react'
 
 import { api } from '@/api/client'
 import { PageLoader } from '@/components/ui/LoadingSpinner'
-import { PartnerOverlapMap } from '@/components/maps/PartnerOverlapMap'
 import { ExecutiveBento } from '@/components/home/ExecutiveBento'
+import { FundedPartners } from '@/components/home/FundedPartners'
 import { AnomalyCards } from '@/components/anomalies/AnomalyCards'
 import {
-  PARTNER_NAMES, PARTNER_ROUTES,
+  PARTNER_NAMES,
   type PartnerCode,
 } from '@/data/partnerDistricts'
 import type { IndicatorProgress } from '@/types'
@@ -74,7 +72,6 @@ function rollupPartner(partner: PartnerCode, rows: IndicatorProgress[]): Partner
 }
 
 export default function Home() {
-  const navigate = useNavigate()
   const reduce = useReducedMotion()
   const { t } = useTranslation()
   const [progress, setProgress] = useState<IndicatorProgress[] | null>(null)
@@ -112,88 +109,48 @@ export default function Home() {
             and the breadcrumb in the Topbar (SPONDON / Programme
             Overview) already provides the same orientation. */}
 
-        <div
-          className="home-hero-grid"
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'minmax(0, 1.05fr) minmax(0, 1fr)',
-            gap: 36,
-            alignItems: 'start',
-            marginTop: 6,
-          }}
-        >
-          {/* ── Left column: headline + brief ────────────────────────── */}
-          <div>
-            <h1
-              className="hero-headline anim-rise d1"
-              style={{
-                marginBottom: 18,
-                // Reduced from clamp(56,8vw,116) — at ~800px viewports the
-                // old size pushed the brief down too far and left a tall
-                // blank gap to the right of "SPONDON".
-                fontSize: 'clamp(40px, 6vw, 88px)',
-                letterSpacing: '-0.035em',
-              }}
-            >
-              <span className="figure">{t('home.headline')}</span>
-            </h1>
+        <div style={{ marginTop: 6, maxWidth: 820 }}>
+          <h1
+            className="hero-headline anim-rise d1"
+            style={{
+              marginBottom: 18,
+              fontSize: 'clamp(40px, 7vw, 96px)',
+              letterSpacing: '-0.035em',
+            }}
+          >
+            <span className="figure">{t('home.headline')}</span>
+          </h1>
 
-            <div
-              className="anim-rise d2"
-              style={{
-                fontSize: 'clamp(15px, 1.3vw, 18px)',
-                lineHeight: 1.6,
-                color: 'var(--ink-2)',
-                textWrap: 'pretty',
-              } as React.CSSProperties}
-            >
-              <p style={{ margin: 0 }}>{t('home.briefP1')}</p>
-              <p style={{ marginTop: 14 }}>
-                <span
-                  className="tag amber"
-                  style={{ fontSize: 10, marginRight: 8, verticalAlign: 'middle' }}
-                >
-                  {t('home.briefPlaceholderBadge')}
-                </span>
-                {t('home.briefP2')}
-              </p>
-            </div>
-          </div>
-
-          {/* ── Right column: coverage map + caption ─────────────────── */}
-          <div className="anim-rise d3">
-            <div className="kicker" style={{ marginBottom: 8 }}>
-              <span className="dot" />{t('home.coverageKicker')}
-            </div>
-            <h2
-              className="section-title"
-              style={{ fontSize: 'clamp(20px, 1.8vw, 26px)', marginBottom: 6 }}
-            >
-              {t('home.coverageTitle')}
-            </h2>
-            <p
-              className="section-sub"
-              style={{ marginBottom: 14, fontSize: 12.5 }}
-            >
-              {t('home.coverageSubtitle')}
+          <div
+            className="anim-rise d2"
+            style={{
+              fontSize: 'clamp(15px, 1.3vw, 18px)',
+              lineHeight: 1.6,
+              color: 'var(--ink-2)',
+              textWrap: 'pretty',
+            } as React.CSSProperties}
+          >
+            <p style={{ margin: 0 }}>{t('home.briefP1')}</p>
+            <p style={{ marginTop: 14 }}>
+              <span
+                className="tag amber"
+                style={{ fontSize: 10, marginRight: 8, verticalAlign: 'middle' }}
+              >
+                {t('home.briefPlaceholderBadge')}
+              </span>
+              {t('home.briefP2')}
             </p>
-            <div className="card shimmer" style={{ padding: 12 }}>
-              <PartnerOverlapMap height={320} />
-            </div>
           </div>
         </div>
       </section>
 
-      {/* Responsive: only collapse to single column on truly narrow viewports
-          (≤ 880px). Above that the brief + map sit side-by-side, eliminating
-          the blank space the user flagged at ~800-1100px laptop widths. */}
-      <style>{`
-        @media (max-width: 880px) {
-          .home-hero-grid {
-            grid-template-columns: 1fr !important;
-          }
-        }
-      `}</style>
+      {/* ═══════════════════════════════════════════════════════════════
+           WHO UNFPA FUNDS — three implementing partners + coverage map.
+           The funder's-eye view: who is funded, what they do, where they
+           work. Replaces the cramped hero-corner map and the redundant
+           partner nav tiles (each partner card here links to its dashboard).
+           ═══════════════════════════════════════════════════════════════ */}
+      <FundedPartners />
 
       {/* ═══════════════════════════════════════════════════════════════
            EXECUTIVE SUMMARY (BENTO GRID)
@@ -243,36 +200,7 @@ export default function Home() {
         )}
       </section>
 
-      {/* ═══════════════════════════════════════════════════════════════
-           PARTNER NAV TILES
-           ═══════════════════════════════════════════════════════════════ */}
-      <section className="section" style={{ marginTop: 56, marginBottom: 96 }}>
-        <div className="section-head">
-          <div>
-            <div className="kicker" style={{ marginBottom: 8 }}>
-              <span className="dot" />{t('home.jumpToKicker')}
-            </div>
-            <h2 className="section-title">{t('home.jumpToTitle')}</h2>
-          </div>
-        </div>
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-            gap: 18,
-          }}
-        >
-          {PARTNERS.map((p, i) => (
-            <NavTile
-              key={p}
-              partner={p}
-              onClick={() => navigate(PARTNER_ROUTES[p])}
-              reduce={reduce}
-              delay={i * 0.08}
-            />
-          ))}
-        </div>
-      </section>
+      <div style={{ marginBottom: 96 }} />
     </>
   )
 }
@@ -393,81 +321,3 @@ function RollupCard({
   )
 }
 
-// ─── NavTile ──────────────────────────────────────────────────────────────────
-
-function NavTile({
-  partner, onClick, reduce, delay,
-}: {
-  partner: PartnerCode
-  onClick: () => void
-  reduce: boolean | null
-  delay: number
-}) {
-  const { t } = useTranslation()
-  // Brand colours retired from nav tiles — see RollupCard rationale.
-  const names = PARTNER_NAMES[partner]
-
-  return (
-    <motion.button
-      onClick={onClick}
-      initial={{ opacity: 0, y: reduce ? 0 : 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{
-        duration: 0.4, delay: reduce ? 0 : delay,
-        ease: [0.22, 1, 0.36, 1],
-      }}
-      whileHover={{ y: reduce ? 0 : -2 }}
-      whileTap={{ scale: 0.985 }}
-      className="card nav-tile"
-      style={{
-        position: 'relative',
-        padding: '28px 24px',
-        background: 'var(--surface)',
-        color: 'var(--ink)',
-        cursor: 'pointer',
-        textAlign: 'left',
-        minHeight: 160,
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'space-between',
-        transitionProperty: 'transform, box-shadow, border-color',
-      }}
-    >
-      <div>
-        <div
-          style={{
-            fontSize: 11, fontWeight: 700, letterSpacing: '0.12em',
-            color: 'var(--unfpa)', textTransform: 'uppercase',
-          }}
-        >
-          {partner}
-        </div>
-        <div
-          style={{
-            fontSize: 26, fontWeight: 700, marginTop: 6,
-            lineHeight: 1.15, letterSpacing: '-0.02em',
-            color: 'var(--ink)',
-          }}
-        >
-          {names.en}
-        </div>
-        <div
-          className="bn"
-          style={{ fontSize: 13, color: 'var(--muted)', marginTop: 4 }}
-        >
-          {names.bn}
-        </div>
-      </div>
-      <div
-        style={{
-          display: 'flex', alignItems: 'center', gap: 8,
-          fontSize: 13, fontWeight: 600,
-          color: 'var(--unfpa)',
-        }}
-      >
-        {t('home.tileCta')}
-        <ArrowRight size={16} />
-      </div>
-    </motion.button>
-  )
-}
