@@ -164,6 +164,20 @@ class CanAccessMPDSR(BasePermission):
         return u.is_authenticated and u.can_access_mpdsr
 
 
+class CanAccessFistulaCases(BasePermission):
+    """
+    Per-patient Fistula records (Corner + house-screening visits) carry
+    decrypted survivor PII and are CIPRB-owned. Dev + Supervisor see all;
+    Org Lead only if CIPRB. Managers (PHD/Bandhu), field staff, focal and
+    baseline get 403. Audit FIX C1 — closes a cross-org PII leak where any
+    authenticated manager/field-staff could read every fistula patient's
+    decrypted name, husband name and phone.
+    """
+    def has_permission(self, request, view):
+        u = request.user
+        return u.is_authenticated and u.can_access_fistula_cases
+
+
 # ── Cross-org / multi-role membership classes ────────────────────────────────
 #
 # The legacy `IsSuperAdmin*` names have been removed entirely (audit FIX 1.2).

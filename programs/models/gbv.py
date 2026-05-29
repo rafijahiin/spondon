@@ -8,41 +8,47 @@ Dashboard views show AGGREGATE COUNTS ONLY.
 Individual records visible only to GBV Officer and Super Admin roles.
 All access logged to GBVAccessLog.
 """
+import logging
 import uuid
+from cryptography.fernet import Fernet, InvalidToken
 from django.db import models
 from django.conf import settings
 from .._base_choices import ORG_CHOICES
 from ._base import SubmissionBase
 
+logger = logging.getLogger('programs')
+
 
 def _encrypt(value: str) -> str:
     if not value:
         return ''
-    try:
-        from cryptography.fernet import Fernet
-        key = settings.FERNET_KEY
-        if not key:
-            return value
-        return Fernet(key.encode() if isinstance(key, str) else key).encrypt(
-            value.encode()
-        ).decode()
-    except Exception:
+    key = settings.FERNET_KEY
+    # Dev/test only — production asserts FERNET_KEY is set (see
+    # spondon/settings/production.py), so this passthrough never stores
+    # PII in cleartext on a real deployment.
+    if not key:
         return value
+    return Fernet(key.encode() if isinstance(key, str) else key).encrypt(
+        value.encode()
+    ).decode()
 
 
 def _decrypt(value: str) -> str:
     if not value:
         return ''
+    key = settings.FERNET_KEY
+    if not key:
+        return value
     try:
-        from cryptography.fernet import Fernet
-        key = settings.FERNET_KEY
-        if not key:
-            return value
         return Fernet(key.encode() if isinstance(key, str) else key).decrypt(
             value.encode()
         ).decode()
-    except Exception:
-        return value
+    except InvalidToken:
+        # Wrong/rotated key or corrupted ciphertext. NEVER return the raw
+        # ciphertext as if it were plaintext (audit FIX H1). Surface a blank
+        # value and log loudly so a key misconfiguration is visible.
+        logger.error('GBV PII decrypt failed (InvalidToken) — check FERNET_KEY')
+        return ''
 
 
 class EncryptedCharField(models.TextField):

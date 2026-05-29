@@ -1,5 +1,9 @@
+import logging
+
 from cryptography.fernet import Fernet, InvalidToken
 from django.conf import settings
+
+logger = logging.getLogger('programs')
 
 
 def _fernet() -> Fernet:
@@ -23,5 +27,10 @@ def decrypt(ciphertext: str) -> str:
         return ''
     try:
         return _fernet().decrypt(ciphertext.encode()).decode()
-    except (InvalidToken, Exception):
+    except InvalidToken:
+        # Wrong/rotated key or corrupted ciphertext — never echo the raw
+        # ciphertext back; blank + log (audit FIX H1). A missing FERNET_KEY
+        # raises ValueError from _fernet() and is intentionally NOT caught
+        # here so the misconfiguration surfaces loudly.
+        logger.error('decrypt() failed (InvalidToken) — check FERNET_KEY')
         return ''

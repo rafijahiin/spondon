@@ -148,3 +148,20 @@ class User(AbstractBaseUser, PermissionsMixin):
         if self.role == Role.ORG_LEAD:
             return self.organisation == Organisation.CIPRB
         return False
+
+    @property
+    def can_access_fistula_cases(self):
+        """Per-patient Fistula records (Corner diagnosis + house-screening
+        visits) carry decrypted survivor PII and are CIPRB-owned clinical
+        data. Same ownership rule as MPDSR: Dev + Supervisor see all; Org
+        Lead only if CIPRB. Managers (PHD/Bandhu) and field staff are denied
+        — the cross-org PII leak this closes was audit FIX C1.
+
+        Note: this gates the individual-record viewsets only. The aggregate
+        FistulaCampaign roll-ups (no PII) remain partner-scoped and readable
+        by PHD/Bandhu managers via OrgFilterMixin."""
+        if self.role in (Role.DEVELOPER, Role.SUPERVISOR):
+            return True
+        if self.role == Role.ORG_LEAD:
+            return self.organisation == Organisation.CIPRB
+        return False

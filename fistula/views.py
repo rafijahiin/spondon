@@ -4,7 +4,11 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
-from accounts.permissions import IsSupervisorOrManager, OrgFilterMixin
+from accounts.permissions import (
+    CanAccessFistulaCases,
+    IsSupervisorOrManager,
+    OrgFilterMixin,
+)
 from .models import FistulaCampaign, FistulaCornerCase, FistulaCampaignVisit
 from .serializers import (
     FistulaCampaignSerializer,
@@ -60,13 +64,14 @@ class FistulaCampaignViewSet(OrgFilterMixin, ModelViewSet):
 class FistulaCornerCaseViewSet(ModelViewSet):
     """CRUD for District Hospital Fistula Corner diagnostic records.
 
-    CIPRB-managed. Org-isolation enforced at the serializer + view level
-    via the user's role: developer/supervisor/org_lead (CIPRB) get full
-    read+write. Manager + field_staff get read-only.
+    CIPRB-owned clinical data carrying decrypted patient PII (name, husband
+    name, mobile). Access is restricted to CIPRB roles by
+    CanAccessFistulaCases — developer/supervisor (all) and org_lead (CIPRB
+    only). PHD/Bandhu managers and field staff are denied (audit FIX C1).
     """
     queryset = FistulaCornerCase.objects.all()
     serializer_class = FistulaCornerCaseSerializer
-    permission_classes = [IsSupervisorOrManager]
+    permission_classes = [CanAccessFistulaCases]
     http_method_names = ['get', 'head', 'options', 'post', 'patch', 'delete']
 
     def get_queryset(self):
@@ -81,10 +86,14 @@ class FistulaCornerCaseViewSet(ModelViewSet):
 
 
 class FistulaCampaignVisitViewSet(ModelViewSet):
-    """CRUD for house-to-house screening visit records."""
+    """CRUD for house-to-house screening visit records.
+
+    CIPRB-owned and PII-bearing (patient name, husband name, contact).
+    Restricted to CIPRB roles by CanAccessFistulaCases — audit FIX C1.
+    """
     queryset = FistulaCampaignVisit.objects.all()
     serializer_class = FistulaCampaignVisitSerializer
-    permission_classes = [IsSupervisorOrManager]
+    permission_classes = [CanAccessFistulaCases]
     http_method_names = ['get', 'head', 'options', 'post', 'patch', 'delete']
 
     def get_queryset(self):

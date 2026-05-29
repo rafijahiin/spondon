@@ -12,7 +12,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
-from accounts.permissions import IsSupervisorOrManager, OrgFilterMixin
+from accounts.permissions import CanApproveSubmissions, OrgFilterMixin
 from .models import FormType, KoboSubmission, SubmissionStatus
 from .serializers import KoboSubmissionDetailSerializer, KoboSubmissionSerializer, RejectSerializer
 from .telegram import send_approval_confirmation, send_rejection_notification, send_submission_alert
@@ -188,8 +188,16 @@ def kobo_webhook(request):
 # ---------------------------------------------------------------------------
 
 class KoboSubmissionViewSet(OrgFilterMixin, ModelViewSet):
+    # Audit FIX C2/H2 — the approval queue exposes the full Kobo `raw_data`
+    # blob (unencrypted deceased/patient names, NID, phone, address for
+    # MPDSR/Fistula) on retrieve, and the approve/reject actions mutate
+    # surveillance data. Both were previously reachable by FIELD_STAFF via
+    # IsSupervisorOrManager. Restricting the whole viewset to
+    # CanApproveSubmissions (dev/supervisor/org_lead/manager) closes the
+    # field-staff raw-PII read AND the unauthorised approve/reject in one
+    # gate — field staff, focal and baseline have no business in the queue.
     queryset = KoboSubmission.objects.select_related('reviewed_by').all()
-    permission_classes = [IsSupervisorOrManager]
+    permission_classes = [CanApproveSubmissions]
     http_method_names = ['get', 'head', 'options', 'post']
     org_field = 'partner'
 

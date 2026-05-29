@@ -3,6 +3,29 @@ from .base import *  # noqa: F403  -- split-settings pattern
 
 DEBUG = False
 
+# --- Fail-closed secret checks (audit FIX: SECRET_KEY + FERNET_KEY) ---------
+# Mirror the loud DATABASE_URL guard in base.py. Booting production with the
+# dev SECRET_KEY default enables session/CSRF forgery; booting without
+# FERNET_KEY would silently write GBV/fistula survivor PII to the DB in
+# cleartext (the model _encrypt() passes through when the key is empty).
+# Refuse to start in either case.
+_INSECURE_SECRET_KEY_DEFAULT = 'unsafe-default-for-dev-only-change-in-production'
+if not SECRET_KEY or SECRET_KEY == _INSECURE_SECRET_KEY_DEFAULT:  # noqa: F405
+    raise RuntimeError(
+        'SECRET_KEY is unset or still the insecure dev default in production. '
+        'Set a strong unique SECRET_KEY on the Railway service Variables.'
+    )
+
+if not FERNET_KEY:  # noqa: F405
+    raise RuntimeError(
+        'FERNET_KEY is not set in production. Survivor/patient PII (GBV, '
+        'fistula) would be written to the database in cleartext. Generate '
+        'one with: python -c "from cryptography.fernet import Fernet; '
+        'print(Fernet.generate_key().decode())" and set it on Railway. '
+        'NOTE: once data exists, rotating this key makes existing ciphertext '
+        'undecryptable — keep it stable.'
+    )
+
 _hosts = os.environ.get('ALLOWED_HOSTS', '')
 ALLOWED_HOSTS = [h.strip() for h in _hosts.split(',') if h.strip()]
 

@@ -1,8 +1,12 @@
+import logging
 import uuid
 
+from cryptography.fernet import Fernet, InvalidToken
 from django.conf import settings
 from django.db import models
 from django.utils import timezone
+
+logger = logging.getLogger('programs')
 
 
 def _safe_int(value, default=0):
@@ -16,36 +20,36 @@ def _safe_int(value, default=0):
 # Same Fernet pattern programs.models.gbv uses — survivor name, husband name
 # and mobile are encrypted at rest. FERNET_KEY env var (set in Step B Railway
 # block) drives the cipher. When the key is absent the field passes through
-# as plaintext so dev/test environments don't crash.
+# as plaintext so dev/test environments don't crash. Production asserts the
+# key is present (spondon/settings/production.py), so the passthrough never
+# stores PII in cleartext on a real deployment.
 
 def _encrypt(value: str) -> str:
     if not value:
         return ''
-    try:
-        from cryptography.fernet import Fernet
-        key = settings.FERNET_KEY
-        if not key:
-            return value
-        return Fernet(key.encode() if isinstance(key, str) else key).encrypt(
-            value.encode()
-        ).decode()
-    except Exception:
+    key = settings.FERNET_KEY
+    if not key:
         return value
+    return Fernet(key.encode() if isinstance(key, str) else key).encrypt(
+        value.encode()
+    ).decode()
 
 
 def _decrypt(value: str) -> str:
     if not value:
         return ''
+    key = settings.FERNET_KEY
+    if not key:
+        return value
     try:
-        from cryptography.fernet import Fernet
-        key = settings.FERNET_KEY
-        if not key:
-            return value
         return Fernet(key.encode() if isinstance(key, str) else key).decrypt(
             value.encode()
         ).decode()
-    except Exception:
-        return value
+    except InvalidToken:
+        # Wrong/rotated key or corrupted ciphertext. NEVER return the raw
+        # ciphertext as if it were plaintext (audit FIX H1). Blank + log.
+        logger.error('Fistula PII decrypt failed (InvalidToken) — check FERNET_KEY')
+        return ''
 
 
 class EncryptedCharField(models.TextField):
