@@ -201,7 +201,10 @@ def _call_groq_json(system: str, user_content: str, max_tokens: int) -> tuple[di
                 'temperature': TEMPERATURE,
                 'response_format': {'type': 'json_object'},
             },
-            timeout=60,
+            # Audit FIX M6 — was 60s, which (with only 2 gunicorn workers)
+            # let two slow narrative calls stall the whole site. Tight cap;
+            # callers already fall back gracefully on timeout.
+            timeout=20,
         )
         response.raise_for_status()
         payload = response.json()

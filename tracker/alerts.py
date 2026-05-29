@@ -191,9 +191,21 @@ def _send_gap_telegram(partner: str, form_label: str) -> None:
     import json
     import urllib.request
 
-    token   = getattr(settings, 'TELEGRAM_BOT_TOKEN', '')
-    chat_id = getattr(settings, f'TELEGRAM_CHAT_ID_{partner.upper()}',
-              getattr(settings, 'TELEGRAM_CHAT_ID_CIPRB', ''))
+    # Audit FIX M5 — previously read settings.TELEGRAM_CHAT_ID_{PARTNER} /
+    # TELEGRAM_CHAT_ID_CIPRB, neither of which exists, so chat_id was always
+    # '' and the gap Telegram never fired. The real config is the
+    # TELEGRAM_CHAT_IDS JSON dict (same source submissions/telegram.py uses).
+    token = getattr(settings, 'TELEGRAM_BOT_TOKEN', '')
+    try:
+        chat_ids = json.loads(getattr(settings, 'TELEGRAM_CHAT_IDS', '{}'))
+    except (json.JSONDecodeError, TypeError):
+        chat_ids = {}
+    chat_id = (
+        chat_ids.get(partner)
+        or chat_ids.get(partner.upper())
+        or chat_ids.get('CIPRB')
+        or chat_ids.get('default', '')
+    )
     if not token or not chat_id:
         logger.debug('Telegram not configured for gap alerts (%s)', partner)
         return

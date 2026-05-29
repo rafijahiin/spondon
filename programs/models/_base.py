@@ -8,7 +8,13 @@ from django.conf import settings
 
 
 class TimestampedModel(models.Model):
-    created_at = models.DateTimeField(auto_now_add=True)
+    # Audit FIX (HIGH) — created_at is indexed because the dashboard count
+    # endpoints (dashboard.views.KPIView, ProgramsSummaryView via
+    # tracker.programs_query.count_programs) filter on created_at__year /
+    # created_at__month across every programs model, dozens of times per
+    # request. Without this index those are sequential scans that degrade as
+    # data grows.
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:

@@ -233,19 +233,33 @@ def answer_question(question: str, partner: str = '') -> str:
         f"\n\nQuestion: {question}"
     )
 
+    # Audit FIX (CRITICAL) — was `from groq import Groq`, but the `groq`
+    # package is NOT in requirements.txt, so this raised ImportError on every
+    # call and the feature was permanently dead. Use the Groq OpenAI-compatible
+    # REST endpoint via `requests`, matching the working pattern in
+    # reports/ai_narrative.py and avoiding a new dependency. Timeout kept tight
+    # (20s) so a slow LLM can't pin a gunicorn worker (only 2 workers).
     try:
-        from groq import Groq
-        client     = Groq(api_key=api_key)
-        completion = client.chat.completions.create(
-            model='llama-3.3-70b-versatile',
-            messages=[
-                {'role': 'system', 'content': _SYSTEM},
-                {'role': 'user',   'content': body},
-            ],
-            max_tokens=600,
-            temperature=0.2,
+        import requests
+        response = requests.post(
+            'https://api.groq.com/openai/v1/chat/completions',
+            headers={
+                'Authorization': f'Bearer {api_key}',
+                'Content-Type': 'application/json',
+            },
+            json={
+                'model': 'llama-3.3-70b-versatile',
+                'messages': [
+                    {'role': 'system', 'content': _SYSTEM},
+                    {'role': 'user',   'content': body},
+                ],
+                'max_tokens': 600,
+                'temperature': 0.2,
+            },
+            timeout=20,
         )
-        return completion.choices[0].message.content.strip()
+        response.raise_for_status()
+        return response.json()['choices'][0]['message']['content'].strip()
     except Exception as exc:
         logger.error('AI chat failed: %s', exc)
         return (
