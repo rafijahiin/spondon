@@ -28,6 +28,12 @@ if not FERNET_KEY:  # noqa: F405
 
 _hosts = os.environ.get('ALLOWED_HOSTS', '')
 ALLOWED_HOSTS = [h.strip() for h in _hosts.split(',') if h.strip()]
+# Railway's internal healthcheck probes the container with the Host header
+# 'healthcheck.railway.app'. Without this, Django raises DisallowedHost and
+# returns 400 to every healthcheck → the deploy is marked unhealthy and the
+# new release never goes live. Always allow it.
+if 'healthcheck.railway.app' not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append('healthcheck.railway.app')
 
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
