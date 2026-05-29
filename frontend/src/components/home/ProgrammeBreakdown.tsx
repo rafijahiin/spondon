@@ -1,52 +1,34 @@
 /**
- * ProgrammeBreakdown — two compact, editorial charts for the homepage:
+ * ProgrammeBreakdown — two compact, editorial charts for the homepage, both
+ * fed by a single /dashboard/activity-breakdown/ call:
  *
- *   1. Activity by category — a donut (Clinical / Community / Operations)
- *      from /dashboard/activity-breakdown/.
- *   2. Partner attainment — horizontal bars of each partner's % to target,
- *      computed from the IndicatorProgress already loaded on the page.
+ *   1. Activity by category — a donut (Clinical / Community / Operations).
+ *   2. Top service types — a ranked list of the most-submitted services
+ *      (clinic visits, outreach sessions, trainings…), each bar coloured by
+ *      its category so it ties back to the donut.
  *
- * Light, brand-tinted, recharts (already a dependency). Both degrade to a
- * calm empty/pending state before real data exists.
+ * Per-partner attainment intentionally lives only in the "Three partners at a
+ * glance" cards above — it is not repeated here. No time-series (this is a
+ * short, ~5-month programme).
+ *
+ * Vivid warm palette, recharts for the donut. Both degrade to a calm empty
+ * state before real data exists.
  */
 import { useEffect, useState } from 'react'
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts'
 import { useTranslation } from 'react-i18next'
 import { api } from '@/api/client'
-import { type PartnerCode } from '@/data/partnerDistricts'
-import type { IndicatorProgress } from '@/types'
 
-const PARTNERS: PartnerCode[] = ['PHD', 'Bandhu', 'CIPRB']
-
-// Three distinct hues from the warm UNFPA palette already used across the home
-// page — orange (primary), coral (Community accent), gold (a true amber, kept
-// clearly lighter/yellower than the orange so the donut slices never read as
-// the same colour). No blue, no collision with the green/red status bands.
-// Vivid warm triad — this is the reference palette for the whole home page.
+// Vivid warm triad — the reference palette for the whole home page.
 const CATEGORY_COLORS: Record<string, string> = {
   Clinical: '#F96000',   // vivid UNFPA orange
   Community: '#ED5B7E',  // coral (pink)
   Operations: '#F2B544', // warm gold — distinct from the orange above
 }
 
-// ── Partner attainment (from already-loaded progress) ─────────────────────────
+interface ServiceRow { name: string; category: string; count: number }
 
-function partnerPct(partner: PartnerCode, rows: IndicatorProgress[] | null): number | null {
-  if (!rows) return null
-  const wt = rows.filter((r) => r.organisation === partner && r.target_value !== null && !r.unlinked)
-  if (!wt.length) return null
-  const ach = wt.reduce((s, r) => s + (r.achievement ?? 0), 0)
-  const tgt = wt.reduce((s, r) => s + (r.target_value ?? 0), 0)
-  return tgt > 0 ? Math.round((ach / tgt) * 1000) / 10 : 0
-}
-
-function bandColor(pct: number): string {
-  if (pct >= 75) return '#58968A'
-  if (pct >= 40) return '#FB904D'
-  return '#F10F45'
-}
-
-// ── Tooltips ──────────────────────────────────────────────────────────────────
+// ── Donut tooltip ─────────────────────────────────────────────────────────────
 
 function DonutTooltip({ active, payload }: any) {
   if (!active || !payload?.length) return null
@@ -61,14 +43,18 @@ function DonutTooltip({ active, payload }: any) {
   )
 }
 
-export function ProgrammeBreakdown({ progress }: { progress: IndicatorProgress[] | null }) {
+export function ProgrammeBreakdown() {
   const { t } = useTranslation()
   const [cats, setCats] = useState<Record<string, number> | null>(null)
+  const [services, setServices] = useState<ServiceRow[] | null>(null)
 
   useEffect(() => {
     api.get('/dashboard/activity-breakdown/')
-      .then((r) => setCats(r.data?.categories ?? {}))
-      .catch(() => setCats({}))
+      .then((r) => {
+        setCats(r.data?.categories ?? {})
+        setServices(r.data?.services ?? [])
+      })
+      .catch(() => { setCats({}); setServices([]) })
   }, [])
 
   const donutData = ['Clinical', 'Community', 'Operations'].map((name) => ({
@@ -76,10 +62,8 @@ export function ProgrammeBreakdown({ progress }: { progress: IndicatorProgress[]
   }))
   const donutTotal = donutData.reduce((s, d) => s + d.value, 0)
 
-  const barData = PARTNERS.map((p) => {
-    const pct = partnerPct(p, progress)
-    return { partner: p, pct: pct ?? 0, pending: pct === null, color: pct === null ? 'var(--muted)' : bandColor(pct) }
-  })
+  const topServices = (services ?? []).slice(0, 6)
+  const maxService = topServices.reduce((m, s) => Math.max(m, s.count), 0)
 
   return (
     <section className="section programme-breakdown" style={{ marginTop: 44 }}>
@@ -89,7 +73,7 @@ export function ProgrammeBreakdown({ progress }: { progress: IndicatorProgress[]
             <span className="dot" style={{ background: 'var(--unfpa)' }} />
             {t('home.breakdownKicker', { defaultValue: 'PROGRAMME BREAKDOWN' })}
           </div>
-          <h2 className="section-title">{t('home.breakdownTitle', { defaultValue: 'Where activity sits, and how partners track' })}</h2>
+          <h2 className="section-title">{t('home.breakdownTitle', { defaultValue: 'Where activity sits, by category and service' })}</h2>
         </div>
       </div>
 
@@ -148,38 +132,50 @@ export function ProgrammeBreakdown({ progress }: { progress: IndicatorProgress[]
           )}
         </div>
 
-        {/* ── Partner attainment — horizontal bars ─────────────────────── */}
+        {/* ── Top service types — ranked list ──────────────────────────── */}
         <div className="card" style={{ padding: 20 }}>
-          <div className="kicker" style={{ marginBottom: 4 }}>PARTNER ATTAINMENT</div>
+          <div className="kicker" style={{ marginBottom: 4 }}>TOP SERVICE TYPES</div>
           <p className="section-sub" style={{ margin: '0 0 8px', fontSize: 12.5 }}>
-            Each partner's overall progress to target (full bar = 100%).
+            Most-submitted services across the programme.
           </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 14 }}>
-            {barData.map((d) => (
-              <div key={d.partner} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <span style={{ width: 58, fontSize: 12, fontWeight: 600, color: 'var(--ink-2)', textAlign: 'right', flexShrink: 0 }}>
-                  {d.partner}
-                </span>
-                <div style={{ flex: 1, height: 22, borderRadius: 6, background: 'var(--surface-3, #EEF1F4)', overflow: 'hidden', position: 'relative' }}>
-                  <div style={{
-                    height: '100%',
-                    width: `${d.pending ? 0 : Math.max(d.pct, 0)}%`,
-                    background: d.color,
-                    borderRadius: 6,
-                    transition: 'width 800ms cubic-bezier(0.22,1,0.36,1)',
-                  }} />
-                </div>
-                <span style={{
-                  width: 90, fontSize: 11.5, textAlign: 'right', flexShrink: 0,
-                  color: d.pending ? 'var(--muted)' : 'var(--ink-3)',
-                  fontStyle: d.pending ? 'italic' : 'normal',
-                  fontVariantNumeric: 'tabular-nums',
-                }}>
-                  {d.pending ? 'targets pending' : `${d.pct}%`}
-                </span>
-              </div>
-            ))}
-          </div>
+
+          {services === null ? (
+            <EmptyState label="" sub="" />
+          ) : topServices.length > 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 14 }}>
+              {topServices.map((s) => {
+                const color = CATEGORY_COLORS[s.category] ?? 'var(--muted)'
+                const pct = maxService > 0 ? Math.max((s.count / maxService) * 100, 3) : 0
+                return (
+                  <div key={s.name} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <span style={{
+                      width: 132, flexShrink: 0, fontSize: 12.5, color: 'var(--ink-2)',
+                      whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                    }} title={s.name}>
+                      {s.name}
+                    </span>
+                    <div style={{ flex: 1, height: 18, borderRadius: 5, background: 'var(--surface-3, #EEF1F4)', overflow: 'hidden' }}>
+                      <div style={{
+                        height: '100%', width: `${pct}%`, background: color, borderRadius: 5,
+                        transition: 'width 800ms cubic-bezier(0.22,1,0.36,1)',
+                      }} />
+                    </div>
+                    <span style={{
+                      width: 28, flexShrink: 0, textAlign: 'right', fontSize: 12.5, fontWeight: 600,
+                      color: 'var(--ink)', fontVariantNumeric: 'tabular-nums',
+                    }}>
+                      {s.count}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+          ) : (
+            <EmptyState
+              label={t('home.servicesEmpty', { defaultValue: 'No service submissions yet' })}
+              sub={t('home.servicesEmptySub', { defaultValue: 'Services rank here as field submissions are approved.' })}
+            />
+          )}
         </div>
       </div>
 
