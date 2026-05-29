@@ -286,8 +286,8 @@ def _slide_04_big_number(prs, data: dict):
               font=DISPLAY_FONT, size=300, italic=True, color=UNFPA,
               align=PP_ALIGN.CENTER, line_spacing=0.9)
 
-    # +%MoM in emerald
-    mom = data.get('mom_pct', 8.4)
+    # +%MoM in emerald (real value from the collector; no fabricated default)
+    mom = data.get('mom_pct', 0)
     sign = '+' if mom >= 0 else ''
     _add_text(slide, Inches(0.7), Inches(5.8), Inches(12), Inches(0.4),
               f'{sign}{mom:.1f}%   vs PREVIOUS PERIOD',
@@ -505,15 +505,16 @@ def _slide_11_districts(prs, data: dict):
               'Top districts.',
               font=DISPLAY_FONT, size=36, italic=True, color=INK)
 
-    # Use sample / placeholder districts since live geo data isn't always present
-    districts = data.get('top_districts') or [
-        ("Cox's Bazar", 156),
-        ('Dhaka',       68),
-        ('Sylhet',      51),
-        ('Rangpur',     42),
-        ('Mymensingh',  35),
-        ('Khulna',      31),
-    ]
+    # Real geography from collect_programme_data (KoboSubmission districts).
+    # If no district data exists for the period yet, show an honest empty
+    # state rather than fabricated sample districts.
+    districts = data.get('top_districts') or []
+    if not districts:
+        _add_text(slide, Inches(0.7), Inches(2.2), Inches(10), Inches(0.5),
+                  'No district-level submissions for this period yet.',
+                  font=UI_FONT, size=16, color=MUTED)
+        _section_header(slide, '03', 'Geography', 11)
+        return
     max_v = max(1, districts[0][1])
 
     y = Inches(2.0)

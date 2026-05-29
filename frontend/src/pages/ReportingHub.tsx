@@ -1,9 +1,13 @@
 /**
  * Reporting Hub — editorial light console.
  *
- * Five report formats with magazine-style previews,
- * period selection, generate + download,
+ * Three report formats with magazine-style layout previews,
+ * period selection, generate + download (one click does both),
  * demo reports, anomaly alerts, and report history.
+ *
+ * Every generated file pulls LIVE approved programme data at the moment
+ * of generation — there is no stale cache, so clicking Download always
+ * reflects the current database.
  */
 import { useState } from 'react'
 import {
@@ -246,7 +250,7 @@ export default function ReportingHub() {
         </div>
 
         <h1 className="hero-headline anim-rise d1" style={{ fontSize: 'clamp(40px, 6vw, 76px)', marginBottom: 8 }}>
-          <span className="figure">Five</span> formats.
+          <span className="figure">Three</span> formats.
         </h1>
         <div className="anim-rise d1" style={{
           fontFamily: 'var(--display)', fontStyle: 'italic',
@@ -254,13 +258,13 @@ export default function ReportingHub() {
           lineHeight: 1.15, color: 'var(--ink-2)',
           letterSpacing: '-0.012em', maxWidth: 760, marginBottom: 4,
         }}>
-          One programme, told five ways — for partners, for the board, for the field.
+          One programme, told three ways — for partners, for the board, for the field.
         </div>
 
         <p className="hero-lede anim-rise d2" style={{ marginTop: 18 }}>
-          Spondon auto-generates the full suite on the first of every month: a narrative report with AI-assisted prose,
-          a single-page brief for donor visits, an email newsletter for partners, a PowerPoint deck for board meetings,
-          and a vertical infographic ready for print.
+          Generate any output for any reporting period on demand — each one pulls live approved data
+          the moment you click, so the numbers are always current. A single-page brief for donor visits,
+          an email-style newsletter for partners, and a PowerPoint deck for board meetings.
         </p>
 
         {/* Format shortcut buttons */}
@@ -444,7 +448,19 @@ export default function ReportingHub() {
                 )}
 
                 {/* Preview */}
-                {PreviewComponent && <PreviewComponent />}
+                {PreviewComponent && (
+                  <>
+                    <div className="mono" style={{
+                      fontSize: 10, letterSpacing: '0.1em', color: 'var(--muted)',
+                      textTransform: 'uppercase', marginBottom: 10,
+                      display: 'flex', alignItems: 'center', gap: 6,
+                    }}>
+                      <span className="dot" style={{ background: 'var(--muted)' }} />
+                      Illustrative layout — your file is filled with live programme data
+                    </div>
+                    <PreviewComponent />
+                  </>
+                )}
               </div>
             </div>
           </section>

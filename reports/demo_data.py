@@ -162,4 +162,20 @@ def get_demo_data() -> dict:
         'mpdsr_cases':       DEMO_MPDSR_CASES,
         'top_kpis':          top_kpis,
         'chart_data':        chart_data,
+        # Sample values for the geography / trend / workforce fields. These
+        # mirror what collect_programme_data() now computes live, so the demo
+        # exercises the identical generator code path.
+        'pending':           37,
+        'active_workers':    38,
+        'mom_pct':           8.4,
+        'monthly_trend':     [1_180, 1_320, 1_410, 1_390, 1_520, 1_488,
+                              1_610, 1_575, 1_640, 1_590, 1_702, DEMO_TOTAL // 12],
+        'top_districts':     [
+            ("Cox's Bazar", 4_860),
+            ('Dhaka',       3_120),
+            ('Chittagong',  2_740),
+            ('Sylhet',      2_510),
+            ('Narayanganj', 2_460),
+            ('Comilla',     2_574),
+        ],
     }

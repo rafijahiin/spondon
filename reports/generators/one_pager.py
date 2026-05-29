@@ -153,10 +153,7 @@ def _draw_headline_number(c, total: int, mom_pct: float, sparkline_data: list[in
 
     sign = '+' if mom_pct >= 0 else ''
     _text(c, rx, y_top - 45,
-          f'{sign}{mom_pct:.1f}% on previous period.',
-          font='Times-Italic', size=14, color=INK_2)
-    _text(c, rx, y_top - 62,
-          'The highest monthly total of the year.',
+          f'{sign}{mom_pct:.1f}% on the previous period.',
           font='Times-Italic', size=14, color=INK_2)
 
     # Sparkline
@@ -378,8 +375,8 @@ def build_infographic(data: dict, narrative: str = '', narrative_source: str = '
 
     # ─── HEADLINE NUMBER ──────────────────────────────────────────────────────
     headline_top = H - 145
-    sparkline = data.get('monthly_trend') or [42, 48, 60, 55, 70, 65, 80, 92, 110, 130, 150, total]
-    mom = data.get('mom_pct', 8.4)
+    sparkline = data.get('monthly_trend') or []
+    mom = data.get('mom_pct', 0)
     next_y = _draw_headline_number(c, total, mom, sparkline, period_label, headline_top)
 
     # ─── 4-UP KPI GRID ────────────────────────────────────────────────────────
@@ -387,14 +384,14 @@ def build_infographic(data: dict, narrative: str = '', narrative_source: str = '
                  + counts.get('mh_screenings', 0))
     bondhu_total = (counts.get('outreach_sessions', 0) + counts.get('individual_counselling', 0)
                     + counts.get('hygiene_kits', 0))
-    workers = data.get('active_workers', 38)
-    pending = data.get('pending', 12)
+    workers = data.get('active_workers', 0)
+    pending = data.get('pending', 0)
 
     kpis = [
-        (phd_total or 369,    'PHD',     'clinical, ANC, MH',   UNFPA),
-        (bondhu_total or 287, 'BONDHU',  'outreach, counsel.',  VIOLET),
-        (workers,             'WORKERS', 'active in field',     EMERALD),
-        (pending,             'PENDING', 'review queue',        CORAL),
+        (phd_total,    'PHD',     'clinical, ANC, MH',   UNFPA),
+        (bondhu_total, 'BONDHU',  'outreach, counsel.',  VIOLET),
+        (workers,      'WORKERS', 'active in field',     EMERALD),
+        (pending,      'PENDING', 'review queue',        CORAL),
     ]
     next_y = _draw_4up(c, kpis, next_y - 16)
 
@@ -405,14 +402,7 @@ def build_infographic(data: dict, narrative: str = '', narrative_source: str = '
     left_w = (W - 72 - col_gap) * 0.52
     right_w = (W - 72 - col_gap) - left_w
 
-    districts = data.get('top_districts') or [
-        ("Cox's Bazar", 156),
-        ('Dhaka',       68),
-        ('Sylhet',      51),
-        ('Rangpur',     42),
-        ('Mymensingh',  35),
-        ('Khulna',      31),
-    ]
+    districts = data.get('top_districts') or []
     _draw_districts(c, districts, 36, section_top, left_w, section_h)
 
     clinical = (counts.get('clinic_visits', 0) + counts.get('hiv_sti_tests', 0)
