@@ -22,9 +22,10 @@ const PARTNERS: PartnerCode[] = ['PHD', 'Bandhu', 'CIPRB']
 // page — orange (primary), coral (Community accent), gold (a true amber, kept
 // clearly lighter/yellower than the orange so the donut slices never read as
 // the same colour). No blue, no collision with the green/red status bands.
+// Vivid warm triad — this is the reference palette for the whole home page.
 const CATEGORY_COLORS: Record<string, string> = {
-  Clinical: '#F96000',   // --unfpa (programme primary, red-orange)
-  Community: '#ED5B7E',  // --coral (pink)
+  Clinical: '#F96000',   // vivid UNFPA orange
+  Community: '#ED5B7E',  // coral (pink)
   Operations: '#F2B544', // warm gold — distinct from the orange above
 }
 
