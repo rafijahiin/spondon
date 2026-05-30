@@ -23,7 +23,7 @@ export function Header({ onToggleSidebar, sidebarOpen }: Props) {
           {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </button>
         <div className="hidden sm:flex items-center gap-2">
-          <span className="font-bangla text-xs text-unfpa-blue font-medium">স্পন্দন</span>
+          <span className="text-xs text-unfpa-blue font-bold tracking-wide">SIMPLE</span>
           <span className="text-gray-300 dark:text-gray-600">|</span>
           <span className="text-xs text-gray-500 dark:text-gray-400">CIPRB / UNFPA Bangladesh</span>
         </div>

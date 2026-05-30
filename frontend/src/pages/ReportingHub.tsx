@@ -559,7 +559,7 @@ function OnePagerPreview() {
         }}>
           <div style={{ position: 'absolute', top: -40, right: -40, width: 180, height: 180, borderRadius: '50%', background: 'radial-gradient(circle, rgba(242,106,79,0.55), transparent 60%)' }} />
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-            <div className="mono" style={{ fontSize: 9.5, letterSpacing: '0.14em', color: 'rgba(255,255,255,0.65)' }}>SPONDON IDMS · ONE-PAGER</div>
+            <div className="mono" style={{ fontSize: 9.5, letterSpacing: '0.14em', color: 'rgba(255,255,255,0.65)' }}>SIMPLE · ONE-PAGER</div>
             <div className="mono" style={{ fontSize: 9.5, letterSpacing: '0.14em', color: 'rgba(255,255,255,0.5)' }}>NO. 12</div>
           </div>
           <div style={{ fontFamily: 'var(--display)', fontStyle: 'italic', fontWeight: 400, fontSize: 40, lineHeight: 0.95, letterSpacing: '-0.025em', color: 'white' }}>May, 2026.</div>
@@ -690,7 +690,7 @@ function OnePagerPreview() {
           <div className="mono" style={{ fontSize: 8.5, color: 'var(--muted)', letterSpacing: '0.1em' }}>GENERATED 01 JUN 2026 · M&E TEAM · SIGNED OFF</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div className="bn" style={{ fontSize: 11, color: 'var(--ink-2)' }}>মে ২০২৬</div>
-            <div className="mono" style={{ fontSize: 8.5, color: 'var(--muted-2, #aaa)' }}>SPONDON · v2.3.1</div>
+            <div className="mono" style={{ fontSize: 8.5, color: 'var(--muted-2, #aaa)' }}>SIMPLE · v2.3.1</div>
           </div>
         </div>
       </div>
@@ -835,7 +835,7 @@ function DeckPreview() {
             <div style={{ fontFamily: 'var(--display)', fontStyle: 'italic', fontSize: 36, lineHeight: 0.95, letterSpacing: '-0.025em' }}>Programme<br />update.</div>
             <div className="bn" style={{ fontSize: 11, marginTop: 6, color: 'rgba(255,255,255,0.7)' }}>মে ২০২৬ · কর্মসূচি প্রতিবেদন</div>
           </div>
-          <div className="mono" style={{ fontSize: 8, letterSpacing: '0.12em', color: 'rgba(255,255,255,0.5)' }}>SPONDON IDMS · 25 MAY 2026</div>
+          <div className="mono" style={{ fontSize: 8, letterSpacing: '0.12em', color: 'rgba(255,255,255,0.5)' }}>SIMPLE · 25 MAY 2026</div>
         </div>
       </SlideThumb>
 

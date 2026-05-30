@@ -176,7 +176,7 @@ def _masthead_onFirstPage(canvas, doc):
     canvas.rect(0, H - bar_h - 20, W, 20, fill=1, stroke=0)
     canvas.setFillColor(WHITE)
     canvas.setFont('Helvetica-Bold', 9)
-    canvas.drawString(MARGIN, H - bar_h - 14, 'Spondon IDMS · CIPRB / UNFPA Bangladesh Reproductive & Child Health Programme')
+    canvas.drawString(MARGIN, H - bar_h - 14, 'SIMPLE · CIPRB / UNFPA Bangladesh Reproductive & Child Health Programme')
 
     # Footer
     info = getattr(doc, '_header_info', {})
@@ -191,7 +191,7 @@ def _subsequent_pages(canvas, doc):
     canvas.rect(0, H - 28, W, 28, fill=1, stroke=0)
     canvas.setFillColor(WHITE)
     canvas.setFont('Helvetica-Bold', 8)
-    canvas.drawString(MARGIN, H - 18, 'Spondon IDMS · Programme Bulletin')
+    canvas.drawString(MARGIN, H - 18, 'SIMPLE · Programme Bulletin')
     info = getattr(doc, '_header_info', {})
     canvas.setFont('Helvetica', 8)
     canvas.setFillColor(colors.HexColor('#9BB5D0'))
@@ -219,7 +219,7 @@ def _draw_footer(canvas, narrative_source: str = 'template'):
     canvas.setFont('Helvetica-Bold', 7.5)
     canvas.drawString(MARGIN, 22, 'CIPRB — Centre for Injury Prevention and Research, Bangladesh')
     canvas.setFont('Helvetica', 7.5)
-    canvas.drawString(MARGIN, 10, 'In partnership with UNFPA Bangladesh  |  spondon.app')
+    canvas.drawString(MARGIN, 10, 'In partnership with UNFPA Bangladesh  |  ciprb-simple.org')
     canvas.setFont('Helvetica', 7)
     canvas.setFillColor(colors.HexColor('#9BB5D0'))
     canvas.drawRightString(W - MARGIN, 22, f"Generated: {today.day} {today.strftime('%b %Y')}")

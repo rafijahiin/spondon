@@ -914,7 +914,7 @@ def _notify(org: str, form_label: str, kobo_id: str) -> None:
         f'<b>New Submission — {form_label}</b>\n\n'
         f'Organisation: {org}\n'
         f'KoboToolbox ID: {kobo_id}\n\n'
-        f'<i>Open Spondon to review and approve.</i>'
+        f'<i>Open SIMPLE to review and approve.</i>'
     )
     try:
         _requests.post(

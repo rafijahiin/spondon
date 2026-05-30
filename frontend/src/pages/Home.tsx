@@ -55,13 +55,34 @@ export default function Home() {
             <h1
               className="hero-headline anim-rise d1"
               style={{
-                marginBottom: 18,
-                fontSize: 'clamp(40px, 6vw, 88px)',
-                letterSpacing: '-0.035em',
+                marginBottom: 10,
+                fontSize: 'clamp(56px, 8vw, 120px)',
+                letterSpacing: '-0.04em',
+                fontWeight: 800,
+                lineHeight: 1,
+                color: 'var(--unfpa)',
               }}
             >
-              <span className="figure">{t('home.headline')}</span>
+              SIMPLE
             </h1>
+            <p
+              className="anim-rise d1"
+              style={{
+                marginBottom: 20,
+                fontSize: 'clamp(13px, 1.1vw, 15px)',
+                letterSpacing: '0.01em',
+                lineHeight: 1.5,
+                color: 'var(--ink-2)',
+                fontWeight: 400,
+              }}
+            >
+              <b style={{ color: 'var(--unfpa)', fontWeight: 700 }}>S</b>trengthening{' '}
+              <b style={{ color: 'var(--unfpa)', fontWeight: 700 }}>I</b>ntegrated{' '}
+              <b style={{ color: 'var(--unfpa)', fontWeight: 700 }}>M</b>onitoring,{' '}
+              <b style={{ color: 'var(--unfpa)', fontWeight: 700 }}>P</b>rogramme{' '}
+              <b style={{ color: 'var(--unfpa)', fontWeight: 700 }}>L</b>earning and{' '}
+              <b style={{ color: 'var(--unfpa)', fontWeight: 700 }}>E</b>vidence for SRHR
+            </p>
 
             <div
               className="anim-rise d2"

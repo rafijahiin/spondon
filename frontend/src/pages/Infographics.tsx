@@ -228,7 +228,7 @@ function InfographicCard({ row, partner }: CardProps) {
                 fontWeight: 700, color: '#F96000',
                 fontSize: 32, letterSpacing: '-0.01em',
               }}>
-                SPONDON
+                SIMPLE
               </span>
             </div>
           </div>

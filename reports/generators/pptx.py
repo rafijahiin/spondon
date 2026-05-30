@@ -138,7 +138,7 @@ def _section_header(slide, section_num: str, section_name: str, page_n: int, dar
     color = MUTED if not dark else RGBColor(0xCC, 0xCC, 0xCC)
     _add_text(
         slide, Inches(0.5), Inches(0.35), Inches(8), Inches(0.25),
-        f'SPONDON IDMS · SECTION {section_num} · {section_name.upper()}',
+        f'SIMPLE · SECTION {section_num} · {section_name.upper()}',
         font=MONO_FONT, size=8, color=color,
     )
     _page_number(slide, page_n, on_dark=dark)
@@ -197,7 +197,7 @@ def _slide_01_cover(prs, data: dict):
     today = _date.today()
     _add_text(
         slide, Inches(0.6), SLIDE_H - Inches(0.55), Inches(6), Inches(0.3),
-        f'SPONDON IDMS · {today.day:02d} {today.strftime("%b %Y").upper()}',
+        f'SIMPLE · {today.day:02d} {today.strftime("%b %Y").upper()}',
         font=MONO_FONT, size=8, color=RGBColor(0x9B, 0xB5, 0xD0),
     )
     # Bottom-right page
@@ -678,7 +678,7 @@ def _slide_16_thanks(prs, data: dict, narrative_source: str = 'template'):
               font=UI_FONT, size=12, color=RGBColor(0x9B, 0xB5, 0xD0),
               align=PP_ALIGN.CENTER)
     _add_text(slide, Inches(0.7), Inches(5.1), SLIDE_W - Inches(1.4), Inches(0.4),
-              'spondon.app',
+              'ciprb-simple.org',
               font=MONO_FONT, size=13, color=UNFPA_BRT,
               align=PP_ALIGN.CENTER)
 
