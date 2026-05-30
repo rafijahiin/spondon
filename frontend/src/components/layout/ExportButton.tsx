@@ -59,7 +59,7 @@ export function ExportButton() {
     return () => clearTimeout(id)
   }, [errMsg])
 
-  const filenameBase = `spondon-${pageNameFromPath(pathname)}-${todayStamp()}`
+  const filenameBase = `simple-${pageNameFromPath(pathname)}-${todayStamp()}`
 
   /**
    * Dynamic imports keep jspdf + html2canvas out of the main bundle.

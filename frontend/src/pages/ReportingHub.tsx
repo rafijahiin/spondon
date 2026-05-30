@@ -714,7 +714,7 @@ function NewsletterPreview() {
           <span style={{ width: 9, height: 9, borderRadius: '50%', background: '#FEBC2E' }} />
           <span style={{ width: 9, height: 9, borderRadius: '50%', background: '#27C840' }} />
           <div className="mono" style={{ marginLeft: 12, fontSize: 10.5, color: 'var(--muted)' }}>
-            <b style={{ color: 'var(--ink-2)' }}>From:</b> Spondon IDMS &lt;noreply@ciprb-spondon.org&gt;
+            <b style={{ color: 'var(--ink-2)' }}>From:</b> SIMPLE &lt;noreply@ciprb-simple.org&gt;
             <span style={{ margin: '0 8px' }}>·</span>
             <b style={{ color: 'var(--ink-2)' }}>To:</b> partners@unfpa-bd
           </div>
@@ -722,12 +722,12 @@ function NewsletterPreview() {
 
         <div style={{ padding: '10px 14px', borderBottom: '1px solid var(--hair)' }}>
           <div className="mono" style={{ fontSize: 10.5, color: 'var(--muted)' }}>Subject:</div>
-          <div style={{ fontSize: 13, fontWeight: 500 }}>Spondon Monthly · May 2026 · 476 submissions, +8.4% MoM</div>
+          <div style={{ fontSize: 13, fontWeight: 500 }}>SIMPLE Monthly · May 2026 · 476 submissions, +8.4% MoM</div>
         </div>
 
         {/* Hero */}
         <div style={{ padding: '24px 28px 20px', background: 'linear-gradient(135deg, #F0F8FB 0%, #FDF1ED 100%)' }}>
-          <div className="kicker" style={{ marginBottom: 8 }}><span className="dot" />SPONDON MONTHLY · MAY 2026</div>
+          <div className="kicker" style={{ marginBottom: 8 }}><span className="dot" />SIMPLE MONTHLY · MAY 2026</div>
           <h3 style={{ fontFamily: 'var(--display)', fontStyle: 'italic', fontSize: 26, lineHeight: 1.1, fontWeight: 400, margin: 0, letterSpacing: '-0.015em' }}>
             The programme grew by <span style={{ color: 'var(--unfpa)' }}>8.4%</span> in May.
           </h3>
@@ -787,7 +787,7 @@ function NewsletterPreview() {
         <div style={{ padding: '14px 28px 18px', textAlign: 'center' }}>
           <div className="mono" style={{ fontSize: 10, color: 'var(--muted)', letterSpacing: '0.06em' }}>
             CIPRB · UNFPA BANGLADESH<br />
-            <span style={{ color: 'var(--muted-2, #aaa)' }}>You are receiving this because you are a partner of the Spondon programme.</span>
+            <span style={{ color: 'var(--muted-2, #aaa)' }}>You are receiving this because you are a partner of the SIMPLE programme.</span>
           </div>
         </div>
       </div>

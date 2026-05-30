@@ -1,6 +1,6 @@
 {
   "topbar": {
-    "brand": "SPONDON",
+    "brand": "SIMPLE",
     "programmeOverview": "PROGRAMME OVERVIEW",
     "dashboards": "DASHBOARDS",
     "phd": "PHD",
@@ -42,8 +42,8 @@
     "eyebrowOrg": "CIPRB · UNFPA BANGLADESH",
     "eyebrowSystem": "INTEGRATED DIGITAL M&E SYSTEM",
     "eyebrowPeriod": "2026–2027",
-    "headline": "SPONDON",
-    "briefP1": "Spondon is the Integrated Digital M&E System for the CIPRB / UNFPA Reproductive and Child Health programme. It consolidates field submissions from three implementing partners — CIPRB, Bandhu Social Welfare Society and Partners in Health and Development (PHD) — into one live dashboard.",
+    "headline": "SIMPLE",
+    "briefP1": "SIMPLE is UNFPA's integrated SRHR data visualisation and programme intelligence platform, designed to strengthen monitoring, programme learning, evidence generation, and evaluation data management. It consolidates field submissions from three implementing partners — CIPRB, Bandhu Social Welfare Society and Partners in Health and Development (PHD) — into one live dashboard.",
     "briefPlaceholderBadge": "Placeholder copy",
     "briefP2": "Final programme brief is confirmed at the validation workshop on 3–4 June 2026 — this text will be replaced after sign-off.",
     "coverageKicker": "COVERAGE",

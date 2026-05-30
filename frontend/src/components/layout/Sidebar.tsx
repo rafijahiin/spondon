@@ -280,12 +280,12 @@ export function Sidebar({ collapsed, onClose }: Props) {
         )}
       >
         <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-white/15">
-          <span className="text-sm font-bold text-white">স</span>
+          <span className="text-sm font-bold text-white tracking-tight">S</span>
         </div>
         {!collapsed && (
           <div>
-            <p className="font-bold text-sm leading-tight">Spondon</p>
-            <p className="font-bangla text-[10px] text-blue-200 leading-tight">স্পন্দন IDMS</p>
+            <p className="font-bold text-sm leading-tight tracking-wide">SIMPLE</p>
+            <p className="text-[10px] text-blue-200 leading-tight">SRHR M&amp;E Platform</p>
           </div>
         )}
       </div>

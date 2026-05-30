@@ -35,10 +35,10 @@ export default function Login() {
       <div className="w-full max-w-sm rounded-2xl bg-white dark:bg-gray-900 shadow-2xl p-8">
         <div className="mb-8 text-center">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-unfpa-blue shadow-lg">
-            <span className="font-bangla text-3xl font-bold text-white leading-none">স</span>
+            <span className="text-3xl font-bold text-white leading-none tracking-tight">S</span>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Spondon</h1>
-          <p className="font-bangla text-sm text-unfpa-blue mt-1">স্পন্দন IDMS</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">SIMPLE</h1>
+          <p className="text-sm text-unfpa-blue mt-1 font-medium">SRHR M&amp;E Platform</p>
           <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
             CIPRB / UNFPA Bangladesh M&amp;E System
           </p>
@@ -105,7 +105,7 @@ export default function Login() {
       </div>
 
       <p className="mt-6 text-xs text-white/50">
-        Spondon IDMS · CIPRB / UNFPA Bangladesh
+        SIMPLE · CIPRB / UNFPA Bangladesh
       </p>
     </div>
   )

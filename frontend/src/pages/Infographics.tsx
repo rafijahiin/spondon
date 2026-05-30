@@ -74,7 +74,7 @@ function InfographicCard({ row, partner }: CardProps) {
     })
     const a = document.createElement('a')
     a.href = png
-    a.download = `Spondon_${partner}_${row.activity_code}.png`
+    a.download = `SIMPLE_${partner}_${row.activity_code}.png`
     a.click()
   }
 
