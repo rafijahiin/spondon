@@ -360,20 +360,8 @@ export function OrgDashboard({ partner }: Props) {
               through KoboToolbox before reaching M&amp;E.
             </p>
 
-            {/* Focal Point meta block removed per Animesh — keep focus strictly
-                programmatic. Agreement + Submission Mode retained. */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 14, marginTop: 28, maxWidth: 480 }} className="anim-rise d4">
-              <Meta
-                label={t('org.metaAgreement')}
-                value={isPHD ? 'UNFPA-PHD-MOU' : 'UNFPA-BWS-2024-A'}
-                sub={t('org.metaAgreementActive')}
-              />
-              <Meta
-                label={t('org.metaSubmissionMode')}
-                value={t('org.metaKoboWeekly')}
-                sub={t('org.metaSyncLive')}
-              />
-            </div>
+            {/* Agreement + Submission Mode meta block removed per Animesh —
+                operational chrome, no programmatic insight. */}
           </div>
 
           <div className="hero-right anim-rise d4">

@@ -25,6 +25,8 @@ import { StatusBadge } from '@/components/ui/StatusBadge'
 import { PageLoader } from '@/components/ui/LoadingSpinner'
 import { formatDate, formatDateTime } from '@/utils/format'
 import { FistulaCornerPanel, FistulaCampaignPanel } from '@/components/fistula/FistulaPanels'
+import { FistulaVisualizations } from '@/components/ciprb/FistulaVisualizations'
+import { MPDSRVisualizations } from '@/components/ciprb/MPDSRVisualizations'
 import type { MPDSRCase, AuditEntry } from '@/types/index'
 
 const CIPRB_BLUE = '#0072BC'
@@ -358,7 +360,10 @@ function MPDSRSection() {
         )}
       </div>
 
-      {/* Cause panels */}
+      {/* ─── Visualizations: Notify vs Review · Cause breakdown · Response Plan ─── */}
+      <MPDSRVisualizations cases={cases ?? []} />
+
+      {/* Cause panels (filter shortcuts above the cases table) */}
       <div style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
@@ -567,6 +572,11 @@ export default function CIPRBDashboard() {
           <KPITile icon={<Send size={14} />}        label={t('ciprb.kpiReferred')}    sub={t('ciprb.kpiReferredSub')}     value={kpis.referred}    />
           <KPITile icon={<Scissors size={14} />}    label={t('ciprb.kpiSurgeryDone')} sub={t('ciprb.kpiSurgeryDoneSub')}  value={kpis.surgeryDone} />
         </div>
+      </section>
+
+      {/* ───────────────── Fistula visualizations (campaign / funnel / pie) ───────────────── */}
+      <section className="section" style={{ marginTop: 8 }}>
+        <FistulaVisualizations />
       </section>
 
       {/* ───────────────── Fistula registers (tabs) ───────────────── */}
