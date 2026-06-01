@@ -25,14 +25,16 @@ export const PARTNER_COLORS: Record<PartnerCode, string> = {
   PHD:    '#F96000',
 }
 
-// Tonal scale — used ONLY in places where THREE distinguishable swatches
-// are genuinely required (e.g. PartnerOverlapMap so single/two/three-org
-// overlaps are readable). All three shades sit inside the UNFPA orange
-// family — no foreign hues.
+// Tonal scale — used ONLY on the homepage coverage map (Animesh:
+// "the map does not need to follow UNFPA colours, it is tough to
+// understand"). Three distinct hues so single-org districts read
+// unambiguously against the dark background. Every other surface
+// on the site still uses the flat UNFPA orange from PARTNER_COLORS.
 export const PARTNER_TINTS: Record<PartnerCode, string> = {
-  CIPRB:  '#F96000',   // UNFPA primary
-  Bandhu: '#C44E00',   // UNFPA deep
-  PHD:    '#FB904D',   // UNFPA bright
+  CIPRB:  '#0072BC',   // institutional blue
+  Bandhu: '#00875A',   // deep teal-green
+  PHD:    '#F96000',   // UNFPA orange (PHD only — the one partner whose
+                       // colour stays inside the brand family)
 }
 
 // Overlap shading — two-org uses UNFPA amber tint, three-org uses status-off red.
