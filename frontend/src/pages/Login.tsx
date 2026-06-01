@@ -4,14 +4,6 @@ import { Eye, EyeOff } from 'lucide-react'
 import { useAuth, apiErrorMessage } from '@/context/AuthContext'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 
-const KOBO_LINKS = [
-  { label: 'Clinic Visit',    url: 'https://ee.kobotoolbox.org/x/TAxdHQQu' },
-  { label: 'Outreach',        url: 'https://ee.kobotoolbox.org/x/mL50QRl8' },
-  { label: 'Group Education', url: 'https://ee.kobotoolbox.org/x/VZ1iYrTd' },
-  { label: 'HIV / STI Test',  url: 'https://ee.kobotoolbox.org/x/svhvZM4N' },
-  { label: 'Fistula Corner',  url: 'https://ee.kobotoolbox.org/x/2EemD80H' },
-  { label: 'MPDSR',           url: 'https://ee.kobotoolbox.org/x/ZOBX0pKd' },
-]
 
 export default function Login() {
   const { login } = useAuth()
@@ -143,57 +135,6 @@ export default function Login() {
                 <b style={{ color: '#FFAA60', fontWeight: 700 }}>E</b>vidence for SRHR
               </p>
 
-              <div style={{
-                fontSize: 12, color: 'rgba(255,255,255,0.2)',
-                letterSpacing: '0.06em',
-              }}>
-                Reproductive &amp; Child Health Programme
-              </div>
-            </div>
-
-            {/* KoboToolbox quick links */}
-            <div style={{
-              borderTop: '1px solid rgba(255,255,255,0.08)',
-              paddingTop: 'clamp(18px, 3vh, 28px)',
-            }}>
-              <div style={{
-                fontSize: 9.5, letterSpacing: '0.2em',
-                color: 'rgba(255,255,255,0.22)',
-                fontFamily: 'var(--mono, monospace)',
-                marginBottom: 12,
-              }}>
-                FIELD STAFF — SUBMIT VIA KOBOTOOLS
-              </div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 16px' }}>
-                {KOBO_LINKS.map(({ label, url }) => (
-                  <a
-                    key={label}
-                    href={url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{
-                      fontSize: 12,
-                      color: 'rgba(255,255,255,0.38)',
-                      textDecoration: 'none',
-                      borderBottom: '1px solid rgba(255,255,255,0.12)',
-                      paddingBottom: 1,
-                      transition: 'color 0.15s, border-color 0.15s',
-                    }}
-                    onMouseEnter={e => {
-                      const a = e.currentTarget as HTMLAnchorElement
-                      a.style.color = '#FFAA60'
-                      a.style.borderColor = 'rgba(249,96,0,0.5)'
-                    }}
-                    onMouseLeave={e => {
-                      const a = e.currentTarget as HTMLAnchorElement
-                      a.style.color = 'rgba(255,255,255,0.38)'
-                      a.style.borderColor = 'rgba(255,255,255,0.12)'
-                    }}
-                  >
-                    {label}
-                  </a>
-                ))}
-              </div>
             </div>
           </div>
         </div>
@@ -339,12 +280,6 @@ export default function Login() {
               </button>
             </form>
 
-            <p style={{
-              marginTop: 40, fontSize: 11.5,
-              color: '#9CA3AF', textAlign: 'center', letterSpacing: '0.03em',
-            }}>
-              SIMPLE · CIPRB / UNFPA Bangladesh
-            </p>
           </div>
         </div>
 
