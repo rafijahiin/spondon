@@ -66,9 +66,10 @@ function useAggregates(): AggregatesPayload | null {
   return data
 }
 
-const CIPRB_BLUE = '#0072BC'
-const CIPRB_BLUE_SOFT = 'rgba(0,114,188,0.08)'
-const CIPRB_BLUE_LIGHT = '#7DB8DC'
+// UNFPA branding — orange across the board.
+const CIPRB_BLUE = '#F96000'
+const CIPRB_BLUE_SOFT = 'rgba(249,96,0,0.10)'
+const CIPRB_BLUE_LIGHT = '#FB904D'   // UNFPA bright (lighter shade for secondary bars)
 
 // ─── 1. Notification vs Review bar chart ─────────────────────────────────────
 
@@ -240,7 +241,7 @@ function NotifyVsReview({
                     borderRadius: 8,
                     fontSize: 12,
                   }}
-                  cursor={{ fill: 'rgba(0,114,188,0.04)' }}
+                  cursor={{ fill: 'rgba(249,96,0,0.04)' }}
                 />
                 <Bar dataKey="notified" name={t('mpdsrViz.notified')} fill={CIPRB_BLUE_LIGHT}
                      radius={[6, 6, 0, 0]} animationDuration={700} />
@@ -283,11 +284,13 @@ const GROUP_LABEL_KEY: Record<DistrictGroup, string> = {
   cp: 'mpdsrViz.tabCp',
 }
 
+// Cause-of-death pie — UNFPA orange tonal scale, all sitting inside the
+// brand family. Other stays neutral so it doesn't read as a partner colour.
 const CAUSE_PALETTE: Record<string, string> = {
-  pph:               '#0072BC',  // CIPRB blue
-  eclampsia:         '#5BA4D1',
-  sepsis:            '#90C7E5',
-  obstructed_labour: '#003F73',
+  pph:               '#F96000',  // UNFPA orange
+  eclampsia:         '#FB904D',  // UNFPA bright
+  sepsis:            '#FFC499',  // UNFPA pale
+  obstructed_labour: '#C44E00',  // UNFPA deep
   other:             'var(--muted-3)',
 }
 
@@ -542,7 +545,7 @@ function ResponsePlanTracker({ summaries }: { summaries: ActionPlanSummary[] }) 
                 <td>
                   <span style={{
                     display: 'inline-block', padding: '2px 8px', borderRadius: 4,
-                    background: 'rgba(0,114,188,0.08)', color: CIPRB_BLUE,
+                    background: 'rgba(249,96,0,0.08)', color: CIPRB_BLUE,
                     fontSize: 11, fontWeight: 600, letterSpacing: '0.04em',
                   }}>
                     {s.level === 'DM' ? t('mpdsrViz.levelDistrict') : t('mpdsrViz.levelUpazila')}

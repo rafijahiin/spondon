@@ -16,8 +16,9 @@ import { Building2, MapPin, Home, Users, Search, Stethoscope, Send, ArrowRight }
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts'
 import { api } from '@/api/client'
 
-const CIPRB_BLUE = '#0072BC'
-const CIPRB_BLUE_SOFT = 'rgba(0,114,188,0.08)'
+// UNFPA branding — orange across the board.
+const CIPRB_BLUE = '#F96000'
+const CIPRB_BLUE_SOFT = 'rgba(249,96,0,0.10)'
 
 interface CornerCase {
   identification_date?: string | null
@@ -236,11 +237,14 @@ function FunnelArrow() {
 
 // ─── Diagnosis Pie ───────────────────────────────────────────────────────────
 
+// Diagnosis pie — UNFPA orange tonal scale. Primary case (obstetric)
+// gets the brand orange; other-type a lighter shade; non-fistula stays
+// neutral grey because it's a diagnostic negative, not a partner colour.
 const PIE_COLORS = {
-  obstetric: '#0072BC',     // CIPRB blue — primary case of interest
-  otherType: '#5BA4D1',     // softer blue
-  noFistula: 'var(--muted-3)',  // grey — diagnostic negative
-  pending: 'var(--surface-3)',  // very faint — not yet diagnosed
+  obstetric: '#F96000',     // UNFPA orange
+  otherType: '#FB904D',     // UNFPA bright
+  noFistula: 'var(--muted-3)',
+  pending: 'var(--surface-3)',
 }
 
 function DiagnosisLegend({ data }: { data: { name: string; value: number; color: string }[] }) {

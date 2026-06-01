@@ -16,13 +16,23 @@
  */
 export type PartnerCode = 'CIPRB' | 'Bandhu' | 'PHD'
 
-// Org identity colours — vivid and saturated to match the energy of the
-// home-page donut (the reference palette). Distinct hue lanes (blue / green /
-// orange) keep the coverage map legend readable.
+// Org identity colours — ALL UNFPA orange per the branding rule
+// ("this is a UNFPA product, their brand colors are the only thing").
+// Partners are identified by their CODE/NAME in the UI, not by hue.
 export const PARTNER_COLORS: Record<PartnerCode, string> = {
-  CIPRB:  '#0072BC',   // CIPRB institutional blue
-  Bandhu: '#00875A',   // deep teal-green (distinct from on-track status #1A7A5A)
-  PHD:    '#C44E00',   // UNFPA deep orange (distinct from brand #F96000)
+  CIPRB:  '#F96000',
+  Bandhu: '#F96000',
+  PHD:    '#F96000',
+}
+
+// Tonal scale — used ONLY in places where THREE distinguishable swatches
+// are genuinely required (e.g. PartnerOverlapMap so single/two/three-org
+// overlaps are readable). All three shades sit inside the UNFPA orange
+// family — no foreign hues.
+export const PARTNER_TINTS: Record<PartnerCode, string> = {
+  CIPRB:  '#F96000',   // UNFPA primary
+  Bandhu: '#C44E00',   // UNFPA deep
+  PHD:    '#FB904D',   // UNFPA bright
 }
 
 // Overlap shading — two-org uses UNFPA amber tint, three-org uses status-off red.

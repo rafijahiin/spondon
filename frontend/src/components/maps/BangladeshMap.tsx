@@ -17,19 +17,22 @@ const CP10_DISTRICTS = new Set([
   'barguna', 'bagerhat',
 ])
 
+// UNFPA branding — every service-type pin uses the brand orange family.
+// The pin shape / icon does the type identification, not colour.
 const CENTER_COLORS: Record<string, string> = {
-  DIC:     '#F96000',   // UNFPA orange — primary service type
-  BROTHEL: '#00658C',   // UNFPA teal-blue
-  SUB_DIC: '#C44E00',   // deep orange — secondary site
-  MOBILE:  '#00875A',   // deep teal-green — mobile outreach
+  DIC:     '#F96000',   // UNFPA primary
+  BROTHEL: '#C44E00',   // UNFPA deep
+  SUB_DIC: '#FB904D',   // UNFPA bright
+  MOBILE:  '#FFC499',   // UNFPA pale
 }
 
-// Per-partner choropleth tints — matches the homepage PartnerOverlapMap
-// palette so partner identity stays consistent across surfaces.
+// Per-partner choropleth tints — all share the UNFPA orange family.
+// Three distinguishable shades so multi-partner overlaps stay readable,
+// but no foreign hues. Partner code on the legend does the identification.
 const PARTNER_TINTS: Record<string, { active: string; cp10: string; stroke: string }> = {
-  PHD:    { active: '#ED7D31', cp10: '#FFCB9A', stroke: '#7A3F12' },
-  Bandhu: { active: '#00B050', cp10: '#A6E1B8', stroke: '#015A28' },
-  CIPRB:  { active: '#0072BC', cp10: '#A8D2EC', stroke: '#003E66' },
+  PHD:    { active: '#F96000', cp10: '#FFD9B8', stroke: '#7A2E00' },
+  Bandhu: { active: '#F96000', cp10: '#FFD9B8', stroke: '#7A2E00' },
+  CIPRB:  { active: '#F96000', cp10: '#FFD9B8', stroke: '#7A2E00' },
 }
 
 interface Props {

@@ -19,8 +19,8 @@ import { ClipboardList, Megaphone, Search, Stethoscope, Send, Scissors } from 'l
 import { api } from '@/api/client'
 import { FistulaCornerPanel, FistulaCampaignPanel } from '@/components/fistula/FistulaPanels'
 
-// CIPRB owns Fistula + MPDSR — accent colour for hero + active tab.
-const CIPRB_BLUE = '#0072BC'
+// UNFPA branding — orange across the board, no partner-specific hues.
+const CIPRB_BLUE = '#F96000'
 
 type TabKey = 'corner' | 'campaign'
 

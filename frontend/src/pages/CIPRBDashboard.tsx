@@ -30,7 +30,9 @@ import { MPDSRVisualizations } from '@/components/ciprb/MPDSRVisualizations'
 import { MPDSRDistrictMap } from '@/components/ciprb/MPDSRDistrictMap'
 import type { MPDSRCase, AuditEntry } from '@/types/index'
 
-const CIPRB_BLUE = '#0072BC'
+// UNFPA branding — every CIPRB page uses UNFPA orange. Partner identity
+// comes from the page header / route, not from colour.
+const CIPRB_BLUE = '#F96000'
 
 const CAUSE_KEYS = ['pph', 'eclampsia', 'sepsis', 'obstructed_labour', 'other'] as const
 const PLACE_KEYS = ['facility', 'home', 'in_transit'] as const
@@ -384,7 +386,7 @@ function MPDSRSection() {
                 padding: 16,
                 textAlign: 'left',
                 cursor: 'pointer',
-                background: active ? 'rgba(0,114,188,0.08)' : 'var(--surface)',
+                background: active ? 'rgba(249,96,0,0.08)' : 'var(--surface)',
                 borderColor: active ? CIPRB_BLUE : 'var(--hair)',
                 transition: 'border-color var(--dur-q), background var(--dur-q)',
               }}
@@ -415,7 +417,7 @@ function MPDSRSection() {
             <span style={{
               display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
               width: 22, height: 22, borderRadius: 999,
-              background: 'rgba(0,114,188,0.10)',
+              background: 'rgba(249,96,0,0.10)',
               color: CIPRB_BLUE,
               fontSize: 11, fontWeight: 700,
               fontVariantNumeric: 'tabular-nums',
@@ -593,20 +595,20 @@ export default function CIPRBDashboard() {
           <a href="#fistula-section" style={{
             display: 'inline-flex', alignItems: 'center', gap: 6,
             padding: '6px 14px', borderRadius: 999,
-            background: 'rgba(0,114,188,0.10)',
+            background: 'rgba(249,96,0,0.10)',
             color: CIPRB_BLUE,
             fontSize: 12.5, fontWeight: 600, textDecoration: 'none',
-            border: '1px solid rgba(0,114,188,0.20)',
+            border: '1px solid rgba(249,96,0,0.20)',
           }}>
             {t('ciprbExtras.jumpFistula')}
           </a>
           <a href="#mpdsr-section" style={{
             display: 'inline-flex', alignItems: 'center', gap: 6,
             padding: '6px 14px', borderRadius: 999,
-            background: 'rgba(0,114,188,0.10)',
+            background: 'rgba(249,96,0,0.10)',
             color: CIPRB_BLUE,
             fontSize: 12.5, fontWeight: 600, textDecoration: 'none',
-            border: '1px solid rgba(0,114,188,0.20)',
+            border: '1px solid rgba(249,96,0,0.20)',
           }}>
             {t('ciprbExtras.jumpMpdsr')}
           </a>

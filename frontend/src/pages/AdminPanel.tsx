@@ -38,11 +38,13 @@ const ROLE_LABELS: Record<string, string> = {
   focal:          'Focal Person (view-only)',
 }
 
+// UNFPA branding — all org accents collapse to UNFPA orange. Partner
+// identity is shown by the org code label, not by colour.
 const ORG_ACCENT: Record<Organisation, string> = {
-  CIPRB:  '#0072BC',   // CIPRB institutional blue
-  UNFPA:  '#F96000',   // UNFPA brand orange
-  PHD:    '#C44E00',   // PHD deep orange
-  Bandhu: '#00875A',   // Bandhu deep teal-green
+  CIPRB:  '#F96000',
+  UNFPA:  '#F96000',
+  PHD:    '#F96000',
+  Bandhu: '#F96000',
 }
 
 interface UserFormData {

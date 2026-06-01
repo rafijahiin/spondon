@@ -274,12 +274,12 @@ function ConfigureModal({
 }
 
 // ── Row component ──────────────────────────────────────────────────────────────
-// Partner chip accent picked per-partner instead of the old PHD-blue/Bandhu-green
-// binary. Matches the partner palette used everywhere else.
+// UNFPA branding — partner chips all use the brand orange. The partner code
+// itself (CIPRB / PHD / Bandhu) does the identification work.
 const PARTNER_ACCENT: Record<string, string> = {
-  CIPRB:  '#0072BC',
-  PHD:    '#ED7D31',
-  Bandhu: '#00B050',
+  CIPRB:  '#F96000',
+  PHD:    '#F96000',
+  Bandhu: '#F96000',
 }
 
 function ComplianceRow({ row }: { row: ProgressRow }) {

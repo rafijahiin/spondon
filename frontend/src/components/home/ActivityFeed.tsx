@@ -29,10 +29,12 @@ interface FeedItem {
   time_ago: string
 }
 
+// UNFPA branding — all partners share the brand orange. Partner identity
+// is communicated by the bold code text next to each row, not by colour.
 const PARTNER_COLOR: Record<string, string> = {
-  PHD: '#C44E00',
-  BANDHU: '#00875A',
-  CIPRB: '#0072BC',
+  PHD: '#F96000',
+  BANDHU: '#F96000',
+  CIPRB: '#F96000',
 }
 
 export function ActivityFeed() {

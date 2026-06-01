@@ -20,10 +20,11 @@ const TOPIC_LABELS: Record<string, string> = {
   report_review:        'Report Review',
 }
 
+// UNFPA branding — orange across all partner accents.
 const PARTNER_ACCENT: Record<string, string> = {
-  CIPRB:  '#0072BC',
-  PHD:    '#ED7D31',
-  Bandhu: '#00B050',
+  CIPRB:  '#F96000',
+  PHD:    '#F96000',
+  Bandhu: '#F96000',
 }
 
 // ─── Session row + attendance accordion ──────────────────────────────────────

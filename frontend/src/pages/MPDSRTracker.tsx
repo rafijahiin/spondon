@@ -23,9 +23,8 @@ import { PageLoader } from '@/components/ui/LoadingSpinner'
 import { formatDate, formatDateTime } from '@/utils/format'
 import type { MPDSRCase, AuditEntry } from '@/types/index'
 
-// CIPRB owns Fistula + MPDSR — accent colour for surfaces that don't already
-// inherit the partner colour from partnerDistricts.ts.
-const CIPRB_BLUE = '#0072BC'
+// UNFPA branding — orange across all partner surfaces.
+const CIPRB_BLUE = '#F96000'
 
 // Cause keys returned by the API. Display labels come from i18n.
 const CAUSE_KEYS = ['pph', 'eclampsia', 'sepsis', 'obstructed_labour', 'other'] as const

@@ -20,7 +20,8 @@ import 'leaflet/dist/leaflet.css'
 import { Info } from 'lucide-react'
 
 const GEOJSON_URL = '/bangladesh-adm2.geojson'
-const CIPRB_BLUE = '#0072BC'
+// UNFPA branding — orange instead of CIPRB blue.
+const CIPRB_BLUE = '#F96000'
 
 // Mappings (mirrors MPDSRVisualizations — single source eventually).
 const GAC = ['Sunamganj', 'Bhola', 'Sherpur', 'Kurigram', 'Khagrachari']
@@ -39,14 +40,16 @@ const GAC_SET = new Set(GAC.map(normalise))
 const SIDA_SET = new Set(SIDA.map(normalise))
 const CP_SET = new Set(CP.map(normalise))
 
-// Colour palette — CIPRB blue family with three shades so overlaps read.
+// Colour palette — UNFPA orange tonal scale. Three distinguishable shades
+// of orange so GAC / SIDA / CP coverage layers stay readable, plus a deep
+// shade for the GAC+SIDA overlap. No foreign hues.
 const TINT = {
-  both:     '#9B27B0',   // purple-ish — SIDA + GAC overlap (Sunamganj)
-  gac:      '#0072BC',   // CIPRB blue
-  sida:     '#00875A',   // teal-green
-  cp:       '#7DB8DC',   // light blue
-  none:     '#E5E7EB',   // light grey
-  stroke:   '#003E66',
+  both:     '#7A2E00',   // very deep orange — GAC + SIDA overlap (Sunamganj)
+  gac:      '#F96000',   // UNFPA primary orange
+  sida:     '#C44E00',   // UNFPA deep
+  cp:       '#FFC499',   // UNFPA pale tint
+  none:     '#E5E7EB',   // neutral grey — districts with no MPDSR focus
+  stroke:   '#7A2E00',
 }
 
 function tintFor(name: string): { fill: string; opacity: number; group: string } {
