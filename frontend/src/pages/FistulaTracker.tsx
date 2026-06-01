@@ -1,60 +1,162 @@
 /**
- * CIPRB Hub — Step 7 placeholder shell.
+ * CIPRB Fistula Tracker — Corner Register + Campaign Visit registers.
  *
- * The CIPRB owned-area lives at /fistula (per Step 3 Part B nav). The
- * three tabs below — Fistula Corner, Fistula Campaign, Baseline Assessment
- * — render placeholder copy until the supervisor confirms the register
- * variables at the 3-4 June 2026 validation workshop. No forms, no data
- * entry, no live records are surfaced here.
+ * Per Animesh (Wednesday demo prep):
+ *   - Hero + active tab use CIPRB blue (#0072BC), not UNFPA orange —
+ *     CIPRB owns this page, so the partner accent should reflect that.
+ *   - A KPI tile band above the tabs gives Animesh's four headline
+ *     numbers at a glance: Suspected · Identified · Referred · Surgery Done.
+ *     Sourced client-side from /fistula/campaign-visits/ (field screening
+ *     count) + /fistula/corner-cases/ (hospital register).
  *
- * Once the supervisor signs off the variables we'll replace each tab's
- * body with its real entry surface — but the route, breadcrumb and
- * tab labels stay stable so muscle memory survives.
+ * Once Sayeed signs off the variable list at the validation workshop
+ * the panels below activate and these tiles fill with live numbers.
  */
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react'
-import { ClipboardList, Megaphone } from 'lucide-react'
+import { ClipboardList, Megaphone, Search, Stethoscope, Send, Scissors } from 'lucide-react'
+import { api } from '@/api/client'
 import { FistulaCornerPanel, FistulaCampaignPanel } from '@/components/fistula/FistulaPanels'
+
+// CIPRB owns Fistula + MPDSR — accent colour for hero + active tab.
+const CIPRB_BLUE = '#0072BC'
 
 type TabKey = 'corner' | 'campaign'
 
 interface TabDef {
   key: TabKey
-  /** Tab label key under `ciprb.*` for the English title. */
   labelKey: string
-  /** Tab label key under `ciprb.*` for the Bengali sub-label rendered as <small>. */
   labelBnKey: string
   icon: React.ReactNode
-  /** Translation key under `ciprb.*` for the body summary. */
-  summaryKey: string
 }
 
 const TABS: TabDef[] = [
-  {
-    key: 'corner',
-    labelKey: 'ciprb.tabCorner',
-    labelBnKey: 'ciprb.tabCornerBn',
-    icon: <ClipboardList size={16} />,
-    summaryKey: 'ciprb.summaryCorner',
-  },
-  {
-    key: 'campaign',
-    labelKey: 'ciprb.tabCampaign',
-    labelBnKey: 'ciprb.tabCampaignBn',
-    icon: <Megaphone size={16} />,
-    summaryKey: 'ciprb.summaryCampaign',
-  },
-  // Baseline removed — it is a distinct deliverable with its own dedicated
-  // page at /baseline (Baseline & Endline), not a fistula register. Keeping
-  // it here duplicated it and confused the page's purpose.
+  { key: 'corner',   labelKey: 'ciprb.tabCorner',   labelBnKey: 'ciprb.tabCornerBn',   icon: <ClipboardList size={16} /> },
+  { key: 'campaign', labelKey: 'ciprb.tabCampaign', labelBnKey: 'ciprb.tabCampaignBn', icon: <Megaphone size={16} /> },
 ]
+
+// ─── KPI band ────────────────────────────────────────────────────────────────
+
+interface KPIs {
+  suspected: number
+  identified: number
+  referred: number
+  surgeryDone: number
+}
+
+interface CornerCaseRow {
+  identification_date?: string | null
+  diagnosis_date?: string | null
+  referral_date?: string | null
+  referral_outcome?: string
+  surgery_performed?: 'yes' | 'no' | 'pending' | ''
+}
+
+interface CampaignVisitRow {
+  id: string
+}
+
+function useFistulaKPIs(): { kpis: KPIs; loading: boolean } {
+  const [kpis, setKpis] = useState<KPIs>({ suspected: 0, identified: 0, referred: 0, surgeryDone: 0 })
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let cancelled = false
+
+    Promise.allSettled([
+      api.get<{ results?: CampaignVisitRow[] } | CampaignVisitRow[]>('/fistula/campaign-visits/'),
+      api.get<{ results?: CornerCaseRow[]    } | CornerCaseRow[]>('/fistula/corner-cases/'),
+    ]).then(([campaignRes, cornerRes]) => {
+      if (cancelled) return
+
+      const campaignRows: CampaignVisitRow[] =
+        campaignRes.status === 'fulfilled'
+          ? (Array.isArray(campaignRes.value.data)
+              ? campaignRes.value.data
+              : campaignRes.value.data.results ?? [])
+          : []
+
+      const cornerRows: CornerCaseRow[] =
+        cornerRes.status === 'fulfilled'
+          ? (Array.isArray(cornerRes.value.data)
+              ? cornerRes.value.data
+              : cornerRes.value.data.results ?? [])
+          : []
+
+      // Suspected = field screening (every campaign visit is a screening attempt).
+      // Identified = corner cases with a confirmed identification/diagnosis date.
+      // Referred = corner cases with a referral date OR non-empty referral outcome.
+      // Surgery Done = corner cases where surgery_performed === 'yes'.
+      const suspected   = campaignRows.length
+      const identified  = cornerRows.filter(c => c.identification_date || c.diagnosis_date).length
+      const referred    = cornerRows.filter(c => c.referral_date || (c.referral_outcome ?? '').trim() !== '').length
+      const surgeryDone = cornerRows.filter(c => c.surgery_performed === 'yes').length
+
+      setKpis({ suspected, identified, referred, surgeryDone })
+      setLoading(false)
+    })
+
+    return () => { cancelled = true }
+  }, [])
+
+  return { kpis, loading }
+}
+
+function KPITile({
+  icon, label, sub, value, accent = CIPRB_BLUE,
+}: {
+  icon: React.ReactNode
+  label: string
+  sub: string
+  value: number
+  accent?: string
+}) {
+  return (
+    <div
+      className="card"
+      style={{
+        padding: '16px 18px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 8,
+      }}
+    >
+      <div style={{
+        display: 'inline-flex', alignItems: 'center', gap: 8,
+        fontSize: 11, color: 'var(--muted)',
+        textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 500,
+      }}>
+        <span style={{
+          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+          width: 24, height: 24, borderRadius: 6,
+          background: `${accent}1A`, color: accent,
+        }}>
+          {icon}
+        </span>
+        {label}
+      </div>
+      <div style={{
+        fontSize: 30, fontWeight: 800, color: 'var(--ink)',
+        fontVariantNumeric: 'tabular-nums', lineHeight: 1, letterSpacing: '-0.02em',
+      }}>
+        {value.toLocaleString()}
+      </div>
+      <div style={{ fontSize: 12, color: 'var(--ink-3)' }}>
+        {sub}
+      </div>
+    </div>
+  )
+}
+
+// ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function FistulaTracker() {
   const { t } = useTranslation()
   const [active, setActive] = useState<TabKey>('corner')
   const reduce = useReducedMotion()
   const activeTab = TABS.find((tab) => tab.key === active)!
+  const { kpis } = useFistulaKPIs()
 
   return (
     <>
@@ -72,13 +174,52 @@ export default function FistulaTracker() {
             marginBottom: 14,
             fontSize: 'clamp(48px, 7vw, 96px)',
             letterSpacing: '-0.035em',
+            fontStyle: 'normal',
+            fontWeight: 800,
+            color: CIPRB_BLUE,
           }}
         >
-          <span className="figure" style={{ color: 'var(--unfpa)' }}>{t('ciprb.heroHeadline')}</span>
+          {t('ciprb.heroHeadline')}
         </h1>
         <p className="hero-lede anim-rise d2" style={{ maxWidth: 720 }}>
           {t('ciprb.heroLede')}
         </p>
+      </section>
+
+      {/* ───────────────── KPI band (4 tiles) ───────────────── */}
+      <section className="section" style={{ marginTop: 0, marginBottom: 12 }}>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+            gap: 12,
+          }}
+        >
+          <KPITile
+            icon={<Search size={14} />}
+            label={t('ciprb.kpiSuspected')}
+            sub={t('ciprb.kpiSuspectedSub')}
+            value={kpis.suspected}
+          />
+          <KPITile
+            icon={<Stethoscope size={14} />}
+            label={t('ciprb.kpiIdentified')}
+            sub={t('ciprb.kpiIdentifiedSub')}
+            value={kpis.identified}
+          />
+          <KPITile
+            icon={<Send size={14} />}
+            label={t('ciprb.kpiReferred')}
+            sub={t('ciprb.kpiReferredSub')}
+            value={kpis.referred}
+          />
+          <KPITile
+            icon={<Scissors size={14} />}
+            label={t('ciprb.kpiSurgeryDone')}
+            sub={t('ciprb.kpiSurgeryDoneSub')}
+            value={kpis.surgeryDone}
+          />
+        </div>
       </section>
 
       {/* ───────────────── Tabs ───────────────── */}
@@ -110,7 +251,7 @@ export default function FistulaTracker() {
                   fontSize: 13.5,
                   fontWeight: isActive ? 600 : 500,
                   color: isActive ? '#fff' : 'var(--ink-2)',
-                  background: isActive ? 'var(--unfpa)' : 'transparent',
+                  background: isActive ? CIPRB_BLUE : 'transparent',
                   border: 'none',
                   borderRadius: 10,
                   cursor: 'pointer',
@@ -134,11 +275,7 @@ export default function FistulaTracker() {
           })}
         </div>
 
-        {/* ───────────── Tab body ─────────────
-            Corner + Campaign now have real entry panels backed by the
-            FistulaCornerCase / FistulaCampaignVisit models. Baseline
-            stays as a placeholder until the supervisor confirms the
-            survey instrument at the validation workshop. */}
+        {/* ───────────── Tab body ───────────── */}
         <AnimatePresence mode="wait">
           <motion.div
             key={activeTab.key}
@@ -147,8 +284,6 @@ export default function FistulaTracker() {
               opacity: 1, y: 0,
               transition: { duration: 0.25, ease: [0.22, 1, 0.36, 1] },
             }}
-            // Exit ~65% of enter — feels responsive when user tab-swaps
-            // rapidly (§7 exit-faster-than-enter).
             exit={{
               opacity: 0, y: reduce ? 0 : -6,
               transition: { duration: 0.16, ease: [0.4, 0, 1, 1] },
@@ -165,4 +300,3 @@ export default function FistulaTracker() {
     </>
   )
 }
-

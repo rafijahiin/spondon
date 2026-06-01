@@ -1,11 +1,12 @@
 /**
  * MPDSR Tracker — Maternal & Perinatal Death Surveillance.
  *
- * Rewritten to consume the editorial design tokens (var(--surface),
- * var(--ink), var(--hair), var(--unfpa)) instead of Tailwind dark-mode
- * utilities, which were rendering a teal-tinted slate-blue panel that
- * clashed with the rest of the site in dark mode. Now matches FistulaTracker
- * / OrgDashboard / ManagerApprovals visually.
+ * CIPRB-owned page. Per Animesh (Wednesday demo prep):
+ *   - Partner column removed — page is CIPRB-only, ownership chip already says it
+ *   - All hardcoded labels routed through i18n (EN + BN parity)
+ *   - Cause + place panels stay visible at 0 counts when empty so the page
+ *     never reads as "raw" during a leadership demo
+ *   - Overdue committee review count surfaced as a hero badge
  *
  * Access (per audit FIX 1.9):
  *   developer + supervisor + (org_lead AND organisation=CIPRB) → 200
@@ -14,7 +15,7 @@
  */
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Clock, MapPin, X } from 'lucide-react'
+import { Clock, MapPin, X, AlertTriangle } from 'lucide-react'
 import { api } from '@/api/client'
 import { usePolling } from '@/hooks/usePolling'
 import { StatusBadge } from '@/components/ui/StatusBadge'
@@ -22,23 +23,23 @@ import { PageLoader } from '@/components/ui/LoadingSpinner'
 import { formatDate, formatDateTime } from '@/utils/format'
 import type { MPDSRCase, AuditEntry } from '@/types/index'
 
-const CAUSE_LABELS: Record<string, string> = {
-  pph: 'PPH',
-  eclampsia: 'Eclampsia',
-  sepsis: 'Sepsis',
-  obstructed_labour: 'Obstructed Labour',
-  other: 'Other',
-}
+// CIPRB owns Fistula + MPDSR — accent colour for surfaces that don't already
+// inherit the partner colour from partnerDistricts.ts.
+const CIPRB_BLUE = '#0072BC'
 
-const PLACE_LABELS: Record<string, string> = {
-  facility: 'Facility',
-  home: 'Home',
-  in_transit: 'In Transit',
-}
+// Cause keys returned by the API. Display labels come from i18n.
+const CAUSE_KEYS = ['pph', 'eclampsia', 'sepsis', 'obstructed_labour', 'other'] as const
+const PLACE_KEYS = ['facility', 'home', 'in_transit'] as const
 
 // ─── Audit drawer ─────────────────────────────────────────────────────────────
 
 function AuditDrawer({ kase, onClose }: { kase: MPDSRCase; onClose: () => void }) {
+  const { t } = useTranslation()
+
+  // Cause/place labels via i18n with a graceful fallback to the raw key.
+  const causeLabel = (k: string) => t(`mpdsr.cause${pascal(k)}`, { defaultValue: k })
+  const placeLabel = (k: string) => t(`mpdsr.place${pascal(k)}`, { defaultValue: k })
+
   return (
     <div
       onClick={onClose}
@@ -72,10 +73,10 @@ function AuditDrawer({ kase, onClose }: { kase: MPDSRCase; onClose: () => void }
         >
           <div>
             <h2 style={{ fontWeight: 700, color: 'var(--ink)', fontSize: 15, margin: 0 }}>
-              Audit Trail
+              {t('mpdsr.drawerAuditTrail')}
             </h2>
             <p style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>
-              Case {kase.case_hash.slice(0, 8)}…
+              {t('mpdsr.drawerCase')} {kase.case_hash.slice(0, 8)}…
             </p>
           </div>
           <button
@@ -101,17 +102,19 @@ function AuditDrawer({ kase, onClose }: { kase: MPDSRCase; onClose: () => void }
             style={{ padding: 16, background: 'var(--surface-2)', fontSize: 13 }}
           >
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-              <SummaryRow label="Form" value={kase.sub_form_label || kase.sub_form_type} span={2} />
-              <SummaryRow label="Type"     value={kase.death_type_display} />
-              <SummaryRow label="Place"    value={PLACE_LABELS[kase.place_of_death] ?? kase.place_of_death} />
-              <SummaryRow label="District" value={kase.district} />
-              {kase.upazila && <SummaryRow label="Upazila" value={kase.upazila} />}
-              {kase.facility_name && <SummaryRow label="Facility" value={kase.facility_name} span={2} />}
-              <SummaryRow label="Date of Death" value={formatDate(kase.date_of_death) || '—'} />
-              {kase.age_years != null && <SummaryRow label="Age" value={`${kase.age_years} yrs`} />}
+              <SummaryRow label={t('mpdsr.drawerForm')}     value={kase.sub_form_label || kase.sub_form_type} span={2} />
+              <SummaryRow label={t('mpdsr.drawerType')}     value={kase.death_type_display} />
+              <SummaryRow label={t('mpdsr.drawerPlace')}    value={placeLabel(kase.place_of_death)} />
+              <SummaryRow label={t('mpdsr.drawerDistrict')} value={kase.district} />
+              {kase.upazila && <SummaryRow label={t('mpdsr.drawerUpazila')} value={kase.upazila} />}
+              {kase.facility_name && <SummaryRow label={t('mpdsr.drawerFacility')} value={kase.facility_name} span={2} />}
+              <SummaryRow label={t('mpdsr.drawerDateOfDeath')} value={formatDate(kase.date_of_death) || '—'} />
+              {kase.age_years != null && (
+                <SummaryRow label={t('mpdsr.drawerAge')} value={t('mpdsr.drawerAgeYears', { years: kase.age_years })} />
+              )}
               {kase.cause_of_death && (
                 <SummaryRow
-                  label="Cause / ICD-10"
+                  label={t('mpdsr.drawerCause')}
                   value={kase.cause_of_death.replace(/ /g, ', ')}
                   span={2}
                 />
@@ -122,10 +125,10 @@ function AuditDrawer({ kase, onClose }: { kase: MPDSRCase; onClose: () => void }
           {/* Audit timeline */}
           <div>
             <div className="kicker" style={{ marginBottom: 12 }}>
-              <span className="dot" />Timeline
+              <span className="dot" />{t('mpdsr.drawerTimeline')}
             </div>
             {(kase.audit_trail ?? []).length === 0 && (
-              <p style={{ fontSize: 13, color: 'var(--muted)' }}>No audit entries yet.</p>
+              <p style={{ fontSize: 13, color: 'var(--muted)' }}>{t('mpdsr.drawerNoAudit')}</p>
             )}
             <div
               style={{
@@ -149,7 +152,7 @@ function AuditDrawer({ kase, onClose }: { kase: MPDSRCase; onClose: () => void }
                     style={{
                       position: 'absolute', left: 10, top: 6,
                       height: 11, width: 11, borderRadius: 999,
-                      background: 'var(--unfpa)',
+                      background: CIPRB_BLUE,
                       boxShadow: '0 0 0 2px var(--surface)',
                     }}
                   />
@@ -189,6 +192,12 @@ function AuditDrawer({ kase, onClose }: { kase: MPDSRCase; onClose: () => void }
       </div>
     </div>
   )
+
+  // Local helper: pascalCase a snake_case key for i18n keys like
+  // `mpdsr.causeObstructedLabour`.
+  function pascal(k: string): string {
+    return k.split('_').map(p => p[0].toUpperCase() + p.slice(1)).join('')
+  }
 }
 
 function SummaryRow({ label, value, span = 1 }: { label: string; value: string; span?: 1 | 2 }) {
@@ -211,7 +220,6 @@ type CauseFilter = 'all' | string
 
 export default function MPDSRTracker() {
   const { t } = useTranslation()
-  // MPDSR is CIPRB-only — no partner filter (removed). Cause filter stays.
   const [causeFilter, setCauseFilter] = useState<CauseFilter>('all')
   const [selectedCase, setSelectedCase] = useState<MPDSRCase | null>(null)
 
@@ -234,8 +242,10 @@ export default function MPDSRTracker() {
     causeCounts[c.cause_of_death] = (causeCounts[c.cause_of_death] ?? 0) + 1
     placeCounts[c.place_of_death] = (placeCounts[c.place_of_death] ?? 0) + 1
   }
+  const overdueCount = (cases ?? []).filter(c => c.is_overdue_committee).length
 
-  const hasCases = (cases ?? []).length > 0
+  const causeLabel = (k: string) => t(`mpdsr.cause${pascal(k)}`, { defaultValue: k })
+  const placeLabel = (k: string) => t(`mpdsr.place${pascal(k)}`, { defaultValue: k })
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
@@ -251,6 +261,9 @@ export default function MPDSRTracker() {
             fontSize: 'clamp(40px, 5.5vw, 64px)',
             letterSpacing: '-0.03em',
             marginBottom: 10,
+            fontStyle: 'normal',
+            fontWeight: 800,
+            color: CIPRB_BLUE,
           }}
         >
           {t('mpdsr.title', { defaultValue: 'MPDSR Tracker' })}
@@ -258,87 +271,105 @@ export default function MPDSRTracker() {
         <p className="hero-lede" style={{ maxWidth: 640 }}>
           {t('mpdsr.subtitle', { defaultValue: 'Maternal & Perinatal Death Surveillance' })}
         </p>
+
+        {/* Hero stat strip — committee overdue badge surfaces directly */}
+        {overdueCount > 0 && (
+          <div style={{ marginTop: 14 }}>
+            <span
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                padding: '6px 12px', borderRadius: 999,
+                background: 'rgba(204,106,0,0.10)',
+                border: '1px solid rgba(204,106,0,0.32)',
+                color: '#CC6A00',
+                fontSize: 12.5, fontWeight: 500,
+              }}
+            >
+              <AlertTriangle size={13} />
+              {t('mpdsr.overdueBadge', {
+                count: overdueCount,
+                defaultValue: `${overdueCount} overdue committee review${overdueCount === 1 ? '' : 's'}`,
+              })}
+            </span>
+          </div>
+        )}
       </section>
 
-      {/* ───────────────── Disaggregation cards ───────────────── */}
-      {hasCases && (
-        <section className="section">
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
-              gap: 12,
-            }}
-          >
-            {Object.entries(CAUSE_LABELS).map(([key, label]) => {
-              const active = causeFilter === key
-              return (
-                <button
-                  key={key}
-                  onClick={() => setCauseFilter(active ? 'all' : key)}
-                  className="card"
-                  style={{
-                    padding: 16,
-                    textAlign: 'left',
-                    cursor: 'pointer',
-                    background: active ? 'rgba(249,96,0,0.08)' : 'var(--surface)',
-                    borderColor: active ? 'var(--unfpa)' : 'var(--hair)',
-                    transition: 'border-color var(--dur-q), background var(--dur-q)',
-                  }}
-                >
-                  <div style={{
-                    fontSize: 26, fontWeight: 700, color: 'var(--ink)',
-                    fontVariantNumeric: 'tabular-nums', lineHeight: 1,
-                  }}>
-                    {causeCounts[key] ?? 0}
-                  </div>
-                  <div style={{
-                    fontSize: 11.5, color: 'var(--muted)', marginTop: 4,
-                    letterSpacing: '0.02em',
-                  }}>
-                    {label}
-                  </div>
-                </button>
-              )
-            })}
-          </div>
-        </section>
-      )}
-
-      {/* ───────────────── Place of death pills ───────────────── */}
-      {hasCases && (
-        <section className="section" style={{ marginTop: -16 }}>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16 }}>
-            {Object.entries(PLACE_LABELS).map(([key, label]) => (
-              <div
+      {/* ───────────────── Disaggregation cards (always visible) ─────────────────
+          Always rendered with 0 counts when empty so the page never reads
+          as "raw" during a leadership demo. */}
+      <section className="section">
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+            gap: 12,
+          }}
+        >
+          {CAUSE_KEYS.map((key) => {
+            const active = causeFilter === key
+            return (
+              <button
                 key={key}
+                onClick={() => setCauseFilter(active ? 'all' : key)}
+                className="card"
                 style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 13,
+                  padding: 16,
+                  textAlign: 'left',
+                  cursor: 'pointer',
+                  background: active ? 'rgba(0,114,188,0.08)' : 'var(--surface)',
+                  borderColor: active ? CIPRB_BLUE : 'var(--hair)',
+                  transition: 'border-color var(--dur-q), background var(--dur-q)',
                 }}
               >
-                <span
-                  style={{
-                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                    width: 22, height: 22, borderRadius: 999,
-                    background: 'rgba(249,96,0,0.10)',
-                    color: 'var(--unfpa)',
-                    fontSize: 11, fontWeight: 700,
-                    fontVariantNumeric: 'tabular-nums',
-                  }}
-                >
-                  {placeCounts[key] ?? 0}
-                </span>
-                <span style={{ color: 'var(--ink-3)' }}>{label}</span>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
+                <div style={{
+                  fontSize: 26, fontWeight: 700, color: 'var(--ink)',
+                  fontVariantNumeric: 'tabular-nums', lineHeight: 1,
+                }}>
+                  {causeCounts[key] ?? 0}
+                </div>
+                <div style={{
+                  fontSize: 11.5, color: 'var(--muted)', marginTop: 4,
+                  letterSpacing: '0.02em',
+                }}>
+                  {causeLabel(key)}
+                </div>
+              </button>
+            )
+          })}
+        </div>
+      </section>
 
-      {/* MPDSR is a CIPRB-owned surveillance activity — there is no PHD /
-          Bandhu partner split, so no partner filter. A single CIPRB chip
-          makes the ownership explicit instead. */}
-      <section className="section" style={{ marginTop: hasCases ? 0 : -8 }}>
+      {/* ───────────────── Place of death pills (always visible) ───────────────── */}
+      <section className="section" style={{ marginTop: -16 }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16 }}>
+          {PLACE_KEYS.map((key) => (
+            <div
+              key={key}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 13,
+              }}
+            >
+              <span
+                style={{
+                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                  width: 22, height: 22, borderRadius: 999,
+                  background: 'rgba(0,114,188,0.10)',
+                  color: CIPRB_BLUE,
+                  fontSize: 11, fontWeight: 700,
+                  fontVariantNumeric: 'tabular-nums',
+                }}
+              >
+                {placeCounts[key] ?? 0}
+              </span>
+              <span style={{ color: 'var(--ink-3)' }}>{placeLabel(key)}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* CIPRB ownership chip — page is CIPRB-only, no partner filter. */}
+      <section className="section" style={{ marginTop: 0 }}>
         <span
           style={{
             display: 'inline-flex', alignItems: 'center', gap: 8,
@@ -347,8 +378,8 @@ export default function MPDSRTracker() {
             fontSize: 13, fontWeight: 500, color: 'var(--ink-2)',
           }}
         >
-          <span style={{ width: 8, height: 8, borderRadius: 2, background: '#0072BC' }} />
-          {t('mpdsr.ciprbOwned', { defaultValue: 'CIPRB — surveillance across all districts' })}
+          <span style={{ width: 8, height: 8, borderRadius: 2, background: CIPRB_BLUE }} />
+          {t('mpdsr.ciprbOwned')}
         </span>
       </section>
 
@@ -363,14 +394,13 @@ export default function MPDSRTracker() {
                 <thead>
                   <tr>
                     {[
-                      t('mpdsr.thCaseId',   { defaultValue: 'Case ID' }),
-                      t('mpdsr.thForm',     { defaultValue: 'Form' }),
-                      t('mpdsr.thPartner',  { defaultValue: 'Partner' }),
-                      t('mpdsr.thDistrict', { defaultValue: 'District' }),
-                      t('mpdsr.thDate',     { defaultValue: 'Date' }),
-                      t('mpdsr.thType',     { defaultValue: 'Type' }),
-                      t('mpdsr.thStatus',   { defaultValue: 'Status' }),
-                      t('mpdsr.thAudit',    { defaultValue: 'Audit' }),
+                      t('mpdsr.thCaseId'),
+                      t('mpdsr.thForm'),
+                      t('mpdsr.thDistrict'),
+                      t('mpdsr.thDate'),
+                      t('mpdsr.thType'),
+                      t('mpdsr.thStatus'),
+                      t('mpdsr.thAudit'),
                     ].map((h) => (
                       <th key={h}>{h}</th>
                     ))}
@@ -381,7 +411,7 @@ export default function MPDSRTracker() {
                     <tr
                       key={c.id}
                       style={c.is_overdue_committee
-                        ? { background: 'rgba(251,144,77,0.06)' }
+                        ? { background: 'rgba(204,106,0,0.08)' }
                         : undefined}
                     >
                       <td>
@@ -399,7 +429,6 @@ export default function MPDSRTracker() {
                       >
                         {c.sub_form_label || c.sub_form_type || '—'}
                       </td>
-                      <td style={{ fontWeight: 500, color: 'var(--unfpa)' }}>{c.partner}</td>
                       <td>
                         <span style={{
                           display: 'inline-flex', alignItems: 'center', gap: 4,
@@ -417,25 +446,25 @@ export default function MPDSRTracker() {
                           onClick={() => setSelectedCase(c)}
                           style={{
                             fontSize: 12, fontWeight: 500,
-                            color: 'var(--unfpa)',
+                            color: CIPRB_BLUE,
                             background: 'transparent', border: 'none',
                             padding: 0, cursor: 'pointer',
                             textDecoration: 'underline', textUnderlineOffset: 2,
                           }}
                         >
-                          {t('mpdsr.view', { defaultValue: 'View' })} ({(c.audit_trail ?? []).length})
+                          {t('mpdsr.view')} ({(c.audit_trail ?? []).length})
                         </button>
                       </td>
                     </tr>
                   ))}
-                  {!hasCases && (
+                  {(cases ?? []).length === 0 && (
                     <tr>
-                      <td colSpan={8} style={{
+                      <td colSpan={7} style={{
                         textAlign: 'center',
                         padding: '48px 16px',
                         fontSize: 13, color: 'var(--muted)',
                       }}>
-                        {t('mpdsr.empty', { defaultValue: 'No MPDSR cases found.' })}
+                        {t('mpdsr.empty')}
                       </td>
                     </tr>
                   )}
@@ -451,4 +480,10 @@ export default function MPDSRTracker() {
       )}
     </div>
   )
+}
+
+// pascalCase a snake_case key — module-level utility for the i18n cause/place
+// label resolver on the main page.
+function pascal(k: string): string {
+  return k.split('_').map(p => p[0].toUpperCase() + p.slice(1)).join('')
 }
