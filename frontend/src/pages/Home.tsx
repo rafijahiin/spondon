@@ -59,6 +59,7 @@ export default function Home() {
                 fontSize: 'clamp(56px, 8vw, 120px)',
                 letterSpacing: '-0.04em',
                 fontWeight: 800,
+                fontStyle: 'normal',
                 lineHeight: 1,
                 color: 'var(--unfpa)',
               }}
@@ -94,15 +95,6 @@ export default function Home() {
               } as React.CSSProperties}
             >
               <p style={{ margin: 0 }}>{t('home.briefP1')}</p>
-              <p style={{ marginTop: 14 }}>
-                <span
-                  className="tag amber"
-                  style={{ fontSize: 10, marginRight: 8, verticalAlign: 'middle' }}
-                >
-                  {t('home.briefPlaceholderBadge')}
-                </span>
-                {t('home.briefP2')}
-              </p>
             </div>
           </div>
 
