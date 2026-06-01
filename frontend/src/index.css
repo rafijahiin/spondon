@@ -68,14 +68,23 @@
   /* Bengali fallback in every UI/display stack so বাং digits (০-৯) and
      mixed-script labels render with Noto Sans Bengali instead of falling
      back to a system Bengali font where ০ looks like a Latin O. */
-  --display: "Atkinson Hyperlegible", "Atkinson Hyperlegible Next", "Noto Sans Bengali", system-ui, sans-serif;
-  --ui:      "Atkinson Hyperlegible", "Noto Sans Bengali", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --mono:    "JetBrains Mono", ui-monospace, "SF Mono", Menlo, "Noto Sans Bengali", monospace;
-  --bn:      "Noto Sans Bengali", "Atkinson Hyperlegible", sans-serif;
-  /* Editorial serif italic for section headers — pulled from the SIMPLE
-     homepage design. Atkinson remains the body/UI font; Newsreader is
-     used ONLY for the section title style. */
-  --serif:   "Newsreader", Georgia, "Times New Roman", serif;
+  /* UNFPA brand fonts — verbatim from
+     https://unfpa.brandkit.host/visual-identity/fonts/font-types/
+     Three approved typefaces; SIMPLE is a programme operations
+     dashboard ('reports / briefing notes' category), so the primary
+     face is Atkinson Hyperlegible Next per UNFPA's own guidance.
+     Atkinson Hyperlegible (the original) stays as a fallback for any
+     case where Next hasn't loaded. Atkinson Hyperlegible Mono is the
+     only sanctioned mono — for code/equations ONLY (other UI mono
+     calls also use it because UNFPA brand permits no other mono).
+     Noto Sans (Bengali variant) handles bn scripts.
+     Headings: tracking -2%, leading 100%.
+     Body:     tracking 0%, leading 120%+, min 16px.
+     Small:    min 14px. */
+  --display: "Atkinson Hyperlegible Next", "Atkinson Hyperlegible", "Noto Sans Bengali", system-ui, sans-serif;
+  --ui:      "Atkinson Hyperlegible Next", "Atkinson Hyperlegible", "Noto Sans Bengali", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --mono:    "Atkinson Hyperlegible Mono", "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --bn:      "Noto Sans Bengali", "Atkinson Hyperlegible Next", "Atkinson Hyperlegible", sans-serif;
 
   /* Radii */
   --r-xs: 4px;
@@ -186,8 +195,11 @@ html.dark ::selection { background: rgba(249, 96, 0, 0.30); color: var(--ink); }
   body {
     background: var(--paper);
     color: var(--ink);
-    font-size: 14px;
+    /* UNFPA brand spec: body min 16px, leading 120%+, tracking 0%
+       (auto). https://unfpa.brandkit.host/visual-identity/fonts/formatting/ */
+    font-size: 16px;
     line-height: 1.5;
+    letter-spacing: 0;
     font-feature-settings: "ss01" 1, "cv11" 1;
   }
   ::selection { background: rgba(249, 96, 0, 0.22); color: var(--ink); }
@@ -1236,16 +1248,18 @@ html.dark .hero-card {
 }
 
 .section-title {
-  /* Newsreader serif italic — SIMPLE homepage design vocabulary. The
-     editorial italic gives section heads a magazine-style voice; Atkinson
-     Hyperlegible carries the body so legibility is preserved everywhere
-     else. Pulls directly from the design at SIMPLE Homepage.html. */
-  font-family: var(--serif);
-  font-style: italic;
-  font-weight: 500;
+  /* UNFPA brand headline spec — Atkinson Hyperlegible Next Bold,
+     tracking -2%, leading 100% per
+     https://unfpa.brandkit.host/visual-identity/fonts/formatting/
+     No serif italic — UNFPA brand permits only Atkinson for content
+     text. The earlier Newsreader pass was wrong; this is the
+     compliant version. */
+  font-family: var(--display);
+  font-style: normal;
+  font-weight: 700;
   font-size: 30px;
-  line-height: 1.08;
-  letter-spacing: -0.01em;
+  line-height: 1.0;
+  letter-spacing: -0.02em;
   color: var(--ink);
   margin: 0;
 }
