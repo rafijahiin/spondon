@@ -175,6 +175,16 @@ def kobo_webhook(request):
         ),
         district=_district_from_payload(payload, form_type),
         region=payload.get('division') or payload.get('region') or '',
+        # Denormalise centre code at ingest time so the 74-hour Programme
+        # Health Flag system can compute per-centre 'X of N submitted today'
+        # without joining through raw_data JSON. Accept both spellings —
+        # field forms vary between center_code / centre_code / site_code.
+        centre_code=(
+            payload.get('center_code')
+            or payload.get('centre_code')
+            or payload.get('site_code')
+            or ''
+        ).strip()[:40],
         latitude=lat,
         longitude=lng,
         submitted_at=_parse_submitted_at(payload.get('_submission_time', '')),
