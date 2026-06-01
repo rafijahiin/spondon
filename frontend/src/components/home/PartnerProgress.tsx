@@ -76,7 +76,14 @@ function rollup(partner: PartnerCode, rows: IndicatorProgress[] | null): Rollup 
   const achievement = withTarget.reduce((s, r) => s + (r.achievement ?? 0), 0)
   const target = withTarget.reduce((s, r) => s + (r.target_value ?? 0), 0)
   const percentage = target > 0 ? Math.round((achievement / target) * 1000) / 10 : 0
-  const onTrack = withTarget.filter((r) => (r.percentage ?? 0) >= 75).length
+  // 'On track' = hitting ≥75% of THIS MONTH's target (Animesh's spec).
+  // Indicators without a month_target set fall back to the overall % so
+  // they're not silently dropped from the count.
+  const onTrack = withTarget.filter((r) => {
+    const monthPct = r.month_percentage ?? null
+    const pct = monthPct ?? r.percentage ?? 0
+    return pct >= 75
+  }).length
 
   // Monthly — only indicators where UNFPA has filled in a month_target.
   const withMonth = all.filter((r) => (r.month_target ?? null) !== null)
@@ -112,8 +119,8 @@ export function PartnerProgress({ progress }: Props) {
           </div>
           <h2 className="section-title">Implementing Partners at a Glance</h2>
           <p className="section-sub">
-            Each partner's progress against its own targets — "on track" means an
-            indicator has reached ≥ 75% of target.
+            Each partner's progress against its own targets — "on track" means
+            an indicator has reached ≥ 75% of this month's target.
           </p>
         </div>
       </div>

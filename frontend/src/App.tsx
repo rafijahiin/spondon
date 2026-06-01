@@ -173,13 +173,14 @@ export default function App() {
             {/* Standalone Target Config route (audit FIX 4.1 restored — the
                 merged tracker tab also routes here; both paths render the
                 same screen). */}
+            {/* /admin/targets is a stale legacy alias — the live Target
+                Config UI lives at /tracker (Programme Targets tab). The
+                /admin/* path is also proxied to Django in vite.config so
+                this route never actually rendered in dev. Redirect for
+                bookmark safety. */}
             <Route
               path="admin/targets"
-              element={
-                <RequireTargetConfigAccess>
-                  <TargetConfig />
-                </RequireTargetConfigAccess>
-              }
+              element={<Navigate to="/tracker" replace />}
             />
             {/* Record drill-down per indicator (audit FIX 6.5). */}
             <Route

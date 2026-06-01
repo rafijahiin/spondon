@@ -112,7 +112,7 @@ const QUESTIONS: Question[] = [
     forWhom: 'Animesh',
     question: 'When will UNFPA fill in the monthly target splits for all 41 indicators?',
     context:
-      'The Target Config page (/admin/targets) now has a "Monthly Splits" column. Each indicator needs a per-month target for May–Nov 2026. Until UNFPA fills them, the "This month" tile on every indicator shows "Not Set". Sum-of-months should equal the overall target — UI warns if mismatched.',
+      'The Target Config page (/tracker → Programme Targets tab) now has a "Monthly Splits" column. Each indicator needs a per-month target for May–Nov 2026. Until UNFPA fills them, the "This month" tile on every indicator shows "Not Set". Sum-of-months should equal the overall target — UI warns if mismatched.',
     blockingForWednesday: false,
   },
 ]
