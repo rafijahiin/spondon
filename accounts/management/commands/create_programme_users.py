@@ -19,12 +19,12 @@ from django.core.management.base import BaseCommand
 
 USERS = [
     # ── PHD ────────────────────────────────────────────────────────────
-    {'email': 'tarique.ksm@gmail.com',   'full_name': 'Tarique',                       'organisation': 'PHD',    'role': 'manager'},
-    {'email': 'a-salam@phd-bd.com',      'full_name': 'Abdul Salam',                   'organisation': 'PHD',    'role': 'manager'},
+    {'email': 'tarique.ksm@gmail.com',   'full_name': 'Tarique',                       'organisation': 'PHD',    'role': 'focal'},
+    {'email': 'a-salam@phd-bd.com',      'full_name': 'Abdul Salam',                   'organisation': 'PHD',    'role': 'focal'},
     # ── Bandhu ─────────────────────────────────────────────────────────
-    {'email': 'tanvir@bandhu-bd.org',    'full_name': 'AKM Mahabubul Islam Tanvir',    'organisation': 'Bandhu', 'role': 'manager'},
-    {'email': 'shahid@bandhu-bd.org',    'full_name': 'Md. Shahidul Alam',             'organisation': 'Bandhu', 'role': 'manager'},
-    {'email': 'shale@bandhu-bd.org',     'full_name': 'Shale Ahmed',                   'organisation': 'Bandhu', 'role': 'manager'},
+    {'email': 'tanvir@bandhu-bd.org',    'full_name': 'AKM Mahabubul Islam Tanvir',    'organisation': 'Bandhu', 'role': 'focal'},
+    {'email': 'shahid@bandhu-bd.org',    'full_name': 'Md. Shahidul Alam',             'organisation': 'Bandhu', 'role': 'focal'},
+    {'email': 'shale@bandhu-bd.org',     'full_name': 'Shale Ahmed',                   'organisation': 'Bandhu', 'role': 'focal'},
     # ── UNFPA ──────────────────────────────────────────────────────────
     {'email': 'ryasmin@unfpa.org',       'full_name': 'Rokhsana Yasmin',               'organisation': 'UNFPA',  'role': 'supervisor'},
     {'email': 'ahasan@unfpa.org',        'full_name': 'Abu Sayed Hasan',               'organisation': 'UNFPA',  'role': 'supervisor'},

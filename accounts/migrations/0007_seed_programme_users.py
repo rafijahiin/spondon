@@ -27,12 +27,12 @@ from django.db import migrations
 ADMIN_ROLES = {'developer', 'supervisor', 'org_lead'}
 
 NEW_USERS = [
-    # ── CIPRB ──────────────────────────────────────────────────────────
+    # ── PHD ────────────────────────────────────────────────────────────
     {
         'email':        'tarique.ksm@gmail.com',
         'full_name':    'Tarique',
         'organisation': 'PHD',
-        'role':         'manager',
+        'role':         'focal',
         'password_env': 'USER_TARIQUE_PASSWORD',
     },
     {
@@ -69,21 +69,21 @@ NEW_USERS = [
         'email':        'tanvir@bandhu-bd.org',
         'full_name':    'AKM Mahabubul Islam Tanvir',
         'organisation': 'Bandhu',
-        'role':         'manager',
+        'role':         'focal',
         'password_env': 'USER_TANVIR_PASSWORD',
     },
     {
         'email':        'shahid@bandhu-bd.org',
         'full_name':    'Md. Shahidul Alam',
         'organisation': 'Bandhu',
-        'role':         'manager',
+        'role':         'focal',
         'password_env': 'USER_SHAHID_PASSWORD',
     },
     {
         'email':        'shale@bandhu-bd.org',
         'full_name':    'Shale Ahmed',
         'organisation': 'Bandhu',
-        'role':         'manager',
+        'role':         'focal',
         'password_env': 'USER_SHALE_PASSWORD',
     },
     # ── PHD ────────────────────────────────────────────────────────────
@@ -91,7 +91,7 @@ NEW_USERS = [
         'email':        'a-salam@phd-bd.com',
         'full_name':    'Abdul Salam',
         'organisation': 'PHD',
-        'role':         'manager',
+        'role':         'focal',
         'password_env': 'USER_SALAM_PASSWORD',
     },
 ]
