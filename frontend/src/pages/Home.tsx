@@ -118,8 +118,13 @@ export default function Home() {
         }
       `}</style>
 
-      {/* ── PARTNER PROGRESS — per-org progress vs target + geography.
-           The at-a-glance view UNFPA opens the homepage to see. ─────────── */}
+      {/* ── DAILY REPORTING — sits directly under the hero per the SIMPLE
+           Homepage design. Daily 24h compliance per partner: submitted /
+           total centres today + silent ones. ─────────────────────────── */}
+      <ProgrammeHealthFlags />
+
+      {/* ── IMPLEMENTING PARTNERS — Animesh's at-a-glance view, follows
+           Daily Reporting per the design order. ─────────────────────── */}
       <PartnerProgress progress={progress} />
       {loadError && (
         <p style={{ marginTop: 12, fontSize: 12.5, color: 'var(--coral)' }}>
@@ -127,21 +132,13 @@ export default function Home() {
         </p>
       )}
 
-      {/* ── PROGRAMME HEALTH FLAGS — per-partner daily compliance.
-           Replaces the deleted Activity Feed per Animesh: silence is the
-           signal. Each tile shows submitted/total centres today + the
-           silent ones with hours-since-touch. ─────────────────────────── */}
-      <ProgrammeHealthFlags />
-
       {/* ── PROGRAMME TOTALS — Animesh's 'till date' headline numbers.
            Total Fistula patients, MD notified / reviewed, ND notified /
-           reviewed, stillbirths, cases managed / referred. Replaces the
-           ActivityFeed heartbeat and the SpecificProgrammes tile band —
-           one consolidated block so managers see the major indicators
-           at a glance, no scrolling. ─────────────────────────────────── */}
+           reviewed, stillbirths, cases managed / referred. ──────────── */}
       <ProgrammeTotals />
 
-      {/* ── PROGRAMME-WIDE HEALTH (bento) ────────────────────────────────── */}
+      {/* ── PROGRAMME-WIDE HEALTH (bento) — 'Programme at a glance'
+           anchor at the bottom of the page per the design. ──────────── */}
       <ExecutiveBento progress={progress} />
 
       {/* AnomalyCards removed per Animesh: the Programme Health Flags block

@@ -72,6 +72,10 @@
   --ui:      "Atkinson Hyperlegible", "Noto Sans Bengali", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --mono:    "JetBrains Mono", ui-monospace, "SF Mono", Menlo, "Noto Sans Bengali", monospace;
   --bn:      "Noto Sans Bengali", "Atkinson Hyperlegible", sans-serif;
+  /* Editorial serif italic for section headers — pulled from the SIMPLE
+     homepage design. Atkinson remains the body/UI font; Newsreader is
+     used ONLY for the section title style. */
+  --serif:   "Newsreader", Georgia, "Times New Roman", serif;
 
   /* Radii */
   --r-xs: 4px;
@@ -1019,12 +1023,16 @@ html.dark .hero-card {
 }
 
 .section-title {
-  font-family: var(--display);
+  /* Newsreader serif italic — SIMPLE homepage design vocabulary. The
+     editorial italic gives section heads a magazine-style voice; Atkinson
+     Hyperlegible carries the body so legibility is preserved everywhere
+     else. Pulls directly from the design at SIMPLE Homepage.html. */
+  font-family: var(--serif);
   font-style: italic;
-  font-weight: 400;
-  font-size: 32px;
-  line-height: 1.05;
-  letter-spacing: -0.02em;
+  font-weight: 500;
+  font-size: 30px;
+  line-height: 1.08;
+  letter-spacing: -0.01em;
   color: var(--ink);
   margin: 0;
 }
