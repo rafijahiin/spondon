@@ -41,9 +41,9 @@ interface Props {
 // Status band colour for an attainment percentage (UNFPA data-viz palette).
 function bandColor(pct: number | null): string {
   if (pct == null) return 'var(--muted)'
-  if (pct >= 75) return '#58968A'  // pastel green
-  if (pct >= 40) return '#FB904D'  // pastel orange
-  return '#F10F45'                 // red
+  if (pct >= 75) return '#1A7A5A'   // on track
+  if (pct >= 40) return '#CC6A00'   // behind
+  return '#C7172E'                  // critical
 }
 
 // ─── Bento card primitive ─────────────────────────────────────────────────────

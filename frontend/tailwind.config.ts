@@ -12,9 +12,9 @@ export default {
           dark: '#004A66',
         },
         status: {
-          on_track: '#16a34a',
-          behind: '#d97706',
-          critical: '#dc2626',
+          on_track: '#1A7A5A',
+          behind: '#CC6A00',
+          critical: '#C7172E',
         },
       },
       fontFamily: {

@@ -48,9 +48,9 @@ interface Rollup {
 
 function bandColor(pct: number | null): string {
   if (pct == null) return 'var(--muted)'
-  if (pct >= 75) return '#58968A'
-  if (pct >= 40) return '#FB904D'
-  return '#F10F45'
+  if (pct >= 75) return '#1A7A5A'
+  if (pct >= 40) return '#CC6A00'
+  return '#C7172E'
 }
 
 function rollup(partner: PartnerCode, rows: IndicatorProgress[] | null): Rollup {

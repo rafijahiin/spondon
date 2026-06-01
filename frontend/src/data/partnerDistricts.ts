@@ -20,14 +20,14 @@ export type PartnerCode = 'CIPRB' | 'Bandhu' | 'PHD'
 // home-page donut (the reference palette). Distinct hue lanes (blue / green /
 // orange) keep the coverage map legend readable.
 export const PARTNER_COLORS: Record<PartnerCode, string> = {
-  CIPRB:  '#0072BC',   // vivid blue
-  Bandhu: '#00B050',   // vivid green
-  PHD:    '#F96000',   // vivid orange (matches the donut's Clinical slice)
+  CIPRB:  '#0072BC',   // CIPRB institutional blue
+  Bandhu: '#00875A',   // deep teal-green (distinct from on-track status #1A7A5A)
+  PHD:    '#C44E00',   // UNFPA deep orange (distinct from brand #F96000)
 }
 
-// Overlap shading per the Step 3 Part B spec.
-export const OVERLAP_TWO_ORGS = '#F2B544'    // gold (matches the donut's Operations slice)
-export const OVERLAP_THREE_ORGS = '#FF0000'  // red
+// Overlap shading — two-org uses UNFPA amber tint, three-org uses status-off red.
+export const OVERLAP_TWO_ORGS  = '#CC9B4A'   // warm amber
+export const OVERLAP_THREE_ORGS = '#C7172E'  // deep red
 export const NO_COVERAGE = '#E5E7EB'         // light grey
 
 export const PARTNER_DISTRICTS: Record<PartnerCode, string[]> = {

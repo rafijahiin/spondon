@@ -38,13 +38,11 @@ const ROLE_LABELS: Record<string, string> = {
   focal:          'Focal Person (view-only)',
 }
 
-// Partner accent colors (CIPRB blue, PHD orange, Bandhu green). UNFPA
-// rides on the brand orange so it doesn't double-up with CIPRB blue.
 const ORG_ACCENT: Record<Organisation, string> = {
-  CIPRB:  '#0072BC',
-  UNFPA:  '#F96000',
-  PHD:    '#ED7D31',
-  Bandhu: '#00B050',
+  CIPRB:  '#0072BC',   // CIPRB institutional blue
+  UNFPA:  '#F96000',   // UNFPA brand orange
+  PHD:    '#C44E00',   // PHD deep orange
+  Bandhu: '#00875A',   // Bandhu deep teal-green
 }
 
 interface UserFormData {

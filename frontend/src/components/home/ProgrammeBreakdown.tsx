@@ -13,11 +13,10 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts'
 import { useTranslation } from 'react-i18next'
 import { api } from '@/api/client'
 
-// Vivid warm triad — the reference palette for the whole home page.
 const CATEGORY_COLORS: Record<string, string> = {
-  Clinical: '#F96000',   // vivid UNFPA orange
-  Community: '#ED5B7E',  // coral (pink)
-  Operations: '#F2B544', // warm gold — distinct from the orange above
+  Clinical:   '#F96000',   // UNFPA orange — brand primary
+  Community:  '#ED5B7E',   // coral — warm secondary
+  Operations: '#00658C',   // UNFPA teal-blue — distinct hue
 }
 
 function DonutTooltip({ active, payload }: any) {

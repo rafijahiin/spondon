@@ -19,21 +19,20 @@
   --unfpa-bright: #FB904D;  /* Pastel Orange — data-viz friendly */
   --unfpa-deep:   #C44E00;  /* Computed: hover/pressed state for orange */
 
-  /* Accent — use only ONE per design */
-  --unfpa-red:    #F10F45;
-  --unfpa-purple: #9C1ED6;
-  --unfpa-blue:   #2171EC;
+  /* Accent — UNFPA Red (critical/error) + UNFPA Blue (info/secondary) */
+  --unfpa-red:    #C7172E;  /* deep red — critical states only */
+  --unfpa-blue:   #00658C;  /* UNFPA teal-blue — secondary brand / info */
 
-  /* Atomic pastel data-viz palette — soft category colors that work on
-     both light and dark surfaces without reading as alarm states. The
-     saturated UNFPA red (#F10F45) is reserved for true error / critical
-     states; category coloring uses the softer pastel pink below. */
-  --coral:        #ED5B7E;  /* pastel pink — Community / outreach category */
+  /* Status semantic — one value per state, no ambiguity */
+  --status-on:    #1A7A5A;  /* deep teal-green — on track */
+  --status-mid:   #CC6A00;  /* deep amber — behind pace */
+  --status-off:   #C7172E;  /* deep red — critical */
+
+  /* Data-viz category palette — Community / outreach (warm pink) */
+  --coral:        #ED5B7E;
   --coral-deep:   #B83655;
-  --amber:        #FB904D;  /* alias → pastel orange (brand-aligned amber) */
-  --emerald:      #58968A;  /* pastel teal-green — used in charts only */
-  --rose:         #ED5B7E;  /* alias → pastel pink */
-  --violet:       #BA61E2;  /* softened from #9C1ED6 — atomic pastel */
+  --amber:        #FB904D;  /* pastel orange tint — brand-aligned */
+  --emerald:      #1A7A5A;  /* deep green — alias for status-on */
 
   /* Surface — UNFPA Off-white / White foundation */
   --paper:     #EFF1F7;  /* UNFPA Off-white (digital) */
@@ -403,7 +402,7 @@ html.dark ::selection { background: rgba(249, 96, 0, 0.30); color: var(--ink); }
 .spine-avatar {
   width: 30px; height: 30px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #C4A8E2, #F2A09B);
+  background: linear-gradient(135deg, #F96000, #ED5B7E);
   display: flex; align-items: center; justify-content: center;
   font-family: var(--mono);
   font-size: 11px;
@@ -599,10 +598,8 @@ html.dark ::selection { background: rgba(249, 96, 0, 0.30); color: var(--ink); }
   opacity: 0.6;
   background-size: 200% 100%;
 }
-.card.shimmer-coral::before  { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent 0%, var(--coral) 50%, transparent 100%); opacity: 0.5; }
-.card.shimmer-amber::before  { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent 0%, var(--amber) 50%, transparent 100%); opacity: 0.5; }
-.card.shimmer-emerald::before{ content: ""; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent 0%, var(--emerald) 50%, transparent 100%); opacity: 0.5; }
-.card.shimmer-violet::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent 0%, var(--violet) 50%, transparent 100%); opacity: 0.5; }
+.card.shimmer-coral::before   { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent 0%, var(--coral) 50%, transparent 100%); opacity: 0.5; }
+.card.shimmer-blue::before    { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent 0%, var(--unfpa-blue) 50%, transparent 100%); opacity: 0.5; }
 
 .card-head {
   display: flex;
@@ -630,9 +627,7 @@ html.dark ::selection { background: rgba(249, 96, 0, 0.30); color: var(--ink); }
   background: var(--unfpa-bright);
 }
 .kicker.coral   .dot { background: var(--coral); }
-.kicker.amber   .dot { background: var(--amber); }
-.kicker.emerald .dot { background: var(--emerald); }
-.kicker.violet  .dot { background: var(--violet); }
+.kicker.blue    .dot { background: var(--unfpa-blue); }
 
 .card-title {
   font-size: 15px;
@@ -671,12 +666,12 @@ html.dark ::selection { background: rgba(249, 96, 0, 0.30); color: var(--ink); }
   color: var(--ink-3);
   border: 1px solid var(--hair);
 }
-.tag.blue    { background: rgba(249,96,0,0.10); color: var(--unfpa); border-color: rgba(249,96,0,0.20); }
-.tag.coral   { background: rgba(242,106,79,0.10); color: var(--coral-deep); border-color: rgba(242,106,79,0.24); }
-.tag.amber   { background: rgba(233,151,10,0.10); color: var(--amber); border-color: rgba(233,151,10,0.26); }
-.tag.emerald { background: rgba(31,154,109,0.10); color: var(--emerald); border-color: rgba(31,154,109,0.24); }
-.tag.violet  { background: rgba(139,92,246,0.10); color: var(--violet); border-color: rgba(139,92,246,0.24); }
-.tag.rose    { background: rgba(233,69,96,0.10); color: var(--rose); border-color: rgba(233,69,96,0.24); }
+.tag.orange  { background: rgba(249,96,0,0.10);  color: var(--unfpa);      border-color: rgba(249,96,0,0.20); }
+.tag.blue    { background: rgba(0,101,140,0.10); color: var(--unfpa-blue); border-color: rgba(0,101,140,0.22); }
+.tag.coral   { background: rgba(237,91,126,0.10); color: var(--coral-deep); border-color: rgba(237,91,126,0.24); }
+.tag.green   { background: rgba(26,122,90,0.10);  color: var(--status-on);  border-color: rgba(26,122,90,0.22); }
+.tag.amber   { background: rgba(204,106,0,0.10);  color: var(--status-mid); border-color: rgba(204,106,0,0.22); }
+.tag.red     { background: rgba(199,23,46,0.10);  color: var(--status-off); border-color: rgba(199,23,46,0.22); }
 
 /* ─── Buttons ────────────────────────────────────────────────────────── */
 
@@ -964,11 +959,10 @@ html.dark ::selection { background: rgba(249, 96, 0, 0.30); color: var(--ink); }
   background: var(--surface-3);
   border: 1px solid var(--hair);
 }
-.stream-avatar.blue    { background: rgba(249,96,0,0.10); color: var(--unfpa); border-color: rgba(249,96,0,0.22); }
-.stream-avatar.coral   { background: rgba(242,106,79,0.10); color: var(--coral-deep); border-color: rgba(242,106,79,0.24); }
-.stream-avatar.amber   { background: rgba(233,151,10,0.10); color: var(--amber); border-color: rgba(233,151,10,0.26); }
-.stream-avatar.emerald { background: rgba(31,154,109,0.10); color: var(--emerald); border-color: rgba(31,154,109,0.24); }
-.stream-avatar.violet  { background: rgba(139,92,246,0.10); color: var(--violet); border-color: rgba(139,92,246,0.24); }
+.stream-avatar.orange  { background: rgba(249,96,0,0.10);  color: var(--unfpa);      border-color: rgba(249,96,0,0.22); }
+.stream-avatar.blue    { background: rgba(0,101,140,0.10); color: var(--unfpa-blue); border-color: rgba(0,101,140,0.22); }
+.stream-avatar.coral   { background: rgba(237,91,126,0.10); color: var(--coral-deep); border-color: rgba(237,91,126,0.24); }
+.stream-avatar.green   { background: rgba(26,122,90,0.10);  color: var(--status-on);  border-color: rgba(26,122,90,0.22); }
 
 .stream-body { min-width: 0; }
 .stream-title { font-size: 13px; color: var(--ink); margin: 0; line-height: 1.4; }

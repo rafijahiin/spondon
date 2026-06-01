@@ -18,10 +18,10 @@ interface Props {
 //   40 .. 74.9 → yellow #FFC000
 //   <  40      → red    #FF0000
 //   null target → grey "Not Set"
-const COLOUR_GREEN = '#00B050'
-const COLOUR_YELLOW = '#FFC000'
-const COLOUR_RED = '#FF0000'
-const COLOUR_GREY = '#9CA3AF'
+const COLOUR_GREEN  = '#1A7A5A'   // on track  — deep teal-green
+const COLOUR_YELLOW = '#CC6A00'   // behind    — deep amber
+const COLOUR_RED    = '#C7172E'   // critical  — deep red
+const COLOUR_GREY   = '#9CA3AF'   // no target — neutral grey
 
 function bandColour(percentage: number | null): string {
   if (percentage === null) return COLOUR_GREY

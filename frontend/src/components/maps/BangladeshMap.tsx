@@ -18,10 +18,10 @@ const CP10_DISTRICTS = new Set([
 ])
 
 const CENTER_COLORS: Record<string, string> = {
-  DIC: '#7c3aed',
-  BROTHEL: '#00658C',
-  SUB_DIC: '#059669',
-  MOBILE: '#d97706',
+  DIC:     '#F96000',   // UNFPA orange — primary service type
+  BROTHEL: '#00658C',   // UNFPA teal-blue
+  SUB_DIC: '#C44E00',   // deep orange — secondary site
+  MOBILE:  '#00875A',   // deep teal-green — mobile outreach
 }
 
 // Per-partner choropleth tints — matches the homepage PartnerOverlapMap
