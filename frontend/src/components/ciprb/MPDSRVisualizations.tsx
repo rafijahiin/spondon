@@ -584,6 +584,99 @@ function ResponsePlanTracker({ summaries }: { summaries: ActionPlanSummary[] }) 
 
 // ─── Main export ─────────────────────────────────────────────────────────────
 
+// ─── Per-district Reporting Rate bar chart ───────────────────────────────────
+//
+// Animesh's spec: reporting rates calculated against Sayeed's 'Estimated
+// Maternal Deaths' denominator per district. Bhola example — estimated=75,
+// reported=35 → ~47% reporting rate. Shown as a horizontal bar chart so
+// districts are scannable by name.
+
+function ReportingRatePerDistrict({
+  cases, denominators,
+}: { cases: MPDSRCase[]; denominators: DistrictDenominator[] }) {
+  // Normalise district name like the cause-breakdown filter does.
+  const norm = (s: string) => (s ?? '').toLowerCase().replace(/[^a-z0-9]/g, '')
+  const reportedByDistrict: Record<string, number> = {}
+  for (const c of cases) {
+    if (c.death_type !== 'maternal') continue
+    const k = norm(c.district ?? '')
+    reportedByDistrict[k] = (reportedByDistrict[k] ?? 0) + 1
+  }
+
+  const rows = denominators
+    .filter(d => (d.project_deaths_md ?? 0) > 0)
+    .map(d => {
+      const estimated = d.project_deaths_md ?? 0
+      const reported = reportedByDistrict[norm(d.district)] ?? 0
+      const rate = estimated > 0 ? (reported / estimated) * 100 : 0
+      return { district: d.district, estimated, reported, rate }
+    })
+    .sort((a, b) => b.rate - a.rate)
+
+  const colorFor = (pct: number) => {
+    if (pct >= 75) return '#1A7A5A'
+    if (pct >= 40) return '#CC6A00'
+    return '#C7172E'
+  }
+
+  return (
+    <div>
+      <div style={{ marginBottom: 14 }}>
+        <div className="kicker">
+          <span className="dot" style={{ background: CIPRB_BLUE }} />
+          REPORTING RATE · PER DISTRICT
+        </div>
+        <h3 style={{ margin: '6px 0 2px', fontSize: 18, fontWeight: 700, color: 'var(--ink)' }}>
+          How completely is each district reporting?
+        </h3>
+        <p style={{ fontSize: 12.5, color: 'var(--muted)', margin: 0 }}>
+          Reported maternal deaths divided by Sayeed's estimated denominator. Districts at the bottom need follow-up.
+        </p>
+      </div>
+      <div className="card" style={{ padding: 20 }}>
+        {rows.length === 0 ? (
+          <div style={{ padding: '32px 0', textAlign: 'center', fontSize: 13, color: 'var(--muted)' }}>
+            Per-district reporting rate will populate once denominators are loaded.
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {rows.map(r => (
+              <div key={r.district} style={{
+                display: 'grid',
+                gridTemplateColumns: '130px 1fr 110px',
+                alignItems: 'center', gap: 12,
+              }}>
+                <div style={{ fontSize: 13, color: 'var(--ink)', fontWeight: 500 }}>
+                  {r.district}
+                </div>
+                <div style={{
+                  height: 10, borderRadius: 999,
+                  background: 'var(--surface-3)', overflow: 'hidden',
+                }}>
+                  <div style={{
+                    width: `${Math.min(100, r.rate)}%`, height: '100%',
+                    background: colorFor(r.rate), borderRadius: 999,
+                    transition: 'width 400ms ease',
+                  }} />
+                </div>
+                <div style={{
+                  textAlign: 'right', fontSize: 12.5,
+                  fontVariantNumeric: 'tabular-nums', color: 'var(--ink-3)',
+                }}>
+                  <b style={{ color: colorFor(r.rate) }}>{r.rate.toFixed(0)}%</b>
+                  <span className="mute" style={{ marginLeft: 6, fontSize: 11 }}>
+                    {r.reported}/{r.estimated}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export function MPDSRVisualizations({ cases }: { cases: MPDSRCase[] }) {
   const agg = useAggregates()
   return (
@@ -593,6 +686,7 @@ export function MPDSRVisualizations({ cases }: { cases: MPDSRCase[] }) {
         totals={agg?.facility_totals ?? null}
         denominators={agg?.denominators ?? []}
       />
+      <ReportingRatePerDistrict cases={cases} denominators={agg?.denominators ?? []} />
       <CauseBreakdown cases={cases} />
       <div id="response-plan" style={{ scrollMarginTop: 80 }}>
         <ResponsePlanTracker summaries={agg?.action_plan_summaries ?? []} />

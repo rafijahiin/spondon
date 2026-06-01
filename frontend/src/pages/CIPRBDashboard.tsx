@@ -427,12 +427,36 @@ function MPDSRSection() {
         ))}
       </div>
 
-      {/* Cases table */}
+      {/* Cases table — collapsed by default so the page isn't too long to scroll */}
       {loading && !cases ? (
         <PageLoader />
       ) : (
-        <div className="card flush" style={{ overflow: 'hidden' }}>
-          <div style={{ overflowX: 'auto' }}>
+        <details style={{
+          border: '1px solid var(--hair)', borderRadius: 12,
+          background: 'var(--surface)',
+        }}>
+          <summary style={{
+            padding: '14px 18px', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            fontWeight: 600, fontSize: 14, color: 'var(--ink)',
+            listStyle: 'none',
+          }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
+              <ClipboardList size={16} color={CIPRB_BLUE} />
+              {t('mpdsr.rawCasesTitle', { defaultValue: 'Open raw MPDSR case register' })}
+              <span style={{
+                marginLeft: 6,
+                fontSize: 11, color: 'var(--muted)', fontWeight: 500,
+                fontVariantNumeric: 'tabular-nums',
+              }}>
+                ({(cases ?? []).length} {(cases ?? []).length === 1 ? 'case' : 'cases'})
+              </span>
+            </span>
+            <span style={{ fontSize: 11, color: 'var(--muted)', letterSpacing: '0.06em' }}>
+              CLICK TO EXPAND
+            </span>
+          </summary>
+          <div style={{ overflowX: 'auto', borderTop: '1px solid var(--hair)' }}>
             <table className="tbl">
               <thead>
                 <tr>
@@ -509,7 +533,7 @@ function MPDSRSection() {
               </tbody>
             </table>
           </div>
-        </div>
+        </details>
       )}
 
       {selectedCase && (
@@ -622,8 +646,27 @@ export default function CIPRBDashboard() {
         <FistulaVisualizations />
       </section>
 
-      {/* ───────────────── Fistula registers (tabs) ───────────────── */}
+      {/* ───────────────── Fistula registers (collapsible — raw data) ───────────────── */}
       <section className="section" style={{ marginTop: 8 }}>
+        <details style={{
+          border: '1px solid var(--hair)', borderRadius: 12,
+          background: 'var(--surface)', padding: 0,
+        }}>
+          <summary style={{
+            padding: '14px 18px', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            fontWeight: 600, fontSize: 14, color: 'var(--ink)',
+            listStyle: 'none',
+          }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
+              <ClipboardList size={16} color={CIPRB_BLUE} />
+              {t('ciprb.rawRegistersTitle', { defaultValue: 'Open raw Fistula registers (Corner / Campaign)' })}
+            </span>
+            <span style={{ fontSize: 11, color: 'var(--muted)', letterSpacing: '0.06em' }}>
+              CLICK TO EXPAND
+            </span>
+          </summary>
+          <div style={{ padding: 18, borderTop: '1px solid var(--hair)' }}>
         <div
           role="tablist"
           aria-label="CIPRB Fistula registers"
@@ -676,6 +719,8 @@ export default function CIPRBDashboard() {
             {activeTab.key === 'corner' ? <FistulaCornerPanel /> : <FistulaCampaignPanel />}
           </motion.div>
         </AnimatePresence>
+          </div>
+        </details>
       </section>
 
       {/* ───────────────── Divider ───────────────── */}
