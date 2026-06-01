@@ -323,6 +323,10 @@ class FistulaCornerCase(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    # Provenance: 'kobo' (live submission) or 'excel_fistula_2026_q1' etc.
+    # for records ingested from Sayeed's Excel files as historical baseline.
+    source = models.CharField(max_length=40, default='kobo', db_index=True)
+
     class Meta:
         ordering = ['-diagnosis_date', '-created_at']
         verbose_name = 'Fistula Corner Case'

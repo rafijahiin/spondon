@@ -211,6 +211,12 @@ class MPDSRCase(models.Model):
     notes = models.TextField(blank=True)
     audit_trail = models.JSONField(default=list, blank=True)
 
+    # Provenance: 'kobo' = live submission via KoboToolbox webhook.
+    # 'excel_va_2026' / 'excel_va_2025' / etc. = historical baseline ingested
+    # from Sayeed's verbal-autopsy Excel files. Dashboards default to combined
+    # view; filterable by source for forensics.
+    source = models.CharField(max_length=40, default='kobo', db_index=True)
+
     latitude = models.DecimalField(max_digits=10, decimal_places=7, null=True, blank=True)
     longitude = models.DecimalField(max_digits=10, decimal_places=7, null=True, blank=True)
 
@@ -276,3 +282,104 @@ class MPDSRCase(models.Model):
         if not self.committee_date:
             return False
         return self.committee_date < datetime.date.today()
+
+
+# ─── Aggregate/lookup models ingested from Sayeed's Excel files ──────────────
+
+
+class MPDSRDistrictDenominator(models.Model):
+    """Per-district 'Project Deaths 2026' estimate — the denominator Animesh
+    needs for the reporting % rate calculation (reported / estimated).
+
+    Source: MPDSR Report_2026.xlsx :: District Wise sheet.
+    """
+    district = models.CharField(max_length=100, unique=True, db_index=True)
+    # Project Deaths 2026 columns (estimates / projections)
+    project_deaths_md = models.FloatField(null=True, blank=True, help_text='Estimated maternal deaths 2026')
+    project_deaths_nd = models.FloatField(null=True, blank=True, help_text='Estimated neonatal deaths 2026')
+    project_deaths_sb = models.FloatField(null=True, blank=True, help_text='Estimated stillbirths 2026')
+    source = models.CharField(max_length=40, default='excel_2026', db_index=True)
+    imported_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'MPDSR District Denominator'
+        verbose_name_plural = 'MPDSR District Denominators'
+        ordering = ['district']
+
+    def __str__(self):
+        return f'{self.district}: MD={self.project_deaths_md}'
+
+
+class MPDSRFacilityCount(models.Model):
+    """Per-facility FDN (Facility Death Notification) + FDR (Facility Death
+    Review) counts. Feeds the Notification vs Review chart with real numbers
+    instead of just live-Kobo submissions.
+
+    Source: MPDSR Report_2026.xlsx :: FDN & FDR sheet.
+    """
+    district = models.CharField(max_length=100, db_index=True)
+    facility_name = models.CharField(max_length=200, db_index=True)
+    period = models.CharField(max_length=20, default='2026', db_index=True,
+                              help_text='Reporting period, e.g. "2026" or "2026-Q1"')
+
+    fdn_md = models.PositiveIntegerField(default=0)
+    fdn_nd = models.PositiveIntegerField(default=0)
+    fdn_sb = models.PositiveIntegerField(default=0)
+    fdr_md = models.PositiveIntegerField(default=0)
+    fdr_nd = models.PositiveIntegerField(default=0)
+    fdr_sb = models.PositiveIntegerField(default=0)
+
+    source = models.CharField(max_length=40, default='excel_2026', db_index=True)
+    imported_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'MPDSR Facility Count'
+        verbose_name_plural = 'MPDSR Facility Counts'
+        unique_together = [('district', 'facility_name', 'period')]
+        ordering = ['district', 'facility_name']
+
+    def __str__(self):
+        return f'{self.district} / {self.facility_name} ({self.period})'
+
+
+class MPDSRActionPlanSummary(models.Model):
+    """Per-district response plan implementation tracker.
+
+    Each row represents a planned MPDSR review/committee meeting and what
+    activities were actually executed. Drives Animesh's 'MPDSR Response Plan
+    Implementation Tracker' box (planned vs executed accountability).
+
+    Source: MPDSR Action Plan_ Progress.xlsx :: per-district sheets.
+    """
+    REVIEW_DM = 'DM'     # District MPDSR
+    REVIEW_UM = 'UM'     # Upazila MPDSR
+    LEVEL_CHOICES = [(REVIEW_DM, 'District'), (REVIEW_UM, 'Upazila')]
+
+    district = models.CharField(max_length=100, db_index=True)
+    level = models.CharField(max_length=4, choices=LEVEL_CHOICES, db_index=True)
+    place_of_meeting = models.CharField(max_length=200, blank=True)
+    meeting_date = models.CharField(max_length=40, blank=True,
+                                    help_text='Raw Excel date string — kept as text for messy formats')
+    participants = models.PositiveIntegerField(null=True, blank=True)
+
+    meetings_planned = models.PositiveIntegerField(default=0,
+                                                   help_text='Number of follow-up meetings planned')
+    activities_planned = models.PositiveIntegerField(default=0)
+    activities_implemented = models.PositiveIntegerField(default=0)
+
+    source = models.CharField(max_length=40, default='excel_action_plan_2026', db_index=True)
+    imported_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'MPDSR Action Plan Summary'
+        verbose_name_plural = 'MPDSR Action Plan Summaries'
+        ordering = ['district', 'level']
+
+    def __str__(self):
+        return f'{self.district} [{self.level}]: {self.activities_implemented}/{self.activities_planned}'
+
+    @property
+    def completion_pct(self) -> float:
+        if not self.activities_planned:
+            return 0.0
+        return round(100.0 * self.activities_implemented / self.activities_planned, 1)

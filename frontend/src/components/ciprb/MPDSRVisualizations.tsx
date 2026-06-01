@@ -20,9 +20,51 @@ import {
   BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, Tooltip,
   PieChart, Pie,
 } from 'recharts'
-import { Info } from 'lucide-react'
+import { Info, Database } from 'lucide-react'
 import { api } from '@/api/client'
 import type { MPDSRCase } from '@/types/index'
+
+// ─── Aggregates fetched from /api/mpdsr/aggregates/ ─────────────────────────
+
+interface FacilityTotals {
+  fdn_md: number; fdn_nd: number; fdn_sb: number
+  fdr_md: number; fdr_nd: number; fdr_sb: number
+}
+
+interface ActionPlanSummary {
+  district: string; level: 'DM' | 'UM'
+  place_of_meeting: string; meeting_date: string
+  participants: number | null
+  meetings_planned: number; activities_planned: number; activities_implemented: number
+  completion_pct: number
+}
+
+interface DistrictDenominator {
+  district: string
+  project_deaths_md: number | null
+  project_deaths_nd: number | null
+  project_deaths_sb: number | null
+}
+
+interface AggregatesPayload {
+  denominators: DistrictDenominator[]
+  facility_counts: any[]
+  facility_totals: FacilityTotals
+  action_plan_summaries: ActionPlanSummary[]
+  totals: { mpdsr_cases: number; fistula_corner_cases: number; fistula_campaign_visits: number }
+}
+
+function useAggregates(): AggregatesPayload | null {
+  const [data, setData] = useState<AggregatesPayload | null>(null)
+  useEffect(() => {
+    let cancelled = false
+    api.get<AggregatesPayload>('/mpdsr/aggregates/')
+      .then(r => { if (!cancelled) setData(r.data) })
+      .catch(() => { /* leave null; visualisations fall back to live-only */ })
+    return () => { cancelled = true }
+  }, [])
+  return data
+}
 
 const CIPRB_BLUE = '#0072BC'
 const CIPRB_BLUE_SOFT = 'rgba(0,114,188,0.08)'
@@ -56,8 +98,16 @@ function computeNotifyVsReview(cases: MPDSRCase[]): NotifyVsReviewData {
   return { notifiedMD: nM, reviewedMD: rM, notifiedND: nN, reviewedND: rN }
 }
 
-function NotifyVsReview({ cases }: { cases: MPDSRCase[] }) {
-  const d = useMemo(() => computeNotifyVsReview(cases), [cases])
+function NotifyVsReview({ cases, totals }: { cases: MPDSRCase[]; totals: FacilityTotals | null }) {
+  const live = useMemo(() => computeNotifyVsReview(cases), [cases])
+
+  // Prefer facility-level aggregate totals from Sayeed's Excel ingest when
+  // available — gives the real programme-wide numbers, not just live Kobo
+  // submissions. Falls back to live-only counts if the import hasn't run.
+  const d = totals ? {
+    notifiedMD: totals.fdn_md, reviewedMD: totals.fdr_md,
+    notifiedND: totals.fdn_nd, reviewedND: totals.fdr_nd,
+  } : live
 
   const chartData = [
     { category: 'Maternal Deaths',  notified: d.notifiedMD, reviewed: d.reviewedMD },
@@ -376,10 +426,16 @@ function pascal(k: string): string {
 
 // ─── 3. Response Plan Implementation Tracker ─────────────────────────────────
 
-function ResponsePlanTracker() {
-  // Placeholder: this populates from the MPDSR Action Plan Progress Excel
-  // ingestion (Sayeed's file). Until then, render the structure with an
-  // explanatory note so Animesh sees the box is here and accountable.
+function ResponsePlanTracker({ summaries }: { summaries: ActionPlanSummary[] }) {
+  // Action Plan Progress ingestion is live — rows show per-district
+  // planned-vs-executed counts with completion %. Bar colour reflects
+  // completion health: green ≥ 75%, amber 40-74%, red < 40%.
+  const colorFor = (pct: number) => {
+    if (pct >= 75) return '#1A7A5A'  // status-on
+    if (pct >= 40) return '#CC6A00'  // status-mid
+    return '#C7172E'                 // status-off
+  }
+
   return (
     <div>
       <div style={{ marginBottom: 14 }}>
@@ -400,33 +456,72 @@ function ResponsePlanTracker() {
           <thead>
             <tr>
               <th>District</th>
-              <th>Intervention</th>
+              <th>Level</th>
+              <th>Place of meeting</th>
               <th style={{ textAlign: 'right' }}>Planned</th>
               <th style={{ textAlign: 'right' }}>Executed</th>
-              <th style={{ textAlign: 'right' }}>Completion</th>
+              <th style={{ textAlign: 'right', minWidth: 160 }}>Completion</th>
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td colSpan={5} style={{
-                textAlign: 'center', padding: '48px 16px',
-                color: 'var(--ink-3)',
-              }}>
-                <div style={{
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,
+            {summaries.length === 0 ? (
+              <tr>
+                <td colSpan={6} style={{
+                  textAlign: 'center', padding: '48px 16px',
+                  color: 'var(--ink-3)',
                 }}>
-                  <Info size={20} style={{ color: CIPRB_BLUE }} />
-                  <div style={{ fontSize: 13.5, fontWeight: 500, color: 'var(--ink-2)' }}>
-                    Awaiting Action Plan Progress data ingestion
+                  <div style={{
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,
+                  }}>
+                    <Info size={20} style={{ color: CIPRB_BLUE }} />
+                    <div style={{ fontSize: 13.5, fontWeight: 500, color: 'var(--ink-2)' }}>
+                      No action plan summaries yet
+                    </div>
                   </div>
-                  <div style={{ fontSize: 12, maxWidth: 520, color: 'var(--muted)', lineHeight: 1.55 }}>
-                    Sayeed sent the <b>MPDSR Action Plan Progress.xlsx</b> file (8 sheets across
-                    Sunamganj, Sherpur, Bhola, Khagrachari × DM/UM). Once ingested, this tracker
-                    shows per-district planned-vs-executed counts with completion %.
+                </td>
+              </tr>
+            ) : summaries.map((s, i) => (
+              <tr key={`${s.district}-${s.level}-${i}`}>
+                <td style={{ fontWeight: 500, color: 'var(--ink)' }}>{s.district}</td>
+                <td>
+                  <span style={{
+                    display: 'inline-block', padding: '2px 8px', borderRadius: 4,
+                    background: 'rgba(0,114,188,0.08)', color: CIPRB_BLUE,
+                    fontSize: 11, fontWeight: 600, letterSpacing: '0.04em',
+                  }}>
+                    {s.level === 'DM' ? 'District' : 'Upazila'}
+                  </span>
+                </td>
+                <td style={{ color: 'var(--ink-3)', fontSize: 12.5 }}>
+                  {s.place_of_meeting || '—'}
+                </td>
+                <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: 'var(--ink-2)' }}>
+                  {s.activities_planned.toLocaleString()}
+                </td>
+                <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: 'var(--ink-2)' }}>
+                  {s.activities_implemented.toLocaleString()}
+                </td>
+                <td style={{ textAlign: 'right' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'flex-end' }}>
+                    <div style={{
+                      width: 80, height: 6, borderRadius: 999,
+                      background: 'var(--surface-3)', overflow: 'hidden',
+                    }}>
+                      <div style={{
+                        width: `${Math.min(100, s.completion_pct)}%`, height: '100%',
+                        background: colorFor(s.completion_pct), borderRadius: 999,
+                      }} />
+                    </div>
+                    <span style={{
+                      minWidth: 40, fontVariantNumeric: 'tabular-nums',
+                      fontWeight: 600, fontSize: 12.5, color: colorFor(s.completion_pct),
+                    }}>
+                      {s.completion_pct.toFixed(0)}%
+                    </span>
                   </div>
-                </div>
-              </td>
-            </tr>
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
@@ -437,11 +532,12 @@ function ResponsePlanTracker() {
 // ─── Main export ─────────────────────────────────────────────────────────────
 
 export function MPDSRVisualizations({ cases }: { cases: MPDSRCase[] }) {
+  const agg = useAggregates()
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 36 }}>
-      <NotifyVsReview cases={cases} />
+      <NotifyVsReview cases={cases} totals={agg?.facility_totals ?? null} />
       <CauseBreakdown cases={cases} />
-      <ResponsePlanTracker />
+      <ResponsePlanTracker summaries={agg?.action_plan_summaries ?? []} />
     </div>
   )
 }
