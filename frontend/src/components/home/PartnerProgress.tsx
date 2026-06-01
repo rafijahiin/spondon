@@ -1,101 +1,77 @@
 /**
- * PartnerProgress — the at-a-glance view of how each implementing partner
- * is performing. This is what UNFPA (and CIPRB leadership) open the homepage
- * to see: for each of the three partners, progress against target, how many
- * indicators are on track, where they work, and a jump to the full dashboard.
+ * PartnerProgress — Implementing Partners at a Glance.
  *
- * Progress is sourced from the IndicatorProgress array already loaded on the
- * homepage (/api/indicators/progress/). Identity + geography come from
- * partnerDistricts. Clicking a card opens that partner's dashboard.
+ * Layout matches SIMPLE Homepage.html (3 cards in one row, This Month
+ * and Overall stacked as panels INSIDE each card, uniform orange accent,
+ * districts footer + View dashboard button). UNFPA Atkinson stays as
+ * the font; light/dark mode both work via theme tokens.
+ *
+ * Progress is sourced from the IndicatorProgress array loaded on home
+ * (/api/indicators/progress/). Geography from partnerDistricts.
  */
-import { Fragment } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, useReducedMotion } from 'motion/react'
 import { ArrowRight } from 'lucide-react'
 
 import {
-  PARTNER_COLORS, PARTNER_ROUTES, PARTNER_DISTRICTS,
-  type PartnerCode,
+  PARTNER_ROUTES, PARTNER_DISTRICTS, type PartnerCode,
 } from '@/data/partnerDistricts'
 import type { IndicatorProgress } from '@/types'
 
 const PARTNERS: PartnerCode[] = ['CIPRB', 'Bandhu', 'PHD']
 
-// Full names dropped across the board for consistency (Animesh: 'if PHD
-// and CIPRB has full name, Bandhu should have the same. rather remove
-// everyone's full name'). The acronym + focus line carries identity.
 const PARTNER_FOCUS: Record<PartnerCode, string> = {
   CIPRB:  'Maternal & child health · Fistula and MPDSR',
   Bandhu: 'Gender Diverse Population',
   PHD:    'Female Sex Workers (FSW)',
 }
 
-interface Props {
-  progress: IndicatorProgress[] | null
-}
+interface Props { progress: IndicatorProgress[] | null }
 
 interface Rollup {
   hasTargets: boolean
   percentage: number | null
-  achievement: number
-  target: number
   onTrack: number
-  total: number            // indicators that have a target set
-  totalIndicators: number  // all of this partner's indicators
-  // Animesh's dual-tracking spec — show monthly % alongside overall %.
-  // Monthly comes from each indicator's month_target / month_achievement
-  // (UNFPA-set per indicator via Target Config).
+  total: number
+  totalIndicators: number
   monthlyHasTargets: boolean
   monthlyPercentage: number | null
-}
-
-function bandColor(pct: number | null): string {
-  if (pct == null || pct === 0) return 'var(--muted)'   // no data / not started
-  if (pct >= 75) return '#1A7A5A'
-  if (pct >= 40) return '#CC6A00'
-  return '#C7172E'
+  monthlyOnTrack: number
 }
 
 function rollup(partner: PartnerCode, rows: IndicatorProgress[] | null): Rollup {
   const empty: Rollup = {
-    hasTargets: false, percentage: null, achievement: 0, target: 0,
+    hasTargets: false, percentage: null,
     onTrack: 0, total: 0, totalIndicators: 0,
-    monthlyHasTargets: false, monthlyPercentage: null,
+    monthlyHasTargets: false, monthlyPercentage: null, monthlyOnTrack: 0,
   }
   if (!rows) return empty
-  const all = rows.filter((r) => r.organisation === partner && !r.unlinked)
+  const all = rows.filter(r => r.organisation === partner && !r.unlinked)
   const totalIndicators = all.length
-  const withTarget = all.filter((r) => r.target_value !== null)
+  const withTarget = all.filter(r => r.target_value !== null)
   if (withTarget.length === 0) return { ...empty, totalIndicators }
   const achievement = withTarget.reduce((s, r) => s + (r.achievement ?? 0), 0)
   const target = withTarget.reduce((s, r) => s + (r.target_value ?? 0), 0)
   const percentage = target > 0 ? Math.round((achievement / target) * 1000) / 10 : 0
-  // 'On track' = hitting ≥75% of THIS MONTH's target (Animesh's spec).
-  // Indicators without a month_target set fall back to the overall % so
-  // they're not silently dropped from the count.
-  const onTrack = withTarget.filter((r) => {
-    const monthPct = r.month_percentage ?? null
-    const pct = monthPct ?? r.percentage ?? 0
-    return pct >= 75
-  }).length
+  const onTrack = withTarget.filter(r => (r.percentage ?? 0) >= 75).length
 
-  // Monthly — only indicators where UNFPA has filled in a month_target.
-  const withMonth = all.filter((r) => (r.month_target ?? null) !== null)
+  const withMonth = all.filter(r => (r.month_target ?? null) !== null)
   let monthlyHasTargets = false
   let monthlyPercentage: number | null = null
+  let monthlyOnTrack = 0
   if (withMonth.length > 0) {
     const monthAch = withMonth.reduce((s, r) => s + (r.month_achievement ?? 0), 0)
     const monthTgt = withMonth.reduce((s, r) => s + (r.month_target ?? 0), 0)
     if (monthTgt > 0) {
       monthlyHasTargets = true
       monthlyPercentage = Math.round((monthAch / monthTgt) * 1000) / 10
+      monthlyOnTrack = withMonth.filter(r => (r.month_percentage ?? 0) >= 75).length
     }
   }
-
   return {
-    hasTargets: true, percentage, achievement, target, onTrack,
-    total: withTarget.length, totalIndicators,
-    monthlyHasTargets, monthlyPercentage,
+    hasTargets: true, percentage,
+    onTrack, total: withTarget.length, totalIndicators,
+    monthlyHasTargets, monthlyPercentage, monthlyOnTrack,
   }
 }
 
@@ -119,220 +95,161 @@ export function PartnerProgress({ progress }: Props) {
         </div>
       </div>
 
-      {/* 2-column × 3-row grid (Animesh's spec) — left column is THIS
-          MONTH per partner, right column is OVERALL. Each card stands
-          alone so the eye can compare across partners without two
-          numbers fighting for attention inside one card. */}
-      <div
-        className="partner-progress-grid"
-        style={{
-          display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16,
-        }}
-      >
+      {/* SIMPLE Homepage.html design — 3 cards in one row, uniform orange
+          accent, This Month + Overall stacked as panels inside, districts
+          footer + View dashboard button. */}
+      <div className="partner-grid">
         {PARTNERS.map((p, i) => (
-          <Fragment key={p}>
-            <PartnerMetricCard
-              partner={p}
-              mode="monthly"
-              data={rollup(p, progress)}
-              loading={progress === null}
-              delay={i * 0.08}
-              reduce={reduce}
-              onClick={() => navigate(PARTNER_ROUTES[p])}
-            />
-            <PartnerMetricCard
-              partner={p}
-              mode="overall"
-              data={rollup(p, progress)}
-              loading={progress === null}
-              delay={i * 0.08 + 0.04}
-              reduce={reduce}
-              onClick={() => navigate(PARTNER_ROUTES[p])}
-            />
-          </Fragment>
+          <PartnerCard
+            key={p}
+            partner={p}
+            data={rollup(p, progress)}
+            loading={progress === null}
+            delay={i * 0.08}
+            reduce={reduce}
+            onClick={() => navigate(PARTNER_ROUTES[p])}
+          />
         ))}
       </div>
-
-      <style>{`
-        @media (max-width: 760px) {
-          .partner-progress-grid { grid-template-columns: 1fr !important; }
-        }
-      `}</style>
     </section>
   )
 }
 
-// ─── PartnerMetricCard ──────────────────────────────────────────────────────
-//
-// One card = one partner × one metric (overall OR this-month). Six total
-// (3 partners × 2 metrics) per Animesh's 'two columns, 6 cards' spec.
-
-function PartnerMetricCard({
-  partner, mode, data, loading, onClick, reduce, delay,
+function PartnerCard({
+  partner, data, loading, onClick, reduce, delay,
 }: {
   partner: PartnerCode
-  mode: 'overall' | 'monthly'
   data: Rollup
   loading: boolean
   onClick: () => void
   reduce: boolean | null
   delay: number
 }) {
-  const color = PARTNER_COLORS[partner]
   const focus = PARTNER_FOCUS[partner]
   const districtList = PARTNER_DISTRICTS[partner]
   const districts = districtList.length
   const MAX_NAMES = 6
   const districtNames = districts <= MAX_NAMES
     ? districtList.join(', ')
-    : `${districtList.slice(0, MAX_NAMES).join(', ')} +${districts - MAX_NAMES} more`
-
-  // Pick metric for this card — overall vs monthly.
-  const isMonthly = mode === 'monthly'
-  const pct = isMonthly ? data.monthlyPercentage : data.percentage
-  const hasMetric = isMonthly ? data.monthlyHasTargets : data.hasTargets
-  const metricColor = bandColor(pct)
-  const modeLabel = isMonthly ? 'THIS MONTH' : 'OVERALL'
-  const modeSub   = isMonthly
-    ? 'Achievement vs this month\'s target'
-    : 'Cumulative achievement vs full programme target'
+    : (
+      <>
+        {districtList.slice(0, MAX_NAMES).join(', ')}{' '}
+        <b>+{districts - MAX_NAMES} more</b>
+      </>
+    )
 
   return (
-    <motion.button
-      onClick={onClick}
+    <motion.div
       initial={{ opacity: 0, y: reduce ? 0 : 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay: reduce ? 0 : delay, ease: [0.22, 1, 0.36, 1] }}
-      whileHover={{ y: reduce ? 0 : -2 }}
-      whileTap={{ scale: 0.985 }}
-      className="card"
-      style={{
-        textAlign: 'left', cursor: 'pointer', padding: 0, overflow: 'hidden',
-        display: 'flex', flexDirection: 'column',
-        borderTop: `3px solid ${color}`,
-        transitionProperty: 'transform, box-shadow, border-color',
-      }}
+      className="pcard"
     >
-      {/* Top section — gets the orange wash from the SIMPLE Homepage
-          design (.pcard-top with color-mix orange 7% bg). Wraps the
-          partner acronym + mode label + big %. */}
-      <div style={{
-        padding: '18px 20px',
-        background: 'color-mix(in srgb, var(--unfpa) 7%, var(--surface))',
-        borderBottom: '1px solid var(--hair)',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-          <div>
-            <div style={{
-              fontSize: 24, fontWeight: 700, letterSpacing: '-0.02em',
-              color: 'var(--ink)', lineHeight: 1,
-              display: 'inline-flex', alignItems: 'center', gap: 9,
-            }}>
-              {/* Small square colour swatch with halo — design's
-                  `.pcard-name i` rule. Visual identity inside the
-                  orange wash. */}
-              <span style={{
-                width: 10, height: 10, borderRadius: 3, background: color,
-                boxShadow: `0 0 0 4px color-mix(in srgb, ${color} 16%, var(--surface))`,
-              }} />
-              {partner}
-            </div>
-            <div className="mono" style={{
-              fontSize: 9.5, color: 'var(--muted)', letterSpacing: '0.10em',
-              marginTop: 6,
-            }}>
-              {modeLabel}
-            </div>
-          </div>
-          <div style={{ textAlign: 'right', flexShrink: 0 }}>
-            {loading ? (
-              <span style={{ fontSize: 13, color: 'var(--muted)' }}>…</span>
-            ) : hasMetric && pct != null ? (
-              <div style={{
-                fontSize: 36, fontWeight: 800, color: metricColor,
-                lineHeight: 1, fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em',
-              }}>
-                {pct}%
-              </div>
-            ) : (
-              <span className="tag amber" style={{ fontSize: 10, fontWeight: 600 }}>
-                {isMonthly ? 'Not set' : 'Targets pending'}
-              </span>
-            )}
-          </div>
+      {/* Top header band — orange wash, partner name + focus + districts chip */}
+      <div className="pcard-top">
+        <div>
+          <div className="pcard-name"><i />{partner}</div>
+          <div className="pcard-focus">{focus}</div>
         </div>
-
-        {/* Focus line stays in the orange-wash top section */}
-        <div style={{ fontSize: 12, color: 'var(--ink-3)', lineHeight: 1.45, paddingTop: 8 }}>
-          {focus}
-        </div>
+        <span className="pcard-dcount">{districts} districts</span>
       </div>
 
-      {/* Content section — neutral background, holds sub-line, progress
-          bar, stats, districts. Sits under the orange wash header. */}
-      <div style={{ padding: '14px 20px', display: 'flex', flexDirection: 'column', gap: 12, flex: 1 }}>
-        {/* Sub-line — what this metric means */}
-        <div style={{ fontSize: 11.5, color: 'var(--muted)', lineHeight: 1.4 }}>
-          {modeSub}
-        </div>
+      {/* This Month panel */}
+      <ThisMonthPanel data={data} loading={loading} />
 
-        {/* Progress bar */}
-        {hasMetric && pct != null && (
-          <div style={{ height: 6, background: 'var(--surface-3)', borderRadius: 999, overflow: 'hidden' }}>
-            <motion.div
-              style={{ height: '100%', background: metricColor, borderRadius: 999 }}
-              initial={{ width: 0 }}
-              animate={{ width: `${Math.min(pct, 100)}%` }}
-              transition={{ duration: 0.9, delay: reduce ? 0 : delay + 0.1, ease: [0.22, 1, 0.36, 1] }}
-            />
-          </div>
+      {/* Overall panel */}
+      <OverallPanel data={data} loading={loading} />
+
+      {/* Footer — districts + View dashboard button */}
+      <div className="pcard-foot">
+        <div className="foot-lbl">Districts</div>
+        <div className="foot-districts">{districtNames}</div>
+        <a
+          className="view-link"
+          href="#"
+          onClick={(e) => { e.preventDefault(); onClick() }}
+        >
+          View dashboard <ArrowRight size={13} />
+        </a>
+      </div>
+    </motion.div>
+  )
+}
+
+function ThisMonthPanel({ data, loading }: { data: Rollup; loading: boolean }) {
+  return (
+    <div className="tf">
+      <div className="tf-head">
+        <span className="tf-lbl">This month</span>
+        {!loading && !data.monthlyHasTargets && (
+          <span className="b-notset">Not set</span>
         )}
-
-        {/* Stats row */}
-        <div style={{
-          display: 'flex', gap: 16, fontSize: 11.5, color: 'var(--ink-3)',
-          fontVariantNumeric: 'tabular-nums',
-        }}>
-          {data.hasTargets ? (
-            <span>
-              <b style={{ color: 'var(--ink)' }}>{data.onTrack}/{data.total}</b> indicators on track
-            </span>
-          ) : (
-            <span>
-              <b style={{ color: 'var(--ink)' }}>{data.totalIndicators}</b> indicators · targets pending
-            </span>
-          )}
-          <span><b style={{ color: 'var(--ink)' }}>{districts}</b> districts</span>
-        </div>
-
-        {/* District names */}
-        <div style={{
-          marginTop: 'auto', paddingTop: 8,
-          borderTop: '1px dashed var(--hair)',
-        }}>
-          <div className="mono" style={{
-            fontSize: 9, color: 'var(--muted)',
-            letterSpacing: '0.08em', marginBottom: 3,
-          }}>
-            DISTRICTS
-          </div>
-          <div style={{
-            fontSize: 11.5, color: 'var(--ink-3)', lineHeight: 1.4,
-            textWrap: 'pretty',
-          } as React.CSSProperties}>
-            {districtNames}
-          </div>
-        </div>
       </div>
+      <div className="tf-desc">Achievement vs this month's target</div>
+      {loading ? (
+        <div className="tf-row"><span className="tf-stat pending">Loading…</span></div>
+      ) : data.monthlyHasTargets ? (
+        <>
+          <div className="tf-row">
+            <span className="tf-stat">
+              {data.monthlyOnTrack}/{data.total}{' '}
+              <span className="words">indicators on track</span>
+            </span>
+            <span className="tf-pct">{data.monthlyPercentage}%</span>
+          </div>
+          <div className="bar">
+            <b style={{ width: `${Math.min(data.monthlyPercentage ?? 0, 100)}%` }} />
+          </div>
+        </>
+      ) : (
+        <>
+          <div className="tf-row">
+            <span className="tf-stat pending">
+              {data.totalIndicators} indicators · targets pending
+            </span>
+          </div>
+          <div className="bar striped" />
+        </>
+      )}
+    </div>
+  )
+}
 
-      {/* Footer CTA */}
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: 6,
-        padding: '10px 20px', borderTop: '1px solid var(--hair)',
-        background: 'var(--surface-2)', fontSize: 12.5, fontWeight: 600, color,
-      }}>
-        View dashboard <ArrowRight size={14} />
+function OverallPanel({ data, loading }: { data: Rollup; loading: boolean }) {
+  return (
+    <div className="tf">
+      <div className="tf-head">
+        <span className="tf-lbl">Overall</span>
+        {!loading && !data.hasTargets && (
+          <span className="b-pending">Targets pending</span>
+        )}
       </div>
-    </motion.button>
+      <div className="tf-desc">Cumulative achievement vs full programme target</div>
+      {loading ? (
+        <div className="tf-row"><span className="tf-stat pending">Loading…</span></div>
+      ) : data.hasTargets ? (
+        <>
+          <div className="tf-row">
+            <span className="tf-stat">
+              {data.onTrack}/{data.total}{' '}
+              <span className="words">indicators on track</span>
+            </span>
+            <span className="tf-pct">{data.percentage}%</span>
+          </div>
+          <div className="bar">
+            <b style={{ width: `${Math.min(data.percentage ?? 0, 100)}%` }} />
+          </div>
+        </>
+      ) : (
+        <>
+          <div className="tf-row">
+            <span className="tf-stat pending">
+              {data.totalIndicators} indicators · targets pending
+            </span>
+          </div>
+          <div className="bar striped" />
+        </>
+      )}
+    </div>
   )
 }
