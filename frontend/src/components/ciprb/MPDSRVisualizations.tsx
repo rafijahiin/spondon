@@ -171,10 +171,10 @@ function NotifyVsReview({ cases }: { cases: MPDSRCase[] }) {
 type DistrictGroup = 'cumulative' | 'sida' | 'gac' | 'cp'
 
 const GROUP_TABS: { key: DistrictGroup; label: string; sub: string }[] = [
-  { key: 'cumulative', label: 'Cumulative',       sub: 'All districts' },
-  { key: 'sida',       label: 'SIDA Districts',   sub: 'Awaiting mapping' },
-  { key: 'gac',        label: 'GAC Districts',    sub: 'Awaiting mapping' },
-  { key: 'cp',         label: 'CP Districts',     sub: 'Awaiting mapping' },
+  { key: 'cumulative', label: 'Cumulative',     sub: 'All cases' },
+  { key: 'sida',       label: 'SIDA Districts', sub: '6 districts' },
+  { key: 'gac',        label: 'GAC Districts',  sub: '5 districts' },
+  { key: 'cp',         label: 'CP Districts',   sub: 'Country Programme' },
 ]
 
 const CAUSE_PALETTE: Record<string, string> = {
@@ -185,14 +185,32 @@ const CAUSE_PALETTE: Record<string, string> = {
   other:             'var(--muted-3)',
 }
 
-// Placeholder: until Sayeed provides the official mapping, SIDA/GAC/CP
-// filters render an empty state with a clear "awaiting mapping" note.
-// The cumulative tab always works on live cases.
+// District groupings per Sayeed (delivered 1 Jun 2026):
+//   GAC  — 5 focused intervention districts
+//   SIDA — 6 focused intervention districts
+//   CP   — the broader Country Programme footprint = all MPDSR districts
+//
+// Note: Sunamganj sits in BOTH GAC and SIDA (intentional regional overlap
+// Sayeed flagged). Multi-set membership is handled naturally — a Sunamganj
+// case counts in both tabs.
+//
+// Matching uses a normalised form (lowercase, alphanumeric only) so
+// "Cox's Bazar" / "Coxsbazar" / "Cox Bazar" all collapse to the same key.
 const DISTRICT_MAPPING: Record<DistrictGroup, string[] | null> = {
   cumulative: null,    // null = no filter (all districts)
-  sida: [],            // empty list = mapping pending
-  gac: [],
-  cp: [],
+  gac:  ['Sunamganj', 'Bhola', 'Sherpur', 'Kurigram', 'Khagrachari'],
+  sida: ['Noakhali', 'Chandpur', 'Bandarban', 'Dhaka', 'Sunamganj', "Cox's Bazar"],
+  cp:   [
+    // Full Country Programme footprint — 16 MPDSR districts. CP includes
+    // GAC and SIDA plus the broader regional coverage.
+    'Sunamganj', 'Sylhet', 'Hobiganj', 'Bhola', 'Bagerhat', 'Patuakhali',
+    'Barguna', 'Bandarban', 'Khagrachari', 'Noakhali', 'Chandpur', 'Sherpur',
+    'Sirajganj', 'Jamalpur', 'Gaibandha', 'Kurigram', "Cox's Bazar", 'Dhaka',
+  ],
+}
+
+function normaliseDistrict(s: string): string {
+  return (s ?? '').toLowerCase().replace(/[^a-z0-9]/g, '')
 }
 
 function CauseBreakdown({ cases }: { cases: MPDSRCase[] }) {
@@ -203,8 +221,8 @@ function CauseBreakdown({ cases }: { cases: MPDSRCase[] }) {
     const allow = DISTRICT_MAPPING[group]
     if (allow === null) return cases
     if (allow.length === 0) return []
-    const set = new Set(allow.map(d => d.toLowerCase()))
-    return cases.filter(c => set.has((c.district ?? '').toLowerCase()))
+    const set = new Set(allow.map(normaliseDistrict))
+    return cases.filter(c => set.has(normaliseDistrict(c.district ?? '')))
   }, [cases, group])
 
   const counts: Record<string, number> = {}
@@ -222,7 +240,10 @@ function CauseBreakdown({ cases }: { cases: MPDSRCase[] }) {
     color: CAUSE_PALETTE[k],
   }))
 
-  const mappingPending = group !== 'cumulative' && DISTRICT_MAPPING[group]?.length === 0
+  // Sayeed has delivered GAC/SIDA/CP mappings — no more pending placeholder.
+  // The empty state only triggers when the filter genuinely yields zero
+  // cases (no maternal-death data recorded for that district group yet).
+  const noCasesInGroup = group !== 'cumulative' && filtered.length === 0
 
   return (
     <div>
@@ -276,7 +297,7 @@ function CauseBreakdown({ cases }: { cases: MPDSRCase[] }) {
       </div>
 
       <div className="card" style={{ padding: 24 }}>
-        {mappingPending ? (
+        {noCasesInGroup ? (
           <div style={{
             padding: '40px 16px', textAlign: 'center',
             color: 'var(--ink-3)',
@@ -284,11 +305,11 @@ function CauseBreakdown({ cases }: { cases: MPDSRCase[] }) {
           }}>
             <Info size={20} style={{ color: CIPRB_BLUE }} />
             <div style={{ fontSize: 13.5, fontWeight: 500, color: 'var(--ink-2)' }}>
-              Awaiting SIDA / GAC / CP district mapping
+              No maternal deaths recorded in this district group yet
             </div>
             <div style={{ fontSize: 12, maxWidth: 480, color: 'var(--muted)', lineHeight: 1.55 }}>
-              Sayeed will provide which districts fall under each programme intervention area.
-              The cumulative tab works in the meantime.
+              Pie chart fills as cases come in from {group.toUpperCase()} districts.
+              Switch to <b>Cumulative</b> to see all data combined.
             </div>
           </div>
         ) : total > 0 ? (
