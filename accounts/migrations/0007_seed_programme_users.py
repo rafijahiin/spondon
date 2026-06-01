@@ -31,7 +31,7 @@ NEW_USERS = [
     {
         'email':        'tarique.ksm@gmail.com',
         'full_name':    'Tarique',
-        'organisation': 'CIPRB',
+        'organisation': 'PHD',
         'role':         'manager',
         'password_env': 'USER_TARIQUE_PASSWORD',
     },
