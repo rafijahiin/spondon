@@ -77,19 +77,19 @@ class CanConfigureTargets(BasePermission):
     """
     Edit IndicatorTarget rows.
 
-    Supervisor/Developer for any partner; Org Lead only for their own org.
-    For write actions, the partner being edited is taken from request body
-    (`partner` field) or the URL/query. Falls back to instance.partner for
-    detail actions.
+    UNFPA Supervisor + Developer (Rafi) only — org leads are NOT
+    allowed to edit targets (Animesh's 2026-06-01 directive). For
+    write actions, the partner being edited is taken from request
+    body (`partner` field) or the URL/query. Falls back to
+    instance.partner for detail actions.
     """
     def has_permission(self, request, view):
         u = request.user
         if not u.is_authenticated:
             return False
         if request.method in SAFE_METHODS:
-            # Read access is broader — covered by CanReadIndicatorTargets if
-            # we add it later; for now read uses the org filter on the
-            # queryset.
+            # Read access stays broad — anyone authenticated can list
+            # / view their own org's targets via the queryset filter.
             return True
         # Determine partner from request data
         partner = (
@@ -98,8 +98,7 @@ class CanConfigureTargets(BasePermission):
         ) or request.query_params.get('partner', '')
         # If not specified on a write, fall through to per-object check
         if not partner:
-            # Detail actions (PATCH /targets/<id>/) — check via object below.
-            return u.role in (Role.DEVELOPER, Role.SUPERVISOR, Role.ORG_LEAD)
+            return u.role in (Role.DEVELOPER, Role.SUPERVISOR)
         return u.can_configure_targets(partner)
 
     def has_object_permission(self, request, view, obj):

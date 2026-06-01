@@ -390,11 +390,11 @@ function TargetConfig() {
   const [rows, setRows] = useState<IndicatorTarget[] | null>(null)
   const [error, setError] = useState('')
 
-  const canEditRow = (row: IndicatorTarget): boolean => {
+  const canEditRow = (_row: IndicatorTarget): boolean => {
+    // UNFPA Supervisor + Developer (Rafi) only — org leads cannot edit
+    // their own targets any more (Animesh's 2026-06-01 directive).
     if (!user) return false
-    if (user.role === 'developer' || user.role === 'supervisor') return true
-    if (user.role === 'org_lead') return row.partner_code === user.organisation
-    return false
+    return user.role === 'developer' || user.role === 'supervisor'
   }
 
   useEffect(() => {

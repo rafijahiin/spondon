@@ -113,13 +113,15 @@ class User(AbstractBaseUser, PermissionsMixin):
         )
 
     def can_configure_targets(self, partner: str) -> bool:
-        """Edit IndicatorTarget rows. Supervisor + Developer for any partner;
-        Org Lead only for their own org. Everyone else: never."""
-        if self.role in (Role.DEVELOPER, Role.SUPERVISOR):
-            return True
-        if self.role == Role.ORG_LEAD:
-            return partner == self.organisation
-        return False
+        """Edit IndicatorTarget rows. UNFPA Supervisor + Developer (Rafi)
+        only — org leads are NOT allowed (Animesh's 2026-06-01 directive:
+        targets are set externally and ratified by UNFPA; partners track
+        against them, not edit them).
+
+        Partner argument retained so the signature stays compatible with
+        existing callers, but it is no longer consulted."""
+        del partner  # unused — kept for backwards-compatible signature
+        return self.role in (Role.DEVELOPER, Role.SUPERVISOR)
 
     @property
     def can_enter_field_records(self):
