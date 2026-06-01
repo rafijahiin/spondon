@@ -22,6 +22,7 @@ const RecordList = lazy(() => import('@/pages/RecordList'))
 const Infographics = lazy(() => import('@/pages/Infographics'))
 const Profile = lazy(() => import('@/pages/Profile'))
 const CIPRBDashboard = lazy(() => import('@/pages/CIPRBDashboard'))
+const OpenQuestions = lazy(() => import('@/pages/OpenQuestions'))
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth()
@@ -201,6 +202,16 @@ export default function App() {
             />
             {/* Profile + password change — available to every authenticated user. */}
             <Route path="profile" element={<Profile />} />
+            {/* Wednesday-meeting prep page — open questions for Animesh /
+                Sayeed. UNFPA-only via the same gate as Target Config. */}
+            <Route
+              path="open-questions"
+              element={
+                <RequireTargetConfigAccess>
+                  <OpenQuestions />
+                </RequireTargetConfigAccess>
+              }
+            />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
