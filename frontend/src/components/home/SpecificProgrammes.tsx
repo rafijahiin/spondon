@@ -201,7 +201,7 @@ export function SpecificProgrammes() {
         <ProgrammeTile
           icon={<ShieldAlert size={18} />}
           title="MPDSR"
-          subtitle="Maternal & Perinatal Death Surveillance"
+          subtitle="Maternal & Perinatal Death tracker"
           metricLabel="Cases · Overdue Reviews"
           metricValue={`${counts.mpdsrCases} · ${counts.mpdsrOverdue}`}
           meta={counts.mpdsrOverdue > 0

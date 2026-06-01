@@ -353,7 +353,7 @@ export function OrgDashboard({ partner }: Props) {
             }}>
               {isPHD
                 ? 'Partners in Health and Development'
-                : 'Key Population (FSW) · Gender Diverse SRHR'}
+                : 'Gender Diverse Population'}
             </p>
             <p className="hero-lede anim-rise d2">
               {partner} delivered <b><CountUp value={totalSubmissions} /> submissions</b> this

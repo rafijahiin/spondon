@@ -31,8 +31,8 @@ const PARTNER_FULL_NAME: Record<PartnerCode, string> = {
 }
 
 const PARTNER_FOCUS: Record<PartnerCode, string> = {
-  CIPRB:  'Maternal & child health · fistula and MPDSR surveillance',
-  Bandhu: 'Key-population HIV / STI outreach & counselling',
+  CIPRB:  'Maternal & child health · Fistula and MPDSR',
+  Bandhu: 'Gender Diverse Population',
   PHD:    'Sex-worker & maternal health service delivery',
 }
 
@@ -136,7 +136,15 @@ function PartnerCard({
 }) {
   const color = PARTNER_COLORS[partner]
   const focus = PARTNER_FOCUS[partner]
-  const districts = PARTNER_DISTRICTS[partner].length
+  const districtList = PARTNER_DISTRICTS[partner]
+  const districts = districtList.length
+  // Animesh's request — show the actual district names below the card,
+  // not just the count. Truncate long lists with a "+N more" suffix so
+  // the card height stays bounded.
+  const MAX_NAMES = 6
+  const districtNames = districts <= MAX_NAMES
+    ? districtList.join(', ')
+    : `${districtList.slice(0, MAX_NAMES).join(', ')} +${districts - MAX_NAMES} more`
   const pctColor = bandColor(data.percentage)
 
   return (
@@ -221,8 +229,29 @@ function PartnerCard({
         </div>
 
         {/* Focus */}
-        <div style={{ fontSize: 12, color: 'var(--ink-3)', lineHeight: 1.45, marginTop: 'auto', paddingTop: 4 }}>
+        <div style={{ fontSize: 12, color: 'var(--ink-3)', lineHeight: 1.45, paddingTop: 4 }}>
           {focus}
+        </div>
+
+        {/* District names — Animesh's request to show actual names, not
+            just the count. Sits above the focus footer so a UNFPA reader
+            can see geographic reach at a glance. */}
+        <div style={{
+          marginTop: 'auto', paddingTop: 8,
+          borderTop: '1px dashed var(--hair)',
+        }}>
+          <div className="mono" style={{
+            fontSize: 9, color: 'var(--muted)',
+            letterSpacing: '0.08em', marginBottom: 3,
+          }}>
+            DISTRICTS
+          </div>
+          <div style={{
+            fontSize: 11.5, color: 'var(--ink-3)', lineHeight: 1.4,
+            textWrap: 'pretty',
+          } as React.CSSProperties}>
+            {districtNames}
+          </div>
         </div>
       </div>
 
