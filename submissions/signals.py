@@ -51,7 +51,7 @@ def _create_baseline_survey(submission):
 
 def _send_approval_telegram(submission):
     try:
-        from .telegram import send_approval_confirmation
+        from .notify import send_approval_confirmation
         send_approval_confirmation(submission)
     except Exception as exc:
         logger.error('Approval Telegram failed for submission %s: %s', submission.id, exc)
@@ -59,7 +59,7 @@ def _send_approval_telegram(submission):
 
 def _send_rejection_telegram(submission):
     try:
-        from .telegram import send_rejection_notification
+        from .notify import send_rejection_notification
         send_rejection_notification(submission)
     except Exception as exc:
         logger.error('Rejection Telegram failed for submission %s: %s', submission.id, exc)

@@ -114,6 +114,9 @@ interface QueueItem {
   urgent?: boolean
   latitude?: string
   longitude?: string
+  // Animesh's baseline duplication warning — true when an earlier baseline
+  // survey from the same (district, upazila, day) is already on file.
+  is_baseline_duplicate?: boolean
 }
 
 function toQueueItems(programsData: ProgramPendingResponse | null, submissions: Submission[] | null): QueueItem[] {
@@ -155,6 +158,7 @@ function toQueueItems(programsData: ProgramPendingResponse | null, submissions: 
         kind: 'legacy',
         latitude: s.latitude?.toString(),
         longitude: s.longitude?.toString(),
+        is_baseline_duplicate: (s as any).is_baseline_duplicate ?? false,
       })
     }
   }
@@ -475,6 +479,31 @@ export default function ManagerApprovals() {
                     <p className="hero-lede" style={{ marginTop: 12, maxWidth: 720 }}>
                       {selected.summary}
                     </p>
+                    {/* Animesh's baseline duplication warning — yellow card
+                        when an earlier baseline from same place+day already
+                        exists. Manager can still approve, but is forced to
+                        notice the collision first. */}
+                    {selected.is_baseline_duplicate && (
+                      <div style={{
+                        marginTop: 14,
+                        padding: '10px 14px',
+                        borderRadius: 8,
+                        background: 'rgba(204,106,0,0.10)',
+                        border: '1px solid rgba(204,106,0,0.35)',
+                        color: '#7A4400',
+                        fontSize: 13,
+                        display: 'flex', gap: 10, alignItems: 'flex-start',
+                      }}>
+                        <span style={{ fontSize: 16, lineHeight: 1 }}>⚠</span>
+                        <span>
+                          <b>{t('approvals.duplicateWarning', { defaultValue: 'Possible duplicate' })}</b>
+                          {' — '}
+                          {t('approvals.duplicateBody', {
+                            defaultValue: 'An earlier baseline survey from the same location and day is already on file. Verify before approving.',
+                          })}
+                        </span>
+                      </div>
+                    )}
                   </div>
                   <div style={{ textAlign: 'right', flexShrink: 0 }}>
                     <div className="kicker"><span className="dot" />{t('approvals.submittedAt')}</div>

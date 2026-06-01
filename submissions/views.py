@@ -15,7 +15,7 @@ from rest_framework.viewsets import ModelViewSet
 from accounts.permissions import CanApproveSubmissions, OrgFilterMixin
 from .models import FormType, KoboSubmission, SubmissionStatus
 from .serializers import KoboSubmissionDetailSerializer, KoboSubmissionSerializer, RejectSerializer
-from .telegram import send_approval_confirmation, send_rejection_notification, send_submission_alert
+from .notify import send_approval_confirmation, send_rejection_notification, send_submission_alert
 from .validators import validate_kobo_signature
 
 logger = logging.getLogger(__name__)
@@ -96,7 +96,7 @@ def _notify_gps_rejection(payload: dict, form_type: str) -> None:
             payload.get('worker_name') or
             payload.get('enumerator_name') or 'Field worker'
         )
-        from .telegram import send_gps_rejection_notice
+        from .notify import send_gps_rejection_notice
         send_gps_rejection_notice(worker_name, form_type)
     except Exception as exc:
         logger.debug('GPS rejection Telegram failed: %s', exc)

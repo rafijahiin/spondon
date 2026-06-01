@@ -21,9 +21,33 @@ class BaselineSurveyManager(models.Manager):
         survey_type_raw = (raw.get('survey_type') or '').lower()
         survey_type = SurveyType.ENDLINE if 'endline' in survey_type_raw else SurveyType.BASELINE
 
+        # Animesh's spec — duplication warning on baseline submissions.
+        # Flag a survey as duplicate when the same (district, upazila,
+        # device/kobo_user, day) already has a survey on file. The manager
+        # sees a yellow card on the approval queue and decides whether to
+        # accept or reject.
+        from datetime import timedelta
+        submitted_day = submission.submitted_at.date()
+        device_marker = (
+            raw.get('deviceid') or raw.get('device_id')
+            or submission.kobo_id.split(':')[0] if submission.kobo_id else ''
+        )
+        district_key = (raw.get('district') or submission.district or '').strip()
+        upazila_key = (raw.get('upazila') or '').strip()
+        dup_candidate = None
+        if district_key and upazila_key:
+            dup_candidate = self.filter(
+                district__iexact=district_key,
+                upazila__iexact=upazila_key,
+                survey_date__range=(submitted_day - timedelta(days=1),
+                                    submitted_day + timedelta(days=1)),
+            ).exclude(submission=submission).order_by('-created_at').first()
+
         obj, created = self.get_or_create(
             submission=submission,
             defaults={
+                'is_duplicate': bool(dup_candidate),
+                'duplicate_of': dup_candidate,
                 'partner': submission.partner,
                 'district': raw.get('district') or submission.district,
                 'upazila': raw.get('upazila') or '',

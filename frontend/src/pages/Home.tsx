@@ -16,6 +16,7 @@ import { PageLoader } from '@/components/ui/LoadingSpinner'
 import { ExecutiveBento } from '@/components/home/ExecutiveBento'
 import { PartnerProgress } from '@/components/home/PartnerProgress'
 import { ProgrammeHealthFlags } from '@/components/home/ProgrammeHealthFlags'
+import { ActivityFeed } from '@/components/home/ActivityFeed'
 import { SpecificProgrammes } from '@/components/home/SpecificProgrammes'
 import { PartnerOverlapMap } from '@/components/maps/PartnerOverlapMap'
 import type { IndicatorProgress } from '@/types'
@@ -132,6 +133,12 @@ export default function Home() {
            signal. Each tile shows submitted/total centres today + the
            silent ones with hours-since-touch. ─────────────────────────── */}
       <ProgrammeHealthFlags />
+
+      {/* ── LIVE ACTIVITY FEED — Animesh's "system heartbeat" ask is back.
+           Sits between the silence-flag picture and the executive bento so
+           managers can see both who's silent AND who's actively submitting
+           right now. UNFPA-only (hidden from focal/manager). ─────────────── */}
+      <ActivityFeed />
 
       {/* ── PROGRAMME-WIDE HEALTH (bento) ────────────────────────────────── */}
       <ExecutiveBento progress={progress} />

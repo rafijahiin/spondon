@@ -159,6 +159,27 @@ FERNET_KEY = os.environ.get('FERNET_KEY', '')
 GROQ_API_KEY = os.environ.get('GROQ_API_KEY', '')
 TELEGRAM_BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN', '')
 TELEGRAM_CHAT_IDS = os.environ.get('TELEGRAM_CHAT_IDS', '{}')
+
+# ─── Email notifications (replacement for Telegram per Animesh spec) ──────────
+# Used by submissions/email_notify.py to send approval / rejection /
+# submission-received messages to focal persons. Set EMAIL_* env vars on
+# Railway to enable; without them, Django falls back to the console backend
+# so dev runs just print to stdout.
+EMAIL_BACKEND = os.environ.get(
+    'EMAIL_BACKEND',
+    'django.core.mail.backends.console.EmailBackend',
+)
+EMAIL_HOST = os.environ.get('EMAIL_HOST', '')
+EMAIL_PORT = int(os.environ.get('EMAIL_PORT', '587'))
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
+EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'true').lower() == 'true'
+DEFAULT_FROM_EMAIL = os.environ.get(
+    'DEFAULT_FROM_EMAIL', 'SIMPLE <noreply@simple.unfpa.org.bd>'
+)
+SIMPLE_PUBLIC_URL = os.environ.get(
+    'SIMPLE_PUBLIC_URL', 'https://simple.up.railway.app'
+)
 KOBO_WEBHOOK_SECRET = os.environ.get('KOBO_WEBHOOK_SECRET', '')
 KOBO_ASSET_UID_MPDSR = os.environ.get('KOBO_ASSET_UID_MPDSR', 'placeholder')
 KOBO_ASSET_UID_FISTULA = os.environ.get('KOBO_ASSET_UID_FISTULA', 'placeholder')

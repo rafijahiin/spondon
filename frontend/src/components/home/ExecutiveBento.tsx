@@ -50,7 +50,7 @@ function bandColor(pct: number | null): string {
 // ─── Bento card primitive ─────────────────────────────────────────────────────
 
 interface CardProps {
-  kicker: string
+  kicker: React.ReactNode
   value: string
   sub?: string
   trend?: number | null
@@ -159,6 +159,9 @@ export function ExecutiveBento({ progress }: Props) {
   const [kpis, setKpis] = useState<KPIs | null>(null)
   const [openAlerts, setOpenAlerts] = useState<number | null>(null)
   const [now, setNow] = useState(new Date())
+  // Animesh's MoM comparison toggle — flip the SUBMISSIONS · THIS MONTH
+  // card between absolute counts (default) and percentage-change view.
+  const [momMode, setMomMode] = useState<'abs' | 'pct'>('abs')
 
   const fmtNum = (n: number) =>
     n.toLocaleString(i18n.language?.startsWith('bn') ? 'bn-BD' : 'en-US')
@@ -315,13 +318,47 @@ export function ExecutiveBento({ progress }: Props) {
           delay={0.15}
         />
         <Card
-          kicker={t('bento.submissionsMtd', { defaultValue: 'SUBMISSIONS · THIS MONTH' })}
-          value={fmtNum(kpis?.submissions_this_month ?? 0)}
-          sub={t('bento.vsLastMonth', {
-            defaultValue: 'vs {{prev}} last month',
-            prev: fmtNum(kpis?.previous_month_submissions ?? 0),
-          })}
-          trend={kpis?.mom_change_percent ?? null}
+          kicker={
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+              {t('bento.submissionsMtd', { defaultValue: 'SUBMISSIONS · THIS MONTH' })}
+              {/* Animesh's MoM toggle. Click to flip the value between
+                  absolute MTD count and % change vs previous month. */}
+              <button
+                onClick={(e) => {
+                  e.preventDefault()
+                  setMomMode(m => m === 'abs' ? 'pct' : 'abs')
+                }}
+                style={{
+                  fontSize: 9, padding: '2px 6px', borderRadius: 999,
+                  background: momMode === 'pct' ? 'var(--unfpa)' : 'var(--surface-2)',
+                  color: momMode === 'pct' ? '#fff' : 'var(--ink-3)',
+                  border: '1px solid var(--hair)', cursor: 'pointer',
+                  fontWeight: 700, letterSpacing: '0.06em',
+                }}
+                title={t('bento.momToggleTooltip', { defaultValue: 'Toggle absolute / percentage' })}
+              >
+                {momMode === 'abs' ? '%' : '#'}
+              </button>
+            </span>
+          }
+          value={momMode === 'abs'
+            ? fmtNum(kpis?.submissions_this_month ?? 0)
+            : (kpis?.mom_change_percent != null
+                ? `${kpis.mom_change_percent > 0 ? '+' : ''}${kpis.mom_change_percent.toFixed(0)}%`
+                : '—')
+          }
+          sub={momMode === 'abs'
+            ? t('bento.vsLastMonth', {
+                defaultValue: 'vs {{prev}} last month',
+                prev: fmtNum(kpis?.previous_month_submissions ?? 0),
+              })
+            : t('bento.momPctSub', {
+                defaultValue: '{{cur}} this month vs {{prev}} last month',
+                cur: fmtNum(kpis?.submissions_this_month ?? 0),
+                prev: fmtNum(kpis?.previous_month_submissions ?? 0),
+              })
+          }
+          trend={momMode === 'abs' ? (kpis?.mom_change_percent ?? null) : null}
           icon={<FileText size={12} />}
           delay={0.2}
         />

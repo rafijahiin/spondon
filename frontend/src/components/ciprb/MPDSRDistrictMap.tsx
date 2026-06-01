@@ -12,7 +12,9 @@
  */
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { motion, AnimatePresence } from 'motion/react'
 import { MapContainer, GeoJSON } from 'react-leaflet'
+import { api } from '@/api/client'
 import type { Layer, PathOptions, LeafletEvent } from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { Info } from 'lucide-react'
@@ -63,9 +65,16 @@ interface DistrictFeatureProps {
   shapeName: string
 }
 
+interface RecentSubmission {
+  district: string
+  time_ago: string
+  partner: string
+}
+
 export function MPDSRDistrictMap() {
   const { t } = useTranslation()
   const [geo, setGeo] = useState<GeoJSON.FeatureCollection | null>(null)
+  const [latest, setLatest] = useState<RecentSubmission | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -74,6 +83,31 @@ export function MPDSRDistrictMap() {
       .then(d => { if (!cancelled) setGeo(d) })
       .catch(() => { /* graceful — render legend without map */ })
     return () => { cancelled = true }
+  }, [])
+
+  // Animesh's spec — the map should feel "live" as submissions arrive.
+  // Pulses the most-recent submission's district name into a floating
+  // badge over the map. Polls every 45s.
+  useEffect(() => {
+    let cancelled = false
+    const fetchLatest = () =>
+      api.get<any>('/dashboard/activity/?limit=1')
+        .then(r => {
+          if (cancelled) return
+          const rows = Array.isArray(r.data) ? r.data : r.data.results ?? []
+          const first = rows[0]
+          if (first?.district) {
+            setLatest({
+              district: first.district,
+              time_ago: first.time_ago,
+              partner: first.partner,
+            })
+          }
+        })
+        .catch(() => {})
+    fetchLatest()
+    const id = setInterval(fetchLatest, 45_000)
+    return () => { cancelled = true; clearInterval(id) }
   }, [])
 
   const style = (feature?: GeoJSON.Feature): PathOptions => {
@@ -125,6 +159,41 @@ export function MPDSRDistrictMap() {
 
       <div className="card" style={{ padding: 16 }}>
         <div style={{ position: 'relative', height: 520, borderRadius: 8, overflow: 'hidden' }}>
+          {/* Live-pulse badge — Animesh's "districts light up as submissions arrive" */}
+          <AnimatePresence>
+            {latest && (
+              <motion.div
+                key={`${latest.partner}-${latest.district}-${latest.time_ago}`}
+                initial={{ opacity: 0, y: -8, scale: 0.96 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                style={{
+                  position: 'absolute', top: 12, left: 12, zIndex: 1000,
+                  padding: '6px 12px', borderRadius: 999,
+                  background: 'rgba(255,255,255,0.96)',
+                  border: '1px solid var(--hair)',
+                  boxShadow: '0 4px 14px rgba(0,0,0,0.08)',
+                  display: 'inline-flex', alignItems: 'center', gap: 8,
+                  fontSize: 12,
+                }}
+              >
+                <motion.span
+                  animate={{ opacity: [1, 0.3, 1] }}
+                  transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+                  style={{
+                    width: 8, height: 8, borderRadius: 999,
+                    background: '#1A7A5A', flexShrink: 0,
+                  }}
+                />
+                <b style={{ color: 'var(--ink)' }}>{latest.partner}</b>
+                <span style={{ color: 'var(--ink-3)' }}>· {latest.district}</span>
+                <span className="mono" style={{ color: 'var(--muted)', fontSize: 10 }}>
+                  {latest.time_ago}
+                </span>
+              </motion.div>
+            )}
+          </AnimatePresence>
           {geo ? (
             <MapContainer
               center={[23.685, 90.3563]}
