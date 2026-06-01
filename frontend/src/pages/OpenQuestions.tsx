@@ -72,24 +72,13 @@ const QUESTIONS: Question[] = [
       'Your campaign metrics list has six items: Upazilas, Districts, Households, Population, Suspected, Diagnosed. We currently show 4 of these in a "Campaign Reach" band and the other 2 inside the Patient Funnel below. Combining all 6 into one row is denser; keeping two sections is more visual.',
     blockingForWednesday: false,
   },
-  {
-    id: 'phd-bandhu-mirror',
-    category: 'scope',
-    forWhom: 'Animesh',
-    question: 'Should Bandhu mirror the PHD page exactly?',
-    context:
-      'You said "Bandhu replicates the PHD structure." Both pages currently render via the same OrgDashboard component but with different data. Want to confirm: any Bandhu-specific blocks needed (e.g. SOGIESC outreach) that PHD doesn\'t have?',
-    blockingForWednesday: false,
-  },
-  {
-    id: 'manager-permissions',
-    category: 'permission',
-    forWhom: 'Animesh',
-    question: 'Confirm: managers can read + download but cannot edit raw data. Only admins delete accounts. Correct?',
-    context:
-      'Current implementation: Manager role can approve/reject submissions, view everything, download CSV. Cannot edit IndicatorTargets or user accounts. Developer + Supervisor manage users. Want to confirm this matches your expectation.',
-    blockingForWednesday: false,
-  },
+  // [RESOLVED 2026-06-01] phd-bandhu-mirror — Bandhu and PHD mirror the
+  // UI exactly; data differs (different indicators per partner). The
+  // shared OrgDashboard component already implements this.
+  //
+  // [RESOLVED 2026-06-01] manager-permissions — confirmed. Managers can
+  // read + download, cannot edit IndicatorTargets or user accounts.
+  // Developer + Supervisor manage users. Already implemented.
   {
     id: 'response-plan-form',
     category: 'data-model',
