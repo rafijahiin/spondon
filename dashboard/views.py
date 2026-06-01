@@ -959,21 +959,34 @@ class ProgrammeHealthFlagView(APIView):
         # Always return all three partners — even with 0 centres — so the
         # home page renders a stable 3-card layout regardless of seed state.
         for partner in ('PHD', 'Bandhu', 'CIPRB'):
-            centres = ServiceCenter.objects.filter(
+            centres = list(ServiceCenter.objects.filter(
                 organisation=partner, is_active=True,
-            )
-            total = centres.count()
+            ))
+            total = len(centres)
 
-            # Recent submissions inside the 74-hour window.
-            recent_submissions = (
-                KoboSubmission.objects
-                .filter(partner=partner, submitted_at__gte=threshold_dt)
-                .count()
+            # Recent submissions in the 74-hour window — used for the
+            # partner-level 'silent' flag (no activity at all).
+            recent_qs = KoboSubmission.objects.filter(
+                partner=partner, submitted_at__gte=threshold_dt,
             )
-            todays_submissions = (
-                KoboSubmission.objects
-                .filter(partner=partner, submitted_at__gte=today_start)
-                .count()
+            todays_qs = KoboSubmission.objects.filter(
+                partner=partner, submitted_at__gte=today_start,
+            )
+            recent_submissions = recent_qs.count()
+            todays_submissions = todays_qs.count()
+
+            # Per-centre granularity — Animesh's 'X of N centres submitted
+            # today' breakdown. Uses denormalised centre_code on
+            # KoboSubmission so we can count without a join.
+            todays_centre_codes = set(
+                todays_qs.exclude(centre_code='')
+                         .values_list('centre_code', flat=True)
+                         .distinct()
+            )
+            recent_centre_codes = set(
+                recent_qs.exclude(centre_code='')
+                         .values_list('centre_code', flat=True)
+                         .distinct()
             )
 
             last_submission = (
@@ -989,28 +1002,43 @@ class ProgrammeHealthFlagView(APIView):
                     (now - last_submission).total_seconds() / 3600.0, 1,
                 )
 
-            # Compliance state — was the partner active inside the 74h window?
+            # Partner is silent only if NO centre has touched the platform
+            # inside the 74-hour window.
             is_silent = recent_submissions == 0
 
+            # Per-centre silence list: centres that have NOT submitted today.
+            # Used by the dashboard drill-down so managers see exactly which
+            # field sites to chase.
             silent_centres = []
-            if is_silent and total > 0:
-                for c in centres[:10]:
+            submitted_today_count = 0
+            for c in centres:
+                if c.code in todays_centre_codes:
+                    submitted_today_count += 1
+                else:
+                    # Compute hours silent for this specific centre.
+                    last_for_centre = (
+                        KoboSubmission.objects
+                        .filter(partner=partner, centre_code=c.code)
+                        .order_by('-submitted_at')
+                        .values_list('submitted_at', flat=True)
+                        .first()
+                    )
+                    centre_hrs = (
+                        round((now - last_for_centre).total_seconds() / 3600.0, 1)
+                        if last_for_centre else None
+                    )
                     silent_centres.append({
                         'name': c.name,
                         'district': c.district,
-                        'hours_silent': partner_silent_hours,
+                        'hours_silent': centre_hrs,
                     })
-                silent_count = total
-                submitted_today = 0
-            else:
-                silent_count = 0 if not is_silent else total
-                # Optimistic until centre-level submission mapping lands.
-                submitted_today = total if todays_submissions > 0 else 0
+
+            silent_count = total - submitted_today_count
 
             partners_data.append({
                 'partner': partner,
                 'total_centres': total,
-                'submitted_today': submitted_today,
+                'submitted_today': submitted_today_count,
                 'silent_count': silent_count,
                 'submissions_today': todays_submissions,
                 'recent_submissions': recent_submissions,

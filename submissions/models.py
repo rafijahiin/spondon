@@ -29,6 +29,12 @@ class KoboSubmission(models.Model):
     latitude = models.DecimalField(max_digits=10, decimal_places=7, null=True, blank=True)
     longitude = models.DecimalField(max_digits=10, decimal_places=7, null=True, blank=True)
 
+    # Centre code — denormalised from raw_data at ingest time so per-centre
+    # health-flag queries don't need to join through the JSON payload. Used by
+    # the 74-hour Programme Health Flag system to show 'X of N centres
+    # submitted today' granularity (Animesh's spec).
+    centre_code = models.CharField(max_length=40, blank=True, db_index=True)
+
     submitted_at = models.DateTimeField()
     received_at = models.DateTimeField(auto_now_add=True)
     raw_data = models.JSONField()
