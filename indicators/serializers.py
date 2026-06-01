@@ -40,6 +40,9 @@ class IndicatorTargetSerializer(serializers.ModelSerializer):
             'activity_code', 'activity_label',
             'indicator_label',
             'target_value', 'unit',
+            # Animesh spec — UNFPA-set monthly splits, same model as the
+            # overall target_value. List of {month: "YYYY-MM", target: <num>}.
+            'monthly_targets',
             'source_form', 'source_form_slug',
             'notes', 'is_active',
             'created_at', 'updated_at',
@@ -82,3 +85,10 @@ class IndicatorProgressSerializer(serializers.Serializer):
     percentage = serializers.FloatField(allow_null=True)
     unlinked = serializers.BooleanField()
     organisation = serializers.CharField(required=False, allow_blank=True)
+    # Monthly cadence (Animesh spec) — set explicitly by UNFPA via
+    # IndicatorTarget.monthly_targets JSON; null = "Not set" until UNFPA
+    # configures it in Target Config.
+    month_label = serializers.CharField(allow_null=True, required=False)
+    month_target = serializers.FloatField(allow_null=True, required=False)
+    month_achievement = serializers.FloatField(allow_null=True, required=False)
+    month_percentage = serializers.FloatField(allow_null=True, required=False)

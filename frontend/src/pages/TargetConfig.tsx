@@ -22,7 +22,7 @@
  */
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Check, Edit3, X, AlertCircle } from 'lucide-react'
+import { Check, Edit3, X, AlertCircle, Calendar } from 'lucide-react'
 import { api, apiErrorMessage } from '@/api/client'
 import { useAuth } from '@/context/AuthContext'
 import { PageLoader } from '@/components/ui/LoadingSpinner'
@@ -92,6 +92,193 @@ function objectiveI18nKey(num: number): string {
   if (num >= 0 && num <= 4) return `indicator.objective${num}`
   return 'indicator.objectiveOther'
 }
+
+// ─── Monthly target editor (Animesh's spec — UNFPA sets monthly splits) ────
+//
+// Contract window: 21 May 2026 → 20 Nov 2026 → 6 calendar months.
+// One numeric input per month. Save PATCHes the whole monthly_targets list
+// so partially-set rows are honoured (the row's month_target falls back to
+// "Not set" if its YYYY-MM is missing from the JSON).
+const PROGRAMME_MONTHS_LIST: { key: string; label: string }[] = [
+  { key: '2026-05', label: 'May 2026' },
+  { key: '2026-06', label: 'Jun 2026' },
+  { key: '2026-07', label: 'Jul 2026' },
+  { key: '2026-08', label: 'Aug 2026' },
+  { key: '2026-09', label: 'Sep 2026' },
+  { key: '2026-10', label: 'Oct 2026' },
+  { key: '2026-11', label: 'Nov 2026' },
+]
+
+interface MonthlyButtonProps {
+  row: IndicatorTarget
+  canEdit: boolean
+  onSaved: (updated: IndicatorTarget) => void
+}
+
+function MonthlyTargetsButton({ row, canEdit, onSaved }: MonthlyButtonProps) {
+  const { t } = useTranslation()
+  const [open, setOpen] = useState(false)
+  const setCount = (row.monthly_targets ?? []).length
+  return (
+    <>
+      <button
+        onClick={() => canEdit && setOpen(true)}
+        disabled={!canEdit}
+        className="inline-flex items-center gap-1 rounded border border-gray-200 bg-white px-2 py-0.5 text-[11px] font-medium text-gray-700 hover:border-unfpa-blue/40 hover:text-unfpa-blue disabled:cursor-not-allowed disabled:opacity-50 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600"
+        title={canEdit
+          ? t('targetConfig.editMonthly', { defaultValue: 'Edit monthly splits' })
+          : t('targetConfig.readOnlyMonthly', { defaultValue: 'Read-only' })
+        }
+      >
+        <Calendar className="h-3 w-3" />
+        {setCount === 0
+          ? t('targetConfig.monthlyNotSet', { defaultValue: 'Set monthly' })
+          : t('targetConfig.monthlyCount', {
+              defaultValue: '{{set}}/{{total}} months',
+              set: setCount, total: PROGRAMME_MONTHS_LIST.length,
+            })}
+      </button>
+      {open && (
+        <MonthlyTargetsModal
+          row={row}
+          onClose={() => setOpen(false)}
+          onSaved={(u) => { onSaved(u); setOpen(false) }}
+        />
+      )}
+    </>
+  )
+}
+
+interface MonthlyModalProps {
+  row: IndicatorTarget
+  onClose: () => void
+  onSaved: (updated: IndicatorTarget) => void
+}
+
+function MonthlyTargetsModal({ row, onClose, onSaved }: MonthlyModalProps) {
+  const { t } = useTranslation()
+  // Seed the modal with whatever's already saved; missing months stay blank
+  // (= "Not set"). Map keyed by YYYY-MM.
+  const initial: Record<string, string> = {}
+  for (const e of row.monthly_targets ?? []) {
+    initial[e.month] = String(e.target ?? '')
+  }
+  const [draft, setDraft] = useState<Record<string, string>>(initial)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+
+  const setMonth = (key: string, value: string) =>
+    setDraft(d => ({ ...d, [key]: value }))
+
+  const sumPlanned = PROGRAMME_MONTHS_LIST.reduce((s, m) => {
+    const n = parseFloat(draft[m.key] ?? '')
+    return s + (Number.isFinite(n) ? n : 0)
+  }, 0)
+  const overall = parseFloat(String(row.target_value ?? '0')) || 0
+
+  const handleSave = async () => {
+    setSaving(true)
+    setError('')
+    try {
+      const payload = PROGRAMME_MONTHS_LIST
+        .map(m => ({ month: m.key, target: parseFloat(draft[m.key] ?? '') }))
+        .filter(e => Number.isFinite(e.target))
+      const resp = await api.patch<IndicatorTarget>(
+        `/indicators/targets/${row.id}/`,
+        { monthly_targets: payload },
+      )
+      onSaved(resp.data)
+    } catch (e) {
+      setError(apiErrorMessage(e, 'Save failed.'))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div
+      onClick={onClose}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-md rounded-xl bg-white p-6 shadow-2xl dark:bg-gray-800"
+      >
+        <div className="mb-4 flex items-start justify-between">
+          <div>
+            <h3 className="text-base font-bold text-gray-900 dark:text-gray-100">
+              {t('targetConfig.monthlyModalTitle', { defaultValue: 'Monthly target splits' })}
+            </h3>
+            <p className="mt-1 text-xs text-gray-500 line-clamp-2">{row.indicator_label}</p>
+            <p className="mt-1 text-[11px] font-mono text-gray-400">
+              {row.activity_code} · {t('targetConfig.overall', { defaultValue: 'Overall' })} = {overall.toLocaleString()} {row.unit}
+            </p>
+          </div>
+          <button onClick={onClose} className="rounded p-1 text-gray-400 hover:bg-gray-100">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="space-y-2">
+          {PROGRAMME_MONTHS_LIST.map(m => (
+            <div key={m.key} className="grid grid-cols-2 items-center gap-3">
+              <label className="text-sm text-gray-700 dark:text-gray-300">{m.label}</label>
+              <input
+                type="number"
+                inputMode="numeric"
+                value={draft[m.key] ?? ''}
+                onChange={(e) => setMonth(m.key, e.target.value)}
+                placeholder={t('targetConfig.notSetPill')}
+                className="rounded border border-gray-300 px-2 py-1 text-sm font-mono focus:border-unfpa-blue focus:outline-none focus:ring-1 focus:ring-unfpa-blue/40 dark:bg-gray-700 dark:border-gray-600"
+              />
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-4 rounded bg-gray-50 p-3 text-xs text-gray-600 dark:bg-gray-900 dark:text-gray-400">
+          <div className="flex justify-between">
+            <span>{t('targetConfig.plannedSum', { defaultValue: 'Sum of months' })}</span>
+            <b className="font-mono">{sumPlanned.toLocaleString()}</b>
+          </div>
+          <div className="flex justify-between">
+            <span>{t('targetConfig.overallTarget', { defaultValue: 'Overall target' })}</span>
+            <b className="font-mono">{overall.toLocaleString()}</b>
+          </div>
+          {sumPlanned !== overall && overall > 0 && (
+            <div className="mt-1 text-amber-600">
+              ⚠ {t('targetConfig.sumMismatch', {
+                defaultValue: 'Monthly sum doesn\'t match overall target — review before saving.',
+              })}
+            </div>
+          )}
+        </div>
+
+        {error && <p className="mt-3 text-xs text-red-600">{error}</p>}
+
+        <div className="mt-5 flex justify-end gap-2">
+          <button
+            onClick={onClose}
+            disabled={saving}
+            className="rounded border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600"
+          >
+            {t('targetConfig.cancel')}
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="rounded bg-unfpa-blue px-3 py-1.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
+          >
+            {saving
+              ? t('targetConfig.saving', { defaultValue: 'Saving…' })
+              : t('targetConfig.save')
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 
 interface TargetCellProps {
   row: IndicatorTarget
@@ -278,6 +465,7 @@ function TargetConfig() {
                         <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t('targetConfig.tableIndicator')}</th>
                         <th className="px-3 py-2 text-right text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t('targetConfig.tableTarget')}</th>
                         <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t('targetConfig.tableUnit')}</th>
+                        <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t('targetConfig.tableMonthly', { defaultValue: 'Monthly Splits' })}</th>
                         <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t('targetConfig.tableSource', { defaultValue: 'Source Form' })}</th>
                         <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t('targetConfig.tableLastUpdated')}</th>
                       </tr>
@@ -306,6 +494,9 @@ function TargetConfig() {
                             </td>
                             <td className="px-3 py-2 text-sm text-gray-600 dark:text-gray-400">
                               {isBn ? bnUnit(row.unit) : row.unit}
+                            </td>
+                            <td className="px-3 py-2">
+                              <MonthlyTargetsButton row={row} canEdit={canEditRow(row)} onSaved={handleRowSaved} />
                             </td>
                             <td className="px-3 py-2 text-[11px] font-mono text-gray-600 dark:text-gray-400">
                               {row.source_form_slug ? (

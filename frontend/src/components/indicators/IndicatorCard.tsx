@@ -43,7 +43,10 @@ export function IndicatorCard({ indicator, partner, delay = 0 }: Props) {
   const reduce = useReducedMotion()
   const navigate = useNavigate()
   const { t, i18n } = useTranslation()
-  const { target_value, achievement, percentage, unlinked } = indicator
+  const {
+    target_value, achievement, percentage, unlinked,
+    month_label, month_target, month_achievement, month_percentage,
+  } = indicator
 
   // Audit FIX 6.5 — click navigates to the record drill-down for this
   // (partner, activity_code) pair. Module-pending rows aren't navigable
@@ -145,35 +148,82 @@ export function IndicatorCard({ indicator, partner, delay = 0 }: Props) {
         >
           {displayLabel}
         </p>
-        <div className="mt-1.5 flex items-baseline gap-1.5 flex-wrap">
-          <span className="text-lg font-bold tabular-nums text-gray-900 dark:text-white leading-none">
-            {fmt(achievement, indicator.unit)}
-          </span>
-          {hasTarget ? (
-            <span className="text-xs text-gray-400 dark:text-gray-500 tabular-nums">
-              / {fmt(target_value!, indicator.unit)} {displayUnit}
-            </span>
-          ) : (
-            <span
-              className="rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase"
-              style={{ backgroundColor: '#FED7AA', color: '#9A3412' }}
-            >
-              {t('indicator.notSet')}
-            </span>
-          )}
-        </div>
-        {/* Progress bar */}
-        {hasTarget && (
-          <div className="mt-2 h-1 w-full rounded-full bg-gray-100 dark:bg-gray-700 overflow-hidden">
-            <motion.div
-              className="h-1 rounded-full"
-              style={{ backgroundColor: ringColor }}
-              initial={{ width: 0 }}
-              animate={{ width: `${Math.min(displayPct, 100)}%` }}
-              transition={{ duration: 0.8, delay: reduce ? 0 : delay + 0.1, ease: [0.22, 1, 0.36, 1] }}
-            />
+
+        {/* Dual progress: OVERALL (programme) and MONTHLY (this calendar
+            month). Animesh's spec — both are UNFPA-set, no auto-derivation. */}
+        <div className="mt-2 grid grid-cols-2 gap-3">
+          {/* OVERALL tile */}
+          <div>
+            <div className="text-[10px] uppercase tracking-wider text-gray-400 font-mono mb-0.5">
+              {t('indicator.overall', { defaultValue: 'Overall' })}
+            </div>
+            <div className="flex items-baseline gap-1 flex-wrap">
+              <span className="text-base font-bold tabular-nums text-gray-900 dark:text-white leading-none">
+                {fmt(achievement, indicator.unit)}
+              </span>
+              {hasTarget ? (
+                <span className="text-[11px] text-gray-400 tabular-nums">
+                  / {fmt(target_value!, indicator.unit)} {displayUnit}
+                </span>
+              ) : (
+                <span
+                  className="rounded-full px-1.5 py-0.5 text-[9px] font-semibold tracking-wide uppercase"
+                  style={{ backgroundColor: '#FED7AA', color: '#9A3412' }}
+                >
+                  {t('indicator.notSet')}
+                </span>
+              )}
+            </div>
+            {hasTarget && (
+              <div className="mt-1 h-1 w-full rounded-full bg-gray-100 dark:bg-gray-700 overflow-hidden">
+                <motion.div
+                  className="h-1 rounded-full"
+                  style={{ backgroundColor: ringColor }}
+                  initial={{ width: 0 }}
+                  animate={{ width: `${Math.min(displayPct, 100)}%` }}
+                  transition={{ duration: 0.8, delay: reduce ? 0 : delay + 0.1, ease: [0.22, 1, 0.36, 1] }}
+                />
+              </div>
+            )}
           </div>
-        )}
+
+          {/* MONTHLY tile */}
+          <div>
+            <div className="text-[10px] uppercase tracking-wider text-gray-400 font-mono mb-0.5">
+              {t('indicator.thisMonth', { defaultValue: 'This month' })}
+              {month_label && <span className="text-gray-300 ml-1">· {month_label}</span>}
+            </div>
+            {month_target != null ? (
+              <>
+                <div className="flex items-baseline gap-1 flex-wrap">
+                  <span className="text-base font-bold tabular-nums text-gray-900 dark:text-white leading-none">
+                    {fmt(month_achievement ?? 0, indicator.unit)}
+                  </span>
+                  <span className="text-[11px] text-gray-400 tabular-nums">
+                    / {fmt(month_target, indicator.unit)} {displayUnit}
+                  </span>
+                </div>
+                <div className="mt-1 h-1 w-full rounded-full bg-gray-100 dark:bg-gray-700 overflow-hidden">
+                  <motion.div
+                    className="h-1 rounded-full"
+                    style={{ backgroundColor: bandColour(month_percentage ?? 0) }}
+                    initial={{ width: 0 }}
+                    animate={{ width: `${Math.min(month_percentage ?? 0, 100)}%` }}
+                    transition={{ duration: 0.8, delay: reduce ? 0 : delay + 0.15, ease: [0.22, 1, 0.36, 1] }}
+                  />
+                </div>
+              </>
+            ) : (
+              <span
+                className="inline-block rounded-full px-1.5 py-0.5 text-[9px] font-semibold tracking-wide uppercase"
+                style={{ backgroundColor: '#FED7AA', color: '#9A3412' }}
+              >
+                {t('indicator.notSet')}
+              </span>
+            )}
+          </div>
+        </div>
+
         <div className="mt-1.5 flex items-center gap-2">
           <span className="text-[10px] text-gray-400 dark:text-gray-600 font-mono">
             {indicator.activity_code}

@@ -113,11 +113,64 @@ def _percentage(achievement, target_value) -> float | None:
     return 0.0
 
 
-def _row_dict(target_row, achievement, unlinked: bool) -> dict:
+# ─── Monthly cadence (Animesh's spec) ────────────────────────────────────────
+#
+# Each indicator carries two parallel metrics:
+#   - OVERALL  — achievement vs full-programme target_value, 21 May → 20 Nov
+#   - MONTHLY  — this calendar month's achievement vs this month's slice
+#
+# Both targets are SET BY UNFPA via the Target Config screen. The monthly
+# slice lives in IndicatorTarget.monthly_targets as a JSON list of
+# {month, target} entries. No auto-derivation — if a month isn't in the
+# JSON, the monthly tile renders 'Not set' until UNFPA fills it.
+
+
+def _month_window(today):
+    """Return (month_start, month_end) date objects for the calendar month
+    containing `today`. Inclusive on both ends."""
+    import calendar, datetime
+    start = today.replace(day=1)
+    last_day = calendar.monthrange(today.year, today.month)[1]
+    end = today.replace(day=last_day)
+    return start, end
+
+
+def _month_target(target_row, today) -> float | None:
+    """Find this month's target.
+
+    UNFPA sets the monthly split explicitly — same model as the overall
+    target_value. No auto-derivation. If `monthly_targets` JSON doesn't
+    contain an entry for today's YYYY-MM, the month renders as 'Not set'
+    in the UI (orange pill) until UNFPA fills it in via Target Config.
+    """
+    key = today.strftime('%Y-%m')
+    rows = target_row.monthly_targets or []
+    for entry in rows:
+        if isinstance(entry, dict) and entry.get('month') == key:
+            try:
+                return float(entry['target'])
+            except (TypeError, ValueError, KeyError):
+                continue
+    return None
+
+
+def _compute_monthly(partner_code: str, activity_code: str, today):
+    """Run the indicator's compute fn over the current calendar month only.
+    Returns (month_achievement, unlinked)."""
+    month_start, month_end = _month_window(today)
+    return _compute_achievement(partner_code, activity_code, month_start, month_end)
+
+
+def _row_dict(target_row, achievement, unlinked: bool,
+              today=None, partner_code: str | None = None) -> dict:
     """Convert an IndicatorTarget ORM row + computed achievement into the
-    Step 3 progress dict shape."""
+    Step 3 progress dict shape, plus Animesh's monthly cadence fields.
+
+    `today` and `partner_code` are required to compute monthly fields. If
+    omitted, monthly_* come back as None (legacy callers stay correct).
+    """
     target_val = float(target_row.target_value) if target_row.target_value is not None else None
-    return {
+    out = {
         'activity_code':    target_row.activity_code,
         'objective_number': target_row.objective_number,
         'activity_label':   target_row.activity_label,
@@ -127,17 +180,32 @@ def _row_dict(target_row, achievement, unlinked: bool) -> dict:
         'achievement':      achievement,
         'percentage':       _percentage(achievement, target_val),
         'unlinked':         unlinked,
+        # Monthly cadence — UNFPA-set, no auto fallback.
+        'month_label':      today.strftime('%Y-%m') if today else None,
+        'month_target':     None,
+        'month_achievement': None,
+        'month_percentage': None,
     }
+    if today and partner_code:
+        out['month_target'] = _month_target(target_row, today)
+        ma, _ = _compute_monthly(partner_code, target_row.activity_code, today)
+        out['month_achievement'] = ma
+        out['month_percentage'] = _percentage(ma, out['month_target'])
+    return out
 
 
 # ─── Public API ───────────────────────────────────────────────────────────────
 
-def get_partner_indicator_progress(partner_code: str, period_start, period_end) -> list[dict]:
+def get_partner_indicator_progress(partner_code: str, period_start, period_end,
+                                   today=None) -> list[dict]:
     """Return progress dicts for every active IndicatorTarget under this partner.
 
     Rows are ordered by objective_number then activity_code so the frontend
     can render groups directly. Bandhu's missing Objective 3 is *not*
     auto-renumbered — that gap is intentional and the UI respects it.
+
+    `today` enables monthly-cadence fields (Animesh spec). Pass the request
+    date; the view layer does this.
     """
     from .models import IndicatorTarget
 
@@ -152,12 +220,14 @@ def get_partner_indicator_progress(partner_code: str, period_start, period_end) 
         achievement, unlinked = _compute_achievement(
             partner_code, t.activity_code, period_start, period_end,
         )
-        results.append(_row_dict(t, achievement, unlinked))
+        results.append(_row_dict(t, achievement, unlinked,
+                                 today=today, partner_code=partner_code))
     return results
 
 
 def get_indicator_progress(partner_code: str, activity_code: str,
-                           period_start=None, period_end=None) -> dict:
+                           period_start=None, period_end=None,
+                           today=None) -> dict:
     """Single-row variant for /api/indicators/progress/<code>/.
 
     Looks up the IndicatorTarget row by (partner_code, activity_code) and
@@ -188,8 +258,13 @@ def get_indicator_progress(partner_code: str, activity_code: str,
             'achievement':      achievement,
             'percentage':       None,
             'unlinked':         True,
+            'month_label':      today.strftime('%Y-%m') if today else None,
+            'month_target':     None,
+            'month_achievement': None,
+            'month_percentage': None,
         }
-    return _row_dict(target_obj, achievement, unlinked)
+    return _row_dict(target_obj, achievement, unlinked,
+                     today=today, partner_code=partner_code)
 
 
 def invalidate_indicator_cache(partner_code: str, activity_code: str,

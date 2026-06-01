@@ -120,7 +120,9 @@ class IndicatorProgressView(views.APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        from django.utils import timezone
         org, period_start, period_end = _resolve_params(request)
+        today = timezone.now().date()
 
         if org is None:
             results = []
@@ -128,12 +130,12 @@ class IndicatorProgressView(views.APIView):
             # the same shape and aggregate. CIPRB rows are all unlinked
             # for now (no compute functions) but still surface.
             for o in ('CIPRB', 'Bandhu', 'PHD'):
-                rows = get_partner_indicator_progress(o, period_start, period_end)
+                rows = get_partner_indicator_progress(o, period_start, period_end, today=today)
                 for r in rows:
                     r['organisation'] = o
                 results.extend(rows)
         else:
-            results = get_partner_indicator_progress(org, period_start, period_end)
+            results = get_partner_indicator_progress(org, period_start, period_end, today=today)
             for r in results:
                 r['organisation'] = org
 
@@ -149,13 +151,15 @@ class SingleIndicatorProgressView(views.APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, code):
+        from django.utils import timezone
         org, period_start, period_end = _resolve_params(request)
         if org is None:
             return Response(
                 {'detail': 'Specify ?org=Bandhu or ?org=PHD for single indicator lookup.'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        result = get_indicator_progress(org, code, period_start, period_end)
+        result = get_indicator_progress(org, code, period_start, period_end,
+                                        today=timezone.now().date())
         result['organisation'] = org
         return Response(result)
 

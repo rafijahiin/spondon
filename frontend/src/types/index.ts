@@ -48,6 +48,9 @@ export interface IndicatorTarget {
   indicator_label: string
   target_value: string | null         // DRF DecimalField — comes as string. Null = "Not Set".
   unit: string
+  // Animesh spec — UNFPA-set monthly splits. List of {month, target} entries.
+  // Same model as target_value (null/empty = "Not Set"). Editable in Target Config.
+  monthly_targets: { month: string; target: number }[]
   source_form: string | null
   source_form_slug: string | null
   notes: string
@@ -418,6 +421,15 @@ export interface IndicatorProgress {
                                  // round(achievement / target * 100, 1) otherwise
   unlinked: boolean              // true if no compute fn yet for this code
   organisation?: string          // added by the view layer on the all-orgs roll-up
+
+  // Monthly cadence (Animesh spec). UNFPA-set, same model as target_value:
+  //   month_target null    → "Not set" pill, UNFPA hasn't configured this month
+  //   month_target > 0     → render the monthly tile next to the overall tile
+  // month_label is the YYYY-MM of the current calendar month.
+  month_label?: string | null
+  month_target?: number | null
+  month_achievement?: number | null
+  month_percentage?: number | null
 }
 
 export interface ServiceCenter {
