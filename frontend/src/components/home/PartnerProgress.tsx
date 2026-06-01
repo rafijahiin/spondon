@@ -8,6 +8,7 @@
  * homepage (/api/indicators/progress/). Identity + geography come from
  * partnerDistricts. Clicking a card opens that partner's dashboard.
  */
+import { Fragment } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, useReducedMotion } from 'motion/react'
 import { ArrowRight } from 'lucide-react'
@@ -20,20 +21,13 @@ import type { IndicatorProgress } from '@/types'
 
 const PARTNERS: PartnerCode[] = ['CIPRB', 'Bandhu', 'PHD']
 
-// Tagline rule (per Animesh): only spell out when the full name adds new
-// information beyond the title. 'Bandhu Social Welfare Society' duplicates
-// 'Bandhu' + adds a generic 'Social Welfare' term — dropped. The focus line
-// below carries the programmatic identity instead.
-const PARTNER_FULL_NAME: Record<PartnerCode, string> = {
-  CIPRB:  'Centre for Injury Prevention & Research, Bangladesh',
-  Bandhu: '',
-  PHD:    'Partners in Health and Development',
-}
-
+// Full names dropped across the board for consistency (Animesh: 'if PHD
+// and CIPRB has full name, Bandhu should have the same. rather remove
+// everyone's full name'). The acronym + focus line carries identity.
 const PARTNER_FOCUS: Record<PartnerCode, string> = {
   CIPRB:  'Maternal & child health · Fistula and MPDSR',
   Bandhu: 'Gender Diverse Population',
-  PHD:    'Sex-worker & maternal health service delivery',
+  PHD:    'Female Sex Workers (FSW)',
 }
 
 interface Props {
@@ -125,22 +119,37 @@ export function PartnerProgress({ progress }: Props) {
         </div>
       </div>
 
+      {/* 2-column × 3-row grid (Animesh's spec) — left column is THIS
+          MONTH per partner, right column is OVERALL. Each card stands
+          alone so the eye can compare across partners without two
+          numbers fighting for attention inside one card. */}
       <div
         className="partner-progress-grid"
         style={{
-          display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16,
+          display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16,
         }}
       >
         {PARTNERS.map((p, i) => (
-          <PartnerCard
-            key={p}
-            partner={p}
-            data={rollup(p, progress)}
-            loading={progress === null}
-            delay={i * 0.08}
-            reduce={reduce}
-            onClick={() => navigate(PARTNER_ROUTES[p])}
-          />
+          <Fragment key={p}>
+            <PartnerMetricCard
+              partner={p}
+              mode="monthly"
+              data={rollup(p, progress)}
+              loading={progress === null}
+              delay={i * 0.08}
+              reduce={reduce}
+              onClick={() => navigate(PARTNER_ROUTES[p])}
+            />
+            <PartnerMetricCard
+              partner={p}
+              mode="overall"
+              data={rollup(p, progress)}
+              loading={progress === null}
+              delay={i * 0.08 + 0.04}
+              reduce={reduce}
+              onClick={() => navigate(PARTNER_ROUTES[p])}
+            />
+          </Fragment>
         ))}
       </div>
 
@@ -153,12 +162,16 @@ export function PartnerProgress({ progress }: Props) {
   )
 }
 
-// ─── PartnerCard ────────────────────────────────────────────────────────────
+// ─── PartnerMetricCard ──────────────────────────────────────────────────────
+//
+// One card = one partner × one metric (overall OR this-month). Six total
+// (3 partners × 2 metrics) per Animesh's 'two columns, 6 cards' spec.
 
-function PartnerCard({
-  partner, data, loading, onClick, reduce, delay,
+function PartnerMetricCard({
+  partner, mode, data, loading, onClick, reduce, delay,
 }: {
   partner: PartnerCode
+  mode: 'overall' | 'monthly'
   data: Rollup
   loading: boolean
   onClick: () => void
@@ -169,14 +182,20 @@ function PartnerCard({
   const focus = PARTNER_FOCUS[partner]
   const districtList = PARTNER_DISTRICTS[partner]
   const districts = districtList.length
-  // Animesh's request — show the actual district names below the card,
-  // not just the count. Truncate long lists with a "+N more" suffix so
-  // the card height stays bounded.
   const MAX_NAMES = 6
   const districtNames = districts <= MAX_NAMES
     ? districtList.join(', ')
     : `${districtList.slice(0, MAX_NAMES).join(', ')} +${districts - MAX_NAMES} more`
-  const pctColor = bandColor(data.percentage)
+
+  // Pick metric for this card — overall vs monthly.
+  const isMonthly = mode === 'monthly'
+  const pct = isMonthly ? data.monthlyPercentage : data.percentage
+  const hasMetric = isMonthly ? data.monthlyHasTargets : data.hasTargets
+  const metricColor = bandColor(pct)
+  const modeLabel = isMonthly ? 'THIS MONTH' : 'OVERALL'
+  const modeSub   = isMonthly
+    ? 'Achievement vs this month\'s target'
+    : 'Cumulative achievement vs full programme target'
 
   return (
     <motion.button
@@ -195,70 +214,49 @@ function PartnerCard({
       }}
     >
       <div style={{ padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: 12, flex: 1 }}>
-        {/* Acronym + attainment */}
+        {/* Header — partner acronym + mode chip on the left, big % on the right */}
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
           <div>
             <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.02em', color: 'var(--ink)', lineHeight: 1 }}>
               {partner}
             </div>
-            {PARTNER_FULL_NAME[partner] && (
-              <div style={{ fontSize: 12, color: 'var(--ink-2)', lineHeight: 1.3, marginTop: 5, maxWidth: 200, textWrap: 'pretty' } as React.CSSProperties}>
-                {PARTNER_FULL_NAME[partner]}
-              </div>
-            )}
+            <div className="mono" style={{
+              fontSize: 9.5, color: 'var(--muted)', letterSpacing: '0.10em',
+              marginTop: 6,
+            }}>
+              {modeLabel}
+            </div>
           </div>
           <div style={{ textAlign: 'right', flexShrink: 0 }}>
             {loading ? (
               <span style={{ fontSize: 13, color: 'var(--muted)' }}>…</span>
-            ) : data.hasTargets ? (
+            ) : hasMetric && pct != null ? (
               <div style={{
-                display: 'flex', gap: 14, alignItems: 'flex-start',
+                fontSize: 36, fontWeight: 800, color: metricColor,
+                lineHeight: 1, fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em',
               }}>
-                {/* This-month % first — Animesh's spec: a manager needs
-                    to know if a partner is hitting THIS MONTH's target,
-                    not just the small cumulative number. */}
-                <div>
-                  <div style={{
-                    fontSize: 22, fontWeight: 700,
-                    color: data.monthlyHasTargets ? bandColor(data.monthlyPercentage) : 'var(--muted)',
-                    lineHeight: 1, fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em',
-                  }}>
-                    {data.monthlyHasTargets ? `${data.monthlyPercentage}%` : '—'}
-                  </div>
-                  <div className="mono" style={{
-                    fontSize: 9, color: 'var(--muted)', letterSpacing: '0.08em', marginTop: 3,
-                  }}>
-                    THIS MONTH
-                  </div>
-                </div>
-                {/* Overall on the right, larger emphasis. */}
-                <div>
-                  <div style={{
-                    fontSize: 30, fontWeight: 700, color: pctColor,
-                    lineHeight: 1, fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em',
-                  }}>
-                    {data.percentage}%
-                  </div>
-                  <div className="mono" style={{ fontSize: 9, color: 'var(--muted)', letterSpacing: '0.08em', marginTop: 3 }}>
-                    OVERALL
-                  </div>
-                </div>
+                {pct}%
               </div>
             ) : (
               <span className="tag amber" style={{ fontSize: 10, fontWeight: 600 }}>
-                Targets pending
+                {isMonthly ? 'Not set' : 'Targets pending'}
               </span>
             )}
           </div>
         </div>
 
+        {/* Sub-line — what this metric means */}
+        <div style={{ fontSize: 11.5, color: 'var(--muted)', lineHeight: 1.4 }}>
+          {modeSub}
+        </div>
+
         {/* Progress bar */}
-        {data.hasTargets && (
+        {hasMetric && pct != null && (
           <div style={{ height: 6, background: 'var(--surface-3)', borderRadius: 999, overflow: 'hidden' }}>
             <motion.div
-              style={{ height: '100%', background: pctColor, borderRadius: 999 }}
+              style={{ height: '100%', background: metricColor, borderRadius: 999 }}
               initial={{ width: 0 }}
-              animate={{ width: `${Math.min(data.percentage ?? 0, 100)}%` }}
+              animate={{ width: `${Math.min(pct, 100)}%` }}
               transition={{ duration: 0.9, delay: reduce ? 0 : delay + 0.1, ease: [0.22, 1, 0.36, 1] }}
             />
           </div>
@@ -286,9 +284,7 @@ function PartnerCard({
           {focus}
         </div>
 
-        {/* District names — Animesh's request to show actual names, not
-            just the count. Sits above the focus footer so a UNFPA reader
-            can see geographic reach at a glance. */}
+        {/* District names */}
         <div style={{
           marginTop: 'auto', paddingTop: 8,
           borderTop: '1px dashed var(--hair)',
