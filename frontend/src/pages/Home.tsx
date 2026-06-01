@@ -15,7 +15,7 @@ import { api } from '@/api/client'
 import { PageLoader } from '@/components/ui/LoadingSpinner'
 import { ExecutiveBento } from '@/components/home/ExecutiveBento'
 import { PartnerProgress } from '@/components/home/PartnerProgress'
-import { ProgrammeBreakdown } from '@/components/home/ProgrammeBreakdown'
+import { SpecificProgrammes } from '@/components/home/SpecificProgrammes'
 import { PartnerOverlapMap } from '@/components/maps/PartnerOverlapMap'
 import { AnomalyCards } from '@/components/anomalies/AnomalyCards'
 import type { IndicatorProgress } from '@/types'
@@ -130,9 +130,11 @@ export default function Home() {
       {/* ── PROGRAMME-WIDE HEALTH (bento) ────────────────────────────────── */}
       <ExecutiveBento progress={progress} />
 
-      {/* ── PROGRAMME BREAKDOWN — activity-by-category donut. Sits with the
-           executive summary, lower on the page. ─────────────────────────── */}
-      <ProgrammeBreakdown />
+      {/* ── SPECIFIC PROGRAMMES — Fistula · MPDSR · Baseline Assessment
+           tiles (per Animesh: explicit named programmes, not the abstract
+           Clinical/Community/Operations donut). Each tile jumps into its
+           dedicated page. ──────────────────────────────────────────────── */}
+      <SpecificProgrammes />
 
       {/* ── ANOMALY DETECTION — silent unless something needs attention ──── */}
       <AnomalyCards />

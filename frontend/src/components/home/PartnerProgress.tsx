@@ -13,7 +13,7 @@ import { motion, useReducedMotion } from 'motion/react'
 import { ArrowRight } from 'lucide-react'
 
 import {
-  PARTNER_COLORS, PARTNER_NAMES, PARTNER_ROUTES, PARTNER_DISTRICTS,
+  PARTNER_COLORS, PARTNER_ROUTES, PARTNER_DISTRICTS,
   type PartnerCode,
 } from '@/data/partnerDistricts'
 import type { IndicatorProgress } from '@/types'
@@ -82,7 +82,7 @@ export function PartnerProgress({ progress }: Props) {
             <span className="dot" style={{ background: 'var(--unfpa)' }} />
             IMPLEMENTING PARTNERS
           </div>
-          <h2 className="section-title">Three partners at a glance</h2>
+          <h2 className="section-title">Implementing Partners at a Glance</h2>
           <p className="section-sub">
             Each partner's progress against its own targets — "on track" means an
             indicator has reached ≥ 75% of target.
@@ -131,7 +131,6 @@ function PartnerCard({
   delay: number
 }) {
   const color = PARTNER_COLORS[partner]
-  const names = PARTNER_NAMES[partner]
   const focus = PARTNER_FOCUS[partner]
   const districts = PARTNER_DISTRICTS[partner].length
   const pctColor = bandColor(data.percentage)
@@ -161,9 +160,6 @@ function PartnerCard({
             </div>
             <div style={{ fontSize: 12, color: 'var(--ink-2)', lineHeight: 1.3, marginTop: 5, maxWidth: 200, textWrap: 'pretty' } as React.CSSProperties}>
               {PARTNER_FULL_NAME[partner]}
-            </div>
-            <div className="bn" style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>
-              {names.bn}
             </div>
           </div>
           <div style={{ textAlign: 'right', flexShrink: 0 }}>

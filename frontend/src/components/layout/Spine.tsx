@@ -42,6 +42,8 @@ const PRIMARY_NAV: SpineItemDef[] = [
   // (default redirect handled in App.tsx).
   { to: '/',         i18nKey: 'nav.programmeOverview', icon: <Home size={18} />,
     visible: (r) => notManager(r) },
+  { to: '/ciprb',    i18nKey: 'nav.ciprbDashboard',    icon: <HeartPulse size={18} />,
+    visible: (r, o) => isAdminRole(r) || r === 'org_lead' || (notManager(r) && o === 'CIPRB') },
   { to: '/phd',      i18nKey: 'nav.phdDashboard',      icon: <Building2 size={18} />,
     visible: (r, o) => isAdminRole(r) || r === 'org_lead' || (notManager(r) && o === 'PHD') },
   { to: '/bondhu',   i18nKey: 'nav.bondhuDashboard',   icon: <HeartHandshake size={18} />,
@@ -56,11 +58,7 @@ const PRIMARY_NAV: SpineItemDef[] = [
 ]
 
 const SECONDARY_NAV: SpineItemDef[] = [
-  { to: '/fistula',  i18nKey: 'nav.fistulaTracker',   icon: <HeartPulse size={18} />,
-    visible: (r, o) => isAdminRole(r) || (r === 'org_lead' && o === 'CIPRB') || (notManager(r) && o === 'CIPRB') },
-  { to: '/mpdsr',    i18nKey: 'nav.mpdsrTracker',     icon: <ShieldAlert size={18} />,
-    visible: (r, o) => isAdminRole(r) || (r === 'org_lead' && o === 'CIPRB') },
-  // Tracker (now hosts both Programme Targets and Submission Compliance tabs).
+  // Fistula + MPDSR moved into the unified CIPRB Dashboard (above).
   { to: '/tracker',  i18nKey: 'nav.progressTracker',  icon: <Target size={18} />,
     visible: (r) => ['developer','supervisor','org_lead'].includes(r) },
   { to: '/baseline', i18nKey: 'nav.baselineEndline',  icon: <ClipboardList size={18} />,

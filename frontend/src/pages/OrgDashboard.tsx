@@ -195,9 +195,6 @@ function FormBox({ form }: { form: { key: string; label: string; label_bn?: stri
       </span>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 13.5, fontWeight: 500 }}>{form.label}</div>
-        {form.label_bn && (
-          <div className="bn mute" style={{ fontSize: 11, marginTop: 1 }}>{form.label_bn}</div>
-        )}
       </div>
       <div className="num-display" style={{ fontSize: 26, color: catColor, fontFamily: 'var(--display)', fontStyle: 'italic' }}>
         {form.count}
@@ -349,6 +346,12 @@ export function OrgDashboard({ partner }: Props) {
                 {partner}
               </span>
             </h1>
+            <p className="hero-tagline anim-rise d1" style={{
+              fontSize: 13, color: 'var(--ink-3)', marginTop: 4, marginBottom: 14,
+              letterSpacing: '0.01em', fontWeight: 500,
+            }}>
+              {isPHD ? 'Partners in Health and Development' : 'Bandhu Social Welfare Society'}
+            </p>
             <p className="hero-lede anim-rise d2">
               {partner} delivered <b><CountUp value={totalSubmissions} /> submissions</b> this
               month &mdash; {momChange > 0 ? '+' : ''}{momChange.toFixed(1)}% compared
@@ -356,19 +359,10 @@ export function OrgDashboard({ partner }: Props) {
               <b>{displayCentres.districts?.length ?? 0} centres</b>, GPS-verified, validated
               through KoboToolbox before reaching M&amp;E.
             </p>
-            <div className="hero-bn anim-rise d2">
-              {isPHD
-                ? <>মে মাসে PHD <b style={{ color: 'var(--ink)' }}>{totalSubmissions.toLocaleString()} টি</b> জমা দিয়েছে — গত মাস থেকে {Math.abs(momChange).toFixed(1)}% {momChange >= 0 ? 'বেশি' : 'কম'}।</>
-                : <>মে মাসে বন্ধু <b style={{ color: 'var(--ink)' }}>{totalSubmissions.toLocaleString()} টি</b> জমা দিয়েছে — গত মাস থেকে {Math.abs(momChange).toFixed(1)}% {momChange >= 0 ? 'বেশি' : 'কম'}।</>
-              }
-            </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, marginTop: 28 }} className="anim-rise d4">
-              <Meta
-                label={t('org.metaFocalPoint')}
-                value={isPHD ? 'Dr. Shahin Begum' : 'Dr. Tanvir Ahmed'}
-                sub={isPHD ? 's.begum@phd.gov.bd' : 'td.ahmed@bondhu.org'}
-              />
+            {/* Focal Point meta block removed per Animesh — keep focus strictly
+                programmatic. Agreement + Submission Mode retained. */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 14, marginTop: 28, maxWidth: 480 }} className="anim-rise d4">
               <Meta
                 label={t('org.metaAgreement')}
                 value={isPHD ? 'UNFPA-PHD-MOU' : 'UNFPA-BWS-2024-A'}
@@ -401,66 +395,10 @@ export function OrgDashboard({ partner }: Props) {
         </div>
       </section>
 
-      {/* ═══════════════════════════════════════════════════════════════
-           12-MONTH STACKED AREA
-           ═══════════════════════════════════════════════════════════════ */}
-      <section className="section" style={{ marginTop: 56 }}>
-        <SectionHead
-          kicker={`${partner} · ${t('org.sectionTrendKicker')}`}
-          title={t('org.sectionTrendTitle')}
-          sub={t('org.sectionTrendSub')}
-        />
-        <div className="card shimmer">
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-            <div style={{ display: 'flex', gap: 16 }}>
-              <LegendDot color="var(--unfpa-bright)" label={t('org.legendClinical')} />
-              <LegendDot color="var(--coral)" label={t('org.legendCommunity')} />
-              <LegendDot color="var(--amber)" label={t('org.legendOperations')} />
-            </div>
-            <span className="tag">stacked</span>
-          </div>
-          {monthlyTrend.length > 0 ? (
-            <ResponsiveContainer width="100%" height={320}>
-              <AreaChart data={monthlyTrend} margin={{ top: 8, right: 4, left: -18, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="org-g-clin" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="var(--unfpa-bright)" stopOpacity={0.32} />
-                    <stop offset="100%" stopColor="var(--unfpa-bright)" stopOpacity={0.04} />
-                  </linearGradient>
-                  <linearGradient id="org-g-comm" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="var(--coral)" stopOpacity={0.28} />
-                    <stop offset="100%" stopColor="var(--coral)" stopOpacity={0.04} />
-                  </linearGradient>
-                  <linearGradient id="org-g-ops" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="var(--amber)" stopOpacity={0.28} />
-                    <stop offset="100%" stopColor="var(--amber)" stopOpacity={0.04} />
-                  </linearGradient>
-                </defs>
-                <XAxis dataKey="month_name"
-                  tick={{ fontSize: 10, fill: 'var(--muted)', fontFamily: 'var(--mono)' }}
-                  axisLine={{ stroke: 'var(--hair)' }} tickLine={false} />
-                <YAxis
-                  tick={{ fontSize: 10, fill: 'var(--muted)', fontFamily: 'var(--mono)' }}
-                  axisLine={false} tickLine={false} />
-                <Tooltip content={<ChartTooltip />} cursor={{ stroke: 'var(--hair-2)', strokeWidth: 1, strokeDasharray: '4 4' }} />
-                <Area type="monotone" dataKey="clinical" name="Clinical" stackId="1"
-                  stroke="var(--unfpa-bright)" strokeWidth={2} fill="url(#org-g-clin)"
-                  animationDuration={1000} animationEasing="ease-out" />
-                <Area type="monotone" dataKey="community" name="Community" stackId="1"
-                  stroke="var(--coral)" strokeWidth={2} fill="url(#org-g-comm)"
-                  animationDuration={1000} animationBegin={200} animationEasing="ease-out" />
-                <Area type="monotone" dataKey="operations" name="Operations" stackId="1"
-                  stroke="var(--amber)" strokeWidth={2} fill="url(#org-g-ops)"
-                  animationDuration={1000} animationBegin={400} animationEasing="ease-out" />
-              </AreaChart>
-            </ResponsiveContainer>
-          ) : (
-            <div style={{ height: 320, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--muted)' }}>
-              Awaiting trend data...
-            </div>
-          )}
-        </div>
-      </section>
+      {/* "Programme delivery" stacked area removed per Animesh — categories
+          were synthetic (Clinical/Community/Operations) and the chart didn't
+          tell a programmatic story at our data volume. Monthly trend lives in
+          the indicator-level monthly target view instead. */}
 
       {/* ═══════════════════════════════════════════════════════════════
            FORM GRID
@@ -571,32 +509,9 @@ export function OrgDashboard({ partner }: Props) {
         </div>
       </section>
 
-      {/* ═══════════════════════════════════════════════════════════════
-           AI WEEKLY SUMMARY
-           ═══════════════════════════════════════════════════════════════ */}
-      {summary && (
-        <section className="section" style={{ marginBottom: 80 }}>
-          <div className="card" style={{
-            background: `linear-gradient(135deg, var(--unfpa) 0%, var(--unfpa-bright) 100%)`,
-            color: '#fff', padding: '28px 32px',
-          }}>
-            <div className="kicker" style={{ color: 'rgba(255,255,255,0.7)', marginBottom: 8 }}>
-              <span className="dot" style={{ background: 'rgba(255,255,255,0.5)' }} />
-              {t('org.aiSummaryEyebrow')} · {summary.period}
-            </div>
-            <p style={{
-              fontSize: 14, lineHeight: 1.65,
-              color: 'rgba(255,255,255,0.9)',
-              textWrap: 'pretty',
-            } as React.CSSProperties}>
-              {summary.ai_summary}
-            </p>
-            <p style={{ marginTop: 12, fontSize: 10.5, color: 'rgba(255,255,255,0.5)' }}>
-              {t('org.aiSummaryFooter', { when: formatDate(summary.generated_at) })}
-            </p>
-          </div>
-        </section>
-      )}
+      {/* AI Weekly Summary card removed per Animesh — placeholder narrative
+          at low data volume read as filler; the indicator grid + KPI tiles
+          carry the programmatic story. */}
     </>
   )
 }

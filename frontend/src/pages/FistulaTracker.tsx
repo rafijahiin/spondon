@@ -261,15 +261,6 @@ export default function FistulaTracker() {
               >
                 {tab.icon}
                 <span>{t(tab.labelKey)}</span>
-                <small
-                  className="bn"
-                  style={{
-                    fontSize: 10,
-                    color: isActive ? 'rgba(255,255,255,0.7)' : 'var(--muted)',
-                  }}
-                >
-                  {t(tab.labelBnKey)}
-                </small>
               </button>
             )
           })}

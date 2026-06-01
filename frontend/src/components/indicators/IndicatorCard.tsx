@@ -24,7 +24,9 @@ const COLOUR_RED    = '#C7172E'   // critical  — deep red
 const COLOUR_GREY   = '#9CA3AF'   // no target — neutral grey
 
 function bandColour(percentage: number | null): string {
-  if (percentage === null) return COLOUR_GREY
+  // 0% at programme start = no data yet, not a failure — render neutral grey.
+  // Critical red only fires for genuine attainment < 40% with actual submissions.
+  if (percentage === null || percentage === 0) return COLOUR_GREY
   if (percentage >= 75) return COLOUR_GREEN
   if (percentage >= 40) return COLOUR_YELLOW
   return COLOUR_RED

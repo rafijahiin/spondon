@@ -21,6 +21,7 @@ const TargetConfig = lazy(() => import('@/pages/TargetConfig'))
 const RecordList = lazy(() => import('@/pages/RecordList'))
 const Infographics = lazy(() => import('@/pages/Infographics'))
 const Profile = lazy(() => import('@/pages/Profile'))
+const CIPRBDashboard = lazy(() => import('@/pages/CIPRBDashboard'))
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth()
@@ -150,8 +151,12 @@ export default function App() {
               }
             />
             <Route path="approvals" element={<ManagerApprovals />} />
-            <Route path="fistula"  element={<RequireCIPRBOrg><FistulaTracker /></RequireCIPRBOrg>} />
-            <Route path="mpdsr"    element={<RequireMPDSRAccess><MPDSRTracker /></RequireMPDSRAccess>} />
+            {/* Unified CIPRB Dashboard — Fistula KPIs + registers + MPDSR in
+                one place, mirroring /phd and /bondhu structure. */}
+            <Route path="ciprb"    element={<RequireCIPRBOrg><CIPRBDashboard /></RequireCIPRBOrg>} />
+            {/* Legacy redirects so old bookmarks still work. */}
+            <Route path="fistula"  element={<Navigate to="/ciprb" replace />} />
+            <Route path="mpdsr"    element={<Navigate to="/ciprb" replace />} />
             <Route path="reports"  element={<RequireNotManager><ReportingHub /></RequireNotManager>} />
             <Route path="baseline" element={<RequireCIPRBOrg><BaselineEndline /></RequireCIPRBOrg>} />
             <Route path="training" element={<RequireNotManager><TrainingLog /></RequireNotManager>} />
