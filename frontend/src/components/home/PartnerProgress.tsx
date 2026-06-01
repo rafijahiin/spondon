@@ -48,6 +48,11 @@ interface Rollup {
   onTrack: number
   total: number            // indicators that have a target set
   totalIndicators: number  // all of this partner's indicators
+  // Animesh's dual-tracking spec — show monthly % alongside overall %.
+  // Monthly comes from each indicator's month_target / month_achievement
+  // (UNFPA-set per indicator via Target Config).
+  monthlyHasTargets: boolean
+  monthlyPercentage: number | null
 }
 
 function bandColor(pct: number | null): string {
@@ -61,6 +66,7 @@ function rollup(partner: PartnerCode, rows: IndicatorProgress[] | null): Rollup 
   const empty: Rollup = {
     hasTargets: false, percentage: null, achievement: 0, target: 0,
     onTrack: 0, total: 0, totalIndicators: 0,
+    monthlyHasTargets: false, monthlyPercentage: null,
   }
   if (!rows) return empty
   const all = rows.filter((r) => r.organisation === partner && !r.unlinked)
@@ -71,7 +77,25 @@ function rollup(partner: PartnerCode, rows: IndicatorProgress[] | null): Rollup 
   const target = withTarget.reduce((s, r) => s + (r.target_value ?? 0), 0)
   const percentage = target > 0 ? Math.round((achievement / target) * 1000) / 10 : 0
   const onTrack = withTarget.filter((r) => (r.percentage ?? 0) >= 75).length
-  return { hasTargets: true, percentage, achievement, target, onTrack, total: withTarget.length, totalIndicators }
+
+  // Monthly — only indicators where UNFPA has filled in a month_target.
+  const withMonth = all.filter((r) => (r.month_target ?? null) !== null)
+  let monthlyHasTargets = false
+  let monthlyPercentage: number | null = null
+  if (withMonth.length > 0) {
+    const monthAch = withMonth.reduce((s, r) => s + (r.month_achievement ?? 0), 0)
+    const monthTgt = withMonth.reduce((s, r) => s + (r.month_target ?? 0), 0)
+    if (monthTgt > 0) {
+      monthlyHasTargets = true
+      monthlyPercentage = Math.round((monthAch / monthTgt) * 1000) / 10
+    }
+  }
+
+  return {
+    hasTargets: true, percentage, achievement, target, onTrack,
+    total: withTarget.length, totalIndicators,
+    monthlyHasTargets, monthlyPercentage,
+  }
 }
 
 export function PartnerProgress({ progress }: Props) {
@@ -180,17 +204,39 @@ function PartnerCard({
             {loading ? (
               <span style={{ fontSize: 13, color: 'var(--muted)' }}>…</span>
             ) : data.hasTargets ? (
-              <>
-                <div style={{
-                  fontSize: 30, fontWeight: 700, color: pctColor,
-                  lineHeight: 1, fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em',
-                }}>
-                  {data.percentage}%
+              <div style={{
+                display: 'flex', gap: 14, alignItems: 'flex-start',
+              }}>
+                {/* This-month % first — Animesh's spec: a manager needs
+                    to know if a partner is hitting THIS MONTH's target,
+                    not just the small cumulative number. */}
+                <div>
+                  <div style={{
+                    fontSize: 22, fontWeight: 700,
+                    color: data.monthlyHasTargets ? bandColor(data.monthlyPercentage) : 'var(--muted)',
+                    lineHeight: 1, fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em',
+                  }}>
+                    {data.monthlyHasTargets ? `${data.monthlyPercentage}%` : '—'}
+                  </div>
+                  <div className="mono" style={{
+                    fontSize: 9, color: 'var(--muted)', letterSpacing: '0.08em', marginTop: 3,
+                  }}>
+                    THIS MONTH
+                  </div>
                 </div>
-                <div className="mono" style={{ fontSize: 9, color: 'var(--muted)', letterSpacing: '0.08em', marginTop: 3 }}>
-                  TO TARGET
+                {/* Overall on the right, larger emphasis. */}
+                <div>
+                  <div style={{
+                    fontSize: 30, fontWeight: 700, color: pctColor,
+                    lineHeight: 1, fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em',
+                  }}>
+                    {data.percentage}%
+                  </div>
+                  <div className="mono" style={{ fontSize: 9, color: 'var(--muted)', letterSpacing: '0.08em', marginTop: 3 }}>
+                    OVERALL
+                  </div>
                 </div>
-              </>
+              </div>
             ) : (
               <span className="tag amber" style={{ fontSize: 10, fontWeight: 600 }}>
                 Targets pending

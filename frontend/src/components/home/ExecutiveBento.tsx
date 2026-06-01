@@ -277,15 +277,11 @@ export function ExecutiveBento({ progress }: Props) {
           gap: 14,
         }}
       >
-        {/* HEADLINE — programme target attainment as a PIE CHART per Animesh:
-            graphical status breakdown beats a big '0%' that reads as failure
-            at programme launch. Slices = On track / Behind / Critical /
-            Not started / Targets pending. Per-partner footer retained. */}
-        <ProgrammeAttainmentPie
-          stats={stats}
-          perPartner={perPartner}
-          t={t}
-        />
+        {/* ProgrammeAttainmentPie removed — Animesh: "heavily confusing".
+            Programme totals + dual cumulative/monthly progress on each
+            indicator card carry the equivalent information without the
+            5-slice pie. ProgrammeAttainmentPie component definition is
+            still in this file (unused) — safe to delete in a later sweep. */}
 
         {/* What needs attention — top-right */}
         <Card

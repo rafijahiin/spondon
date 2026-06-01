@@ -25,7 +25,7 @@ import { FitToData } from './FitToData'
 import {
   buildCoverageMap, fillForPartners,
   normaliseDistrict, PARTNER_ROUTES, PARTNER_NAMES,
-  PARTNER_COLORS, OVERLAP_TWO_ORGS, OVERLAP_THREE_ORGS, NO_COVERAGE,
+  PARTNER_TINTS, OVERLAP_TWO_ORGS, OVERLAP_THREE_ORGS, NO_COVERAGE,
 } from '@/data/partnerDistricts'
 
 const GEOJSON_URL = '/bangladesh-adm2.geojson'
@@ -143,9 +143,9 @@ export function PartnerOverlapMap({ className, height = 360 }: Props) {
           border: '1px solid var(--hair)',
         }}
       >
-        <LegendSwatch color={PARTNER_COLORS.CIPRB}  label="CIPRB" />
-        <LegendSwatch color={PARTNER_COLORS.Bandhu} label="Bandhu" />
-        <LegendSwatch color={PARTNER_COLORS.PHD}    label="PHD" />
+        <LegendSwatch color={PARTNER_TINTS.CIPRB}  label="CIPRB" />
+        <LegendSwatch color={PARTNER_TINTS.Bandhu} label="Bandhu" />
+        <LegendSwatch color={PARTNER_TINTS.PHD}    label="PHD" />
         <LegendSwatch color={OVERLAP_TWO_ORGS}      label={t('home.legendTwoOrgs')} />
         <LegendSwatch color={OVERLAP_THREE_ORGS}    label={t('home.legendThreeOrgs')} />
         <LegendSwatch color={NO_COVERAGE}           label={t('home.legendNoCoverage')} />

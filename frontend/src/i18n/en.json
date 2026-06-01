@@ -501,7 +501,7 @@
     "legendNone": "No focused MPDSR"
   },
   "health": {
-    "kicker": "PROGRAMME HEALTH FLAGS · {{hours}}H WINDOW",
+    "kicker": "DAILY REPORTING UPDATE · {{hours}}H WINDOW",
     "titleAllActive": "Every partner is active",
     "titleAlert": "Who hasn't reported recently?",
     "subtitle": "Each partner must submit at least once every {{hours}} hours — even a '0' entry on zero-patient days. Silent partners surface here so programme managers can chase before the gap grows.",
@@ -653,9 +653,9 @@
     "countryProgramme": "Country Programme"
   },
   "health": {
-    "kicker": "PROGRAMME HEALTH FLAGS · {{hours}}H WINDOW",
-    "titleAllSteady": "Every partner is active",
-    "titleSilent": "Who hasn't reported recently?",
+    "kicker": "DAILY REPORTING UPDATE · {{hours}}H WINDOW",
+    "titleAllSteady": "Daily reporting update",
+    "titleSilent": "Daily reporting update",
     "sub": "Each centre must submit at least once every {{hours}} hours — even a zero-day return. Anything older flags as silent.",
     "active": "Active",
     "silent": "Silent",

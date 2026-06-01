@@ -103,7 +103,11 @@ export function buildCoverageMap(): Map<string, PartnerCode[]> {
  */
 export function fillForPartners(partners: PartnerCode[] | undefined): string {
   if (!partners || partners.length === 0) return NO_COVERAGE
-  if (partners.length === 1) return PARTNER_COLORS[partners[0]]
+  // Coverage map exception (Animesh: "homepage map should have different
+  // colours like before"). Use the PARTNER_TINTS scale so single-partner
+  // districts are visually distinguishable. The rest of the site still
+  // uses the flat UNFPA orange from PARTNER_COLORS.
+  if (partners.length === 1) return PARTNER_TINTS[partners[0]]
   if (partners.length === 2) return OVERLAP_TWO_ORGS
   return OVERLAP_THREE_ORGS
 }

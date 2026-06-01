@@ -149,17 +149,22 @@ class KPIView(APIView):
         total_nd_reviewed = 0
         total_fistula_patients = 0
         total_fistula_referred = 0
+        total_stillbirths_notified = 0
+        total_stillbirths_reviewed = 0
         try:
             from mpdsr.models import MPDSRFacilityCount
             from django.db.models import Sum
             agg = MPDSRFacilityCount.objects.aggregate(
                 md_n=Sum('fdn_md'), md_r=Sum('fdr_md'),
                 nd_n=Sum('fdn_nd'), nd_r=Sum('fdr_nd'),
+                sb_n=Sum('fdn_sb'), sb_r=Sum('fdr_sb'),
             )
             total_md_notified = int(agg.get('md_n') or 0)
             total_md_reviewed = int(agg.get('md_r') or 0)
             total_nd_notified = int(agg.get('nd_n') or 0)
             total_nd_reviewed = int(agg.get('nd_r') or 0)
+            total_stillbirths_notified = int(agg.get('sb_n') or 0)
+            total_stillbirths_reviewed = int(agg.get('sb_r') or 0)
         except Exception:
             pass
         try:
@@ -190,6 +195,8 @@ class KPIView(APIView):
             'total_nd_reviewed': total_nd_reviewed,
             'total_fistula_patients': total_fistula_patients,
             'total_fistula_referred': total_fistula_referred,
+            'total_stillbirths_notified': total_stillbirths_notified,
+            'total_stillbirths_reviewed': total_stillbirths_reviewed,
             'as_of': now.isoformat(),
         })
 
@@ -939,8 +946,10 @@ class ProgrammeHealthFlagView(APIView):
     # across all partners. Developers retained for support visibility.
     permission_classes = [IsSupervisorOrManager]
 
-    # Animesh's spec: alert if partner hasn't uploaded anything in the past 74 hours.
-    ALERT_THRESHOLD_HOURS = 74
+    # Animesh's spec (revised 2026-06-01) — 24-hour daily reporting window.
+    # If a centre hasn't submitted anything in the past 24 hours, it
+    # surfaces on the 'Daily reporting update' card as silent for today.
+    ALERT_THRESHOLD_HOURS = 24
 
     def get(self, request):
         from programs.models.center import ServiceCenter
