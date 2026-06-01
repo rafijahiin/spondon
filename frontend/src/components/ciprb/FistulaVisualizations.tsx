@@ -11,7 +11,7 @@
  * — the leadership-demo bar.
  */
 import { useEffect, useState } from 'react'
-import { Building2, MapPin, Home, Search, Stethoscope, Send, ArrowRight } from 'lucide-react'
+import { Building2, MapPin, Home, Users, Search, Stethoscope, Send, ArrowRight } from 'lucide-react'
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts'
 import { api } from '@/api/client'
 
@@ -35,24 +35,35 @@ interface CampaignVisit {
   village?: string
 }
 
+// FistulaCampaign — daily roll-up (CHW day-reports). This is where the
+// 'No of population covered' + 'No of Households Visited' totals live,
+// per the xlsx 'Sunamganj-Daily Data Sheet' shape.
+interface CampaignRollup {
+  district?: string
+  upazila?: string
+  households_visited?: number
+  population_covered?: number
+}
+
 interface AggregateData {
   // Campaign reach
   districts: number
   upazilas: number
   households: number
+  population: number
   // Funnel
   suspected: number
   identified: number
   referred: number
-  // Diagnosis pie (corner cases)
+  // Diagnosis pie (corner cases) — Animesh's 3 categories
   pieObstetric: number   // VVF
   pieOtherType: number   // RVF / BOTH / OTHER
   pieNoFistula: number   // diagnosis_date set but fistula_type empty
-  piePending: number     // no diagnosis_date yet
+  piePending: number     // no diagnosis_date — kept out of pie, shown beside it
 }
 
 const EMPTY: AggregateData = {
-  districts: 0, upazilas: 0, households: 0,
+  districts: 0, upazilas: 0, households: 0, population: 0,
   suspected: 0, identified: 0, referred: 0,
   pieObstetric: 0, pieOtherType: 0, pieNoFistula: 0, piePending: 0,
 }
@@ -65,7 +76,8 @@ function useFistulaAggregates(): AggregateData {
     Promise.allSettled([
       api.get<{ results?: CampaignVisit[] } | CampaignVisit[]>('/fistula/campaign-visits/'),
       api.get<{ results?: CornerCase[]    } | CornerCase[]>('/fistula/corner-cases/'),
-    ]).then(([campaignRes, cornerRes]) => {
+      api.get<{ results?: CampaignRollup[] } | CampaignRollup[]>('/fistula/campaigns/'),
+    ]).then(([campaignRes, cornerRes, rollupRes]) => {
       if (cancelled) return
 
       const campaign: CampaignVisit[] =
@@ -82,9 +94,27 @@ function useFistulaAggregates(): AggregateData {
               : cornerRes.value.data.results ?? [])
           : []
 
-      const districts = new Set(campaign.map(c => (c.district ?? '').trim()).filter(Boolean))
-      const upazilas  = new Set(campaign.map(c => `${c.district ?? ''}|${c.upazila ?? ''}`).filter(s => s.replace('|', '').trim() !== ''))
-      const households = campaign.length   // 1 visit ≈ 1 household reached
+      const rollups: CampaignRollup[] =
+        rollupRes.status === 'fulfilled'
+          ? (Array.isArray(rollupRes.value.data)
+              ? rollupRes.value.data
+              : rollupRes.value.data.results ?? [])
+          : []
+
+      // Districts/upazilas drawn from BOTH sources — daily roll-ups give
+      // wider coverage; individual visits add specifics. Households +
+      // population come from the daily roll-up totals (authoritative per
+      // Animesh's spec and the xlsx column headings).
+      const allDistricts = new Set<string>()
+      const allUpazilas = new Set<string>()
+      for (const r of [...campaign, ...rollups]) {
+        const d = (r.district ?? '').trim()
+        if (d) allDistricts.add(d)
+        const u = (r.upazila ?? '').trim()
+        if (d && u) allUpazilas.add(`${d}|${u}`)
+      }
+      const households = rollups.reduce((s, r) => s + (r.households_visited ?? 0), 0)
+      const population = rollups.reduce((s, r) => s + (r.population_covered ?? 0), 0)
 
       const identified = corner.filter(c => c.identification_date || c.diagnosis_date).length
       const referred   = corner.filter(c => c.referral_date || (c.referral_outcome ?? '').trim() !== '').length
@@ -101,9 +131,10 @@ function useFistulaAggregates(): AggregateData {
       }
 
       setData({
-        districts: districts.size,
-        upazilas: upazilas.size,
+        districts: allDistricts.size,
+        upazilas: allUpazilas.size,
         households,
+        population,
         suspected: campaign.length,
         identified,
         referred,
@@ -225,11 +256,13 @@ export function FistulaVisualizations() {
   const funnelConversionDiag = agg.suspected > 0 ? (agg.identified / agg.suspected) * 100 : 0
   const funnelConversionRefer = agg.identified > 0 ? (agg.referred / agg.identified) * 100 : 0
 
+  // Pie shows Animesh's three categories ONLY — Obstetric / Other / Not Fistula.
+  // 'Awaiting diagnosis' is reported beside the donut so the % totals stay
+  // honest (denominator = patients who have actually been examined).
   const pieData = [
     { name: 'Obstetric fistula (VVF)',    value: agg.pieObstetric, color: PIE_COLORS.obstetric },
     { name: 'Other fistula type',         value: agg.pieOtherType, color: PIE_COLORS.otherType },
     { name: 'No fistula confirmed',       value: agg.pieNoFistula, color: PIE_COLORS.noFistula },
-    { name: 'Awaiting diagnosis',         value: agg.piePending,   color: PIE_COLORS.pending },
   ]
   const pieTotal = pieData.reduce((s, d) => s + d.value, 0)
 
@@ -258,6 +291,7 @@ export function FistulaVisualizations() {
           <MetricTile icon={<MapPin     size={13} />} label="Districts"   value={agg.districts}  sub="Distinct districts visited" />
           <MetricTile icon={<Building2  size={13} />} label="Upazilas"    value={agg.upazilas}   sub="Upazila-level coverage" />
           <MetricTile icon={<Home       size={13} />} label="Households"  value={agg.households} sub="Doors knocked / families screened" />
+          <MetricTile icon={<Users      size={13} />} label="Population"  value={agg.population} sub="Total population covered" />
         </div>
       </div>
 
@@ -339,7 +373,20 @@ export function FistulaVisualizations() {
                   }}>EXAMINED</span>
                 </div>
               </div>
-              <DiagnosisLegend data={pieData} />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12, flex: 1, minWidth: 220 }}>
+                <DiagnosisLegend data={pieData} />
+                {agg.piePending > 0 && (
+                  <div style={{
+                    marginTop: 4, padding: '8px 12px', borderRadius: 8,
+                    background: 'var(--surface-2)', border: '1px dashed var(--hair)',
+                    fontSize: 12, color: 'var(--ink-3)',
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  }}>
+                    <span>Awaiting diagnosis</span>
+                    <b style={{ fontVariantNumeric: 'tabular-nums' }}>{agg.piePending.toLocaleString()}</b>
+                  </div>
+                )}
+              </div>
             </div>
           ) : (
             <div style={{

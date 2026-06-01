@@ -143,6 +143,13 @@ class FistulaCampaign(models.Model):
     men_reached_awareness = models.PositiveIntegerField(default=0)
     community_sessions = models.PositiveSmallIntegerField(default=0)
 
+    # Animesh's spec — campaign scale metrics (visible as top-line tiles on
+    # the CIPRB dashboard). The 'Sunamganj-Daily Data Sheet' xlsx column
+    # '# of Households Visited' maps to households_visited, and 'No of
+    # population covered' maps to population_covered.
+    households_visited = models.PositiveIntegerField(default=0)
+    population_covered = models.PositiveIntegerField(default=0)
+
     # Case identification
     suspected_fistula_cases = models.PositiveSmallIntegerField(default=0)
     confirmed_fistula_cases = models.PositiveSmallIntegerField(default=0)

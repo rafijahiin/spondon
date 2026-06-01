@@ -27,7 +27,8 @@ from mpdsr.models import (
     MPDSRCase, MPDSRDistrictDenominator, MPDSRFacilityCount,
     MPDSRActionPlanSummary, DeathType, ReviewStatus, PlaceOfDeath,
 )
-from fistula.models import FistulaCornerCase
+from fistula.models import FistulaCornerCase, FistulaCampaign
+from submissions.models import FormType
 
 MPDSR_ROOT_DEFAULT   = r'C:/Users/HP/Downloads/fielddatareports_mpdsr'
 FISTULA_ROOT_DEFAULT = r'C:/Users/HP/Downloads/fistuladatareport'
@@ -408,6 +409,79 @@ def import_fistula_identified(fistula_root: str) -> tuple[int, int]:
     return created, skipped
 
 
+def _parse_date(v):
+    """Cells in 'Sunamganj-Daily Data Sheet' come as datetime objects or
+    DD.MM.YY / DD/MM/YYYY strings. Return a date or None."""
+    if v is None or v == '':
+        return None
+    if isinstance(v, datetime.datetime):
+        return v.date()
+    if isinstance(v, datetime.date):
+        return v
+    s = _str(v)
+    for fmt in ('%d.%m.%y', '%d.%m.%Y', '%d/%m/%y', '%d/%m/%Y'):
+        try:
+            return datetime.datetime.strptime(s, fmt).date()
+        except ValueError:
+            continue
+    return None
+
+
+def import_mass_campaign(path: str) -> tuple[int, int]:
+    """Ingest 'Mass Campaign on_ End Obstetric Fistula in Bangladesh.xlsx'
+    daily roll-up sheet into FistulaCampaign rows. Maps the form columns
+    Animesh asked for — households visited + population covered — into
+    structured fields so the CIPRB dashboard tiles render real numbers."""
+    import openpyxl
+    wb = openpyxl.load_workbook(path, data_only=True)
+    created = skipped = 0
+    for sheet_name in wb.sheetnames:
+        if 'Daily' not in sheet_name:
+            continue
+        ws = wb[sheet_name]
+        # Header row is row 3 in this workbook; data starts row 4.
+        for row in ws.iter_rows(min_row=4, values_only=True):
+            campaign_date = _parse_date(row[0])
+            if not campaign_date:
+                continue
+            union    = _str(row[1])
+            upazila  = _str(row[2])
+            district = _str(row[3])
+            households = _int(row[15])
+            population = _int(row[16])
+            if households == 0 and population == 0:
+                continue   # empty row / total row
+            # Compact deterministic key — case_hash is max_length=30, so
+            # encode district+upazila+date through a short hash to avoid
+            # collisions truncating the date component.
+            import hashlib
+            digest = hashlib.md5(
+                f'{district}|{upazila}|{campaign_date.isoformat()}'.encode()
+            ).hexdigest()[:18]
+            key = f'MC-{digest}'   # 21 chars, well under the 30-char ceiling
+            obj, was_created = FistulaCampaign.objects.update_or_create(
+                case_hash=key,
+                defaults=dict(
+                    partner='CIPRB',
+                    campaign_date=campaign_date,
+                    district=district,
+                    upazila=upazila,
+                    union=union,
+                    households_visited=households,
+                    population_covered=population,
+                    suspected_fistula_cases=_int(row[17]),
+                    confirmed_fistula_cases=_int(row[18]),
+                    cases_referred=_int(row[19]),
+                    cases_surgery_completed=_int(row[20]),
+                ),
+            )
+            if was_created:
+                created += 1
+            else:
+                skipped += 1
+    return created, skipped
+
+
 class Command(BaseCommand):
     help = "Import Sayeed's CIPRB Excel files as historical baseline."
 
@@ -418,6 +492,9 @@ class Command(BaseCommand):
         parser.add_argument('--action-plan', action='store_true')
         parser.add_argument('--va-md', action='store_true')
         parser.add_argument('--fistula', action='store_true')
+        parser.add_argument('--mass-campaign', action='store_true',
+            help='Import Mass Campaign daily roll-up (households + population)')
+        parser.add_argument('--mass-campaign-file', default=r'C:/Users/HP/Downloads/Mass Campaign on_ End Obstetric Fistula in Bangladesh.xlsx')
         parser.add_argument('--mpdsr-root', default=MPDSR_ROOT_DEFAULT)
         parser.add_argument('--fistula-root', default=FISTULA_ROOT_DEFAULT)
 
@@ -451,6 +528,11 @@ class Command(BaseCommand):
             c, s = import_fistula_identified(fistula_root)
             self.stdout.write(self.style.SUCCESS(f'  OK created={c} skipped={s}'))
 
+        if do_all or opts['mass_campaign']:
+            self.stdout.write('Importing Mass Campaign daily roll-ups...')
+            c, s = import_mass_campaign(opts['mass_campaign_file'])
+            self.stdout.write(self.style.SUCCESS(f'  OK created={c} updated={s}'))
+
         if not (do_all or any(opts[k] for k in
-                ('denominators', 'facility', 'action_plan', 'va_md', 'fistula'))):
+                ('denominators', 'facility', 'action_plan', 'va_md', 'fistula', 'mass_campaign'))):
             self.stdout.write('Pass --all or a specific flag. See --help.')
