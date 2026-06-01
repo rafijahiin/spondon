@@ -97,6 +97,13 @@ export interface KPIs {
   previous_month_submissions: number
   mom_change_percent: number
   target_attainment: number | null
+  // Cumulative programme totals (Animesh's high-level executive numbers)
+  total_md_notified?: number
+  total_md_reviewed?: number
+  total_nd_notified?: number
+  total_nd_reviewed?: number
+  total_fistula_patients?: number
+  total_fistula_referred?: number
   as_of: string
 }
 

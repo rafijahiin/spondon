@@ -139,6 +139,40 @@ class KPIView(APIView):
         else:
             mom_change = 0.0
 
+        # Cumulative programme totals — Animesh's high-level executive numbers:
+        # 'Total Maternal Deaths Notified / Reviewed / Total Fistula patients
+        # managed/referred to date'. Pulls from the MPDSR facility aggregates
+        # (Sayeed's Excel ingest) and FistulaCornerCase counts.
+        total_md_notified = 0
+        total_md_reviewed = 0
+        total_nd_notified = 0
+        total_nd_reviewed = 0
+        total_fistula_patients = 0
+        total_fistula_referred = 0
+        try:
+            from mpdsr.models import MPDSRFacilityCount
+            from django.db.models import Sum
+            agg = MPDSRFacilityCount.objects.aggregate(
+                md_n=Sum('fdn_md'), md_r=Sum('fdr_md'),
+                nd_n=Sum('fdn_nd'), nd_r=Sum('fdr_nd'),
+            )
+            total_md_notified = int(agg.get('md_n') or 0)
+            total_md_reviewed = int(agg.get('md_r') or 0)
+            total_nd_notified = int(agg.get('nd_n') or 0)
+            total_nd_reviewed = int(agg.get('nd_r') or 0)
+        except Exception:
+            pass
+        try:
+            from fistula.models import FistulaCornerCase
+            total_fistula_patients = FistulaCornerCase.objects.count()
+            total_fistula_referred = FistulaCornerCase.objects.exclude(
+                referral_date__isnull=True,
+            ).count() + FistulaCornerCase.objects.exclude(
+                referral_outcome='',
+            ).exclude(referral_date__isnull=False).count()
+        except Exception:
+            pass
+
         return Response({
             'submissions_this_month': this_month_count,
             'submissions_pending': pending_count,
@@ -149,6 +183,13 @@ class KPIView(APIView):
             'previous_month_submissions': prev_month_count,
             'mom_change_percent': mom_change,
             'target_attainment': None,  # wired up when tracker app is complete
+            # Cumulative high-level metrics (Animesh's spec)
+            'total_md_notified': total_md_notified,
+            'total_md_reviewed': total_md_reviewed,
+            'total_nd_notified': total_nd_notified,
+            'total_nd_reviewed': total_nd_reviewed,
+            'total_fistula_patients': total_fistula_patients,
+            'total_fistula_referred': total_fistula_referred,
             'as_of': now.isoformat(),
         })
 

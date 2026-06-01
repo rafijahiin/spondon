@@ -336,26 +336,37 @@ export function ExecutiveBento({ progress }: Props) {
           delay={0.2}
         />
 
-        {/* Outcome counts + field activity — bottom row */}
+        {/* Cumulative programme totals (Animesh's high-level executive numbers):
+            Total MD Notified, Total MD Reviewed, Total Fistula Patients,
+            Total Fistula Referred. THIS MONTH numbers retained inline as
+            sub-text so the executive can see both. */}
         <Card
-          kicker={t('bento.gbv', { defaultValue: 'GBV CASES · THIS MONTH' })}
-          value={fmtNum(kpis?.gbv_cases_this_month ?? 0)}
-          sub={t('bento.gbvSub', { defaultValue: 'referral protocol' })}
+          kicker={t('bento.totalMDNotified', { defaultValue: 'MATERNAL DEATHS · NOTIFIED' })}
+          value={fmtNum(kpis?.total_md_notified ?? 0)}
+          sub={t('bento.totalMDNotifiedSub', {
+            defaultValue: `${fmtNum(kpis?.mpdsr_cases_this_month ?? 0)} this month`,
+          })}
           icon={<ShieldAlert size={12} />}
           delay={0.25}
         />
         <Card
-          kicker={t('bento.fistula', { defaultValue: 'FISTULA · THIS MONTH' })}
-          value={fmtNum(kpis?.fistula_cases_this_month ?? 0)}
-          sub={t('bento.fistulaSub', { defaultValue: 'CIPRB campaigns' })}
-          icon={<Heart size={12} />}
+          kicker={t('bento.totalMDReviewed', { defaultValue: 'MATERNAL DEATHS · REVIEWED' })}
+          value={fmtNum(kpis?.total_md_reviewed ?? 0)}
+          sub={t('bento.totalMDReviewedSub', {
+            defaultValue: kpis?.total_md_notified
+              ? `${Math.round(((kpis.total_md_reviewed ?? 0) / kpis.total_md_notified) * 100)}% review rate`
+              : 'awaiting data',
+          })}
+          icon={<Activity size={12} />}
           delay={0.3}
         />
         <Card
-          kicker={t('bento.mpdsr', { defaultValue: 'MPDSR · THIS MONTH' })}
-          value={fmtNum(kpis?.mpdsr_cases_this_month ?? 0)}
-          sub={t('bento.mpdsrSub', { defaultValue: 'CIPRB reviews' })}
-          icon={<Activity size={12} />}
+          kicker={t('bento.totalFistula', { defaultValue: 'FISTULA PATIENTS · TOTAL' })}
+          value={fmtNum(kpis?.total_fistula_patients ?? 0)}
+          sub={t('bento.totalFistulaSub', {
+            defaultValue: `${fmtNum(kpis?.total_fistula_referred ?? 0)} referred for treatment`,
+          })}
+          icon={<Heart size={12} />}
           delay={0.35}
         />
         <Card
