@@ -40,14 +40,16 @@ function RequireSupervisorOrDeveloper({ children }: { children: React.ReactNode 
   return <>{children}</>
 }
 
-/** Guard for the Target Config screen. UNFPA Supervisor + Developer
- *  (Rafi) only — org leads are NOT allowed (Animesh's 2026-06-01
- *  directive). Other roles bounce to home. Server enforces the same
- *  rules on the API (CanConfigureTargets). */
+/** Guard for the Target Config screen.
+ *  - Developer + Supervisor: read + edit any partner
+ *  - Org Lead: read-only, own partner only
+ *  - Everyone else: bounce to home
+ *  Server enforces edit restrictions on the API (CanConfigureTargets);
+ *  this guard only controls view access. */
 function RequireTargetConfigAccess({ children }: { children: React.ReactNode }) {
   const { user } = useAuth()
   if (!user) return <Navigate to="/login" replace />
-  if (!['developer', 'supervisor'].includes(user.role)) {
+  if (!['developer', 'supervisor', 'org_lead'].includes(user.role)) {
     return <Navigate to="/" replace />
   }
   return <>{children}</>

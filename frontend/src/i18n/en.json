@@ -231,7 +231,7 @@
   "targetConfig": {
     "title": "Target Config",
     "subtitle": "Editable indicator-target registry. Click any cell to revise the target for that activity. Org Leads can edit only their own partner's rows; Developer and Supervisor can edit any partner.",
-    "scopeBannerOrgLead": "You're viewing as Org Lead — you can edit targets only for your own partner ({{org}}). Other partners' rows are read-only.",
+    "scopeBannerOrgLead": "You're viewing as Org Lead — read-only access to {{org}}'s targets and monthly splits. Targets are set by UNFPA; contact your supervisor to request changes.",
     "loadError": "Could not load indicator targets.",
     "tableActivity": "Activity",
     "tableIndicator": "Indicator",

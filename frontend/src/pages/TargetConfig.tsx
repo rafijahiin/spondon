@@ -409,7 +409,20 @@ function TargetConfig() {
     return () => { cancelled = true }
   }, [])
 
-  const grouped = useMemo(() => (rows ? groupTargets(rows) : []), [rows])
+  // Org Lead scope — they're allowed to view the page READ-ONLY but
+  // only their own partner's indicators. Developer + Supervisor see
+  // everything. The API still returns all rows to org_lead (because
+  // can_read_other_orgs is True for them); the filter here is the UI
+  // restriction.
+  const visibleRows = useMemo(() => {
+    if (!rows) return null
+    if (user?.role === 'org_lead') {
+      return rows.filter(r => r.partner_code === user.organisation)
+    }
+    return rows
+  }, [rows, user])
+
+  const grouped = useMemo(() => (visibleRows ? groupTargets(visibleRows) : []), [visibleRows])
 
   const handleRowSaved = (updated: IndicatorTarget) => {
     setRows(prev => prev?.map(r => r.id === updated.id ? updated : r) ?? null)
