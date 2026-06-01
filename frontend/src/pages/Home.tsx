@@ -39,7 +39,7 @@ export default function Home() {
   return (
     <>
       {/* ── HERO — project brief (left) + coverage map (right) ───────────── */}
-      <section className="hero" style={{ paddingBottom: 28 }}>
+      <section className="hero hero-card" style={{ paddingBottom: 28 }}>
         <div
           className="home-hero-grid"
           style={{

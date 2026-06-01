@@ -718,6 +718,33 @@ html.dark ::selection { background: rgba(249, 96, 0, 0.30); color: var(--ink); }
   margin: 0 auto;
 }
 
+/* Standalone-HTML design — hero wrapped in a card with a vertical
+   orange gradient strip on the left edge. Animesh's reference design.
+   Works in both light and dark mode (the gradient stays consistent;
+   the surface flips via existing tokens). */
+.hero-card {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--hair);
+  border-radius: 18px;
+  box-shadow: 0 6px 22px -10px rgba(20, 24, 40, 0.22),
+              0 2px 6px rgba(20, 24, 40, 0.05);
+  overflow: hidden;
+  padding: 38px 42px 34px;
+}
+.hero-card::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 0;
+  width: 5px;
+  height: 100%;
+  background: linear-gradient(180deg, var(--unfpa), var(--unfpa-bright));
+}
+html.dark .hero-card {
+  box-shadow: 0 6px 22px -10px rgba(0, 0, 0, 0.55),
+              0 2px 6px rgba(0, 0, 0, 0.25);
+}
+
 .hero-eyebrow {
   display: flex;
   align-items: center;
