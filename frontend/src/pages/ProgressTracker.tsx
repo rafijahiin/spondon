@@ -572,59 +572,16 @@ function SubmissionComplianceTab() {
 // the API layer (CanConfigureTargets vs CanApproveSubmissions); the UI just
 // stops splitting them across two pages.
 
-type TabKey = 'targets' | 'compliance'
-
+// /tracker collapsed to the Programme Targets page only (Animesh: kill
+// the Submission Compliance tab — Daily Reporting Update on home + the
+// 'What's being submitted' section on each org page cover the same
+// information, and the 48h-Gap labels here contradicted the new 24h
+// home rule). SubmissionComplianceTab is left defined above but unused;
+// safe to delete in a later cleanup sweep.
 export default function ProgressTracker() {
-  const { t } = useTranslation()
-  const [active, setActive] = useState<TabKey>('compliance')
-
-  const TABS: { key: TabKey; labelKey: string }[] = [
-    { key: 'compliance', labelKey: 'tracker.tabCompliance' },
-    { key: 'targets',    labelKey: 'tracker.tabProgrammeTargets' },
-  ]
-
   return (
     <div className="mx-auto max-w-7xl px-4 pt-6 sm:px-6 lg:px-8">
-      {/* Tab pill bar — same visual treatment as the CIPRB hub tabs */}
-      <div
-        role="tablist"
-        aria-label="Progress tracker views"
-        style={{
-          display: 'inline-flex', gap: 6, padding: 4,
-          background: 'var(--surface-2)',
-          border: '1px solid var(--hair)',
-          borderRadius: 12,
-          marginBottom: 24,
-        }}
-      >
-        {TABS.map((tab) => {
-          const isActive = active === tab.key
-          return (
-            <button
-              key={tab.key}
-              role="tab"
-              aria-selected={isActive}
-              onClick={() => setActive(tab.key)}
-              style={{
-                padding: '7px 14px',
-                fontSize: 13,
-                fontWeight: isActive ? 600 : 500,
-                color: isActive ? '#fff' : 'var(--ink-2)',
-                background: isActive ? 'var(--unfpa)' : 'transparent',
-                border: 'none',
-                borderRadius: 8,
-                cursor: 'pointer',
-                transitionProperty: 'background-color, color',
-                transitionDuration: '150ms',
-              }}
-            >
-              {t(tab.labelKey)}
-            </button>
-          )
-        })}
-      </div>
-
-      {active === 'compliance' ? <SubmissionComplianceTab /> : <ProgrammeTargetsTab />}
+      <ProgrammeTargetsTab />
     </div>
   )
 }
