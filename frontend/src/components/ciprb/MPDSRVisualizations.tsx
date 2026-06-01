@@ -610,10 +610,15 @@ function ReportingRatePerDistrict({
   const rows = denominators
     .filter(d => (d.project_deaths_md ?? 0) > 0)
     .map(d => {
-      const estimated = d.project_deaths_md ?? 0
+      // Sayeed's Project-Deaths denominators arrive as estimates with
+      // fractional precision (10.336, 68.19312). Round for display — you
+      // can't have 0.336 of a maternal death — while keeping the precise
+      // value for the rate math underneath.
+      const estimatedRaw = d.project_deaths_md ?? 0
+      const estimatedDisplay = Math.round(estimatedRaw)
       const reported = reportedByDistrict[norm(d.district)] ?? 0
-      const rate = estimated > 0 ? (reported / estimated) * 100 : 0
-      return { district: d.district, estimated, reported, rate }
+      const rate = estimatedRaw > 0 ? (reported / estimatedRaw) * 100 : 0
+      return { district: d.district, estimated: estimatedDisplay, reported, rate }
     })
     .sort((a, b) => b.rate - a.rate)
 
@@ -683,6 +688,10 @@ function ReportingRatePerDistrict({
 
 export function MPDSRVisualizations({ cases }: { cases: MPDSRCase[] }) {
   const agg = useAggregates()
+  // Response Plan tracker is hidden — no Kobo form is wired to capture
+  // executed-activity counts yet, so the only data source was Sayeed's
+  // Excel which had ~50% placeholder values across the board. Re-enable
+  // by re-adding <ResponsePlanTracker /> here once the field form lands.
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 36 }}>
       <NotifyVsReview
@@ -692,9 +701,6 @@ export function MPDSRVisualizations({ cases }: { cases: MPDSRCase[] }) {
       />
       <ReportingRatePerDistrict cases={cases} denominators={agg?.denominators ?? []} />
       <CauseBreakdown cases={cases} />
-      <div id="response-plan" style={{ scrollMarginTop: 80 }}>
-        <ResponsePlanTracker summaries={agg?.action_plan_summaries ?? []} />
-      </div>
     </div>
   )
 }

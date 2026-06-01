@@ -38,12 +38,17 @@ interface CampaignVisit {
 
 // FistulaCampaign — daily roll-up (CHW day-reports). This is where the
 // 'No of population covered' + 'No of Households Visited' totals live,
-// per the xlsx 'Sunamganj-Daily Data Sheet' shape.
+// per the xlsx 'Sunamganj-Daily Data Sheet' shape. The suspected/
+// confirmed/referred fields here are the authoritative campaign-side
+// numbers — Patient Funnel reads them from this source.
 interface CampaignRollup {
   district?: string
   upazila?: string
   households_visited?: number
   population_covered?: number
+  suspected_fistula_cases?: number
+  confirmed_fistula_cases?: number
+  cases_referred?: number
 }
 
 interface AggregateData {
@@ -117,6 +122,15 @@ function useFistulaAggregates(): AggregateData {
       const households = rollups.reduce((s, r) => s + (r.households_visited ?? 0), 0)
       const population = rollups.reduce((s, r) => s + (r.population_covered ?? 0), 0)
 
+      // Patient Funnel sources — fixed after audit:
+      //   Suspected — from daily campaign roll-ups (CHWs noting suspected
+      //     patients during outreach), NOT individual visit register.
+      //     Sayeed's Mass Campaign Excel writes this sum directly.
+      //   Identified — Fistula Corner cases that have a diagnosis date.
+      //   Referred — Fistula Corner cases sent on for surgery. Most Excel-
+      //     imported rows don't carry a referral_date yet; once a Kobo
+      //     referral form lands this will populate.
+      const suspected = rollups.reduce((s, r) => s + (r.suspected_fistula_cases ?? 0), 0)
       const identified = corner.filter(c => c.identification_date || c.diagnosis_date).length
       const referred   = corner.filter(c => c.referral_date || (c.referral_outcome ?? '').trim() !== '').length
 
@@ -136,7 +150,7 @@ function useFistulaAggregates(): AggregateData {
         upazilas: allUpazilas.size,
         households,
         population,
-        suspected: campaign.length,
+        suspected,
         identified,
         referred,
         pieObstetric, pieOtherType, pieNoFistula, piePending,
@@ -204,20 +218,18 @@ function FunnelStage({
   )
 }
 
-function FunnelArrow({ pct, label }: { pct: number; label?: string }) {
+function FunnelArrow() {
+  // Decorative-only divider between funnel stages. Conversion % between
+  // Suspected (community outreach) and Identified (clinic walk-ins) was
+  // removed after audit — those are parallel cohorts, not a sequential
+  // funnel, so dividing them was misleading. Patients may walk straight
+  // into a Fistula Corner without ever being noted during outreach.
   return (
     <div style={{
-      display: 'flex', flexDirection: 'column', alignItems: 'center',
-      gap: 4, flexShrink: 0, padding: '0 12px',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      flexShrink: 0, padding: '0 16px',
     }}>
-      <ArrowRight size={20} color={CIPRB_BLUE} />
-      <span style={{
-        fontSize: 10.5, color: CIPRB_BLUE, fontWeight: 600,
-        fontVariantNumeric: 'tabular-nums',
-        background: CIPRB_BLUE_SOFT, padding: '2px 8px', borderRadius: 999,
-      }}>
-        {label ?? `${pct.toFixed(0)}% conversion`}
-      </span>
+      <ArrowRight size={22} color={CIPRB_BLUE} aria-hidden />
     </div>
   )
 }
@@ -255,8 +267,10 @@ export function FistulaVisualizations() {
   const { t } = useTranslation()
   const agg = useFistulaAggregates()
 
-  const funnelConversionDiag = agg.suspected > 0 ? (agg.identified / agg.suspected) * 100 : 0
-  const funnelConversionRefer = agg.identified > 0 ? (agg.referred / agg.identified) * 100 : 0
+  // Conversion arrows removed after audit — Suspected (campaign outreach)
+  // and Identified (clinic walk-ins) are PARALLEL intake cohorts, not a
+  // sequential funnel. Quoting % between them was misleading. Tiles now
+  // stand alone; the arrow is decorative only.
 
   // Pie shows Animesh's three categories ONLY — Obstetric / Other / Not Fistula.
   // 'Awaiting diagnosis' is reported beside the donut so the % totals stay
@@ -316,9 +330,9 @@ export function FistulaVisualizations() {
           display: 'flex', alignItems: 'center', gap: 0, flexWrap: 'wrap',
         }}>
           <FunnelStage icon={<Search size={14} />}      label={t('fistulaViz.suspected')}  value={agg.suspected}  sub={t('fistulaViz.suspectedSub')} />
-          <FunnelArrow pct={funnelConversionDiag} label={t('fistulaViz.conversion', { pct: funnelConversionDiag.toFixed(0) })} />
+          <FunnelArrow />
           <FunnelStage icon={<Stethoscope size={14} />} label={t('fistulaViz.identified')} value={agg.identified} sub={t('fistulaViz.identifiedSub')} />
-          <FunnelArrow pct={funnelConversionRefer} label={t('fistulaViz.conversion', { pct: funnelConversionRefer.toFixed(0) })} />
+          <FunnelArrow />
           <FunnelStage icon={<Send size={14} />}        label={t('fistulaViz.referred')}   value={agg.referred}   sub={t('fistulaViz.referredSub')} />
         </div>
       </div>

@@ -610,16 +610,8 @@ export default function CIPRBDashboard() {
           }}>
             {t('ciprbExtras.jumpMpdsr')}
           </a>
-          <a href="#response-plan" style={{
-            display: 'inline-flex', alignItems: 'center', gap: 6,
-            padding: '6px 14px', borderRadius: 999,
-            background: 'rgba(204,106,0,0.10)',
-            color: '#CC6A00',
-            fontSize: 12.5, fontWeight: 600, textDecoration: 'none',
-            border: '1px solid rgba(204,106,0,0.22)',
-          }}>
-            {t('ciprbExtras.jumpResponse')}
-          </a>
+          {/* Jump-to-Response-Plan pill removed — tracker is hidden until
+              a Kobo form is wired for live executed-count submissions. */}
         </div>
       </section>
 
