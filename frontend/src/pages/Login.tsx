@@ -43,19 +43,8 @@ export default function Login() {
         }
         @keyframes orb2 {
           0%   { transform: translate(0px,  0px)   scale(1.05); }
-          40%  { transform: translate(-70px, 55px) scale(0.92); }
-          80%  { transform: translate(50px, -35px) scale(1.1);  }
+          50%  { transform: translate(-60px, 70px) scale(0.90); }
           100% { transform: translate(0px,  0px)   scale(1.05); }
-        }
-        @keyframes orb3 {
-          0%   { transform: translate(0px, 0px)    scale(1);    }
-          50%  { transform: translate(45px, 60px)  scale(1.08); }
-          100% { transform: translate(0px, 0px)    scale(1);    }
-        }
-        @keyframes orb4 {
-          0%   { transform: translate(0px,   0px)  scale(0.95); }
-          60%  { transform: translate(-55px,-45px) scale(1.1);  }
-          100% { transform: translate(0px,   0px)  scale(0.95); }
         }
         @media (max-width: 760px) {
           .login-brand-panel { display: none !important; }
@@ -69,7 +58,7 @@ export default function Login() {
           className="login-brand-panel"
           style={{
             flex: '0 0 52%',
-            background: '#130A04',   /* very dark warm near-black */
+            background: '#09090C',   /* near-black neutral — lets orange glow */
             display: 'flex',
             flexDirection: 'column',
             padding: 'clamp(40px, 6vh, 72px) clamp(36px, 5vw, 64px)',
@@ -77,30 +66,18 @@ export default function Login() {
             overflow: 'hidden',
           }}
         >
-          {/* Floating colour orbs */}
+          {/* Two orbs only — orange dominant, coral accent */}
           <div style={{
-            position: 'absolute', width: 480, height: 480, borderRadius: '50%',
-            background: '#F96000', filter: 'blur(110px)', opacity: 0.28,
-            top: '-10%', left: '-5%',
-            animation: 'orb1 14s ease-in-out infinite',
+            position: 'absolute', width: 560, height: 560, borderRadius: '50%',
+            background: '#F96000', filter: 'blur(130px)', opacity: 0.30,
+            top: '-15%', left: '-10%',
+            animation: 'orb1 16s ease-in-out infinite',
           }} />
           <div style={{
-            position: 'absolute', width: 380, height: 380, borderRadius: '50%',
-            background: '#ED5B7E', filter: 'blur(100px)', opacity: 0.22,
-            bottom: '5%', right: '-8%',
-            animation: 'orb2 18s ease-in-out infinite',
-          }} />
-          <div style={{
-            position: 'absolute', width: 300, height: 300, borderRadius: '50%',
-            background: '#F2B544', filter: 'blur(90px)', opacity: 0.20,
-            top: '45%', left: '35%',
-            animation: 'orb3 11s ease-in-out infinite',
-          }} />
-          <div style={{
-            position: 'absolute', width: 260, height: 260, borderRadius: '50%',
-            background: '#C94030', filter: 'blur(80px)', opacity: 0.18,
-            bottom: '25%', left: '-5%',
-            animation: 'orb4 16s ease-in-out infinite',
+            position: 'absolute', width: 360, height: 360, borderRadius: '50%',
+            background: '#ED5B7E', filter: 'blur(110px)', opacity: 0.18,
+            bottom: '-5%', right: '-5%',
+            animation: 'orb2 20s ease-in-out infinite',
           }} />
 
           {/* Content sits above the orbs */}
@@ -109,30 +86,30 @@ export default function Login() {
             {/* SIMPLE wordmark */}
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
               <h1 style={{
-                fontSize: 'clamp(80px, 10vw, 128px)',
-                fontWeight: 800,
-                letterSpacing: '-0.045em',
-                lineHeight: 0.88,
+                fontSize: 'clamp(72px, 9.5vw, 118px)',
+                fontWeight: 700,
+                letterSpacing: '-0.03em',
+                lineHeight: 1,
                 color: 'white',
-                margin: '0 0 clamp(20px, 3vh, 32px)',
+                margin: '0 0 clamp(16px, 2.5vh, 26px)',
               }}>
                 SIMPLE
               </h1>
 
               <p style={{
-                fontSize: 'clamp(13px, 1.15vw, 16px)',
-                lineHeight: 1.75,
-                color: 'rgba(255,255,255,0.52)',
-                maxWidth: 390,
+                fontSize: 'clamp(12px, 1.05vw, 14.5px)',
+                lineHeight: 1.65,
+                color: 'rgba(255,255,255,0.50)',
                 margin: '0 0 clamp(20px, 3vh, 32px)',
                 fontWeight: 400,
+                whiteSpace: 'nowrap',
               }}>
-                <b style={{ color: '#FFAA60', fontWeight: 700 }}>S</b>trengthening{' '}
-                <b style={{ color: '#FFAA60', fontWeight: 700 }}>I</b>ntegrated{' '}
-                <b style={{ color: '#FFAA60', fontWeight: 700 }}>M</b>onitoring,{' '}
-                <b style={{ color: '#FFAA60', fontWeight: 700 }}>P</b>rogramme{' '}
-                <b style={{ color: '#FFAA60', fontWeight: 700 }}>L</b>earning and{' '}
-                <b style={{ color: '#FFAA60', fontWeight: 700 }}>E</b>vidence for SRHR
+                <b style={{ color: '#F96000', fontWeight: 700 }}>S</b>trengthening{' '}
+                <b style={{ color: '#F96000', fontWeight: 700 }}>I</b>ntegrated{' '}
+                <b style={{ color: '#F96000', fontWeight: 700 }}>M</b>onitoring,{' '}
+                <b style={{ color: '#F96000', fontWeight: 700 }}>P</b>rogramme{' '}
+                <b style={{ color: '#F96000', fontWeight: 700 }}>L</b>earning and{' '}
+                <b style={{ color: '#F96000', fontWeight: 700 }}>E</b>vidence for SRHR
               </p>
 
             </div>

@@ -43,7 +43,7 @@
     "eyebrowSystem": "INTEGRATED DIGITAL M&E SYSTEM",
     "eyebrowPeriod": "2026–2027",
     "headline": "SIMPLE",
-    "briefP1": "SIMPLE is UNFPA's integrated SRHR data visualisation and programme intelligence platform, designed to strengthen monitoring, programme learning, evidence generation, and evaluation data management. It consolidates field submissions from three implementing partners — CIPRB, Bandhu Social Welfare Society and Partners in Health and Development (PHD) — into one live dashboard.",
+    "briefP1": "SIMPLE is UNFPA's integrated SRHR data visualisation and programme intelligence platform, designed to strengthen monitoring, programme learning, evidence generation, and evaluation data management. It consolidates field submissions from three implementing partners — Centre for Injury Prevention and Research, Bangladesh (CIPRB), Bandhu Social Welfare Society and Partners in Health and Development (PHD) — into one live dashboard.",
     "briefPlaceholderBadge": "Placeholder copy",
     "briefP2": "Final programme brief is confirmed at the validation workshop on 3–4 June 2026 — this text will be replaced after sign-off.",
     "coverageKicker": "COVERAGE",
@@ -263,7 +263,7 @@
   "anomalies": {
     "kicker": "ANOMALY DETECTION",
     "title": "Programme health flags",
-    "subtitle": "Automated checks for MoM submission drops, indicators behind pace, 48-hour silences, and review backlogs.",
+    "subtitle": "Automated checks for submission drops, indicators behind pace, and review backlogs.",
     "refresh": "Refresh",
     "retry": "Retry",
     "clearTitle": "All systems clear",

@@ -109,7 +109,7 @@ export function AnomalyCards({ partner }: Props) {
           <p className="section-sub">
             {t('anomalies.subtitle', {
               defaultValue:
-                "Automated checks for MoM submission drops, indicators behind pace, 48-hour silences, and review backlogs.",
+                "Automated checks for submission drops, indicators behind pace, and review backlogs.",
             })}
           </p>
         </div>
