@@ -20,6 +20,7 @@ const AdminPanel = lazy(() => import('@/pages/AdminPanel'))
 const TargetConfig = lazy(() => import('@/pages/TargetConfig'))
 const RecordList = lazy(() => import('@/pages/RecordList'))
 const Infographics = lazy(() => import('@/pages/Infographics'))
+const Profile = lazy(() => import('@/pages/Profile'))
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth()
@@ -193,6 +194,8 @@ export default function App() {
                 </RequireRecordListAccess>
               }
             />
+            {/* Profile + password change — available to every authenticated user. */}
+            <Route path="profile" element={<Profile />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

@@ -313,18 +313,29 @@ export function Spine() {
             {expanded ? <span className="spine-label">{t('nav.adminPanel')}</span> : <span className="spine-tip">{t('nav.adminPanel')}</span>}
           </NavLink>
         ) : (
-          <button className="spine-item" title={t('nav.settings')}>
+          <NavLink
+            to="/profile"
+            className={({ isActive }) => `spine-item ${isActive ? 'active' : ''}`}
+            title={t('nav.profile', { defaultValue: 'Profile & password' })}
+          >
             <Settings size={18} />
-            {expanded ? <span className="spine-label">{t('nav.settings')}</span> : <span className="spine-tip">{t('nav.settings')}</span>}
-          </button>
+            {expanded
+              ? <span className="spine-label">{t('nav.profile', { defaultValue: 'Profile' })}</span>
+              : <span className="spine-tip">{t('nav.profile', { defaultValue: 'Profile' })}</span>}
+          </NavLink>
         )}
         <button className="spine-item" onClick={handleLogout} title={t('nav.logout')}>
           <LogOut size={18} />
           {expanded ? <span className="spine-label">{t('nav.logout')}</span> : <span className="spine-tip">{t('nav.logout')}</span>}
         </button>
-        <div className="spine-avatar" title={user?.full_name || user?.email || ''}>
+        <NavLink
+          to="/profile"
+          className="spine-avatar"
+          title={user?.full_name || user?.email || 'Profile'}
+          style={{ textDecoration: 'none' }}
+        >
           {initials}
-        </div>
+        </NavLink>
       </div>
 
       {/* KoboToolbox slide-out panel */}
