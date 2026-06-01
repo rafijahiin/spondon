@@ -213,11 +213,28 @@ function PartnerMetricCard({
         transitionProperty: 'transform, box-shadow, border-color',
       }}
     >
-      <div style={{ padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: 12, flex: 1 }}>
-        {/* Header — partner acronym + mode chip on the left, big % on the right */}
+      {/* Top section — gets the orange wash from the SIMPLE Homepage
+          design (.pcard-top with color-mix orange 7% bg). Wraps the
+          partner acronym + mode label + big %. */}
+      <div style={{
+        padding: '18px 20px',
+        background: 'color-mix(in srgb, var(--unfpa) 7%, var(--surface))',
+        borderBottom: '1px solid var(--hair)',
+      }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
           <div>
-            <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.02em', color: 'var(--ink)', lineHeight: 1 }}>
+            <div style={{
+              fontSize: 24, fontWeight: 700, letterSpacing: '-0.02em',
+              color: 'var(--ink)', lineHeight: 1,
+              display: 'inline-flex', alignItems: 'center', gap: 9,
+            }}>
+              {/* Small square colour swatch with halo — design's
+                  `.pcard-name i` rule. Visual identity inside the
+                  orange wash. */}
+              <span style={{
+                width: 10, height: 10, borderRadius: 3, background: color,
+                boxShadow: `0 0 0 4px color-mix(in srgb, ${color} 16%, var(--surface))`,
+              }} />
               {partner}
             </div>
             <div className="mono" style={{
@@ -245,6 +262,15 @@ function PartnerMetricCard({
           </div>
         </div>
 
+        {/* Focus line stays in the orange-wash top section */}
+        <div style={{ fontSize: 12, color: 'var(--ink-3)', lineHeight: 1.45, paddingTop: 8 }}>
+          {focus}
+        </div>
+      </div>
+
+      {/* Content section — neutral background, holds sub-line, progress
+          bar, stats, districts. Sits under the orange wash header. */}
+      <div style={{ padding: '14px 20px', display: 'flex', flexDirection: 'column', gap: 12, flex: 1 }}>
         {/* Sub-line — what this metric means */}
         <div style={{ fontSize: 11.5, color: 'var(--muted)', lineHeight: 1.4 }}>
           {modeSub}
@@ -277,11 +303,6 @@ function PartnerMetricCard({
             </span>
           )}
           <span><b style={{ color: 'var(--ink)' }}>{districts}</b> districts</span>
-        </div>
-
-        {/* Focus */}
-        <div style={{ fontSize: 12, color: 'var(--ink-3)', lineHeight: 1.45, paddingTop: 4 }}>
-          {focus}
         </div>
 
         {/* District names */}

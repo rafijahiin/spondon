@@ -62,7 +62,10 @@ function PartnerFlagTile({ flag, thresholdHours }: { flag: PartnerFlag; threshol
       style={{
         padding: 20,
         display: 'flex', flexDirection: 'column', gap: 12,
-        borderTop: `3px solid ${color}`,
+        // SIMPLE Homepage.html design — amber top accent on daily
+        // reporting cards (not partner colour). Conveys 'attention
+        // surface', consistent across all three partner tiles.
+        borderTop: '3px solid #F1B566',
       }}
     >
       {/* Partner header + compliance pill */}
@@ -71,7 +74,15 @@ function PartnerFlagTile({ flag, thresholdHours }: { flag: PartnerFlag; threshol
           <div style={{
             fontSize: 18, fontWeight: 700, color: 'var(--ink)',
             letterSpacing: '-0.01em',
+            display: 'inline-flex', alignItems: 'center', gap: 9,
           }}>
+            {/* Partner colour dot — design carries CIPRB blue / Bandhu
+                green / PHD orange here even though the rest of the site
+                is UNFPA orange. Pure identification, no editing happens
+                from this dot. */}
+            <span style={{
+              width: 9, height: 9, borderRadius: '50%', background: color,
+            }} />
             {flag.partner}
           </div>
           <div style={{ fontSize: 11.5, color: 'var(--muted)', marginTop: 2 }}>
@@ -103,10 +114,13 @@ function PartnerFlagTile({ flag, thresholdHours }: { flag: PartnerFlag; threshol
         )}
       </div>
 
-      {/* Big number: recent submissions in 74h window */}
+      {/* Big number — amber (#E8870B) per design, signals attention.
+          Partner-coloured dot above handles identification; this
+          number signals 'how many in 24h'. */}
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
         <span style={{
-          fontSize: 36, fontWeight: 800, color,
+          fontSize: 36, fontWeight: 600,
+          color: '#E8870B',
           fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em', lineHeight: 1,
         }}>
           {flag.recent_submissions.toLocaleString()}
