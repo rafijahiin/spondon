@@ -111,6 +111,24 @@ class IndicatorTarget(models.Model):
         null=True, blank=True,
         help_text='Numeric target. Null = "Not Set" — display orange pill.',
     )
+
+    # Animesh's spec: partner-defined monthly splits, NOT evenly divided.
+    # Stored as a list of {"month": "YYYY-MM", "target": <number>} entries.
+    # Example for Bandhu indicator with 4,000 total: [
+    #   {"month": "2026-06", "target": 200},
+    #   {"month": "2026-07", "target": 2000},
+    #   {"month": "2026-08", "target": 1000},
+    #   {"month": "2026-09", "target": 500},
+    #   {"month": "2026-10", "target": 300}
+    # ]
+    # Frontend renders both Monthly Achievement (this month's captured /
+    # this month's target) and Overall Achievement (total captured / total
+    # target) side-by-side.
+    monthly_targets = models.JSONField(
+        default=list, blank=True,
+        help_text='Partner-defined monthly splits — list of {month, target}.',
+    )
+
     unit = models.CharField(
         max_length=50, default='count',
         help_text="e.g. 'individuals', 'sessions', 'boxes', 'pcs', 'meetings'.",

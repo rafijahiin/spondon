@@ -27,6 +27,7 @@ import { formatDate, formatDateTime } from '@/utils/format'
 import { FistulaCornerPanel, FistulaCampaignPanel } from '@/components/fistula/FistulaPanels'
 import { FistulaVisualizations } from '@/components/ciprb/FistulaVisualizations'
 import { MPDSRVisualizations } from '@/components/ciprb/MPDSRVisualizations'
+import { MPDSRDistrictMap } from '@/components/ciprb/MPDSRDistrictMap'
 import type { MPDSRCase, AuditEntry } from '@/types/index'
 
 const CIPRB_BLUE = '#0072BC'
@@ -359,6 +360,9 @@ function MPDSRSection() {
           </div>
         )}
       </div>
+
+      {/* ─── Geographic coverage map (SIDA / GAC / CP highlight) ─── */}
+      <MPDSRDistrictMap />
 
       {/* ─── Visualizations: Notify vs Review · Cause breakdown · Response Plan ─── */}
       <MPDSRVisualizations cases={cases ?? []} />
