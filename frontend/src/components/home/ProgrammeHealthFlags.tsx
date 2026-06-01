@@ -1,17 +1,21 @@
 /**
- * ProgrammeHealthFlags — per-partner daily-submission compliance.
+ * ProgrammeHealthFlags — per-partner activity-compliance + anomaly surface.
  *
- * Animesh's spec: every centre must touch the platform once per day,
- * even with a '0' entry. This block surfaces who's silent and for how
- * long, so program managers can demand accountability before the field
- * staff cite "internet was down" or "device was broken."
+ * Animesh's spec:
+ *   - Three cards, one per implementing partner (PHD, Bandhu, CIPRB).
+ *   - Alert if a partner hasn't uploaded anything in the past 74 hours.
+ *   - Field users must submit daily — even a '0' on zero-patient days.
+ *   - REPLACES the old Activity Feed entirely.
+ *   - UNFPA-only surface: only supervisors (and developers, for support)
+ *     see this block.
  *
- * Replaces the deleted Activity Feed — silence is the signal, not the
- * scroll of recent events.
+ * Renders nothing for non-UNFPA roles, so partner managers don't see
+ * the cross-partner compliance picture.
  */
 import { useEffect, useState } from 'react'
 import { CheckCircle2, AlertTriangle, Clock } from 'lucide-react'
 import { api } from '@/api/client'
+import { useAuth } from '@/context/AuthContext'
 import { PARTNER_COLORS, type PartnerCode } from '@/data/partnerDistricts'
 
 interface PartnerFlag {
@@ -20,8 +24,10 @@ interface PartnerFlag {
   submitted_today: number
   silent_count: number
   submissions_today: number
+  recent_submissions: number
   last_submission_at: string | null
   partner_silent_hours: number | null
+  is_silent: boolean
   silent_centres: { name: string; district: string; hours_silent: number | null }[]
 }
 
@@ -33,21 +39,20 @@ interface HealthFlagPayload {
 
 function useHealthFlags() {
   const [data, setData] = useState<HealthFlagPayload | null>(null)
-  const [error, setError] = useState(false)
   useEffect(() => {
     let cancelled = false
     api.get<HealthFlagPayload>('/dashboard/health-flags/')
       .then(r => { if (!cancelled) setData(r.data) })
-      .catch(() => { if (!cancelled) setError(true) })
+      .catch(() => { /* silently fail — block hides */ })
     return () => { cancelled = true }
   }, [])
-  return { data, error }
+  return data
 }
 
-function PartnerFlagTile({ flag }: { flag: PartnerFlag }) {
+function PartnerFlagTile({ flag, thresholdHours }: { flag: PartnerFlag; thresholdHours: number }) {
   const partner = flag.partner as PartnerCode
   const color = PARTNER_COLORS[partner] ?? '#999'
-  const isCompliant = flag.silent_count === 0 && flag.submissions_today > 0
+  const isCompliant = !flag.is_silent
 
   return (
     <div
@@ -68,7 +73,9 @@ function PartnerFlagTile({ flag }: { flag: PartnerFlag }) {
             {flag.partner}
           </div>
           <div style={{ fontSize: 11.5, color: 'var(--muted)', marginTop: 2 }}>
-            {flag.total_centres} {flag.total_centres === 1 ? 'centre' : 'centres'} active
+            {flag.total_centres > 0
+              ? `${flag.total_centres} ${flag.total_centres === 1 ? 'centre' : 'centres'} active`
+              : 'centre registry pending'}
           </div>
         </div>
         {isCompliant ? (
@@ -79,7 +86,7 @@ function PartnerFlagTile({ flag }: { flag: PartnerFlag }) {
             color: '#1A7A5A',
             fontSize: 11, fontWeight: 600,
           }}>
-            <CheckCircle2 size={12} /> Active today
+            <CheckCircle2 size={12} /> Active
           </span>
         ) : (
           <span style={{
@@ -94,41 +101,50 @@ function PartnerFlagTile({ flag }: { flag: PartnerFlag }) {
         )}
       </div>
 
-      {/* Big number: submitted today / total */}
+      {/* Big number: recent submissions in 74h window */}
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
         <span style={{
           fontSize: 36, fontWeight: 800, color,
           fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em', lineHeight: 1,
         }}>
-          {flag.submitted_today}
+          {flag.recent_submissions.toLocaleString()}
         </span>
         <span style={{
-          fontSize: 14, color: 'var(--ink-3)',
-          fontVariantNumeric: 'tabular-nums',
+          fontSize: 13, color: 'var(--ink-3)',
         }}>
-          / {flag.total_centres} centres submitted today
+          submissions in last {thresholdHours}h
         </span>
       </div>
 
-      {/* Submission count + last touched */}
+      {/* Today + last touched */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12 }}>
         <div style={{ color: 'var(--ink-3)' }}>
           <b style={{ color: 'var(--ink-2)', fontVariantNumeric: 'tabular-nums' }}>
             {flag.submissions_today.toLocaleString()}
           </b>
-          {' '}submissions in the last 24 hours
+          {' '}today
+          {flag.total_centres > 0 && (
+            <>
+              {' · '}
+              <b style={{ color: 'var(--ink-2)', fontVariantNumeric: 'tabular-nums' }}>
+                {flag.submitted_today}/{flag.total_centres}
+              </b>
+              {' centres'}
+            </>
+          )}
         </div>
-        {flag.partner_silent_hours !== null && (
+        {flag.partner_silent_hours !== null ? (
           <div style={{
             display: 'inline-flex', alignItems: 'center', gap: 5,
-            color: flag.partner_silent_hours > 24 ? '#CC6A00' : 'var(--muted)',
+            color: flag.partner_silent_hours > thresholdHours ? '#C7172E'
+                 : flag.partner_silent_hours > 24 ? '#CC6A00'
+                 : 'var(--muted)',
             fontSize: 11.5,
           }}>
             <Clock size={11} />
             {flag.partner_silent_hours.toFixed(1)}h since last touch
           </div>
-        )}
-        {flag.partner_silent_hours === null && (
+        ) : (
           <div style={{ fontSize: 11.5, color: 'var(--muted)' }}>
             No submissions on record yet
           </div>
@@ -182,38 +198,41 @@ function PartnerFlagTile({ flag }: { flag: PartnerFlag }) {
 }
 
 export function ProgrammeHealthFlags() {
-  const { data, error } = useHealthFlags()
+  const { user } = useAuth()
+  const data = useHealthFlags()
 
-  if (error || !data) {
-    return null  // Stay silent if endpoint isn't reachable — don't pollute the homepage
-  }
-
-  if (data.partners.length === 0) {
+  // UNFPA-only block. Hidden from focal, manager, field_staff, org_lead,
+  // ciprb_baseline. Developers retained for support visibility.
+  if (!user || !['supervisor', 'developer'].includes(user.role)) {
     return null
   }
 
-  const allCompliant = data.partners.every(
-    p => p.silent_count === 0 && p.submissions_today > 0
-  )
+  if (!data || data.partners.length === 0) {
+    return null
+  }
+
+  const allCompliant = data.partners.every(p => !p.is_silent)
+  const thresholdHours = data.alert_threshold_hours
 
   return (
     <section className="section programme-health-flags" style={{ marginTop: 44 }}>
       <div className="section-head" style={{ marginBottom: 20 }}>
         <div>
           <div className="kicker" style={{ marginBottom: 8 }}>
-            <span className="dot" style={{ background: allCompliant ? '#1A7A5A' : '#CC6A00' }} />
-            PROGRAMME HEALTH FLAGS · DAILY COMPLIANCE
+            <span className="dot" style={{
+              background: allCompliant ? 'var(--unfpa)' : '#CC6A00',
+            }} />
+            PROGRAMME HEALTH FLAGS · {thresholdHours}H WINDOW
           </div>
           <h2 className="section-title">
             {allCompliant
-              ? 'Every partner touched the platform today'
-              : 'Who hasn\'t reported today?'
+              ? 'Every partner is active'
+              : 'Who hasn\'t reported recently?'
             }
           </h2>
           <p className="section-sub">
-            Every centre is required to submit at least once per day — even a
-            '0' entry on zero-patient days. Silent partners surface here so
-            managers can chase before the day closes.
+            Each partner must submit at least once every {thresholdHours} hours — even a '0' entry on
+            zero-patient days. Silent partners surface here so programme managers can chase before the gap grows.
           </p>
         </div>
       </div>
@@ -227,7 +246,7 @@ export function ProgrammeHealthFlags() {
         }}
       >
         {data.partners.map(p => (
-          <PartnerFlagTile key={p.partner} flag={p} />
+          <PartnerFlagTile key={p.partner} flag={p} thresholdHours={thresholdHours} />
         ))}
       </div>
 

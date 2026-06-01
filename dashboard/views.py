@@ -894,40 +894,47 @@ class ProgrammeHealthFlagView(APIView):
         ]
       }
     """
-    # Operational visibility — every operational role consumes this
-    # (developers, supervisors, org leads, partner managers).
+    # UNFPA-only surface per Animesh: programme managers see compliance
+    # across all partners. Developers retained for support visibility.
     permission_classes = [IsSupervisorOrManager]
+
+    # Animesh's spec: alert if partner hasn't uploaded anything in the past 74 hours.
+    ALERT_THRESHOLD_HOURS = 74
 
     def get(self, request):
         from programs.models.center import ServiceCenter
 
+        user = request.user
+        # Surface restriction — only UNFPA supervisors + developers see the
+        # full programme-wide compliance view.
+        if user.role not in ('supervisor', 'developer'):
+            return Response({'detail': 'Forbidden.'}, status=403)
+
         now = timezone.now()
-        # Start of today in local time (UTC for now; can be timezone-aware later)
         today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        threshold_dt = now - datetime.timedelta(hours=self.ALERT_THRESHOLD_HOURS)
 
         partners_data = []
+        # Always return all three partners — even with 0 centres — so the
+        # home page renders a stable 3-card layout regardless of seed state.
         for partner in ('PHD', 'Bandhu', 'CIPRB'):
             centres = ServiceCenter.objects.filter(
                 organisation=partner, is_active=True,
             )
             total = centres.count()
-            if total == 0:
-                continue
 
-            # Find centres that have at least one submission today.
-            # Match on partner only (centre-level submission mapping is
-            # KoboToolbox-side); when centre-level mapping lands this query
-            # tightens to joinedness on centre code.
+            # Recent submissions inside the 74-hour window.
+            recent_submissions = (
+                KoboSubmission.objects
+                .filter(partner=partner, submitted_at__gte=threshold_dt)
+                .count()
+            )
             todays_submissions = (
                 KoboSubmission.objects
                 .filter(partner=partner, submitted_at__gte=today_start)
                 .count()
             )
 
-            # Per-centre silent detection — placeholder until centre code is
-            # captured on the submission. For now we report binary partner-level
-            # compliance: any submission today = OK for that partner.
-            partner_silent_hours = None
             last_submission = (
                 KoboSubmission.objects
                 .filter(partner=partner)
@@ -935,14 +942,17 @@ class ProgrammeHealthFlagView(APIView):
                 .values_list('submitted_at', flat=True)
                 .first()
             )
+            partner_silent_hours = None
             if last_submission:
-                delta = now - last_submission
-                partner_silent_hours = round(delta.total_seconds() / 3600.0, 1)
+                partner_silent_hours = round(
+                    (now - last_submission).total_seconds() / 3600.0, 1,
+                )
+
+            # Compliance state — was the partner active inside the 74h window?
+            is_silent = recent_submissions == 0
 
             silent_centres = []
-            if todays_submissions == 0:
-                # No data today — every centre is potentially silent.
-                # Show the top 10 by name as a sample.
+            if is_silent and total > 0:
                 for c in centres[:10]:
                     silent_centres.append({
                         'name': c.name,
@@ -952,9 +962,9 @@ class ProgrammeHealthFlagView(APIView):
                 silent_count = total
                 submitted_today = 0
             else:
-                # Approximate: if any submission landed today, treat partner as compliant.
-                silent_count = 0
-                submitted_today = total  # optimistic until centre-level mapping lands
+                silent_count = 0 if not is_silent else total
+                # Optimistic until centre-level submission mapping lands.
+                submitted_today = total if todays_submissions > 0 else 0
 
             partners_data.append({
                 'partner': partner,
@@ -962,13 +972,15 @@ class ProgrammeHealthFlagView(APIView):
                 'submitted_today': submitted_today,
                 'silent_count': silent_count,
                 'submissions_today': todays_submissions,
+                'recent_submissions': recent_submissions,
                 'last_submission_at': last_submission.isoformat() if last_submission else None,
                 'partner_silent_hours': partner_silent_hours,
+                'is_silent': is_silent,
                 'silent_centres': silent_centres,
             })
 
         return Response({
             'as_of': now.isoformat(),
-            'alert_threshold_hours': 24,
+            'alert_threshold_hours': self.ALERT_THRESHOLD_HOURS,
             'partners': partners_data,
         })

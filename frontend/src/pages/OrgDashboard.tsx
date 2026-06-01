@@ -350,7 +350,9 @@ export function OrgDashboard({ partner }: Props) {
               fontSize: 13, color: 'var(--ink-3)', marginTop: 4, marginBottom: 14,
               letterSpacing: '0.01em', fontWeight: 500,
             }}>
-              {isPHD ? 'Partners in Health and Development' : 'Bandhu Social Welfare Society'}
+              {isPHD
+                ? 'Partners in Health and Development'
+                : 'Key Population (FSW) · Gender Diverse SRHR'}
             </p>
             <p className="hero-lede anim-rise d2">
               {partner} delivered <b><CountUp value={totalSubmissions} /> submissions</b> this

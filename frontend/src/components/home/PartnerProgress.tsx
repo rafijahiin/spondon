@@ -20,9 +20,13 @@ import type { IndicatorProgress } from '@/types'
 
 const PARTNERS: PartnerCode[] = ['CIPRB', 'Bandhu', 'PHD']
 
+// Tagline rule (per Animesh): only spell out when the full name adds new
+// information beyond the title. 'Bandhu Social Welfare Society' duplicates
+// 'Bandhu' + adds a generic 'Social Welfare' term — dropped. The focus line
+// below carries the programmatic identity instead.
 const PARTNER_FULL_NAME: Record<PartnerCode, string> = {
   CIPRB:  'Centre for Injury Prevention & Research, Bangladesh',
-  Bandhu: 'Bandhu Social Welfare Society',
+  Bandhu: '',
   PHD:    'Partners in Health and Development',
 }
 
@@ -158,9 +162,11 @@ function PartnerCard({
             <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.02em', color: 'var(--ink)', lineHeight: 1 }}>
               {partner}
             </div>
-            <div style={{ fontSize: 12, color: 'var(--ink-2)', lineHeight: 1.3, marginTop: 5, maxWidth: 200, textWrap: 'pretty' } as React.CSSProperties}>
-              {PARTNER_FULL_NAME[partner]}
-            </div>
+            {PARTNER_FULL_NAME[partner] && (
+              <div style={{ fontSize: 12, color: 'var(--ink-2)', lineHeight: 1.3, marginTop: 5, maxWidth: 200, textWrap: 'pretty' } as React.CSSProperties}>
+                {PARTNER_FULL_NAME[partner]}
+              </div>
+            )}
           </div>
           <div style={{ textAlign: 'right', flexShrink: 0 }}>
             {loading ? (

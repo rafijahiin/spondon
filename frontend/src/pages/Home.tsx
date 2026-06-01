@@ -18,7 +18,6 @@ import { PartnerProgress } from '@/components/home/PartnerProgress'
 import { ProgrammeHealthFlags } from '@/components/home/ProgrammeHealthFlags'
 import { SpecificProgrammes } from '@/components/home/SpecificProgrammes'
 import { PartnerOverlapMap } from '@/components/maps/PartnerOverlapMap'
-import { AnomalyCards } from '@/components/anomalies/AnomalyCards'
 import type { IndicatorProgress } from '@/types'
 
 export default function Home() {
@@ -143,8 +142,10 @@ export default function Home() {
            dedicated page. ──────────────────────────────────────────────── */}
       <SpecificProgrammes />
 
-      {/* ── ANOMALY DETECTION — silent unless something needs attention ──── */}
-      <AnomalyCards />
+      {/* AnomalyCards removed per Animesh: the Programme Health Flags block
+          above is the single source of programmatic alerts. Anomaly
+          detection (submission drops, indicators behind pace, review
+          backlogs) folds into that surface. */}
 
       <div style={{ marginBottom: 96 }} />
     </>

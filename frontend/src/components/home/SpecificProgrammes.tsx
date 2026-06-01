@@ -12,7 +12,11 @@ import { useTranslation } from 'react-i18next'
 import { ArrowRight, HeartPulse, ShieldAlert, ClipboardList } from 'lucide-react'
 import { api } from '@/api/client'
 
-const CIPRB_BLUE = '#0072BC'
+// Home-page accents follow UNFPA brand orange. The block surfaces CIPRB
+// programmes by name, but the home page is the UNFPA executive view, so the
+// accents pull from the brand token instead of CIPRB's partner colour.
+const BRAND_ORANGE = 'var(--unfpa)'
+const BRAND_ORANGE_SOFT = 'rgba(249,96,0,0.10)'
 
 interface FistulaRow { id: string }
 interface MPDSRRow {
@@ -94,7 +98,7 @@ function ProgrammeTile({ icon, title, subtitle, metricLabel, metricValue, meta, 
         transitionProperty: 'transform, box-shadow, border-color',
       }}
       onMouseEnter={e => {
-        e.currentTarget.style.borderColor = CIPRB_BLUE
+        e.currentTarget.style.borderColor = 'var(--unfpa)'
       }}
       onMouseLeave={e => {
         e.currentTarget.style.borderColor = 'var(--hair)'
@@ -105,7 +109,7 @@ function ProgrammeTile({ icon, title, subtitle, metricLabel, metricValue, meta, 
         <span style={{
           display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
           width: 38, height: 38, borderRadius: 10,
-          background: `${CIPRB_BLUE}1A`, color: CIPRB_BLUE,
+          background: BRAND_ORANGE_SOFT, color: BRAND_ORANGE,
         }}>
           {icon}
         </span>
@@ -144,7 +148,7 @@ function ProgrammeTile({ icon, title, subtitle, metricLabel, metricValue, meta, 
       {/* Footer link */}
       <div style={{
         display: 'inline-flex', alignItems: 'center', gap: 4,
-        fontSize: 12, color: CIPRB_BLUE, fontWeight: 600,
+        fontSize: 12, color: BRAND_ORANGE, fontWeight: 600,
       }}>
         Open <ArrowRight size={13} />
       </div>
@@ -161,7 +165,7 @@ export function SpecificProgrammes() {
       <div className="section-head">
         <div>
           <div className="kicker" style={{ marginBottom: 8 }}>
-            <span className="dot" style={{ background: CIPRB_BLUE }} />
+            <span className="dot" style={{ background: BRAND_ORANGE }} />
             {t('home.specificProgrammesKicker', { defaultValue: 'CIPRB · SPECIFIC PROGRAMMES' })}
           </div>
           <h2 className="section-title">
