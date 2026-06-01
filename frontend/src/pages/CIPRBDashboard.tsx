@@ -554,10 +554,49 @@ export default function CIPRBDashboard() {
         <p className="hero-lede anim-rise d2" style={{ maxWidth: 720 }}>
           {t('ciprb.heroLede')}
         </p>
+
+        {/* Jump-link strip — Animesh's two named surveillance programmes
+            need to be discoverable without scrolling past three Fistula
+            visualisations to find MPDSR. */}
+        <div style={{
+          display: 'flex', flexWrap: 'wrap', gap: 8,
+          marginTop: 18,
+        }}>
+          <a href="#fistula-section" style={{
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+            padding: '6px 14px', borderRadius: 999,
+            background: 'rgba(0,114,188,0.10)',
+            color: CIPRB_BLUE,
+            fontSize: 12.5, fontWeight: 600, textDecoration: 'none',
+            border: '1px solid rgba(0,114,188,0.20)',
+          }}>
+            Jump to Fistula
+          </a>
+          <a href="#mpdsr-section" style={{
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+            padding: '6px 14px', borderRadius: 999,
+            background: 'rgba(0,114,188,0.10)',
+            color: CIPRB_BLUE,
+            fontSize: 12.5, fontWeight: 600, textDecoration: 'none',
+            border: '1px solid rgba(0,114,188,0.20)',
+          }}>
+            Jump to MPDSR
+          </a>
+          <a href="#response-plan" style={{
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+            padding: '6px 14px', borderRadius: 999,
+            background: 'rgba(204,106,0,0.10)',
+            color: '#CC6A00',
+            fontSize: 12.5, fontWeight: 600, textDecoration: 'none',
+            border: '1px solid rgba(204,106,0,0.22)',
+          }}>
+            Jump to Response Plan Tracker
+          </a>
+        </div>
       </section>
 
       {/* ───────────────── Fistula KPI band ───────────────── */}
-      <section className="section" style={{ marginTop: 0 }}>
+      <section className="section" id="fistula-section" style={{ marginTop: 0, scrollMarginTop: 80 }}>
         <div className="kicker" style={{ marginBottom: 10 }}>
           <span className="dot" style={{ background: CIPRB_BLUE }} />
           FISTULA · AT A GLANCE
@@ -639,7 +678,7 @@ export default function CIPRBDashboard() {
       <div style={{ height: 1, background: 'var(--hair)', margin: '24px 0' }} />
 
       {/* ───────────────── MPDSR ───────────────── */}
-      <section className="section" style={{ marginBottom: 80 }}>
+      <section className="section" id="mpdsr-section" style={{ marginBottom: 80, scrollMarginTop: 80 }}>
         <MPDSRSection />
       </section>
     </div>

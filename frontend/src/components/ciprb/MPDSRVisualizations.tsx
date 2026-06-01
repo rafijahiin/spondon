@@ -98,7 +98,13 @@ function computeNotifyVsReview(cases: MPDSRCase[]): NotifyVsReviewData {
   return { notifiedMD: nM, reviewedMD: rM, notifiedND: nN, reviewedND: rN }
 }
 
-function NotifyVsReview({ cases, totals }: { cases: MPDSRCase[]; totals: FacilityTotals | null }) {
+function NotifyVsReview({
+  cases, totals, denominators,
+}: {
+  cases: MPDSRCase[]
+  totals: FacilityTotals | null
+  denominators: DistrictDenominator[]
+}) {
   const live = useMemo(() => computeNotifyVsReview(cases), [cases])
 
   // Prefer facility-level aggregate totals from Sayeed's Excel ingest when
@@ -109,6 +115,12 @@ function NotifyVsReview({ cases, totals }: { cases: MPDSRCase[]; totals: Facilit
     notifiedND: totals.fdn_nd, reviewedND: totals.fdr_nd,
   } : live
 
+  // Estimated maternal/neonatal/stillbirth deaths across all districts —
+  // the denominator Animesh asked for to compute the REPORTING RATE
+  // (notified / estimated) per Sayeed's 'Project Deaths 2026' column.
+  const estimatedMD = denominators.reduce((s, x) => s + (x.project_deaths_md ?? 0), 0)
+  const estimatedND = denominators.reduce((s, x) => s + (x.project_deaths_nd ?? 0), 0)
+
   const chartData = [
     { category: 'Maternal Deaths',  notified: d.notifiedMD, reviewed: d.reviewedMD },
     { category: 'Neonatal Deaths',  notified: d.notifiedND, reviewed: d.reviewedND },
@@ -116,24 +128,65 @@ function NotifyVsReview({ cases, totals }: { cases: MPDSRCase[]; totals: Facilit
 
   const reviewRateMD = d.notifiedMD > 0 ? (d.reviewedMD / d.notifiedMD) * 100 : 0
   const reviewRateND = d.notifiedND > 0 ? (d.reviewedND / d.notifiedND) * 100 : 0
+  const reportingRateMD = estimatedMD > 0 ? (d.notifiedMD / estimatedMD) * 100 : null
+  const reportingRateND = estimatedND > 0 ? (d.notifiedND / estimatedND) * 100 : null
 
   return (
     <div>
       <div style={{ marginBottom: 14 }}>
         <div className="kicker">
           <span className="dot" style={{ background: CIPRB_BLUE }} />
-          NOTIFICATION VS REVIEW
+          NOTIFICATION VS REVIEW · REPORTING RATE
         </div>
         <h3 style={{ margin: '6px 0 2px', fontSize: 18, fontWeight: 700, color: 'var(--ink)' }}>
-          Are reported deaths being reviewed?
+          Are deaths being reported and reviewed?
         </h3>
         <p style={{ fontSize: 12.5, color: 'var(--muted)', margin: 0 }}>
-          For every death notification, the committee should run a review. The gap shows what's still pending.
+          Reporting Rate = notified vs estimated. Review Rate = reviewed vs notified. The gap shows what's still pending.
         </p>
       </div>
 
       <div className="card" style={{ padding: 24 }}>
-        {/* Summary rates */}
+        {/* Reporting rate tiles — uses Sayeed's Project Deaths 2026 denominators */}
+        {(reportingRateMD !== null || reportingRateND !== null) && (
+          <div style={{
+            display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 18,
+            marginBottom: 18,
+            paddingBottom: 18,
+            borderBottom: '1px solid var(--hair)',
+          }}>
+            <div>
+              <div className="mono" style={{ fontSize: 9.5, color: 'var(--muted)', letterSpacing: '0.08em', marginBottom: 4 }}>
+                MD REPORTING RATE
+              </div>
+              <div style={{
+                fontSize: 28, fontWeight: 800, color: '#CC6A00',
+                fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em', lineHeight: 1,
+              }}>
+                {reportingRateMD !== null ? `${reportingRateMD.toFixed(0)}%` : '—'}
+              </div>
+              <div style={{ fontSize: 11.5, color: 'var(--ink-3)', marginTop: 4 }}>
+                {d.notifiedMD} reported of {Math.round(estimatedMD)} estimated
+              </div>
+            </div>
+            <div>
+              <div className="mono" style={{ fontSize: 9.5, color: 'var(--muted)', letterSpacing: '0.08em', marginBottom: 4 }}>
+                ND REPORTING RATE
+              </div>
+              <div style={{
+                fontSize: 28, fontWeight: 800, color: '#CC6A00',
+                fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em', lineHeight: 1,
+              }}>
+                {reportingRateND !== null ? `${reportingRateND.toFixed(0)}%` : '—'}
+              </div>
+              <div style={{ fontSize: 11.5, color: 'var(--ink-3)', marginTop: 4 }}>
+                {d.notifiedND} reported of {Math.round(estimatedND)} estimated
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Review rate tiles */}
         <div style={{
           display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 18,
           marginBottom: 24,
@@ -535,9 +588,15 @@ export function MPDSRVisualizations({ cases }: { cases: MPDSRCase[] }) {
   const agg = useAggregates()
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 36 }}>
-      <NotifyVsReview cases={cases} totals={agg?.facility_totals ?? null} />
+      <NotifyVsReview
+        cases={cases}
+        totals={agg?.facility_totals ?? null}
+        denominators={agg?.denominators ?? []}
+      />
       <CauseBreakdown cases={cases} />
-      <ResponsePlanTracker summaries={agg?.action_plan_summaries ?? []} />
+      <div id="response-plan" style={{ scrollMarginTop: 80 }}>
+        <ResponsePlanTracker summaries={agg?.action_plan_summaries ?? []} />
+      </div>
     </div>
   )
 }

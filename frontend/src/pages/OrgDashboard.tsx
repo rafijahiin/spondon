@@ -26,6 +26,7 @@ import { usePolling } from '@/hooks/usePolling'
 import { PageLoader } from '@/components/ui/LoadingSpinner'
 import { BangladeshMap } from '@/components/maps/BangladeshMap'
 import { IndicatorGrid } from '@/components/indicators/IndicatorGrid'
+import { CumulativeAverageTile } from '@/components/indicators/CumulativeAverageTile'
 import { formatDate } from '@/utils/format'
 import type { PartnerKPIs, CentresResponse, Alert, ProgramsSummary } from '@/types'
 import {
@@ -422,6 +423,15 @@ export function OrgDashboard({ partner }: Props) {
           kicker={t('org.sectionIndicatorKicker')}
           title={t('org.sectionIndicatorTitle')}
           sub={t('org.sectionIndicatorSub')}
+        />
+        {/* Cumulative average tile — Animesh's "single unified progress %"
+            for the whole partner. Simple mean of every indicator's %.
+            Bandhu (19 indicators) gets the most value here, but PHD also
+            sees its 22-indicator average at a glance. */}
+        <CumulativeAverageTile
+          org={partner}
+          periodStart="2026-05-21"
+          periodEnd="2026-11-20"
         />
         <div className="card shimmer">
           <IndicatorGrid
