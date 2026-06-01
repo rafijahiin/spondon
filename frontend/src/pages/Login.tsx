@@ -4,7 +4,6 @@ import { Eye, EyeOff } from 'lucide-react'
 import { useAuth, apiErrorMessage } from '@/context/AuthContext'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 
-
 export default function Login() {
   const { login } = useAuth()
   const navigate   = useNavigate()
@@ -33,233 +32,314 @@ export default function Login() {
 
   return (
     <>
-      {/* ── Keyframe animations for the floating orbs ── */}
       <style>{`
-        @keyframes orb1 {
-          0%   { transform: translate(0px,   0px)   scale(1);    }
-          33%  { transform: translate(60px, -50px)  scale(1.12); }
-          66%  { transform: translate(-30px, 40px)  scale(0.95); }
-          100% { transform: translate(0px,   0px)   scale(1);    }
+        .login-root {
+          min-height: 100vh;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          position: relative;
+          overflow: hidden;
+          background:
+            radial-gradient(ellipse at 20% 30%, #C44E00 0%, transparent 55%),
+            radial-gradient(ellipse at 80% 75%, #8B2800 0%, transparent 50%),
+            radial-gradient(ellipse at 55% 10%, #5A1400 0%, transparent 45%),
+            #070504;
+          font-family: var(--ui, sans-serif);
         }
-        @keyframes orb2 {
-          0%   { transform: translate(0px,  0px)   scale(1.05); }
-          50%  { transform: translate(-60px, 70px) scale(0.90); }
-          100% { transform: translate(0px,  0px)   scale(1.05); }
+
+        /* ── Floating 3D shapes ── */
+        .shape {
+          position: absolute;
+          border-radius: 50%;
+          pointer-events: none;
+          will-change: transform;
         }
-        @media (max-width: 760px) {
-          .login-brand-panel { display: none !important; }
+        .shape-1 {
+          width: 220px; height: 220px;
+          top: 6%; left: 8%;
+          background: linear-gradient(135deg, #F96000 0%, #C44E00 60%, #7A2C00 100%);
+          box-shadow:
+            inset -6px -8px 18px rgba(0,0,0,0.45),
+            inset 6px 6px 14px rgba(255,160,80,0.30),
+            0 30px 60px rgba(0,0,0,0.55);
+          animation: float1 9s ease-in-out infinite;
+          border-radius: 62% 38% 46% 54% / 60% 44% 56% 40%;
         }
+        .shape-2 {
+          width: 160px; height: 160px;
+          top: 4%; right: 12%;
+          background: linear-gradient(135deg, #ED5B7E 0%, #C44E00 70%, #7A2C00 100%);
+          box-shadow:
+            inset -5px -6px 14px rgba(0,0,0,0.40),
+            inset 4px 4px 10px rgba(255,180,120,0.25),
+            0 20px 45px rgba(0,0,0,0.50);
+          animation: float2 11s ease-in-out infinite;
+          border-radius: 40% 60% 55% 45% / 50% 65% 35% 50%;
+        }
+        .shape-3 {
+          width: 280px; height: 150px;
+          bottom: 14%; left: 4%;
+          background: linear-gradient(120deg, #F96000 0%, #A83A00 55%, #5A1A00 100%);
+          box-shadow:
+            inset -8px -10px 22px rgba(0,0,0,0.50),
+            inset 6px 6px 16px rgba(255,140,50,0.25),
+            0 25px 55px rgba(0,0,0,0.55);
+          animation: float3 13s ease-in-out infinite;
+          border-radius: 55% 45% 70% 30% / 40% 60% 40% 60%;
+        }
+        .shape-4 {
+          width: 180px; height: 260px;
+          bottom: 8%; right: 6%;
+          background: linear-gradient(160deg, #ED5B7E 0%, #C44E00 50%, #6B2200 100%);
+          box-shadow:
+            inset -5px -7px 16px rgba(0,0,0,0.45),
+            inset 4px 5px 12px rgba(255,160,100,0.20),
+            0 22px 50px rgba(0,0,0,0.50);
+          animation: float4 10s ease-in-out infinite;
+          border-radius: 44% 56% 38% 62% / 58% 42% 58% 42%;
+        }
+        .shape-5 {
+          width: 120px; height: 120px;
+          top: 42%; right: 4%;
+          background: linear-gradient(135deg, #F96000 0%, #8B2800 100%);
+          box-shadow:
+            inset -4px -5px 12px rgba(0,0,0,0.40),
+            inset 3px 3px 8px rgba(255,180,80,0.20),
+            0 16px 36px rgba(0,0,0,0.45);
+          animation: float5 15s ease-in-out infinite;
+          border-radius: 50%;
+        }
+        /* Glow blobs — soft, behind the shapes */
+        .glow-1 {
+          position: absolute;
+          width: 500px; height: 500px;
+          top: -80px; left: -80px;
+          background: radial-gradient(circle, rgba(249,96,0,0.18) 0%, transparent 65%);
+          pointer-events: none;
+        }
+        .glow-2 {
+          position: absolute;
+          width: 400px; height: 400px;
+          bottom: -60px; right: -60px;
+          background: radial-gradient(circle, rgba(237,91,126,0.12) 0%, transparent 65%);
+          pointer-events: none;
+        }
+
+        @keyframes float1 {
+          0%,100% { transform: translateY(0px) rotate(0deg); }
+          50%      { transform: translateY(-22px) rotate(4deg); }
+        }
+        @keyframes float2 {
+          0%,100% { transform: translateY(0px) rotate(-3deg); }
+          50%      { transform: translateY(18px) rotate(3deg); }
+        }
+        @keyframes float3 {
+          0%,100% { transform: translateY(0px) rotate(2deg); }
+          50%      { transform: translateY(-16px) rotate(-3deg); }
+        }
+        @keyframes float4 {
+          0%,100% { transform: translateY(0px) rotate(-2deg); }
+          50%      { transform: translateY(20px) rotate(4deg); }
+        }
+        @keyframes float5 {
+          0%,100% { transform: translateY(0px); }
+          50%      { transform: translateY(-14px); }
+        }
+
+        /* ── Glass card ── */
+        .login-glass {
+          position: relative;
+          z-index: 10;
+          width: 100%;
+          max-width: 400px;
+          margin: 24px;
+          padding: 40px 36px 36px;
+          background: rgba(255, 255, 255, 0.07);
+          backdrop-filter: blur(28px) saturate(160%);
+          -webkit-backdrop-filter: blur(28px) saturate(160%);
+          border: 1px solid rgba(255, 255, 255, 0.13);
+          border-radius: 24px;
+          box-shadow:
+            0 2px 0 rgba(255,255,255,0.08) inset,
+            0 32px 80px rgba(0,0,0,0.55),
+            0 8px 24px rgba(0,0,0,0.35);
+        }
+
+        /* Input fields inside glass */
+        .glass-input {
+          width: 100%;
+          box-sizing: border-box;
+          padding: 10px 14px;
+          font-size: 14px;
+          background: rgba(255,255,255,0.08);
+          border: 1px solid rgba(255,255,255,0.16);
+          border-radius: 10px;
+          color: white;
+          outline: none;
+          font-family: var(--ui, sans-serif);
+          transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+        }
+        .glass-input::placeholder { color: rgba(255,255,255,0.38); }
+        .glass-input:focus {
+          background: rgba(255,255,255,0.13);
+          border-color: rgba(249,96,0,0.70);
+          box-shadow: 0 0 0 3px rgba(249,96,0,0.18);
+        }
+
+        .login-btn {
+          width: 100%;
+          padding: 11px 0;
+          background: #F96000;
+          color: white;
+          border: none;
+          border-radius: 10px;
+          font-size: 14px;
+          font-weight: 600;
+          font-family: var(--ui, sans-serif);
+          cursor: pointer;
+          transition: background 0.15s, box-shadow 0.15s;
+          box-shadow: 0 4px 16px rgba(249,96,0,0.40);
+        }
+        .login-btn:hover:not(:disabled) {
+          background: #D95300;
+          box-shadow: 0 4px 20px rgba(249,96,0,0.55);
+        }
+        .login-btn:disabled { opacity: 0.65; cursor: not-allowed; }
       `}</style>
 
-      <div style={{ display: 'flex', minHeight: '100vh', fontFamily: 'var(--body, sans-serif)' }}>
+      <div className="login-root">
+        {/* Background glow blobs */}
+        <div className="glow-1" />
+        <div className="glow-2" />
 
-        {/* ── LEFT: Brand panel with animated orbs ─────────────────────── */}
-        <div
-          className="login-brand-panel"
-          style={{
-            flex: '0 0 52%',
-            background: '#09090C',   /* near-black neutral — lets orange glow */
-            display: 'flex',
-            flexDirection: 'column',
-            padding: 'clamp(40px, 6vh, 72px) clamp(36px, 5vw, 64px)',
-            position: 'relative',
-            overflow: 'hidden',
-          }}
-        >
-          {/* Two orbs only — orange dominant, coral accent */}
-          <div style={{
-            position: 'absolute', width: 560, height: 560, borderRadius: '50%',
-            background: '#F96000', filter: 'blur(130px)', opacity: 0.30,
-            top: '-15%', left: '-10%',
-            animation: 'orb1 16s ease-in-out infinite',
-          }} />
-          <div style={{
-            position: 'absolute', width: 360, height: 360, borderRadius: '50%',
-            background: '#ED5B7E', filter: 'blur(110px)', opacity: 0.18,
-            bottom: '-5%', right: '-5%',
-            animation: 'orb2 20s ease-in-out infinite',
-          }} />
+        {/* Floating 3D shapes */}
+        <div className="shape shape-1" />
+        <div className="shape shape-2" />
+        <div className="shape shape-3" />
+        <div className="shape shape-4" />
+        <div className="shape shape-5" />
 
-          {/* Content sits above the orbs */}
-          <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', height: '100%' }}>
+        {/* ── Glass card ── */}
+        <div className="login-glass">
 
-            {/* SIMPLE wordmark */}
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-              <h1 style={{
-                fontSize: 'clamp(72px, 9.5vw, 118px)',
-                fontWeight: 700,
-                letterSpacing: '-0.03em',
-                lineHeight: 1,
-                color: 'white',
-                margin: '0 0 clamp(16px, 2.5vh, 26px)',
-              }}>
-                SIMPLE
-              </h1>
-
-              <p style={{
-                fontSize: 'clamp(12px, 1.05vw, 14.5px)',
-                lineHeight: 1.65,
-                color: 'rgba(255,255,255,0.50)',
-                margin: '0 0 clamp(20px, 3vh, 32px)',
-                fontWeight: 400,
-                whiteSpace: 'nowrap',
-              }}>
-                <b style={{ color: '#F96000', fontWeight: 700 }}>S</b>trengthening{' '}
-                <b style={{ color: '#F96000', fontWeight: 700 }}>I</b>ntegrated{' '}
-                <b style={{ color: '#F96000', fontWeight: 700 }}>M</b>onitoring,{' '}
-                <b style={{ color: '#F96000', fontWeight: 700 }}>P</b>rogramme{' '}
-                <b style={{ color: '#F96000', fontWeight: 700 }}>L</b>earning and{' '}
-                <b style={{ color: '#F96000', fontWeight: 700 }}>E</b>vidence for SRHR
-              </p>
-
+          {/* Branding */}
+          <div style={{ textAlign: 'center', marginBottom: 28 }}>
+            <div style={{
+              fontSize: 52,
+              fontWeight: 800,
+              letterSpacing: '-0.04em',
+              lineHeight: 1,
+              color: 'white',
+              marginBottom: 8,
+            }}>
+              SIMPLE
+            </div>
+            <div style={{
+              fontSize: 11,
+              color: 'rgba(255,255,255,0.45)',
+              lineHeight: 1.6,
+              letterSpacing: '0.01em',
+            }}>
+              <span style={{ color: '#F96000', fontWeight: 700 }}>S</span>trengthening{' '}
+              <span style={{ color: '#F96000', fontWeight: 700 }}>I</span>ntegrated{' '}
+              <span style={{ color: '#F96000', fontWeight: 700 }}>M</span>onitoring,{' '}
+              <span style={{ color: '#F96000', fontWeight: 700 }}>P</span>rogramme{' '}
+              <span style={{ color: '#F96000', fontWeight: 700 }}>L</span>earning &amp;{' '}
+              <span style={{ color: '#F96000', fontWeight: 700 }}>E</span>vidence for SRHR
             </div>
           </div>
-        </div>
 
-        {/* ── RIGHT: Form panel ─────────────────────────────────────────── */}
-        <div style={{
-          flex: 1,
-          background: '#F7F8FA',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: 'clamp(32px, 6vh, 64px) clamp(28px, 5vw, 56px)',
-        }}>
-          <div style={{ width: '100%', maxWidth: 360 }}>
+          {/* Divider */}
+          <div style={{
+            height: 1,
+            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent)',
+            marginBottom: 28,
+          }} />
 
-            <div style={{ marginBottom: 36 }}>
-              <h2 style={{
-                fontSize: 28, fontWeight: 700,
-                color: '#0F1923', letterSpacing: '-0.02em',
-                margin: '0 0 6px',
+          {/* Form */}
+          <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+            <div>
+              <label style={{
+                display: 'block', fontSize: 12.5, fontWeight: 500,
+                color: 'rgba(255,255,255,0.65)', marginBottom: 6, letterSpacing: '0.02em',
               }}>
-                Sign in
-              </h2>
-              <p style={{ fontSize: 14, color: '#6B7280', margin: 0 }}>
-                Enter your SIMPLE credentials below
-              </p>
+                Username
+              </label>
+              <input
+                className="glass-input"
+                type="text"
+                value={username}
+                onChange={e => setUsername(e.target.value)}
+                required
+                autoComplete="username"
+                autoFocus
+                placeholder="your@email.org"
+              />
             </div>
 
-            <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-
-              {/* Username */}
-              <div>
-                <label style={{
-                  display: 'block', fontSize: 13, fontWeight: 500,
-                  color: '#374151', marginBottom: 6,
-                }}>
-                  Username
-                </label>
+            <div>
+              <label style={{
+                display: 'block', fontSize: 12.5, fontWeight: 500,
+                color: 'rgba(255,255,255,0.65)', marginBottom: 6, letterSpacing: '0.02em',
+              }}>
+                Password
+              </label>
+              <div style={{ position: 'relative' }}>
                 <input
-                  type="text"
-                  value={username}
-                  onChange={e => setUsername(e.target.value)}
+                  className="glass-input"
+                  type={showPw ? 'text' : 'password'}
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
                   required
-                  autoComplete="username"
-                  autoFocus
-                  placeholder="your@email.org"
-                  style={{
-                    width: '100%', boxSizing: 'border-box',
-                    padding: '10px 14px', fontSize: 14,
-                    border: '1.5px solid #D1D5DB', borderRadius: 8,
-                    background: 'white', color: '#111827', outline: 'none',
-                    transition: 'border-color 0.15s, box-shadow 0.15s',
-                  }}
-                  onFocus={e => {
-                    e.target.style.borderColor = '#F96000'
-                    e.target.style.boxShadow = '0 0 0 3px rgba(249,96,0,0.12)'
-                  }}
-                  onBlur={e => {
-                    e.target.style.borderColor = '#D1D5DB'
-                    e.target.style.boxShadow = 'none'
-                  }}
+                  autoComplete="current-password"
+                  placeholder="••••••••"
+                  style={{ paddingRight: 42 }}
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPw(s => !s)}
+                  style={{
+                    position: 'absolute', right: 12, top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'none', border: 'none', padding: 0,
+                    cursor: 'pointer', color: 'rgba(255,255,255,0.45)',
+                    display: 'flex', alignItems: 'center',
+                  }}
+                >
+                  {showPw ? <EyeOff size={15} /> : <Eye size={15} />}
+                </button>
               </div>
+            </div>
 
-              {/* Password */}
-              <div>
-                <label style={{
-                  display: 'block', fontSize: 13, fontWeight: 500,
-                  color: '#374151', marginBottom: 6,
-                }}>
-                  Password
-                </label>
-                <div style={{ position: 'relative' }}>
-                  <input
-                    type={showPw ? 'text' : 'password'}
-                    value={password}
-                    onChange={e => setPassword(e.target.value)}
-                    required
-                    autoComplete="current-password"
-                    placeholder="••••••••"
-                    style={{
-                      width: '100%', boxSizing: 'border-box',
-                      padding: '10px 42px 10px 14px', fontSize: 14,
-                      border: '1.5px solid #D1D5DB', borderRadius: 8,
-                      background: 'white', color: '#111827', outline: 'none',
-                      transition: 'border-color 0.15s, box-shadow 0.15s',
-                    }}
-                    onFocus={e => {
-                      e.target.style.borderColor = '#F96000'
-                      e.target.style.boxShadow = '0 0 0 3px rgba(249,96,0,0.12)'
-                    }}
-                    onBlur={e => {
-                      e.target.style.borderColor = '#D1D5DB'
-                      e.target.style.boxShadow = 'none'
-                    }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPw(s => !s)}
-                    style={{
-                      position: 'absolute', right: 12, top: '50%',
-                      transform: 'translateY(-50%)',
-                      background: 'none', border: 'none', padding: 0,
-                      cursor: 'pointer', color: '#9CA3AF',
-                      display: 'flex', alignItems: 'center',
-                    }}
-                  >
-                    {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </button>
-                </div>
+            {error && (
+              <div style={{
+                padding: '9px 13px',
+                background: 'rgba(199,23,46,0.18)',
+                border: '1px solid rgba(199,23,46,0.40)',
+                borderRadius: 8,
+                fontSize: 12.5,
+                color: '#FF8FA3',
+              }}>
+                {error}
               </div>
+            )}
 
-              {/* Error */}
-              {error && (
-                <div style={{
-                  padding: '10px 14px',
-                  background: '#FEF2F2', border: '1px solid #FECACA',
-                  borderRadius: 8, fontSize: 13, color: '#DC2626',
-                }}>
-                  {error}
-                </div>
-              )}
+            <button
+              className="login-btn"
+              type="submit"
+              disabled={loading}
+              style={{ marginTop: 4 }}
+            >
+              {loading
+                ? <LoadingSpinner size="sm" className="text-white" />
+                : 'Sign in'
+              }
+            </button>
+          </form>
 
-              {/* Submit */}
-              <button
-                type="submit"
-                disabled={loading}
-                style={{
-                  width: '100%', padding: '11px 0',
-                  background: loading ? '#F9A070' : '#F96000',
-                  color: 'white', border: 'none', borderRadius: 8,
-                  fontSize: 14, fontWeight: 600,
-                  cursor: loading ? 'not-allowed' : 'pointer',
-                  transition: 'background 0.15s',
-                  display: 'flex', alignItems: 'center',
-                  justifyContent: 'center', gap: 8, marginTop: 4,
-                }}
-                onMouseEnter={e => { if (!loading) (e.currentTarget as HTMLButtonElement).style.background = '#D95300' }}
-                onMouseLeave={e => { if (!loading) (e.currentTarget as HTMLButtonElement).style.background = '#F96000' }}
-              >
-                {loading ? <LoadingSpinner size="sm" className="text-white" /> : 'Sign in'}
-              </button>
-            </form>
-
-          </div>
         </div>
-
       </div>
     </>
   )
