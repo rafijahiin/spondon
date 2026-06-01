@@ -105,6 +105,7 @@ function NotifyVsReview({
   totals: FacilityTotals | null
   denominators: DistrictDenominator[]
 }) {
+  const { t } = useTranslation()
   const live = useMemo(() => computeNotifyVsReview(cases), [cases])
 
   // Prefer facility-level aggregate totals from Sayeed's Excel ingest when
@@ -122,8 +123,8 @@ function NotifyVsReview({
   const estimatedND = denominators.reduce((s, x) => s + (x.project_deaths_nd ?? 0), 0)
 
   const chartData = [
-    { category: 'Maternal Deaths',  notified: d.notifiedMD, reviewed: d.reviewedMD },
-    { category: 'Neonatal Deaths',  notified: d.notifiedND, reviewed: d.reviewedND },
+    { category: t('mpdsrViz.maternalDeaths'), notified: d.notifiedMD, reviewed: d.reviewedMD },
+    { category: t('mpdsrViz.neonatalDeaths'), notified: d.notifiedND, reviewed: d.reviewedND },
   ]
 
   const reviewRateMD = d.notifiedMD > 0 ? (d.reviewedMD / d.notifiedMD) * 100 : 0
@@ -136,13 +137,13 @@ function NotifyVsReview({
       <div style={{ marginBottom: 14 }}>
         <div className="kicker">
           <span className="dot" style={{ background: CIPRB_BLUE }} />
-          NOTIFICATION VS REVIEW · REPORTING RATE
+          {t('mpdsrViz.notifyKicker')}
         </div>
         <h3 style={{ margin: '6px 0 2px', fontSize: 18, fontWeight: 700, color: 'var(--ink)' }}>
-          Are deaths being reported and reviewed?
+          {t('mpdsrViz.notifyTitle')}
         </h3>
         <p style={{ fontSize: 12.5, color: 'var(--muted)', margin: 0 }}>
-          Reporting Rate = notified vs estimated. Review Rate = reviewed vs notified. The gap shows what's still pending.
+          {t('mpdsrViz.notifySub')}
         </p>
       </div>
 
@@ -157,7 +158,7 @@ function NotifyVsReview({
           }}>
             <div>
               <div className="mono" style={{ fontSize: 9.5, color: 'var(--muted)', letterSpacing: '0.08em', marginBottom: 4 }}>
-                MD REPORTING RATE
+                {t('mpdsrViz.mdReportingRate')}
               </div>
               <div style={{
                 fontSize: 28, fontWeight: 800, color: '#CC6A00',
@@ -166,12 +167,12 @@ function NotifyVsReview({
                 {reportingRateMD !== null ? `${reportingRateMD.toFixed(0)}%` : '—'}
               </div>
               <div style={{ fontSize: 11.5, color: 'var(--ink-3)', marginTop: 4 }}>
-                {d.notifiedMD} reported of {Math.round(estimatedMD)} estimated
+                {t('mpdsrViz.reportedOfEstimated', { reported: d.notifiedMD, estimated: Math.round(estimatedMD) })}
               </div>
             </div>
             <div>
               <div className="mono" style={{ fontSize: 9.5, color: 'var(--muted)', letterSpacing: '0.08em', marginBottom: 4 }}>
-                ND REPORTING RATE
+                {t('mpdsrViz.ndReportingRate')}
               </div>
               <div style={{
                 fontSize: 28, fontWeight: 800, color: '#CC6A00',
@@ -180,7 +181,7 @@ function NotifyVsReview({
                 {reportingRateND !== null ? `${reportingRateND.toFixed(0)}%` : '—'}
               </div>
               <div style={{ fontSize: 11.5, color: 'var(--ink-3)', marginTop: 4 }}>
-                {d.notifiedND} reported of {Math.round(estimatedND)} estimated
+                {t('mpdsrViz.reportedOfEstimated', { reported: d.notifiedND, estimated: Math.round(estimatedND) })}
               </div>
             </div>
           </div>
@@ -193,7 +194,7 @@ function NotifyVsReview({
         }}>
           <div>
             <div className="mono" style={{ fontSize: 9.5, color: 'var(--muted)', letterSpacing: '0.08em', marginBottom: 4 }}>
-              MD REVIEW RATE
+              {t('mpdsrViz.mdReviewRate')}
             </div>
             <div style={{
               fontSize: 28, fontWeight: 800, color: CIPRB_BLUE,
@@ -202,12 +203,12 @@ function NotifyVsReview({
               {reviewRateMD.toFixed(0)}%
             </div>
             <div style={{ fontSize: 11.5, color: 'var(--ink-3)', marginTop: 4 }}>
-              {d.reviewedMD} of {d.notifiedMD} maternal deaths reviewed
+              {t('mpdsrViz.mdReviewedOfNotified', { reviewed: d.reviewedMD, notified: d.notifiedMD })}
             </div>
           </div>
           <div>
             <div className="mono" style={{ fontSize: 9.5, color: 'var(--muted)', letterSpacing: '0.08em', marginBottom: 4 }}>
-              ND REVIEW RATE
+              {t('mpdsrViz.ndReviewRate')}
             </div>
             <div style={{
               fontSize: 28, fontWeight: 800, color: CIPRB_BLUE_LIGHT,
@@ -216,7 +217,7 @@ function NotifyVsReview({
               {reviewRateND.toFixed(0)}%
             </div>
             <div style={{ fontSize: 11.5, color: 'var(--ink-3)', marginTop: 4 }}>
-              {d.reviewedND} of {d.notifiedND} neonatal deaths reviewed
+              {t('mpdsrViz.ndReviewedOfNotified', { reviewed: d.reviewedND, notified: d.notifiedND })}
             </div>
           </div>
         </div>
@@ -241,27 +242,27 @@ function NotifyVsReview({
                   }}
                   cursor={{ fill: 'rgba(0,114,188,0.04)' }}
                 />
-                <Bar dataKey="notified" name="Notified" fill={CIPRB_BLUE_LIGHT}
+                <Bar dataKey="notified" name={t('mpdsrViz.notified')} fill={CIPRB_BLUE_LIGHT}
                      radius={[6, 6, 0, 0]} animationDuration={700} />
-                <Bar dataKey="reviewed" name="Reviewed" fill={CIPRB_BLUE}
+                <Bar dataKey="reviewed" name={t('mpdsrViz.reviewed')} fill={CIPRB_BLUE}
                      radius={[6, 6, 0, 0]} animationDuration={700} animationBegin={120} />
               </BarChart>
             </ResponsiveContainer>
           </div>
         ) : (
           <div style={{ padding: '32px 0', textAlign: 'center', fontSize: 13, color: 'var(--muted)' }}>
-            Bar chart fills as MPDSR cases are reported and reviewed.
+            {t('mpdsrViz.barEmpty')}
           </div>
         )}
 
         <div style={{ display: 'flex', gap: 18, marginTop: 14, fontSize: 12 }}>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--ink-3)' }}>
             <span style={{ width: 10, height: 10, borderRadius: 2, background: CIPRB_BLUE_LIGHT }} />
-            Notified
+            {t('mpdsrViz.notified')}
           </span>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--ink-3)' }}>
             <span style={{ width: 10, height: 10, borderRadius: 2, background: CIPRB_BLUE }} />
-            Reviewed
+            {t('mpdsrViz.reviewed')}
           </span>
         </div>
       </div>
@@ -273,12 +274,14 @@ function NotifyVsReview({
 
 type DistrictGroup = 'cumulative' | 'sida' | 'gac' | 'cp'
 
-const GROUP_TABS: { key: DistrictGroup; label: string; sub: string }[] = [
-  { key: 'cumulative', label: 'Cumulative',     sub: 'All cases' },
-  { key: 'sida',       label: 'SIDA Districts', sub: '6 districts' },
-  { key: 'gac',        label: 'GAC Districts',  sub: '5 districts' },
-  { key: 'cp',         label: 'CP Districts',   sub: 'Country Programme' },
-]
+// Labels are translated at render-time via t() — see CauseBreakdown.
+const GROUP_TAB_KEYS: DistrictGroup[] = ['cumulative', 'sida', 'gac', 'cp']
+const GROUP_LABEL_KEY: Record<DistrictGroup, string> = {
+  cumulative: 'mpdsrViz.tabCumulative',
+  sida: 'mpdsrViz.tabSida',
+  gac: 'mpdsrViz.tabGac',
+  cp: 'mpdsrViz.tabCp',
+}
 
 const CAUSE_PALETTE: Record<string, string> = {
   pph:               '#0072BC',  // CIPRB blue
@@ -353,13 +356,13 @@ function CauseBreakdown({ cases }: { cases: MPDSRCase[] }) {
       <div style={{ marginBottom: 14 }}>
         <div className="kicker">
           <span className="dot" style={{ background: CIPRB_BLUE }} />
-          MATERNAL CAUSES OF DEATH
+          {t('mpdsrViz.causeKicker')}
         </div>
         <h3 style={{ margin: '6px 0 2px', fontSize: 18, fontWeight: 700, color: 'var(--ink)' }}>
-          What's driving maternal mortality?
+          {t('mpdsrViz.causeTitle')}
         </h3>
         <p style={{ fontSize: 12.5, color: 'var(--muted)', margin: 0 }}>
-          Percentage breakdown of clinical causes. Compare SIDA vs GAC vs CP districts to spot regional patterns.
+          {t('mpdsrViz.causeSub')}
         </p>
       </div>
 
@@ -373,12 +376,12 @@ function CauseBreakdown({ cases }: { cases: MPDSRCase[] }) {
         width: 'fit-content',
         marginBottom: 16,
       }} role="tablist">
-        {GROUP_TABS.map(tab => {
-          const isActive = group === tab.key
+        {GROUP_TAB_KEYS.map(key => {
+          const isActive = group === key
           return (
             <button
-              key={tab.key}
-              onClick={() => setGroup(tab.key)}
+              key={key}
+              onClick={() => setGroup(key)}
               role="tab"
               aria-selected={isActive}
               style={{
@@ -393,7 +396,7 @@ function CauseBreakdown({ cases }: { cases: MPDSRCase[] }) {
                 transitionDuration: '180ms',
               }}
             >
-              {tab.label}
+              {t(GROUP_LABEL_KEY[key])}
             </button>
           )
         })}
@@ -408,12 +411,11 @@ function CauseBreakdown({ cases }: { cases: MPDSRCase[] }) {
           }}>
             <Info size={20} style={{ color: CIPRB_BLUE }} />
             <div style={{ fontSize: 13.5, fontWeight: 500, color: 'var(--ink-2)' }}>
-              No maternal deaths recorded in this district group yet
+              {t('mpdsrViz.groupEmpty')}
             </div>
-            <div style={{ fontSize: 12, maxWidth: 480, color: 'var(--muted)', lineHeight: 1.55 }}>
-              Pie chart fills as cases come in from {group.toUpperCase()} districts.
-              Switch to <b>Cumulative</b> to see all data combined.
-            </div>
+            <div style={{ fontSize: 12, maxWidth: 480, color: 'var(--muted)', lineHeight: 1.55 }}
+              dangerouslySetInnerHTML={{ __html: t('mpdsrViz.groupEmptySub', { group: group.toUpperCase() }) }}
+            />
           </div>
         ) : total > 0 ? (
           <div style={{
@@ -446,7 +448,7 @@ function CauseBreakdown({ cases }: { cases: MPDSRCase[] }) {
                   fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em',
                 }}>{total.toLocaleString()}</span>
                 <span className="mono" style={{ fontSize: 9.5, color: 'var(--muted)', letterSpacing: '0.08em', marginTop: 4 }}>
-                  MD CASES
+                  {t('mpdsrViz.mdCases')}
                 </span>
               </div>
             </div>
@@ -465,7 +467,7 @@ function CauseBreakdown({ cases }: { cases: MPDSRCase[] }) {
           </div>
         ) : (
           <div style={{ padding: '40px 16px', textAlign: 'center', fontSize: 13, color: 'var(--muted)' }}>
-            Breakdown fills as maternal death cases are recorded and the cause of death is assigned.
+            {t('mpdsrViz.causeEmpty')}
           </div>
         )}
       </div>
@@ -480,6 +482,7 @@ function pascal(k: string): string {
 // ─── 3. Response Plan Implementation Tracker ─────────────────────────────────
 
 function ResponsePlanTracker({ summaries }: { summaries: ActionPlanSummary[] }) {
+  const { t } = useTranslation()
   // Action Plan Progress ingestion is live — rows show per-district
   // planned-vs-executed counts with completion %. Bar colour reflects
   // completion health: green ≥ 75%, amber 40-74%, red < 40%.
@@ -494,13 +497,13 @@ function ResponsePlanTracker({ summaries }: { summaries: ActionPlanSummary[] }) 
       <div style={{ marginBottom: 14 }}>
         <div className="kicker">
           <span className="dot" style={{ background: CIPRB_BLUE }} />
-          MPDSR RESPONSE PLAN · IMPLEMENTATION TRACKER
+          {t('mpdsrViz.responseKicker')}
         </div>
         <h3 style={{ margin: '6px 0 2px', fontSize: 18, fontWeight: 700, color: 'var(--ink)' }}>
-          Are review action plans being executed?
+          {t('mpdsrViz.responseTitle')}
         </h3>
         <p style={{ fontSize: 12.5, color: 'var(--muted)', margin: 0 }}>
-          After each maternal death review, teams draft a response plan. This tracker compares planned interventions against what was genuinely carried out on the ground.
+          {t('mpdsrViz.responseSub')}
         </p>
       </div>
 
@@ -508,12 +511,12 @@ function ResponsePlanTracker({ summaries }: { summaries: ActionPlanSummary[] }) 
         <table className="tbl">
           <thead>
             <tr>
-              <th>District</th>
-              <th>Level</th>
-              <th>Place of meeting</th>
-              <th style={{ textAlign: 'right' }}>Planned</th>
-              <th style={{ textAlign: 'right' }}>Executed</th>
-              <th style={{ textAlign: 'right', minWidth: 160 }}>Completion</th>
+              <th>{t('mpdsrViz.thDistrict')}</th>
+              <th>{t('mpdsrViz.thLevel')}</th>
+              <th>{t('mpdsrViz.thPlace')}</th>
+              <th style={{ textAlign: 'right' }}>{t('mpdsrViz.thPlanned')}</th>
+              <th style={{ textAlign: 'right' }}>{t('mpdsrViz.thExecuted')}</th>
+              <th style={{ textAlign: 'right', minWidth: 160 }}>{t('mpdsrViz.thCompletion')}</th>
             </tr>
           </thead>
           <tbody>
@@ -528,7 +531,7 @@ function ResponsePlanTracker({ summaries }: { summaries: ActionPlanSummary[] }) 
                   }}>
                     <Info size={20} style={{ color: CIPRB_BLUE }} />
                     <div style={{ fontSize: 13.5, fontWeight: 500, color: 'var(--ink-2)' }}>
-                      No action plan summaries yet
+                      {t('mpdsrViz.responseEmpty')}
                     </div>
                   </div>
                 </td>
@@ -542,7 +545,7 @@ function ResponsePlanTracker({ summaries }: { summaries: ActionPlanSummary[] }) 
                     background: 'rgba(0,114,188,0.08)', color: CIPRB_BLUE,
                     fontSize: 11, fontWeight: 600, letterSpacing: '0.04em',
                   }}>
-                    {s.level === 'DM' ? 'District' : 'Upazila'}
+                    {s.level === 'DM' ? t('mpdsrViz.levelDistrict') : t('mpdsrViz.levelUpazila')}
                   </span>
                 </td>
                 <td style={{ color: 'var(--ink-3)', fontSize: 12.5 }}>
@@ -594,6 +597,7 @@ function ResponsePlanTracker({ summaries }: { summaries: ActionPlanSummary[] }) 
 function ReportingRatePerDistrict({
   cases, denominators,
 }: { cases: MPDSRCase[]; denominators: DistrictDenominator[] }) {
+  const { t } = useTranslation()
   // Normalise district name like the cause-breakdown filter does.
   const norm = (s: string) => (s ?? '').toLowerCase().replace(/[^a-z0-9]/g, '')
   const reportedByDistrict: Record<string, number> = {}
@@ -624,19 +628,19 @@ function ReportingRatePerDistrict({
       <div style={{ marginBottom: 14 }}>
         <div className="kicker">
           <span className="dot" style={{ background: CIPRB_BLUE }} />
-          REPORTING RATE · PER DISTRICT
+          {t('mpdsrViz.perDistrictKicker')}
         </div>
         <h3 style={{ margin: '6px 0 2px', fontSize: 18, fontWeight: 700, color: 'var(--ink)' }}>
-          How completely is each district reporting?
+          {t('mpdsrViz.perDistrictTitle')}
         </h3>
         <p style={{ fontSize: 12.5, color: 'var(--muted)', margin: 0 }}>
-          Reported maternal deaths divided by Sayeed's estimated denominator. Districts at the bottom need follow-up.
+          {t('mpdsrViz.perDistrictSub')}
         </p>
       </div>
       <div className="card" style={{ padding: 20 }}>
         {rows.length === 0 ? (
           <div style={{ padding: '32px 0', textAlign: 'center', fontSize: 13, color: 'var(--muted)' }}>
-            Per-district reporting rate will populate once denominators are loaded.
+            {t('mpdsrViz.perDistrictEmpty')}
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>

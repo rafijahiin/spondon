@@ -11,6 +11,7 @@
  * with a striped fill to signal multi-set membership.
  */
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { MapContainer, GeoJSON } from 'react-leaflet'
 import type { Layer, PathOptions, LeafletEvent } from 'leaflet'
 import 'leaflet/dist/leaflet.css'
@@ -63,6 +64,7 @@ interface DistrictFeatureProps {
 }
 
 export function MPDSRDistrictMap() {
+  const { t } = useTranslation()
   const [geo, setGeo] = useState<GeoJSON.FeatureCollection | null>(null)
 
   useEffect(() => {
@@ -111,13 +113,13 @@ export function MPDSRDistrictMap() {
       <div style={{ marginBottom: 14 }}>
         <div className="kicker">
           <span className="dot" style={{ background: CIPRB_BLUE }} />
-          GEOGRAPHIC COVERAGE · MPDSR INTERVENTION DISTRICTS
+          {t('mpdsrMap.kicker')}
         </div>
         <h3 style={{ margin: '6px 0 2px', fontSize: 18, fontWeight: 700, color: 'var(--ink)' }}>
-          Where focused MPDSR support is running
+          {t('mpdsrMap.title')}
         </h3>
         <p style={{ fontSize: 12.5, color: 'var(--muted)', margin: 0 }}>
-          GAC + SIDA-funded intensive districts, layered over the broader Country Programme footprint.
+          {t('mpdsrMap.sub')}
         </p>
       </div>
 
@@ -140,7 +142,7 @@ export function MPDSRDistrictMap() {
               height: '100%', color: 'var(--muted)', fontSize: 13,
             }}>
               <Info size={16} style={{ marginRight: 8 }} />
-              Loading district boundaries…
+              {t('mpdsrMap.loading')}
             </div>
           )}
         </div>
@@ -150,11 +152,11 @@ export function MPDSRDistrictMap() {
           display: 'flex', flexWrap: 'wrap', gap: 16,
           marginTop: 16, fontSize: 12.5,
         }}>
-          <LegendSwatch color={TINT.gac}  label="GAC districts (5)" sub="Focused intervention" />
-          <LegendSwatch color={TINT.sida} label="SIDA districts (6)" sub="Focused intervention" />
-          <LegendSwatch color={TINT.both} label="GAC + SIDA overlap" sub="Sunamganj" />
-          <LegendSwatch color={TINT.cp}   label="CP districts" sub="Country Programme" />
-          <LegendSwatch color={TINT.none} label="No focused MPDSR" sub="" />
+          <LegendSwatch color={TINT.gac}  label={t('mpdsrMap.legendGac')}  sub={t('mpdsrMap.intervention')} />
+          <LegendSwatch color={TINT.sida} label={t('mpdsrMap.legendSida')} sub={t('mpdsrMap.intervention')} />
+          <LegendSwatch color={TINT.both} label={t('mpdsrMap.legendOverlap')} sub="Sunamganj" />
+          <LegendSwatch color={TINT.cp}   label={t('mpdsrMap.legendCp')}    sub={t('mpdsrMap.countryProgramme')} />
+          <LegendSwatch color={TINT.none} label={t('mpdsrMap.legendNone')} sub="" />
         </div>
       </div>
     </div>

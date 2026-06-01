@@ -13,6 +13,7 @@
  * the cross-partner compliance picture.
  */
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { CheckCircle2, AlertTriangle, Clock } from 'lucide-react'
 import { api } from '@/api/client'
 import { useAuth } from '@/context/AuthContext'
@@ -50,6 +51,7 @@ function useHealthFlags() {
 }
 
 function PartnerFlagTile({ flag, thresholdHours }: { flag: PartnerFlag; thresholdHours: number }) {
+  const { t } = useTranslation()
   const partner = flag.partner as PartnerCode
   const color = PARTNER_COLORS[partner] ?? '#999'
   const isCompliant = !flag.is_silent
@@ -74,8 +76,8 @@ function PartnerFlagTile({ flag, thresholdHours }: { flag: PartnerFlag; threshol
           </div>
           <div style={{ fontSize: 11.5, color: 'var(--muted)', marginTop: 2 }}>
             {flag.total_centres > 0
-              ? `${flag.total_centres} ${flag.total_centres === 1 ? 'centre' : 'centres'} active`
-              : 'centre registry pending'}
+              ? t('health.centresActive', { count: flag.total_centres })
+              : t('health.registryPending')}
           </div>
         </div>
         {isCompliant ? (
@@ -86,7 +88,7 @@ function PartnerFlagTile({ flag, thresholdHours }: { flag: PartnerFlag; threshol
             color: '#1A7A5A',
             fontSize: 11, fontWeight: 600,
           }}>
-            <CheckCircle2 size={12} /> Active
+            <CheckCircle2 size={12} /> {t('health.active')}
           </span>
         ) : (
           <span style={{
@@ -96,7 +98,7 @@ function PartnerFlagTile({ flag, thresholdHours }: { flag: PartnerFlag; threshol
             color: '#CC6A00',
             fontSize: 11, fontWeight: 600,
           }}>
-            <AlertTriangle size={12} /> Silent
+            <AlertTriangle size={12} /> {t('health.silent')}
           </span>
         )}
       </div>
@@ -112,7 +114,7 @@ function PartnerFlagTile({ flag, thresholdHours }: { flag: PartnerFlag; threshol
         <span style={{
           fontSize: 13, color: 'var(--ink-3)',
         }}>
-          submissions in last {thresholdHours}h
+          {t('health.submissionsInWindow', { hours: thresholdHours })}
         </span>
       </div>
 
@@ -122,14 +124,14 @@ function PartnerFlagTile({ flag, thresholdHours }: { flag: PartnerFlag; threshol
           <b style={{ color: 'var(--ink-2)', fontVariantNumeric: 'tabular-nums' }}>
             {flag.submissions_today.toLocaleString()}
           </b>
-          {' '}today
+          {' '}{t('health.today')}
           {flag.total_centres > 0 && (
             <>
               {' · '}
               <b style={{ color: 'var(--ink-2)', fontVariantNumeric: 'tabular-nums' }}>
                 {flag.submitted_today}/{flag.total_centres}
               </b>
-              {' centres'}
+              {' '}{t('health.centresLabel')}
             </>
           )}
         </div>
@@ -142,11 +144,11 @@ function PartnerFlagTile({ flag, thresholdHours }: { flag: PartnerFlag; threshol
             fontSize: 11.5,
           }}>
             <Clock size={11} />
-            {flag.partner_silent_hours.toFixed(1)}h since last touch
+            {flag.partner_silent_hours.toFixed(1)}{t('health.hoursSinceLastTouch')}
           </div>
         ) : (
           <div style={{ fontSize: 11.5, color: 'var(--muted)' }}>
-            No submissions on record yet
+            {t('health.noSubmissionsYet')}
           </div>
         )}
       </div>
@@ -161,7 +163,7 @@ function PartnerFlagTile({ flag, thresholdHours }: { flag: PartnerFlag; threshol
             fontSize: 9.5, color: 'var(--muted)',
             letterSpacing: '0.1em', marginBottom: 8,
           }}>
-            SILENT CENTRES
+            {t('health.silentCentresHeading')}
           </div>
           <ul style={{
             margin: 0, padding: 0, listStyle: 'none',
@@ -187,7 +189,7 @@ function PartnerFlagTile({ flag, thresholdHours }: { flag: PartnerFlag; threshol
             ))}
             {flag.silent_centres.length > 4 && (
               <li style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>
-                + {flag.silent_centres.length - 4} more
+                {t('health.moreCount', { count: flag.silent_centres.length - 4 })}
               </li>
             )}
           </ul>
@@ -198,6 +200,7 @@ function PartnerFlagTile({ flag, thresholdHours }: { flag: PartnerFlag; threshol
 }
 
 export function ProgrammeHealthFlags() {
+  const { t } = useTranslation()
   const { user } = useAuth()
   const data = useHealthFlags()
 
@@ -222,17 +225,13 @@ export function ProgrammeHealthFlags() {
             <span className="dot" style={{
               background: allCompliant ? 'var(--unfpa)' : '#CC6A00',
             }} />
-            PROGRAMME HEALTH FLAGS · {thresholdHours}H WINDOW
+            {t('health.kicker', { hours: thresholdHours })}
           </div>
           <h2 className="section-title">
-            {allCompliant
-              ? 'Every partner is active'
-              : 'Who hasn\'t reported recently?'
-            }
+            {allCompliant ? t('health.titleAllSteady') : t('health.titleSilent')}
           </h2>
           <p className="section-sub">
-            Each partner must submit at least once every {thresholdHours} hours — even a '0' entry on
-            zero-patient days. Silent partners surface here so programme managers can chase before the gap grows.
+            {t('health.sub', { hours: thresholdHours })}
           </p>
         </div>
       </div>

@@ -443,17 +443,17 @@ function MPDSRSection() {
           }}>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
               <ClipboardList size={16} color={CIPRB_BLUE} />
-              {t('mpdsr.rawCasesTitle', { defaultValue: 'Open raw MPDSR case register' })}
+              {t('ciprbExtras.rawMpdsr')}
               <span style={{
                 marginLeft: 6,
                 fontSize: 11, color: 'var(--muted)', fontWeight: 500,
                 fontVariantNumeric: 'tabular-nums',
               }}>
-                ({(cases ?? []).length} {(cases ?? []).length === 1 ? 'case' : 'cases'})
+                ({t('ciprbExtras.casesCount', { count: (cases ?? []).length })})
               </span>
             </span>
             <span style={{ fontSize: 11, color: 'var(--muted)', letterSpacing: '0.06em' }}>
-              CLICK TO EXPAND
+              {t('ciprbExtras.clickToExpand')}
             </span>
           </summary>
           <div style={{ overflowX: 'auto', borderTop: '1px solid var(--hair)' }}>
@@ -577,7 +577,7 @@ export default function CIPRBDashboard() {
           fontSize: 13, color: 'var(--ink-3)', marginTop: 4, marginBottom: 14,
           letterSpacing: '0.01em', fontWeight: 500,
         }} className="anim-rise d1">
-          Centre for Injury Prevention and Research, Bangladesh
+          {t('ciprbExtras.subtitle')}
         </p>
         <p className="hero-lede anim-rise d2" style={{ maxWidth: 720 }}>
           {t('ciprb.heroLede')}
@@ -598,7 +598,7 @@ export default function CIPRBDashboard() {
             fontSize: 12.5, fontWeight: 600, textDecoration: 'none',
             border: '1px solid rgba(0,114,188,0.20)',
           }}>
-            Jump to Fistula
+            {t('ciprbExtras.jumpFistula')}
           </a>
           <a href="#mpdsr-section" style={{
             display: 'inline-flex', alignItems: 'center', gap: 6,
@@ -608,7 +608,7 @@ export default function CIPRBDashboard() {
             fontSize: 12.5, fontWeight: 600, textDecoration: 'none',
             border: '1px solid rgba(0,114,188,0.20)',
           }}>
-            Jump to MPDSR
+            {t('ciprbExtras.jumpMpdsr')}
           </a>
           <a href="#response-plan" style={{
             display: 'inline-flex', alignItems: 'center', gap: 6,
@@ -618,7 +618,7 @@ export default function CIPRBDashboard() {
             fontSize: 12.5, fontWeight: 600, textDecoration: 'none',
             border: '1px solid rgba(204,106,0,0.22)',
           }}>
-            Jump to Response Plan Tracker
+            {t('ciprbExtras.jumpResponse')}
           </a>
         </div>
       </section>
@@ -627,7 +627,7 @@ export default function CIPRBDashboard() {
       <section className="section" id="fistula-section" style={{ marginTop: 0, scrollMarginTop: 80 }}>
         <div className="kicker" style={{ marginBottom: 10 }}>
           <span className="dot" style={{ background: CIPRB_BLUE }} />
-          FISTULA · AT A GLANCE
+          {t('ciprbExtras.fistulaGlance')}
         </div>
         <div style={{
           display: 'grid',
@@ -660,10 +660,10 @@ export default function CIPRBDashboard() {
           }}>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
               <ClipboardList size={16} color={CIPRB_BLUE} />
-              {t('ciprb.rawRegistersTitle', { defaultValue: 'Open raw Fistula registers (Corner / Campaign)' })}
+              {t('ciprbExtras.rawFistula')}
             </span>
             <span style={{ fontSize: 11, color: 'var(--muted)', letterSpacing: '0.06em' }}>
-              CLICK TO EXPAND
+              {t('ciprbExtras.clickToExpand')}
             </span>
           </summary>
           <div style={{ padding: 18, borderTop: '1px solid var(--hair)' }}>

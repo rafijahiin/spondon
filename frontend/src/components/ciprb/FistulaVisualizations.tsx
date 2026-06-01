@@ -11,6 +11,7 @@
  * — the leadership-demo bar.
  */
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Building2, MapPin, Home, Users, Search, Stethoscope, Send, ArrowRight } from 'lucide-react'
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts'
 import { api } from '@/api/client'
@@ -203,7 +204,7 @@ function FunnelStage({
   )
 }
 
-function FunnelArrow({ pct }: { pct: number }) {
+function FunnelArrow({ pct, label }: { pct: number; label?: string }) {
   return (
     <div style={{
       display: 'flex', flexDirection: 'column', alignItems: 'center',
@@ -215,7 +216,7 @@ function FunnelArrow({ pct }: { pct: number }) {
         fontVariantNumeric: 'tabular-nums',
         background: CIPRB_BLUE_SOFT, padding: '2px 8px', borderRadius: 999,
       }}>
-        {pct.toFixed(0)}% conversion
+        {label ?? `${pct.toFixed(0)}% conversion`}
       </span>
     </div>
   )
@@ -251,6 +252,7 @@ function DiagnosisLegend({ data }: { data: { name: string; value: number; color:
 // ─── Main export ─────────────────────────────────────────────────────────────
 
 export function FistulaVisualizations() {
+  const { t } = useTranslation()
   const agg = useFistulaAggregates()
 
   const funnelConversionDiag = agg.suspected > 0 ? (agg.identified / agg.suspected) * 100 : 0
@@ -260,9 +262,9 @@ export function FistulaVisualizations() {
   // 'Awaiting diagnosis' is reported beside the donut so the % totals stay
   // honest (denominator = patients who have actually been examined).
   const pieData = [
-    { name: 'Obstetric fistula (VVF)',    value: agg.pieObstetric, color: PIE_COLORS.obstetric },
-    { name: 'Other fistula type',         value: agg.pieOtherType, color: PIE_COLORS.otherType },
-    { name: 'No fistula confirmed',       value: agg.pieNoFistula, color: PIE_COLORS.noFistula },
+    { name: t('fistulaViz.pieObstetric'), value: agg.pieObstetric, color: PIE_COLORS.obstetric },
+    { name: t('fistulaViz.pieOther'),     value: agg.pieOtherType, color: PIE_COLORS.otherType },
+    { name: t('fistulaViz.pieNone'),      value: agg.pieNoFistula, color: PIE_COLORS.noFistula },
   ]
   const pieTotal = pieData.reduce((s, d) => s + d.value, 0)
 
@@ -274,13 +276,13 @@ export function FistulaVisualizations() {
         <div style={{ marginBottom: 14 }}>
           <div className="kicker">
             <span className="dot" style={{ background: CIPRB_BLUE }} />
-            CAMPAIGN REACH · COMMUNITY OUTREACH
+            {t('fistulaViz.reachKicker')}
           </div>
           <h3 style={{ margin: '6px 0 2px', fontSize: 18, fontWeight: 700, color: 'var(--ink)' }}>
-            How far the campaigns have travelled
+            {t('fistulaViz.reachTitle')}
           </h3>
           <p style={{ fontSize: 12.5, color: 'var(--muted)', margin: 0 }}>
-            Cumulative scale of the house-to-house screening drive.
+            {t('fistulaViz.reachSub')}
           </p>
         </div>
         <div style={{
@@ -288,10 +290,10 @@ export function FistulaVisualizations() {
           gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
           gap: 12,
         }}>
-          <MetricTile icon={<MapPin     size={13} />} label="Districts"   value={agg.districts}  sub="Distinct districts visited" />
-          <MetricTile icon={<Building2  size={13} />} label="Upazilas"    value={agg.upazilas}   sub="Upazila-level coverage" />
-          <MetricTile icon={<Home       size={13} />} label="Households"  value={agg.households} sub="Doors knocked / families screened" />
-          <MetricTile icon={<Users      size={13} />} label="Population"  value={agg.population} sub="Total population covered" />
+          <MetricTile icon={<MapPin     size={13} />} label={t('fistulaViz.districts')}  value={agg.districts}  sub={t('fistulaViz.districtsSub')} />
+          <MetricTile icon={<Building2  size={13} />} label={t('fistulaViz.upazilas')}   value={agg.upazilas}   sub={t('fistulaViz.upazilasSub')} />
+          <MetricTile icon={<Home       size={13} />} label={t('fistulaViz.households')} value={agg.households} sub={t('fistulaViz.householdsSub')} />
+          <MetricTile icon={<Users      size={13} />} label={t('fistulaViz.population')} value={agg.population} sub={t('fistulaViz.populationSub')} />
         </div>
       </div>
 
@@ -300,24 +302,24 @@ export function FistulaVisualizations() {
         <div style={{ marginBottom: 14 }}>
           <div className="kicker">
             <span className="dot" style={{ background: CIPRB_BLUE }} />
-            PATIENT FUNNEL · COMMUNITY → CLINIC → CARE
+            {t('fistulaViz.funnelKicker')}
           </div>
           <h3 style={{ margin: '6px 0 2px', fontSize: 18, fontWeight: 700, color: 'var(--ink)' }}>
-            Are campaigns converting into care?
+            {t('fistulaViz.funnelTitle')}
           </h3>
           <p style={{ fontSize: 12.5, color: 'var(--muted)', margin: 0 }}>
-            How patients flow from community screening to diagnosis to referral.
+            {t('fistulaViz.funnelSub')}
           </p>
         </div>
         <div className="card" style={{
           padding: '24px 28px',
           display: 'flex', alignItems: 'center', gap: 0, flexWrap: 'wrap',
         }}>
-          <FunnelStage icon={<Search size={14} />}      label="Suspected"   value={agg.suspected}  sub="Identified at community screening" />
-          <FunnelArrow pct={funnelConversionDiag} />
-          <FunnelStage icon={<Stethoscope size={14} />} label="Identified"  value={agg.identified} sub="Diagnosed at Fistula Corner" />
-          <FunnelArrow pct={funnelConversionRefer} />
-          <FunnelStage icon={<Send size={14} />}        label="Referred"    value={agg.referred}   sub="Sent for surgery / treatment" />
+          <FunnelStage icon={<Search size={14} />}      label={t('fistulaViz.suspected')}  value={agg.suspected}  sub={t('fistulaViz.suspectedSub')} />
+          <FunnelArrow pct={funnelConversionDiag} label={t('fistulaViz.conversion', { pct: funnelConversionDiag.toFixed(0) })} />
+          <FunnelStage icon={<Stethoscope size={14} />} label={t('fistulaViz.identified')} value={agg.identified} sub={t('fistulaViz.identifiedSub')} />
+          <FunnelArrow pct={funnelConversionRefer} label={t('fistulaViz.conversion', { pct: funnelConversionRefer.toFixed(0) })} />
+          <FunnelStage icon={<Send size={14} />}        label={t('fistulaViz.referred')}   value={agg.referred}   sub={t('fistulaViz.referredSub')} />
         </div>
       </div>
 
@@ -326,13 +328,13 @@ export function FistulaVisualizations() {
         <div style={{ marginBottom: 14 }}>
           <div className="kicker">
             <span className="dot" style={{ background: CIPRB_BLUE }} />
-            FISTULA CORNER · CLINICAL FINDINGS
+            {t('fistulaViz.pieKicker')}
           </div>
           <h3 style={{ margin: '6px 0 2px', fontSize: 18, fontWeight: 700, color: 'var(--ink)' }}>
-            What suspected patients actually have
+            {t('fistulaViz.pieTitle')}
           </h3>
           <p style={{ fontSize: 12.5, color: 'var(--muted)', margin: 0 }}>
-            Of all women examined at the Fistula Corner, how the final diagnoses break down.
+            {t('fistulaViz.pieSub')}
           </p>
         </div>
         <div className="card" style={{ padding: 24 }}>
@@ -370,7 +372,7 @@ export function FistulaVisualizations() {
                   <span className="mono" style={{
                     fontSize: 9.5, color: 'var(--muted)',
                     letterSpacing: '0.08em', marginTop: 4,
-                  }}>EXAMINED</span>
+                  }}>{t('fistulaViz.examined')}</span>
                 </div>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12, flex: 1, minWidth: 220 }}>
@@ -382,7 +384,7 @@ export function FistulaVisualizations() {
                     fontSize: 12, color: 'var(--ink-3)',
                     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                   }}>
-                    <span>Awaiting diagnosis</span>
+                    <span>{t('fistulaViz.awaiting')}</span>
                     <b style={{ fontVariantNumeric: 'tabular-nums' }}>{agg.piePending.toLocaleString()}</b>
                   </div>
                 )}
@@ -393,8 +395,7 @@ export function FistulaVisualizations() {
               padding: '48px 0', textAlign: 'center',
               fontSize: 13, color: 'var(--muted)',
             }}>
-              No Fistula Corner cases recorded yet — pie chart will fill as patients are
-              examined and diagnoses recorded.
+              {t('fistulaViz.pieEmpty')}
             </div>
           )}
         </div>

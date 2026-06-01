@@ -1,10 +1,12 @@
 import { FormEvent, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { Eye, EyeOff } from 'lucide-react'
 import { useAuth, apiErrorMessage } from '@/context/AuthContext'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 
 export default function Login() {
+  const { t } = useTranslation()
   const { login } = useAuth()
   const navigate   = useNavigate()
   const location   = useLocation()
@@ -24,7 +26,7 @@ export default function Login() {
       await login(username, password)
       navigate(from, { replace: true })
     } catch (err) {
-      setError(apiErrorMessage(err, 'Invalid username or password.'))
+      setError(apiErrorMessage(err, t('login.invalid')))
     } finally {
       setLoading(false)
     }
@@ -187,7 +189,7 @@ export default function Login() {
                 fontSize: 12.5, fontWeight: 500,
                 color: 'rgba(255,255,255,0.58)', letterSpacing: '0.02em',
               }}>
-                Username
+                {t('login.username')}
               </label>
               <input
                 className="login-field"
@@ -197,7 +199,7 @@ export default function Login() {
                 required
                 autoComplete="username"
                 autoFocus
-                placeholder="your@email.org"
+                placeholder={t('login.usernamePlaceholder')}
               />
             </div>
 
@@ -206,7 +208,7 @@ export default function Login() {
                 fontSize: 12.5, fontWeight: 500,
                 color: 'rgba(255,255,255,0.58)', letterSpacing: '0.02em',
               }}>
-                Password
+                {t('login.password')}
               </label>
               <div style={{ position: 'relative' }}>
                 <input
@@ -261,7 +263,7 @@ export default function Login() {
             >
               {loading
                 ? <LoadingSpinner size="sm" className="text-white" />
-                : 'Sign in'
+                : t('login.signIn')
               }
             </button>
           </form>
@@ -274,7 +276,7 @@ export default function Login() {
             color: 'rgba(255,255,255,0.22)',
             letterSpacing: '0.04em',
           }}>
-            UNFPA Bangladesh · CIPRB
+            {t('login.footer')}
           </p>
 
         </div>
