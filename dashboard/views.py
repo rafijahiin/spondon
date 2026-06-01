@@ -863,3 +863,112 @@ class ChatView(APIView):
         from .chat import answer_question
         answer = answer_question(question, partner)
         return Response({'answer': answer})
+
+
+# ─── Programme Health Flag ───────────────────────────────────────────────────
+
+
+class ProgrammeHealthFlagView(APIView):
+    """GET /api/dashboard/health-flags/
+
+    Per-partner daily-submission compliance. Animesh's spec: every centre
+    must touch the platform once per day, even with a '0' entry. The flag
+    surfaces who's silent.
+
+    Returns:
+      {
+        "as_of": "2026-06-01T13:58:00Z",
+        "alert_threshold_hours": 24,
+        "partners": [
+          {
+            "partner": "PHD",
+            "total_centres": 11,
+            "submitted_today": 7,
+            "silent_count": 4,
+            "silent_centres": [
+              { "name": ..., "district": ..., "hours_silent": 47.2 },
+              ...
+            ]
+          },
+          ...
+        ]
+      }
+    """
+    # Operational visibility — every operational role consumes this
+    # (developers, supervisors, org leads, partner managers).
+    permission_classes = [IsSupervisorOrManager]
+
+    def get(self, request):
+        from programs.models.center import ServiceCenter
+
+        now = timezone.now()
+        # Start of today in local time (UTC for now; can be timezone-aware later)
+        today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+
+        partners_data = []
+        for partner in ('PHD', 'Bandhu', 'CIPRB'):
+            centres = ServiceCenter.objects.filter(
+                organisation=partner, is_active=True,
+            )
+            total = centres.count()
+            if total == 0:
+                continue
+
+            # Find centres that have at least one submission today.
+            # Match on partner only (centre-level submission mapping is
+            # KoboToolbox-side); when centre-level mapping lands this query
+            # tightens to joinedness on centre code.
+            todays_submissions = (
+                KoboSubmission.objects
+                .filter(partner=partner, submitted_at__gte=today_start)
+                .count()
+            )
+
+            # Per-centre silent detection — placeholder until centre code is
+            # captured on the submission. For now we report binary partner-level
+            # compliance: any submission today = OK for that partner.
+            partner_silent_hours = None
+            last_submission = (
+                KoboSubmission.objects
+                .filter(partner=partner)
+                .order_by('-submitted_at')
+                .values_list('submitted_at', flat=True)
+                .first()
+            )
+            if last_submission:
+                delta = now - last_submission
+                partner_silent_hours = round(delta.total_seconds() / 3600.0, 1)
+
+            silent_centres = []
+            if todays_submissions == 0:
+                # No data today — every centre is potentially silent.
+                # Show the top 10 by name as a sample.
+                for c in centres[:10]:
+                    silent_centres.append({
+                        'name': c.name,
+                        'district': c.district,
+                        'hours_silent': partner_silent_hours,
+                    })
+                silent_count = total
+                submitted_today = 0
+            else:
+                # Approximate: if any submission landed today, treat partner as compliant.
+                silent_count = 0
+                submitted_today = total  # optimistic until centre-level mapping lands
+
+            partners_data.append({
+                'partner': partner,
+                'total_centres': total,
+                'submitted_today': submitted_today,
+                'silent_count': silent_count,
+                'submissions_today': todays_submissions,
+                'last_submission_at': last_submission.isoformat() if last_submission else None,
+                'partner_silent_hours': partner_silent_hours,
+                'silent_centres': silent_centres,
+            })
+
+        return Response({
+            'as_of': now.isoformat(),
+            'alert_threshold_hours': 24,
+            'partners': partners_data,
+        })

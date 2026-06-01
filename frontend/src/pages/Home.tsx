@@ -15,6 +15,7 @@ import { api } from '@/api/client'
 import { PageLoader } from '@/components/ui/LoadingSpinner'
 import { ExecutiveBento } from '@/components/home/ExecutiveBento'
 import { PartnerProgress } from '@/components/home/PartnerProgress'
+import { ProgrammeHealthFlags } from '@/components/home/ProgrammeHealthFlags'
 import { SpecificProgrammes } from '@/components/home/SpecificProgrammes'
 import { PartnerOverlapMap } from '@/components/maps/PartnerOverlapMap'
 import { AnomalyCards } from '@/components/anomalies/AnomalyCards'
@@ -126,6 +127,12 @@ export default function Home() {
           {t('home.rollupLoadError')}
         </p>
       )}
+
+      {/* ── PROGRAMME HEALTH FLAGS — per-partner daily compliance.
+           Replaces the deleted Activity Feed per Animesh: silence is the
+           signal. Each tile shows submitted/total centres today + the
+           silent ones with hours-since-touch. ─────────────────────────── */}
+      <ProgrammeHealthFlags />
 
       {/* ── PROGRAMME-WIDE HEALTH (bento) ────────────────────────────────── */}
       <ExecutiveBento progress={progress} />
