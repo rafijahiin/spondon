@@ -26,7 +26,6 @@ import { usePolling } from '@/hooks/usePolling'
 import { PageLoader } from '@/components/ui/LoadingSpinner'
 import { BangladeshMap } from '@/components/maps/BangladeshMap'
 import { IndicatorGrid } from '@/components/indicators/IndicatorGrid'
-import { AnomalyCards } from '@/components/anomalies/AnomalyCards'
 import { formatDate } from '@/utils/format'
 import type { PartnerKPIs, CentresResponse, Alert, ProgramsSummary } from '@/types'
 import {
@@ -481,12 +480,11 @@ export function OrgDashboard({ partner }: Props) {
         </section>
       )}
 
-      {/* LiveMonitoring removed — it duplicated info from the headline
-          KPI tiles above (submissions count + sparkline) and the topbar
-          SYNC LIVE pill, while its "system health" pills were hardcoded
-          green checkmarks not tied to real probes. AnomalyCards remains
-          as the single source of truth for system signal on this page. */}
-      <AnomalyCards partner={partner} />
+      {/* Anomaly Detection lives on the home page only — the partner
+          dashboards already show submission counts, indicator progress
+          and review backlogs through their own KPI tiles. Repeating it
+          here also hit a 403 for focal-role users who don't have access
+          to /api/dashboard/alerts/. */}
 
       {/* ═══════════════════════════════════════════════════════════════
            M&E INDICATOR PROGRESS
