@@ -185,6 +185,69 @@ def detect_submission_gaps(dry_run: bool = False) -> list[dict]:
     return created_alerts
 
 
+def detect_daily_silence(dry_run: bool = False) -> list[dict]:
+    """Strict daily-reporting compliance check.
+
+    Every partner must touch the platform at least once per day — even a
+    'zero / no-activity' report counts. This looks at the PREVIOUS local
+    (Asia/Dhaka) calendar day: if a partner submitted nothing at all on a
+    completed day, raise a DAILY_SILENCE alert so managers can chase it.
+    Runs once per day (e.g. an early-morning cron); deduplicated per
+    partner per day.
+    """
+    from .models import Alert, AlertSeverity, AlertType
+    from submissions.models import KoboSubmission
+
+    local_now = timezone.localtime(timezone.now())
+    yesterday = (local_now - datetime.timedelta(days=1)).date()
+    day_start = local_now.replace(hour=0, minute=0, second=0, microsecond=0) \
+        - datetime.timedelta(days=1)
+    day_end = day_start + datetime.timedelta(days=1)
+
+    created_alerts = []
+    for partner in ('PHD', 'Bandhu', 'CIPRB'):
+        had_any = KoboSubmission.objects.filter(
+            partner=partner,
+            submitted_at__gte=day_start,
+            submitted_at__lt=day_end,
+        ).exists()
+        if had_any:
+            continue
+
+        already = Alert.objects.filter(
+            partner=partner,
+            alert_type=AlertType.DAILY_SILENCE,
+            created_at__date=local_now.date(),
+        ).exists()
+        if already:
+            continue
+
+        title = f'{partner}: no daily report for {yesterday:%d %b}'
+        message = (
+            f'{partner} submitted nothing on {yesterday:%d %b %Y} — not even a '
+            f'zero/no-activity report. Daily reporting duty was not met; '
+            f'please follow up with the focal person.'
+        )
+        alert_data = {
+            'partner':    partner,
+            'alert_type': AlertType.DAILY_SILENCE,
+            'severity':   AlertSeverity.WARNING,
+            'title':      title,
+            'message':    message,
+        }
+        if not dry_run:
+            Alert.objects.create(**alert_data)
+            try:
+                from submissions.email_notify import send_gap_alert
+                send_gap_alert(partner, 24.0, 24)
+            except Exception as exc:
+                logger.debug('daily-silence email skipped: %s', exc)
+        created_alerts.append(alert_data)
+        logger.info('Daily-silence alert created: %s', title)
+
+    return created_alerts
+
+
 def _send_gap_telegram(partner: str, form_label: str) -> None:
     """Send a Telegram alert for a 48-hour submission gap."""
     from django.conf import settings

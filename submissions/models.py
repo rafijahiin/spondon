@@ -57,6 +57,12 @@ class KoboSubmission(models.Model):
     reviewed_at = models.DateTimeField(null=True, blank=True)
     rejection_reason = models.TextField(blank=True)
 
+    # Daily-compliance "zero report": the worker logged in and confirmed
+    # there was no patient/activity today. Counts as the day's reporting
+    # touch (a positive "nothing happened" signal, not a blank), but is
+    # excluded from clinical/volume aggregates.
+    is_zero_report = models.BooleanField(default=False, db_index=True)
+
     # Permanent audit trail of every review action (Animesh's "evidence of
     # you working" requirement). One entry per approve/reject, never
     # overwritten — survives re-review cycles. Each entry:

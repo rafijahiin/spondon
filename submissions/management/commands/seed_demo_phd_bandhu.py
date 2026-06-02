@@ -212,7 +212,38 @@ class Command(BaseCommand):
                     )
                     created_s += 1
 
+        # One explicit "zero / no-activity" report per partner, dated today,
+        # so the daily-compliance health flag demonstrates the feature: the
+        # partner reported today even though a centre had no activity.
+        zero_created = 0
+        for partner, profile in (('PHD', PHD_PROFILE), ('Bandhu', BANDHU_PROFILE)):
+            district, cfg = next(iter(profile.items()))
+            suffix = cfg['centres'][0][0]
+            code = f'{partner.upper()}-{suffix}' if not suffix.startswith(partner.upper()) else suffix
+            kobo_id = f'DEMO-{partner}-ZERO-TODAY'
+            if not KoboSubmission.objects.filter(kobo_id=kobo_id).exists():
+                KoboSubmission.objects.create(
+                    kobo_id=kobo_id,
+                    form_type=FormType.ACTIVITY,
+                    partner=partner,
+                    worker_name=f'{partner} Field Worker',
+                    district=district,
+                    centre_code=code,
+                    latitude=cfg['centres'][0][4],
+                    longitude=cfg['centres'][0][5],
+                    submitted_at=now,
+                    raw_data={
+                        'partner_org': partner, 'center_code': code,
+                        'district': district, '_source': 'demo_seed',
+                        'no_activity': 'yes',
+                    },
+                    status=SubmissionStatus.APPROVED,
+                    is_zero_report=True,
+                )
+                zero_created += 1
+
         self.stdout.write(self.style.SUCCESS(
             f'Centres: {created_c} created, {updated_c} updated. '
-            f'Submissions: {created_s} created, {skipped_s} skipped.'
+            f'Submissions: {created_s} created, {skipped_s} skipped. '
+            f'Zero-reports: {zero_created} created.'
         ))

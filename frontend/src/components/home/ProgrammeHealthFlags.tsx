@@ -25,6 +25,7 @@ interface PartnerFlag {
   submitted_today: number
   silent_count: number
   submissions_today: number
+  zero_reports_today?: number
   recent_submissions: number
   last_submission_at: string | null
   partner_silent_hours: number | null
@@ -148,6 +149,11 @@ function PartnerFlagTile({ flag, thresholdHours }: { flag: PartnerFlag; threshol
               {' '}{t('health.centresLabel')}
             </>
           )}
+          {(flag.zero_reports_today ?? 0) > 0 && (
+            <span style={{ color: 'var(--muted)' }}>
+              {' · '}{flag.zero_reports_today} no-activity report{flag.zero_reports_today === 1 ? '' : 's'}
+            </span>
+          )}
         </div>
         {flag.partner_silent_hours !== null ? (
           <div style={{
@@ -218,9 +224,11 @@ export function ProgrammeHealthFlags() {
   const { user } = useAuth()
   const data = useHealthFlags()
 
-  // UNFPA-only block. Hidden from focal, manager, field_staff, org_lead,
-  // ciprb_baseline. Developers retained for support visibility.
-  if (!user || !['supervisor', 'developer'].includes(user.role)) {
+  // Daily reporting compliance. Every authenticated reviewer sees it now
+  // (the backend scopes which partners are returned): UNFPA/CIPRB see all
+  // three, a PHD/Bandhu manager or focal sees only their own card — which
+  // is what lets a manager confirm their own daily reporting duty was met.
+  if (!user) {
     return null
   }
 
@@ -230,6 +238,8 @@ export function ProgrammeHealthFlags() {
 
   const allCompliant = data.partners.every(p => !p.is_silent)
   const thresholdHours = data.alert_threshold_hours
+  // A manager/focal sees a single card (their own org); UNFPA sees all three.
+  const cols = Math.min(3, Math.max(1, data.partners.length))
 
   return (
     <section className="section programme-health-flags" style={{ marginTop: 44 }}>
@@ -254,7 +264,7 @@ export function ProgrammeHealthFlags() {
         className="health-flags-grid"
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(3, 1fr)',
+          gridTemplateColumns: `repeat(${cols}, 1fr)`,
           gap: 16,
         }}
       >

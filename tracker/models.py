@@ -45,6 +45,7 @@ class AlertType(models.TextChoices):
     ANOMALY = 'anomaly', 'Anomaly Detected'
     OVERDUE_CASES = 'overdue_cases', 'Overdue Cases'
     SUBMISSION_GAP = 'submission_gap', '48-Hour Submission Gap'
+    DAILY_SILENCE = 'daily_silence', 'No Daily Report'
     CUSTOM = 'custom', 'Custom'
 
 

@@ -65,6 +65,29 @@ def _partner_from_payload(payload: dict) -> str:
     return ''
 
 
+_ZERO_TRUE = {'yes', 'true', '1', 'no_activity', 'zero', 'none', 'nothing'}
+_ZERO_FALSE = {'no', 'false', '0', ''}
+
+
+def _is_zero_report(payload: dict) -> bool:
+    """Detect a daily 'no activity / zero patient' report.
+
+    Accepts several Kobo question conventions so the form author has
+    freedom: an explicit `zero_report`/`no_activity` flag set truthy, OR an
+    `any_activity`/`had_activity` question answered 'no'. Defaults to False
+    (a normal data-bearing submission)."""
+    for key in ('zero_report', 'no_activity', 'no_data', 'is_zero_report'):
+        v = str(payload.get(key, '')).strip().lower()
+        if v in _ZERO_TRUE:
+            return True
+    for key in ('any_activity', 'had_activity', 'activity_today', 'patients_seen_today'):
+        if key in payload:
+            v = str(payload.get(key, '')).strip().lower()
+            if v in _ZERO_FALSE:
+                return True
+    return False
+
+
 def _district_from_payload(payload: dict, form_type: str) -> str:
     if form_type == FormType.MPDSR:
         sub = payload.get('form_type', '')
@@ -224,6 +247,7 @@ def kobo_webhook(request):
         longitude=lng,
         submitted_at=_parse_submitted_at(payload.get('_submission_time', '')),
         raw_data=payload,
+        is_zero_report=_is_zero_report(payload),
     )
 
     try:

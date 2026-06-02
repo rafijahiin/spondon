@@ -8,6 +8,7 @@ from django.core.management.base import BaseCommand
 
 from tracker.alerts import (
     detect_submission_gaps,
+    detect_daily_silence,
     generate_below_target_alerts,
     generate_overdue_case_alerts,
 )
@@ -34,3 +35,7 @@ class Command(BaseCommand):
         self.stdout.write(f'{prefix}Detecting 48-hour submission gaps…')
         gaps = detect_submission_gaps(dry_run=dry)
         self.stdout.write(self.style.SUCCESS(f'  {len(gaps)} gap alert(s) created'))
+
+        self.stdout.write(f'{prefix}Detecting missed daily reports…')
+        silence = detect_daily_silence(dry_run=dry)
+        self.stdout.write(self.style.SUCCESS(f'  {len(silence)} daily-silence alert(s) created'))

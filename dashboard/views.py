@@ -988,19 +988,23 @@ class ProgrammeHealthFlagView(APIView):
         from programs.models.center import ServiceCenter
 
         user = request.user
-        # Surface restriction — only UNFPA supervisors + developers see the
-        # full programme-wide compliance view.
-        if user.role not in ('supervisor', 'developer'):
-            return Response({'detail': 'Forbidden.'}, status=403)
+        # Compliance visibility (revised): every reviewer sees the daily
+        # reporting flag, but scoped to the partners they're allowed to see.
+        # UNFPA/CIPRB get all three (monitoring orgs); a PHD/Bandhu manager
+        # or focal sees only their own partner's card. This is what lets
+        # managers confirm their own daily reporting duty was met.
+        visible = allowed_partners(user)
 
+        # "Today" is the local (Asia/Dhaka) calendar day, not UTC — a centre
+        # that reported at 9am Dhaka must read as "reported today".
         now = timezone.now()
-        today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        local_now = timezone.localtime(now)
+        today_start = local_now.replace(hour=0, minute=0, second=0, microsecond=0)
         threshold_dt = now - datetime.timedelta(hours=self.ALERT_THRESHOLD_HOURS)
 
         partners_data = []
-        # Always return all three partners — even with 0 centres — so the
-        # home page renders a stable 3-card layout regardless of seed state.
-        for partner in ('PHD', 'Bandhu', 'CIPRB'):
+        # Stable card order; filtered to the partners this user may see.
+        for partner in [p for p in ('PHD', 'Bandhu', 'CIPRB') if p in visible]:
             centres = list(ServiceCenter.objects.filter(
                 organisation=partner, is_active=True,
             ))
@@ -1016,6 +1020,10 @@ class ProgrammeHealthFlagView(APIView):
             )
             recent_submissions = recent_qs.count()
             todays_submissions = todays_qs.count()
+            # How many of today's touches were explicit zero/no-activity
+            # reports — surfaced so the card can show "reported today
+            # (no activity)" rather than implying clinical volume.
+            todays_zero_reports = todays_qs.filter(is_zero_report=True).count()
 
             # Per-centre granularity — Animesh's 'X of N centres submitted
             # today' breakdown. Uses denormalised centre_code on
@@ -1083,6 +1091,7 @@ class ProgrammeHealthFlagView(APIView):
                 'submitted_today': submitted_today_count,
                 'silent_count': silent_count,
                 'submissions_today': todays_submissions,
+                'zero_reports_today': todays_zero_reports,
                 'recent_submissions': recent_submissions,
                 'last_submission_at': last_submission.isoformat() if last_submission else None,
                 'partner_silent_hours': partner_silent_hours,
