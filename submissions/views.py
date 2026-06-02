@@ -60,8 +60,27 @@ def _district_from_payload(payload: dict, form_type: str) -> str:
     if form_type == FormType.MPDSR:
         sub = payload.get('form_type', '')
         field = f'{sub}_district' if sub else ''
-        return payload.get(field) or payload.get('district') or ''
-    return payload.get('district') or ''
+        d = payload.get(field) or payload.get('district') or ''
+        if d:
+            return d
+    else:
+        d = payload.get('district') or ''
+        if d:
+            return d
+
+    # Fallback: most PHD/Bandhu forms capture `center_code` instead of asking
+    # for district directly. Look up the centre's home district so the
+    # submission can still surface in district-level rankings.
+    code = (payload.get('center_code') or payload.get('centre_code') or '').strip()
+    if code:
+        try:
+            from programs.models.center import ServiceCenter
+            sc = ServiceCenter.objects.filter(code=code).only('district').first()
+            if sc and sc.district:
+                return sc.district
+        except Exception:
+            pass
+    return ''
 
 
 def _geolocation(payload: dict) -> tuple[float | None, float | None]:

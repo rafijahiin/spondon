@@ -1,0 +1,185 @@
+"""Seed demo ServiceCenters + KoboSubmissions for PHD and Bandhu so the
+OrgDashboard surfaces live numbers instead of mock fallback.
+
+Idempotent: centres get stable codes (e.g. PHD-COXBAZ-001), submissions get a
+deterministic kobo_id (DEMO-PHD-...), so re-runs do nothing.
+
+Removable: --purge deletes only DEMO-prefixed rows; real data is untouched.
+"""
+import datetime
+import random
+import uuid
+
+from django.core.management.base import BaseCommand
+from django.utils import timezone
+
+from programs.models.center import ServiceCenter
+from submissions.models import KoboSubmission, FormType, SubmissionStatus
+
+
+PHD_PROFILE = {
+    # district: { 'centres': [(code_suffix, name, type, upazila, lat, lng), ...], 'monthly_volume': int }
+    "Cox's Bazar": {
+        'centres': [
+            ('COXBAZ-CS',    "Cox's Bazar Civil Surgeon Office", 'sda',  'Sadar',  21.4272, 91.9810),
+            ('COXBAZ-DH',    "Cox's Bazar District Hospital",    'sdp',  'Sadar',  21.4292, 91.9788),
+        ],
+        'monthly': 156,
+    },
+    'Ukhiya': {
+        'centres': [
+            ('UKHIYA-UHC',   'Ukhiya Upazila Health Complex',    'sdp',  'Ukhiya', 21.2566, 92.1234),
+            ('UKHIYA-CAMP1', 'Rohingya Camp 1 PHD Outreach',     'oc',   'Ukhiya', 21.2300, 92.1500),
+        ],
+        'monthly': 89,
+    },
+    'Chattogram': {
+        'centres': [
+            ('CTG-MEMORIAL', 'Chattagram Maa Shishu Hospital',   'sdp',  'Sadar',  22.3569, 91.7832),
+        ],
+        'monthly': 78,
+    },
+    'Sylhet': {
+        'centres': [
+            ('SYL-OSMANI',   'Sylhet MAG Osmani Medical College','sdp',  'Sadar',  24.8949, 91.8687),
+        ],
+        'monthly': 56,
+    },
+    'Teknaf': {
+        'centres': [
+            ('TEKNAF-UHC',   'Teknaf Upazila Health Complex',    'sdp',  'Teknaf', 20.8654, 92.2978),
+        ],
+        'monthly': 46,
+    },
+}
+
+BANDHU_PROFILE = {
+    'Dhaka': {
+        'centres': [
+            ('DHK-MOHA',     'Mohammadpur Bandhu Centre',        'sda',  'Mohammadpur', 23.7651, 90.3590),
+            ('DHK-MOTI',     'Motijheel Bandhu Drop-in Centre',  'sda',  'Motijheel',   23.7300, 90.4200),
+        ],
+        'monthly': 210,
+    },
+    'Chittagong': {
+        'centres': [
+            ('CTG-BAN-AGRA', 'Agrabad Bandhu Centre',            'sda',  'Agrabad', 22.3261, 91.8137),
+        ],
+        'monthly': 168,
+    },
+    'Sylhet': {
+        'centres': [
+            ('SYL-BAN',      'Sylhet Bandhu Centre',             'sda',  'Sadar',   24.8949, 91.8687),
+        ],
+        'monthly': 145,
+    },
+    'Narayanganj': {
+        'centres': [
+            ('NGJ-BAN',      'Narayanganj Bandhu Centre',        'sda',  'Sadar',   23.6238, 90.5000),
+        ],
+        'monthly': 102,
+    },
+    'Comilla': {
+        'centres': [
+            ('CML-BAN',      'Comilla Bandhu Centre',            'sda',  'Sadar',   23.4607, 91.1809),
+        ],
+        'monthly': 78,
+    },
+}
+
+# Forms PHD/Bandhu actually submit day-to-day. ACTIVITY is the catch-all
+# FormType these all classify under (see submissions/views.py form_type router).
+DEMO_FORM_MIX = [FormType.ACTIVITY] * 9 + [FormType.FISTULA] * 1
+
+
+class Command(BaseCommand):
+    help = 'Seed demo ServiceCenters + KoboSubmissions for PHD/Bandhu (idempotent).'
+
+    def add_arguments(self, parser):
+        parser.add_argument('--purge', action='store_true',
+                            help='Delete demo rows instead of seeding.')
+
+    def handle(self, *args, **opts):
+        if opts['purge']:
+            n_sub, _ = KoboSubmission.objects.filter(kobo_id__startswith='DEMO-').delete()
+            n_ctr, _ = ServiceCenter.objects.filter(
+                organisation__in=('PHD', 'Bandhu'),
+            ).exclude(code__in=('PHDDEMO', 'BANDEMO')).delete()
+            self.stdout.write(self.style.WARNING(
+                f'Purged {n_sub} demo submissions, {n_ctr} demo centres.'
+            ))
+            return
+
+        rng = random.Random(20260602)
+        now = timezone.now()
+        month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+
+        created_c = updated_c = 0
+        created_s = skipped_s = 0
+
+        for partner, profile in (('PHD', PHD_PROFILE), ('Bandhu', BANDHU_PROFILE)):
+            for district, cfg in profile.items():
+                for suffix, name, ctype, upazila, lat, lng in cfg['centres']:
+                    code = f'{partner.upper()}-{suffix}' if not suffix.startswith(partner.upper()) else suffix
+                    sc, was_created = ServiceCenter.objects.update_or_create(
+                        code=code,
+                        defaults={
+                            'organisation': partner,
+                            'name': name,
+                            'center_type': ctype,
+                            'district': district,
+                            'upazila': upazila,
+                            'latitude': lat,
+                            'longitude': lng,
+                            'is_active': True,
+                        },
+                    )
+                    if was_created:
+                        created_c += 1
+                    else:
+                        updated_c += 1
+
+                # Distribute this district's monthly volume across its centres
+                centres = [
+                    f'{partner.upper()}-{s}' if not s.startswith(partner.upper()) else s
+                    for s, *_ in cfg['centres']
+                ]
+                total = cfg['monthly']
+                for i in range(total):
+                    code = centres[i % len(centres)]
+                    # Spread across the current month, biased toward recent days
+                    days_back = rng.randint(0, max(1, (now.date() - month_start.date()).days))
+                    submitted = now - datetime.timedelta(
+                        days=days_back,
+                        hours=rng.randint(0, 23),
+                        minutes=rng.randint(0, 59),
+                    )
+                    form_type = rng.choice(DEMO_FORM_MIX)
+                    kobo_id = f'DEMO-{partner}-{district[:6].replace(" ", "")}-{i:04d}'
+                    if KoboSubmission.objects.filter(kobo_id=kobo_id).exists():
+                        skipped_s += 1
+                        continue
+                    KoboSubmission.objects.create(
+                        kobo_id=kobo_id,
+                        form_type=form_type,
+                        partner=partner,
+                        worker_name=f'{partner} Field Worker',
+                        district=district,
+                        centre_code=code,
+                        latitude=cfg['centres'][i % len(cfg['centres'])][4],
+                        longitude=cfg['centres'][i % len(cfg['centres'])][5],
+                        submitted_at=submitted,
+                        raw_data={
+                            'partner_org': partner,
+                            'center_code': code,
+                            'district': district,
+                            '_source': 'demo_seed',
+                        },
+                        status=SubmissionStatus.APPROVED,
+                    )
+                    created_s += 1
+
+        self.stdout.write(self.style.SUCCESS(
+            f'Centres: {created_c} created, {updated_c} updated. '
+            f'Submissions: {created_s} created, {skipped_s} skipped.'
+        ))
