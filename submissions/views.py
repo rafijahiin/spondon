@@ -173,12 +173,19 @@ def kobo_webhook(request):
             status=400,
         )
 
-    # Audit FIX 2.7 — only BASELINE auto-approves (ciprb_baseline self-approves
-    # per spec). MPDSR + Fistula now go through the same PENDING → manager
-    # approval workflow as every other field record. Auto-approval here was
-    # overbroad and bypassed the supervisor approval queue for surveillance
-    # data that needs review before reaching the tracker.
-    _AUTO_APPROVE = {FormType.BASELINE}
+    # Auto-approval list. BASELINE has always auto-approved (CIPRB self-
+    # validates the survey). FISTULA_STAGED and MPDSR_RESPONSE_PLAN are
+    # added per Rafi 2026-06-02: these two new staged forms are CIPRB-
+    # owned, written by trained clinical staff, and need to flow straight
+    # to the dashboard without a manager approval queue (the queue was
+    # creating dashboard latency Animesh flagged as a blocker).
+    # MPDSR (F1–F6 combined) and FISTULA (legacy campaign) still queue
+    # for manager review since those have broader field-staff submitters.
+    _AUTO_APPROVE = {
+        FormType.BASELINE,
+        FormType.FISTULA_STAGED,
+        FormType.MPDSR_RESPONSE_PLAN,
+    }
     initial_status = SubmissionStatus.APPROVED if form_type in _AUTO_APPROVE else SubmissionStatus.PENDING
 
     # MPDSR and Baseline are CIPRB-owned surveillance/survey activities.
@@ -186,7 +193,7 @@ def kobo_webhook(request):
     # organisation in the payload (the form offers PHD/Bondhu for the
     # collector, but ownership of the record is CIPRB). Other forms keep
     # their detected partner.
-    if form_type in (FormType.MPDSR, FormType.BASELINE):
+    if form_type in (FormType.MPDSR, FormType.BASELINE, FormType.FISTULA_STAGED, FormType.MPDSR_RESPONSE_PLAN):
         partner = 'CIPRB'
     else:
         partner = _partner_from_payload(payload)

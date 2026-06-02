@@ -500,7 +500,10 @@ function MPDSRSection({
       {/* ─── Visualizations: Notify vs Review · Cause breakdown · Response Plan ─── */}
       <MPDSRVisualizations cases={cases ?? []} period={{ from: period.from, to: period.to }} />
 
-      {/* Cause panels (filter shortcuts above the cases table) */}
+      {/* Cause panels REMOVED per Rafi 2026-06-02 — Maternal Causes pie
+          inside MPDSRVisualizations already shows the same breakdown with
+          ICD-10 buckets; these duplicate cards were redundant. */}
+      {false && (
       <div style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
@@ -539,26 +542,10 @@ function MPDSRSection({
         })}
       </div>
 
-      {/* Place pills */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16 }}>
-        {PLACE_KEYS.map((key) => (
-          <div key={key} style={{
-            display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 13,
-          }}>
-            <span style={{
-              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-              width: 22, height: 22, borderRadius: 999,
-              background: 'rgba(249,96,0,0.10)',
-              color: CIPRB_BLUE,
-              fontSize: 11, fontWeight: 700,
-              fontVariantNumeric: 'tabular-nums',
-            }}>
-              {placeCounts[key] ?? 0}
-            </span>
-            <span style={{ color: 'var(--ink-3)' }}>{placeLabel(key)}</span>
-          </div>
-        ))}
-      </div>
+      )}
+      {/* Place pills REMOVED — Animesh's 2026-06-02 spec keeps the page
+          focused on the MPDSR funnel + Response Plan. Place-of-death is
+          a drill-down field on the case audit drawer, not a dashboard tile. */}
 
       {/* Cases table — collapsed by default so the page isn't too long to scroll */}
       {loading && !cases ? (
