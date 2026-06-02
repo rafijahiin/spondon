@@ -564,8 +564,8 @@
     "jumpMpdsr": "MPDSR সেকশনে যান",
     "jumpResponse": "রেসপন্স প্ল্যান ট্র্যাকার দেখুন",
     "fistulaGlance": "Fistula · এক নজরে",
-    "rawFistula": "কাঁচা Fistula রেজিস্টার খুলুন",
-    "rawMpdsr": "কাঁচা MPDSR কেস রেজিস্টার খুলুন",
+    "rawFistula": "Raw Fistula রেজিস্টার খুলুন",
+    "rawMpdsr": "Raw MPDSR কেস রেজিস্টার খুলুন",
     "clickToExpand": "ক্লিক করে খুলুন",
     "casesCount_one": "{{count}}টি কেস",
     "casesCount_other": "{{count}}টি কেস"
