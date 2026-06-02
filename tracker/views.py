@@ -6,7 +6,10 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.views import APIView
 
-from accounts.permissions import IsSupervisorOrOrgLead, IsSupervisorOrManager, OrgFilterMixin
+from accounts.permissions import (
+    IsSupervisorOrOrgLead, IsSupervisorOrManager, OrgFilterMixin,
+    CanConfigureTargets,
+)
 from submissions.models import FormType
 from .forecasting import attainment_percent, linear_forecast
 from .models import Alert, MonthlyTarget
@@ -20,10 +23,14 @@ from .programs_query import (
 
 
 class MonthlyTargetViewSet(ModelViewSet):
-    """CRUD for monthly targets — supervisors + org leads."""
+    """CRUD for monthly targets. Read is open to any authenticated user
+    (managers/focal/developer need to SEE targets vs actuals); writes are
+    restricted to UNFPA supervisors + the developer (CanConfigureTargets).
+    Was IsSupervisorOrOrgLead, which 403'd the developer and blocked
+    managers/focal from even reading their own targets."""
     queryset = MonthlyTarget.objects.all()
     serializer_class = MonthlyTargetSerializer
-    permission_classes = [IsSupervisorOrOrgLead]
+    permission_classes = [CanConfigureTargets]
 
     def get_queryset(self):
         qs = super().get_queryset()
