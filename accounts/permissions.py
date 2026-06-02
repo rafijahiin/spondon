@@ -19,7 +19,12 @@ commit after every call site is migrated to the new classes.
 """
 from rest_framework.permissions import BasePermission, SAFE_METHODS
 
-from .models import Role
+from .models import Role, Organisation
+
+# Monitoring orgs — CIPRB and UNFPA oversee the whole programme, so their
+# staff (any role) get read-only visibility across all partners and into
+# CIPRB-owned clinical aggregates. PHD/Bandhu remain scoped to their own org.
+MONITORING_ORGS = (Organisation.CIPRB, Organisation.UNFPA)
 
 
 # ── Identity classes ──────────────────────────────────────────────────────────
@@ -160,7 +165,16 @@ class CanAccessMPDSR(BasePermission):
     """
     def has_permission(self, request, view):
         u = request.user
-        return u.is_authenticated and u.can_access_mpdsr
+        if not u.is_authenticated:
+            return False
+        if u.can_access_mpdsr:
+            return True
+        # Read-only visibility for monitoring orgs (CIPRB/UNFPA), e.g. a CIPRB
+        # focal person viewing the MPDSR dashboard. Write stays restricted.
+        return (
+            request.method in SAFE_METHODS
+            and u.organisation in MONITORING_ORGS
+        )
 
 
 class CanAccessFistulaCases(BasePermission):
@@ -174,7 +188,16 @@ class CanAccessFistulaCases(BasePermission):
     """
     def has_permission(self, request, view):
         u = request.user
-        return u.is_authenticated and u.can_access_fistula_cases
+        if not u.is_authenticated:
+            return False
+        if u.can_access_fistula_cases:
+            return True
+        # Read-only visibility for monitoring orgs (CIPRB/UNFPA). PHD/Bandhu
+        # staff stay blocked from CIPRB survivor PII (audit FIX C1 preserved).
+        return (
+            request.method in SAFE_METHODS
+            and u.organisation in MONITORING_ORGS
+        )
 
 
 # ── Cross-org / multi-role membership classes ────────────────────────────────
@@ -200,13 +223,21 @@ class IsSupervisorOrManager(BasePermission):
     and CIPRB_BASELINE on the write path. Used by dashboard and tracker
     endpoints that every operational role consumes.
 
-    Replaces the deprecated `IsSuperAdminOrManager`."""
+    Replaces the deprecated `IsSuperAdminOrManager`.
+
+    FOCAL is the "view-only" role: it is allowed on read (SAFE_METHODS) so
+    focal persons can see dashboards, but never on the write path."""
     def has_permission(self, request, view):
         u = request.user
-        return u.is_authenticated and u.role in (
+        if not u.is_authenticated:
+            return False
+        if u.role in (
             Role.SUPERVISOR, Role.ORG_LEAD,
             Role.MANAGER, Role.DEVELOPER, Role.FIELD_STAFF,
-        )
+        ):
+            return True
+        # View-only focal persons can read dashboards, not write.
+        return u.role == Role.FOCAL and request.method in SAFE_METHODS
 
 
 class IsSupervisorOrDeveloper(BasePermission):
@@ -260,6 +291,10 @@ class OrgFilterMixin:
         qs = super().get_queryset()
         user = self.request.user
         if user.can_see_all_orgs or user.can_read_other_orgs:
+            return qs
+        # Monitoring orgs (CIPRB/UNFPA) read every org's rows. Writes are still
+        # gated by the view's permission class (focal can't write).
+        if user.organisation in (Organisation.CIPRB, Organisation.UNFPA):
             return qs
 
         # Org scope.

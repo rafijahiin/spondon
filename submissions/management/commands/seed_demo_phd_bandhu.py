@@ -174,10 +174,14 @@ class Command(BaseCommand):
                     for s, *_ in cfg['centres']
                 ]
                 total = cfg['monthly']
+                # Spread across a trailing ~24-day window (not just since the
+                # 1st) so the 14-day sparkline is populated even early in a
+                # month. Submissions landing in the current month still feed
+                # the "this month" district counts.
+                trailing_window = 24
                 for i in range(total):
                     code = centres[i % len(centres)]
-                    # Spread across the current month, biased toward recent days
-                    days_back = rng.randint(0, max(1, (now.date() - month_start.date()).days))
+                    days_back = rng.randint(0, trailing_window)
                     submitted = now - datetime.timedelta(
                         days=days_back,
                         hours=rng.randint(0, 23),
