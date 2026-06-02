@@ -544,5 +544,26 @@
     "clickToExpand": "ক্লিক করে খুলুন",
     "casesCount_one": "{{count}}টি কেস",
     "casesCount_other": "{{count}}টি কেস"
+  },
+  "partnerCard": {
+    "sectionKicker": "বাস্তবায়নকারী পার্টনার",
+    "sectionTitle": "বাস্তবায়নকারী পার্টনার · এক নজরে",
+    "sectionSub": "প্রতিটি পার্টনারের নিজস্ব লক্ষ্যমাত্রার বিপরীতে অগ্রগতি — \"ট্র্যাকে\" মানে একটি সূচক এই মাসের লক্ষ্যমাত্রার ≥ ৭৫% পূরণ করেছে।",
+    "focusCIPRB": "মাতৃ ও শিশু স্বাস্থ্য · Fistula এবং MPDSR",
+    "focusBandhu": "বিভিন্ন লিঙ্গ পরিচয়ের জনগোষ্ঠী",
+    "focusPHD": "নারী যৌনকর্মী (FSW)",
+    "districtsCount": "{{count}}টি জেলা",
+    "thisMonth": "এই মাসে",
+    "overall": "সর্বমোট",
+    "thisMonthDesc": "এই মাসের লক্ষ্যমাত্রার বিপরীতে অর্জন",
+    "overallDesc": "সম্পূর্ণ প্রকল্পের লক্ষ্যমাত্রার বিপরীতে সঞ্চিত অর্জন",
+    "notSet": "নির্ধারিত নয়",
+    "targetsPending": "লক্ষ্যমাত্রা অপেক্ষমাণ",
+    "indicatorsOnTrack": "{{onTrack}}/{{total}} সূচক ট্র্যাকে",
+    "indicatorsPending": "{{count}}টি সূচক · লক্ষ্যমাত্রা অপেক্ষমাণ",
+    "districtsLabel": "জেলাসমূহ",
+    "moreDistricts": "+আরও {{count}}টি",
+    "viewDashboard": "ড্যাশবোর্ড দেখুন",
+    "loading": "লোড হচ্ছে…"
   }
 }

@@ -561,6 +561,27 @@
     "partnerOnTrack": "{{onTrack}} / {{withTarget}} indicators on track",
     "partnerPending": "{{count}} indicators · targets pending"
   },
+  "partnerCard": {
+    "sectionKicker": "IMPLEMENTING PARTNERS",
+    "sectionTitle": "Implementing Partners at a Glance",
+    "sectionSub": "Each partner's progress against its own targets — \"on track\" means an indicator has reached ≥ 75% of this month's target.",
+    "focusCIPRB": "Maternal & child health · Fistula and MPDSR",
+    "focusBandhu": "Gender Diverse Population",
+    "focusPHD": "Female Sex Workers (FSW)",
+    "districtsCount": "{{count}} districts",
+    "thisMonth": "This month",
+    "overall": "Overall",
+    "thisMonthDesc": "Achievement vs this month's target",
+    "overallDesc": "Cumulative achievement vs full programme target",
+    "notSet": "Not set",
+    "targetsPending": "Targets pending",
+    "indicatorsOnTrack": "{{onTrack}}/{{total}} indicators on track",
+    "indicatorsPending": "{{count}} indicators · targets pending",
+    "districtsLabel": "Districts",
+    "moreDistricts": "+{{count}} more",
+    "viewDashboard": "View dashboard",
+    "loading": "Loading…"
+  },
   "fistulaViz": {
     "reachKicker": "CAMPAIGN REACH · COMMUNITY OUTREACH",
     "reachTitle": "How far the campaigns have travelled",

@@ -10,6 +10,7 @@
  * (/api/indicators/progress/). Geography from partnerDistricts.
  */
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { motion, useReducedMotion } from 'motion/react'
 import { ArrowRight } from 'lucide-react'
 
@@ -20,10 +21,12 @@ import type { IndicatorProgress } from '@/types'
 
 const PARTNERS: PartnerCode[] = ['CIPRB', 'Bandhu', 'PHD']
 
-const PARTNER_FOCUS: Record<PartnerCode, string> = {
-  CIPRB:  'Maternal & child health · Fistula and MPDSR',
-  Bandhu: 'Gender Diverse Population',
-  PHD:    'Female Sex Workers (FSW)',
+// Focus labels resolved via i18n at render-time. Mapping partner →
+// i18n key keeps the component clean and lets the EN/BN toggle work.
+const FOCUS_KEY: Record<PartnerCode, string> = {
+  CIPRB:  'partnerCard.focusCIPRB',
+  Bandhu: 'partnerCard.focusBandhu',
+  PHD:    'partnerCard.focusPHD',
 }
 
 interface Props { progress: IndicatorProgress[] | null }
@@ -78,6 +81,7 @@ function rollup(partner: PartnerCode, rows: IndicatorProgress[] | null): Rollup 
 export function PartnerProgress({ progress }: Props) {
   const navigate = useNavigate()
   const reduce = useReducedMotion()
+  const { t } = useTranslation()
 
   return (
     <section className="section partner-progress" style={{ marginTop: 44 }}>
@@ -85,13 +89,10 @@ export function PartnerProgress({ progress }: Props) {
         <div>
           <div className="kicker" style={{ marginBottom: 8 }}>
             <span className="dot" style={{ background: 'var(--unfpa)' }} />
-            IMPLEMENTING PARTNERS
+            {t('partnerCard.sectionKicker')}
           </div>
-          <h2 className="section-title">Implementing Partners at a Glance</h2>
-          <p className="section-sub">
-            Each partner's progress against its own targets — "on track" means
-            an indicator has reached ≥ 75% of this month's target.
-          </p>
+          <h2 className="section-title">{t('partnerCard.sectionTitle')}</h2>
+          <p className="section-sub">{t('partnerCard.sectionSub')}</p>
         </div>
       </div>
 
@@ -125,7 +126,8 @@ function PartnerCard({
   reduce: boolean | null
   delay: number
 }) {
-  const focus = PARTNER_FOCUS[partner]
+  const { t } = useTranslation()
+  const focus = t(FOCUS_KEY[partner])
   const districtList = PARTNER_DISTRICTS[partner]
   const districts = districtList.length
   const MAX_NAMES = 6
@@ -134,7 +136,7 @@ function PartnerCard({
     : (
       <>
         {districtList.slice(0, MAX_NAMES).join(', ')}{' '}
-        <b>+{districts - MAX_NAMES} more</b>
+        <b>{t('partnerCard.moreDistricts', { count: districts - MAX_NAMES })}</b>
       </>
     )
 
@@ -151,49 +153,52 @@ function PartnerCard({
           <div className="pcard-name"><i />{partner}</div>
           <div className="pcard-focus">{focus}</div>
         </div>
-        <span className="pcard-dcount">{districts} districts</span>
+        <span className="pcard-dcount">
+          {t('partnerCard.districtsCount', { count: districts })}
+        </span>
       </div>
 
       {/* This Month panel */}
-      <ThisMonthPanel data={data} loading={loading} />
+      <ThisMonthPanel data={data} loading={loading} t={t} />
 
       {/* Overall panel */}
-      <OverallPanel data={data} loading={loading} />
+      <OverallPanel data={data} loading={loading} t={t} />
 
       {/* Footer — districts + View dashboard button */}
       <div className="pcard-foot">
-        <div className="foot-lbl">Districts</div>
+        <div className="foot-lbl">{t('partnerCard.districtsLabel')}</div>
         <div className="foot-districts">{districtNames}</div>
         <a
           className="view-link"
           href="#"
           onClick={(e) => { e.preventDefault(); onClick() }}
         >
-          View dashboard <ArrowRight size={13} />
+          {t('partnerCard.viewDashboard')} <ArrowRight size={13} />
         </a>
       </div>
     </motion.div>
   )
 }
 
-function ThisMonthPanel({ data, loading }: { data: Rollup; loading: boolean }) {
+type TFn = (key: string, opts?: Record<string, unknown>) => string
+
+function ThisMonthPanel({ data, loading, t }: { data: Rollup; loading: boolean; t: TFn }) {
   return (
     <div className="tf">
       <div className="tf-head">
-        <span className="tf-lbl">This month</span>
+        <span className="tf-lbl">{t('partnerCard.thisMonth')}</span>
         {!loading && !data.monthlyHasTargets && (
-          <span className="b-notset">Not set</span>
+          <span className="b-notset">{t('partnerCard.notSet')}</span>
         )}
       </div>
-      <div className="tf-desc">Achievement vs this month's target</div>
+      <div className="tf-desc">{t('partnerCard.thisMonthDesc')}</div>
       {loading ? (
-        <div className="tf-row"><span className="tf-stat pending">Loading…</span></div>
+        <div className="tf-row"><span className="tf-stat pending">{t('partnerCard.loading')}</span></div>
       ) : data.monthlyHasTargets ? (
         <>
           <div className="tf-row">
             <span className="tf-stat">
-              {data.monthlyOnTrack}/{data.total}{' '}
-              <span className="words">indicators on track</span>
+              {t('partnerCard.indicatorsOnTrack', { onTrack: data.monthlyOnTrack, total: data.total })}
             </span>
             <span className="tf-pct">{data.monthlyPercentage}%</span>
           </div>
@@ -205,7 +210,7 @@ function ThisMonthPanel({ data, loading }: { data: Rollup; loading: boolean }) {
         <>
           <div className="tf-row">
             <span className="tf-stat pending">
-              {data.totalIndicators} indicators · targets pending
+              {t('partnerCard.indicatorsPending', { count: data.totalIndicators })}
             </span>
           </div>
           <div className="bar striped" />
@@ -215,24 +220,23 @@ function ThisMonthPanel({ data, loading }: { data: Rollup; loading: boolean }) {
   )
 }
 
-function OverallPanel({ data, loading }: { data: Rollup; loading: boolean }) {
+function OverallPanel({ data, loading, t }: { data: Rollup; loading: boolean; t: TFn }) {
   return (
     <div className="tf">
       <div className="tf-head">
-        <span className="tf-lbl">Overall</span>
+        <span className="tf-lbl">{t('partnerCard.overall')}</span>
         {!loading && !data.hasTargets && (
-          <span className="b-pending">Targets pending</span>
+          <span className="b-pending">{t('partnerCard.targetsPending')}</span>
         )}
       </div>
-      <div className="tf-desc">Cumulative achievement vs full programme target</div>
+      <div className="tf-desc">{t('partnerCard.overallDesc')}</div>
       {loading ? (
-        <div className="tf-row"><span className="tf-stat pending">Loading…</span></div>
+        <div className="tf-row"><span className="tf-stat pending">{t('partnerCard.loading')}</span></div>
       ) : data.hasTargets ? (
         <>
           <div className="tf-row">
             <span className="tf-stat">
-              {data.onTrack}/{data.total}{' '}
-              <span className="words">indicators on track</span>
+              {t('partnerCard.indicatorsOnTrack', { onTrack: data.onTrack, total: data.total })}
             </span>
             <span className="tf-pct">{data.percentage}%</span>
           </div>
@@ -244,7 +248,7 @@ function OverallPanel({ data, loading }: { data: Rollup; loading: boolean }) {
         <>
           <div className="tf-row">
             <span className="tf-stat pending">
-              {data.totalIndicators} indicators · targets pending
+              {t('partnerCard.indicatorsPending', { count: data.totalIndicators })}
             </span>
           </div>
           <div className="bar striped" />

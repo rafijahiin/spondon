@@ -758,7 +758,25 @@ html.dark ::selection { background: rgba(249, 96, 0, 0.30); color: var(--ink); }
   gap: 12px;
   padding: 18px 20px 14px;
   border-top: 3px solid var(--ac);
+  /* 7% orange wash works fine on a white surface; against dark mode it
+     all but disappears. Tone is bumped in the dark override below. */
   background: color-mix(in srgb, var(--ac) 7%, var(--surface));
+}
+html.dark .pcard-top {
+  background: color-mix(in srgb, var(--ac) 22%, var(--surface));
+}
+html.dark .pcard-name i {
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--ac) 30%, var(--surface));
+}
+html.dark .pcard {
+  border-color: var(--hair-2);
+}
+html.dark .pcard-dcount {
+  background: color-mix(in srgb, var(--ink) 4%, var(--surface));
+  color: var(--ink-2);
+}
+html.dark .pcard-foot {
+  background: color-mix(in srgb, var(--ink) 4%, var(--surface));
 }
 .pcard-name {
   display: flex;
@@ -935,6 +953,76 @@ html.dark ::selection { background: rgba(249, 96, 0, 0.30); color: var(--ink); }
 
 @media (max-width: 1080px) {
   .partner-grid { grid-template-columns: 1fr; }
+}
+
+/* DARK MODE — partner cards need stronger contrast against the dark
+   page background. The default --surface in dark mode is too close to
+   the background; lift the card to a brighter neutral, deepen the
+   border, and intensify the orange header wash so the accent reads.
+   Light mode stays untouched. */
+html.dark .pcard {
+  background: #1F2329;                       /* brighter than surface */
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35),
+              0 1px 0 rgba(255, 255, 255, 0.04) inset;
+}
+html.dark .pcard:hover {
+  box-shadow: 0 10px 28px -10px rgba(0, 0, 0, 0.6),
+              0 1px 0 rgba(255, 255, 255, 0.04) inset;
+}
+html.dark .pcard-top {
+  /* Deeper orange wash on dark — needs higher alpha to read. */
+  background: color-mix(in srgb, var(--ac) 18%, #1F2329);
+  border-top-width: 3px;
+}
+html.dark .pcard-name { color: #F5F6F8; }
+html.dark .pcard-focus { color: #C1C6CE; }
+html.dark .pcard-dcount {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.14);
+  color: #D8DCE3;
+}
+html.dark .tf { border-top-color: rgba(255, 255, 255, 0.08); }
+html.dark .tf-lbl { color: #A3A9B2; }
+html.dark .tf-desc { color: #8E939C; }
+html.dark .tf-stat { color: #F1F2F4; }
+html.dark .tf-stat .words { color: #C6CBD2; }
+html.dark .tf-stat.pending { color: #A3A9B2; }
+html.dark .tf-pct { color: #B7BCC5; }
+html.dark .bar { background: rgba(255, 255, 255, 0.08); }
+html.dark .bar.striped {
+  background-image: repeating-linear-gradient(
+    45deg,
+    rgba(255, 255, 255, 0.04) 0 6px,
+    rgba(255, 255, 255, 0.08) 6px 12px
+  );
+}
+html.dark .pcard-foot {
+  background: rgba(255, 255, 255, 0.03);
+  border-top-color: rgba(255, 255, 255, 0.08);
+}
+html.dark .foot-lbl { color: #8E939C; }
+html.dark .foot-districts { color: #D2D6DD; }
+html.dark .foot-districts b { color: var(--unfpa-bright); }
+html.dark .view-link {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.14);
+  color: var(--unfpa-bright);
+}
+html.dark .view-link:hover {
+  background: color-mix(in srgb, var(--unfpa) 18%, #1F2329);
+  color: #FFFFFF;
+  border-color: var(--unfpa);
+}
+html.dark .b-notset {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.14);
+  color: #C1C6CE;
+}
+html.dark .b-pending {
+  background: color-mix(in srgb, #E8870B 22%, #1F2329);
+  color: #F5C078;
+  border-color: color-mix(in srgb, #E8870B 35%, #1F2329);
 }
 
 /* ─── Hero — editorial moment ────────────────────────────────────────── */
