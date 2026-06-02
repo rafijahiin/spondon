@@ -39,7 +39,7 @@ export const PARTNER_TINTS: Record<PartnerCode, string> = {
 
 // Overlap shading — two-org uses UNFPA amber tint, three-org uses status-off red.
 export const OVERLAP_TWO_ORGS  = '#CC9B4A'   // warm amber
-export const OVERLAP_THREE_ORGS = '#C7172E'  // deep red
+export const OVERLAP_THREE_ORGS = '#F10F45'  // deep red
 export const NO_COVERAGE = '#E5E7EB'         // light grey
 
 export const PARTNER_DISTRICTS: Record<PartnerCode, string[]> = {

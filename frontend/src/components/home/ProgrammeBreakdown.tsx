@@ -16,7 +16,7 @@ import { api } from '@/api/client'
 const CATEGORY_COLORS: Record<string, string> = {
   Clinical:   '#F96000',   // UNFPA orange — brand primary
   Community:  '#ED5B7E',   // coral — warm secondary
-  Operations: '#00658C',   // UNFPA teal-blue — distinct hue
+  Operations: '#2171EC',   // UNFPA teal-blue — distinct hue
 }
 
 function DonutTooltip({ active, payload }: any) {

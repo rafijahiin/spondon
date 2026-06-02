@@ -492,7 +492,7 @@ function ResponsePlanTracker({ summaries }: { summaries: ActionPlanSummary[] }) 
   const colorFor = (pct: number) => {
     if (pct >= 75) return '#1A7A5A'  // status-on
     if (pct >= 40) return '#CC6A00'  // status-mid
-    return '#C7172E'                 // status-off
+    return '#F10F45'                 // status-off
   }
 
   return (
@@ -628,7 +628,7 @@ function ReportingRatePerDistrict({
   const colorFor = (pct: number) => {
     if (pct >= 75) return '#1A7A5A'
     if (pct >= 40) return '#CC6A00'
-    return '#C7172E'
+    return '#F10F45'
   }
 
   return (

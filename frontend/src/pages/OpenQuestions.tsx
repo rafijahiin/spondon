@@ -211,8 +211,8 @@ export default function OpenQuestions() {
                       {q.blockingForWednesday && (
                         <span style={{
                           padding: '2px 8px', borderRadius: 4,
-                          background: 'rgba(199,23,46,0.10)',
-                          color: '#C7172E',
+                          background: 'rgba(241,15,69,0.10)',
+                          color: '#F10F45',
                         }}>
                           BLOCKING
                         </span>

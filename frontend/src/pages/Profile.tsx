@@ -156,9 +156,9 @@ export default function Profile() {
           {error && (
             <div style={{
               padding: '10px 14px', borderRadius: 8,
-              background: 'rgba(199,23,46,0.08)',
-              border: '1px solid rgba(199,23,46,0.22)',
-              fontSize: 13, color: '#C7172E',
+              background: 'rgba(241,15,69,0.08)',
+              border: '1px solid rgba(241,15,69,0.22)',
+              fontSize: 13, color: '#F10F45',
             }}>
               {error}
             </div>

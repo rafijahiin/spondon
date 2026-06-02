@@ -6,7 +6,7 @@ interface Props {
   className?: string
 }
 
-export function Sparkline({ data, width = 80, height = 28, color = '#00658C', className }: Props) {
+export function Sparkline({ data, width = 80, height = 28, color = '#2171EC', className }: Props) {
   if (!data || data.length < 2) {
     return <span className={className} style={{ width, height, display: 'inline-block' }} />
   }

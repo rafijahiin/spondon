@@ -14,19 +14,34 @@
      Data-viz pastels live in their own block below.
      ──────────────────────────────────────────────────────────────────── */
 
-  /* Brand — primary highlight */
+  /* ─── UNFPA BRAND COLOURS — verbatim from
+       https://unfpa.brandkit.host/visual-identity/colour/colour-codes/
+       Primary: Orange + Black + Off-white + White (must dominate).
+       Accents: ONE per layout — Red, Purple, Blue, or UNFPA gradient.
+       Tints + tones available for orange, red, purple, blue.
+       Golden rule: primaries dominate; accents never compete. ─── */
+
+  /* Primary — UNFPA Orange + tones (must dominate every layout) */
   --unfpa:        #F96000;  /* UNFPA Orange (Pantone Orange 021 C) */
-  --unfpa-bright: #FB904D;  /* Pastel Orange — data-viz friendly */
-  --unfpa-deep:   #C44E00;  /* Computed: hover/pressed state for orange */
+  --unfpa-bright: #FB904D;  /* Pastel Orange (UNFPA tone) */
+  --unfpa-deep:   #AE4300;  /* Dark Orange (UNFPA tone) — hover/pressed */
+  --unfpa-light:  #FDCFB3;  /* Light Orange (UNFPA tone) */
 
-  /* Accent — UNFPA Red (critical/error) + UNFPA Blue (info/secondary) */
-  --unfpa-red:    #C7172E;  /* deep red — critical states only */
-  --unfpa-blue:   #00658C;  /* UNFPA teal-blue — secondary brand / info */
+  /* Accents — official UNFPA Red / Blue / Purple. Use ONE per layout. */
+  --unfpa-red:    #F10F45;  /* UNFPA Red (Pantone-spec exact) */
+  --unfpa-red-dark:   #A00F31;  /* Dark Red tone */
+  --unfpa-red-pastel: #ED5B7E;  /* Pastel Red tone */
+  --unfpa-blue:   #2171EC;  /* UNFPA Blue (Pantone 2727 C) — was wrong (#2171EC) */
+  --unfpa-purple: #9C1ED6;  /* UNFPA Purple — accent only */
 
-  /* Status semantic — one value per state, no ambiguity */
-  --status-on:    #1A7A5A;  /* deep teal-green — on track */
-  --status-mid:   #CC6A00;  /* deep amber — behind pace */
-  --status-off:   #C7172E;  /* deep red — critical */
+  /* Status semantics — Animesh-approved exceptions for dashboard
+     readability (green/amber/red traffic light). UNFPA's strict rule
+     is one accent per layout; we keep this as a documented exception
+     because status signalling is a functional accessibility feature
+     for programme managers scanning the dashboard. */
+  --status-on:    #1A7A5A;  /* on track (non-brand green, exception) */
+  --status-mid:   #AE4300;  /* behind — uses UNFPA Dark Orange tone */
+  --status-off:   #F10F45;  /* critical — uses UNFPA Red */
 
   /* Data-viz category palette — Community / outreach (warm pink) */
   --coral:        #ED5B7E;
@@ -695,11 +710,11 @@ html.dark ::selection { background: rgba(249, 96, 0, 0.30); color: var(--ink); }
   border: 1px solid var(--hair);
 }
 .tag.orange  { background: rgba(249,96,0,0.10);  color: var(--unfpa);      border-color: rgba(249,96,0,0.20); }
-.tag.blue    { background: rgba(0,101,140,0.10); color: var(--unfpa-blue); border-color: rgba(0,101,140,0.22); }
+.tag.blue    { background: rgba(33,113,236,0.10); color: var(--unfpa-blue); border-color: rgba(33,113,236,0.22); }
 .tag.coral   { background: rgba(237,91,126,0.10); color: var(--coral-deep); border-color: rgba(237,91,126,0.24); }
 .tag.green   { background: rgba(26,122,90,0.10);  color: var(--status-on);  border-color: rgba(26,122,90,0.22); }
 .tag.amber   { background: rgba(204,106,0,0.10);  color: var(--status-mid); border-color: rgba(204,106,0,0.22); }
-.tag.red     { background: rgba(199,23,46,0.10);  color: var(--status-off); border-color: rgba(199,23,46,0.22); }
+.tag.red     { background: rgba(241,15,69,0.10);  color: var(--status-off); border-color: rgba(241,15,69,0.22); }
 
 /* ─── Buttons ────────────────────────────────────────────────────────── */
 
@@ -1333,7 +1348,7 @@ html.dark .hero-card {
   border: 1px solid var(--hair);
 }
 .stream-avatar.orange  { background: rgba(249,96,0,0.10);  color: var(--unfpa);      border-color: rgba(249,96,0,0.22); }
-.stream-avatar.blue    { background: rgba(0,101,140,0.10); color: var(--unfpa-blue); border-color: rgba(0,101,140,0.22); }
+.stream-avatar.blue    { background: rgba(33,113,236,0.10); color: var(--unfpa-blue); border-color: rgba(33,113,236,0.22); }
 .stream-avatar.coral   { background: rgba(237,91,126,0.10); color: var(--coral-deep); border-color: rgba(237,91,126,0.24); }
 .stream-avatar.green   { background: rgba(26,122,90,0.10);  color: var(--status-on);  border-color: rgba(26,122,90,0.22); }
 

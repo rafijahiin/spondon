@@ -70,7 +70,7 @@ export function KPICard({
         {sparkData && sparkData.length >= 2 && (
           <Sparkline
             data={sparkData}
-            color={highlight ? '#93c5fd' : '#00658C'}
+            color={highlight ? '#93c5fd' : '#2171EC'}
             width={72}
             height={28}
           />

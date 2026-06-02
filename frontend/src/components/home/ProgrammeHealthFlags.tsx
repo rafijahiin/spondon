@@ -152,7 +152,7 @@ function PartnerFlagTile({ flag, thresholdHours }: { flag: PartnerFlag; threshol
         {flag.partner_silent_hours !== null ? (
           <div style={{
             display: 'inline-flex', alignItems: 'center', gap: 5,
-            color: flag.partner_silent_hours > thresholdHours ? '#C7172E'
+            color: flag.partner_silent_hours > thresholdHours ? '#F10F45'
                  : flag.partner_silent_hours > 24 ? '#CC6A00'
                  : 'var(--muted)',
             fontSize: 11.5,

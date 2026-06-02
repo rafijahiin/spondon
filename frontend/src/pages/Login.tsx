@@ -245,8 +245,8 @@ export default function Login() {
               <div style={{
                 padding: '10px 14px',
                 borderRadius: 8,
-                background: 'rgba(199,23,46,0.16)',
-                border: '1px solid rgba(199,23,46,0.35)',
+                background: 'rgba(241,15,69,0.16)',
+                border: '1px solid rgba(241,15,69,0.35)',
                 fontSize: 13,
                 color: 'rgba(255,160,170,0.95)',
                 lineHeight: 1.4,

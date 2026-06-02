@@ -44,7 +44,7 @@ function bandColor(pct: number | null): string {
   if (pct == null || pct === 0) return 'var(--muted)'   // no data / not started
   if (pct >= 75) return '#1A7A5A'
   if (pct >= 40) return '#CC6A00'
-  return '#C7172E'
+  return '#F10F45'
 }
 
 // ─── Bento card primitive ─────────────────────────────────────────────────────
@@ -452,7 +452,7 @@ interface PartnerRow {
 const STATUS_COLORS = {
   onTrack:    '#1A7A5A',  // deep green
   behind:     '#CC6A00',  // deep amber
-  critical:   '#C7172E',  // deep red
+  critical:   '#F10F45',  // deep red
   notStarted: '#9CA3AF',  // neutral grey
   pending:    'var(--muted-3)', // very faint — no target yet
 }

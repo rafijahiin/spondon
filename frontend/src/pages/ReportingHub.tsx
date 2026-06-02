@@ -824,7 +824,7 @@ function DeckPreview() {
 
       {/* 01 — TITLE */}
       <SlideThumb n={1} of={16}>
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, #002A3D 0%, #00658C 60%, #0091C7 100%)' }} />
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, #002A3D 0%, #2171EC 60%, #0091C7 100%)' }} />
         <div style={{ position: 'absolute', top: -40, right: -40, width: 220, height: 220, borderRadius: '50%', background: 'radial-gradient(circle, rgba(242,106,79,0.55), transparent 60%)' }} />
         <div style={{ position: 'absolute', inset: 0, padding: '22px 24px', color: 'white', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>

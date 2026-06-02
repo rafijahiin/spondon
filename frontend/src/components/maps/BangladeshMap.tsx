@@ -56,7 +56,7 @@ export function BangladeshMap({ activityFeed, centers = [], className, partner }
 
   // Resolve tint from partner prop; default to UNFPA blue.
   const tint = (partner && PARTNER_TINTS[partner]) || {
-    active: '#00658C', cp10: '#f59e0b', stroke: '#004A66',
+    active: '#2171EC', cp10: '#f59e0b', stroke: '#004A66',
   }
 
   // The set of districts to highlight: this partner's own coverage when a
