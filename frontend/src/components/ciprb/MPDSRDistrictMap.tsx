@@ -162,41 +162,6 @@ export function MPDSRDistrictMap() {
 
       <div className="card" style={{ padding: 16 }}>
         <div style={{ position: 'relative', height: 520, borderRadius: 8, overflow: 'hidden' }}>
-          {/* Live-pulse badge — Animesh's "districts light up as submissions arrive" */}
-          <AnimatePresence>
-            {latest && (
-              <motion.div
-                key={`${latest.partner}-${latest.district}-${latest.time_ago}`}
-                initial={{ opacity: 0, y: -8, scale: 0.96 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -6 }}
-                transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-                style={{
-                  position: 'absolute', top: 12, left: 12, zIndex: 1000,
-                  padding: '6px 12px', borderRadius: 999,
-                  background: 'rgba(255,255,255,0.96)',
-                  border: '1px solid var(--hair)',
-                  boxShadow: '0 4px 14px rgba(0,0,0,0.08)',
-                  display: 'inline-flex', alignItems: 'center', gap: 8,
-                  fontSize: 12,
-                }}
-              >
-                <motion.span
-                  animate={{ opacity: [1, 0.3, 1] }}
-                  transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
-                  style={{
-                    width: 8, height: 8, borderRadius: 999,
-                    background: '#58968A', flexShrink: 0,
-                  }}
-                />
-                <b style={{ color: 'var(--ink)' }}>{latest.partner}</b>
-                <span style={{ color: 'var(--ink-3)' }}>· {latest.district}</span>
-                <span className="mono" style={{ color: 'var(--muted)', fontSize: 10 }}>
-                  {latest.time_ago}
-                </span>
-              </motion.div>
-            )}
-          </AnimatePresence>
           {geo ? (
             <MapContainer
               center={[23.685, 90.3563]}
