@@ -716,28 +716,57 @@ export default function CIPRBDashboard() {
           <span className="live-dot" />
           <span>{t('ciprb.heroEyebrow', { defaultValue: 'CIPRB · IMPLEMENTING PARTNER' })}</span>
         </div>
-        <h1
-          className="hero-headline anim-rise d1"
-          style={{
-            marginBottom: 6,
-            fontSize: 'clamp(56px, 9vw, 132px)',
-            letterSpacing: '-0.035em',
-            fontStyle: 'normal',
-            fontWeight: 800,
-            color: CIPRB_BLUE,
-          }}
-        >
-          CIPRB
-        </h1>
-        <p style={{
-          fontSize: 13, color: 'var(--ink-3)', marginTop: 4, marginBottom: 14,
-          letterSpacing: '0.01em', fontWeight: 500,
-        }} className="anim-rise d1">
-          {t('ciprbExtras.subtitle')}
-        </p>
-        <p className="hero-lede anim-rise d2" style={{ maxWidth: 720 }}>
-          {t('ciprb.heroLede')}
-        </p>
+
+        <div className="hero-grid">
+          <div>
+            <h1
+              className="hero-headline anim-rise d1"
+              style={{
+                marginBottom: 6,
+                fontSize: 'clamp(56px, 9vw, 132px)',
+                letterSpacing: '-0.035em',
+                fontStyle: 'normal',
+                fontWeight: 800,
+                color: CIPRB_BLUE,
+              }}
+            >
+              CIPRB
+            </h1>
+            <p style={{
+              fontSize: 13, color: 'var(--ink-3)', marginTop: 4, marginBottom: 14,
+              letterSpacing: '0.01em', fontWeight: 500,
+            }} className="anim-rise d1">
+              {t('ciprbExtras.subtitle')}
+            </p>
+            <p className="hero-lede anim-rise d2" style={{ maxWidth: 720 }}>
+              {t('ciprb.heroLede')}
+            </p>
+          </div>
+
+          <div className="hero-right anim-rise d4">
+            <div className="kicker" style={{ marginBottom: 8 }}>
+              <span className="dot" style={{ background: CIPRB_BLUE }} />COVERAGE
+            </div>
+            <div className="card shimmer" style={{ padding: 10 }}>
+              <PartnerOverlapMap
+                height={340}
+                partner="CIPRB"
+                subgroups={[
+                  {
+                    name: 'GAC',
+                    color: '#F96000',
+                    districts: ['Sunamganj', 'Bhola', 'Sherpur', 'Kurigram', 'Khagrachari'],
+                  },
+                  {
+                    name: 'SIDA',
+                    color: '#2171EC',
+                    districts: ['Noakhali', 'Chandpur', 'Bandarban', 'Dhaka', 'Sunamganj', "Cox's Bazar"],
+                  },
+                ]}
+              />
+            </div>
+          </div>
+        </div>
 
         {/* Jump-link strip — Animesh's two named surveillance programmes
             need to be discoverable without scrolling past three Fistula
@@ -879,18 +908,6 @@ export default function CIPRBDashboard() {
               </button>
             )
           })}
-        </div>
-
-        {/* Coverage map — same style as the homepage Coverage map and the
-            Bandhu/PHD hero maps. Animesh asked for consistency across all
-            three partner pages. */}
-        <div style={{ marginTop: 18 }}>
-          <div className="kicker" style={{ marginBottom: 8 }}>
-            <span className="dot" style={{ background: CIPRB_BLUE }} />COVERAGE
-          </div>
-          <div className="card shimmer" style={{ padding: 10 }}>
-            <PartnerOverlapMap height={340} />
-          </div>
         </div>
 
       </section>

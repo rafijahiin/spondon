@@ -373,7 +373,7 @@ export function OrgDashboard({ partner }: Props) {
               <span className="dot" />COVERAGE
             </div>
             <div className="card shimmer" style={{ padding: 10 }}>
-              <PartnerOverlapMap height={340} />
+              <PartnerOverlapMap height={340} partner={partner} />
             </div>
           </div>
         </div>

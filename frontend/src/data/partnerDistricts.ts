@@ -46,9 +46,13 @@ export const NO_COVERAGE = '#E5E7EB'         // light grey
 
 export const PARTNER_DISTRICTS: Record<PartnerCode, string[]> = {
   CIPRB: [
-    "Cox's Bazar", 'Bandarban', 'Noakhali', 'Dhaka',
-    'Sirajganj', 'Jamalpur', 'Gaibandha', 'Patuakhali',
-    'Barguna', 'Bagerhat',
+    // GAC (5)
+    'Sunamganj', 'Bhola', 'Sherpur', 'Kurigram', 'Khagrachari',
+    // SIDA (6) — Sunamganj overlaps GAC
+    'Noakhali', 'Chandpur', 'Bandarban', 'Dhaka', "Cox's Bazar",
+    // Other CIPRB-covered districts (11) — confirmed by Rafi 2026-06-02
+    'Sirajganj', 'Jamalpur', 'Gaibandha', 'Patuakhali', 'Barguna', 'Bagerhat',
+    'Habiganj', 'Sylhet', 'Bogura', 'Rajshahi', 'Rangpur',
   ],
   Bandhu: [
     'Dhaka', 'Chittagong', 'Sylhet', 'Khulna',
@@ -79,9 +83,26 @@ export const PARTNER_NAMES: Record<PartnerCode, { en: string; bn: string }> = {
   PHD:    { en: 'Partners in Health and Development', bn: 'পার্টনার্স ইন হেলথ অ্যান্ড ডেভেলপমেন্ট' },
 }
 
-/** Normalise a district name for matching against GeoJSON shapeName. */
+/** Aliases for districts whose GeoJSON shapeName differs from the GoB
+ *  spelling commonly used in app data and Sayed's Excel files. Add new
+ *  rows here whenever a district fails to highlight on the map. */
+const DISTRICT_ALIASES: Record<string, string> = {
+  khagrachari:    'khagrachhari',     // GeoJSON has the double-h spelling
+  patuakahli:     'patuakhali',       // common typo in Sayed's data
+  chittagong:     'chattogram',       // GoB renamed in 2018
+  barishal:       'barisal',          // GeoJSON uses old spelling
+  cumilla:        'comilla',
+  bogura:         'bogra',
+  jashore:        'jessore',
+  noakhli:        'noakhali',
+}
+
+/** Normalise a district name for matching against GeoJSON shapeName.
+ *  Strips non-letters, lowercases, and applies the alias table so common
+ *  alternate spellings map to the GeoJSON canonical form. */
 export function normaliseDistrict(name: string): string {
-  return (name ?? '').toLowerCase().replace(/[^a-z]/g, '')
+  const base = (name ?? '').toLowerCase().replace(/[^a-z]/g, '')
+  return DISTRICT_ALIASES[base] ?? base
 }
 
 /** Build a Map: districtKey → array of PartnerCodes covering it. */

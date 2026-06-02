@@ -25,17 +25,37 @@ import { FitToData } from './FitToData'
 import {
   buildCoverageMap, fillForPartners,
   normaliseDistrict, PARTNER_ROUTES, PARTNER_NAMES,
-  PARTNER_TINTS, OVERLAP_TWO_ORGS, OVERLAP_THREE_ORGS, NO_COVERAGE,
+  PARTNER_TINTS, PARTNER_DISTRICTS, OVERLAP_TWO_ORGS, OVERLAP_THREE_ORGS, NO_COVERAGE,
 } from '@/data/partnerDistricts'
+import type { PartnerCode } from '@/data/partnerDistricts'
 
 const GEOJSON_URL = '/bangladesh-adm2.geojson'
+
+interface Subgroup {
+  name: string
+  color: string
+  districts: string[]
+}
 
 interface Props {
   className?: string
   height?: number | string
+  /** When set, the map and legend show ONLY this partner's districts.
+   *  Other partners' coverage is rendered as "No coverage" grey. */
+  partner?: PartnerCode
+  /** Optional district sub-groupings to colour-code on top of `partner`.
+   *  Each district is tinted by the first subgroup it matches; districts in
+   *  multiple subgroups get a darker overlap tint. Use for CIPRB → GAC vs
+   *  SIDA donor distinction. */
+  subgroups?: Subgroup[]
+  /** Tint to use when a district sits in TWO subgroups (e.g. Sunamganj in
+   *  GAC + SIDA). Defaults to a deeper UNFPA tone. */
+  subgroupOverlapColor?: string
 }
 
-export function PartnerOverlapMap({ className, height = 360 }: Props) {
+export function PartnerOverlapMap({
+  className, height = 360, partner, subgroups, subgroupOverlapColor = '#8B3700',
+}: Props) {
   const navigate = useNavigate()
   const { t } = useTranslation()
   const [geoData, setGeoData] = useState<GeoJSON.FeatureCollection | null>(null)
@@ -52,12 +72,49 @@ export function PartnerOverlapMap({ className, height = 360 }: Props) {
       .catch(() => setError(true))
   }, [])
 
+  // Pre-normalise subgroup district sets so the per-feature lookup is O(1).
+  const subgroupKeys = subgroups?.map((s) => ({
+    ...s,
+    keys: new Set(s.districts.map(normaliseDistrict)),
+  }))
+
   const styleFeature = (feature?: GeoJSON.Feature): PathOptions => {
     const key = normaliseDistrict((feature?.properties?.shapeName as string) ?? '')
     const partners = coverage.get(key)
-    // No basemap behind the choropleth, so uncovered districts still need a
-    // visible body — otherwise the country silhouette breaks up. Covered
-    // districts are bolder; the crisp stroke draws the national outline.
+    // When a single partner is being highlighted, render every district NOT
+    // in that partner's coverage as "No coverage" grey — even if other
+    // partners cover it. The page is about that one partner.
+    if (partner) {
+      // Subgroup hits (donor groupings on top of base coverage).
+      const hits = subgroupKeys
+        ? subgroupKeys.filter((s) => s.keys.has(key))
+        : []
+      // A district counts as in-partner if EITHER the global coverage map
+      // says so OR it appears in any subgroup. This matters for CIPRB where
+      // GAC/SIDA donor districts (Bhola, Sherpur, etc.) aren't in the base
+      // PARTNER_DISTRICTS.CIPRB list but ARE in CIPRB's donor footprint.
+      const inPartner = partners?.includes(partner) || hits.length > 0
+      if (!inPartner) {
+        return {
+          fillColor: NO_COVERAGE,
+          fillOpacity: 0.5,
+          color: '#ffffff',
+          weight: 0.8,
+        }
+      }
+      if (hits.length >= 2) {
+        return { fillColor: subgroupOverlapColor, fillOpacity: 0.9, color: '#ffffff', weight: 0.8 }
+      }
+      if (hits.length === 1) {
+        return { fillColor: hits[0].color, fillOpacity: 0.85, color: '#ffffff', weight: 0.8 }
+      }
+      return {
+        fillColor: PARTNER_TINTS[partner],
+        fillOpacity: 0.85,
+        color: '#ffffff',
+        weight: 0.8,
+      }
+    }
     return {
       fillColor: fillForPartners(partners),
       fillOpacity: partners?.length ? 0.78 : 0.5,
@@ -70,18 +127,41 @@ export function PartnerOverlapMap({ className, height = 360 }: Props) {
     const name = (feature.properties?.shapeName as string) ?? 'Unknown'
     const key = normaliseDistrict(name)
     const partners = coverage.get(key) ?? []
-    const partnerList = partners.length
-      ? partners.map((p) => PARTNER_NAMES[p].en).join(', ')
-      : 'No partner coverage yet'
+
+    // Build the tooltip label. When subgroups are defined (e.g. CIPRB
+    // hero map showing GAC vs SIDA vs Other), surface the subgroup
+    // membership so reviewers see WHICH donor footprint a district is in.
+    let label: string
+    if (partner) {
+      const hits = subgroupKeys ? subgroupKeys.filter((s) => s.keys.has(key)) : []
+      const inPartner = partners.includes(partner) || hits.length > 0
+      if (!inPartner) {
+        label = 'Not covered'
+      } else if (hits.length >= 2) {
+        label = `${partner} · ${hits.map(h => h.name).join(' + ')} (donor overlap)`
+      } else if (hits.length === 1) {
+        label = `${partner} · ${hits[0].name}`
+      } else {
+        label = `${partner} · Other`
+      }
+    } else {
+      label = partners.length
+        ? partners.map((p) => PARTNER_NAMES[p].en).join(', ')
+        : 'No partner coverage yet'
+    }
 
     ;(layer as unknown as { bindTooltip: (s: string, o: object) => void }).bindTooltip(
-      `<b>${name}</b><br/>${partnerList}`,
+      `<b>${name}</b><br/>${label}`,
       { direction: 'top', className: 'leaflet-tooltip-custom' },
     )
 
-    if (partners.length > 0) {
-      // First partner in coverage list wins the click destination.
-      const dest = PARTNER_ROUTES[partners[0]]
+    // Click → navigate to that partner's owned page (only when a partner
+    // covers the district).
+    const displayPartners = partner
+      ? partners.filter((p) => p === partner)
+      : partners
+    if (displayPartners.length > 0) {
+      const dest = PARTNER_ROUTES[displayPartners[0]]
       ;(layer as unknown as { on: (e: string, fn: () => void) => void }).on('click', () => {
         navigate(dest)
       })
@@ -132,10 +212,10 @@ export function PartnerOverlapMap({ className, height = 360 }: Props) {
         )}
       </MapContainer>
 
-      {/* Legend */}
+      {/* Legend — partner-scoped variant when `partner` is set. */}
       <div
         style={{
-          display: 'flex', flexWrap: 'wrap', gap: 14,
+          display: 'flex', flexWrap: 'wrap', gap: 14, alignItems: 'center',
           fontSize: 11.5, color: 'var(--ink-3)',
           padding: '8px 12px',
           background: 'var(--surface-2)',
@@ -143,12 +223,45 @@ export function PartnerOverlapMap({ className, height = 360 }: Props) {
           border: '1px solid var(--hair)',
         }}
       >
-        <LegendSwatch color={PARTNER_TINTS.CIPRB}  label="CIPRB" />
-        <LegendSwatch color={PARTNER_TINTS.Bandhu} label="Bandhu" />
-        <LegendSwatch color={PARTNER_TINTS.PHD}    label="PHD" />
-        <LegendSwatch color={OVERLAP_TWO_ORGS}      label={t('home.legendTwoOrgs')} />
-        <LegendSwatch color={OVERLAP_THREE_ORGS}    label={t('home.legendThreeOrgs')} />
-        <LegendSwatch color={NO_COVERAGE}           label={t('home.legendNoCoverage')} />
+        {partner && subgroups && subgroups.length ? (
+          <>
+            {subgroups.map((s) => (
+              <LegendSwatch
+                key={s.name}
+                color={s.color}
+                label={`${s.name} · ${s.districts.length} districts`}
+              />
+            ))}
+            {subgroups.length >= 2 && (
+              <LegendSwatch color={subgroupOverlapColor} label="Donor overlap" />
+            )}
+            <LegendSwatch
+              color={PARTNER_TINTS[partner]}
+              label={`${PARTNER_NAMES[partner].en} (other)`}
+            />
+            <LegendSwatch color={NO_COVERAGE} label="Not covered" />
+          </>
+        ) : partner ? (
+          <>
+            <LegendSwatch
+              color={PARTNER_TINTS[partner]}
+              label={`${PARTNER_NAMES[partner].en} · ${PARTNER_DISTRICTS[partner].length} districts`}
+            />
+            <LegendSwatch color={NO_COVERAGE} label="Not covered" />
+            <span style={{ color: 'var(--ink-2)', fontSize: 12 }}>
+              {PARTNER_DISTRICTS[partner].join(' · ')}
+            </span>
+          </>
+        ) : (
+          <>
+            <LegendSwatch color={PARTNER_TINTS.CIPRB}  label="CIPRB" />
+            <LegendSwatch color={PARTNER_TINTS.Bandhu} label="Bandhu" />
+            <LegendSwatch color={PARTNER_TINTS.PHD}    label="PHD" />
+            <LegendSwatch color={OVERLAP_TWO_ORGS}      label={t('home.legendTwoOrgs')} />
+            <LegendSwatch color={OVERLAP_THREE_ORGS}    label={t('home.legendThreeOrgs')} />
+            <LegendSwatch color={NO_COVERAGE}           label={t('home.legendNoCoverage')} />
+          </>
+        )}
         <span style={{ marginLeft: 'auto', color: 'var(--muted)', fontStyle: 'italic' }}>
           {t('home.coveragePlaceholderNote')}
         </span>
