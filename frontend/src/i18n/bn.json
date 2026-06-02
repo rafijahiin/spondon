@@ -455,7 +455,7 @@
     "pieObstetric": "প্রসূতি Fistula",
     "pieIatrogenic": "Iatrogenic Fistula",
     "pieOther": "অন্যান্য / Fistula নয়",
-    "pieCaption": "লাইভ কেসগুলো Kobo 'Cause of Fistula' ফিল্ড থেকে শ্রেণিবিভাগ করা হয় (Surgical Injury → Iatrogenic; Prolonged Labour / Early Marriage / Unsafe Abortion / GBV → Obstetric)। প্রাক-Kobo ঐতিহাসিক কেসগুলো শারীরবৃত্তীয় ধরন থেকে অনুমান করা হয় (VVF → Obstetric)।",
+    "pieCaption": "Live cases classified from the Kobo 'Cause of Fistula' field (Surgical Injury → Iatrogenic; Prolonged Labour / Early Marriage / Unsafe Abortion / GBV → Obstetric). Pre-Kobo historical cases fall back to anatomy (VVF → Obstetric).",
     "examined": "পরীক্ষিত",
     "awaiting": "নির্ণয়ের অপেক্ষায়",
     "pieEmpty": "এখনো কোনো Fistula কর্নার কেস নথিভুক্ত হয়নি — রোগী পরীক্ষিত হলে চার্ট পূর্ণ হবে।"

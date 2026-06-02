@@ -774,17 +774,6 @@ export default function CIPRBDashboard() {
           })}
         </div>
 
-        {/* Visible confirmation of the active selection */}
-        <p style={{
-          marginTop: 10, marginBottom: 0,
-          fontSize: 14, color: 'var(--ink-3)',
-        }}>
-          {/* TODO BN */}
-          Showing data for:{' '}
-          <span style={{ color: 'var(--ink)', fontWeight: 600 }}>
-            {activePeriod.shortLabel} · {activePeriod.rangeLabel}
-          </span>
-        </p>
       </section>
 
       {/* ───────────────── Fistula KPI band ───────────────── */}
