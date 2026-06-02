@@ -350,7 +350,7 @@ function MPDSRSection() {
               padding: '6px 12px', borderRadius: 999,
               background: 'rgba(204,106,0,0.10)',
               border: '1px solid rgba(204,106,0,0.32)',
-              color: '#CC6A00',
+              color: '#AE4300',
               fontSize: 12.5, fontWeight: 500,
             }}>
               <AlertTriangle size={13} />

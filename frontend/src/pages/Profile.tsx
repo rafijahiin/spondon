@@ -169,7 +169,7 @@ export default function Profile() {
               padding: '10px 14px', borderRadius: 8,
               background: 'rgba(26,122,90,0.08)',
               border: '1px solid rgba(26,122,90,0.22)',
-              fontSize: 13, color: '#1A7A5A',
+              fontSize: 13, color: '#58968A',
               display: 'flex', alignItems: 'center', gap: 8,
             }}>
               <Check size={15} /> Password updated.

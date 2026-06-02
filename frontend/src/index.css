@@ -34,20 +34,37 @@
   --unfpa-blue:   #2171EC;  /* UNFPA Blue (Pantone 2727 C) — was wrong (#2171EC) */
   --unfpa-purple: #9C1ED6;  /* UNFPA Purple — accent only */
 
-  /* Status semantics — Animesh-approved exceptions for dashboard
-     readability (green/amber/red traffic light). UNFPA's strict rule
-     is one accent per layout; we keep this as a documented exception
-     because status signalling is a functional accessibility feature
-     for programme managers scanning the dashboard. */
-  --status-on:    #1A7A5A;  /* on track (non-brand green, exception) */
-  --status-mid:   #AE4300;  /* behind — uses UNFPA Dark Orange tone */
-  --status-off:   #F10F45;  /* critical — uses UNFPA Red */
+  /* Status semantics — drawn from UNFPA's Complex Visualisation Palette
+     per https://unfpa.brandkit.host/visual-identity/colour/data-viz/
+     The dashboard is a 'complex visualisation' (many data points,
+     traffic-light status), so UNFPA permits the green/red/orange tonal
+     set listed below — NO custom hexes required any more. */
+  --status-on:    #58968A;  /* UNFPA Pastel Green (data-viz palette) */
+  --status-mid:   #AE4300;  /* UNFPA Dark Orange tone */
+  --status-off:   #F10F45;  /* UNFPA Red */
 
-  /* Data-viz category palette — Community / outreach (warm pink) */
-  --coral:        #ED5B7E;
-  --coral-deep:   #B83655;
-  --amber:        #FB904D;  /* pastel orange tint — brand-aligned */
-  --emerald:      #1A7A5A;  /* deep green — alias for status-on */
+  /* ─── UNFPA COMPLEX VISUALISATION PALETTE ─────────────────────────
+     The official 12-colour palette for dashboards, charts, infographics.
+     Use ONLY for data-viz. Background must be white / off-white. */
+  --viz-pastel-orange: #FB904D;  /* same as --unfpa-bright */
+  --viz-light-orange:  #FDCFB3;  /* same as --unfpa-light */
+  --viz-pastel-red:    #ED5B7E;
+  --viz-light-red:     #F7B9C8;
+  --viz-pastel-purple: #BA61E2;
+  --viz-light-purple:  #E1BBF3;
+  --viz-pastel-blue:   #649BF2;
+  --viz-light-blue:    #BDD4F9;
+  --viz-pastel-green:  #58968A;  /* THE green — data-viz only */
+  --viz-light-green:   #C4E5DE;  /* data-viz only */
+  --viz-ash:           #686A6C;  /* same as --muted */
+  --viz-silver:        #D9DBE1;  /* same as --muted-3 */
+
+  /* Category aliases — point to UNFPA viz palette. Kept for backwards
+     compatibility with existing component imports of --coral / --amber. */
+  --coral:        #ED5B7E;  /* → UNFPA Pastel Red */
+  --coral-deep:   #ED5B7E;  /* → UNFPA Pastel Red (was #ED5B7E custom) */
+  --amber:        #FB904D;  /* → UNFPA Pastel Orange */
+  --emerald:      #58968A;  /* → UNFPA Pastel Green */
 
   /* Surface — UNFPA Off-white / White foundation */
   --paper:     #EFF1F7;  /* UNFPA Off-white (digital) */

@@ -162,7 +162,7 @@ function NotifyVsReview({
                 {t('mpdsrViz.mdReportingRate')}
               </div>
               <div style={{
-                fontSize: 28, fontWeight: 800, color: '#CC6A00',
+                fontSize: 28, fontWeight: 800, color: '#AE4300',
                 fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em', lineHeight: 1,
               }}>
                 {reportingRateMD !== null ? `${reportingRateMD.toFixed(0)}%` : '—'}
@@ -176,7 +176,7 @@ function NotifyVsReview({
                 {t('mpdsrViz.ndReportingRate')}
               </div>
               <div style={{
-                fontSize: 28, fontWeight: 800, color: '#CC6A00',
+                fontSize: 28, fontWeight: 800, color: '#AE4300',
                 fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em', lineHeight: 1,
               }}>
                 {reportingRateND !== null ? `${reportingRateND.toFixed(0)}%` : '—'}
@@ -289,7 +289,7 @@ const GROUP_LABEL_KEY: Record<DistrictGroup, string> = {
 const CAUSE_PALETTE: Record<string, string> = {
   pph:               '#F96000',  // UNFPA orange
   eclampsia:         '#FB904D',  // UNFPA bright
-  sepsis:            '#FFC499',  // UNFPA pale
+  sepsis:            '#FDCFB3',  // UNFPA pale
   obstructed_labour: '#C44E00',  // UNFPA deep
   other:             'var(--muted-3)',
 }
@@ -490,8 +490,8 @@ function ResponsePlanTracker({ summaries }: { summaries: ActionPlanSummary[] }) 
   // planned-vs-executed counts with completion %. Bar colour reflects
   // completion health: green ≥ 75%, amber 40-74%, red < 40%.
   const colorFor = (pct: number) => {
-    if (pct >= 75) return '#1A7A5A'  // status-on
-    if (pct >= 40) return '#CC6A00'  // status-mid
+    if (pct >= 75) return '#58968A'  // status-on
+    if (pct >= 40) return '#AE4300'  // status-mid
     return '#F10F45'                 // status-off
   }
 
@@ -626,8 +626,8 @@ function ReportingRatePerDistrict({
     .sort((a, b) => b.rate - a.rate)
 
   const colorFor = (pct: number) => {
-    if (pct >= 75) return '#1A7A5A'
-    if (pct >= 40) return '#CC6A00'
+    if (pct >= 75) return '#58968A'
+    if (pct >= 40) return '#AE4300'
     return '#F10F45'
   }
 

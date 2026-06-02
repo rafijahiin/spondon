@@ -47,7 +47,7 @@ const TINT = {
   both:     '#7A2E00',   // very deep orange — GAC + SIDA overlap (Sunamganj)
   gac:      '#F96000',   // UNFPA primary orange
   sida:     '#C44E00',   // UNFPA deep
-  cp:       '#FFC499',   // UNFPA pale tint
+  cp:       '#FDCFB3',   // UNFPA pale tint
   none:     '#E5E7EB',   // neutral grey — districts with no MPDSR focus
   stroke:   '#7A2E00',
 }
@@ -186,7 +186,7 @@ export function MPDSRDistrictMap() {
                   transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
                   style={{
                     width: 8, height: 8, borderRadius: 999,
-                    background: '#1A7A5A', flexShrink: 0,
+                    background: '#58968A', flexShrink: 0,
                   }}
                 />
                 <b style={{ color: 'var(--ink)' }}>{latest.partner}</b>

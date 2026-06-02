@@ -16,8 +16,8 @@ import type { IndicatorProgress } from '@/types'
 
 const BAND_COLOR = (pct: number | null) => {
   if (pct === null || pct === 0) return 'var(--muted)'
-  if (pct >= 75) return '#1A7A5A'
-  if (pct >= 40) return '#CC6A00'
+  if (pct >= 75) return '#58968A'
+  if (pct >= 40) return '#AE4300'
   return '#F10F45'
 }
 

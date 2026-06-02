@@ -96,7 +96,7 @@ function PartnerFlagTile({ flag, thresholdHours }: { flag: PartnerFlag; threshol
             display: 'inline-flex', alignItems: 'center', gap: 5,
             padding: '4px 10px', borderRadius: 999,
             background: 'rgba(26,122,90,0.10)',
-            color: '#1A7A5A',
+            color: '#58968A',
             fontSize: 11, fontWeight: 600,
           }}>
             <CheckCircle2 size={12} /> {t('health.active')}
@@ -106,7 +106,7 @@ function PartnerFlagTile({ flag, thresholdHours }: { flag: PartnerFlag; threshol
             display: 'inline-flex', alignItems: 'center', gap: 5,
             padding: '4px 10px', borderRadius: 999,
             background: 'rgba(204,106,0,0.10)',
-            color: '#CC6A00',
+            color: '#AE4300',
             fontSize: 11, fontWeight: 600,
           }}>
             <AlertTriangle size={12} /> {t('health.silent')}
@@ -153,7 +153,7 @@ function PartnerFlagTile({ flag, thresholdHours }: { flag: PartnerFlag; threshol
           <div style={{
             display: 'inline-flex', alignItems: 'center', gap: 5,
             color: flag.partner_silent_hours > thresholdHours ? '#F10F45'
-                 : flag.partner_silent_hours > 24 ? '#CC6A00'
+                 : flag.partner_silent_hours > 24 ? '#AE4300'
                  : 'var(--muted)',
             fontSize: 11.5,
           }}>
@@ -237,7 +237,7 @@ export function ProgrammeHealthFlags() {
         <div>
           <div className="kicker" style={{ marginBottom: 8 }}>
             <span className="dot" style={{
-              background: allCompliant ? 'var(--unfpa)' : '#CC6A00',
+              background: allCompliant ? 'var(--unfpa)' : '#AE4300',
             }} />
             {t('health.kicker', { hours: thresholdHours })}
           </div>

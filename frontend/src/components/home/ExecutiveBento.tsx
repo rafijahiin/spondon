@@ -42,8 +42,8 @@ interface Props {
 // Status band colour for an attainment percentage (UNFPA data-viz palette).
 function bandColor(pct: number | null): string {
   if (pct == null || pct === 0) return 'var(--muted)'   // no data / not started
-  if (pct >= 75) return '#1A7A5A'
-  if (pct >= 40) return '#CC6A00'
+  if (pct >= 75) return '#58968A'
+  if (pct >= 40) return '#AE4300'
   return '#F10F45'
 }
 
@@ -450,8 +450,8 @@ interface PartnerRow {
 }
 
 const STATUS_COLORS = {
-  onTrack:    '#1A7A5A',  // deep green
-  behind:     '#CC6A00',  // deep amber
+  onTrack:    '#58968A',  // deep green
+  behind:     '#AE4300',  // deep amber
   critical:   '#F10F45',  // deep red
   notStarted: '#9CA3AF',  // neutral grey
   pending:    'var(--muted-3)', // very faint — no target yet

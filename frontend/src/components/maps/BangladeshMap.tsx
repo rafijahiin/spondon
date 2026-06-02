@@ -23,7 +23,7 @@ const CENTER_COLORS: Record<string, string> = {
   DIC:     '#F96000',   // UNFPA primary
   BROTHEL: '#C44E00',   // UNFPA deep
   SUB_DIC: '#FB904D',   // UNFPA bright
-  MOBILE:  '#FFC499',   // UNFPA pale
+  MOBILE:  '#FDCFB3',   // UNFPA pale
 }
 
 // Per-partner choropleth tints — all share the UNFPA orange family.

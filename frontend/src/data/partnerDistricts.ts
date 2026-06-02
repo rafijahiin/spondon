@@ -25,21 +25,23 @@ export const PARTNER_COLORS: Record<PartnerCode, string> = {
   PHD:    '#F96000',
 }
 
-// Tonal scale — used ONLY on the homepage coverage map (Animesh:
-// "the map does not need to follow UNFPA colours, it is tough to
-// understand"). Three distinct hues so single-org districts read
-// unambiguously against the dark background. Every other surface
-// on the site still uses the flat UNFPA orange from PARTNER_COLORS.
+// Coverage-map per-partner tints, drawn from the UNFPA Complex
+// Visualisation Palette (https://unfpa.brandkit.host/visual-identity/
+// colour/data-viz/). Three distinguishable hues so single-org districts
+// read unambiguously, but every one is UNFPA-official:
+//   CIPRB  → UNFPA Pastel Blue
+//   Bandhu → UNFPA Pastel Green (data-viz only; UNFPA's one approved green)
+//   PHD    → UNFPA Orange (primary brand)
+// Every other surface on the site uses flat UNFPA orange (PARTNER_COLORS).
 export const PARTNER_TINTS: Record<PartnerCode, string> = {
-  CIPRB:  '#0072BC',   // institutional blue
-  Bandhu: '#00875A',   // deep teal-green
-  PHD:    '#F96000',   // UNFPA orange (PHD only — the one partner whose
-                       // colour stays inside the brand family)
+  CIPRB:  '#649BF2',   // UNFPA Pastel Blue (was #0072BC custom)
+  Bandhu: '#58968A',   // UNFPA Pastel Green (was #00875A custom)
+  PHD:    '#F96000',   // UNFPA Orange
 }
 
 // Overlap shading — two-org uses UNFPA amber tint, three-org uses status-off red.
-export const OVERLAP_TWO_ORGS  = '#CC9B4A'   // warm amber
-export const OVERLAP_THREE_ORGS = '#F10F45'  // deep red
+export const OVERLAP_TWO_ORGS  = '#FDCFB3'   // UNFPA Light Orange (data-viz palette)
+export const OVERLAP_THREE_ORGS = '#F10F45'  // UNFPA Red
 export const NO_COVERAGE = '#E5E7EB'         // light grey
 
 export const PARTNER_DISTRICTS: Record<PartnerCode, string[]> = {

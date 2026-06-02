@@ -51,7 +51,7 @@ const SEVERITY_META: Record<Finding['severity'], {
     label: 'CRITICAL',
   },
   warning: {
-    color: '#CC6A00',
+    color: '#AE4300',
     bg: 'rgba(204, 106, 0, 0.10)',
     icon: <AlertTriangle size={14} />,
     label: 'WARNING',
