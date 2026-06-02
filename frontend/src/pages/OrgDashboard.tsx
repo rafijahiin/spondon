@@ -481,12 +481,16 @@ export function OrgDashboard({ partner }: Props) {
                   </td>
                   <td>
                     <Sparkline
-                      data={[
-                        Math.round(d.count * 0.55),
-                        Math.round(d.count * 0.7),
-                        Math.round(d.count * 0.85),
-                        d.count,
-                      ]}
+                      data={
+                        d.trend && d.trend.length > 0
+                          ? d.trend
+                          : [
+                              Math.round(d.count * 0.55),
+                              Math.round(d.count * 0.7),
+                              Math.round(d.count * 0.85),
+                              d.count,
+                            ]
+                      }
                       color={isPHD ? 'var(--unfpa)' : 'var(--violet)'}
                       w={180} h={28}
                     />

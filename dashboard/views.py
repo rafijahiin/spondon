@@ -454,29 +454,62 @@ class CentresView(APIView):
     permission_classes = [IsSupervisorOrManager]
 
     def get(self, request):
+        import datetime as _dt
+        from django.db.models.functions import TruncDate
+
         month_start, month_end = current_month_bounds()
         now = timezone.now()
 
         partner = request.query_params.get('partner', '')
-        qs = (
+        month_qs = (
             _base_qs(request.user)
             .filter(submitted_at__gte=month_start, submitted_at__lt=month_end)
             .exclude(district='')
         )
         if partner and partner in allowed_partners(request.user):
-            qs = qs.filter(partner=partner)
+            month_qs = month_qs.filter(partner=partner)
 
         rows = (
-            qs
+            month_qs
             .values('district')
             .annotate(count=Count('id'))
             .order_by('-count')
         )
 
-        districts = [
-            {'district': row['district'], 'count': row['count'], 'rank': rank}
-            for rank, row in enumerate(rows, start=1)
-        ]
+        # 14-day daily trend per district — feeds the sparkline column.
+        trend_start = now - _dt.timedelta(days=14)
+        trend_qs = (
+            _base_qs(request.user)
+            .filter(submitted_at__gte=trend_start)
+            .exclude(district='')
+        )
+        if partner and partner in allowed_partners(request.user):
+            trend_qs = trend_qs.filter(partner=partner)
+
+        per_day = (
+            trend_qs
+            .annotate(day=TruncDate('submitted_at'))
+            .values('district', 'day')
+            .annotate(c=Count('id'))
+        )
+        trend_map: dict[str, dict] = {}
+        for r in per_day:
+            trend_map.setdefault(r['district'], {})[r['day']] = r['c']
+
+        # Build a 14-slot vector per district, oldest → newest.
+        today = now.date()
+        day_axis = [today - _dt.timedelta(days=i) for i in range(13, -1, -1)]
+
+        districts = []
+        for rank, row in enumerate(rows, start=1):
+            d = row['district']
+            trend = [trend_map.get(d, {}).get(day, 0) for day in day_axis]
+            districts.append({
+                'district': d,
+                'count': row['count'],
+                'rank': rank,
+                'trend': trend,
+            })
 
         return Response({
             'month': now.strftime('%B %Y'),

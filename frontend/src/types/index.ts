@@ -137,7 +137,7 @@ export interface ActivityItem {
 
 export interface CentresResponse {
   month: string
-  districts: { district: string; count: number; rank: number }[]
+  districts: { district: string; count: number; rank: number; trend?: number[] }[]
 }
 
 export interface PartnerKPIs {
