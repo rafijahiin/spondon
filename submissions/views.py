@@ -153,7 +153,8 @@ def _notify_gps_rejection(payload: dict, form_type: str) -> None:
         worker_name = (
             payload.get('collector_name') or
             payload.get('worker_name') or
-            payload.get('enumerator_name') or 'Field worker'
+            payload.get('enumerator_name') or
+            payload.get('_submitted_by') or 'Field worker'
         )
         from .notify import send_gps_rejection_notice
         send_gps_rejection_notice(worker_name, form_type)
@@ -237,7 +238,11 @@ def kobo_webhook(request):
         worker_name=(
             payload.get('collector_name') or
             payload.get('worker_name') or
-            payload.get('enumerator_name') or ''
+            payload.get('enumerator_name') or
+            # KoboToolbox always stamps the submitting account's username on
+            # authenticated submissions. Use it so forms without an explicit
+            # name question still attribute the submitter (no more "Unknown").
+            payload.get('_submitted_by') or ''
         ),
         district=_district_from_payload(payload, form_type),
         region=payload.get('division') or payload.get('region') or '',

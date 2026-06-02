@@ -275,6 +275,8 @@ export default function ManagerApprovals() {
   // selected legacy submission. Lets the manager check actual field values
   // (e.g. age=14) before deciding, per Animesh's variable-checking spec.
   const [detail, setDetail] = useState<SubmissionDetail | null>(null)
+  // Toggle for the full raw-submission JSON (every field incl. Kobo metadata).
+  const [showRaw, setShowRaw] = useState(false)
   const [toast, setToast] = useState<{ action: 'approve' | 'reject'; item: QueueItem } | null>(null)
 
   // ── API data ────────────────────────────────────────────────────────────────
@@ -337,6 +339,7 @@ export default function ManagerApprovals() {
   useEffect(() => {
     setReviewerNote('')
     setDetail(null)
+    setShowRaw(false)
     if (!selected || selected.kind !== 'legacy') return
     let cancelled = false
     api.get(`/submissions/${selected.id}/`)
@@ -796,6 +799,29 @@ export default function ManagerApprovals() {
                           </div>
                         ))}
                     </div>
+                    {/* Deep verification: full raw submission incl. Kobo
+                        metadata (_id, _submission_time, _xform_id_string …). */}
+                    <button
+                      onClick={() => setShowRaw(v => !v)}
+                      style={{
+                        marginTop: 12, fontSize: 12, color: 'var(--unfpa)',
+                        background: 'none', border: 'none', cursor: 'pointer',
+                        padding: 0, fontFamily: 'var(--ui)',
+                      }}
+                    >
+                      {showRaw ? '▾ Hide raw submission' : '▸ View raw submission (all fields)'}
+                    </button>
+                    {showRaw && (
+                      <pre className="mono" style={{
+                        marginTop: 10, padding: 14, borderRadius: 10,
+                        background: 'var(--surface-2)', border: '1px solid var(--hair)',
+                        fontSize: 11.5, lineHeight: 1.5, color: 'var(--ink-2)',
+                        maxHeight: 320, overflow: 'auto', whiteSpace: 'pre-wrap',
+                        wordBreak: 'break-word',
+                      }}>
+                        {JSON.stringify(detail.raw_data, null, 2)}
+                      </pre>
+                    )}
                   </div>
                 )}
 
