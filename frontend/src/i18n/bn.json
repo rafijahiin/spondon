@@ -565,5 +565,19 @@
     "moreDistricts": "+আরও {{count}}টি",
     "viewDashboard": "ড্যাশবোর্ড দেখুন",
     "loading": "লোড হচ্ছে…"
+  },
+  "totals": {
+    "kicker": "প্রকল্পের মোট · এ পর্যন্ত",
+    "title": "সব পার্টনারের প্রধান সূচকসমূহ",
+    "sub": "Fistula, MPDSR এবং রেফারেলের সঞ্চিত পরিসংখ্যান — Fistula রোগী, মাতৃ ও নবজাতকের মৃত্যু, মৃত শিশু জন্ম, এবং ব্যবস্থাপিত বা প্রেরিত মোট কেস।",
+    "fistulaPatients": "Fistula রোগী",
+    "fistulaSub": "Fistula Corner-এ মোট শনাক্ত",
+    "maternalDeaths": "মাতৃমৃত্যু",
+    "newbornDeaths": "নবজাতকের মৃত্যু",
+    "stillbirths": "মৃত শিশু জন্ম",
+    "referred": "রেফারকৃত কেস",
+    "referredSub": "অস্ত্রোপচার বা চিকিৎসার জন্য প্রেরিত Fistula রোগী",
+    "notified": "অবহিত",
+    "reviewed": "পর্যালোচিত"
   }
 }

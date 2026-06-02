@@ -582,6 +582,20 @@
     "viewDashboard": "View dashboard",
     "loading": "Loading…"
   },
+  "totals": {
+    "kicker": "PROGRAMME TOTALS · TILL DATE",
+    "title": "Major indicators across all partners",
+    "sub": "Cumulative figures for Fistula, MPDSR, and onward referrals — Fistula patients, maternal & newborn deaths, stillbirths, and total cases managed or referred.",
+    "fistulaPatients": "Fistula Patients",
+    "fistulaSub": "Total identified at the Fistula Corner",
+    "maternalDeaths": "Maternal Deaths",
+    "newbornDeaths": "Newborn Deaths",
+    "stillbirths": "Stillbirths",
+    "referred": "Cases Referred",
+    "referredSub": "Fistula patients sent for surgery / treatment",
+    "notified": "Notified",
+    "reviewed": "Reviewed"
+  },
   "fistulaViz": {
     "reachKicker": "CAMPAIGN REACH · COMMUNITY OUTREACH",
     "reachTitle": "How far the campaigns have travelled",
