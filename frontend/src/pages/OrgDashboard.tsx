@@ -338,16 +338,11 @@ export function OrgDashboard({ partner }: Props) {
 
         <div className="hero-grid">
           <div>
+            {/* Headline treatment is identical across all partners (UNFPA
+                orange italic display serif via .figure) — only the text
+                differs. Matches CIPRB and PHD heroes. */}
             <h1 className="hero-headline anim-rise d1" style={{ marginBottom: 6, fontSize: 'clamp(56px, 9vw, 132px)', letterSpacing: '-0.035em' }}>
-              <span
-                className={isPHD ? 'figure' : 'accent'}
-                style={!isPHD ? {
-                  color: 'var(--violet)',
-                  textShadow: '0 0 36px rgba(139,92,246,0.25), 0 0 70px rgba(139,92,246,0.10)',
-                } : undefined}
-              >
-                {partner}
-              </span>
+              <span className="figure">{partner}</span>
             </h1>
             <p className="hero-tagline anim-rise d1" style={{
               fontSize: 13, color: 'var(--ink-3)', marginTop: 4, marginBottom: 14,

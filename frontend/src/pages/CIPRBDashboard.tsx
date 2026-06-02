@@ -17,7 +17,7 @@ import { useTranslation } from 'react-i18next'
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react'
 import {
   ClipboardList, Megaphone, Search, Stethoscope, Send, Scissors,
-  Clock, MapPin, X, AlertTriangle, HeartHandshake,
+  Clock, MapPin, X, AlertTriangle, HeartHandshake, Info,
 } from 'lucide-react'
 import { api } from '@/api/client'
 import { usePolling } from '@/hooks/usePolling'
@@ -696,25 +696,34 @@ export default function CIPRBDashboard() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 40 }}>
       {/* ───────────────── Hero ───────────────── */}
       <section className="hero" style={{ paddingBottom: 8 }}>
+        {/* Same eyebrow structure as /phd and /bondhu: role / full name /
+            month / demo pill — identical typography across all partners. */}
         <div className="hero-eyebrow anim-rise">
           <span className="live-dot" />
-          <span>{t('ciprb.heroEyebrow', { defaultValue: 'CIPRB · IMPLEMENTING PARTNER' })}</span>
+          <span>{t('org.eyebrowImplementingPartner', { defaultValue: 'IMPLEMENTING PARTNER' })}</span>
+          <span className="sep">/</span>
+          <span>Centre for Injury Prevention and Research, Bangladesh</span>
+          <span className="sep">/</span>
+          <span>{new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' }).toUpperCase()}</span>
+          <span className="sep">/</span>
+          <span className="tag amber" style={{ marginLeft: 4, fontSize: 10.5 }}>
+            <Info size={10} style={{ marginRight: 3 }} />{t('org.demoData', { defaultValue: 'DEMO DATA' })}
+          </span>
         </div>
 
         <div className="hero-grid">
           <div>
+            {/* Identical treatment to /phd and /bondhu — UNFPA orange italic
+                display serif via .figure. Only the text differs per partner. */}
             <h1
               className="hero-headline anim-rise d1"
               style={{
                 marginBottom: 6,
                 fontSize: 'clamp(56px, 9vw, 132px)',
                 letterSpacing: '-0.035em',
-                fontStyle: 'normal',
-                fontWeight: 800,
-                color: CIPRB_BLUE,
               }}
             >
-              CIPRB
+              <span className="figure">CIPRB</span>
             </h1>
             <p style={{
               fontSize: 13, color: 'var(--ink-3)', marginTop: 4, marginBottom: 14,
