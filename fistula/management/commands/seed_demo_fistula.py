@@ -77,6 +77,21 @@ class Command(BaseCommand):
                     [FistulaCornerCase.SURGERY_YES, FistulaCornerCase.SURGERY_NO, FistulaCornerCase.SURGERY_PENDING],
                     weights=[55, 15, 30],
                 )[0]
+                # Rehab — Animesh's definition: any of 9 support types =
+                # rehabilitated. Only operated patients are eligible. Seed
+                # ~50% of operated patients as rehabilitated to give the
+                # tile a meaningful 30–50% value on screen.
+                operated = surgery == FistulaCornerCase.SURGERY_YES
+                rehabbed = operated and rng.random() < 0.55
+                support_options = [
+                    'Cash', 'Training', 'Psychosocial support',
+                    'Reintegration support', 'Sewing machine', 'VGF Card',
+                ]
+                support_types = (
+                    ','.join(rng.sample(support_options, k=rng.randint(1, 3)))
+                    if rehabbed else ''
+                )
+
                 FistulaCornerCase.objects.create(
                     case_hash=ch,
                     source='demo_seed',
@@ -91,6 +106,12 @@ class Command(BaseCommand):
                     surgery_performed=surgery,
                     referral_date=today - datetime.timedelta(days=max(1, diag_offset - 3)) if surgery != FistulaCornerCase.SURGERY_NO else None,
                     referral_place='Dhaka Medical College Fistula Centre',
+                    received_rehab_support=rehabbed,
+                    rehab_support_types=support_types,
+                    rehab_support_date=(
+                        today - datetime.timedelta(days=max(1, diag_offset - 14))
+                        if rehabbed else None
+                    ),
                 )
                 created_c += 1
 

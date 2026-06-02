@@ -63,6 +63,8 @@ class FistulaCornerCaseSerializer(serializers.ModelSerializer):
             'service_provider_name', 'service_provider_designation',
             # Referral
             'referral_date', 'referral_place', 'surgery_performed', 'referral_outcome',
+            # Rehabilitation (Animesh's definition: any support = rehabilitated)
+            'received_rehab_support', 'rehab_support_types', 'rehab_support_date',
             # Remarks
             'remarks',
             # Provenance

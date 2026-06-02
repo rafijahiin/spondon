@@ -314,6 +314,22 @@ class FistulaCornerCase(models.Model):
     )
     referral_outcome  = models.TextField(blank=True)
 
+    # ─── Rehabilitation & Reintegration ──────────────────────────────────
+    # Per Animesh in the 2026-06-01 meeting: a patient counts as
+    # "Rehabilitated" if ANY of cash / livestock / training / tree plant /
+    # sewing machine / VGF card / disability card / psychosocial support /
+    # reintegration support is recorded. The boolean below is the umbrella
+    # "did the patient receive ANY rehab support" flag; the CharField
+    # captures which types as a comma-separated list (audit detail).
+    received_rehab_support = models.BooleanField(default=False, db_index=True)
+    rehab_support_types = models.CharField(
+        max_length=300, blank=True,
+        help_text='Comma-separated: Cash, Livestock, Training, Tree plant, '
+                  'Sewing machine, VGF Card, Disability card, Psychosocial '
+                  'support, Reintegration support',
+    )
+    rehab_support_date = models.DateField(null=True, blank=True)
+
     # ─── Remarks ─────────────────────────────────────────────────────────
     remarks = models.TextField(blank=True)
 

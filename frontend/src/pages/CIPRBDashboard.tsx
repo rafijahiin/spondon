@@ -88,6 +88,8 @@ interface KPIs {
   identified: number
   referred: number
   surgeryDone: number
+  rehabilitated: number
+  rehabPct: number | null
 }
 
 interface CornerCaseRow {
@@ -96,6 +98,8 @@ interface CornerCaseRow {
   referral_date?: string | null
   referral_outcome?: string
   surgery_performed?: 'yes' | 'no' | 'pending' | ''
+  received_rehab_support?: boolean
+  district?: string
 }
 
 interface CampaignVisitRow {
@@ -106,7 +110,7 @@ function useFistulaKPIs(
   period: ReportingPeriodDef,
   districtFilter: readonly string[] | null,
 ): { kpis: KPIs; loading: boolean } {
-  const [kpis, setKpis] = useState<KPIs>({ suspected: 0, identified: 0, referred: 0, surgeryDone: 0 })
+  const [kpis, setKpis] = useState<KPIs>({ suspected: 0, identified: 0, referred: 0, surgeryDone: 0, rehabilitated: 0, rehabPct: null })
   const [loading, setLoading] = useState(true)
   const periodFrom = period.from
   const periodTo = period.to
@@ -144,11 +148,20 @@ function useFistulaKPIs(
       const campaignFiltered = campaignRows.filter(c => inFilter(c.district))
       const cornerFiltered = cornerRows.filter(c => inFilter(c.district))
 
+      const surgeryDone   = cornerFiltered.filter(c => c.surgery_performed === 'yes').length
+      const rehabilitated = cornerFiltered.filter(c => c.received_rehab_support === true).length
+      // Animesh's funnel rule: each stage % uses the previous stage as
+      // denominator. Rehab is the stage after surgery, so denominator =
+      // surgeryDone. Null when surgeryDone == 0 (avoid /0 nonsense).
+      const rehabPct = surgeryDone > 0 ? (rehabilitated / surgeryDone) * 100 : null
+
       setKpis({
         suspected:   campaignFiltered.length,
         identified:  cornerFiltered.filter(c => c.identification_date || c.diagnosis_date).length,
         referred:    cornerFiltered.filter(c => c.referral_date || (c.referral_outcome ?? '').trim() !== '').length,
-        surgeryDone: cornerFiltered.filter(c => c.surgery_performed === 'yes').length,
+        surgeryDone,
+        rehabilitated,
+        rehabPct,
       })
       setLoading(false)
     })
@@ -164,7 +177,7 @@ function KPITile({
   icon: React.ReactNode
   label: string
   sub: string
-  value: number
+  value: number | string
 }) {
   return (
     <div
@@ -194,7 +207,7 @@ function KPITile({
         fontSize: 30, fontWeight: 800, color: 'var(--ink)',
         fontVariantNumeric: 'tabular-nums', lineHeight: 1, letterSpacing: '-0.02em',
       }}>
-        {value.toLocaleString()}
+        {typeof value === 'number' ? value.toLocaleString() : value}
       </div>
       <div style={{ fontSize: 12, color: 'var(--ink-3)' }}>{sub}</div>
     </div>
@@ -884,17 +897,24 @@ export default function CIPRBDashboard() {
           <KPITile icon={<Stethoscope size={14} />} label={t('ciprb.kpiIdentified')}  sub={t('ciprb.kpiIdentifiedSub')}   value={kpis.identified}  />
           <KPITile icon={<Send size={14} />}        label={t('ciprb.kpiReferred')}    sub={t('ciprb.kpiReferredSub')}     value={kpis.referred}    />
           <KPITile icon={<Scissors size={14} />}    label={t('ciprb.kpiSurgeryDone')} sub={t('ciprb.kpiSurgeryDoneSub')}  value={kpis.surgeryDone} />
-          {/* Rehabilitation % — Animesh's Health Intelligence Command Center
-              deck flags Rehab % as a Fistula indicator. Operational definition
-              still pending from Sayed (which denominator counts as "rehab
-              eligible", how outcome is observed). Tile is rendered as a
-              placeholder so Animesh sees the metric is recognised on our
-              roadmap, without faking a number. */}
-          <PendingKPITile
-            icon={<HeartHandshake size={14} />}
-            label={t('ciprb.kpiRehab')}
-            sub={t('ciprb.kpiRehabSub')}
-          />
+          {/* Rehabilitation % — Animesh's definition from the 2026-06-01
+              meeting: rehabilitated = any of cash / training / psychosocial /
+              reintegration / 5 other support types is Yes. Denominator =
+              operated patients (previous funnel stage). */}
+          {kpis.rehabPct != null ? (
+            <KPITile
+              icon={<HeartHandshake size={14} />}
+              label={t('ciprb.kpiRehab')}
+              sub={`${kpis.rehabilitated} of ${kpis.surgeryDone} operated`}
+              value={`${Math.round(kpis.rehabPct)}%`}
+            />
+          ) : (
+            <PendingKPITile
+              icon={<HeartHandshake size={14} />}
+              label={t('ciprb.kpiRehab')}
+              sub={t('ciprb.kpiRehabSub')}
+            />
+          )}
         </div>
       </section>
 
