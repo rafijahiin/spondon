@@ -33,6 +33,10 @@
   --unfpa-red-pastel: #ED5B7E;  /* Pastel Red tone */
   --unfpa-blue:   #2171EC;  /* UNFPA Blue (Pantone 2727 C) — was wrong (#2171EC) */
   --unfpa-purple: #9C1ED6;  /* UNFPA Purple — accent only */
+  --violet:       #8B5CF6;  /* Bandhu accent — sparklines, tile rails, form bars.
+                               Was referenced (var(--violet)) in ~6 places but
+                               never defined, so stroke/fill silently resolved to
+                               none (invisible 14-day trend sparklines on /bondhu). */
 
   /* Status semantics — drawn from UNFPA's Complex Visualisation Palette
      per https://unfpa.brandkit.host/visual-identity/colour/data-viz/
