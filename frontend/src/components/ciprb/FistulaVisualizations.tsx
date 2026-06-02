@@ -13,7 +13,7 @@
  */
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Building2, MapPin, Home, Users, Search, Stethoscope, Send, ArrowRight } from 'lucide-react'
+import { Building2, MapPin, Home, Users, Search, Stethoscope, Send, ArrowRight, Scissors } from 'lucide-react'
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts'
 import { api } from '@/api/client'
 
@@ -60,10 +60,11 @@ interface AggregateData {
   upazilas: number
   households: number
   population: number
-  // Funnel
+  // Funnel (Animesh's 4-stage pipeline)
   suspected: number
   identified: number
   referred: number
+  repaired: number
   // Diagnosis pie (corner cases) — Animesh's exact 3 slices
   pieObstetric: number   // VVF → mapped to Obstetric Fistula
   pieIatrogenic: number  // pending — no 'cause' field on Kobo form yet; stays 0
@@ -73,7 +74,7 @@ interface AggregateData {
 
 const EMPTY: AggregateData = {
   districts: 0, upazilas: 0, households: 0, population: 0,
-  suspected: 0, identified: 0, referred: 0,
+  suspected: 0, identified: 0, referred: 0, repaired: 0,
   pieObstetric: 0, pieIatrogenic: 0, pieOther: 0, piePending: 0,
 }
 
@@ -160,6 +161,7 @@ function useFistulaAggregates(
       const suspected = rollups.reduce((s, r) => s + (r.suspected_fistula_cases ?? 0), 0)
       const identified = cornerFil.filter(c => c.identification_date || c.diagnosis_date).length
       const referred   = cornerFil.filter(c => c.referral_date || (c.referral_outcome ?? '').trim() !== '').length
+      const repaired   = cornerFil.filter(c => c.surgery_performed === 'yes').length
 
       // Diagnosis pie — Animesh's exact three slices, classified from
       // the Kobo 'Cause of Fistula' radio (which DOES exist on the
@@ -213,6 +215,7 @@ function useFistulaAggregates(
         suspected,
         identified,
         referred,
+        repaired,
         pieObstetric, pieIatrogenic, pieOther, piePending,
       })
     })
@@ -278,17 +281,30 @@ function FunnelStage({
   )
 }
 
-function FunnelArrow() {
-  // Decorative-only divider between funnel stages. Conversion % between
-  // Suspected (community outreach) and Identified (clinic walk-ins) was
-  // removed after audit — those are parallel cohorts, not a sequential
-  // funnel, so dividing them was misleading. Patients may walk straight
-  // into a Fistula Corner without ever being noted during outreach.
+function FunnelArrow({ conversionPct }: { conversionPct?: number }) {
+  // Decorative divider between funnel stages, with optional conversion %
+  // pill above. Animesh's spec (2026-06-02): each stage % uses the
+  // previous stage as denominator (Identified ÷ Suspected, Referred ÷
+  // Identified, Repaired ÷ Referred). Suspected→Identified is omitted
+  // here because those are parallel cohorts (campaign vs clinic walk-in),
+  // not sequential — that ratio is misleading.
   return (
     <div style={{
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      flexShrink: 0, padding: '0 16px',
+      display: 'flex', flexDirection: 'column', alignItems: 'center',
+      justifyContent: 'center', flexShrink: 0, padding: '0 16px', gap: 8,
     }}>
+      {conversionPct !== undefined && (
+        <div style={{
+          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: 11, fontWeight: 700, color: CIPRB_BLUE,
+          background: 'rgba(249,96,0,0.10)', borderRadius: 12,
+          padding: '4px 10px', minWidth: 48, textAlign: 'center',
+          fontVariantNumeric: 'tabular-nums',
+          border: '1px solid rgba(249,96,0,0.20)',
+        }}>
+          {conversionPct}%
+        </div>
+      )}
       <ArrowRight size={22} color={CIPRB_BLUE} aria-hidden />
     </div>
   )
@@ -415,11 +431,25 @@ export function FistulaVisualizations({
           display: 'flex', alignItems: 'center', gap: 0, flexWrap: 'wrap',
         }}>
           <FunnelStage icon={<Search size={14} />}      label={t('fistulaViz.suspected')}  value={agg.suspected}  sub={t('fistulaViz.suspectedSub')} />
+          {/* Suspected → Identified: parallel cohorts (campaign vs clinic walk-in),
+              not sequential — no conversion %. */}
           <FunnelArrow />
           <FunnelStage icon={<Stethoscope size={14} />} label={t('fistulaViz.identified')} value={agg.identified} sub={t('fistulaViz.identifiedSub')} />
-          <FunnelArrow />
+          <FunnelArrow conversionPct={
+            agg.identified > 0 ? Math.round((agg.referred / agg.identified) * 100) : undefined
+          } />
           <FunnelStage icon={<Send size={14} />}        label={t('fistulaViz.referred')}   value={agg.referred}   sub={t('fistulaViz.referredSub')} />
+          <FunnelArrow conversionPct={
+            agg.referred > 0 ? Math.round((agg.repaired / agg.referred) * 100) : undefined
+          } />
+          <FunnelStage icon={<Scissors size={14} />}    label="REPAIRED"                    value={agg.repaired}   sub="Surgery completed" />
         </div>
+        <p style={{
+          fontSize: 11.5, color: 'var(--muted)', margin: '8px 4px 0',
+          fontStyle: 'italic',
+        }}>
+          Suspected and Identified are parallel intake cohorts (campaign vs clinic walk-in); Identified → Referred → Repaired are sequential clinical stages.
+        </p>
       </div>
 
       {/* ─── 3. Diagnosis Pie ─── */}
