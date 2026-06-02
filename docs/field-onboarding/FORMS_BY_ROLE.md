@@ -50,8 +50,8 @@ Map of which Kobo form belongs to which worker type. Use this when a focal asks 
 | KF-18 Mobile Camp | spondon_kf18_camp_v1 | https://ee.kobotoolbox.org/x/Bc7XiGmm | Outreach coord |
 | KF-19 Coord Meeting | spondon_kf19_meeting_v1 | https://ee.kobotoolbox.org/x/BW115Ila | Programme officer |
 | KF-20 Training | spondon_kf20_training_v1 | https://ee.kobotoolbox.org/x/bRmo6yVq | Programme officer |
-| KF-MPDSR Response Plan | spondon_mpdsr_response_plan_v1 | _pending Kobo upload_ | CIPRB district focal (per Animesh) |
-| KF-Fistula Staged (Auto-ID, 5 stages) | spondon_fistula_staged_v1 | _pending Kobo upload_ | CIPRB clinical staff — Animesh's staged-entry design |
+| KF-MPDSR Response Plan | spondon_mpdsr_response_plan_v1 | https://ee.kobotoolbox.org/x/7kAJGedj | CIPRB district focal (per Animesh) |
+| KF-Fistula Staged (Auto-ID, 5 stages) | spondon_fistula_staged_v1 | https://ee.kobotoolbox.org/x/mc06MRIn | CIPRB clinical staff — Animesh's staged-entry design |
 | Referral | spondon_referral_v1 | https://ee.kobotoolbox.org/x/VF7qdmTN | Any |
 | GBV Case | spondon_gbv_v1 | https://ee.kobotoolbox.org/x/v9gd1IPa | Trained counsellor only |
 
