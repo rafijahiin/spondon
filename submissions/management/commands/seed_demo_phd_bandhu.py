@@ -104,10 +104,27 @@ class Command(BaseCommand):
 
     def handle(self, *args, **opts):
         if opts['purge']:
+            # Submissions: only DEMO-prefixed kobo_id rows.
             n_sub, _ = KoboSubmission.objects.filter(kobo_id__startswith='DEMO-').delete()
-            n_ctr, _ = ServiceCenter.objects.filter(
-                organisation__in=('PHD', 'Bandhu'),
-            ).exclude(code__in=('PHDDEMO', 'BANDEMO')).delete()
+
+            # Centres: only the ones MY seed created. Codes are prefixed
+            # PHD-... or BANDHU-... (set when this command writes). Real
+            # seed_centers rows (e.g. "PHD Brothel 01", "Bandhu DIC Dhaka")
+            # don't carry this prefix and may have FK-protected children
+            # like OutreachSession; never touch them.
+            from django.db.models import Q
+            demo_centres = ServiceCenter.objects.filter(
+                Q(code__startswith='PHD-') | Q(code__startswith='BANDHU-'),
+            )
+            n_ctr = 0
+            for sc in demo_centres:
+                try:
+                    sc.delete()
+                    n_ctr += 1
+                except Exception as exc:  # FK-protected children
+                    self.stdout.write(self.style.WARNING(
+                        f'  skipped {sc.code} — protected child rows ({exc.__class__.__name__})'
+                    ))
             self.stdout.write(self.style.WARNING(
                 f'Purged {n_sub} demo submissions, {n_ctr} demo centres.'
             ))
