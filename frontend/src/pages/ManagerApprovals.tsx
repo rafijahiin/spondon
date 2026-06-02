@@ -7,7 +7,7 @@
  */
 import { useState, useEffect, useCallback } from 'react'
 import {
-  X, Check, AlertTriangle,
+  X, Check, AlertTriangle, FileText,
 } from 'lucide-react'
 import { useReducedMotion } from 'motion/react'
 import { useTranslation } from 'react-i18next'
@@ -110,6 +110,9 @@ interface QueueItem {
   submitted_by: string
   created_at: string
   kobo_submission_id?: string
+  // Human-readable Kobo form name (e.g. "Fistula Campaign") so the manager
+  // sees exactly which form they're approving, not a raw slug.
+  form_type_display?: string
   kind: 'program' | 'legacy'
   urgent?: boolean
   latitude?: string
@@ -149,16 +152,18 @@ function toQueueItems(programsData: ProgramPendingResponse | null, submissions: 
   // Legacy submissions (pending only)
   if (submissions) {
     for (const s of submissions.filter(s => s.status === 'pending')) {
+      const formName = s.form_type_display || s.form_type.replace(/_/g, ' ')
       items.push({
         id: s.id,
         model_type: s.form_type,
-        model_label: s.form_type.replace(/_/g, ' '),
-        title: `${s.form_type.replace(/_/g, ' ')} — ${s.worker_name}`,
-        summary: `${s.worker_name} submitted ${s.form_type.replace(/_/g, ' ')} from ${s.district}`,
+        model_label: formName,
+        title: `${formName} — ${s.worker_name}`,
+        summary: `${s.worker_name} submitted the ${formName} form from ${s.district}`,
         organisation: s.partner ?? '',
         center_name: s.district ?? '',
         submitted_by: s.worker_name ?? '',
         created_at: s.submitted_at,
+        form_type_display: formName,
         kind: 'legacy',
         latitude: s.latitude?.toString(),
         longitude: s.longitude?.toString(),
@@ -178,21 +183,25 @@ function reviewedQueueItems(submissions: Submission[] | null): QueueItem[] {
   return submissions
     .slice()
     .sort((a, b) => (b.reviewed_at ?? '').localeCompare(a.reviewed_at ?? ''))
-    .map(s => ({
+    .map(s => {
+      const formName = s.form_type_display || s.form_type.replace(/_/g, ' ')
+      return {
       id: s.id,
       model_type: s.form_type,
-      model_label: s.form_type.replace(/_/g, ' '),
-      title: `${s.form_type.replace(/_/g, ' ')} — ${s.worker_name}`,
+      model_label: formName,
+      title: `${formName} — ${s.worker_name}`,
       summary: `${s.status_display} by ${s.reviewed_by?.full_name ?? 'manager'}`,
       organisation: s.partner ?? '',
       center_name: s.district ?? '',
       submitted_by: s.worker_name ?? '',
       created_at: s.submitted_at,
+      form_type_display: formName,
       kind: 'legacy' as const,
       latitude: s.latitude?.toString(),
       longitude: s.longitude?.toString(),
       logic_flags: Array.isArray((s as any).logic_flags) ? (s as any).logic_flags : [],
-    }))
+    }
+    })
 }
 
 // ─── Toast ────────────────────────────────────────────────────────────────────
@@ -585,6 +594,25 @@ export default function ManagerApprovals() {
                     <p className="hero-lede" style={{ marginTop: 12, maxWidth: 720 }}>
                       {selected.summary}
                     </p>
+                    {/* Which Kobo form is being approved — the manager must
+                        see the form name + its KoboToolbox id, read-only. */}
+                    {selected.kind === 'legacy' && (
+                      <div style={{
+                        marginTop: 14, display: 'inline-flex', alignItems: 'center', gap: 10,
+                        padding: '8px 14px', borderRadius: 10,
+                        background: 'var(--surface-2)', border: '1px solid var(--hair)',
+                      }}>
+                        <FileText size={14} style={{ color: 'var(--unfpa)' }} />
+                        <span style={{ fontSize: 13, color: 'var(--ink)', fontWeight: 600 }}>
+                          {selected.form_type_display || selected.model_label}
+                        </span>
+                        {Boolean(detail?.raw_data?._xform_id_string) && (
+                          <span className="mono mute" style={{ fontSize: 11 }}>
+                            · {String(detail!.raw_data._xform_id_string)}
+                          </span>
+                        )}
+                      </div>
+                    )}
                     {/* Animesh's baseline duplication warning — yellow card
                         when an earlier baseline from same place+day already
                         exists. Manager can still approve, but is forced to
