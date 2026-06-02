@@ -258,6 +258,11 @@ class FistulaCornerCase(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     case_hash = models.CharField(max_length=30, unique=True, blank=True, db_index=True)
 
+    # Auto-ID from KF-Fistula_Staged form. One patient → one row; subsequent
+    # stage submissions look up by this patient_id and UPDATE the existing
+    # row instead of creating a new one. Format: DISTRICT-YYYY-<6char>.
+    patient_id = models.CharField(max_length=50, blank=True, db_index=True)
+
     submission = models.OneToOneField(
         'submissions.KoboSubmission',
         null=True, blank=True,
