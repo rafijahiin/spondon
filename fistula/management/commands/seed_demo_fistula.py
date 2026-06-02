@@ -1,0 +1,133 @@
+"""Seed demo Fistula Corner cases + Mass Campaign visits for the CIPRB
+dashboard. Idempotent; --purge removes only DEMO-* rows.
+"""
+import datetime
+import random
+import uuid
+
+from django.core.management.base import BaseCommand
+from django.utils import timezone
+
+from fistula.models import FistulaCornerCase, FistulaCampaign
+
+
+DISTRICTS = [
+    ('Sunamganj',   18),
+    ('Sherpur',     14),
+    ('Bhola',       12),
+    ('Khagrachari', 10),
+    ('Noakhali',    11),
+    ('Chandpur',     8),
+    ('Gaibandha',    6),
+]
+
+CAUSES_KOBO = [
+    'Prolonged/Obstructed Labour',
+    'Prolonged/Obstructed Labour',
+    'Prolonged/Obstructed Labour',
+    'Early Marriage/Adolescent Pregnancy',
+    'Unsafe Abortion',
+    'Surgical Injury',
+    'Surgical Injury',
+    'Gender-Based Violence',
+    'Unknown',
+]
+
+CAMPAIGN_DISTRICTS = ['Sunamganj', 'Sherpur', 'Bhola', 'Khagrachari']
+
+
+class Command(BaseCommand):
+    help = 'Seed demo Fistula Corner cases + Mass Campaign visits.'
+
+    def add_arguments(self, parser):
+        parser.add_argument('--purge', action='store_true')
+
+    def handle(self, *args, **opts):
+        if opts['purge']:
+            n1, _ = FistulaCornerCase.objects.filter(case_hash__startswith='DEMO-').delete()
+            n2, _ = FistulaCampaign.objects.filter(case_hash__startswith='DEMO-').delete()
+            self.stdout.write(self.style.WARNING(f'Purged {n1} corner cases, {n2} campaign visits.'))
+            return
+
+        rng = random.Random(20260603)
+        today = timezone.now().date()
+        created_c = skipped_c = 0
+        created_v = skipped_v = 0
+
+        # ----- Corner cases (clinical / facility walk-ins) -----
+        for district, count in DISTRICTS:
+            for i in range(count):
+                ch = f'DEMO-FC-{district[:6]}-{i:03d}'
+                if FistulaCornerCase.objects.filter(case_hash=ch).exists():
+                    skipped_c += 1
+                    continue
+                diag_offset = rng.randint(5, 150)
+                susp_offset = diag_offset + rng.randint(7, 30)
+                ftype = rng.choices(
+                    [FistulaCornerCase.VVF, FistulaCornerCase.RVF, FistulaCornerCase.BOTH, FistulaCornerCase.OTHER],
+                    weights=[70, 12, 10, 8],
+                )[0]
+                cause = rng.choice(CAUSES_KOBO)
+                surgery = rng.choices(
+                    [FistulaCornerCase.SURGERY_YES, FistulaCornerCase.SURGERY_NO, FistulaCornerCase.SURGERY_PENDING],
+                    weights=[55, 15, 30],
+                )[0]
+                FistulaCornerCase.objects.create(
+                    case_hash=ch,
+                    source='demo_seed',
+                    district=district,
+                    upazila='Sadar',
+                    age_years=rng.randint(18, 55),
+                    suspected_date=today - datetime.timedelta(days=susp_offset),
+                    identification_date=today - datetime.timedelta(days=susp_offset - 5),
+                    diagnosis_date=today - datetime.timedelta(days=diag_offset),
+                    fistula_type=ftype,
+                    fistula_cause=cause,
+                    surgery_performed=surgery,
+                    referral_date=today - datetime.timedelta(days=max(1, diag_offset - 3)) if surgery != FistulaCornerCase.SURGERY_NO else None,
+                    referral_place='Dhaka Medical College Fistula Centre',
+                )
+                created_c += 1
+
+        # ----- Campaign visits (community house-to-house screening) -----
+        # 2-3 visits per campaign district, spread across recent months.
+        for district in CAMPAIGN_DISTRICTS:
+            n_visits = rng.randint(2, 4)
+            for i in range(n_visits):
+                ch = f'DEMO-CV-{district[:6]}-{i:02d}'
+                if FistulaCampaign.objects.filter(case_hash=ch).exists():
+                    skipped_v += 1
+                    continue
+                households = rng.randint(80, 220)
+                population = households * rng.randint(4, 6)
+                screened = rng.randint(40, 120)
+                suspected = rng.randint(2, 8)
+                confirmed = rng.randint(1, max(1, suspected - 1))
+                FistulaCampaign.objects.create(
+                    case_hash=ch,
+                    partner='CIPRB',
+                    district=district,
+                    upazila='Sadar',
+                    campaign_date=today - datetime.timedelta(days=rng.randint(10, 140)),
+                    households_visited=households,
+                    population_covered=population,
+                    women_screened=screened,
+                    women_reached_awareness=screened * 2,
+                    men_reached_awareness=rng.randint(30, 80),
+                    community_sessions=rng.randint(1, 4),
+                    suspected_fistula_cases=suspected,
+                    confirmed_fistula_cases=confirmed,
+                    new_cases=confirmed,
+                    cases_referred=confirmed,
+                    cases_accepted_referral=max(0, confirmed - rng.randint(0, 1)),
+                    cases_reached_facility=max(0, confirmed - rng.randint(0, 2)),
+                    cases_surgery_completed=max(0, confirmed - rng.randint(1, 2)),
+                    cases_followup_completed=rng.randint(0, max(1, confirmed - 1)),
+                    cases_counselling_provided=screened,
+                )
+                created_v += 1
+
+        self.stdout.write(self.style.SUCCESS(
+            f'Corner cases: {created_c} created, {skipped_c} skipped. '
+            f'Campaign visits: {created_v} created, {skipped_v} skipped.'
+        ))

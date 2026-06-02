@@ -36,4 +36,4 @@ EXPOSE 8080
 #         b. Redeploy. The seed runs once.
 #         c. Unset SEED_DB. Subsequent deploys do not reseed.
 #   3. gunicorn — long-running web server.
-CMD ["sh", "-c", "python manage.py migrate --noinput && python manage.py seed_users && python manage.py seed_centers && python manage.py seed_demo_mpdsr && python manage.py seed_demo_phd_bandhu && gunicorn spondon.wsgi --bind 0.0.0.0:$PORT --workers 2 --timeout 120"]
+CMD ["sh", "-c", "python manage.py migrate --noinput && python manage.py seed_users && python manage.py seed_centers && python manage.py seed_demo_mpdsr && python manage.py seed_demo_phd_bandhu && python manage.py seed_demo_fistula && gunicorn spondon.wsgi --bind 0.0.0.0:$PORT --workers 2 --timeout 120"]
