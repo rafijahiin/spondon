@@ -593,36 +593,54 @@ function ResponsePlanTracker({ summaries }: { summaries: ActionPlanSummary[] }) 
         </p>
       </div>
 
-      {/* Data-note banner — explains that executed-activity counts are still
-          placeholder values until a Kobo field-form is wired in. Soft amber
-          tint on cream with a status-mid left border. UNFPA 14px minimum. */}
-      <div
-        role="note"
-        style={{
-          display: 'flex', gap: 12, alignItems: 'flex-start',
-          padding: '12px 14px',
-          marginBottom: 14,
-          background: 'rgba(249, 96, 0, 0.06)',
-          borderLeft: '3px solid var(--status-mid, #AE4300)',
-          borderRadius: 6,
-        }}
-      >
-        <AlertTriangle size={18} style={{ color: 'var(--status-mid, #AE4300)', flexShrink: 0, marginTop: 1 }} />
-        <div style={{ flex: 1 }}>
+      {/* OVERALL IMPLEMENTATION summary tile — Animesh's accountability ask
+          (2026-06-02 spec): if 10 actions planned and 6 implemented, show
+          60%. Aggregates across every row in the table below. */}
+      {summaries.length > 0 && (() => {
+        const totalPlanned = summaries.reduce((s, x) => s + (x.activities_planned ?? 0), 0)
+        const totalImpl = summaries.reduce((s, x) => s + (x.activities_implemented ?? 0), 0)
+        const overallPct = totalPlanned > 0 ? Math.round((totalImpl / totalPlanned) * 100) : 0
+        const overallColor = colorFor(overallPct)
+        return (
           <div
-            className="mono"
+            className="card"
             style={{
-              fontSize: 10, color: 'var(--status-mid, #AE4300)',
-              letterSpacing: '0.08em', fontWeight: 700, marginBottom: 4,
+              padding: '16px 22px',
+              marginBottom: 14,
+              display: 'flex', alignItems: 'center', gap: 18,
+              borderLeft: `4px solid ${overallColor}`,
             }}
           >
-            {t('mpdsrViz.responseDataNoteKicker')}
+            <div style={{
+              flex: 1,
+            }}>
+              <div className="mono" style={{
+                fontSize: 10, color: 'var(--muted)',
+                letterSpacing: '0.08em', fontWeight: 700, marginBottom: 4,
+              }}>
+                OVERALL IMPLEMENTATION
+              </div>
+              <div style={{ fontSize: 13.5, color: 'var(--ink-2)' }}>
+                <b style={{ color: 'var(--ink)', fontVariantNumeric: 'tabular-nums' }}>
+                  {totalImpl}
+                </b>
+                {' of '}
+                <b style={{ color: 'var(--ink)', fontVariantNumeric: 'tabular-nums' }}>
+                  {totalPlanned}
+                </b>
+                {' actions implemented across all districts'}
+              </div>
+            </div>
+            <div style={{
+              fontSize: 34, fontWeight: 800, color: overallColor,
+              fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em',
+              lineHeight: 1,
+            }}>
+              {overallPct}%
+            </div>
           </div>
-          <div style={{ fontSize: 14, color: 'var(--ink-2)', lineHeight: 1.5 }}>
-            {t('mpdsrViz.responseDataNoteBody')}
-          </div>
-        </div>
-      </div>
+        )
+      })()}
 
       <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
         <table className="tbl">
