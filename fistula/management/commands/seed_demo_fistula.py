@@ -82,6 +82,17 @@ class Command(BaseCommand):
                 # ~50% of operated patients as rehabilitated to give the
                 # tile a meaningful 30–50% value on screen.
                 operated = surgery == FistulaCornerCase.SURGERY_YES
+                # Surgical outcome — only meaningful for operated cases.
+                # ~68% dry, ~22% not-dry, ~10% failed (typical fistula-repair
+                # success profile). Dashboard reports the two successful ones.
+                surgery_outcome = ''
+                if operated:
+                    surgery_outcome = rng.choices(
+                        [FistulaCornerCase.OUTCOME_DRY,
+                         FistulaCornerCase.OUTCOME_NOT_DRY,
+                         FistulaCornerCase.OUTCOME_FAILED],
+                        weights=[68, 22, 10],
+                    )[0]
                 rehabbed = operated and rng.random() < 0.55
                 support_options = [
                     'Cash', 'Training', 'Psychosocial support',
@@ -104,6 +115,7 @@ class Command(BaseCommand):
                     fistula_type=ftype,
                     fistula_cause=cause,
                     surgery_performed=surgery,
+                    surgery_outcome=surgery_outcome,
                     referral_date=today - datetime.timedelta(days=max(1, diag_offset - 3)) if surgery != FistulaCornerCase.SURGERY_NO else None,
                     referral_place='Dhaka Medical College Fistula Centre',
                     received_rehab_support=rehabbed,

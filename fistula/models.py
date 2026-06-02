@@ -255,6 +255,19 @@ class FistulaCornerCase(models.Model):
         (SURGERY_PENDING, 'Pending'),
     ]
 
+    # Surgical outcome category (Animesh's spec / GoB Fistula form):
+    # Successful and dry / Successful and not dry / Failed.
+    # Dashboard reports the two "successful" categories; Failed tracked
+    # but de-emphasised per Animesh + Sayed's reporting decision.
+    OUTCOME_DRY = 'success_dry'
+    OUTCOME_NOT_DRY = 'success_not_dry'
+    OUTCOME_FAILED = 'failed'
+    OUTCOME_CHOICES = [
+        (OUTCOME_DRY,     'Successfully repaired and dry'),
+        (OUTCOME_NOT_DRY, 'Successfully repaired but not dry'),
+        (OUTCOME_FAILED,  'Failed'),
+    ]
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     case_hash = models.CharField(max_length=30, unique=True, blank=True, db_index=True)
 
@@ -316,6 +329,10 @@ class FistulaCornerCase(models.Model):
     referral_place    = models.CharField(max_length=200, blank=True)
     surgery_performed = models.CharField(
         max_length=10, choices=SURGERY_CHOICES, blank=True,
+    )
+    surgery_outcome = models.CharField(
+        max_length=20, choices=OUTCOME_CHOICES, blank=True, db_index=True,
+        help_text='Clinical outcome for repaired cases: dry / not-dry / failed.',
     )
     referral_outcome  = models.TextField(blank=True)
 

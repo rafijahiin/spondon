@@ -344,6 +344,14 @@ class MPDSRFacilityCount(models.Model):
     period = models.CharField(max_length=20, default='2026', db_index=True,
                               help_text='Reporting period, e.g. "2026" or "2026-Q1"')
 
+    # CDN = Community Death Notification (per MPDSR Report 2026 columns:
+    # CDN / VA / SA / FDN / FDR per death type). Animesh's spec wants
+    # notifications "visibly separated by Community level and Facility level"
+    # — CDN is the community level, FDN is the facility level.
+    cdn_md = models.PositiveIntegerField(default=0)
+    cdn_nd = models.PositiveIntegerField(default=0)
+    cdn_sb = models.PositiveIntegerField(default=0)
+
     fdn_md = models.PositiveIntegerField(default=0)
     fdn_nd = models.PositiveIntegerField(default=0)
     fdn_sb = models.PositiveIntegerField(default=0)
@@ -388,6 +396,12 @@ class MPDSRActionPlanSummary(models.Model):
                                                    help_text='Number of follow-up meetings planned')
     activities_planned = models.PositiveIntegerField(default=0)
     activities_implemented = models.PositiveIntegerField(default=0)
+
+    # Per-action detail for the full accountability matrix (Animesh's spec:
+    # Date / Action / Timeline / Responsible / Indicator / Milestone /
+    # Remarks / Implementation Status). List of dicts, one per action.
+    # Drives the expandable matrix + deadline-based green/red colouring.
+    actions = models.JSONField(default=list, blank=True)
 
     source = models.CharField(max_length=40, default='excel_action_plan_2026', db_index=True)
     imported_at = models.DateTimeField(auto_now=True)

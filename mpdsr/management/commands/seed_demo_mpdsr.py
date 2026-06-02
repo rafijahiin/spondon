@@ -11,7 +11,7 @@ from django.utils import timezone
 
 from mpdsr.models import (
     MPDSRCase, DeathType, PlaceOfDeath, ReviewStatus,
-    MPDSRDistrictDenominator, MPDSRFacilityCount,
+    MPDSRDistrictDenominator, MPDSRFacilityCount, MPDSRActionPlanSummary,
 )
 
 
@@ -84,7 +84,10 @@ class Command(BaseCommand):
     def handle(self, *args, **opts):
         if opts['purge']:
             n, _ = MPDSRCase.objects.filter(case_hash__startswith='DEMO-').delete()
-            self.stdout.write(self.style.WARNING(f'Purged {n} demo MPDSR rows.'))
+            ap, _ = MPDSRActionPlanSummary.objects.filter(source='demo_response_plan').delete()
+            self.stdout.write(self.style.WARNING(
+                f'Purged {n} demo MPDSR rows, {ap} demo response plans.'
+            ))
             # Denominators + facility counts are idempotent upserts keyed by
             # district; leave them (they carry no DEMO- prefix and are the
             # canonical Project Deaths 2026 figures).
@@ -123,7 +126,12 @@ class Command(BaseCommand):
                 facility_name=f'{district} District Hospital',
                 period='2026',
                 defaults={
+                    # Community Death Notifications (CDN) — community level
+                    'cdn_md': int(md * 0.6), 'cdn_nd': int(nd * 0.55),
+                    'cdn_sb': int(nd * 0.7),
+                    # Facility Death Notifications (FDN) — facility level
                     'fdn_md': md, 'fdn_nd': nd, 'fdn_sb': int(nd * 1.2),
+                    # Facility Death Reviews (FDR)
                     'fdr_md': int(md * 0.35), 'fdr_nd': int(nd * 0.9),
                     'fdr_sb': int(nd * 0.5),
                 },
@@ -132,6 +140,66 @@ class Command(BaseCommand):
                 fac_n += 1
         self.stdout.write(self.style.SUCCESS(
             f'Facility counts upserted ({len(DEMO_PROFILE)} districts, {fac_n} new).'
+        ))
+
+        # ── Response Plan action matrix (Animesh's accountability tool) ──
+        # Each district meeting carries a full per-action list with the 7
+        # spec fields. Statuses + timelines are mixed so the deadline-based
+        # green/red colouring has something to show.
+        ACTION_TEMPLATES = [
+            ('MPDSR System Strengthening', 'Refresher training for FWAs and HAs', 'UH&FPO',
+             'implemented', -20, '% staff trained', 'All FWAs trained'),
+            ('MPDSR System Strengthening', 'Ensure death notification within 24h', 'RMO',
+             'implemented', -10, 'Notification timeliness', '90% within 24h'),
+            ('Community Verbal Autopsy', 'Strengthen community SBCC on danger signs', 'HI',
+             'in_progress', 8, 'Sessions conducted', '12 sessions/quarter'),
+            ('Community Verbal Autopsy', 'Engage union council on transport fund', 'UH&FPO',
+             'pending', -5, 'Transport fund active', 'Fund operational'),
+            ('Facility Death Review', 'Review and update facility SOPs', 'RMO',
+             'delayed', -15, 'SOPs updated', 'All SOPs current'),
+            ('Facility Death Review', 'Establish blood transfusion readiness', 'CS',
+             'implemented', -3, 'Blood available 24/7', 'Zero stock-outs'),
+        ]
+        ap_n = 0
+        # Use first 4 districts for response-plan meetings
+        rp_districts = list(DEMO_PROFILE.keys())[:4]
+        for di, district in enumerate(rp_districts):
+            actions = []
+            n_actions = 4 + (di % 3)  # 4–6 actions per meeting
+            implemented = 0
+            for ai in range(n_actions):
+                sec, act, resp, status, days, indicator, milestone = ACTION_TEMPLATES[ai % len(ACTION_TEMPLATES)]
+                timeline = (today + datetime.timedelta(days=days)).isoformat()
+                actions.append({
+                    'section': sec,
+                    'action': act,
+                    'responsible': resp,
+                    'timeline': timeline,
+                    'indicator': indicator,
+                    'milestone': milestone,
+                    'considerations': 'Demo seed',
+                    'status': status,
+                })
+                if status == 'implemented':
+                    implemented += 1
+            _, was_new = MPDSRActionPlanSummary.objects.update_or_create(
+                district=district,
+                level='DM',
+                meeting_date=(today - datetime.timedelta(days=30 + di)).isoformat(),
+                defaults={
+                    'place_of_meeting': f'{district} Civil Surgeon Office',
+                    'participants': 12 + di,
+                    'meetings_planned': 1,
+                    'activities_planned': n_actions,
+                    'activities_implemented': implemented,
+                    'actions': actions,
+                    'source': 'demo_response_plan',
+                },
+            )
+            if was_new:
+                ap_n += 1
+        self.stdout.write(self.style.SUCCESS(
+            f'Response plan meetings upserted ({len(rp_districts)} districts, {ap_n} new).'
         ))
 
         for district, prof in DEMO_PROFILE.items():

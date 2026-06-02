@@ -14,7 +14,7 @@
  * Each block answers a programmatic question in one glance — no Excel-like
  * tables, no raw-number sprawl.
  */
-import { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, Tooltip,
@@ -28,14 +28,24 @@ import type { MPDSRCase } from '@/types/index'
 // ─── Aggregates fetched from /api/mpdsr/aggregates/ ─────────────────────────
 
 interface FacilityTotals {
+  cdn_md?: number; cdn_nd?: number; cdn_sb?: number
   fdn_md: number; fdn_nd: number; fdn_sb: number
   fdr_md: number; fdr_nd: number; fdr_sb: number
+}
+
+interface LevelSplit { community: number; facility: number }
+interface NotificationByLevel { md: LevelSplit; nd: LevelSplit; sb: LevelSplit }
+
+interface ActionItem {
+  section?: string; action?: string; responsible?: string; timeline?: string
+  indicator?: string; milestone?: string; considerations?: string; status?: string
 }
 
 interface ActionPlanSummary {
   district: string; level: 'DM' | 'UM'
   place_of_meeting: string; meeting_date: string
   participants: number | null
+  actions?: ActionItem[]
   meetings_planned: number; activities_planned: number; activities_implemented: number
   completion_pct: number
 }
@@ -65,6 +75,7 @@ interface AggregatesPayload {
   denominators: DistrictDenominator[]
   facility_counts: any[]
   facility_totals: FacilityTotals
+  notification_by_level?: NotificationByLevel
   action_plan_summaries: ActionPlanSummary[]
   totals: { mpdsr_cases: number; fistula_corner_cases: number; fistula_campaign_visits: number }
   review_counts?: ReviewCounts
@@ -121,12 +132,13 @@ function computeNotifyVsReview(cases: MPDSRCase[]): NotifyVsReviewData {
 }
 
 function NotifyVsReview({
-  cases, totals, denominators, reviewCounts,
+  cases, totals, denominators, reviewCounts, notificationByLevel,
 }: {
   cases: MPDSRCase[]
   totals: FacilityTotals | null
   denominators: DistrictDenominator[]
   reviewCounts: ReviewCounts | null
+  notificationByLevel: NotificationByLevel | null
 }) {
   const { t } = useTranslation()
   const live = useMemo(() => computeNotifyVsReview(cases), [cases])
@@ -137,13 +149,15 @@ function NotifyVsReview({
   const d = totals ? {
     notifiedMD: totals.fdn_md, reviewedMD: totals.fdr_md,
     notifiedND: totals.fdn_nd, reviewedND: totals.fdr_nd,
-  } : live
+    notifiedSB: totals.fdn_sb,
+  } : { ...live, notifiedSB: 0 }
 
   // Estimated maternal/neonatal/stillbirth deaths across all districts —
   // the denominator Animesh asked for to compute the REPORTING RATE
   // (notified / estimated) per Sayeed's 'Project Deaths 2026' column.
   const estimatedMD = denominators.reduce((s, x) => s + (x.project_deaths_md ?? 0), 0)
   const estimatedND = denominators.reduce((s, x) => s + (x.project_deaths_nd ?? 0), 0)
+  const estimatedSB = denominators.reduce((s, x) => s + (x.project_deaths_sb ?? 0), 0)
 
   const chartData = [
     { category: t('mpdsrViz.maternalDeaths'), notified: d.notifiedMD, reviewed: d.reviewedMD },
@@ -154,6 +168,7 @@ function NotifyVsReview({
   const reviewRateND = d.notifiedND > 0 ? (d.reviewedND / d.notifiedND) * 100 : 0
   const reportingRateMD = estimatedMD > 0 ? (d.notifiedMD / estimatedMD) * 100 : null
   const reportingRateND = estimatedND > 0 ? (d.notifiedND / estimatedND) * 100 : null
+  const reportingRateSB = estimatedSB > 0 ? (d.notifiedSB / estimatedSB) * 100 : null
 
   return (
     <div>
@@ -171,77 +186,72 @@ function NotifyVsReview({
       </div>
 
       <div className="card" style={{ padding: 24 }}>
-        {/* Reporting rate tiles — uses Sayeed's Project Deaths 2026 denominators */}
-        {(reportingRateMD !== null || reportingRateND !== null) && (
-          <div style={{
-            display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 18,
-            marginBottom: 18,
-            paddingBottom: 18,
-            borderBottom: '1px solid var(--hair)',
-          }}>
+        {/* Reporting-rate tiles — MD / ND / SB (notified ÷ estimated).
+            Denominators from Sayeed's Project Deaths 2026. */}
+        {(() => {
+          const FORMULA = (
+            'MD = (Live Birth × 136) / 100,000\n' +
+            'ND = (Live Birth × 20) / 1,000\n' +
+            'SB = (Live Birth × 21) / 1,000\n\n' +
+            "Source: Sayed's MPDSR M&E Framework (email 2 Jun 2026).\n" +
+            'Decimals come from per-upazila Live Birth counts × ratio; rounded for display.'
+          )
+          const rateTile = (label: string, rate: number | null, reported: number, estimated: number) => (
             <div>
               <div className="mono" style={{ fontSize: 9.5, color: 'var(--muted)', letterSpacing: '0.08em', marginBottom: 4 }}>
-                {t('mpdsrViz.mdReportingRate')}
+                {label}
               </div>
-              <div style={{
-                fontSize: 28, fontWeight: 800, color: '#AE4300',
-                fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em', lineHeight: 1,
-              }}>
-                {reportingRateMD !== null ? `${reportingRateMD.toFixed(0)}%` : '—'}
+              <div style={{ fontSize: 28, fontWeight: 800, color: '#AE4300', fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em', lineHeight: 1 }}>
+                {rate !== null ? `${rate.toFixed(0)}%` : '—'}
               </div>
               <div style={{ fontSize: 11.5, color: 'var(--ink-3)', marginTop: 4, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                {t('mpdsrViz.reportedOfEstimated', { reported: d.notifiedMD, estimated: Math.round(estimatedMD) })}
-                <span
-                  title={
-                    'MD = (Live Birth × 136) / 100,000\n' +
-                    'ND = (Live Birth × 20) / 1,000\n' +
-                    'SB = (Live Birth × 21) / 1,000\n\n' +
-                    "Source: Sayed's MPDSR M&E Framework (email 2 Jun 2026).\n" +
-                    "Decimals come from per-upazila Live Birth counts × ratio;\n" +
-                    'rounded for display.'
-                  }
-                  style={{
-                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                    width: 14, height: 14, borderRadius: 999,
-                    background: 'var(--surface-3)', color: 'var(--muted)',
-                    fontSize: 9, fontWeight: 700, cursor: 'help',
-                    border: '1px solid var(--hair)',
-                  }}
-                  aria-label="Show denominator formula"
-                >i</span>
+                {reported} reported of {Math.round(estimated)} estimated
+                <span title={FORMULA} aria-label="Show denominator formula" style={{
+                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                  width: 14, height: 14, borderRadius: 999, background: 'var(--surface-3)',
+                  color: 'var(--muted)', fontSize: 9, fontWeight: 700, cursor: 'help',
+                  border: '1px solid var(--hair)',
+                }}>i</span>
               </div>
             </div>
-            <div>
-              <div className="mono" style={{ fontSize: 9.5, color: 'var(--muted)', letterSpacing: '0.08em', marginBottom: 4 }}>
-                {t('mpdsrViz.ndReportingRate')}
-              </div>
-              <div style={{
-                fontSize: 28, fontWeight: 800, color: '#AE4300',
-                fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em', lineHeight: 1,
-              }}>
-                {reportingRateND !== null ? `${reportingRateND.toFixed(0)}%` : '—'}
-              </div>
-              <div style={{ fontSize: 11.5, color: 'var(--ink-3)', marginTop: 4, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                {t('mpdsrViz.reportedOfEstimated', { reported: d.notifiedND, estimated: Math.round(estimatedND) })}
-                <span
-                  title={
-                    'MD = (Live Birth × 136) / 100,000\n' +
-                    'ND = (Live Birth × 20) / 1,000\n' +
-                    'SB = (Live Birth × 21) / 1,000\n\n' +
-                    "Source: Sayed's MPDSR M&E Framework (email 2 Jun 2026).\n" +
-                    "Decimals come from per-upazila Live Birth counts × ratio;\n" +
-                    'rounded for display.'
-                  }
-                  style={{
-                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                    width: 14, height: 14, borderRadius: 999,
-                    background: 'var(--surface-3)', color: 'var(--muted)',
-                    fontSize: 9, fontWeight: 700, cursor: 'help',
-                    border: '1px solid var(--hair)',
-                  }}
-                  aria-label="Show denominator formula"
-                >i</span>
-              </div>
+          )
+          return (reportingRateMD !== null || reportingRateND !== null || reportingRateSB !== null) ? (
+            <div style={{
+              display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 18,
+              marginBottom: 18, paddingBottom: 18, borderBottom: '1px solid var(--hair)',
+            }}>
+              {rateTile('MD REPORTING RATE', reportingRateMD, d.notifiedMD, estimatedMD)}
+              {rateTile('ND REPORTING RATE', reportingRateND, d.notifiedND, estimatedND)}
+              {rateTile('SB REPORTING RATE', reportingRateSB, d.notifiedSB, estimatedSB)}
+            </div>
+          ) : null
+        })()}
+
+        {/* Notification by level — Animesh: "separated by Community / Facility".
+            CDN = community death notification, FDN = facility death notification. */}
+        {notificationByLevel && (
+          <div style={{
+            marginBottom: 18, paddingBottom: 18, borderBottom: '1px solid var(--hair)',
+          }}>
+            <div className="mono" style={{ fontSize: 9.5, color: 'var(--muted)', letterSpacing: '0.08em', marginBottom: 10 }}>
+              NOTIFICATIONS BY LEVEL · COMMUNITY (CDN) vs FACILITY (FDN)
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 18 }}>
+              {([['Maternal (MD)', notificationByLevel.md], ['Neonatal (ND)', notificationByLevel.nd], ['Stillbirth (SB)', notificationByLevel.sb]] as const).map(([lbl, lv]) => (
+                <div key={lbl}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--ink-2)', marginBottom: 6 }}>{lbl}</div>
+                  <div style={{ display: 'flex', gap: 14 }}>
+                    <div>
+                      <div style={{ fontSize: 20, fontWeight: 800, color: CIPRB_BLUE, fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>{lv.community}</div>
+                      <div style={{ fontSize: 10.5, color: 'var(--muted)', marginTop: 2 }}>Community</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 20, fontWeight: 800, color: '#C44E00', fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>{lv.facility}</div>
+                      <div style={{ fontSize: 10.5, color: 'var(--muted)', marginTop: 2 }}>Facility</div>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         )}
@@ -594,6 +604,7 @@ function pascal(k: string): string {
 
 function ResponsePlanTracker({ summaries }: { summaries: ActionPlanSummary[] }) {
   const { t } = useTranslation()
+  const [expanded, setExpanded] = useState<number | null>(null)
   // Action Plan Progress ingestion is live — rows show per-district
   // planned-vs-executed counts with completion %. Bar colour reflects
   // completion health: green ≥ 75%, amber 40-74%, red < 40%.
@@ -601,6 +612,17 @@ function ResponsePlanTracker({ summaries }: { summaries: ActionPlanSummary[] }) 
     if (pct >= 75) return '#58968A'  // status-on
     if (pct >= 40) return '#AE4300'  // status-mid
     return '#F10F45'                 // status-off
+  }
+  // Per-action deadline-based status (Animesh's spec): implemented = green;
+  // past deadline & not implemented = red; otherwise (still within timeline)
+  // = amber/pending.
+  const today = new Date().toISOString().slice(0, 10)
+  const actionStatus = (a: ActionItem): { label: string; color: string } => {
+    const st = (a.status || '').toLowerCase()
+    if (st === 'implemented') return { label: 'Implemented', color: '#1A7A5A' }
+    const overdue = a.timeline && a.timeline < today
+    if (overdue) return { label: 'Overdue', color: '#F10F45' }
+    return { label: st === 'in_progress' ? 'In progress' : 'Pending', color: '#AE4300' }
   }
 
   return (
@@ -696,9 +718,21 @@ function ResponsePlanTracker({ summaries }: { summaries: ActionPlanSummary[] }) 
                   </div>
                 </td>
               </tr>
-            ) : summaries.map((s, i) => (
-              <tr key={`${s.district}-${s.level}-${i}`}>
-                <td style={{ fontWeight: 500, color: 'var(--ink)' }}>{s.district}</td>
+            ) : summaries.map((s, i) => {
+              const hasActions = (s.actions?.length ?? 0) > 0
+              const isOpen = expanded === i
+              return (
+              <React.Fragment key={`${s.district}-${s.level}-${i}`}>
+              <tr
+                onClick={() => hasActions && setExpanded(isOpen ? null : i)}
+                style={{ cursor: hasActions ? 'pointer' : 'default' }}
+              >
+                <td style={{ fontWeight: 500, color: 'var(--ink)' }}>
+                  {hasActions && (
+                    <span style={{ display: 'inline-block', width: 14, color: 'var(--muted)', transition: 'transform 150ms', transform: isOpen ? 'rotate(90deg)' : 'none' }}>▸</span>
+                  )}
+                  {s.district}
+                </td>
                 <td>
                   <span style={{
                     display: 'inline-block', padding: '2px 8px', borderRadius: 4,
@@ -737,7 +771,57 @@ function ResponsePlanTracker({ summaries }: { summaries: ActionPlanSummary[] }) 
                   </div>
                 </td>
               </tr>
-            ))}
+              {isOpen && hasActions && (
+                <tr>
+                  <td colSpan={6} style={{ padding: 0, background: 'var(--surface-2)' }}>
+                    <div style={{ padding: '12px 18px' }}>
+                      <div className="mono" style={{ fontSize: 9.5, color: 'var(--muted)', letterSpacing: '0.08em', marginBottom: 8 }}>
+                        ACTION ITEMS · {s.meeting_date || 'meeting date n/a'}
+                      </div>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                        <thead>
+                          <tr style={{ color: 'var(--muted)', textAlign: 'left' }}>
+                            <th style={{ padding: '4px 8px', fontWeight: 600 }}>Action</th>
+                            <th style={{ padding: '4px 8px', fontWeight: 600 }}>Responsible</th>
+                            <th style={{ padding: '4px 8px', fontWeight: 600 }}>Timeline</th>
+                            <th style={{ padding: '4px 8px', fontWeight: 600 }}>Indicator</th>
+                            <th style={{ padding: '4px 8px', fontWeight: 600 }}>Milestone</th>
+                            <th style={{ padding: '4px 8px', fontWeight: 600 }}>Status</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {s.actions!.map((a, ai) => {
+                            const st = actionStatus(a)
+                            return (
+                              <tr key={ai} style={{ borderTop: '1px solid var(--hair)' }}>
+                                <td style={{ padding: '6px 8px', color: 'var(--ink)' }}>{a.action || '—'}</td>
+                                <td style={{ padding: '6px 8px', color: 'var(--ink-3)' }}>{a.responsible || '—'}</td>
+                                <td style={{ padding: '6px 8px', color: 'var(--ink-3)', fontVariantNumeric: 'tabular-nums' }}>{a.timeline || '—'}</td>
+                                <td style={{ padding: '6px 8px', color: 'var(--ink-3)' }}>{a.indicator || '—'}</td>
+                                <td style={{ padding: '6px 8px', color: 'var(--ink-3)' }}>{a.milestone || '—'}</td>
+                                <td style={{ padding: '6px 8px' }}>
+                                  <span style={{
+                                    display: 'inline-flex', alignItems: 'center', gap: 5,
+                                    padding: '2px 9px', borderRadius: 999, fontSize: 11, fontWeight: 600,
+                                    color: st.color, background: `${st.color}1A`,
+                                    border: `1px solid ${st.color}40`,
+                                  }}>
+                                    <span style={{ width: 6, height: 6, borderRadius: 999, background: st.color }} />
+                                    {st.label}
+                                  </span>
+                                </td>
+                              </tr>
+                            )
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </td>
+                </tr>
+              )}
+              </React.Fragment>
+              )
+            })}
           </tbody>
         </table>
       </div>
@@ -878,6 +962,7 @@ export function MPDSRVisualizations({
           totals={agg?.facility_totals ?? null}
           denominators={agg?.denominators ?? []}
           reviewCounts={agg?.review_counts ?? null}
+          notificationByLevel={agg?.notification_by_level ?? null}
         />
         <DataSource>
           spondon_mpdsr_combined_v1 (F1 community + F2 facility notifications, F4 facility review, va_md community verbal autopsy, sa_md social autopsy) · Denominator: CIPRB Project Deaths 2026

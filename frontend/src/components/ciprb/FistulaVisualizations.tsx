@@ -13,7 +13,7 @@
  */
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Building2, MapPin, Home, Users, Search, Stethoscope, Send, ArrowRight, Scissors } from 'lucide-react'
+import { Building2, MapPin, Home, Users, Search, Stethoscope, Send, ArrowRight, Scissors, Megaphone } from 'lucide-react'
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts'
 import { api } from '@/api/client'
 import { DataSource } from '@/components/ui/DataSource'
@@ -28,6 +28,7 @@ interface CornerCase {
   referral_date?: string | null
   referral_outcome?: string
   surgery_performed?: 'yes' | 'no' | 'pending' | ''
+  surgery_outcome?: 'success_dry' | 'success_not_dry' | 'failed' | ''
   fistula_type?: string  // 'VVF' | 'RVF' | 'BOTH' | 'OTHER' | ''
   fistula_cause?: string // 'Surgical Injury' | 'Prolonged/Obstructed Labour' | etc.
 }
@@ -57,15 +58,22 @@ interface CampaignRollup {
 
 interface AggregateData {
   // Campaign reach
+  campaigns: number
   districts: number
   upazilas: number
   households: number
   population: number
+  campaignSuspected: number
+  campaignDiagnosed: number
   // Funnel (Animesh's 4-stage pipeline)
   suspected: number
   identified: number
   referred: number
   repaired: number
+  // Surgical outcome (Animesh's 3 categories; report the two successful)
+  outcomeDry: number
+  outcomeNotDry: number
+  outcomeFailed: number
   // Diagnosis pie (corner cases) — Animesh's exact 3 slices
   pieObstetric: number   // VVF → mapped to Obstetric Fistula
   pieIatrogenic: number  // pending — no 'cause' field on Kobo form yet; stays 0
@@ -74,8 +82,10 @@ interface AggregateData {
 }
 
 const EMPTY: AggregateData = {
-  districts: 0, upazilas: 0, households: 0, population: 0,
+  campaigns: 0, districts: 0, upazilas: 0, households: 0, population: 0,
+  campaignSuspected: 0, campaignDiagnosed: 0,
   suspected: 0, identified: 0, referred: 0, repaired: 0,
+  outcomeDry: 0, outcomeNotDry: 0, outcomeFailed: 0,
   pieObstetric: 0, pieIatrogenic: 0, pieOther: 0, piePending: 0,
 }
 
@@ -103,7 +113,7 @@ function useFistulaAggregates(
     Promise.allSettled([
       api.get<{ results?: CampaignVisit[] } | CampaignVisit[]>('/fistula/campaign-visits/', { params }),
       api.get<{ results?: CornerCase[]    } | CornerCase[]>('/fistula/corner-cases/', { params }),
-      api.get<{ results?: CampaignRollup[] } | CampaignRollup[]>('/fistula/campaigns/', { params }),
+      api.get<{ results?: CampaignRollup[] } | CampaignRollup[]>('/fistula/cases/', { params }),
     ]).then(([campaignRes, cornerRes, rollupRes]) => {
       if (cancelled) return
 
@@ -150,6 +160,11 @@ function useFistulaAggregates(
       }
       const households = rollups.reduce((s, r) => s + (r.households_visited ?? 0), 0)
       const population = rollups.reduce((s, r) => s + (r.population_covered ?? 0), 0)
+      // Campaign aggregate counts (Animesh's spec: # campaigns, suspected,
+      // diagnosed found during campaigns).
+      const campaigns = rollups.length
+      const campaignSuspected = rollups.reduce((s, r) => s + (r.suspected_fistula_cases ?? 0), 0)
+      const campaignDiagnosed = rollups.reduce((s, r) => s + (r.confirmed_fistula_cases ?? 0), 0)
 
       // Patient Funnel sources — fixed after audit:
       //   Suspected — from daily campaign roll-ups (CHWs noting suspected
@@ -163,6 +178,10 @@ function useFistulaAggregates(
       const identified = cornerFil.filter(c => c.identification_date || c.diagnosis_date).length
       const referred   = cornerFil.filter(c => c.referral_date || (c.referral_outcome ?? '').trim() !== '').length
       const repaired   = cornerFil.filter(c => c.surgery_performed === 'yes').length
+      // Surgical outcome categories (Animesh: dry / not-dry / failed)
+      const outcomeDry    = cornerFil.filter(c => c.surgery_outcome === 'success_dry').length
+      const outcomeNotDry = cornerFil.filter(c => c.surgery_outcome === 'success_not_dry').length
+      const outcomeFailed = cornerFil.filter(c => c.surgery_outcome === 'failed').length
 
       // Diagnosis pie — Animesh's exact three slices, classified from
       // the Kobo 'Cause of Fistula' radio (which DOES exist on the
@@ -209,14 +228,18 @@ function useFistulaAggregates(
       }
 
       setData({
+        campaigns,
         districts: allDistricts.size,
         upazilas: allUpazilas.size,
         households,
         population,
+        campaignSuspected,
+        campaignDiagnosed,
         suspected,
         identified,
         referred,
         repaired,
+        outcomeDry, outcomeNotDry, outcomeFailed,
         pieObstetric, pieIatrogenic, pieOther, piePending,
       })
     })
@@ -406,12 +429,15 @@ export function FistulaVisualizations({
           gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
           gap: 12,
         }}>
+          <MetricTile icon={<Megaphone  size={13} />} label="Campaigns"  value={agg.campaigns}  sub="Screening drives conducted" />
           <MetricTile icon={<MapPin     size={13} />} label={t('fistulaViz.districts')}  value={agg.districts}  sub={t('fistulaViz.districtsSub')} />
           <MetricTile icon={<Building2  size={13} />} label={t('fistulaViz.upazilas')}   value={agg.upazilas}   sub={t('fistulaViz.upazilasSub')} />
           <MetricTile icon={<Home       size={13} />} label={t('fistulaViz.households')} value={agg.households} sub={t('fistulaViz.householdsSub')} />
           <MetricTile icon={<Users      size={13} />} label={t('fistulaViz.population')} value={agg.population} sub={t('fistulaViz.populationSub')} />
+          <MetricTile icon={<Search      size={13} />} label="Suspected (campaign)" value={agg.campaignSuspected} sub="Suspected cases found" />
+          <MetricTile icon={<Stethoscope size={13} />} label="Diagnosed (campaign)" value={agg.campaignDiagnosed} sub="Confirmed during campaigns" />
         </div>
-        <DataSource>KF-Fistula_Campaign_Visit.xlsx (daily rollups: households_visited, population_covered, districts/upazilas covered)</DataSource>
+        <DataSource>KF-Fistula_Campaign_Visit.xlsx (daily rollups: campaigns, households, population, districts/upazilas, suspected + diagnosed cases)</DataSource>
       </div>
 
       {/* ─── 2. Patient Funnel ─── */}
@@ -454,6 +480,50 @@ export function FistulaVisualizations({
         </p>
         <DataSource>KF-Fistula_Campaign_Visit.xlsx (Suspected) · KF-Fistula_Corner.xlsx (Identified/Referred/Repaired)</DataSource>
       </div>
+
+      {/* ─── 2b. Surgical Outcome (Animesh's 3 categories) ─── */}
+      {(agg.outcomeDry + agg.outcomeNotDry + agg.outcomeFailed) > 0 && (
+        <div>
+          <div style={{ marginBottom: 14 }}>
+            <div className="kicker">
+              <span className="dot" style={{ background: CIPRB_BLUE }} />
+              SURGICAL OUTCOME · REPAIRED CASES
+            </div>
+            <h3 style={{ margin: '6px 0 2px', fontSize: 18, fontWeight: 700, color: 'var(--ink)' }}>
+              Surgical repair outcomes
+            </h3>
+            <p style={{ fontSize: 12.5, color: 'var(--muted)', margin: 0 }}>
+              Of all surgically repaired patients, the clinical outcome breakdown. Project reporting focuses on the two successful categories.
+            </p>
+          </div>
+          {(() => {
+            const total = agg.outcomeDry + agg.outcomeNotDry + agg.outcomeFailed
+            const pct = (n: number) => total > 0 ? Math.round((n / total) * 100) : 0
+            const card = (label: string, n: number, color: string, emphasis: boolean) => (
+              <div className="card" style={{
+                padding: '16px 18px', flex: '1 1 200px',
+                opacity: emphasis ? 1 : 0.7,
+              }}>
+                <div className="mono" style={{ fontSize: 10, color: 'var(--muted)', letterSpacing: '0.08em', fontWeight: 700, marginBottom: 6 }}>
+                  {label}
+                </div>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                  <span style={{ fontSize: 28, fontWeight: 800, color, fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>{n}</span>
+                  <span style={{ fontSize: 14, color: 'var(--ink-3)', fontVariantNumeric: 'tabular-nums' }}>{pct(n)}%</span>
+                </div>
+              </div>
+            )
+            return (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
+                {card('SUCCESSFULLY REPAIRED & DRY', agg.outcomeDry, '#1A7A5A', true)}
+                {card('SUCCESSFULLY REPAIRED, NOT DRY', agg.outcomeNotDry, '#F96000', true)}
+                {card('FAILED', agg.outcomeFailed, 'var(--muted)', false)}
+              </div>
+            )
+          })()}
+          <DataSource>KF-Fistula_Corner.xlsx · op_outcome field (Animesh + Sayed: report the two successful categories; Failed tracked but de-emphasised)</DataSource>
+        </div>
+      )}
 
       {/* ─── 3. Diagnosis Pie ─── */}
       <div>

@@ -10,6 +10,7 @@ class FistulaCampaignSerializer(serializers.ModelSerializer):
             'id', 'case_hash', 'partner',
             'district', 'upazila', 'union', 'village', 'facility_name', 'region',
             'campaign_date',
+            'households_visited', 'population_covered',
             'women_screened', 'women_reached_awareness', 'men_reached_awareness',
             'community_sessions',
             'suspected_fistula_cases', 'confirmed_fistula_cases',
@@ -62,7 +63,7 @@ class FistulaCornerCaseSerializer(serializers.ModelSerializer):
             # Provider
             'service_provider_name', 'service_provider_designation',
             # Referral
-            'referral_date', 'referral_place', 'surgery_performed', 'referral_outcome',
+            'referral_date', 'referral_place', 'surgery_performed', 'surgery_outcome', 'referral_outcome',
             # Rehabilitation (Animesh's definition: any support = rehabilitated)
             'received_rehab_support', 'rehab_support_types', 'rehab_support_date',
             # Remarks

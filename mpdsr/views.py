@@ -156,9 +156,20 @@ def mpdsr_aggregates(request):
         )
     )
     facility_totals = facility_qs.aggregate(
+        cdn_md=Sum('cdn_md'), cdn_nd=Sum('cdn_nd'), cdn_sb=Sum('cdn_sb'),
         fdn_md=Sum('fdn_md'), fdn_nd=Sum('fdn_nd'), fdn_sb=Sum('fdn_sb'),
         fdr_md=Sum('fdr_md'), fdr_nd=Sum('fdr_nd'), fdr_sb=Sum('fdr_sb'),
     )
+
+    # Notification by level (Animesh: "separated by Community / Facility").
+    # CDN = community death notification, FDN = facility death notification.
+    def _ft(k):
+        return int(facility_totals.get(k) or 0)
+    notification_by_level = {
+        'md': {'community': _ft('cdn_md'), 'facility': _ft('fdn_md')},
+        'nd': {'community': _ft('cdn_nd'), 'facility': _ft('fdn_nd')},
+        'sb': {'community': _ft('cdn_sb'), 'facility': _ft('fdn_sb')},
+    }
 
     action_plan_summaries = []
     for a in apply_donor(MPDSRActionPlanSummary.objects.all()):
@@ -172,6 +183,7 @@ def mpdsr_aggregates(request):
             'activities_planned': a.activities_planned,
             'activities_implemented': a.activities_implemented,
             'completion_pct': a.completion_pct,
+            'actions': a.actions or [],
         })
 
     # Exclude F3 / F6 stillbirth reviews from dashboard surface counts
@@ -201,6 +213,7 @@ def mpdsr_aggregates(request):
         'denominators': denominators,
         'facility_counts': facility_counts,
         'facility_totals': {k: int(v or 0) for k, v in facility_totals.items()},
+        'notification_by_level': notification_by_level,
         'action_plan_summaries': action_plan_summaries,
         'totals': totals,
         'review_counts': review_counts,

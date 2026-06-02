@@ -88,6 +88,9 @@ def _create_fistula_staged(submission):
             _set('fistula_type', 'cause_type', lambda v: v.title())
             _set('fistula_anatomy', 'fistula_anatomy', lambda v: v.upper())
             _set('fistula_cause', 'cause_iatrogenic')
+            # Surgical outcome category (dry / not-dry / failed) — the Kobo
+            # op_outcome values map 1:1 to FistulaCornerCase.OUTCOME_* codes.
+            _set('surgery_outcome', 'op_outcome')
         elif stage == 'rehabilitated':
             v = raw.get('rehab_received')
             if v == 'yes':
@@ -139,17 +142,33 @@ def _create_mpdsr_response_plan(submission):
         except (TypeError, ValueError):
             participants = None
 
-        SECTIONS = ('sys_strengthen', 'community_va', 'facility_dr')
+        SECTION_LABELS = {
+            'sys_strengthen': 'MPDSR System Strengthening',
+            'community_va': 'Community Verbal Autopsy',
+            'facility_dr': 'Facility Death Review',
+        }
         planned = 0
         implemented = 0
-        for sec in SECTIONS:
+        actions = []  # full per-action matrix for the dashboard
+        for sec, sec_label in SECTION_LABELS.items():
             for i in range(1, 6):
                 action = raw.get(f'{sec}_a{i}_action_taken')
+                if not (action and str(action).strip()):
+                    continue
                 status = (raw.get(f'{sec}_a{i}_status') or '').lower()
-                if action and str(action).strip():
-                    planned += 1
+                planned += 1
                 if status == 'implemented':
                     implemented += 1
+                actions.append({
+                    'section': sec_label,
+                    'action': str(action).strip(),
+                    'responsible': raw.get(f'{sec}_a{i}_responsible') or '',
+                    'timeline': raw.get(f'{sec}_a{i}_timeline') or '',
+                    'indicator': raw.get(f'{sec}_a{i}_indicator') or '',
+                    'milestone': raw.get(f'{sec}_a{i}_milestone') or '',
+                    'considerations': raw.get(f'{sec}_a{i}_considerations') or '',
+                    'status': status,
+                })
         if planned == 0:
             return
         md_str = meeting_date.isoformat() if meeting_date else ''
@@ -163,6 +182,7 @@ def _create_mpdsr_response_plan(submission):
                 'meetings_planned': 1,
                 'activities_planned': planned,
                 'activities_implemented': implemented,
+                'actions': actions,
                 'source': 'kobo_response_plan',
             },
         )
