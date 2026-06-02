@@ -89,7 +89,10 @@ BANDHU_PROFILE = {
 
 # Forms PHD/Bandhu actually submit day-to-day. ACTIVITY is the catch-all
 # FormType these all classify under (see submissions/views.py form_type router).
-DEMO_FORM_MIX = [FormType.ACTIVITY] * 9 + [FormType.FISTULA] * 1
+# Fistula is intentionally excluded — PHD/Bandhu don't run fistula programmes;
+# the webhook would otherwise auto-create empty FistulaCampaign rows that
+# pollute the CIPRB dashboard's Campaign Reach aggregate.
+DEMO_FORM_MIX = [FormType.ACTIVITY] * 10
 
 
 class Command(BaseCommand):
@@ -109,6 +112,15 @@ class Command(BaseCommand):
                 f'Purged {n_sub} demo submissions, {n_ctr} demo centres.'
             ))
             return
+
+        # Always clean up any leaked Fistula submissions from older seed runs
+        # (when DEMO_FORM_MIX included FISTULA the webhook auto-created empty
+        # FistulaCampaign rows that broke the Campaign Reach aggregate).
+        from fistula.models import FistulaCampaign
+        FistulaCampaign.objects.filter(
+            partner__in=('PHD', 'Bandhu'),
+            households_visited=0,
+        ).delete()
 
         rng = random.Random(20260602)
         now = timezone.now()

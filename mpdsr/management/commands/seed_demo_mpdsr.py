@@ -62,7 +62,9 @@ class Command(BaseCommand):
                 if MPDSRCase.objects.filter(case_hash=case_hash).exists():
                     skipped += 1
                     continue
-                dod = today - datetime.timedelta(days=rng.randint(1, 165))
+                dod = today - datetime.timedelta(
+                    days=rng.randint(0, 11) if rng.random() < 0.7 else rng.randint(12, 165)
+                )
                 MPDSRCase.objects.create(
                     case_hash=case_hash,
                     partner='CIPRB',
@@ -89,7 +91,9 @@ class Command(BaseCommand):
                 if MPDSRCase.objects.filter(case_hash=case_hash).exists():
                     skipped += 1
                     continue
-                dod = today - datetime.timedelta(days=rng.randint(1, 165))
+                dod = today - datetime.timedelta(
+                    days=rng.randint(0, 11) if rng.random() < 0.7 else rng.randint(12, 165)
+                )
                 MPDSRCase.objects.create(
                     case_hash=case_hash,
                     partner='CIPRB',

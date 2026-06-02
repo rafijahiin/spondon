@@ -61,7 +61,12 @@ class Command(BaseCommand):
                 if FistulaCornerCase.objects.filter(case_hash=ch).exists():
                     skipped_c += 1
                     continue
-                diag_offset = rng.randint(5, 150)
+                # 70% of cases inside the current Contract window (last 12 days),
+                # 30% spread further back so trend charts have shape.
+                if rng.random() < 0.7:
+                    diag_offset = rng.randint(0, 11)
+                else:
+                    diag_offset = rng.randint(12, 150)
                 susp_offset = diag_offset + rng.randint(7, 30)
                 ftype = rng.choices(
                     [FistulaCornerCase.VVF, FistulaCornerCase.RVF, FistulaCornerCase.BOTH, FistulaCornerCase.OTHER],
@@ -108,7 +113,9 @@ class Command(BaseCommand):
                     partner='CIPRB',
                     district=district,
                     upazila='Sadar',
-                    campaign_date=today - datetime.timedelta(days=rng.randint(10, 140)),
+                    campaign_date=today - datetime.timedelta(
+                        days=rng.randint(0, 10) if rng.random() < 0.7 else rng.randint(10, 140)
+                    ),
                     households_visited=households,
                     population_covered=population,
                     women_screened=screened,
