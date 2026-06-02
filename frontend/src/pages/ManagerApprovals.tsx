@@ -799,8 +799,9 @@ export default function ManagerApprovals() {
                           </div>
                         ))}
                     </div>
-                    {/* Deep verification: full raw submission incl. Kobo
-                        metadata (_id, _submission_time, _xform_id_string …). */}
+                    {/* Full record as a plain table (every field, incl. Kobo
+                        system fields) — a manager reads this like a spreadsheet,
+                        not raw JSON. */}
                     <button
                       onClick={() => setShowRaw(v => !v)}
                       style={{
@@ -809,18 +810,36 @@ export default function ManagerApprovals() {
                         padding: 0, fontFamily: 'var(--ui)',
                       }}
                     >
-                      {showRaw ? '▾ Hide raw submission' : '▸ View raw submission (all fields)'}
+                      {showRaw ? '▾ Hide full record' : '▸ View full record (every field)'}
                     </button>
                     {showRaw && (
-                      <pre className="mono" style={{
-                        marginTop: 10, padding: 14, borderRadius: 10,
-                        background: 'var(--surface-2)', border: '1px solid var(--hair)',
-                        fontSize: 11.5, lineHeight: 1.5, color: 'var(--ink-2)',
-                        maxHeight: 320, overflow: 'auto', whiteSpace: 'pre-wrap',
-                        wordBreak: 'break-word',
+                      <div style={{
+                        marginTop: 10, borderRadius: 10, overflow: 'hidden',
+                        border: '1px solid var(--hair)', maxHeight: 360, overflowY: 'auto',
                       }}>
-                        {JSON.stringify(detail.raw_data, null, 2)}
-                      </pre>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5 }}>
+                          <thead>
+                            <tr style={{ background: 'var(--surface-2)' }}>
+                              <th style={{ textAlign: 'left', padding: '8px 12px', color: 'var(--muted)', fontWeight: 600, position: 'sticky', top: 0, background: 'var(--surface-2)' }}>Field</th>
+                              <th style={{ textAlign: 'left', padding: '8px 12px', color: 'var(--muted)', fontWeight: 600, position: 'sticky', top: 0, background: 'var(--surface-2)' }}>Value</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {Object.entries(detail.raw_data).map(([k, v], i) => {
+                              const label = k.split('/').pop()!.replace(/^_/, '').replace(/_/g, ' ')
+                              const val = v === null || v === '' || v === undefined
+                                ? '—'
+                                : (typeof v === 'object' ? JSON.stringify(v) : String(v))
+                              return (
+                                <tr key={k} style={{ background: i % 2 ? 'transparent' : 'var(--surface-2)' }}>
+                                  <td style={{ padding: '7px 12px', color: 'var(--ink-2)', textTransform: 'capitalize', verticalAlign: 'top', wordBreak: 'break-word' }}>{label}</td>
+                                  <td className="mono" style={{ padding: '7px 12px', color: 'var(--ink)', wordBreak: 'break-word' }}>{val}</td>
+                                </tr>
+                              )
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
                     )}
                   </div>
                 )}
