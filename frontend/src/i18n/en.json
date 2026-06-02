@@ -664,6 +664,8 @@
     "responseKicker": "MPDSR RESPONSE PLAN · IMPLEMENTATION TRACKER",
     "responseTitle": "Are review action plans being executed?",
     "responseSub": "After each maternal death review, teams draft a response plan. This tracker compares planned interventions against what was genuinely carried out on the ground.",
+    "responseDataNoteKicker": "DATA NOTE",
+    "responseDataNoteBody": "Showing baseline plan from Sayeed's MPDSR Action Plan summary. Field-form for executed-activity counts is pending — these numbers will update once Kobo capture is in place.",
     "thDistrict": "District",
     "thLevel": "Level",
     "thPlace": "Place of meeting",

@@ -39,6 +39,37 @@ const PLACE_KEYS = ['facility', 'home', 'in_transit'] as const
 
 type FistulaTabKey = 'corner' | 'campaign'
 
+// Reporting period presets — default is the contract window per Animesh.
+// Annual cycle is for September annual-reporting needs on MPDSR + Fistula.
+// TODO: wire to backend query params (date_from / date_to) in a follow-up.
+type ReportingPeriodKey = 'contract' | 'annual'
+
+interface ReportingPeriodDef {
+  key: ReportingPeriodKey
+  // TODO BN: add Bangla translations via i18n keys when copy is finalised
+  shortLabel: string  // pill label
+  rangeLabel: string  // human-readable range
+  from: string        // ISO date
+  to: string          // ISO date
+}
+
+const REPORTING_PERIODS: ReportingPeriodDef[] = [
+  {
+    key: 'contract',
+    shortLabel: 'Contract',
+    rangeLabel: '21 May 2026 → 20 Nov 2026',
+    from: '2026-05-21',
+    to: '2026-11-20',
+  },
+  {
+    key: 'annual',
+    shortLabel: 'Annual',
+    rangeLabel: '1 Oct 2025 → 30 Sep 2026',
+    from: '2025-10-01',
+    to: '2026-09-30',
+  },
+]
+
 interface FistulaTabDef {
   key: FistulaTabKey
   labelKey: string
@@ -302,7 +333,7 @@ function SummaryRow({ label, value, span = 1 }: { label: string; value: string; 
 
 type CauseFilter = 'all' | string
 
-function MPDSRSection() {
+function MPDSRSection({ period }: { period: ReportingPeriodDef }) {
   const { t } = useTranslation()
   const [causeFilter, setCauseFilter] = useState<CauseFilter>('all')
   const [selectedCase, setSelectedCase] = useState<MPDSRCase | null>(null)
@@ -341,6 +372,16 @@ function MPDSRSection() {
         </h2>
         <p className="section-sub">
           {t('mpdsr.subtitle', { defaultValue: 'Maternal & Perinatal Death Surveillance' })}
+        </p>
+
+        {/* Period indicator — makes the active reporting window obvious
+            above the MPDSR visualisations. TODO BN: translate label. */}
+        <p style={{
+          marginTop: 10, marginBottom: 0,
+          fontSize: 13, color: 'var(--ink-3)', fontWeight: 500,
+        }}>
+          <span style={{ color: 'var(--muted)', fontWeight: 500 }}>Period: </span>
+          <span style={{ color: CIPRB_BLUE, fontWeight: 600 }}>{period.rangeLabel}</span>
         </p>
 
         {overdueCount > 0 && (
@@ -550,9 +591,11 @@ function MPDSRSection() {
 export default function CIPRBDashboard() {
   const { t } = useTranslation()
   const [active, setActive] = useState<FistulaTabKey>('corner')
+  const [periodKey, setPeriodKey] = useState<ReportingPeriodKey>('contract')
   const reduce = useReducedMotion()
   const activeTab = FISTULA_TABS.find((tab) => tab.key === active)!
   const { kpis } = useFistulaKPIs()
+  const activePeriod = REPORTING_PERIODS.find((p) => p.key === periodKey)!
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 40 }}>
@@ -615,6 +658,75 @@ export default function CIPRBDashboard() {
           {/* Jump-to-Response-Plan pill removed — tracker is hidden until
               a Kobo form is wired for live executed-count submissions. */}
         </div>
+
+        {/* ─── Reporting period toggle ───
+            Per Animesh Q8: default stays contract window; MPDSR + Fistula
+            need to be filterable for the annual cycle ahead of September
+            annual reporting. Visual toggle for Wednesday MVP — backend
+            wiring is a follow-up.
+            TODO BN: add Bangla copy via i18n. Latin acronyms stay Latin. */}
+        <div
+          role="radiogroup"
+          aria-label="Reporting period"
+          style={{
+            display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 10,
+            marginTop: 16,
+          }}
+        >
+          <span style={{
+            fontSize: 11, color: 'var(--muted)',
+            textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600,
+          }}>
+            {/* TODO BN */}
+            Reporting period
+          </span>
+          {REPORTING_PERIODS.map((p) => {
+            const isActive = periodKey === p.key
+            return (
+              <button
+                key={p.key}
+                role="radio"
+                aria-checked={isActive}
+                onClick={() => setPeriodKey(p.key)}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 6,
+                  padding: '6px 14px', borderRadius: 999,
+                  background: isActive ? 'rgba(249,96,0,0.10)' : 'var(--surface-2)',
+                  color: isActive ? CIPRB_BLUE : 'var(--ink-3)',
+                  fontSize: 14,
+                  fontWeight: isActive ? 600 : 500,
+                  border: isActive
+                    ? '1px solid rgba(249,96,0,0.32)'
+                    : '1px solid var(--hair)',
+                  cursor: 'pointer',
+                  transitionProperty: 'background-color, color, border-color',
+                  transitionDuration: '180ms',
+                }}
+              >
+                <span>{p.shortLabel}</span>
+                <span style={{
+                  color: isActive ? CIPRB_BLUE : 'var(--muted)',
+                  fontWeight: 500,
+                  fontVariantNumeric: 'tabular-nums',
+                }}>
+                  · {p.rangeLabel}
+                </span>
+              </button>
+            )
+          })}
+        </div>
+
+        {/* Visible confirmation of the active selection */}
+        <p style={{
+          marginTop: 10, marginBottom: 0,
+          fontSize: 14, color: 'var(--ink-3)',
+        }}>
+          {/* TODO BN */}
+          Showing data for:{' '}
+          <span style={{ color: 'var(--ink)', fontWeight: 600 }}>
+            {activePeriod.shortLabel} · {activePeriod.rangeLabel}
+          </span>
+        </p>
       </section>
 
       {/* ───────────────── Fistula KPI band ───────────────── */}
@@ -722,7 +834,7 @@ export default function CIPRBDashboard() {
 
       {/* ───────────────── MPDSR ───────────────── */}
       <section className="section" id="mpdsr-section" style={{ marginBottom: 80, scrollMarginTop: 80 }}>
-        <MPDSRSection />
+        <MPDSRSection period={activePeriod} />
       </section>
     </div>
   )

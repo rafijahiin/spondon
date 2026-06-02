@@ -20,7 +20,7 @@ import {
   BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, Tooltip,
   PieChart, Pie,
 } from 'recharts'
-import { Info, Database } from 'lucide-react'
+import { Info, Database, AlertTriangle } from 'lucide-react'
 import { api } from '@/api/client'
 import type { MPDSRCase } from '@/types/index'
 
@@ -510,6 +510,37 @@ function ResponsePlanTracker({ summaries }: { summaries: ActionPlanSummary[] }) 
         </p>
       </div>
 
+      {/* Data-note banner — explains that executed-activity counts are still
+          placeholder values until a Kobo field-form is wired in. Soft amber
+          tint on cream with a status-mid left border. UNFPA 14px minimum. */}
+      <div
+        role="note"
+        style={{
+          display: 'flex', gap: 12, alignItems: 'flex-start',
+          padding: '12px 14px',
+          marginBottom: 14,
+          background: 'rgba(249, 96, 0, 0.06)',
+          borderLeft: '3px solid var(--status-mid, #AE4300)',
+          borderRadius: 6,
+        }}
+      >
+        <AlertTriangle size={18} style={{ color: 'var(--status-mid, #AE4300)', flexShrink: 0, marginTop: 1 }} />
+        <div style={{ flex: 1 }}>
+          <div
+            className="mono"
+            style={{
+              fontSize: 10, color: 'var(--status-mid, #AE4300)',
+              letterSpacing: '0.08em', fontWeight: 700, marginBottom: 4,
+            }}
+          >
+            {t('mpdsrViz.responseDataNoteKicker')}
+          </div>
+          <div style={{ fontSize: 14, color: 'var(--ink-2)', lineHeight: 1.5 }}>
+            {t('mpdsrViz.responseDataNoteBody')}
+          </div>
+        </div>
+      </div>
+
       <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
         <table className="tbl">
           <thead>
@@ -691,10 +722,12 @@ function ReportingRatePerDistrict({
 
 export function MPDSRVisualizations({ cases }: { cases: MPDSRCase[] }) {
   const agg = useAggregates()
-  // Response Plan tracker is hidden — no Kobo form is wired to capture
-  // executed-activity counts yet, so the only data source was Sayeed's
-  // Excel which had ~50% placeholder values across the board. Re-enable
-  // by re-adding <ResponsePlanTracker /> here once the field form lands.
+  // Response Plan tracker is re-enabled for Animesh's Wednesday review.
+  // Data source is still Sayeed's MPDSR Action Plan Excel — 7 of 8 rows
+  // carry placeholder executed = planned/2 values because no Kobo form
+  // exists yet for executed-activity counts. The tracker now shows a
+  // "DATA NOTE" caption banner explaining the state. Once the Kobo
+  // field-form lands, the placeholders will be replaced automatically.
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 36 }}>
       <NotifyVsReview
@@ -704,6 +737,9 @@ export function MPDSRVisualizations({ cases }: { cases: MPDSRCase[] }) {
       />
       <ReportingRatePerDistrict cases={cases} denominators={agg?.denominators ?? []} />
       <CauseBreakdown cases={cases} />
+      <div id="response-plan">
+        <ResponsePlanTracker summaries={agg?.action_plan_summaries ?? []} />
+      </div>
     </div>
   )
 }
