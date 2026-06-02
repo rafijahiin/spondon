@@ -34,6 +34,10 @@ def _form_type_from_payload(payload: dict) -> str | None:
         'spondon_fistula_v1': FormType.FISTULA,
         'spondon_fistula_staged_v1': FormType.FISTULA_STAGED,
         'spondon_mpdsr_response_plan_v1': FormType.MPDSR_RESPONSE_PLAN,
+        # Daily Activity / zero-report form — field staff submit once a day,
+        # answering "Any activity today?". 'no' is tagged is_zero_report by
+        # _is_zero_report(). Routes to ACTIVITY → lands in the manager queue.
+        'spondon_daily_activity_v1': FormType.ACTIVITY,
     }
     if xform_id in id_string_map:
         return id_string_map[xform_id]
