@@ -70,11 +70,13 @@ export default function Home() {
               className="anim-rise d1"
               style={{
                 marginBottom: 20,
-                fontSize: 'clamp(13px, 1.1vw, 15px)',
-                letterSpacing: '0.01em',
+                /* UNFPA body floor 16px, leading 120%+ */
+                fontSize: 16,
+                letterSpacing: 0,
                 lineHeight: 1.5,
                 color: 'var(--ink-2)',
                 fontWeight: 400,
+                maxWidth: '65ch',
               }}
             >
               <b style={{ color: 'var(--unfpa)', fontWeight: 700 }}>S</b>trengthening{' '}
@@ -88,9 +90,11 @@ export default function Home() {
             <div
               className="anim-rise d2"
               style={{
-                fontSize: 'clamp(15px, 1.2vw, 17px)',
-                lineHeight: 1.6,
+                /* UNFPA body floor 16px, leading 120%+, max line-length 65ch */
+                fontSize: 16,
+                lineHeight: 1.55,
                 color: 'var(--ink-2)',
+                maxWidth: '65ch',
                 textWrap: 'pretty',
               } as React.CSSProperties}
             >
