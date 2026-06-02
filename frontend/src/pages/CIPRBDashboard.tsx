@@ -17,7 +17,7 @@ import { useTranslation } from 'react-i18next'
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react'
 import {
   ClipboardList, Megaphone, Search, Stethoscope, Send, Scissors,
-  Clock, MapPin, X, AlertTriangle,
+  Clock, MapPin, X, AlertTriangle, HeartHandshake,
 } from 'lucide-react'
 import { api } from '@/api/client'
 import { usePolling } from '@/hooks/usePolling'
@@ -102,15 +102,18 @@ interface CampaignVisitRow {
   id: string
 }
 
-function useFistulaKPIs(): { kpis: KPIs; loading: boolean } {
+function useFistulaKPIs(period: ReportingPeriodDef): { kpis: KPIs; loading: boolean } {
   const [kpis, setKpis] = useState<KPIs>({ suspected: 0, identified: 0, referred: 0, surgeryDone: 0 })
   const [loading, setLoading] = useState(true)
+  const periodFrom = period.from
+  const periodTo = period.to
 
   useEffect(() => {
     let cancelled = false
+    const params = { from: periodFrom, to: periodTo }
     Promise.allSettled([
-      api.get<{ results?: CampaignVisitRow[] } | CampaignVisitRow[]>('/fistula/campaign-visits/'),
-      api.get<{ results?: CornerCaseRow[]    } | CornerCaseRow[]>('/fistula/corner-cases/'),
+      api.get<{ results?: CampaignVisitRow[] } | CampaignVisitRow[]>('/fistula/campaign-visits/', { params }),
+      api.get<{ results?: CornerCaseRow[]    } | CornerCaseRow[]>('/fistula/corner-cases/', { params }),
     ]).then(([campaignRes, cornerRes]) => {
       if (cancelled) return
 
@@ -137,7 +140,7 @@ function useFistulaKPIs(): { kpis: KPIs; loading: boolean } {
       setLoading(false)
     })
     return () => { cancelled = true }
-  }, [])
+  }, [periodFrom, periodTo])
 
   return { kpis, loading }
 }
@@ -181,6 +184,54 @@ function KPITile({
         {value.toLocaleString()}
       </div>
       <div style={{ fontSize: 12, color: 'var(--ink-3)' }}>{sub}</div>
+    </div>
+  )
+}
+
+// Placeholder variant of KPITile — value is rendered as an em-dash and the
+// whole tile uses muted colour + softer surface so it visually reads as
+// "metric is on the roadmap, definition pending" rather than "we have data".
+function PendingKPITile({
+  icon, label, sub,
+}: {
+  icon: React.ReactNode
+  label: string
+  sub: string
+}) {
+  return (
+    <div
+      className="card"
+      style={{
+        padding: '16px 18px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 8,
+        background: 'var(--surface-2)',
+        borderStyle: 'dashed',
+      }}
+      aria-label={`${label} — definition pending`}
+    >
+      <div style={{
+        display: 'inline-flex', alignItems: 'center', gap: 8,
+        fontSize: 11, color: 'var(--muted)',
+        textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 500,
+      }}>
+        <span style={{
+          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+          width: 24, height: 24, borderRadius: 6,
+          background: 'var(--surface-3)', color: 'var(--muted)',
+        }}>
+          {icon}
+        </span>
+        {label}
+      </div>
+      <div style={{
+        fontSize: 30, fontWeight: 800, color: 'var(--muted)',
+        fontVariantNumeric: 'tabular-nums', lineHeight: 1, letterSpacing: '-0.02em',
+      }}>
+        —
+      </div>
+      <div style={{ fontSize: 12, color: 'var(--muted)', fontStyle: 'italic' }}>{sub}</div>
     </div>
   )
 }
@@ -342,10 +393,17 @@ function MPDSRSection({ period }: { period: ReportingPeriodDef }) {
     fetcher: () =>
       api
         .get('/mpdsr/cases/', {
-          params: { ...(causeFilter !== 'all' ? { cause_of_death: causeFilter } : {}) },
+          params: {
+            ...(causeFilter !== 'all' ? { cause_of_death: causeFilter } : {}),
+            from: period.from,
+            to: period.to,
+          },
         })
         .then((r) => (Array.isArray(r.data) ? r.data : r.data.results ?? [])),
     interval: 60_000,
+    // Re-fetch when the reporting period changes so the cases table and
+    // counts re-derive against the selected Contract / Annual window.
+    deps: [causeFilter, period.from, period.to],
   })
 
   const causeCounts: Record<string, number> = {}
@@ -408,7 +466,7 @@ function MPDSRSection({ period }: { period: ReportingPeriodDef }) {
       <MPDSRDistrictMap />
 
       {/* ─── Visualizations: Notify vs Review · Cause breakdown · Response Plan ─── */}
-      <MPDSRVisualizations cases={cases ?? []} />
+      <MPDSRVisualizations cases={cases ?? []} period={{ from: period.from, to: period.to }} />
 
       {/* Cause panels (filter shortcuts above the cases table) */}
       <div style={{
@@ -594,8 +652,8 @@ export default function CIPRBDashboard() {
   const [periodKey, setPeriodKey] = useState<ReportingPeriodKey>('contract')
   const reduce = useReducedMotion()
   const activeTab = FISTULA_TABS.find((tab) => tab.key === active)!
-  const { kpis } = useFistulaKPIs()
   const activePeriod = REPORTING_PERIODS.find((p) => p.key === periodKey)!
+  const { kpis } = useFistulaKPIs(activePeriod)
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 40 }}>
@@ -744,12 +802,23 @@ export default function CIPRBDashboard() {
           <KPITile icon={<Stethoscope size={14} />} label={t('ciprb.kpiIdentified')}  sub={t('ciprb.kpiIdentifiedSub')}   value={kpis.identified}  />
           <KPITile icon={<Send size={14} />}        label={t('ciprb.kpiReferred')}    sub={t('ciprb.kpiReferredSub')}     value={kpis.referred}    />
           <KPITile icon={<Scissors size={14} />}    label={t('ciprb.kpiSurgeryDone')} sub={t('ciprb.kpiSurgeryDoneSub')}  value={kpis.surgeryDone} />
+          {/* Rehabilitation % — Animesh's Health Intelligence Command Center
+              deck flags Rehab % as a Fistula indicator. Operational definition
+              still pending from Sayed (which denominator counts as "rehab
+              eligible", how outcome is observed). Tile is rendered as a
+              placeholder so Animesh sees the metric is recognised on our
+              roadmap, without faking a number. */}
+          <PendingKPITile
+            icon={<HeartHandshake size={14} />}
+            label={t('ciprb.kpiRehab')}
+            sub={t('ciprb.kpiRehabSub')}
+          />
         </div>
       </section>
 
       {/* ───────────────── Fistula visualizations (campaign / funnel / pie) ───────────────── */}
       <section className="section" style={{ marginTop: 8 }}>
-        <FistulaVisualizations />
+        <FistulaVisualizations period={{ from: activePeriod.from, to: activePeriod.to }} />
       </section>
 
       {/* ───────────────── Fistula registers (collapsible — raw data) ───────────────── */}

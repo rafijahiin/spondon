@@ -22,6 +22,7 @@ class MPDSRCaseSerializer(serializers.ModelSerializer):
             'status', 'status_display', 'committee_date',
             'action_plan', 'notes', 'audit_trail', 'is_overdue_committee',
             'latitude', 'longitude',
+            'logic_flags',
             'created_at', 'updated_at',
         ]
         read_only_fields = [
@@ -29,6 +30,7 @@ class MPDSRCaseSerializer(serializers.ModelSerializer):
             'sub_form_type', 'district', 'upazila', 'union', 'region',
             'date_of_death', 'death_type', 'cause_of_death', 'place_of_death',
             'facility_name', 'age_years', 'audit_trail', 'latitude', 'longitude',
+            'logic_flags',
             'created_at',
         ]
 

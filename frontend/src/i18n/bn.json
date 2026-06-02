@@ -64,7 +64,17 @@
     "rollupLoadError": "/api/indicators/progress/ এ পৌঁছানো গেল না — খালি রোলআপ দেখানো হচ্ছে।",
     "jumpToKicker": "এখানে যান",
     "jumpToTitle": "পার্টনার পেজ",
-    "tileCta": "পার্টনার পেজ খুলুন"
+    "tileCta": "পার্টনার পেজ খুলুন",
+    "monthRing": {
+      "kicker": "অগ্রগতির ছন্দ",
+      "monthBig": "মাস {{n}}",
+      "ofFive": "/ ৫",
+      "preStartBig": "শীঘ্রই",
+      "preStartSmall": "শুরু হতে {{n}} দিন",
+      "completeBig": "সম্পন্ন",
+      "caption": "৫-মাসের স্প্রিন্ট · জুন → অক্টোবর",
+      "aria": "প্রোগ্রাম পেসিং — ৫-মাসের স্প্রিন্ট"
+    }
   },
   "approvals": {
     "eyebrowConsole": "অনুমোদন কনসোল",
@@ -95,7 +105,17 @@
     "reviewerNote": "রিভিউয়ার নোট — ঐচ্ছিক",
     "reviewerPlaceholder": "মাঠ দলের জন্য প্রসঙ্গ…",
     "btnReject": "প্রত্যাখ্যান",
-    "btnApprove": "অনুমোদন ও লগ"
+    "btnApprove": "অনুমোদন ও লগ",
+    "logicFlag": {
+      "badge": "{{count}} টি যাচাই",
+      "title": "{{count}} টি যাচাই",
+      "body": "স্বয়ংক্রিয় যাচাই কিছু অস্বাভাবিক মান চিহ্নিত করেছে। অনুমোদনের আগে যাচাই করুন।",
+      "AGE_LOW": "মায়ের বয়স ১৪ বছরের কম — মাতৃমৃত্যুর প্রতিবেদনে অস্বাভাবিক।",
+      "AGE_HIGH": "মায়ের বয়স ৫৫ বছরের বেশি — মাতৃমৃত্যুর জন্য অস্বাভাবিক।",
+      "CAUSE_EMPTY": "মৃত্যুর কারণ পূরণ করা হয়নি।",
+      "DATE_FUTURE": "মৃত্যুর তারিখ ভবিষ্যতে।",
+      "DATE_OLD": "মৃত্যুর তারিখ ২ বছরের বেশি পুরনো (বিলম্বিত প্রতিবেদন)।"
+    }
   },
   "indicator": {
     "title": "M&E সূচক অগ্রগতি",
@@ -189,7 +209,9 @@
     "kpiReferred": "রেফার করা হয়েছে",
     "kpiReferredSub": "সার্জারি কেন্দ্রে",
     "kpiSurgeryDone": "সার্জারি সম্পন্ন",
-    "kpiSurgeryDoneSub": "Fistula মেরামত সম্পূর্ণ"
+    "kpiSurgeryDoneSub": "Fistula মেরামত সম্পূর্ণ",
+    "kpiRehab": "Rehabilitation %",
+    "kpiRehabSub": "সংজ্ঞা অপেক্ষমাণ — Sayed-এর শ্রেণীবিভাগ"
   },
   "baseline": {
     "heroEyebrow": "CIPRB · Baseline / Endline",
@@ -430,9 +452,10 @@
     "pieKicker": "Fistula কর্নার · ক্লিনিক্যাল ফলাফল",
     "pieTitle": "সন্দেহজনক রোগীদের প্রকৃত অবস্থা",
     "pieSub": "Fistula কর্নারে পরীক্ষিত সকল নারীর চূড়ান্ত নির্ণয়ের বিভাজন।",
-    "pieObstetric": "প্রসূতি Fistula (VVF)",
-    "pieOther": "অন্যান্য Fistula ধরন",
-    "pieNone": "Fistula নিশ্চিত হয়নি",
+    "pieObstetric": "প্রসূতি Fistula",
+    "pieIatrogenic": "Iatrogenic Fistula",
+    "pieOther": "অন্যান্য / Fistula নয়",
+    "pieCaption": "লাইভ কেসগুলো Kobo 'Cause of Fistula' ফিল্ড থেকে শ্রেণিবিভাগ করা হয় (Surgical Injury → Iatrogenic; Prolonged Labour / Early Marriage / Unsafe Abortion / GBV → Obstetric)। প্রাক-Kobo ঐতিহাসিক কেসগুলো শারীরবৃত্তীয় ধরন থেকে অনুমান করা হয় (VVF → Obstetric)।",
     "examined": "পরীক্ষিত",
     "awaiting": "নির্ণয়ের অপেক্ষায়",
     "pieEmpty": "এখনো কোনো Fistula কর্নার কেস নথিভুক্ত হয়নি — রোগী পরীক্ষিত হলে চার্ট পূর্ণ হবে।"

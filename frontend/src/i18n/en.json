@@ -64,7 +64,17 @@
     "rollupLoadError": "Could not reach /api/indicators/progress/ — showing empty rollups.",
     "jumpToKicker": "JUMP TO",
     "jumpToTitle": "Partner pages",
-    "tileCta": "Open partner page"
+    "tileCta": "Open partner page",
+    "monthRing": {
+      "kicker": "PACING",
+      "monthBig": "Month {{n}}",
+      "ofFive": "/ 5",
+      "preStartBig": "Soon",
+      "preStartSmall": "{{n}} days to start",
+      "completeBig": "Done",
+      "caption": "5-month sprint · June → October",
+      "aria": "Programme pacing — 5-month sprint"
+    }
   },
   "approvals": {
     "eyebrowConsole": "APPROVAL CONSOLE",
@@ -95,7 +105,17 @@
     "reviewerNote": "REVIEWER NOTE — OPTIONAL",
     "reviewerPlaceholder": "Context for the field team…",
     "btnReject": "Reject",
-    "btnApprove": "Approve & log"
+    "btnApprove": "Approve & log",
+    "logicFlag": {
+      "badge": "{{count}} review",
+      "title": "{{count}} review",
+      "body": "Automated checks flagged implausible values. Verify before approving.",
+      "AGE_LOW": "Mother's age below 14 — unusual for a reported maternal death.",
+      "AGE_HIGH": "Mother's age above 55 — post-menopausal, unusual for a maternal death.",
+      "CAUSE_EMPTY": "Cause of death is blank.",
+      "DATE_FUTURE": "Date of death is in the future.",
+      "DATE_OLD": "Date of death is more than 2 years ago (late reporting)."
+    }
   },
   "indicator": {
     "title": "M&E Indicator Progress",
@@ -189,7 +209,9 @@
     "kpiReferred": "Referred",
     "kpiReferredSub": "to surgery centre",
     "kpiSurgeryDone": "Surgery Done",
-    "kpiSurgeryDoneSub": "Fistula repair complete"
+    "kpiSurgeryDoneSub": "Fistula repair complete",
+    "kpiRehab": "Rehabilitation %",
+    "kpiRehabSub": "Definition pending — Sayed's classification"
   },
   "baseline": {
     "heroEyebrow": "CIPRB · BASELINE / ENDLINE",
@@ -621,9 +643,10 @@
     "pieKicker": "FISTULA CORNER · CLINICAL FINDINGS",
     "pieTitle": "What suspected patients actually have",
     "pieSub": "Of all women examined at the Fistula Corner, how the final diagnoses break down.",
-    "pieObstetric": "Obstetric Fistula (VVF)",
-    "pieOther": "Other Fistula type",
-    "pieNone": "No Fistula confirmed",
+    "pieObstetric": "Obstetric Fistula",
+    "pieIatrogenic": "Iatrogenic Fistula",
+    "pieOther": "Other / Not Fistula",
+    "pieCaption": "Live cases classified from the Kobo 'Cause of Fistula' field (Surgical Injury → Iatrogenic; Prolonged Labour / Early Marriage / Unsafe Abortion / GBV → Obstetric). Pre-Kobo historical cases fall back to anatomy (VVF → Obstetric).",
     "examined": "EXAMINED",
     "awaiting": "Awaiting diagnosis",
     "pieEmpty": "No Fistula Corner cases recorded yet — pie chart will fill as patients are examined and diagnoses recorded."

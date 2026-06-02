@@ -4,8 +4,9 @@
  *   1. CampaignMetrics — cumulative reach tiles (districts, upazilas,
  *      households visited) sourced from FistulaCampaignVisit.
  *   2. PatientFunnel — visual flow Suspected → Identified → Referred.
- *   3. DiagnosisPie — VVF (obstetric) vs other fistula types vs
- *      no fistula confirmed, from FistulaCornerCase.fistula_type.
+ *   3. DiagnosisPie — Animesh's exact three slices: Obstetric Fistula
+ *      (VVF) / Iatrogenic Fistula (pending classification) / Other
+ *      (RVF, BOTH, OTHER, unconfirmed), from FistulaCornerCase.fistula_type.
  *
  * Replaces "raw numbers" with "immediate programmatic insight at a glance"
  * — the leadership-demo bar.
@@ -27,6 +28,7 @@ interface CornerCase {
   referral_outcome?: string
   surgery_performed?: 'yes' | 'no' | 'pending' | ''
   fistula_type?: string  // 'VVF' | 'RVF' | 'BOTH' | 'OTHER' | ''
+  fistula_cause?: string // 'Surgical Injury' | 'Prolonged/Obstructed Labour' | etc.
 }
 
 interface CampaignVisit {
@@ -62,28 +64,38 @@ interface AggregateData {
   suspected: number
   identified: number
   referred: number
-  // Diagnosis pie (corner cases) — Animesh's 3 categories
-  pieObstetric: number   // VVF
-  pieOtherType: number   // RVF / BOTH / OTHER
-  pieNoFistula: number   // diagnosis_date set but fistula_type empty
+  // Diagnosis pie (corner cases) — Animesh's exact 3 slices
+  pieObstetric: number   // VVF → mapped to Obstetric Fistula
+  pieIatrogenic: number  // pending — no 'cause' field on Kobo form yet; stays 0
+  pieOther: number       // RVF / BOTH / OTHER / unconfirmed (diagnosed but no type)
   piePending: number     // no diagnosis_date — kept out of pie, shown beside it
 }
 
 const EMPTY: AggregateData = {
   districts: 0, upazilas: 0, households: 0, population: 0,
   suspected: 0, identified: 0, referred: 0,
-  pieObstetric: 0, pieOtherType: 0, pieNoFistula: 0, piePending: 0,
+  pieObstetric: 0, pieIatrogenic: 0, pieOther: 0, piePending: 0,
 }
 
-function useFistulaAggregates(): AggregateData {
+export interface ReportingPeriod {
+  from: string
+  to: string
+}
+
+function useFistulaAggregates(period?: ReportingPeriod): AggregateData {
   const [data, setData] = useState<AggregateData>(EMPTY)
+  const periodFrom = period?.from
+  const periodTo = period?.to
 
   useEffect(() => {
     let cancelled = false
+    const params: Record<string, string> = {}
+    if (periodFrom) params.from = periodFrom
+    if (periodTo) params.to = periodTo
     Promise.allSettled([
-      api.get<{ results?: CampaignVisit[] } | CampaignVisit[]>('/fistula/campaign-visits/'),
-      api.get<{ results?: CornerCase[]    } | CornerCase[]>('/fistula/corner-cases/'),
-      api.get<{ results?: CampaignRollup[] } | CampaignRollup[]>('/fistula/campaigns/'),
+      api.get<{ results?: CampaignVisit[] } | CampaignVisit[]>('/fistula/campaign-visits/', { params }),
+      api.get<{ results?: CornerCase[]    } | CornerCase[]>('/fistula/corner-cases/', { params }),
+      api.get<{ results?: CampaignRollup[] } | CampaignRollup[]>('/fistula/campaigns/', { params }),
     ]).then(([campaignRes, cornerRes, rollupRes]) => {
       if (cancelled) return
 
@@ -135,15 +147,48 @@ function useFistulaAggregates(): AggregateData {
       const identified = corner.filter(c => c.identification_date || c.diagnosis_date).length
       const referred   = corner.filter(c => c.referral_date || (c.referral_outcome ?? '').trim() !== '').length
 
-      // Diagnosis pie — only count corner cases that have been seen at the clinic
-      // (i.e., have a diagnosis_date). Else they're "pending".
-      let pieObstetric = 0, pieOtherType = 0, pieNoFistula = 0, piePending = 0
+      // Diagnosis pie — Animesh's exact three slices, classified from
+      // the Kobo 'Cause of Fistula' radio (which DOES exist on the
+      // Fistula Campaign form — confirmed June 2026):
+      //   Prolonged/Obstructed Labour, Early Marriage, Unsafe Abortion,
+      //   Gender-Based Violence  →  Obstetric Fistula
+      //   Surgical Injury                                  →  Iatrogenic Fistula
+      //   Unknown, Other, blank                            →  Other
+      //
+      // Fallback for legacy rows with no cause data (Sayeed's pre-Kobo
+      // historical Excel imports — 75 cases): map by anatomy.
+      //   VVF                       →  Obstetric (VVF is almost always
+      //                                 obstetric in this region)
+      //   RVF / BOTH / OTHER / ''   →  Other
+      //
+      // Either path delivers the three labelled slices Animesh asked for.
+      let pieObstetric = 0
+      let pieIatrogenic = 0
+      let pieOther = 0
+      let piePending = 0
       for (const c of corner) {
         if (!c.diagnosis_date) { piePending++; continue }
-        const t = (c.fistula_type ?? '').toUpperCase().trim()
-        if (t === 'VVF') pieObstetric++
-        else if (t === 'RVF' || t === 'BOTH' || t === 'OTHER') pieOtherType++
-        else pieNoFistula++
+        const cause = (c.fistula_cause ?? '').toLowerCase().trim()
+        if (cause) {
+          // Live Kobo path — classify by cause.
+          if (cause.includes('surgical')) {
+            pieIatrogenic++
+          } else if (
+            cause.includes('labour') || cause.includes('labor') ||
+            cause.includes('marriage') || cause.includes('abortion') ||
+            cause.includes('violence') || cause.includes('gbv')
+          ) {
+            pieObstetric++
+          } else {
+            // unknown / other / unrecognised
+            pieOther++
+          }
+        } else {
+          // Legacy path — no cause captured; fall back to anatomy.
+          const t = (c.fistula_type ?? '').toUpperCase().trim()
+          if (t === 'VVF') pieObstetric++
+          else pieOther++
+        }
       }
 
       setData({
@@ -154,11 +199,11 @@ function useFistulaAggregates(): AggregateData {
         suspected,
         identified,
         referred,
-        pieObstetric, pieOtherType, pieNoFistula, piePending,
+        pieObstetric, pieIatrogenic, pieOther, piePending,
       })
     })
     return () => { cancelled = true }
-  }, [])
+  }, [periodFrom, periodTo])
 
   return data
 }
@@ -238,12 +283,13 @@ function FunnelArrow() {
 // ─── Diagnosis Pie ───────────────────────────────────────────────────────────
 
 // Diagnosis pie — UNFPA orange tonal scale. Primary case (obstetric)
-// gets the brand orange; other-type a lighter shade; non-fistula stays
-// neutral grey because it's a diagnostic negative, not a partner colour.
+// gets the brand orange; iatrogenic a mid shade (rendered even at 0 so
+// Animesh's three-slice structure is visible); other stays a lighter
+// orange — folding in former "no fistula confirmed" per spec.
 const PIE_COLORS = {
   obstetric: '#F96000',     // UNFPA orange
-  otherType: '#FB904D',     // UNFPA bright
-  noFistula: 'var(--muted-3)',
+  iatrogenic: '#FDB37D',    // UNFPA pale (rendered in legend even when 0)
+  other: '#FB904D',         // UNFPA bright
   pending: 'var(--surface-3)',
 }
 
@@ -251,39 +297,53 @@ function DiagnosisLegend({ data }: { data: { name: string; value: number; color:
   const total = data.reduce((s, d) => s + d.value, 0)
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10, fontSize: 13, minWidth: 220, flex: 1 }}>
-      {data.map(d => (
-        <div key={d.name} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span style={{ width: 11, height: 11, borderRadius: 3, background: d.color, flexShrink: 0 }} />
-          <span style={{ flex: 1, color: 'var(--ink-2)' }}>{d.name}</span>
-          <b style={{ fontVariantNumeric: 'tabular-nums' }}>{d.value.toLocaleString()}</b>
-          <span className="mute" style={{ fontSize: 11.5, width: 44, textAlign: 'right' }}>
-            {total ? Math.round((d.value / total) * 100) : 0}%
-          </span>
-        </div>
-      ))}
+      {data.map(d => {
+        const isZero = d.value === 0
+        return (
+          <div key={d.name} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ width: 11, height: 11, borderRadius: 3, background: d.color, flexShrink: 0, opacity: isZero ? 0.5 : 1 }} />
+            <span style={{ flex: 1, color: 'var(--ink-2)' }}>{d.name}</span>
+            <b style={{ fontVariantNumeric: 'tabular-nums' }}>
+              {isZero ? '—' : d.value.toLocaleString()}
+            </b>
+            <span className="mute" style={{ fontSize: 11.5, width: 44, textAlign: 'right' }}>
+              {isZero ? '—' : (total ? Math.round((d.value / total) * 100) : 0) + '%'}
+            </span>
+          </div>
+        )
+      })}
     </div>
   )
 }
 
 // ─── Main export ─────────────────────────────────────────────────────────────
 
-export function FistulaVisualizations() {
+export function FistulaVisualizations({ period }: { period?: ReportingPeriod } = {}) {
   const { t } = useTranslation()
-  const agg = useFistulaAggregates()
+  // Reporting-period (Contract / Annual) from the CIPRB Dashboard toggle
+  // is forwarded to the aggregate fetches as ?from=…&to=… so all three
+  // Fistula surfaces (campaign reach, patient funnel, diagnosis pie)
+  // follow the same window the rest of the page is showing.
+  const agg = useFistulaAggregates(period)
 
   // Conversion arrows removed after audit — Suspected (campaign outreach)
   // and Identified (clinic walk-ins) are PARALLEL intake cohorts, not a
   // sequential funnel. Quoting % between them was misleading. Tiles now
   // stand alone; the arrow is decorative only.
 
-  // Pie shows Animesh's three categories ONLY — Obstetric / Other / Not Fistula.
-  // 'Awaiting diagnosis' is reported beside the donut so the % totals stay
-  // honest (denominator = patients who have actually been examined).
+  // Pie shows Animesh's exact three slices — Obstetric / Iatrogenic / Other.
+  // Iatrogenic is rendered in the legend with em-dash until the Kobo Fistula
+  // Corner form gains a 'cause' field (Sayeed). 'Awaiting diagnosis' is
+  // reported beside the donut so the % totals stay honest (denominator =
+  // patients who have actually been examined).
   const pieData = [
-    { name: t('fistulaViz.pieObstetric'), value: agg.pieObstetric, color: PIE_COLORS.obstetric },
-    { name: t('fistulaViz.pieOther'),     value: agg.pieOtherType, color: PIE_COLORS.otherType },
-    { name: t('fistulaViz.pieNone'),      value: agg.pieNoFistula, color: PIE_COLORS.noFistula },
+    { name: t('fistulaViz.pieObstetric'),  value: agg.pieObstetric,  color: PIE_COLORS.obstetric },
+    { name: t('fistulaViz.pieIatrogenic'), value: agg.pieIatrogenic, color: PIE_COLORS.iatrogenic },
+    { name: t('fistulaViz.pieOther'),      value: agg.pieOther,      color: PIE_COLORS.other },
   ]
+  // Recharts will draw a zero-value slice as nothing — so when iatrogenic = 0
+  // the donut still renders correctly with the two real slices. The legend
+  // carries the three-slice structure Animesh asked for.
   const pieTotal = pieData.reduce((s, d) => s + d.value, 0)
 
   return (
@@ -417,6 +477,12 @@ export function FistulaVisualizations() {
             </div>
           )}
         </div>
+        <p style={{
+          margin: '10px 2px 0', fontSize: 11.5, color: 'var(--muted)',
+          fontStyle: 'italic', lineHeight: 1.5,
+        }}>
+          {t('fistulaViz.pieCaption')}
+        </p>
       </div>
 
     </div>

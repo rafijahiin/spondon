@@ -28,10 +28,17 @@ class FistulaCampaignViewSet(OrgFilterMixin, ModelViewSet):
         qs = super().get_queryset()
         partner_param = self.request.query_params.get('partner')
         district_param = self.request.query_params.get('district')
+        date_from = self.request.query_params.get('from')
+        date_to = self.request.query_params.get('to')
         if partner_param and getattr(self.request.user, 'can_see_all_orgs', False):
             qs = qs.filter(partner=partner_param)
         if district_param:
             qs = qs.filter(district__icontains=district_param)
+        # Reporting-period filter from the CIPRB Dashboard toggle.
+        if date_from:
+            qs = qs.filter(campaign_date__gte=date_from)
+        if date_to:
+            qs = qs.filter(campaign_date__lte=date_to)
         return qs
 
     def get_serializer_class(self):
@@ -77,8 +84,16 @@ class FistulaCornerCaseViewSet(ModelViewSet):
     def get_queryset(self):
         qs = super().get_queryset().order_by('-diagnosis_date', '-created_at')
         district = self.request.query_params.get('district')
+        date_from = self.request.query_params.get('from')
+        date_to = self.request.query_params.get('to')
         if district:
             qs = qs.filter(district__icontains=district)
+        # Reporting-period filter — uses diagnosis_date (event date for a
+        # corner-case workflow).
+        if date_from:
+            qs = qs.filter(diagnosis_date__gte=date_from)
+        if date_to:
+            qs = qs.filter(diagnosis_date__lte=date_to)
         return qs
 
     def perform_create(self, serializer):
@@ -100,10 +115,17 @@ class FistulaCampaignVisitViewSet(ModelViewSet):
         qs = super().get_queryset().order_by('-visit_date', '-created_at')
         district = self.request.query_params.get('district')
         union = self.request.query_params.get('union')
+        date_from = self.request.query_params.get('from')
+        date_to = self.request.query_params.get('to')
         if district:
             qs = qs.filter(district__icontains=district)
         if union:
             qs = qs.filter(union__icontains=union)
+        # Reporting-period filter — visit_date is the event date.
+        if date_from:
+            qs = qs.filter(visit_date__gte=date_from)
+        if date_to:
+            qs = qs.filter(visit_date__lte=date_to)
         return qs
 
     def perform_create(self, serializer):

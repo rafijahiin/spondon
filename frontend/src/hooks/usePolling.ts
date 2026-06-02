@@ -4,6 +4,14 @@ interface UsePollingOptions<T> {
   fetcher: () => Promise<T>
   interval?: number
   enabled?: boolean
+  /**
+   * Optional dependency list. Whenever any value here changes, the polling
+   * loop restarts and an immediate refetch fires. Use this when the fetcher
+   * closes over reactive params (e.g. filters, date ranges) so the data
+   * follows the UI selection — without this, the fetcher ref updates but
+   * the effect would not re-run.
+   */
+  deps?: ReadonlyArray<unknown>
 }
 
 interface UsePollingResult<T> {
@@ -17,6 +25,7 @@ export function usePolling<T>({
   fetcher,
   interval = 30_000,
   enabled = true,
+  deps = [],
 }: UsePollingOptions<T>): UsePollingResult<T> {
   const [data, setData] = useState<T | null>(null)
   const [loading, setLoading] = useState(true)
@@ -44,7 +53,8 @@ export function usePolling<T>({
     return () => {
       if (timerRef.current) clearInterval(timerRef.current)
     }
-  }, [enabled, fetch, interval])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [enabled, fetch, interval, ...deps])
 
   return { data, loading, error, refetch: fetch }
 }

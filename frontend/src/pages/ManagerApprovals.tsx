@@ -117,6 +117,10 @@ interface QueueItem {
   // Animesh's baseline duplication warning — true when an earlier baseline
   // survey from the same (district, upazila, day) is already on file.
   is_baseline_duplicate?: boolean
+  // Animesh's MPDSR QA-gate flags (deck slide 9). Short stable tag list
+  // (e.g. 'AGE_LOW', 'CAUSE_EMPTY'). Renders amber AlertTriangle pill in
+  // the queue spine + expanded human-readable list in the focus panel.
+  logic_flags?: string[]
 }
 
 function toQueueItems(programsData: ProgramPendingResponse | null, submissions: Submission[] | null): QueueItem[] {
@@ -159,6 +163,7 @@ function toQueueItems(programsData: ProgramPendingResponse | null, submissions: 
         latitude: s.latitude?.toString(),
         longitude: s.longitude?.toString(),
         is_baseline_duplicate: (s as any).is_baseline_duplicate ?? false,
+        logic_flags: Array.isArray((s as any).logic_flags) ? (s as any).logic_flags : [],
       })
     }
   }
@@ -443,6 +448,27 @@ export default function ManagerApprovals() {
                       {it.center_name} · {formatDateTime(it.created_at).split(',')[0]}
                     </div>
                   </div>
+                  {it.logic_flags && it.logic_flags.length > 0 && (
+                    <span
+                      title={it.logic_flags
+                        .map(tag => t(`approvals.logicFlag.${tag}`, { defaultValue: tag }))
+                        .join(' · ')}
+                      style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 3,
+                        height: 18, padding: '0 6px', fontSize: 9.5,
+                        borderRadius: 999, flexShrink: 0,
+                        background: selected?.id === it.id
+                          ? 'rgba(255,255,255,0.16)'
+                          : 'rgba(233,151,10,0.14)',
+                        color: selected?.id === it.id ? '#fff' : 'var(--amber)',
+                        border: '1px solid rgba(233,151,10,0.35)',
+                        fontFamily: 'var(--mono)', letterSpacing: '0.02em',
+                      }}
+                    >
+                      <AlertTriangle size={9} strokeWidth={2.5} />
+                      {t('approvals.logicFlag.badge', { count: it.logic_flags.length, defaultValue: '{{count}} review' })}
+                    </span>
+                  )}
                   {it.urgent && (
                     <span className="tag coral" style={{ height: 18, padding: '0 6px', fontSize: 9.5, flexShrink: 0 }}>!</span>
                   )}
@@ -483,6 +509,38 @@ export default function ManagerApprovals() {
                         when an earlier baseline from same place+day already
                         exists. Manager can still approve, but is forced to
                         notice the collision first. */}
+                    {/* MPDSR QA-gate logic-error flags (Animesh deck slide 9).
+                        Amber advisory listing implausible field values so the
+                        manager can scrutinise + reject with a note. Does NOT
+                        gate the approve/reject buttons. */}
+                    {selected.logic_flags && selected.logic_flags.length > 0 && (
+                      <div style={{
+                        marginTop: 14,
+                        padding: '10px 14px',
+                        borderRadius: 8,
+                        background: 'rgba(233,151,10,0.10)',
+                        border: '1px solid rgba(233,151,10,0.35)',
+                        color: '#7A4400',
+                        fontSize: 13,
+                        display: 'flex', gap: 10, alignItems: 'flex-start',
+                      }}>
+                        <AlertTriangle size={16} style={{ flexShrink: 0, marginTop: 1, color: 'var(--amber)' }} />
+                        <div>
+                          <b>{t('approvals.logicFlag.title', { count: selected.logic_flags.length, defaultValue: '{{count}} review' })}</b>
+                          {' — '}
+                          {t('approvals.logicFlag.body', {
+                            defaultValue: 'Automated checks flagged implausible values. Verify before approving.',
+                          })}
+                          <ul style={{ margin: '6px 0 0', paddingLeft: 18 }}>
+                            {selected.logic_flags.map(tag => (
+                              <li key={tag} style={{ marginTop: 2 }}>
+                                {t(`approvals.logicFlag.${tag}`, { defaultValue: tag })}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+                    )}
                     {selected.is_baseline_duplicate && (
                       <div style={{
                         marginTop: 14,

@@ -25,10 +25,19 @@ class MPDSRCaseViewSet(OrgFilterMixin, ModelViewSet):
         qs = super().get_queryset()
         partner = self.request.query_params.get('partner')
         cause = self.request.query_params.get('cause_of_death')
+        date_from = self.request.query_params.get('from')
+        date_to = self.request.query_params.get('to')
         if partner and self.request.user.can_see_all_orgs:
             qs = qs.filter(partner=partner)
         if cause:
             qs = qs.filter(cause_of_death=cause)
+        # Reporting-period filter — CIPRB Dashboard reporting-period toggle
+        # passes ?from=YYYY-MM-DD&to=YYYY-MM-DD. Filters on date_of_death,
+        # which is the canonical event date for an MPDSR case.
+        if date_from:
+            qs = qs.filter(date_of_death__gte=date_from)
+        if date_to:
+            qs = qs.filter(date_of_death__lte=date_to)
         return qs
 
     def get_serializer_class(self):

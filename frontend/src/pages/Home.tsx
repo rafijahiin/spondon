@@ -14,6 +14,7 @@ import { useTranslation } from 'react-i18next'
 import { api } from '@/api/client'
 import { PageLoader } from '@/components/ui/LoadingSpinner'
 import { ExecutiveBento } from '@/components/home/ExecutiveBento'
+import { MonthOfFive } from '@/components/home/MonthOfFive'
 import { PartnerProgress } from '@/components/home/PartnerProgress'
 import { ProgrammeHealthFlags } from '@/components/home/ProgrammeHealthFlags'
 import { ProgrammeTotals } from '@/components/home/ProgrammeTotals'
@@ -135,6 +136,14 @@ export default function Home() {
           {t('home.rollupLoadError')}
         </p>
       )}
+
+      {/* ── PROGRAMME PACING — slim band above Programme Totals showing
+           which month of the 5-month sprint we are in (slide 4 of
+           Animesh's Executive At-A-Glance deck). Right-aligned so it
+           doesn't crowd the totals heading below. ────────────────── */}
+      <section style={{ marginTop: 36, display: 'flex', justifyContent: 'flex-end' }}>
+        <MonthOfFive />
+      </section>
 
       {/* ── PROGRAMME TOTALS — Animesh's 'till date' headline numbers.
            Total Fistula patients, MD notified / reviewed, ND notified /

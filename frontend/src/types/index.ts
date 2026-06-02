@@ -177,6 +177,15 @@ export interface Submission {
   reviewed_by: User | null
   reviewed_at: string | null
   rejection_reason: string
+  /** Animesh baseline-duplication warning — only meaningful for BASELINE submissions. */
+  is_baseline_duplicate?: boolean
+  /**
+   * MPDSR logic-error flag tags (Animesh QA-gate, deck slide 9). Stable
+   * short identifiers like 'AGE_LOW', 'CAUSE_EMPTY'. Empty list when no
+   * issues are detected or when the form is not MPDSR. The manager
+   * approval queue renders an amber AlertTriangle pill when non-empty.
+   */
+  logic_flags?: string[]
 }
 
 export interface SubmissionDetail extends Submission {

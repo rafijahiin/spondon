@@ -54,15 +54,20 @@ interface AggregatesPayload {
   totals: { mpdsr_cases: number; fistula_corner_cases: number; fistula_campaign_visits: number }
 }
 
-function useAggregates(): AggregatesPayload | null {
+function useAggregates(period?: { from: string; to: string }): AggregatesPayload | null {
   const [data, setData] = useState<AggregatesPayload | null>(null)
+  const periodFrom = period?.from
+  const periodTo = period?.to
   useEffect(() => {
     let cancelled = false
-    api.get<AggregatesPayload>('/mpdsr/aggregates/')
+    const params: Record<string, string> = {}
+    if (periodFrom) params.from = periodFrom
+    if (periodTo) params.to = periodTo
+    api.get<AggregatesPayload>('/mpdsr/aggregates/', { params })
       .then(r => { if (!cancelled) setData(r.data) })
       .catch(() => { /* leave null; visualisations fall back to live-only */ })
     return () => { cancelled = true }
-  }, [])
+  }, [periodFrom, periodTo])
   return data
 }
 
@@ -720,8 +725,24 @@ function ReportingRatePerDistrict({
   )
 }
 
-export function MPDSRVisualizations({ cases }: { cases: MPDSRCase[] }) {
-  const agg = useAggregates()
+export interface ReportingPeriod {
+  from: string
+  to: string
+}
+
+export function MPDSRVisualizations({
+  cases,
+  period,
+}: {
+  cases: MPDSRCase[]
+  period?: ReportingPeriod
+}) {
+  // Threading reporting-period through to the aggregate endpoint so the
+  // MPDSR visualisations follow the CIPRB Dashboard's Contract / Annual
+  // toggle. NotifyVsReview and ReportingRatePerDistrict re-derive from
+  // `cases` (already period-filtered by the parent) and the period-scoped
+  // aggregates returned here.
+  const agg = useAggregates(period)
   // Response Plan tracker is re-enabled for Animesh's Wednesday review.
   // Data source is still Sayeed's MPDSR Action Plan Excel — 7 of 8 rows
   // carry placeholder executed = planned/2 values because no Kobo form

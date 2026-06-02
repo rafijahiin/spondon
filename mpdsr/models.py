@@ -142,6 +142,16 @@ class MPDSRCaseManager(models.Manager):
         else:
             date_of_death = submitted or timezone.now().date()
 
+        # Compute logic-error flags (Animesh QA gate, deck slide 9). Advisory
+        # only — flagged rows still flow through the normal review status.
+        from .validators import compute_logic_flags
+        logic_flags = compute_logic_flags(
+            death_type=death_type,
+            age_years=age_years,
+            cause_of_death=cause,
+            date_of_death=date_of_death,
+        )
+
         obj, created = self.get_or_create(
             submission=submission,
             defaults={
@@ -161,6 +171,7 @@ class MPDSRCaseManager(models.Manager):
                 'age_years': age_years,
                 'status': ReviewStatus.REPORTED,
                 'audit_trail': [],
+                'logic_flags': logic_flags,
             },
         )
         return obj, created
@@ -210,6 +221,12 @@ class MPDSRCase(models.Model):
     action_plan = models.TextField(blank=True)
     notes = models.TextField(blank=True)
     audit_trail = models.JSONField(default=list, blank=True)
+
+    # Logic-error flag tags raised at MPDSRCase creation by the QA validator
+    # (mpdsr.validators.compute_logic_flags). Each entry is a short stable
+    # string like 'AGE_LOW'. Advisory only — the manager queue renders an
+    # amber badge but the approval workflow is unchanged.
+    logic_flags = models.JSONField(default=list, blank=True)
 
     # Provenance: 'kobo' = live submission via KoboToolbox webhook.
     # 'excel_va_2026' / 'excel_va_2025' / etc. = historical baseline ingested
