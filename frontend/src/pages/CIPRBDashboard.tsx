@@ -63,13 +63,6 @@ const REPORTING_PERIODS: ReportingPeriodDef[] = [
     from: '2026-05-21',
     to: '2026-11-20',
   },
-  {
-    key: 'annual',
-    shortLabel: 'Annual',
-    rangeLabel: '1 Oct 2025 → 30 Sep 2026',
-    from: '2025-10-01',
-    to: '2026-09-30',
-  },
 ]
 
 interface FistulaTabDef {
