@@ -291,12 +291,45 @@ const GROUP_LABEL_KEY: Record<DistrictGroup, string> = {
 
 // Cause-of-death pie — UNFPA orange tonal scale, all sitting inside the
 // brand family. Other stays neutral so it doesn't read as a partner colour.
+// GoB ICD-10 cause groupings — per the MPDSR Form 01 PDF Sayed shared
+// (2026-06-02). Six buckets cover all 15 maternal-death cause codes:
+//
+//   haemorrhage         PPH (O72) · APH (O46) · Early Pregnancy (O20) ·
+//                        Placenta Previa (O44) · Abruptio (O45) ·
+//                        Rupture Uterus (O71)
+//   eclampsia           Eclampsia (O15)
+//   sepsis              Puerperal Sepsis (O85)
+//   obstructed_labour   Obstructed Labour due to malposition (O64)
+//   abortion_related    Ectopic (O00) · Failed abortion (O07) ·
+//                        Medical abortion (O04)
+//   other_direct        Anaesthesia complications (O74, O29) ·
+//                        Obstetric Embolism (O88) · Malnutrition (O25) ·
+//                        Death from sequel (O97) · everything else
 const CAUSE_PALETTE: Record<string, string> = {
-  pph:               '#F96000',  // UNFPA orange
-  eclampsia:         '#FB904D',  // UNFPA bright
-  sepsis:            '#FDCFB3',  // UNFPA pale
-  obstructed_labour: '#C44E00',  // UNFPA deep
-  other:             'var(--muted-3)',
+  haemorrhage:       '#F96000',  // UNFPA orange (primary)
+  eclampsia:         '#C44E00',  // UNFPA deep
+  sepsis:            '#FB904D',  // UNFPA bright
+  obstructed_labour: '#FDCFB3',  // UNFPA pale
+  abortion_related:  '#8B3700',  // UNFPA darker
+  other_direct:      'var(--muted-3)',
+}
+
+// Map any free-text cause string to one of the 6 buckets. Matches are
+// case-insensitive substrings so both ICD code labels and verbose
+// English / Bangla cause strings classify cleanly.
+function bucketForCause(raw: string): string {
+  const c = (raw ?? '').toLowerCase().trim()
+  if (!c) return 'other_direct'
+  if (c.includes('pph') || c.includes('aph') || c.includes('haemorr') ||
+      c.includes('placenta previa') || c.includes('abruptio') ||
+      c.includes('rupture')) return 'haemorrhage'
+  if (c.includes('eclampsia') || c.includes('hypertens')) return 'eclampsia'
+  if (c.includes('sepsis')) return 'sepsis'
+  if (c.includes('obstructed') || c.includes('labour') || c.includes('labor'))
+    return 'obstructed_labour'
+  if (c.includes('abortion') || c.includes('ectopic'))
+    return 'abortion_related'
+  return 'other_direct'
 }
 
 // District groupings per Sayeed (delivered 1 Jun 2026):
@@ -342,14 +375,23 @@ function CauseBreakdown({ cases }: { cases: MPDSRCase[] }) {
   const counts: Record<string, number> = {}
   for (const c of filtered) {
     if (c.death_type !== 'maternal') continue   // cause analysis is MD-specific
-    const k = (c.cause_of_death ?? '').toLowerCase().trim() || 'other'
+    const k = bucketForCause(c.cause_of_death ?? '')
     counts[k] = (counts[k] ?? 0) + 1
   }
   const total = Object.values(counts).reduce((s, v) => s + v, 0)
 
-  const causeKeys = ['pph', 'eclampsia', 'sepsis', 'obstructed_labour', 'other']
+  // GoB ICD-10 ordering — most-common first, "other direct" last.
+  const causeKeys = ['haemorrhage', 'eclampsia', 'sepsis', 'obstructed_labour', 'abortion_related', 'other_direct']
+  const causeLabels: Record<string, string> = {
+    haemorrhage:       'Haemorrhage (PPH/APH)',
+    eclampsia:         'Eclampsia',
+    sepsis:            'Sepsis',
+    obstructed_labour: 'Obstructed Labour',
+    abortion_related:  'Abortion-related',
+    other_direct:      'Other Direct',
+  }
   const pieData = causeKeys.map(k => ({
-    name: t(`mpdsr.cause${pascal(k)}`, { defaultValue: k }),
+    name: causeLabels[k],
     value: counts[k] ?? 0,
     color: CAUSE_PALETTE[k],
   }))

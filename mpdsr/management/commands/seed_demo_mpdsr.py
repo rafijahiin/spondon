@@ -12,17 +12,36 @@ from django.utils import timezone
 from mpdsr.models import MPDSRCase, DeathType, PlaceOfDeath, ReviewStatus
 
 
+# Per MPDSR Form 01 (Sayed 2026-06-02) — GoB ICD-10 cause taxonomy.
+# Weighted to reflect typical Bangladesh maternal-mortality cause profile:
+# Haemorrhage and Eclampsia together dominate (~50%), then Sepsis,
+# Obstructed Labour, Abortion-related, Other Direct.
 CAUSES = [
-    'Postpartum Haemorrhage',
+    # Haemorrhage cluster (35%)
+    'PPH (Postpartum Haemorrhage)',
+    'PPH (Postpartum Haemorrhage)',
+    'APH (Antepartum Haemorrhage)',
+    'Placenta Previa',
+    'Abruptio placentae',
+    'Rupture Uterus',
+    'Haemorrhage in Early Pregnancy',
+    # Eclampsia (18%)
     'Eclampsia',
-    'Sepsis',
+    'Eclampsia',
+    'Eclampsia',
+    # Sepsis (12%)
+    'Puerperal Sepsis',
+    'Puerperal Sepsis',
+    # Obstructed Labour (10%)
+    'Obstructed Labour due to Malposition',
     'Obstructed Labour',
-    'Unsafe Abortion',
-    'Postpartum Haemorrhage',
-    'Eclampsia',
-    'Sepsis',
-    'Other Direct',
-    'Indirect / Medical',
+    # Abortion-related (10%)
+    'Unsafe / Failed Abortion',
+    'Ectopic Pregnancy',
+    # Other Direct (15%)
+    'Complication of Anaesthesia',
+    'Obstetric Embolism',
+    'Malnutrition in pregnancy',
 ]
 
 PLACES = [PlaceOfDeath.FACILITY, PlaceOfDeath.HOME, PlaceOfDeath.IN_TRANSIT]
