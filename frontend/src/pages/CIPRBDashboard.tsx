@@ -25,6 +25,7 @@ import { StatusBadge } from '@/components/ui/StatusBadge'
 import { PageLoader } from '@/components/ui/LoadingSpinner'
 import { formatDate, formatDateTime } from '@/utils/format'
 import { FistulaCornerPanel, FistulaCampaignPanel } from '@/components/fistula/FistulaPanels'
+import { PartnerOverlapMap } from '@/components/maps/PartnerOverlapMap'
 import { FistulaVisualizations } from '@/components/ciprb/FistulaVisualizations'
 import { MPDSRVisualizations } from '@/components/ciprb/MPDSRVisualizations'
 import { MPDSRDistrictMap } from '@/components/ciprb/MPDSRDistrictMap'
@@ -878,6 +879,18 @@ export default function CIPRBDashboard() {
               </button>
             )
           })}
+        </div>
+
+        {/* Coverage map — same style as the homepage Coverage map and the
+            Bandhu/PHD hero maps. Animesh asked for consistency across all
+            three partner pages. */}
+        <div style={{ marginTop: 18 }}>
+          <div className="kicker" style={{ marginBottom: 8 }}>
+            <span className="dot" style={{ background: CIPRB_BLUE }} />COVERAGE
+          </div>
+          <div className="card shimmer" style={{ padding: 10 }}>
+            <PartnerOverlapMap height={340} />
+          </div>
         </div>
 
       </section>

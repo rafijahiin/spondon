@@ -25,6 +25,7 @@ import { api } from '@/api/client'
 import { usePolling } from '@/hooks/usePolling'
 import { PageLoader } from '@/components/ui/LoadingSpinner'
 import { BangladeshMap } from '@/components/maps/BangladeshMap'
+import { PartnerOverlapMap } from '@/components/maps/PartnerOverlapMap'
 import { IndicatorGrid } from '@/components/indicators/IndicatorGrid'
 import { CumulativeAverageTile } from '@/components/indicators/CumulativeAverageTile'
 import { formatDate } from '@/utils/format'
@@ -368,8 +369,11 @@ export function OrgDashboard({ partner }: Props) {
           </div>
 
           <div className="hero-right anim-rise d4">
-            <div className="map-frame" style={{ height: '100%', minHeight: 320, position: 'relative' }}>
-              <BangladeshMap activityFeed={[]} className="leaflet-org-map" partner={partner} />
+            <div className="kicker" style={{ marginBottom: 8 }}>
+              <span className="dot" />COVERAGE
+            </div>
+            <div className="card shimmer" style={{ padding: 10 }}>
+              <PartnerOverlapMap height={340} />
             </div>
           </div>
         </div>
