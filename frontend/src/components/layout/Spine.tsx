@@ -88,6 +88,13 @@ interface KoboGroup {
 
 const KOBO_GROUPS: KoboGroup[] = [
   {
+    heading: 'CIPRB Surveillance',
+    forms: [
+      { url: 'https://ee.kobotoolbox.org/x/mc06MRIn', label: 'KF-Fistula Staged',     labelBn: 'ফিস্টুলা স্টেজড ট্র্যাকার' },
+      { url: 'https://ee.kobotoolbox.org/x/7kAJGedj', label: 'KF-MPDSR Response Plan', labelBn: 'MPDSR রেসপন্স প্ল্যান' },
+    ],
+  },
+  {
     heading: 'Legacy Forms',
     forms: [
       { url: 'https://ee.kobotoolbox.org/x/ZOBX0pKd', label: 'MPDSR Form',        labelBn: 'মাতৃমৃত্যু ফর্ম' },
