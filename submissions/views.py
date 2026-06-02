@@ -32,11 +32,20 @@ def _form_type_from_payload(payload: dict) -> str | None:
         'spondon_mpdsr_combined_v1': FormType.MPDSR,
         'spondon_baseline_v1': FormType.BASELINE,
         'spondon_fistula_v1': FormType.FISTULA,
+        'spondon_fistula_staged_v1': FormType.FISTULA_STAGED,
+        'spondon_mpdsr_response_plan_v1': FormType.MPDSR_RESPONSE_PLAN,
     }
     if xform_id in id_string_map:
         return id_string_map[xform_id]
-    # Fallback: some KoboToolbox deployments send asset UID in this field
+    # Fallback: some KoboToolbox deployments send asset UID in this field.
+    # Hardcoded UIDs for the two new staged forms — these are CIPRB's
+    # KoboToolbox asset UIDs delivered 2026-06-02; env-var override still
+    # works via the existing settings.
     asset_uid_map = {
+        # Hardcoded UIDs for the new staged forms (Rafi confirmed 2026-06-02)
+        'aVMRPKVUdwcVAcixBszUKU': FormType.MPDSR_RESPONSE_PLAN,
+        'a4N3C9eZvUM5UJetngf5h7': FormType.FISTULA_STAGED,
+        # Env-var overrides for older forms
         getattr(settings, 'KOBO_ASSET_UID_MPDSR', ''): FormType.MPDSR,
         getattr(settings, 'KOBO_ASSET_UID_FISTULA', ''): FormType.FISTULA,
         getattr(settings, 'KOBO_ASSET_UID_ACTIVITY', ''): FormType.ACTIVITY,

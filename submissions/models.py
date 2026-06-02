@@ -8,6 +8,8 @@ class FormType(models.TextChoices):
     FISTULA = 'fistula', 'Fistula Campaign'
     ACTIVITY = 'activity', 'Activity Report'
     BASELINE = 'baseline', 'Baseline/Endline Survey'
+    FISTULA_STAGED = 'fistula_staged', 'Fistula Staged (Auto-ID, 5 stages)'
+    MPDSR_RESPONSE_PLAN = 'mpdsr_response_plan', 'MPDSR Response Plan'
 
 
 class SubmissionStatus(models.TextChoices):
