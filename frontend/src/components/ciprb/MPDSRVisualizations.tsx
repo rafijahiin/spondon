@@ -172,8 +172,26 @@ function NotifyVsReview({
               }}>
                 {reportingRateMD !== null ? `${reportingRateMD.toFixed(0)}%` : '—'}
               </div>
-              <div style={{ fontSize: 11.5, color: 'var(--ink-3)', marginTop: 4 }}>
+              <div style={{ fontSize: 11.5, color: 'var(--ink-3)', marginTop: 4, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                 {t('mpdsrViz.reportedOfEstimated', { reported: d.notifiedMD, estimated: Math.round(estimatedMD) })}
+                <span
+                  title={
+                    'MD = (Live Birth × 136) / 100,000\n' +
+                    'ND = (Live Birth × 20) / 1,000\n' +
+                    'SB = (Live Birth × 21) / 1,000\n\n' +
+                    "Source: Sayed's MPDSR M&E Framework (email 2 Jun 2026).\n" +
+                    "Decimals come from per-upazila Live Birth counts × ratio;\n" +
+                    'rounded for display.'
+                  }
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                    width: 14, height: 14, borderRadius: 999,
+                    background: 'var(--surface-3)', color: 'var(--muted)',
+                    fontSize: 9, fontWeight: 700, cursor: 'help',
+                    border: '1px solid var(--hair)',
+                  }}
+                  aria-label="Show denominator formula"
+                >i</span>
               </div>
             </div>
             <div>
@@ -186,8 +204,26 @@ function NotifyVsReview({
               }}>
                 {reportingRateND !== null ? `${reportingRateND.toFixed(0)}%` : '—'}
               </div>
-              <div style={{ fontSize: 11.5, color: 'var(--ink-3)', marginTop: 4 }}>
+              <div style={{ fontSize: 11.5, color: 'var(--ink-3)', marginTop: 4, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                 {t('mpdsrViz.reportedOfEstimated', { reported: d.notifiedND, estimated: Math.round(estimatedND) })}
+                <span
+                  title={
+                    'MD = (Live Birth × 136) / 100,000\n' +
+                    'ND = (Live Birth × 20) / 1,000\n' +
+                    'SB = (Live Birth × 21) / 1,000\n\n' +
+                    "Source: Sayed's MPDSR M&E Framework (email 2 Jun 2026).\n" +
+                    "Decimals come from per-upazila Live Birth counts × ratio;\n" +
+                    'rounded for display.'
+                  }
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                    width: 14, height: 14, borderRadius: 999,
+                    background: 'var(--surface-3)', color: 'var(--muted)',
+                    fontSize: 9, fontWeight: 700, cursor: 'help',
+                    border: '1px solid var(--hair)',
+                  }}
+                  aria-label="Show denominator formula"
+                >i</span>
               </div>
             </div>
           </div>
