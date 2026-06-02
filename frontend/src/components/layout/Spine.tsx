@@ -88,6 +88,15 @@ interface KoboGroup {
 
 const KOBO_GROUPS: KoboGroup[] = [
   {
+    heading: 'Daily Reporting',
+    forms: [
+      // Submitted once a day by every field worker — "Any activity today?".
+      // Answering "No" files a zero report (counts as the day's reporting
+      // touch). Feeds the daily compliance health flag.
+      { url: 'https://ee.kobotoolbox.org/bTZY1sGZ', label: 'Daily Activity Report', labelBn: 'দৈনিক কার্যক্রম রিপোর্ট' },
+    ],
+  },
+  {
     heading: 'CIPRB Surveillance',
     forms: [
       { url: 'https://ee.kobotoolbox.org/x/mc06MRIn', label: 'KF-Fistula Staged',     labelBn: 'ফিস্টুলা স্টেজড ট্র্যাকার' },
