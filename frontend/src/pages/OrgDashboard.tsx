@@ -26,6 +26,7 @@ import { usePolling } from '@/hooks/usePolling'
 import { PageLoader } from '@/components/ui/LoadingSpinner'
 import { BangladeshMap } from '@/components/maps/BangladeshMap'
 import { PartnerOverlapMap } from '@/components/maps/PartnerOverlapMap'
+import { DataSource } from '@/components/ui/DataSource'
 import { IndicatorGrid } from '@/components/indicators/IndicatorGrid'
 import { CumulativeAverageTile } from '@/components/indicators/CumulativeAverageTile'
 import { formatDate } from '@/utils/format'
@@ -375,6 +376,7 @@ export function OrgDashboard({ partner }: Props) {
             <div className="card shimmer" style={{ padding: 10 }}>
               <PartnerOverlapMap height={340} partner={partner} />
             </div>
+            <DataSource>Configured at validation workshop (3-4 June 2026) · placeholder until final list confirmed</DataSource>
           </div>
         </div>
       </section>
@@ -388,6 +390,11 @@ export function OrgDashboard({ partner }: Props) {
             <Tile key={i} {...k} />
           ))}
         </div>
+        <DataSource>
+          {isPHD
+            ? 'Aggregated from KF-01 (clients), KF-02 (clinic visits), KF-08 (outreach), KF-GBV, KF-ANC, KF-Fistula_Corner submissions'
+            : 'Aggregated from KF-01 (clients), KF-02 (clinic visits), KF-08 (outreach), KF-09 (counselling), KF-GBV submissions'}
+        </DataSource>
       </section>
 
       {/* "Programme delivery" stacked area removed per Animesh — categories
@@ -410,6 +417,7 @@ export function OrgDashboard({ partner }: Props) {
               <FormBox key={f.key} form={f} />
             ))}
           </div>
+          <DataSource>Per-form submission counts from KF-01 through KF-20 + GBV + ANC + Referral + Fistula Kobo XLSForms</DataSource>
         </section>
       )}
 
@@ -515,6 +523,9 @@ export function OrgDashboard({ partner }: Props) {
             </tbody>
           </table>
         </div>
+        <DataSource>
+          Aggregated from all {partner} KoboSubmission rows this month, grouped by district. 14-day trend = daily counts from /api/dashboard/centres/ endpoint.
+        </DataSource>
       </section>
 
       {/* AI Weekly Summary card removed per Animesh — placeholder narrative

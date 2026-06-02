@@ -22,6 +22,7 @@ import {
 } from 'recharts'
 import { Info, Database, AlertTriangle } from 'lucide-react'
 import { api } from '@/api/client'
+import { DataSource } from '@/components/ui/DataSource'
 import type { MPDSRCase } from '@/types/index'
 
 // ─── Aggregates fetched from /api/mpdsr/aggregates/ ─────────────────────────
@@ -871,16 +872,28 @@ export function MPDSRVisualizations({
   // field-form lands, the placeholders will be replaced automatically.
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 36 }}>
-      <NotifyVsReview
-        cases={cases}
-        totals={agg?.facility_totals ?? null}
-        denominators={agg?.denominators ?? []}
-        reviewCounts={agg?.review_counts ?? null}
-      />
-      <ReportingRatePerDistrict cases={cases} denominators={agg?.denominators ?? []} />
-      <CauseBreakdown cases={cases} />
+      <div>
+        <NotifyVsReview
+          cases={cases}
+          totals={agg?.facility_totals ?? null}
+          denominators={agg?.denominators ?? []}
+          reviewCounts={agg?.review_counts ?? null}
+        />
+        <DataSource>
+          spondon_mpdsr_combined_v1 (F1 community + F2 facility notifications, F4 facility review, va_md community verbal autopsy, sa_md social autopsy) · Denominator: CIPRB Project Deaths 2026
+        </DataSource>
+      </div>
+      <div>
+        <ReportingRatePerDistrict cases={cases} denominators={agg?.denominators ?? []} />
+        <DataSource>spondon_mpdsr_combined_v1 (F1+F2 notifications grouped by district) · Denominator: CIPRB Project Deaths 2026 (Live Birth × 136/100k)</DataSource>
+      </div>
+      <div>
+        <CauseBreakdown cases={cases} />
+        <DataSource>spondon_mpdsr_combined_v1 · F4 cause_of_death field (ICD-10 codes per Sayed's MPDSR Form 01)</DataSource>
+      </div>
       <div id="response-plan">
         <ResponsePlanTracker summaries={agg?.action_plan_summaries ?? []} />
+        <DataSource>KF-MPDSR_Response_Plan.xlsx (3 sections × 5 actions × 7 fields per Sayed's MPDSR Response Plan_2026 docx)</DataSource>
       </div>
     </div>
   )

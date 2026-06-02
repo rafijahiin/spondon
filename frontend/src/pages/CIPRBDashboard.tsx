@@ -26,6 +26,7 @@ import { PageLoader } from '@/components/ui/LoadingSpinner'
 import { formatDate, formatDateTime } from '@/utils/format'
 import { FistulaCornerPanel, FistulaCampaignPanel } from '@/components/fistula/FistulaPanels'
 import { PartnerOverlapMap } from '@/components/maps/PartnerOverlapMap'
+import { DataSource } from '@/components/ui/DataSource'
 import { FistulaVisualizations } from '@/components/ciprb/FistulaVisualizations'
 import { MPDSRVisualizations } from '@/components/ciprb/MPDSRVisualizations'
 import { MPDSRDistrictMap } from '@/components/ciprb/MPDSRDistrictMap'
@@ -498,7 +499,10 @@ function MPDSRSection({
       </div>
 
       {/* ─── Geographic coverage map (SIDA / GAC / CP highlight) ─── */}
-      <MPDSRDistrictMap />
+      <div>
+        <MPDSRDistrictMap />
+        <DataSource>CIPRB M&E Framework · GAC (5) + SIDA (6) confirmed by Rafi 2026-06-02 · CP-10 from 10th UNFPA Bangladesh CPE Report (para 491)</DataSource>
+      </div>
 
       {/* ─── Visualizations: Notify vs Review · Cause breakdown · Response Plan ─── */}
       <MPDSRVisualizations cases={cases ?? []} period={{ from: period.from, to: period.to }} />
@@ -946,6 +950,7 @@ export default function CIPRBDashboard() {
             />
           )}
         </div>
+        <DataSource>KF-Fistula_Corner.xlsx · KF-Fistula_Campaign_Visit.xlsx</DataSource>
       </section>
 
       {/* ───────────────── Fistula visualizations (campaign / funnel / pie) ───────────────── */}

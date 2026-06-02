@@ -16,6 +16,7 @@ import { useTranslation } from 'react-i18next'
 import { Building2, MapPin, Home, Users, Search, Stethoscope, Send, ArrowRight, Scissors } from 'lucide-react'
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts'
 import { api } from '@/api/client'
+import { DataSource } from '@/components/ui/DataSource'
 
 // UNFPA branding — orange across the board.
 const CIPRB_BLUE = '#F96000'
@@ -410,6 +411,7 @@ export function FistulaVisualizations({
           <MetricTile icon={<Home       size={13} />} label={t('fistulaViz.households')} value={agg.households} sub={t('fistulaViz.householdsSub')} />
           <MetricTile icon={<Users      size={13} />} label={t('fistulaViz.population')} value={agg.population} sub={t('fistulaViz.populationSub')} />
         </div>
+        <DataSource>KF-Fistula_Campaign_Visit.xlsx (daily rollups: households_visited, population_covered, districts/upazilas covered)</DataSource>
       </div>
 
       {/* ─── 2. Patient Funnel ─── */}
@@ -450,6 +452,7 @@ export function FistulaVisualizations({
         }}>
           Suspected and Identified are parallel intake cohorts (campaign vs clinic walk-in); Identified → Referred → Repaired are sequential clinical stages.
         </p>
+        <DataSource>KF-Fistula_Campaign_Visit.xlsx (Suspected) · KF-Fistula_Corner.xlsx (Identified/Referred/Repaired)</DataSource>
       </div>
 
       {/* ─── 3. Diagnosis Pie ─── */}
@@ -534,6 +537,7 @@ export function FistulaVisualizations({
         }}>
           {t('fistulaViz.pieCaption')}
         </p>
+        <DataSource>KF-Fistula_Corner.xlsx (fistula_cause field) · pre-Kobo rows fall back to fistula_type anatomy</DataSource>
       </div>
 
     </div>
