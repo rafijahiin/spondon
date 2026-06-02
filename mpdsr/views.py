@@ -183,10 +183,25 @@ def mpdsr_aggregates(request):
         'fistula_campaign_visits': apply_donor(FistulaCampaignVisit.objects.all()).count(),
     }
 
+    # Per-sub-form review counts — Animesh's 2026-06-02 spec splits the
+    # single "MD Review Rate" into three: Community MD Review (CDN via
+    # va_md), Facility MD Review (FDR via f4), and Social Autopsy (sa_md).
+    # Denominator for each is MD notified (f1 + f2 rows).
+    from django.db.models import Count
+    md_donor_qs = apply_donor(mpdsr_qs)
+    review_rows = (
+        md_donor_qs.values('sub_form_type')
+        .annotate(c=Count('id'))
+    )
+    review_counts = {r['sub_form_type']: r['c'] for r in review_rows}
+    notified_md = review_counts.get('f1', 0) + review_counts.get('f2', 0)
+    review_counts['notified_md'] = notified_md
+
     return Response({
         'denominators': denominators,
         'facility_counts': facility_counts,
         'facility_totals': {k: int(v or 0) for k, v in facility_totals.items()},
         'action_plan_summaries': action_plan_summaries,
         'totals': totals,
+        'review_counts': review_counts,
     })

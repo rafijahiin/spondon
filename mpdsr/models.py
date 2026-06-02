@@ -25,7 +25,10 @@ class PlaceOfDeath(models.TextChoices):
     IN_TRANSIT = 'in_transit', 'In Transit / On the Way'
 
 
-# Maps sub-form name → human label (F1–F6 from MPDSR combined form)
+# Maps sub-form name → human label (F1–F6 from MPDSR combined form,
+# plus the review types Animesh specified in the 2026-06-02 meeting:
+# Community MD Review (CDN) via verbal autopsy, Facility MD Review (FDR),
+# and Social Autopsy).
 SUB_FORM_LABELS = {
     'f1': 'F1 Community Notification',
     'f2': 'F2 Facility Notification',
@@ -33,6 +36,8 @@ SUB_FORM_LABELS = {
     'f4': 'F4 Facility Maternal Death Review',
     'f5': 'F5 Facility Neonatal Death Review',
     'f6': 'F6 Facility Stillbirth Review',
+    'va_md': 'Community Verbal Autopsy (Maternal)',
+    'sa_md': 'Social Autopsy (Maternal)',
 }
 
 # Sub-forms that are always perinatal/neonatal regardless of death_type field

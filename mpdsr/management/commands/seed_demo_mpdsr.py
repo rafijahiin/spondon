@@ -84,15 +84,20 @@ class Command(BaseCommand):
                 dod = today - datetime.timedelta(
                     days=rng.randint(0, 11) if rng.random() < 0.7 else rng.randint(12, 165)
                 )
+                # Animesh's spec: notification can be community (f1) or
+                # facility (f2); ~60% facility, 40% community.
+                notify_sub = 'f2' if rng.random() < 0.6 else 'f1'
+                cause = rng.choice(CAUSES)
+                place = rng.choice(PLACES)
                 MPDSRCase.objects.create(
                     case_hash=case_hash,
                     partner='CIPRB',
                     district=district,
-                    sub_form_type='f2',
+                    sub_form_type=notify_sub,
                     date_of_death=dod,
                     death_type=DeathType.MATERNAL,
-                    cause_of_death=rng.choice(CAUSES),
-                    place_of_death=rng.choice(PLACES),
+                    cause_of_death=cause,
+                    place_of_death=place,
                     facility_name=f'{district} UHC',
                     age_years=rng.randint(18, 42),
                     status=ReviewStatus.REPORTED,
@@ -104,6 +109,58 @@ class Command(BaseCommand):
                     source='demo_seed',
                 )
                 created += 1
+
+                # Animesh's review structure: each notified MD potentially
+                # generates a Community Verbal Autopsy (va_md), Social
+                # Autopsy (sa_md), and Facility Death Review (f4) — each
+                # an INDEPENDENT MPDSRCase row that the dashboard counts
+                # in the review-rate tiles.
+                if rng.random() < 0.75:  # 75% get Community Verbal Autopsy
+                    MPDSRCase.objects.create(
+                        case_hash=f'DEMO-VAMD-{district}-{i}',
+                        partner='CIPRB',
+                        district=district,
+                        sub_form_type='va_md',
+                        date_of_death=dod,
+                        death_type=DeathType.MATERNAL,
+                        cause_of_death=cause,
+                        place_of_death=place,
+                        facility_name=f'{district} community',
+                        status=ReviewStatus.UNDER_REVIEW,
+                        source='demo_seed',
+                    )
+                    created += 1
+                if rng.random() < 0.65:  # 65% get Social Autopsy
+                    MPDSRCase.objects.create(
+                        case_hash=f'DEMO-SAMD-{district}-{i}',
+                        partner='CIPRB',
+                        district=district,
+                        sub_form_type='sa_md',
+                        date_of_death=dod,
+                        death_type=DeathType.MATERNAL,
+                        cause_of_death=cause,
+                        place_of_death=place,
+                        facility_name=f'{district} community',
+                        status=ReviewStatus.UNDER_REVIEW,
+                        source='demo_seed',
+                    )
+                    created += 1
+                if notify_sub == 'f2' and rng.random() < 0.70:
+                    # Facility-notified deaths get F4 facility review at 70%
+                    MPDSRCase.objects.create(
+                        case_hash=f'DEMO-F4-{district}-{i}',
+                        partner='CIPRB',
+                        district=district,
+                        sub_form_type='f4',
+                        date_of_death=dod,
+                        death_type=DeathType.MATERNAL,
+                        cause_of_death=cause,
+                        place_of_death=place,
+                        facility_name=f'{district} UHC',
+                        status=ReviewStatus.UNDER_REVIEW,
+                        source='demo_seed',
+                    )
+                    created += 1
 
             for i in range(prof['pd']):
                 case_hash = f'DEMO-PD-{district}-{i}'

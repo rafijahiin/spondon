@@ -46,12 +46,27 @@ interface DistrictDenominator {
   project_deaths_sb: number | null
 }
 
+interface ReviewCounts {
+  /** Community Verbal Autopsy (Animesh's "Community MD Review / CDN") */
+  va_md?: number
+  /** Social Autopsy (Animesh's "Social Autopsy") */
+  sa_md?: number
+  /** F4 Facility Maternal Death Review (Animesh's "Facility MD Review / FDR") */
+  f4?: number
+  /** F1 + F2 notification rows summed — denominator for review rates */
+  notified_md?: number
+  /** Per-sub-form raw counts also returned for transparency */
+  f1?: number
+  f2?: number
+}
+
 interface AggregatesPayload {
   denominators: DistrictDenominator[]
   facility_counts: any[]
   facility_totals: FacilityTotals
   action_plan_summaries: ActionPlanSummary[]
   totals: { mpdsr_cases: number; fistula_corner_cases: number; fistula_campaign_visits: number }
+  review_counts?: ReviewCounts
 }
 
 function useAggregates(period?: { from: string; to: string }): AggregatesPayload | null {
@@ -105,11 +120,12 @@ function computeNotifyVsReview(cases: MPDSRCase[]): NotifyVsReviewData {
 }
 
 function NotifyVsReview({
-  cases, totals, denominators,
+  cases, totals, denominators, reviewCounts,
 }: {
   cases: MPDSRCase[]
   totals: FacilityTotals | null
   denominators: DistrictDenominator[]
+  reviewCounts: ReviewCounts | null
 }) {
   const { t } = useTranslation()
   const live = useMemo(() => computeNotifyVsReview(cases), [cases])
@@ -229,40 +245,48 @@ function NotifyVsReview({
           </div>
         )}
 
-        {/* Review rate tiles */}
-        <div style={{
-          display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 18,
-          marginBottom: 24,
-        }}>
-          <div>
-            <div className="mono" style={{ fontSize: 9.5, color: 'var(--muted)', letterSpacing: '0.08em', marginBottom: 4 }}>
-              {t('mpdsrViz.mdReviewRate')}
+        {/* MD Review subdivision — Animesh's 2026-06-02 spec splits the
+            single MD Review Rate into three tiles:
+              CDN = Community MD Review (verbal autopsy / va_md)
+              FDR = Facility MD Review (f4)
+              SA  = Social Autopsy (sa_md)
+            All three use MD notified (f1 + f2) as the denominator. */}
+        {(() => {
+          const notifiedMD_kobo = reviewCounts?.notified_md ?? 0
+          const baseMD = notifiedMD_kobo > 0 ? notifiedMD_kobo : d.notifiedMD
+          const cdn = reviewCounts?.va_md ?? 0
+          const fdr = reviewCounts?.f4 ?? d.reviewedMD
+          const sa  = reviewCounts?.sa_md ?? 0
+          const cdnPct = baseMD > 0 ? (cdn / baseMD) * 100 : null
+          const fdrPct = baseMD > 0 ? (fdr / baseMD) * 100 : null
+          const saPct  = baseMD > 0 ? (sa / baseMD) * 100  : null
+          const tile = (label: string, value: number, pct: number | null, color: string) => (
+            <div>
+              <div className="mono" style={{ fontSize: 9.5, color: 'var(--muted)', letterSpacing: '0.08em', marginBottom: 4 }}>
+                {label}
+              </div>
+              <div style={{
+                fontSize: 28, fontWeight: 800, color,
+                fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em', lineHeight: 1,
+              }}>
+                {pct !== null ? `${pct.toFixed(0)}%` : '—'}
+              </div>
+              <div style={{ fontSize: 11.5, color: 'var(--ink-3)', marginTop: 4 }}>
+                {value} of {baseMD} notified
+              </div>
             </div>
+          )
+          return (
             <div style={{
-              fontSize: 28, fontWeight: 800, color: CIPRB_BLUE,
-              fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em', lineHeight: 1,
+              display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 18,
+              marginBottom: 24,
             }}>
-              {reviewRateMD.toFixed(0)}%
+              {tile('COMMUNITY MD REVIEW (CDN)', cdn, cdnPct, CIPRB_BLUE)}
+              {tile('FACILITY MD REVIEW (FDR)',  fdr, fdrPct, '#C44E00')}
+              {tile('SOCIAL AUTOPSY (SA)',       sa,  saPct,  CIPRB_BLUE_LIGHT)}
             </div>
-            <div style={{ fontSize: 11.5, color: 'var(--ink-3)', marginTop: 4 }}>
-              {t('mpdsrViz.mdReviewedOfNotified', { reviewed: d.reviewedMD, notified: d.notifiedMD })}
-            </div>
-          </div>
-          <div>
-            <div className="mono" style={{ fontSize: 9.5, color: 'var(--muted)', letterSpacing: '0.08em', marginBottom: 4 }}>
-              {t('mpdsrViz.ndReviewRate')}
-            </div>
-            <div style={{
-              fontSize: 28, fontWeight: 800, color: CIPRB_BLUE_LIGHT,
-              fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em', lineHeight: 1,
-            }}>
-              {reviewRateND.toFixed(0)}%
-            </div>
-            <div style={{ fontSize: 11.5, color: 'var(--ink-3)', marginTop: 4 }}>
-              {t('mpdsrViz.ndReviewedOfNotified', { reviewed: d.reviewedND, notified: d.notifiedND })}
-            </div>
-          </div>
-        </div>
+          )
+        })()}
 
         {/* Bar chart */}
         {(d.notifiedMD + d.notifiedND) > 0 ? (
@@ -851,6 +875,7 @@ export function MPDSRVisualizations({
         cases={cases}
         totals={agg?.facility_totals ?? null}
         denominators={agg?.denominators ?? []}
+        reviewCounts={agg?.review_counts ?? null}
       />
       <ReportingRatePerDistrict cases={cases} denominators={agg?.denominators ?? []} />
       <CauseBreakdown cases={cases} />
