@@ -49,6 +49,10 @@ def _form_type_from_payload(payload: dict) -> str | None:
         # Hardcoded UIDs for the new staged forms (Rafi confirmed 2026-06-02)
         'aVMRPKVUdwcVAcixBszUKU': FormType.MPDSR_RESPONSE_PLAN,
         'a4N3C9eZvUM5UJetngf5h7': FormType.FISTULA_STAGED,
+        # Daily Activity / zero-report form asset UID (deployed 2026-06-03).
+        # Kobo may send the asset UID as _xform_id_string instead of the
+        # settings form_id, so accept both.
+        'aJrk9VUUy9o6YGipAJ8H5t': FormType.ACTIVITY,
         # Env-var overrides for older forms
         getattr(settings, 'KOBO_ASSET_UID_MPDSR', ''): FormType.MPDSR,
         getattr(settings, 'KOBO_ASSET_UID_FISTULA', ''): FormType.FISTULA,
