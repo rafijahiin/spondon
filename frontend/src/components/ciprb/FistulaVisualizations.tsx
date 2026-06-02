@@ -444,7 +444,7 @@ export function FistulaVisualizations({
           <FunnelArrow conversionPct={
             agg.referred > 0 ? Math.round((agg.repaired / agg.referred) * 100) : undefined
           } />
-          <FunnelStage icon={<Scissors size={14} />}    label="REPAIRED"                    value={agg.repaired}   sub="Surgery completed" />
+          <FunnelStage icon={<Scissors size={14} />}    label={t('fistulaViz.repaired')}    value={agg.repaired}   sub={t('fistulaViz.repairedSub')} />
         </div>
         <p style={{
           fontSize: 11.5, color: 'var(--muted)', margin: '8px 4px 0',
