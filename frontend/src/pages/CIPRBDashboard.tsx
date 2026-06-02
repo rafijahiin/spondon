@@ -102,15 +102,20 @@ interface CampaignVisitRow {
   id: string
 }
 
-function useFistulaKPIs(period: ReportingPeriodDef): { kpis: KPIs; loading: boolean } {
+function useFistulaKPIs(
+  period: ReportingPeriodDef,
+  districtFilter: readonly string[] | null,
+): { kpis: KPIs; loading: boolean } {
   const [kpis, setKpis] = useState<KPIs>({ suspected: 0, identified: 0, referred: 0, surgeryDone: 0 })
   const [loading, setLoading] = useState(true)
   const periodFrom = period.from
   const periodTo = period.to
+  const districtsKey = districtFilter ? districtFilter.join(',') : ''
 
   useEffect(() => {
     let cancelled = false
-    const params = { from: periodFrom, to: periodTo }
+    const params: Record<string, string> = { from: periodFrom, to: periodTo }
+    if (districtsKey) params.districts = districtsKey
     Promise.allSettled([
       api.get<{ results?: CampaignVisitRow[] } | CampaignVisitRow[]>('/fistula/campaign-visits/', { params }),
       api.get<{ results?: CornerCaseRow[]    } | CornerCaseRow[]>('/fistula/corner-cases/', { params }),
@@ -131,16 +136,24 @@ function useFistulaKPIs(period: ReportingPeriodDef): { kpis: KPIs; loading: bool
               : cornerRes.value.data.results ?? [])
           : []
 
+      // Client-side district filter as a safety net — backend should also
+      // honour ?districts= but until that ships, this keeps the KPIs honest.
+      const districtSet = districtFilter ? new Set(districtFilter.map(d => d.toLowerCase())) : null
+      const inFilter = (d?: string) => !districtSet || (d && districtSet.has(d.toLowerCase()))
+
+      const campaignFiltered = campaignRows.filter(c => inFilter(c.district))
+      const cornerFiltered = cornerRows.filter(c => inFilter(c.district))
+
       setKpis({
-        suspected:   campaignRows.length,
-        identified:  cornerRows.filter(c => c.identification_date || c.diagnosis_date).length,
-        referred:    cornerRows.filter(c => c.referral_date || (c.referral_outcome ?? '').trim() !== '').length,
-        surgeryDone: cornerRows.filter(c => c.surgery_performed === 'yes').length,
+        suspected:   campaignFiltered.length,
+        identified:  cornerFiltered.filter(c => c.identification_date || c.diagnosis_date).length,
+        referred:    cornerFiltered.filter(c => c.referral_date || (c.referral_outcome ?? '').trim() !== '').length,
+        surgeryDone: cornerFiltered.filter(c => c.surgery_performed === 'yes').length,
       })
       setLoading(false)
     })
     return () => { cancelled = true }
-  }, [periodFrom, periodTo])
+  }, [periodFrom, periodTo, districtsKey])
 
   return { kpis, loading }
 }
@@ -384,10 +397,17 @@ function SummaryRow({ label, value, span = 1 }: { label: string; value: string; 
 
 type CauseFilter = 'all' | string
 
-function MPDSRSection({ period }: { period: ReportingPeriodDef }) {
+function MPDSRSection({
+  period,
+  districts,
+}: {
+  period: ReportingPeriodDef
+  districts: readonly string[] | null
+}) {
   const { t } = useTranslation()
   const [causeFilter, setCauseFilter] = useState<CauseFilter>('all')
   const [selectedCase, setSelectedCase] = useState<MPDSRCase | null>(null)
+  const districtsKey = districts ? districts.join(',') : ''
 
   const { data: cases, loading } = usePolling<MPDSRCase[]>({
     fetcher: () =>
@@ -395,15 +415,16 @@ function MPDSRSection({ period }: { period: ReportingPeriodDef }) {
         .get('/mpdsr/cases/', {
           params: {
             ...(causeFilter !== 'all' ? { cause_of_death: causeFilter } : {}),
+            ...(districtsKey ? { districts: districtsKey } : {}),
             from: period.from,
             to: period.to,
           },
         })
         .then((r) => (Array.isArray(r.data) ? r.data : r.data.results ?? [])),
     interval: 60_000,
-    // Re-fetch when the reporting period changes so the cases table and
-    // counts re-derive against the selected Contract / Annual window.
-    deps: [causeFilter, period.from, period.to],
+    // Re-fetch when the reporting period or donor filter changes so the
+    // cases table and counts re-derive against the selected window.
+    deps: [causeFilter, period.from, period.to, districtsKey],
   })
 
   const causeCounts: Record<string, number> = {}
@@ -646,14 +667,32 @@ function MPDSRSection({ period }: { period: ReportingPeriodDef }) {
 
 // ─── Main page ───────────────────────────────────────────────────────────────
 
+// Donor filter — Animesh asked for one-click GAC and SIDA pills.
+// Districts confirmed by Rafi 2026-06-02 (override Sayed's earlier
+// 3-district mention in meeting minutes).
+const DONOR_FILTERS = {
+  all:  { label: 'All',  districts: null as string[] | null },
+  GAC:  {
+    label: 'GAC',
+    districts: ['Sunamganj', 'Bhola', 'Sherpur', 'Kurigram', 'Khagrachari'],
+  },
+  SIDA: {
+    label: 'SIDA',
+    districts: ['Noakhali', 'Chandpur', 'Bandarban', 'Dhaka', 'Sunamganj', "Cox's Bazar"],
+  },
+} as const
+type DonorKey = keyof typeof DONOR_FILTERS
+
 export default function CIPRBDashboard() {
   const { t } = useTranslation()
   const [active, setActive] = useState<FistulaTabKey>('corner')
   const [periodKey, setPeriodKey] = useState<ReportingPeriodKey>('contract')
+  const [donorKey, setDonorKey] = useState<DonorKey>('all')
   const reduce = useReducedMotion()
   const activeTab = FISTULA_TABS.find((tab) => tab.key === active)!
   const activePeriod = REPORTING_PERIODS.find((p) => p.key === periodKey)!
-  const { kpis } = useFistulaKPIs(activePeriod)
+  const activeDonor = DONOR_FILTERS[donorKey]
+  const { kpis } = useFistulaKPIs(activePeriod, activeDonor.districts)
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 40 }}>
@@ -774,6 +813,60 @@ export default function CIPRBDashboard() {
           })}
         </div>
 
+        {/* ─── Donor filter pills (Animesh's one-click GAC/SIDA ask) ─── */}
+        <div
+          role="radiogroup"
+          aria-label="Donor filter"
+          style={{
+            display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 10,
+            marginTop: 12,
+          }}
+        >
+          <span style={{
+            fontSize: 11, color: 'var(--muted)',
+            textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600,
+          }}>
+            Donor
+          </span>
+          {(Object.keys(DONOR_FILTERS) as DonorKey[]).map((k) => {
+            const cfg = DONOR_FILTERS[k]
+            const isActive = donorKey === k
+            return (
+              <button
+                key={k}
+                role="radio"
+                aria-checked={isActive}
+                onClick={() => setDonorKey(k)}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 6,
+                  padding: '6px 14px', borderRadius: 999,
+                  background: isActive ? 'rgba(249,96,0,0.10)' : 'var(--surface-2)',
+                  color: isActive ? CIPRB_BLUE : 'var(--ink-3)',
+                  fontSize: 14,
+                  fontWeight: isActive ? 600 : 500,
+                  border: isActive
+                    ? '1px solid rgba(249,96,0,0.32)'
+                    : '1px solid var(--hair)',
+                  cursor: 'pointer',
+                  transitionProperty: 'background-color, color, border-color',
+                  transitionDuration: '180ms',
+                }}
+              >
+                <span>{cfg.label}</span>
+                {cfg.districts && (
+                  <span style={{
+                    color: isActive ? CIPRB_BLUE : 'var(--muted)',
+                    fontWeight: 500,
+                    fontVariantNumeric: 'tabular-nums',
+                  }}>
+                    · {cfg.districts.length} districts
+                  </span>
+                )}
+              </button>
+            )
+          })}
+        </div>
+
       </section>
 
       {/* ───────────────── Fistula KPI band ───────────────── */}
@@ -807,7 +900,7 @@ export default function CIPRBDashboard() {
 
       {/* ───────────────── Fistula visualizations (campaign / funnel / pie) ───────────────── */}
       <section className="section" style={{ marginTop: 8 }}>
-        <FistulaVisualizations period={{ from: activePeriod.from, to: activePeriod.to }} />
+        <FistulaVisualizations period={{ from: activePeriod.from, to: activePeriod.to }} districts={activeDonor.districts} />
       </section>
 
       {/* ───────────────── Fistula registers (collapsible — raw data) ───────────────── */}
@@ -892,7 +985,7 @@ export default function CIPRBDashboard() {
 
       {/* ───────────────── MPDSR ───────────────── */}
       <section className="section" id="mpdsr-section" style={{ marginBottom: 80, scrollMarginTop: 80 }}>
-        <MPDSRSection period={activePeriod} />
+        <MPDSRSection period={activePeriod} districts={activeDonor.districts} />
       </section>
     </div>
   )

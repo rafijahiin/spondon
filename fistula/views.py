@@ -34,6 +34,17 @@ class FistulaCampaignViewSet(OrgFilterMixin, ModelViewSet):
             qs = qs.filter(partner=partner_param)
         if district_param:
             qs = qs.filter(district__icontains=district_param)
+        # Donor-filter pill (GAC / SIDA) sends a comma-separated district
+        # list. Match case-insensitively against the district field.
+        districts_param = self.request.query_params.get('districts')
+        if districts_param:
+            names = [n.strip() for n in districts_param.split(',') if n.strip()]
+            if names:
+                from django.db.models import Q
+                q = Q()
+                for n in names:
+                    q |= Q(district__iexact=n)
+                qs = qs.filter(q)
         # Reporting-period filter from the CIPRB Dashboard toggle.
         if date_from:
             qs = qs.filter(campaign_date__gte=date_from)
@@ -88,6 +99,16 @@ class FistulaCornerCaseViewSet(ModelViewSet):
         date_to = self.request.query_params.get('to')
         if district:
             qs = qs.filter(district__icontains=district)
+        # Donor filter — comma-separated district list from the pill.
+        districts_param = self.request.query_params.get('districts')
+        if districts_param:
+            names = [n.strip() for n in districts_param.split(',') if n.strip()]
+            if names:
+                from django.db.models import Q
+                q = Q()
+                for n in names:
+                    q |= Q(district__iexact=n)
+                qs = qs.filter(q)
         # Reporting-period filter — uses diagnosis_date (event date for a
         # corner-case workflow).
         if date_from:
@@ -121,6 +142,16 @@ class FistulaCampaignVisitViewSet(ModelViewSet):
             qs = qs.filter(district__icontains=district)
         if union:
             qs = qs.filter(union__icontains=union)
+        # Donor filter — comma-separated district list from the pill.
+        districts_param = self.request.query_params.get('districts')
+        if districts_param:
+            names = [n.strip() for n in districts_param.split(',') if n.strip()]
+            if names:
+                from django.db.models import Q
+                q = Q()
+                for n in names:
+                    q |= Q(district__iexact=n)
+                qs = qs.filter(q)
         # Reporting-period filter — visit_date is the event date.
         if date_from:
             qs = qs.filter(visit_date__gte=date_from)

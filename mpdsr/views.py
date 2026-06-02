@@ -31,6 +31,20 @@ class MPDSRCaseViewSet(OrgFilterMixin, ModelViewSet):
             qs = qs.filter(partner=partner)
         if cause:
             qs = qs.filter(cause_of_death=cause)
+        # Donor filter — comma-separated district list from the pill.
+        districts_param = self.request.query_params.get('districts')
+        if districts_param:
+            names = [n.strip() for n in districts_param.split(',') if n.strip()]
+            if names:
+                from django.db.models import Q
+                q = Q()
+                for n in names:
+                    q |= Q(district__iexact=n)
+                qs = qs.filter(q)
+        # Hide stillbirth review sub-forms (F3, F6) from the dashboard
+        # — Animesh decision in the 2026-06-01 meeting. Records stay in DB
+        # for audit, just don't surface in API responses.
+        qs = qs.exclude(sub_form_type__in=['f3', 'f6'])
         # Reporting-period filter — CIPRB Dashboard reporting-period toggle
         # passes ?from=YYYY-MM-DD&to=YYYY-MM-DD. Filters on date_of_death,
         # which is the canonical event date for an MPDSR case.
@@ -111,15 +125,30 @@ def mpdsr_aggregates(request):
     }
     """
     from fistula.models import FistulaCornerCase, FistulaCampaignVisit
-    from django.db.models import Sum
+    from django.db.models import Sum, Q
 
+    # Donor filter — comma-separated district list from the pill.
+    districts_param = request.query_params.get('districts')
+    district_names = None
+    if districts_param:
+        district_names = [n.strip() for n in districts_param.split(',') if n.strip()]
+
+    def apply_donor(qs, field='district'):
+        if not district_names:
+            return qs
+        q = Q()
+        for n in district_names:
+            q |= Q(**{f'{field}__iexact': n})
+        return qs.filter(q)
+
+    denom_qs = apply_donor(MPDSRDistrictDenominator.objects.all())
     denominators = list(
-        MPDSRDistrictDenominator.objects.values(
+        denom_qs.values(
             'district', 'project_deaths_md', 'project_deaths_nd', 'project_deaths_sb',
         )
     )
 
-    facility_qs = MPDSRFacilityCount.objects.all()
+    facility_qs = apply_donor(MPDSRFacilityCount.objects.all())
     facility_counts = list(
         facility_qs.values(
             'district', 'facility_name', 'period',
@@ -132,7 +161,7 @@ def mpdsr_aggregates(request):
     )
 
     action_plan_summaries = []
-    for a in MPDSRActionPlanSummary.objects.all():
+    for a in apply_donor(MPDSRActionPlanSummary.objects.all()):
         action_plan_summaries.append({
             'district': a.district,
             'level': a.level,
@@ -145,10 +174,13 @@ def mpdsr_aggregates(request):
             'completion_pct': a.completion_pct,
         })
 
+    # Exclude F3 / F6 stillbirth reviews from dashboard surface counts
+    # (Animesh decision, 2026-06-01 meeting). Records remain in DB.
+    mpdsr_qs = MPDSRCase.objects.exclude(sub_form_type__in=['f3', 'f6'])
     totals = {
-        'mpdsr_cases': MPDSRCase.objects.count(),
-        'fistula_corner_cases': FistulaCornerCase.objects.count(),
-        'fistula_campaign_visits': FistulaCampaignVisit.objects.count(),
+        'mpdsr_cases': apply_donor(mpdsr_qs).count(),
+        'fistula_corner_cases': apply_donor(FistulaCornerCase.objects.all()).count(),
+        'fistula_campaign_visits': apply_donor(FistulaCampaignVisit.objects.all()).count(),
     }
 
     return Response({

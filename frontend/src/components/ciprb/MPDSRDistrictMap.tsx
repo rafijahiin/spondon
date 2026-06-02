@@ -26,10 +26,11 @@ const CIPRB_BLUE = '#F96000'
 // Mappings (mirrors MPDSRVisualizations — single source eventually).
 const GAC = ['Sunamganj', 'Bhola', 'Sherpur', 'Kurigram', 'Khagrachari']
 const SIDA = ['Noakhali', 'Chandpur', 'Bandarban', 'Dhaka', 'Sunamganj', "Cox's Bazar"]
+// CP-10 priority districts per the 10th UNFPA Bangladesh Country Programme
+// Evaluation report (2026), paragraph 491. Exactly 10 districts.
 const CP = [
-  'Sunamganj', 'Sylhet', 'Hobiganj', 'Bhola', 'Bagerhat', 'Patuakhali',
-  'Barguna', 'Bandarban', 'Khagrachari', 'Noakhali', 'Chandpur', 'Sherpur',
-  'Sirajganj', 'Jamalpur', 'Gaibandha', 'Kurigram', "Cox's Bazar", 'Dhaka',
+  "Cox's Bazar", 'Bandarban', 'Noakhali', 'Dhaka', 'Sirajganj',
+  'Jamalpur', 'Gaibandha', 'Patuakhali', 'Barguna', 'Bagerhat',
 ]
 
 function normalise(s: string): string {

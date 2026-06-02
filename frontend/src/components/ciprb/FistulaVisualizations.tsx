@@ -82,16 +82,22 @@ export interface ReportingPeriod {
   to: string
 }
 
-function useFistulaAggregates(period?: ReportingPeriod): AggregateData {
+function useFistulaAggregates(
+  period?: ReportingPeriod,
+  districts?: readonly string[] | null,
+): AggregateData {
   const [data, setData] = useState<AggregateData>(EMPTY)
   const periodFrom = period?.from
   const periodTo = period?.to
+  const districtsKey = districts ? districts.join(',') : ''
+  const districtSet = districts ? new Set(districts.map(d => d.toLowerCase())) : null
 
   useEffect(() => {
     let cancelled = false
     const params: Record<string, string> = {}
     if (periodFrom) params.from = periodFrom
     if (periodTo) params.to = periodTo
+    if (districtsKey) params.districts = districtsKey
     Promise.allSettled([
       api.get<{ results?: CampaignVisit[] } | CampaignVisit[]>('/fistula/campaign-visits/', { params }),
       api.get<{ results?: CornerCase[]    } | CornerCase[]>('/fistula/corner-cases/', { params }),
@@ -113,12 +119,20 @@ function useFistulaAggregates(period?: ReportingPeriod): AggregateData {
               : cornerRes.value.data.results ?? [])
           : []
 
-      const rollups: CampaignRollup[] =
+      const rollupsAll: CampaignRollup[] =
         rollupRes.status === 'fulfilled'
           ? (Array.isArray(rollupRes.value.data)
               ? rollupRes.value.data
               : rollupRes.value.data.results ?? [])
           : []
+
+      // Client-side donor filter — until ?districts= is honoured by all
+      // endpoints, restrict aggregates to the selected donor's districts.
+      const inFilter = (d?: string) =>
+        !districtSet || (d != null && districtSet.has(d.toLowerCase()))
+      const campaignFil = campaign.filter(c => inFilter(c.district))
+      const cornerFil = corner.filter(c => inFilter(c.district))
+      const rollups = rollupsAll.filter(r => inFilter(r.district))
 
       // Districts/upazilas drawn from BOTH sources — daily roll-ups give
       // wider coverage; individual visits add specifics. Households +
@@ -126,7 +140,7 @@ function useFistulaAggregates(period?: ReportingPeriod): AggregateData {
       // Animesh's spec and the xlsx column headings).
       const allDistricts = new Set<string>()
       const allUpazilas = new Set<string>()
-      for (const r of [...campaign, ...rollups]) {
+      for (const r of [...campaignFil, ...rollups]) {
         const d = (r.district ?? '').trim()
         if (d) allDistricts.add(d)
         const u = (r.upazila ?? '').trim()
@@ -144,8 +158,8 @@ function useFistulaAggregates(period?: ReportingPeriod): AggregateData {
       //     imported rows don't carry a referral_date yet; once a Kobo
       //     referral form lands this will populate.
       const suspected = rollups.reduce((s, r) => s + (r.suspected_fistula_cases ?? 0), 0)
-      const identified = corner.filter(c => c.identification_date || c.diagnosis_date).length
-      const referred   = corner.filter(c => c.referral_date || (c.referral_outcome ?? '').trim() !== '').length
+      const identified = cornerFil.filter(c => c.identification_date || c.diagnosis_date).length
+      const referred   = cornerFil.filter(c => c.referral_date || (c.referral_outcome ?? '').trim() !== '').length
 
       // Diagnosis pie — Animesh's exact three slices, classified from
       // the Kobo 'Cause of Fistula' radio (which DOES exist on the
@@ -166,7 +180,7 @@ function useFistulaAggregates(period?: ReportingPeriod): AggregateData {
       let pieIatrogenic = 0
       let pieOther = 0
       let piePending = 0
-      for (const c of corner) {
+      for (const c of cornerFil) {
         if (!c.diagnosis_date) { piePending++; continue }
         const cause = (c.fistula_cause ?? '').toLowerCase().trim()
         if (cause) {
@@ -203,7 +217,7 @@ function useFistulaAggregates(period?: ReportingPeriod): AggregateData {
       })
     })
     return () => { cancelled = true }
-  }, [periodFrom, periodTo])
+  }, [periodFrom, periodTo, districtsKey])
 
   return data
 }
@@ -318,13 +332,20 @@ function DiagnosisLegend({ data }: { data: { name: string; value: number; color:
 
 // ─── Main export ─────────────────────────────────────────────────────────────
 
-export function FistulaVisualizations({ period }: { period?: ReportingPeriod } = {}) {
+export function FistulaVisualizations({
+  period,
+  districts,
+}: {
+  period?: ReportingPeriod
+  districts?: readonly string[] | null
+} = {}) {
   const { t } = useTranslation()
   // Reporting-period (Contract / Annual) from the CIPRB Dashboard toggle
   // is forwarded to the aggregate fetches as ?from=…&to=… so all three
   // Fistula surfaces (campaign reach, patient funnel, diagnosis pie)
   // follow the same window the rest of the page is showing.
-  const agg = useFistulaAggregates(period)
+  // `districts` narrows to a donor's footprint (GAC / SIDA / All).
+  const agg = useFistulaAggregates(period, districts)
 
   // Conversion arrows removed after audit — Suspected (campaign outreach)
   // and Identified (clinic walk-ins) are PARALLEL intake cohorts, not a
