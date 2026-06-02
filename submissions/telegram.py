@@ -83,14 +83,21 @@ def send_rejection_notification(submission) -> None:
 
     reviewer = getattr(submission.reviewed_by, 'full_name', None) or 'Manager'
     reason = submission.rejection_reason or 'No reason provided'
+    from .form_links import resubmit_url
+    link = resubmit_url(submission)
     text = (
-        f'<b>❌ Submission Rejected</b>\n\n'
+        f'<b>❌ Submission Rejected — please correct & resubmit</b>\n\n'
         f'Form: {submission.get_form_type_display()}\n'
         f'Partner: {submission.partner}\n'
         f'Worker: {submission.worker_name or "—"}\n'
         f'Rejected by: {reviewer}\n'
-        f'Reason: {reason}'
+        f'Reviewer note: {reason}\n'
     )
+    if link:
+        text += (
+            f'\n👉 Open the form again, fix the flagged field, and submit a '
+            f'corrected entry:\n{link}'
+        )
     _post(token, chat_id, text)
 
 

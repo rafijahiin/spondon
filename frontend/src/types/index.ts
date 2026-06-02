@@ -186,6 +186,20 @@ export interface Submission {
    * approval queue renders an amber AlertTriangle pill when non-empty.
    */
   logic_flags?: string[]
+  /**
+   * Immutable audit trail of every review decision (Animesh: permanent
+   * reviewer notes as evidence). Each entry records who, what action, an
+   * optional note, and when. Appended on approve/reject; never edited.
+   */
+  review_history?: ReviewEntry[]
+}
+
+export interface ReviewEntry {
+  reviewer: string
+  reviewer_email: string
+  action: string
+  note: string
+  timestamp: string
 }
 
 export interface SubmissionDetail extends Submission {

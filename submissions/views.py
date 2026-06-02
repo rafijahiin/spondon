@@ -14,7 +14,7 @@ from rest_framework.viewsets import ModelViewSet
 
 from accounts.permissions import CanApproveSubmissions, OrgFilterMixin
 from .models import FormType, KoboSubmission, SubmissionStatus
-from .serializers import KoboSubmissionDetailSerializer, KoboSubmissionSerializer, RejectSerializer
+from .serializers import KoboSubmissionDetailSerializer, KoboSubmissionSerializer, RejectSerializer, ApproveSerializer
 from .notify import send_approval_confirmation, send_rejection_notification, send_submission_alert
 from .validators import validate_kobo_signature
 
@@ -287,9 +287,14 @@ class KoboSubmissionViewSet(OrgFilterMixin, ModelViewSet):
                 {'detail': f'Cannot approve — current status is "{submission.status}".'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+        note = ''
+        ser = ApproveSerializer(data=request.data)
+        if ser.is_valid():
+            note = ser.validated_data.get('note', '')
         submission.status = SubmissionStatus.APPROVED
         submission.reviewed_by = request.user
         submission.reviewed_at = timezone.now()
+        submission.add_review_entry(user=request.user, action='approved', note=note)
         submission.save()
         try:
             send_approval_confirmation(submission)
@@ -307,10 +312,12 @@ class KoboSubmissionViewSet(OrgFilterMixin, ModelViewSet):
             )
         serializer = RejectSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        reason = serializer.validated_data['rejection_reason']
         submission.status = SubmissionStatus.REJECTED
         submission.reviewed_by = request.user
         submission.reviewed_at = timezone.now()
-        submission.rejection_reason = serializer.validated_data['rejection_reason']
+        submission.rejection_reason = reason
+        submission.add_review_entry(user=request.user, action='rejected', note=reason)
         submission.save()
         try:
             send_rejection_notification(submission)

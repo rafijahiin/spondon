@@ -57,6 +57,27 @@ class KoboSubmission(models.Model):
     reviewed_at = models.DateTimeField(null=True, blank=True)
     rejection_reason = models.TextField(blank=True)
 
+    # Permanent audit trail of every review action (Animesh's "evidence of
+    # you working" requirement). One entry per approve/reject, never
+    # overwritten — survives re-review cycles. Each entry:
+    #   {reviewer, reviewer_email, action, note, timestamp}
+    review_history = models.JSONField(default=list, blank=True)
+
+    def add_review_entry(self, *, user, action: str, note: str = ''):
+        """Append an immutable review-history entry. Caller saves."""
+        from django.utils import timezone as _tz
+        entry = {
+            'reviewer': getattr(user, 'full_name', '') or getattr(user, 'email', '') or 'Unknown',
+            'reviewer_email': getattr(user, 'email', ''),
+            'action': action,
+            'note': (note or '').strip(),
+            'timestamp': _tz.now().isoformat(),
+        }
+        history = list(self.review_history or [])
+        history.append(entry)
+        self.review_history = history
+        return entry
+
     class Meta:
         ordering = ['-submitted_at']
         indexes = [

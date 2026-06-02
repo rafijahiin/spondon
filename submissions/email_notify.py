@@ -105,18 +105,24 @@ def send_rejection_notification(submission) -> None:
         return
     reviewer = getattr(submission.reviewed_by, 'full_name', None) or 'Manager'
     reason = submission.rejection_reason or 'No reason provided'
+    from .form_links import resubmit_url
+    link = resubmit_url(submission)
+    link_line = f'\nResubmit here: {link}\n' if link else ''
     subject = f'[SIMPLE] ✗ {submission.get_form_type_display()} rejected — {submission.partner}'
     body = (
-        f'Your submission was rejected and needs to be re-submitted.\n\n'
+        f'Your submission was rejected and needs a corrected re-submission.\n\n'
         f'Form:        {submission.get_form_type_display()}\n'
         f'Worker:      {submission.worker_name or "—"}\n'
         f'Rejected by: {reviewer}\n'
-        f'Reason:      {reason}\n\n'
-        f'Please correct the issue and submit again from the Kobo form.'
+        f'Reviewer note: {reason}\n'
+        f'{link_line}\n'
+        f'Please open the form again, fix the flagged field, and submit a '
+        f'corrected entry. The rejected record is kept as an audit trail.'
         + DIVIDER +
         f'আপনার জমা প্রত্যাখ্যাত হয়েছে।\n'
-        f'কারণ: {reason}\n'
-        f'অনুগ্রহ করে সংশোধন করে আবার জমা দিন।'
+        f'রিভিউয়ার নোট: {reason}\n'
+        f'{link_line}'
+        f'অনুগ্রহ করে ফর্মটি আবার খুলে সংশোধন করে জমা দিন।'
     )
     _send(subject, body, recipients)
 

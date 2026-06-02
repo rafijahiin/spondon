@@ -15,7 +15,7 @@ import { api, apiErrorMessage } from '@/api/client'
 import { usePolling } from '@/hooks/usePolling'
 import { PageLoader, LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { formatDateTime } from '@/utils/format'
-import type { Submission, ProgramPendingResponse } from '@/types'
+import type { Submission, SubmissionDetail, ProgramPendingResponse } from '@/types'
 
 // ─── CountUp hook ─────────────────────────────────────────────────────────────
 
@@ -171,6 +171,30 @@ function toQueueItems(programsData: ProgramPendingResponse | null, submissions: 
   return items
 }
 
+// Map already-reviewed submissions (approved/rejected) into queue items so
+// the "Reviewed" tab can show the audit trail. Newest decision first.
+function reviewedQueueItems(submissions: Submission[] | null): QueueItem[] {
+  if (!submissions) return []
+  return submissions
+    .slice()
+    .sort((a, b) => (b.reviewed_at ?? '').localeCompare(a.reviewed_at ?? ''))
+    .map(s => ({
+      id: s.id,
+      model_type: s.form_type,
+      model_label: s.form_type.replace(/_/g, ' '),
+      title: `${s.form_type.replace(/_/g, ' ')} — ${s.worker_name}`,
+      summary: `${s.status_display} by ${s.reviewed_by?.full_name ?? 'manager'}`,
+      organisation: s.partner ?? '',
+      center_name: s.district ?? '',
+      submitted_by: s.worker_name ?? '',
+      created_at: s.submitted_at,
+      kind: 'legacy' as const,
+      latitude: s.latitude?.toString(),
+      longitude: s.longitude?.toString(),
+      logic_flags: Array.isArray((s as any).logic_flags) ? (s as any).logic_flags : [],
+    }))
+}
+
 // ─── Toast ────────────────────────────────────────────────────────────────────
 
 function Toast({ action, item, onClose }: {
@@ -219,11 +243,11 @@ export default function ManagerApprovals() {
   // Filter state persisted to localStorage so navigating away and
   // back restores the user's last selected filter (§9 state-preservation).
   const FILTER_KEY = 'approvals.filter'
-  type FilterKey = 'all' | 'urgent' | 'phd' | 'bondhu'
+  type FilterKey = 'all' | 'urgent' | 'phd' | 'bondhu' | 'reviewed'
   const [filter, setFilter] = useState<FilterKey>(() => {
     if (typeof window === 'undefined') return 'all'
     const stored = window.localStorage.getItem(FILTER_KEY)
-    if (stored === 'all' || stored === 'urgent' || stored === 'phd' || stored === 'bondhu') {
+    if (stored === 'all' || stored === 'urgent' || stored === 'phd' || stored === 'bondhu' || stored === 'reviewed') {
       return stored
     }
     return 'all'
@@ -234,6 +258,14 @@ export default function ManagerApprovals() {
   const [error, setError] = useState('')
   const [approving, setApproving] = useState(false)
   const [rejecting, setRejecting] = useState(false)
+  // Reviewer note (Animesh: permanent reviewer notes as evidence). Captured
+  // here, sent on approve (as `note`) or reject (as `rejection_reason`),
+  // then persisted server-side into the immutable review_history trail.
+  const [reviewerNote, setReviewerNote] = useState('')
+  // Full detail (raw_data clinical variables + review_history) for the
+  // selected legacy submission. Lets the manager check actual field values
+  // (e.g. age=14) before deciding, per Animesh's variable-checking spec.
+  const [detail, setDetail] = useState<SubmissionDetail | null>(null)
   const [toast, setToast] = useState<{ action: 'approve' | 'reject'; item: QueueItem } | null>(null)
 
   // ── API data ────────────────────────────────────────────────────────────────
@@ -252,11 +284,29 @@ export default function ManagerApprovals() {
       interval: 30_000,
     })
 
+  // Reviewed (approved/rejected) submissions — for the "Reviewed" tab so the
+  // audit trail (who decided, when, with what note) stays visible after the
+  // item leaves the pending queue. Animesh: full visibility, no manipulation.
+  // Fetch approved + rejected in parallel (backend filters status by exact
+  // match, so there is no single "reviewed" value to query).
+  const { data: reviewedSubs } = usePolling<Submission[]>({
+    fetcher: () =>
+      Promise.all([
+        api.get('/submissions/', { params: { status: 'approved' } }),
+        api.get('/submissions/', { params: { status: 'rejected' } }),
+      ]).then(([a, r]) => {
+        const rows = (res: any) => (Array.isArray(res.data) ? res.data : res.data.results ?? [])
+        return [...rows(a), ...rows(r)] as Submission[]
+      }),
+    interval: 60_000,
+  })
+
   // ── Queue ───────────────────────────────────────────────────────────────────
 
   const allItems = toQueueItems(programsData ?? null, submissions ?? null)
+  const reviewedItems = reviewedQueueItems(reviewedSubs ?? null)
 
-  const filtered = allItems.filter(it => {
+  const filtered = (filter === 'reviewed' ? reviewedItems : allItems).filter(it => {
     if (filter === 'urgent') return it.urgent
     if (filter === 'phd') return it.organisation === 'PHD'
     if (filter === 'bondhu') return it.organisation === 'Bandhu' || it.organisation === 'Bondhu'
@@ -272,9 +322,30 @@ export default function ManagerApprovals() {
     }
   }, [filtered, selectedId])
 
+  // When the selection changes, clear the draft note and pull the full
+  // submission detail (raw_data clinical variables + review_history). Only
+  // legacy/Kobo submissions carry this; program items are skipped.
+  useEffect(() => {
+    setReviewerNote('')
+    setDetail(null)
+    if (!selected || selected.kind !== 'legacy') return
+    let cancelled = false
+    api.get(`/submissions/${selected.id}/`)
+      .then((r) => { if (!cancelled) setDetail(r.data as SubmissionDetail) })
+      .catch(() => { if (!cancelled) setDetail(null) })
+    return () => { cancelled = true }
+  }, [selected?.id, selected?.kind])
+
   // ── Actions ─────────────────────────────────────────────────────────────────
 
   const decide = useCallback(async (item: QueueItem, action: 'approve' | 'reject') => {
+    // A rejection must say why — the field worker needs to know what to fix,
+    // and the reason is permanently recorded as audit evidence.
+    if (action === 'reject' && item.kind === 'legacy' && !reviewerNote.trim()) {
+      setError('Add a reviewer note explaining what to correct before rejecting.')
+      return
+    }
+    setError('')
     const setter = action === 'approve' ? setApproving : setRejecting
     setter(true)
     try {
@@ -282,9 +353,17 @@ export default function ManagerApprovals() {
         await api.post('/programs/pending-approvals/', { id: item.id, model_type: item.model_type, action })
         refetchPrograms()
       } else {
-        await api.post(`/submissions/${item.id}/${action}/`)
+        const note = reviewerNote.trim()
+        if (action === 'reject') {
+          // Backend requires a non-blank rejection reason — it becomes the
+          // worker-facing "what to fix" note and the audit-trail entry.
+          await api.post(`/submissions/${item.id}/reject/`, { rejection_reason: note })
+        } else {
+          await api.post(`/submissions/${item.id}/approve/`, { note })
+        }
         refetchLegacy()
       }
+      setReviewerNote('')
       setToast({ action, item })
       setTimeout(() => setToast(null), 4500)
       // Select next item
@@ -296,7 +375,7 @@ export default function ManagerApprovals() {
     } finally {
       setter(false)
     }
-  }, [filtered, refetchPrograms, refetchLegacy])
+  }, [filtered, refetchPrograms, refetchLegacy, reviewerNote])
 
   // ── Keyboard navigation ─────────────────────────────────────────────────────
 
@@ -382,6 +461,7 @@ export default function ManagerApprovals() {
                   { key: 'urgent' as const, label: t('approvals.filterUrgent'), count: allItems.filter(x => x.urgent).length },
                   { key: 'phd'    as const, label: t('approvals.filterPHD'),    count: allItems.filter(x => x.organisation === 'PHD').length },
                   { key: 'bondhu' as const, label: t('approvals.filterBondhu'), count: allItems.filter(x => x.organisation === 'Bandhu' || x.organisation === 'Bondhu').length },
+                  { key: 'reviewed' as const, label: 'Reviewed', count: reviewedItems.length },
                 ]).map(f => (
                   <button
                     key={f.key}
@@ -661,41 +741,116 @@ export default function ManagerApprovals() {
                   </div>
                 </div>
 
-                {/* Reviewer note */}
-                <div style={{ padding: '22px 0', borderBottom: '1px solid var(--hair)' }}>
-                  <div className="kicker" style={{ marginBottom: 10 }}><span className="dot" />{t('approvals.reviewerNote')}</div>
-                  <textarea
-                    placeholder={t('approvals.reviewerPlaceholder')}
-                    style={{
-                      width: '100%', minHeight: 64, padding: '10px 12px',
-                      border: '1px solid var(--hair)', borderRadius: 10,
-                      background: 'var(--surface-2)', fontSize: 13, color: 'var(--ink)',
-                      resize: 'vertical', fontFamily: 'var(--ui)',
-                    }}
-                  />
-                </div>
-
-                {/* Actions */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingTop: 20 }}>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <button
-                      className="btn danger lg"
-                      onClick={() => decide(selected, 'reject')}
-                      disabled={rejecting}
-                      style={{ display: 'flex', alignItems: 'center', gap: 6 }}
-                    >
-                      {rejecting ? <LoadingSpinner size="sm" /> : <><X size={14} /> {t('approvals.btnReject')}</>}
-                    </button>
-                    <button
-                      className="btn success lg"
-                      onClick={() => decide(selected, 'approve')}
-                      disabled={approving}
-                      style={{ display: 'flex', alignItems: 'center', gap: 6 }}
-                    >
-                      {approving ? <LoadingSpinner size="sm" /> : <><Check size={14} /> {t('approvals.btnApprove')}</>}
-                    </button>
+                {/* Submitted field values — read-only. Lets the manager verify
+                    actual clinical variables (e.g. mother's age = 14) against
+                    the form before deciding. No editing: full visibility, no
+                    manipulation (Animesh). */}
+                {detail && detail.raw_data && (
+                  <div style={{ padding: '22px 0', borderBottom: '1px solid var(--hair)' }}>
+                    <div className="kicker" style={{ marginBottom: 12 }}>
+                      <span className="dot" />SUBMITTED VALUES (READ-ONLY)
+                    </div>
+                    <div style={{
+                      display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 24px',
+                      maxHeight: 280, overflowY: 'auto',
+                    }}>
+                      {Object.entries(detail.raw_data)
+                        .filter(([k]) => !k.startsWith('_') && !k.startsWith('formhub') && !k.startsWith('meta'))
+                        .map(([k, v]) => (
+                          <div key={k} style={{
+                            display: 'flex', justifyContent: 'space-between', gap: 12,
+                            fontSize: 12.5, padding: '4px 0', borderBottom: '1px dotted var(--hair)',
+                          }}>
+                            <span className="mute" style={{ wordBreak: 'break-word' }}>{k.split('/').pop()}</span>
+                            <span className="mono" style={{ color: 'var(--ink)', textAlign: 'right', wordBreak: 'break-word' }}>
+                              {v === null || v === '' ? '—' : String(v)}
+                            </span>
+                          </div>
+                        ))}
+                    </div>
                   </div>
-                </div>
+                )}
+
+                {/* Review history — immutable audit trail (who, what, when, note). */}
+                {detail && detail.review_history && detail.review_history.length > 0 && (
+                  <div style={{ padding: '22px 0', borderBottom: '1px solid var(--hair)' }}>
+                    <div className="kicker" style={{ marginBottom: 12 }}><span className="dot" />REVIEW HISTORY</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      {detail.review_history.map((e, i) => (
+                        <div key={i} style={{
+                          display: 'flex', gap: 10, fontSize: 12.5,
+                          padding: '8px 12px', borderRadius: 8,
+                          background: 'var(--surface-2)', border: '1px solid var(--hair)',
+                        }}>
+                          <span style={{
+                            color: e.action === 'approved' ? 'var(--emerald)' : 'var(--coral)',
+                            fontWeight: 600, textTransform: 'capitalize', minWidth: 64,
+                          }}>{e.action}</span>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ color: 'var(--ink)' }}>{e.reviewer || 'Manager'}</div>
+                            {e.note && <div className="mute" style={{ marginTop: 2 }}>"{e.note}"</div>}
+                          </div>
+                          <span className="mono mute" style={{ fontSize: 11, whiteSpace: 'nowrap' }}>
+                            {e.timestamp ? new Date(e.timestamp).toLocaleString('en-US', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {filter === 'reviewed' ? (
+                  /* Already-decided item — show the outcome, no action controls. */
+                  <div style={{ paddingTop: 18, fontSize: 13, color: 'var(--muted)' }}>
+                    {detail?.reviewed_by
+                      ? <>Decided by <strong style={{ color: 'var(--ink)' }}>{detail.reviewed_by.full_name}</strong>
+                          {detail.reviewed_at && <> on {new Date(detail.reviewed_at).toLocaleString('en-US', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</>}.</>
+                      : 'This submission has already been reviewed.'}
+                  </div>
+                ) : (
+                  <>
+                    {/* Reviewer note */}
+                    <div style={{ padding: '22px 0', borderBottom: '1px solid var(--hair)' }}>
+                      <div className="kicker" style={{ marginBottom: 10 }}><span className="dot" />{t('approvals.reviewerNote')}</div>
+                      <textarea
+                        value={reviewerNote}
+                        onChange={(e) => setReviewerNote(e.target.value)}
+                        placeholder={t('approvals.reviewerPlaceholder')}
+                        style={{
+                          width: '100%', minHeight: 64, padding: '10px 12px',
+                          border: '1px solid var(--hair)', borderRadius: 10,
+                          background: 'var(--surface-2)', fontSize: 13, color: 'var(--ink)',
+                          resize: 'vertical', fontFamily: 'var(--ui)',
+                        }}
+                      />
+                      <div className="mute" style={{ fontSize: 11, marginTop: 6 }}>
+                        Required when rejecting — the worker sees this note and a link to resubmit a corrected entry.
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingTop: 20 }}>
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <button
+                          className="btn danger lg"
+                          onClick={() => decide(selected, 'reject')}
+                          disabled={rejecting}
+                          style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+                        >
+                          {rejecting ? <LoadingSpinner size="sm" /> : <><X size={14} /> {t('approvals.btnReject')}</>}
+                        </button>
+                        <button
+                          className="btn success lg"
+                          onClick={() => decide(selected, 'approve')}
+                          disabled={approving}
+                          style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+                        >
+                          {approving ? <LoadingSpinner size="sm" /> : <><Check size={14} /> {t('approvals.btnApprove')}</>}
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           ) : (

@@ -48,6 +48,7 @@ class KoboSubmissionSerializer(serializers.ModelSerializer):
             'submitted_at', 'received_at',
             'status', 'status_display',
             'reviewed_by', 'reviewed_at', 'rejection_reason',
+            'review_history',
             'is_baseline_duplicate',
             'logic_flags',
         ]
@@ -63,3 +64,9 @@ class KoboSubmissionDetailSerializer(KoboSubmissionSerializer):
 
 class RejectSerializer(serializers.Serializer):
     rejection_reason = serializers.CharField(allow_blank=False)
+
+
+class ApproveSerializer(serializers.Serializer):
+    # Animesh: managers should be able to leave an "ok"/"not ok" note on
+    # approval too, not just rejection. Optional.
+    note = serializers.CharField(allow_blank=True, required=False, default='')
