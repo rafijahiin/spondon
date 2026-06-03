@@ -157,6 +157,32 @@ class OrgFilteredViewSet(viewsets.ModelViewSet):
                 obj.rejected_reason = reason
 
             obj.save()
+
+        # Email the partner's managers/focal (+ the submitter if we resolved
+        # their account email) about the decision. Mirrors the KoboSubmission
+        # path so operational forms also notify. Defensive: never blocks the
+        # response if SMTP is off or recipients are empty.
+        try:
+            from submissions.email_notify import _recipients_for, _send
+            label = obj._meta.verbose_name.title()
+            recipients = _recipients_for(obj.organisation)
+            sub_email = getattr(getattr(obj, 'submitted_by', None), 'email', '') or ''
+            if sub_email and sub_email not in recipients:
+                recipients = recipients + [sub_email]
+            if recipients:
+                if obj.approval_status == 'APPROVED':
+                    subj = f'[SIMPLE] ✓ {label} approved — {obj.organisation}'
+                    body = (f'A {label} submission for {obj.organisation} has been approved '
+                            f'by {getattr(user, "full_name", "") or user.email}.')
+                else:
+                    subj = f'[SIMPLE] ✗ {label} rejected — {obj.organisation}'
+                    body = (f'A {label} submission for {obj.organisation} was rejected.\n\n'
+                            f'Reason: {obj.rejected_reason or "No reason provided"}\n\n'
+                            f'Please correct the flagged field and submit a new corrected entry.')
+                _send(subj, body, recipients)
+        except Exception:
+            pass
+
         return Response({'status': obj.approval_status})
 
     @action(detail=True, methods=['post'])

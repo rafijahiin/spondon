@@ -898,6 +898,22 @@ def _notify(org: str, form_label: str, kobo_id: str) -> None:
     import requests as _requests
     from django.conf import settings as _settings
 
+    # Email the partner's managers/focal that a new submission is awaiting
+    # review (operational forms now alert just like the KoboSubmission path).
+    try:
+        from submissions.email_notify import _recipients_for, _send
+        recipients = _recipients_for(org)
+        if recipients:
+            _send(
+                f'[SIMPLE] New {form_label} submission — {org}',
+                f'A new {form_label} submission from {org} is awaiting review.\n\n'
+                f'Open SIMPLE to review and approve:\n'
+                f'{getattr(_settings, "SIMPLE_PUBLIC_URL", "")}/approvals',
+                recipients,
+            )
+    except Exception as exc:
+        logger.error('Programs webhook email error: %s', exc)
+
     token = getattr(_settings, 'TELEGRAM_BOT_TOKEN', '')
     if not token:
         return
