@@ -108,6 +108,15 @@ USERS = [
         'role':         'ciprb_baseline',
         'password_env': 'CIPRB_BASELINE_PASSWORD',
     },
+    # ── Workshop / partner participant accounts ──────────────────────────
+    # Created only when SEED_DB=1 and the password env var is set in Railway.
+    {
+        'email':        'Habib.ahsan1992@gmail.com',
+        'full_name':    'Habib Ahsan',
+        'organisation': 'PHD',
+        'role':         'manager',
+        'password_env': 'HABIB_PASSWORD',
+    },
 ]
 
 
