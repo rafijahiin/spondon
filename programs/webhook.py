@@ -154,8 +154,25 @@ def _get_center(payload: dict, org: str):
         logger.warning('Programs webhook: center_code %r not found; trying fallback', code)
 
     center = ServiceCenter.objects.filter(organisation=org, is_active=True).first()
-    if not center:
-        logger.error('Programs webhook: no active ServiceCenter for org %r', org)
+    if center:
+        return center
+    # Never drop a submission just because the centre can't be matched —
+    # fall back to ANY active centre, then to an auto-created placeholder.
+    # (Workshop fix: forms whose centre list doesn't match seeded centres
+    # were 400'ing with "center not found".)
+    center = ServiceCenter.objects.filter(is_active=True).first()
+    if center:
+        logger.warning('Programs webhook: no centre for org %r; using fallback %r', org, center.code)
+        return center
+    center = ServiceCenter.objects.create(
+        code=f'AUTO-{(org or "NA")[:8].upper()}',
+        organisation=org or 'PHD',
+        name=f'{org or "Unassigned"} (auto-created)',
+        center_type='sda',
+        district='',
+        is_active=True,
+    )
+    logger.warning('Programs webhook: auto-created placeholder centre %r', center.code)
     return center
 
 
