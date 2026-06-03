@@ -36,4 +36,7 @@ EXPOSE 8080
 #         b. Redeploy. The seed runs once.
 #         c. Unset SEED_DB. Subsequent deploys do not reseed.
 #   3. gunicorn — long-running web server.
-CMD ["sh", "-c", "python manage.py migrate --noinput && python manage.py seed_users && python manage.py seed_centers && if [ \"$REFRESH_DEMO_SEED\" = \"1\" ]; then python manage.py seed_demo_mpdsr --purge && python manage.py seed_demo_fistula --purge && python manage.py seed_demo_phd_bandhu --purge; fi && python manage.py seed_demo_mpdsr && python manage.py seed_demo_phd_bandhu && python manage.py seed_demo_fistula && python manage.py backfill_worker_name && gunicorn spondon.wsgi --bind 0.0.0.0:$PORT --workers 2 --timeout 120"]
+# Boot must be fast or the healthcheck times out. migrate + the gated
+# user/centre seeds are quick; the heavy demo seeds + worker_name backfill
+# now run ONLY when REFRESH_DEMO_SEED=1 (on demand), not on every boot.
+CMD ["sh", "-c", "python manage.py migrate --noinput && python manage.py seed_users && python manage.py seed_centers && if [ \"$REFRESH_DEMO_SEED\" = \"1\" ]; then python manage.py seed_demo_mpdsr --purge && python manage.py seed_demo_fistula --purge && python manage.py seed_demo_phd_bandhu --purge && python manage.py seed_demo_mpdsr && python manage.py seed_demo_phd_bandhu && python manage.py seed_demo_fistula && python manage.py backfill_worker_name; fi && gunicorn spondon.wsgi --bind 0.0.0.0:$PORT --workers 2 --timeout 120"]
