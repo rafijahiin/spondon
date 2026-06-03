@@ -5,7 +5,7 @@
  * Click to select; click Approve/Reject buttons to act.
  * Preserves both Programs and Legacy API flows.
  */
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   X, Check, AlertTriangle, FileText,
 } from 'lucide-react'
@@ -265,6 +265,9 @@ export default function ManagerApprovals() {
     try { window.localStorage.setItem(FILTER_KEY, filter) } catch {}
   }, [filter])
   const [error, setError] = useState('')
+  // Ref to the reviewer-note box so a blocked rejection jumps the manager
+  // straight to it (the note is required to reject).
+  const noteRef = useRef<HTMLTextAreaElement>(null)
   const [approving, setApproving] = useState(false)
   const [rejecting, setRejecting] = useState(false)
   // Reviewer note (Animesh: permanent reviewer notes as evidence). Captured
@@ -355,6 +358,9 @@ export default function ManagerApprovals() {
     // and the reason is permanently recorded as audit evidence.
     if (action === 'reject' && item.kind === 'legacy' && !reviewerNote.trim()) {
       setError('Add a reviewer note explaining what to correct before rejecting.')
+      // Jump to the note box so it's obvious why nothing happened.
+      noteRef.current?.focus()
+      noteRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
       return
     }
     setError('')
@@ -886,18 +892,21 @@ export default function ManagerApprovals() {
                     <div style={{ padding: '22px 0', borderBottom: '1px solid var(--hair)' }}>
                       <div className="kicker" style={{ marginBottom: 10 }}><span className="dot" />{t('approvals.reviewerNote')}</div>
                       <textarea
+                        ref={noteRef}
                         value={reviewerNote}
-                        onChange={(e) => setReviewerNote(e.target.value)}
+                        onChange={(e) => { setReviewerNote(e.target.value); if (error) setError('') }}
                         placeholder={t('approvals.reviewerPlaceholder')}
                         style={{
                           width: '100%', minHeight: 64, padding: '10px 12px',
-                          border: '1px solid var(--hair)', borderRadius: 10,
+                          border: `1px solid ${error ? 'var(--coral)' : 'var(--hair)'}`, borderRadius: 10,
                           background: 'var(--surface-2)', fontSize: 13, color: 'var(--ink)',
                           resize: 'vertical', fontFamily: 'var(--ui)',
                         }}
                       />
-                      <div className="mute" style={{ fontSize: 11, marginTop: 6 }}>
-                        Required when rejecting — the worker sees this note and a link to resubmit a corrected entry.
+                      <div style={{ fontSize: 11, marginTop: 6, color: error ? 'var(--coral)' : 'var(--muted)' }}>
+                        {error
+                          ? '⚠ A note is required to reject — type the reason above, then click Reject.'
+                          : 'Required when rejecting — the worker sees this note and a link to resubmit a corrected entry.'}
                       </div>
                     </div>
 
