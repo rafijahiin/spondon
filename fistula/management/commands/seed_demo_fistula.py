@@ -138,9 +138,12 @@ class Command(BaseCommand):
                     continue
                 households = rng.randint(80, 220)
                 population = households * rng.randint(4, 6)
-                screened = rng.randint(40, 120)
-                suspected = rng.randint(2, 8)
-                confirmed = rng.randint(1, max(1, suspected - 1))
+                screened = rng.randint(60, 160)
+                # Suspected is the top of the funnel — it must sum well above
+                # the diagnosed (Fistula Corner) count so the pipeline reads
+                # logically (≈60% of suspected go on to be diagnosed).
+                suspected = rng.randint(8, 16)
+                confirmed = rng.randint(max(1, suspected // 2), max(1, suspected - 2))
                 FistulaCampaign.objects.create(
                     case_hash=ch,
                     partner='CIPRB',

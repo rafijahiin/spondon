@@ -118,7 +118,8 @@ function useFistulaKPIs(
     Promise.allSettled([
       api.get<{ results?: CampaignVisitRow[] } | CampaignVisitRow[]>('/fistula/campaign-visits/', { params }),
       api.get<{ results?: CornerCaseRow[]    } | CornerCaseRow[]>('/fistula/corner-cases/', { params }),
-    ]).then(([campaignRes, cornerRes]) => {
+      api.get<{ results?: any[] } | any[]>('/fistula/cases/', { params }),
+    ]).then(([campaignRes, cornerRes, rollupRes]) => {
       if (cancelled) return
 
       const campaignRows: CampaignVisitRow[] =
@@ -140,8 +141,23 @@ function useFistulaKPIs(
       const districtSet = districtFilter ? new Set(districtFilter.map(d => d.toLowerCase())) : null
       const inFilter = (d?: string) => !districtSet || (d && districtSet.has(d.toLowerCase()))
 
-      const campaignFiltered = campaignRows.filter(c => inFilter(c.district))
+      const rollupRows: any[] =
+        rollupRes.status === 'fulfilled'
+          ? (Array.isArray(rollupRes.value.data)
+              ? rollupRes.value.data
+              : rollupRes.value.data.results ?? [])
+          : []
+
       const cornerFiltered = cornerRows.filter(c => inFilter(c.district))
+      const rollupFiltered = rollupRows.filter((r: any) => inFilter(r.district))
+
+      // Suspected = total suspected cases found during community screening
+      // (sum of the campaign roll-up counts), NOT the number of campaign
+      // rows. This is the top of the funnel and is always larger than the
+      // diagnosed (Fistula Corner) count.
+      const suspectedTotal = rollupFiltered.reduce(
+        (s: number, r: any) => s + (r.suspected_fistula_cases ?? 0), 0,
+      )
 
       const surgeryDone   = cornerFiltered.filter(c => c.surgery_performed === 'yes').length
       const rehabilitated = cornerFiltered.filter(c => c.received_rehab_support === true).length
@@ -151,7 +167,7 @@ function useFistulaKPIs(
       const rehabPct = surgeryDone > 0 ? (rehabilitated / surgeryDone) * 100 : null
 
       setKpis({
-        suspected:   campaignFiltered.length,
+        suspected:   suspectedTotal,
         identified:  cornerFiltered.filter(c => c.identification_date || c.diagnosis_date).length,
         referred:    cornerFiltered.filter(c => c.referral_date || (c.referral_outcome ?? '').trim() !== '').length,
         surgeryDone,
@@ -167,12 +183,14 @@ function useFistulaKPIs(
 }
 
 function KPITile({
-  icon, label, sub, value,
+  icon, label, sub, value, pct, pctLabel,
 }: {
   icon: React.ReactNode
   label: string
   sub: string
   value: number | string
+  pct?: number | null
+  pctLabel?: string
 }) {
   return (
     <div
@@ -198,11 +216,22 @@ function KPITile({
         </span>
         {label}
       </div>
-      <div style={{
-        fontSize: 30, fontWeight: 800, color: 'var(--ink)',
-        fontVariantNumeric: 'tabular-nums', lineHeight: 1, letterSpacing: '-0.02em',
-      }}>
-        {typeof value === 'number' ? value.toLocaleString() : value}
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
+        <div style={{
+          fontSize: 30, fontWeight: 800, color: 'var(--ink)',
+          fontVariantNumeric: 'tabular-nums', lineHeight: 1, letterSpacing: '-0.02em',
+        }}>
+          {typeof value === 'number' ? value.toLocaleString() : value}
+        </div>
+        {pct != null && (
+          <span style={{
+            fontSize: 12, fontWeight: 700, color: CIPRB_BLUE,
+            background: `${CIPRB_BLUE}14`, borderRadius: 999, padding: '2px 9px',
+            fontVariantNumeric: 'tabular-nums',
+          }}>
+            {Math.round(pct)}%{pctLabel ? ` ${pctLabel}` : ''}
+          </span>
+        )}
       </div>
       <div style={{ fontSize: 12, color: 'var(--ink-3)' }}>{sub}</div>
     </div>
@@ -917,9 +946,12 @@ export default function CIPRBDashboard() {
           gap: 12,
         }}>
           <KPITile icon={<Search size={14} />}     label={t('ciprb.kpiSuspected')}    sub={t('ciprb.kpiSuspectedSub')}    value={kpis.suspected}   />
-          <KPITile icon={<Stethoscope size={14} />} label={t('ciprb.kpiIdentified')}  sub={t('ciprb.kpiIdentifiedSub')}   value={kpis.identified}  />
-          <KPITile icon={<Send size={14} />}        label={t('ciprb.kpiReferred')}    sub={t('ciprb.kpiReferredSub')}     value={kpis.referred}    />
-          <KPITile icon={<Scissors size={14} />}    label={t('ciprb.kpiSurgeryDone')} sub={t('ciprb.kpiSurgeryDoneSub')}  value={kpis.surgeryDone} />
+          <KPITile icon={<Stethoscope size={14} />} label={t('ciprb.kpiIdentified')}  sub={t('ciprb.kpiIdentifiedSub')}   value={kpis.identified}
+            pct={kpis.suspected > 0 ? (kpis.identified / kpis.suspected) * 100 : null} pctLabel="of suspected" />
+          <KPITile icon={<Send size={14} />}        label={t('ciprb.kpiReferred')}    sub={t('ciprb.kpiReferredSub')}     value={kpis.referred}
+            pct={kpis.suspected > 0 ? (kpis.referred / kpis.suspected) * 100 : null} pctLabel="of suspected" />
+          <KPITile icon={<Scissors size={14} />}    label={t('ciprb.kpiSurgeryDone')} sub={t('ciprb.kpiSurgeryDoneSub')}  value={kpis.surgeryDone}
+            pct={kpis.suspected > 0 ? (kpis.surgeryDone / kpis.suspected) * 100 : null} pctLabel="of suspected" />
           {/* Rehabilitation % — Animesh's definition from the 2026-06-01
               meeting: rehabilitated = any of cash / training / psychosocial /
               reintegration / 5 other support types is Yes. Denominator =

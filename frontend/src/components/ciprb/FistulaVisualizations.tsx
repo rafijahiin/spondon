@@ -459,9 +459,11 @@ export function FistulaVisualizations({
           display: 'flex', alignItems: 'center', gap: 0, flexWrap: 'wrap',
         }}>
           <FunnelStage icon={<Search size={14} />}      label={t('fistulaViz.suspected')}  value={agg.suspected}  sub={t('fistulaViz.suspectedSub')} />
-          {/* Suspected → Identified: parallel cohorts (campaign vs clinic walk-in),
-              not sequential — no conversion %. */}
-          <FunnelArrow />
+          {/* Suspected → Diagnosed conversion (e.g. "60% of suspected are
+              diagnosed"). */}
+          <FunnelArrow conversionPct={
+            agg.suspected > 0 ? Math.round((agg.identified / agg.suspected) * 100) : undefined
+          } />
           <FunnelStage icon={<Stethoscope size={14} />} label={t('fistulaViz.identified')} value={agg.identified} sub={t('fistulaViz.identifiedSub')} />
           <FunnelArrow conversionPct={
             agg.identified > 0 ? Math.round((agg.referred / agg.identified) * 100) : undefined
@@ -476,7 +478,7 @@ export function FistulaVisualizations({
           fontSize: 11.5, color: 'var(--muted)', margin: '8px 4px 0',
           fontStyle: 'italic',
         }}>
-          Suspected and Identified are parallel intake cohorts (campaign vs clinic walk-in); Identified → Referred → Repaired are sequential clinical stages.
+          Each percentage uses the previous stage as the denominator — e.g. the share of suspected cases that go on to be diagnosed, referred, and repaired.
         </p>
         <DataSource>KF-Fistula_Campaign_Visit.xlsx (Suspected) · KF-Fistula_Corner.xlsx (Identified/Referred/Repaired)</DataSource>
       </div>
