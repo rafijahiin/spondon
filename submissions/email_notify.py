@@ -24,6 +24,19 @@ logger = logging.getLogger(__name__)
 DIVIDER = '\n\n────────────────\n\n'
 
 
+def _submitter_email(submission) -> str:
+    """Best-effort email of the person who filled the form, read from the
+    Kobo payload. The form must carry an email question — common field names
+    are accepted. Empty string when the form didn't collect one."""
+    rd = getattr(submission, 'raw_data', None) or {}
+    for key in ('email', 'submitter_email', 'your_email', 'respondent_email',
+                'collector_email', 'reporter_email', 'contact_email'):
+        val = str(rd.get(key, '') or '').strip()
+        if '@' in val:
+            return val
+    return ''
+
+
 def _recipients_for(partner: str) -> list[str]:
     """Find all email addresses for managers/supervisors/org_leads who should
     be notified about events for this partner. Supervisors + developers always
@@ -80,6 +93,10 @@ def send_submission_alert(submission) -> None:
 def send_approval_confirmation(submission) -> None:
     """Submission approved by manager — confirm to whoever submitted it."""
     recipients = _recipients_for(submission.partner)
+    # Notify the field worker directly if the form captured their email.
+    submitter = _submitter_email(submission)
+    if submitter and submitter not in recipients:
+        recipients = recipients + [submitter]
     if not recipients:
         return
     reviewer = getattr(submission.reviewed_by, 'full_name', None) or 'Manager'
@@ -101,6 +118,11 @@ def send_approval_confirmation(submission) -> None:
 def send_rejection_notification(submission) -> None:
     """Submission rejected — tell the worker so they can re-submit."""
     recipients = _recipients_for(submission.partner)
+    # Send the rejection (with note + resubmit link) straight to the field
+    # worker too, if the form captured their email.
+    submitter = _submitter_email(submission)
+    if submitter and submitter not in recipients:
+        recipients = recipients + [submitter]
     if not recipients:
         return
     reviewer = getattr(submission.reviewed_by, 'full_name', None) or 'Manager'
