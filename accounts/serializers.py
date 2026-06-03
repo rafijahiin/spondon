@@ -75,11 +75,15 @@ class UserCreateSerializer(serializers.ModelSerializer):
     first_name = serializers.CharField(write_only=True, required=False, default='', allow_blank=True)
     last_name = serializers.CharField(write_only=True, required=False, default='', allow_blank=True)
     username = serializers.CharField(write_only=True, required=False, default='', allow_blank=True)
+    # Must allow blank: the admin form sends first_name + last_name (not
+    # full_name), so full_name arrives empty and create() builds it from
+    # first+last (or the email). Without allow_blank the serializer rejected
+    # every create with "full_name: This field may not be blank."
+    full_name = serializers.CharField(required=False, allow_blank=True, default='')
 
     class Meta:
         model = User
         fields = ['email', 'username', 'first_name', 'last_name', 'full_name', 'organisation', 'role', 'password']
-        extra_kwargs = {'full_name': {'required': False, 'default': ''}}
 
     def create(self, validated_data):
         first = validated_data.pop('first_name', '')
