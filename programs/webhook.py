@@ -993,6 +993,9 @@ def _lazy_phd(name):
 FORM_HANDLERS: dict = {
     # ── PHD consolidated forms (new, from final source files) ──────────────────
     'phd_registration_v1':      _lazy_phd('handle_phd_registration'),
+    'phd_service_log_v1':       _lazy_phd('handle_phd_service_log'),
+    # Legacy 3-form variants — kept registered so any in-flight submissions
+    # from the old Forms 2 & 3 still route correctly during transition.
     'phd_patient_services_v1':  _lazy_phd('handle_phd_patient_services'),
     'phd_activity_ops_v1':      _lazy_phd('handle_phd_activity_ops'),
     # ── PHD 3-form consolidation (registration + 2 combined forms) ──
@@ -1119,6 +1122,7 @@ def _notify(org: str, form_label: str, kobo_id: str) -> None:
 
 _FORM_LABELS = {
     'phd_registration_v1':      'PHD — FSW Registration',
+    'phd_service_log_v1':       'PHD — Service Log',
     'phd_patient_services_v1':  'PHD — Patient Services',
     'phd_activity_ops_v1':      'PHD — Activity & Operations',
     'spondon_client_reg_v1':       'FSW Registration',

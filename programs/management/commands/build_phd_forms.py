@@ -85,8 +85,12 @@ def _meta(center_required=True):
         _sr('geopoint','location',
             'GPS location (required — step outside if no signal)',
             'জিপিএস অবস্থান (প্রয়োজনীয়)', required='yes'),
-        _sr('select_one centre','centre_id',
-            'Wellness Centre','ওয়েলনেস সেন্টার', required=req),
+        # Free-text — enumerators type the wellness-centre name themselves
+        # (no dropdown). Avoids any auto-listed centre data leaking from the
+        # backend ServiceCenter table into the form.
+        _sr('text','centre_id',
+            'Wellness Centre (type the name)',
+            'ওয়েলনেস সেন্টার (নাম লিখুন)', required=req),
         _sr('text','enumerator_name',
             'Your name (person filling this form)',
             'আপনার নাম (কে পূরণ করছেন)', required='yes'),
@@ -95,14 +99,9 @@ def _meta(center_required=True):
 
 
 def _centre_choices():
-    rows = []
-    for c in ServiceCenter.objects.filter(is_active=True).order_by('organisation','name'):
-        rows.append(_ch('centre', c.code, c.name, c.name_bangla or c.name))
-    if not rows:
-        rows.append(_ch('centre','PLACEHOLDER',
-                        'Placeholder — add centres before deployment',
-                        'কেন্দ্র যোগ করুন'))
-    return rows
+    """Centre is now a free-text question — no choice list needed.
+    Kept as an empty-returning helper so the existing callers compile."""
+    return []
 
 
 # ─── FORM 1: FSW Registration ─────────────────────────────────────────────────
@@ -241,7 +240,7 @@ def _form2_survey():
     ]
 
     # ── Clinic Visit (Patient Record Register) ────────────────────────────────
-    REL_C = "${service_type}='clinic'"
+    REL_C = "${record_type}='clinic'"
     rows += [
         _sr('begin_group','sec_clinic',
             'Clinic Visit / Patient Record',
@@ -322,7 +321,7 @@ def _form2_survey():
     ]
 
     # ── HTC Service Register ──────────────────────────────────────────────────
-    REL_H = "${service_type}='htc'"
+    REL_H = "${record_type}='htc'"
     rows += [
         _sr('begin_group','sec_htc',
             'HTC Service Register','এইচটিসি সেবা রেজিস্টার',
@@ -383,7 +382,7 @@ def _form2_survey():
     ]
 
     # ── Counselling Report (monthly aggregate per counsellor) ─────────────────
-    REL_CO = "${service_type}='counselling'"
+    REL_CO = "${record_type}='counselling'"
     rows += [
         _sr('begin_group','sec_counsel',
             'Counselling Report (monthly)',
@@ -433,7 +432,7 @@ def _form2_survey():
     ]
 
     # ── Referral Register ─────────────────────────────────────────────────────
-    REL_R = "${service_type}='referral'"
+    REL_R = "${record_type}='referral'"
     rows += [
         _sr('begin_group','sec_referral',
             'Referral Register','রেফারেল রেজিস্টার',
@@ -577,7 +576,7 @@ def _form3_survey():
     #       + group health education.docx (monthly summary same topics)
     # Structure: one Kobo submission = one group session
     # Audience selector → relevant topics shown per audience type
-    REL_G = "${activity_type}='group_edu'"
+    REL_G = "${record_type}='group_edu'"
     IS_FSW    = "(${gedu_audience}='adult_fsw' or ${gedu_audience}='old_fsw')"
     IS_GEN    = "${gedu_audience}='general'"
     IS_CLIENT = "${gedu_audience}='client'"
@@ -611,7 +610,7 @@ def _form3_survey():
     rows.append(_sr('end_group','sec_group_edu'))
 
     # ── Event Database ────────────────────────────────────────────────────────
-    REL_E = "${activity_type}='event'"
+    REL_E = "${record_type}='event'"
     rows += [
         _sr('begin_group','sec_event',
             'Event Database','ইভেন্ট ডেটাবেস',
@@ -632,7 +631,7 @@ def _form3_survey():
     ]
 
     # ── Material Database ─────────────────────────────────────────────────────
-    REL_M = "${activity_type}='material'"
+    REL_M = "${record_type}='material'"
     rows += [
         _sr('begin_group','sec_material',
             'Material Database','উপকরণ ডেটাবেস',
@@ -652,7 +651,7 @@ def _form3_survey():
     ]
 
     # ── GBV Corner Establishment Database ────────────────────────────────────
-    REL_GBV = "${activity_type}='gbv_corner'"
+    REL_GBV = "${record_type}='gbv_corner'"
     rows += [
         _sr('begin_group','sec_gbv_corner',
             'GBV Corner Establishment',
@@ -674,7 +673,7 @@ def _form3_survey():
     ]
 
     # ── Stock Register ────────────────────────────────────────────────────────
-    REL_S = "${activity_type}='stock'"
+    REL_S = "${record_type}='stock'"
     rows += [
         _sr('begin_group','sec_stock',
             'Stock Register','স্টক রেজিস্টার',
@@ -743,6 +742,100 @@ def _form3_choices():
     return rows
 
 
+# ─── MERGED FORM 2 — Service Log ──────────────────────────────────────────────
+# Single Kobo form with a "What are you recording today?" selector at the top.
+# Only the section matching the picked record_type shows; the other 8 stay
+# hidden. Different roles fill different sections — medical assistant fills
+# Clinic/HTC, counsellor fills Counselling, peer educator fills Group Education,
+# storekeeper fills Stock, programme officer fills Event/GBV-corner/Material.
+#
+# Replaces the previous Forms 2 & 3. Field name conventions and webhook
+# dispatch use the section prefix in the field name (clinic_*, htc_*, ref_*,
+# gedu_*, event_*, mat_*, gbv_*, stock_*, counsel_*).
+
+def _form_service_log_survey():
+    """Build the merged Service Log survey:
+       meta → record_type selector → 9 gated sections."""
+    rows = _meta(center_required=False)
+    rows += [
+        _sr('select_one record_type','record_type',
+            'What are you recording today?',
+            'আজ কী নথিভুক্ত করছেন?', required='yes'),
+    ]
+    # Reuse all 9 section bodies. _form2_survey() and _form3_survey() each
+    # prepend their own meta + selector; strip those off so we don't repeat.
+    f2 = _form2_survey()
+    f3 = _form3_survey()
+    rows += _strip_meta_and_selector(f2)
+    rows += _strip_meta_and_selector(f3)
+    return rows
+
+
+def _strip_meta_and_selector(rows):
+    """Drop the leading grp_meta block and the per-form select_one selector
+    so the section bodies can be appended after our combined selector."""
+    out = list(rows)
+    # 1. Drop everything from start through end_group grp_meta
+    for i, r in enumerate(out):
+        if r[0] == 'end_group' and r[1] == 'grp_meta':
+            out = out[i+1:]
+            break
+    # 2. Drop the leading select_one (the old per-form selector that's been
+    #    rewritten by replace_all to use ${record_type})
+    if out and out[0][0].startswith('select_one'):
+        out = out[1:]
+    return out
+
+
+def _form_service_log_choices():
+    """Merge Form 2 + Form 3 choices into one sheet. The dropped per-form
+    selectors (service_type, activity_type) are replaced by the unified
+    record_type list with all 9 options."""
+    rows = []
+    # yes_no — used everywhere
+    rows += [_ch('yes_no','yes','Yes','হ্যাঁ'), _ch('yes_no','no','No','না')]
+
+    # ── record_type — the top-level "What are you recording today?" ──
+    for v, en, bn in [
+        ('clinic',      'Clinic visit (Patient Record)',
+            'ক্লিনিক ভিজিট (রোগীর রেকর্ড)'),
+        ('htc',         'HIV / STI test (HTC)',
+            'এইচআইভি / এসটিআই পরীক্ষা (HTC)'),
+        ('counselling', 'Counselling Report (monthly)',
+            'কাউন্সেলিং রিপোর্ট (মাসিক)'),
+        ('referral',    'Referral',
+            'রেফারেল'),
+        ('group_edu',   'Group Education session',
+            'দলগত স্বাস্থ্য শিক্ষা সেশন'),
+        ('event',       'Event (training / orientation / camp / coord. meeting)',
+            'ইভেন্ট (প্রশিক্ষণ / ওরিয়েন্টেশন / ক্যাম্প / সমন্বয় সভা)'),
+        ('material',    'IEC material installed',
+            'আইইসি উপকরণ স্থাপন'),
+        ('gbv_corner',  'GBV corner established',
+            'জিবিভি কর্নার স্থাপন'),
+        ('stock',       'Stock entry',
+            'স্টক এন্ট্রি'),
+    ]:
+        rows.append(_ch('record_type', v, en, bn))
+
+    # ── reuse all other choice lists from F2 + F3 (visit_type, treatment_timing,
+    #    sex, test_occasion, tested_at, tested_by, rnrinv, final_result,
+    #    gedu_audience, event_subtype) ──
+    # Deduplicate yes_no (already added above).
+    seen = {('yes_no','yes'), ('yes_no','no')}
+    for src_choices in (_form2_choices(), _form3_choices()):
+        for row in src_choices:
+            key = (row[0], row[1])
+            # Skip the dead per-form selectors (we use record_type instead)
+            if row[0] in ('service_type', 'activity_type'):
+                continue
+            if key in seen:
+                continue
+            seen.add(key)
+            rows.append(row)
+    return rows
+
+
 # ─── Command ──────────────────────────────────────────────────────────────────
 
 FORMS = [
@@ -754,24 +847,17 @@ FORMS = [
         'choices': _form1_choices,
     },
     {
-        'file': 'PHD-2_Patient_Services.xlsx',
-        'id':   'phd_patient_services_v1',
-        'title':'PHD 2 — Patient Services',
-        'survey': _form2_survey,
-        'choices': _form2_choices,
-    },
-    {
-        'file': 'PHD-3_Activity_Ops.xlsx',
-        'id':   'phd_activity_ops_v1',
-        'title':'PHD 3 — Activity & Operations',
-        'survey': _form3_survey,
-        'choices': _form3_choices,
+        'file': 'PHD-2_Service_Log.xlsx',
+        'id':   'phd_service_log_v1',
+        'title':'PHD 2 — Service Log',
+        'survey': _form_service_log_survey,
+        'choices': _form_service_log_choices,
     },
 ]
 
 
 class Command(BaseCommand):
-    help = 'Build the 3 PHD XLSForms from the final source files.'
+    help = 'Build the 2 PHD XLSForms (Registration + Service Log) from final source files.'
 
     def add_arguments(self, parser):
         parser.add_argument('--output-dir', default=OUTDIR)

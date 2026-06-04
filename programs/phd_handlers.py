@@ -397,3 +397,35 @@ def handle_phd_activity_ops(payload: dict, lat, lng) -> HttpResponse:
         return fn(payload, lat, lng)
     logger.warning('phd_activity_ops_v1: unknown activity_type=%r', atype)
     return HttpResponse(f'Bad Request — unknown activity_type: {atype}', status=400)
+
+
+# ─── Merged Service Log handler ───────────────────────────────────────────────
+# Single dispatcher for the new PHD-2 Service Log form (phd_service_log_v1).
+# Reads the top-level `record_type` selector and routes to the per-section
+# handler. All 9 PHD service & activity types in one place.
+
+def handle_phd_service_log(payload: dict, lat, lng) -> HttpResponse:
+    rtype = _str(payload.get('record_type'))
+    dispatch = {
+        # Patient-level services (Patient Record, HTC, Counselling, Referral)
+        'clinic':       _phd_clinic,
+        'htc':          _phd_htc,
+        'referral':     _phd_referral,
+        # Activity & operations (Group Ed, Event, Material, GBV corner, Stock)
+        'group_edu':    _phd_group_edu,
+        'event':        _phd_event,
+        'material':     _phd_material,
+        'gbv_corner':   _phd_gbv_corner,
+        'stock':        _phd_stock,
+    }
+    if rtype == 'counselling':
+        # Monthly aggregate report — stored in raw_payload only (no
+        # per-patient model). Counselling counts feed SL3 via the
+        # ClinicVisit.mh_screening_done flag from the clinic section.
+        logger.info('PHD counselling monthly report stored (raw_payload only)')
+        return HttpResponse('Created', status=201)
+    fn = dispatch.get(rtype)
+    if fn:
+        return fn(payload, lat, lng)
+    logger.warning('phd_service_log_v1: unknown record_type=%r', rtype)
+    return HttpResponse(f'Bad Request — unknown record_type: {rtype}', status=400)
