@@ -17,20 +17,27 @@ from django.core.management.base import BaseCommand
 PHD = 'PHD'
 
 MODELS_PURGE = [
+    # Child models first (FKs to Client), so Client can be deleted last
     ('programs', 'ClinicVisit'),
     ('programs', 'HIVSTITestResult'),
-    ('programs', 'GBVCornerRecord'),
+    ('programs', 'AntenatalCard'),
+    ('programs', 'HTCCounselling'),
+    ('programs', 'IndividualCounselling'),
+    ('programs', 'MHScreening'),
+    ('programs', 'ADRRecord'),
+    ('programs', 'AutoclaveLog'),
+    ('programs', 'SafetyHygieneKit'),
+    ('programs', 'Referral'),
+    ('programs', 'GBVCase'),
+    ('programs', 'OutreachSession'),
     ('programs', 'GroupEducationSession'),
+    ('programs', 'MobileHealthCamp'),
+    ('programs', 'CoordMeeting'),
     ('programs', 'TrainingEvent'),
     ('programs', 'IECMaterial'),
     ('programs', 'StockEntry'),
-    ('programs', 'Referral'),
-    ('programs', 'Client'),
-    ('programs', 'GBVCase'),
-    ('programs', 'OutreachSession'),
-    ('programs', 'IndividualCounselling'),
-    ('programs', 'MobileHealthCamp'),
-    ('programs', 'CoordMeeting'),
+    ('programs', 'GBVCornerRecord'),
+    ('programs', 'Client'),  # last — FKs are cleared by now
     ('submissions', 'KoboSubmission'),
 ]
 
@@ -69,7 +76,7 @@ class Command(BaseCommand):
             label = f'  {app_label}.{model_name:<30} {n:>6} rows'
             if confirm and n:
                 qs.delete()
-                self.stdout.write(self.style.SUCCESS(label + '  → deleted'))
+                self.stdout.write(self.style.SUCCESS(label + '  deleted'))
             else:
                 self.stdout.write(label + ('  (would delete)' if n else ''))
 
@@ -82,7 +89,7 @@ class Command(BaseCommand):
             label = f'  submissions.KoboSubmission              {n:>6} rows'
             if confirm and n:
                 qs.delete()
-                self.stdout.write(self.style.SUCCESS(label + '  → deleted'))
+                self.stdout.write(self.style.SUCCESS(label + '  deleted'))
             else:
                 self.stdout.write(label + ('  (would delete)' if n else ''))
         except Exception:

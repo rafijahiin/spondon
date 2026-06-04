@@ -40,6 +40,8 @@ class ClinicVisit(SubmissionBase):
     diabetic_screening_done = models.BooleanField(default=False)
     hep_b_screening_done = models.BooleanField(default=False)   # PHD only
     hep_c_screening_done = models.BooleanField(default=False)   # PHD only
+    gbv_screening_done = models.BooleanField(default=False)     # PHD — Patient Record Register column
+    mh_screening_done = models.BooleanField(default=False)      # PHD — Mental Health Screening column
 
     # STI Diagnoses
     diag_uds = models.BooleanField(default=False)
@@ -71,6 +73,7 @@ class ClinicVisit(SubmissionBase):
     referral_mental_health = models.BooleanField(default=False)
     referral_diabetic = models.BooleanField(default=False)
     referral_fp = models.BooleanField(default=False)
+    referral_gbv = models.BooleanField(default=False)           # PHD — GBV referral column
 
     follow_up_due_date = models.DateField(null=True, blank=True)
     follow_up_done_date = models.DateField(null=True, blank=True)
