@@ -78,6 +78,9 @@ BONDHU_DICS = [
     },
 ]
 
+# SIDA target: 9 brothel-based wellness centres (SL8).
+# Was previously 11 from an earlier placeholder count; corrected to 9 to
+# match PHD_SIDA_Activities_Indicators_Output_Outcome.docx exactly.
 PHD_BROTHELS = [
     {
         'code': f'PHD-BROTHEL-{i:02d}',
@@ -89,7 +92,7 @@ PHD_BROTHELS = [
         'lat': 24.2513 + (i * 0.02),
         'lng': 89.9167 + (i * 0.01),
     }
-    for i in range(1, 12)
+    for i in range(1, 10)  # 9 brothels (SL8 target)
 ]
 
 PHD_SUB_DICS = [

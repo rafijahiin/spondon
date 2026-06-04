@@ -118,8 +118,14 @@ def compute_SL7(org, period_start, period_end):
 
 
 # ── SL8 — Functional brothel-based SRHR service centres ──────────────────────
+# SIDA target is 9 BROTHEL-type centres. Filter by center_type to exclude
+# mobile / sub-DIC / generic rows that may sit alongside in the same partner.
 def compute_SL8(org):
-    return ServiceCenter.objects.filter(organisation=org, is_active=True).count()
+    return ServiceCenter.objects.filter(
+        organisation=org,
+        is_active=True,
+        center_type=ServiceCenter.BROTHEL,
+    ).count()
 
 
 # ── SL9 — Mobile health camps conducted ──────────────────────────────────────
