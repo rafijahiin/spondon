@@ -122,12 +122,13 @@ const KOBO_GROUPS: KoboGroup[] = [
     visible: isPhdVisible,
     forms: [
       // Registration — filled once per FSW (creates the permanent ID No).
-      { url: 'https://kf.kobotoolbox.org/#/forms/aGWfLrP2yNXqnAiBKuvVgv/landing',
+      // Enketo offline_url — public collect link, works without login.
+      { url: 'https://ee.kobotoolbox.org/x/NesXOMsL',
         label: 'PHD 1 — FSW Registration', labelBn: 'যৌনকর্মী নিবন্ধন' },
       // Service Log — daily form with a "What are you recording?" selector
       // that opens the correct section (clinic / HTC / counselling / referral
       // / group education / event / IEC material / GBV corner / stock).
-      { url: 'https://kf.kobotoolbox.org/#/forms/aDv2CZapM2eSqijKr2WZKc/landing',
+      { url: 'https://ee.kobotoolbox.org/x/o7GhleIk',
         label: 'PHD 2 — Service Log', labelBn: 'সেবা ও কার্যক্রম লগ' },
     ],
   },
