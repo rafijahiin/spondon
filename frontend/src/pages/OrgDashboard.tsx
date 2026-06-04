@@ -461,7 +461,11 @@ export function OrgDashboard({ partner }: Props) {
 
       {/* ═══════════════════════════════════════════════════════════════
            CENTRES TABLE
+           Hide the whole section for PHD when there's no district data yet —
+           the empty table reads as broken on a freshly-launched programme.
+           Bandhu keeps the existing empty-state row.
            ═══════════════════════════════════════════════════════════════ */}
+      {!(isPHD && (displayCentres.districts?.length ?? 0) === 0) && (
       <section className="section" style={{ marginTop: 56, marginBottom: 80 }}>
         <SectionHead
           kicker={t('org.sectionCentresKicker')}
@@ -532,6 +536,7 @@ export function OrgDashboard({ partner }: Props) {
           Aggregated from all {partner} KoboSubmission rows this month, grouped by district. 14-day trend = daily counts from /api/dashboard/centres/ endpoint.
         </DataSource>
       </section>
+      )}
 
       {/* AI Weekly Summary card removed per Animesh — placeholder narrative
           at low data volume read as filler; the indicator grid + KPI tiles

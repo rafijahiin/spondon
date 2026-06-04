@@ -49,12 +49,18 @@ export function CumulativeAverageTile({ org, periodStart, periodEnd }: Props) {
   const withTargets = (data ?? []).filter(i => i.target_value !== null && !i.unlinked)
   const allIndicators = (data ?? []).filter(i => !i.unlinked)
   const total = withTargets.length
+  // Aggregate the actual programme-to-date achievement, not just the percent.
+  // When every indicator is still at 0 the mean is mathematically 0% but
+  // semantically "no field submissions yet" — show that state explicitly
+  // instead of a misleading red 0.0% / 7.1% on an empty programme.
+  const totalAchievement = withTargets.reduce((s, i) => s + (i.achievement || 0), 0)
+  const awaitingFirstSubmission = total > 0 && totalAchievement === 0
   const avgPct =
     total > 0
       ? withTargets.reduce((s, i) => s + (i.percentage ?? 0), 0) / total
       : null
   const onTrack = withTargets.filter(i => (i.percentage ?? 0) >= 75).length
-  const color = BAND_COLOR(avgPct)
+  const color = awaitingFirstSubmission ? 'var(--muted)' : BAND_COLOR(avgPct)
 
   return (
     <section
@@ -76,16 +82,24 @@ export function CumulativeAverageTile({ org, periodStart, periodEnd }: Props) {
         </div>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
           <span style={{
-            fontSize: 48, fontWeight: 800, color, lineHeight: 1,
+            fontSize: awaitingFirstSubmission ? 18 : 48,
+            fontWeight: awaitingFirstSubmission ? 600 : 800,
+            color,
+            lineHeight: 1,
             fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.025em',
+            fontStyle: awaitingFirstSubmission ? 'italic' : 'normal',
           }}>
-            {avgPct === null ? '—' : `${avgPct.toFixed(1)}%`}
+            {awaitingFirstSubmission
+              ? 'Awaiting first submissions'
+              : (avgPct === null ? '—' : `${avgPct.toFixed(1)}%`)}
           </span>
         </div>
         <div style={{ fontSize: 12.5, color: 'var(--ink-3)', marginTop: 6 }}>
-          {avgPct === null
-            ? 'Awaiting targets'
-            : `Mean of ${total} indicator${total === 1 ? '' : 's'} (with targets)`}
+          {awaitingFirstSubmission
+            ? `${total} indicators ready · 0 records approved yet`
+            : avgPct === null
+              ? 'Awaiting targets'
+              : `Mean of ${total} indicator${total === 1 ? '' : 's'} (with targets)`}
         </div>
       </div>
 
@@ -99,10 +113,13 @@ export function CumulativeAverageTile({ org, periodStart, periodEnd }: Props) {
           INDICATORS ON TRACK
         </div>
         <div style={{
-          fontSize: 32, fontWeight: 700, color: 'var(--ink)',
+          fontSize: 32, fontWeight: 700,
+          color: awaitingFirstSubmission ? 'var(--muted)' : 'var(--ink)',
           fontVariantNumeric: 'tabular-nums', lineHeight: 1, letterSpacing: '-0.02em',
         }}>
-          {total > 0 ? `${onTrack} / ${total}` : '—'}
+          {awaitingFirstSubmission
+            ? `0 / ${total}`
+            : (total > 0 ? `${onTrack} / ${total}` : '—')}
         </div>
         <div style={{ fontSize: 12, color: 'var(--ink-3)', marginTop: 6 }}>
           ≥ 75 % of own target

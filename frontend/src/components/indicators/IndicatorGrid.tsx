@@ -20,12 +20,36 @@ function objectiveI18nKey(n: number): string {
   return 'indicator.objectiveOther'
 }
 
+/** Natural-sort key for activity codes.
+ *  Handles SL1, SL2 … SL16 (numeric ordering, not lexicographic which puts
+ *  SL10 before SL2) plus the SL5a/b/c sub-row suffix and legacy "1.1", "1.5a". */
+function codeKey(code: string): [number, number, string] {
+  const m = code.match(/^(?:SL)?(\d+)(?:\.(\d+))?([a-z]*)$/i)
+  if (m) {
+    return [parseInt(m[1], 10), m[2] ? parseInt(m[2], 10) : 0, (m[3] || '').toLowerCase()]
+  }
+  return [Number.MAX_SAFE_INTEGER, 0, code]
+}
+
+function compareCodes(a: string, b: string): number {
+  const [a1, a2, a3] = codeKey(a)
+  const [b1, b2, b3] = codeKey(b)
+  if (a1 !== b1) return a1 - b1
+  if (a2 !== b2) return a2 - b2
+  return a3.localeCompare(b3)
+}
+
 function groupByObjective(indicators: IndicatorProgress[]): Map<number, IndicatorProgress[]> {
   const groups = new Map<number, IndicatorProgress[]>()
   for (const ind of indicators) {
     const key = ind.objective_number
     if (!groups.has(key)) groups.set(key, [])
     groups.get(key)!.push(ind)
+  }
+  // Sort rows within each objective by natural activity-code order
+  // (SL1 → SL5a → SL5b → ... SL10 → SL16, not lexicographic).
+  for (const rows of groups.values()) {
+    rows.sort((a, b) => compareCodes(a.activity_code, b.activity_code))
   }
   // Numeric sort that naturally renders PHD 0 → 1 → 2 and Bandhu 1 → 2 → 4
   // (no auto-renumbering of the missing Bandhu Obj 3).
@@ -160,7 +184,11 @@ export function IndicatorGrid({ org, periodStart = '2026-05-21', periodEnd = '20
       {!loading && indicators.length > 0 && [...grouped.entries()].map(([objNum, rows]) => (
         <div key={objNum} className="space-y-3">
           <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
-            {t(objectiveI18nKey(objNum), { n: objNum })}
+            {/* PHD's new SIDA scheme is flat (all objective_number=0).
+                Show the SIDA banner; Bandhu keeps its 1/2/4 objective grouping. */}
+            {org === 'PHD'
+              ? 'SIDA Framework — SL1 through SL16'
+              : t(objectiveI18nKey(objNum), { n: objNum })}
           </h3>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {rows.map((ind, idx) => (
