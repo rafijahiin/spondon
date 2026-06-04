@@ -1,32 +1,29 @@
 """
-PHD indicator compute functions — rebuilt for the 3 consolidated PHD forms.
+PHD indicator compute functions — SL1 through SL16, directly from
+PHD_SIDA_Activities_Indicators_Output_Outcome.docx.
 
-All 16 SL indicators read from the models that the NEW PHD forms populate:
+All counts are over APPROVED submissions only. Data comes from the
+3 consolidated PHD forms via the new phd_handlers.py:
+
   phd_registration_v1      → Client
   phd_patient_services_v1  → ClinicVisit, HIVSTITestResult, Referral
   phd_activity_ops_v1      → GroupEducationSession, TrainingEvent,
                              IECMaterial, StockEntry, GBVCornerRecord
-
-Targets corrected to match PHD_SIDA_Activities_Indicators_Output_Outcome.docx.
-All filter on approval_status='APPROVED' only.
 """
 from django.db.models import Q, Sum
 
 from programs.models import (
-    Client, ClinicVisit, HIVSTITestResult,
-    GroupEducationSession, Referral,
+    Client, ClinicVisit, HIVSTITestResult, Referral,
+    GroupEducationSession,
     ServiceCenter, TrainingEvent, StockEntry, IECMaterial,
     GBVCornerRecord,
 )
 
 APPROVED = 'APPROVED'
-PHD = 'PHD'
 
 
-# ── SL1 — FSWs receiving HIV/STI screening and FP counselling  ──────────────
-# Source: Patient Record Register (clinic_hiv_screen / clinic_syphilis_screen)
-# Target: 3,500 FSWs (distinct)
-def compute_I_PHD_1_1(org, period_start, period_end):
+# ── SL1 — FSWs receiving HIV/STI screening and FP counselling ────────────────
+def compute_SL1(org, period_start, period_end):
     return ClinicVisit.objects.filter(
         organisation=org,
         approval_status=APPROVED,
@@ -36,10 +33,8 @@ def compute_I_PHD_1_1(org, period_start, period_end):
     ).values('client_id').distinct().count()
 
 
-# ── SL2 — GBV survivors identified and referred ─────────────────────────────
-# Source: Patient Record Register (GBV Screening + GBV referral columns)
-# Target: 100 GBV survivors (distinct clinic visits with GBV flag)
-def compute_I_PHD_1_2(org, period_start, period_end):
+# ── SL2 — GBV survivors identified and referred for services ─────────────────
+def compute_SL2(org, period_start, period_end):
     return ClinicVisit.objects.filter(
         organisation=org,
         approval_status=APPROVED,
@@ -49,10 +44,8 @@ def compute_I_PHD_1_2(org, period_start, period_end):
     ).values('client_id').distinct().count()
 
 
-# ── SL3 — FSWs receiving mental health counselling ──────────────────────────
-# Source: Patient Record Register (Mental Health Screening column)
-# Target: 100 FSWs (distinct)
-def compute_I_PHD_1_3(org, period_start, period_end):
+# ── SL3 — FSWs receiving mental health counselling sessions ──────────────────
+def compute_SL3(org, period_start, period_end):
     return ClinicVisit.objects.filter(
         organisation=org,
         approval_status=APPROVED,
@@ -61,10 +54,8 @@ def compute_I_PHD_1_3(org, period_start, period_end):
     ).values('client_id').distinct().count()
 
 
-# ── SL4 — Outreach sessions conducted ───────────────────────────────────────
-# Source: Group Health Education (group_edu section → GroupEducationSession)
-# Target: 897 sessions
-def compute_I_PHD_1_4(org, period_start, period_end):
+# ── SL4 — Outreach sessions conducted ────────────────────────────────────────
+def compute_SL4(org, period_start, period_end):
     return GroupEducationSession.objects.filter(
         organisation=org,
         approval_status=APPROVED,
@@ -72,19 +63,8 @@ def compute_I_PHD_1_4(org, period_start, period_end):
     ).count()
 
 
-# ── SL5 — Essential SRHR & GBV supplies (commodities) ───────────────────────
-# Source: Stock register → StockEntry
-# 5A: Condoms distributed (quantity_issued for condom items)
-# 5B: Syphilis kits   5C: Hep B kits   5D: Hep C kits   5E: HIV kits
-def compute_I_PHD_1_5A(org, period_start, period_end):
-    return StockEntry.objects.filter(
-        organisation=org,
-        reporting_month__range=(period_start, period_end),
-        item_name__icontains='condom',
-    ).aggregate(t=Sum('quantity_issued'))['t'] or 0
-
-
-def _kit(org, period_start, period_end, fragment):
+# ── SL5 — Essential SRHR & GBV supplies (5 commodity sub-rows) ───────────────
+def _kit_issued(org, period_start, period_end, fragment):
     return StockEntry.objects.filter(
         organisation=org,
         reporting_month__range=(period_start, period_end),
@@ -92,34 +72,34 @@ def _kit(org, period_start, period_end, fragment):
     ).aggregate(t=Sum('quantity_issued'))['t'] or 0
 
 
-def compute_I_PHD_1_5B(org, period_start, period_end):
-    return _kit(org, period_start, period_end, 'syphilis')
+def compute_SL5a(org, period_start, period_end):   # condoms
+    return _kit_issued(org, period_start, period_end, 'condom')
 
 
-def compute_I_PHD_1_5C(org, period_start, period_end):
-    return _kit(org, period_start, period_end, 'hepatitis b')
+def compute_SL5b(org, period_start, period_end):   # syphilis
+    return _kit_issued(org, period_start, period_end, 'syphilis')
 
 
-def compute_I_PHD_1_5D(org, period_start, period_end):
-    return _kit(org, period_start, period_end, 'hepatitis c')
+def compute_SL5c(org, period_start, period_end):   # hep B
+    return _kit_issued(org, period_start, period_end, 'hepatitis b')
 
 
-def compute_I_PHD_1_5E(org, period_start, period_end):
-    return _kit(org, period_start, period_end, 'hiv')
+def compute_SL5d(org, period_start, period_end):   # hep C
+    return _kit_issued(org, period_start, period_end, 'hepatitis c')
+
+
+def compute_SL5e(org, period_start, period_end):   # HIV kits
+    return _kit_issued(org, period_start, period_end, 'hiv')
 
 
 # ── SL6 — HIV/STI positive cases referred and enrolled in treatment ──────────
-# Source: HTC Service register (htc section) → HIVSTITestResult
-#         Referral register (referral section) → Referral
-# Target: 135 cases
-def compute_I_PHD_1_6(org, period_start, period_end):
+def compute_SL6(org, period_start, period_end):
     positive_clients = HIVSTITestResult.objects.filter(
         organisation=org,
         approval_status=APPROVED,
         testing_date__range=(period_start, period_end),
         hiv_result='positive',
     ).values_list('client_id', flat=True)
-
     return Referral.objects.filter(
         organisation=org,
         approval_status=APPROVED,
@@ -127,10 +107,8 @@ def compute_I_PHD_1_6(org, period_start, period_end):
     ).values('client_id').distinct().count()
 
 
-# ── SL7 — GBV survivors referred for MHPSS ──────────────────────────────────
-# Source: Patient Record Register (MHPSS referral column → referral_mental_health)
-# Target: 50
-def compute_I_PHD_1_7_mhpss(org, period_start, period_end):
+# ── SL7 — GBV survivors referred for MHPSS ───────────────────────────────────
+def compute_SL7(org, period_start, period_end):
     return ClinicVisit.objects.filter(
         organisation=org,
         approval_status=APPROVED,
@@ -139,17 +117,13 @@ def compute_I_PHD_1_7_mhpss(org, period_start, period_end):
     ).values('client_id').distinct().count()
 
 
-# ── SL8 — Functional wellness centres ───────────────────────────────────────
-# Source: ServiceCenter registry (static)
-# Target: 9
-def compute_I_PHD_1_8_centres(org):
+# ── SL8 — Functional brothel-based SRHR service centres ──────────────────────
+def compute_SL8(org):
     return ServiceCenter.objects.filter(organisation=org, is_active=True).count()
 
 
-# ── SL9 — Mobile health camps conducted ─────────────────────────────────────
-# Source: event database → TrainingEvent where event_type='camp'
-# Target: 90
-def compute_I_PHD_1_9_camps(org, period_start, period_end):
+# ── SL9 — Mobile health camps conducted ──────────────────────────────────────
+def compute_SL9(org, period_start, period_end):
     return TrainingEvent.objects.filter(
         organisation=org,
         approval_status=APPROVED,
@@ -158,49 +132,41 @@ def compute_I_PHD_1_9_camps(org, period_start, period_end):
     ).count()
 
 
-# ── SL10 — DGFP/DGHS/DGNM focal points oriented ────────────────────────────
-# Source: event database → TrainingEvent participant_type='HM', type orientation
-# Target: 30 participants (1 event)
-def compute_I_PHD_2_1A(org, period_start, period_end):
+# ── SL10 — Focal points (DGFP/DGHS/DGNM) oriented ────────────────────────────
+def compute_SL10(org, period_start, period_end):
     return TrainingEvent.objects.filter(
         organisation=org,
         approval_status=APPROVED,
         event_date__range=(period_start, period_end),
+        event_type='orientation',
         participant_type='HM',
-        event_type__in=('orientation', TrainingEvent.ORIENTATION),
     ).aggregate(t=Sum('total_participants'))['t'] or 0
 
 
-# ── SL11 — Health managers and supervisors oriented ─────────────────────────
-# Source: TrainingEvent participant_type='GOB', type orientation
-# Target: 140 participants (7 events)
-def compute_I_PHD_2_1B(org, period_start, period_end):
+# ── SL11 — Health managers / District-Upazila GOB staff oriented ─────────────
+def compute_SL11(org, period_start, period_end):
     return TrainingEvent.objects.filter(
         organisation=org,
         approval_status=APPROVED,
         event_date__range=(period_start, period_end),
+        event_type='orientation',
         participant_type='GOB',
-        event_type__in=('orientation', TrainingEvent.ORIENTATION),
     ).aggregate(t=Sum('total_participants'))['t'] or 0
 
 
-# ── SL12 — Medical Assistants / Midwives trained ────────────────────────────
-# Source: TrainingEvent participant_type='MW', type training
-# Target: 10 participants
-def compute_I_PHD_2_2(org, period_start, period_end):
+# ── SL12 — Medical Assistants / Midwives / Counsellors trained ───────────────
+def compute_SL12(org, period_start, period_end):
     return TrainingEvent.objects.filter(
         organisation=org,
         approval_status=APPROVED,
         event_date__range=(period_start, period_end),
+        event_type='training',
         participant_type='MW',
-        event_type__in=('training', TrainingEvent.TRAINING),
     ).aggregate(t=Sum('total_participants'))['t'] or 0
 
 
-# ── SL13 — Peer educators and community leaders trained ─────────────────────
-# Source: TrainingEvent participant_type='PE'
-# Target: 20 participants
-def compute_I_PHD_2_3(org, period_start, period_end):
+# ── SL13 — Peer educators / community leaders trained ────────────────────────
+def compute_SL13(org, period_start, period_end):
     return TrainingEvent.objects.filter(
         organisation=org,
         approval_status=APPROVED,
@@ -209,10 +175,8 @@ def compute_I_PHD_2_3(org, period_start, period_end):
     ).aggregate(t=Sum('total_participants'))['t'] or 0
 
 
-# ── SL14 — Quarterly coordination meetings ──────────────────────────────────
-# Source: event database → TrainingEvent where event_type='coord_meeting'
-# Target: 18 meetings
-def compute_I_PHD_2_4(org, period_start, period_end):
+# ── SL14 — Quarterly coordination meetings ───────────────────────────────────
+def compute_SL14(org, period_start, period_end):
     return TrainingEvent.objects.filter(
         organisation=org,
         approval_status=APPROVED,
@@ -221,12 +185,8 @@ def compute_I_PHD_2_4(org, period_start, period_end):
     ).count()
 
 
-# ── SL15 — Install billboards and communication materials ───────────────────
-# Source: material database → IECMaterial
-# 3.1a: Message boards (target 99)
-# 3.1b: Signboards    (target 9)
-# 3.1c: Billboards    (target 11)
-def _iec(org, period_start, period_end, mat_type):
+# ── SL15 — Awareness materials installed (3 sub-rows) ────────────────────────
+def _iec_qty(org, period_start, period_end, mat_type):
     return IECMaterial.objects.filter(
         organisation=org,
         approval_status=APPROVED,
@@ -235,22 +195,20 @@ def _iec(org, period_start, period_end, mat_type):
     ).aggregate(t=Sum('quantity'))['t'] or 0
 
 
-def compute_I_PHD_3_1A(org, period_start, period_end):
-    return _iec(org, period_start, period_end, IECMaterial.MESSAGE_BOARD)
+def compute_SL15a(org, period_start, period_end):  # message boards
+    return _iec_qty(org, period_start, period_end, IECMaterial.MESSAGE_BOARD)
 
 
-def compute_I_PHD_3_1B(org, period_start, period_end):
-    return _iec(org, period_start, period_end, IECMaterial.SIGNBOARD)
+def compute_SL15b(org, period_start, period_end):  # signboards
+    return _iec_qty(org, period_start, period_end, IECMaterial.SIGNBOARD)
 
 
-def compute_I_PHD_3_1C(org, period_start, period_end):
-    return _iec(org, period_start, period_end, IECMaterial.BILLBOARD)
+def compute_SL15c(org, period_start, period_end):  # billboards
+    return _iec_qty(org, period_start, period_end, IECMaterial.BILLBOARD)
 
 
-# ── SL16 — GBV corners established and fully operational ────────────────────
-# Source: gbv corner establishment database → GBVCornerRecord
-# Target: 44 facilities
-def compute_I_PHD_2_5(org, period_start, period_end):
+# ── SL16 — GBV corners established and fully equipped ───────────────────────
+def compute_SL16(org, period_start, period_end):
     return GBVCornerRecord.objects.filter(
         organisation=org,
         approval_status=APPROVED,
@@ -259,37 +217,30 @@ def compute_I_PHD_2_5(org, period_start, period_end):
     ).count()
 
 
-# ── Overall: brothels / wellness centres covered ────────────────────────────
-def compute_phd_overall(org):
-    return ServiceCenter.objects.filter(organisation=org, is_active=True).count()
-
-
 # ─── Activity-code registry ──────────────────────────────────────────────────
 ACTIVITY_REGISTRY = {
-    'OVERALL': compute_phd_overall,       # org-only
-    '1.1':  compute_I_PHD_1_1,
-    '1.2':  compute_I_PHD_1_2,
-    '1.3':  compute_I_PHD_1_3,
-    '1.4':  compute_I_PHD_1_4,
-    '1.5a': compute_I_PHD_1_5A,
-    '1.5b': compute_I_PHD_1_5B,
-    '1.5c': compute_I_PHD_1_5C,
-    '1.5d': compute_I_PHD_1_5D,
-    '1.5e': compute_I_PHD_1_5E,
-    '1.6':  compute_I_PHD_1_6,
-    '1.7':  compute_I_PHD_1_8_centres,   # org-only (functional centres)
-    '1.8':  compute_I_PHD_1_9_camps,     # mobile health camps
-    '2.1a': compute_I_PHD_2_1A,
-    '2.1b': compute_I_PHD_2_1B,
-    '2.2':  compute_I_PHD_2_2,
-    '2.3':  compute_I_PHD_2_3,
-    '2.4':  compute_I_PHD_2_4,
-    '2.5':  compute_I_PHD_2_5,           # GBV corners (was unlinked)
-    '3.1a': compute_I_PHD_3_1A,
-    '3.1b': compute_I_PHD_3_1B,
-    '3.1c': compute_I_PHD_3_1C,
-    # SL7 (MHPSS referral) registered under its fixture code
-    'mhpss': compute_I_PHD_1_7_mhpss,
+    'SL1':   compute_SL1,
+    'SL2':   compute_SL2,
+    'SL3':   compute_SL3,
+    'SL4':   compute_SL4,
+    'SL5a':  compute_SL5a,
+    'SL5b':  compute_SL5b,
+    'SL5c':  compute_SL5c,
+    'SL5d':  compute_SL5d,
+    'SL5e':  compute_SL5e,
+    'SL6':   compute_SL6,
+    'SL7':   compute_SL7,
+    'SL8':   compute_SL8,           # org-only
+    'SL9':   compute_SL9,
+    'SL10':  compute_SL10,
+    'SL11':  compute_SL11,
+    'SL12':  compute_SL12,
+    'SL13':  compute_SL13,
+    'SL14':  compute_SL14,
+    'SL15a': compute_SL15a,
+    'SL15b': compute_SL15b,
+    'SL15c': compute_SL15c,
+    'SL16':  compute_SL16,
 }
 
-ORG_ONLY_CODES = {'OVERALL', '1.7'}
+ORG_ONLY_CODES = {'SL8'}

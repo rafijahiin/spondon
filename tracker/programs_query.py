@@ -15,20 +15,26 @@ logger = logging.getLogger(__name__)
 
 PROGRAMS_REGISTRY: dict[str, tuple[str, str, str, str]] = {
     # key:                (model_name,              label_en,                label_bn,                category)
+    # ── PHD new forms ─────────────────────────────────────────────────────────
+    'client_registration':('Client',                'FSW Registrations',     'যৌনকর্মী নিবন্ধন',      'Clinical'),
     'clinic_visit':       ('ClinicVisit',            'Clinic Visits',         'ক্লিনিক পরিদর্শন',      'Clinical'),
-    'hiv_sti_test':       ('HIVSTITestResult',       'HIV/STI Tests',         'এইচআইভি পরীক্ষা',       'Clinical'),
+    'hiv_sti_test':       ('HIVSTITestResult',       'HIV / STI Tests',       'এইচআইভি পরীক্ষা',       'Clinical'),
+    'referral':           ('Referral',               'Referrals',             'রেফারেল',                'Community'),
+    'group_education':    ('GroupEducationSession',  'Group Education',       'দলগত স্বাস্থ্য শিক্ষা', 'Community'),
+    'training_event':     ('TrainingEvent',          'Events & Trainings',    'ইভেন্ট ও প্রশিক্ষণ',    'Operations'),
+    'iec_material':       ('IECMaterial',            'IEC Materials',         'আইইসি উপকরণ',           'Operations'),
+    'stock_entry':        ('StockEntry',             'Stock Entries',         'স্টক এন্ট্রি',           'Operations'),
+    'gbv_corner':         ('GBVCornerRecord',        'GBV Corners',           'জিবিভি কর্নার',          'Operations'),
+    # ── Bandhu / shared forms ─────────────────────────────────────────────────
     'adr_record':         ('ADRRecord',              'ADR Records',           'পার্শ্বপ্রতিক্রিয়া',   'Clinical'),
     'autoclave_log':      ('AutoclaveLog',           'Autoclave Logs',        'অটোক্লেভ লগ',           'Clinical'),
     'antenatal_card':     ('AntenatalCard',          'Antenatal Cards',       'প্রসব পূর্ব যত্ন',      'Clinical'),
     'htc_counselling':    ('HTCCounselling',         'HTC Counselling',       'এইচটিসি পরামর্শ',       'Clinical'),
-    'individual_counselling': ('IndividualCounselling',  'Individual Counselling','ব্যক্তিগত পরামর্শ',     'Community'),
+    'individual_counselling': ('IndividualCounselling', 'Individual Counselling', 'ব্যক্তিগত পরামর্শ',  'Community'),
     'mh_screening':       ('MHScreening',            'MH Screenings',         'মানসিক স্বাস্থ্য',      'Clinical'),
     'gbv_case':           ('GBVCase',                'GBV Cases',             'জিবিভি কেস',             'Community'),
     'outreach_session':   ('OutreachSession',        'Outreach Sessions',     'আউটরিচ সেশন',           'Community'),
-    'group_education':    ('GroupEducationSession',  'Group Education',       'গ্রুপ শিক্ষা',           'Community'),
-    'referral':           ('Referral',               'Referrals',             'রেফারেল',                'Community'),
     'hygiene_kit':        ('SafetyHygieneKit',       'Hygiene Kits',          'হাইজিন কিট',             'Community'),
-    'training_event':     ('TrainingEvent',          'Training Events',       'প্রশিক্ষণ',              'Operations'),
     'coord_meeting':      ('CoordMeeting',           'Coord. Meetings',       'সমন্বয় সভা',            'Operations'),
     'mobile_camp':        ('MobileHealthCamp',       'Mobile Health Camps',   'মোবাইল ক্যাম্প',        'Operations'),
 }
@@ -51,14 +57,12 @@ CATEGORY_ORDER = ['Clinical', 'Community', 'Operations', 'Legacy']
 
 ORG_FORM_TYPES: dict[str, list[str]] = {
     'PHD': [
-        # Clinical
-        'clinic_visit', 'antenatal_card', 'hiv_sti_test', 'htc_counselling',
-        'mh_screening', 'adr_record', 'autoclave_log',
-        # Community
-        'outreach_session', 'group_education', 'individual_counselling',
-        'gbv_case', 'referral',
-        # Operations
-        'mobile_camp', 'training_event', 'coord_meeting',
+        # Clinical — from Patient Services form
+        'client_registration', 'clinic_visit', 'hiv_sti_test',
+        # Community — from Patient Services + Activity & Ops
+        'referral', 'group_education',
+        # Operations — from Activity & Ops form
+        'training_event', 'iec_material', 'stock_entry', 'gbv_corner',
     ],
     'Bandhu': [
         # Clinical

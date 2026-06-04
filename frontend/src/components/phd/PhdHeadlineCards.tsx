@@ -45,11 +45,11 @@ interface CardDef {
 }
 
 const CARDS: CardDef[] = [
-  { key: 'fsws',      kind: 'number', codes: ['1.1'],                     label: 'FSWs reached',          sub: 'Integrated SRHR & HIV services', sl: 'SL1',     icon: <HeartPulse size={15} /> },
-  { key: 'centres',   kind: 'ring',   codes: ['1.7'],                     label: 'Wellness centres',      sub: 'Providing SRHR services',        sl: 'SL8',     icon: <Home size={15} /> },
-  { key: 'outreach',  kind: 'number', codes: ['1.4'],                     label: 'Outreach sessions',     sub: 'SRHR / HIV / GBV awareness',     sl: 'SL4',     icon: <Megaphone size={15} /> },
-  { key: 'providers', kind: 'number', codes: ['2.1a', '2.1b', '2.2', '2.3'], label: 'Providers capacitated', sub: 'Gender-sensitive SRHR training', sl: 'SL10–13', icon: <GraduationCap size={15} /> },
-  { key: 'gbv',       kind: 'ring',   codes: ['2.5'],                     label: 'GBV corners',           sub: 'Established & operational',       sl: 'SL16',    icon: <ShieldPlus size={15} /> },
+  { key: 'fsws',      kind: 'number', codes: ['SL1'],                          label: 'FSWs reached',          sub: 'Integrated SRHR & HIV services', sl: 'SL1',     icon: <HeartPulse size={15} /> },
+  { key: 'centres',   kind: 'ring',   codes: ['SL8'],                          label: 'Wellness centres',      sub: 'Providing SRHR services',        sl: 'SL8',     icon: <Home size={15} /> },
+  { key: 'outreach',  kind: 'number', codes: ['SL4'],                          label: 'Outreach sessions',     sub: 'SRHR / HIV / GBV awareness',     sl: 'SL4',     icon: <Megaphone size={15} /> },
+  { key: 'providers', kind: 'number', codes: ['SL10', 'SL11', 'SL12', 'SL13'], label: 'Providers capacitated', sub: 'Gender-sensitive SRHR training', sl: 'SL10–13', icon: <GraduationCap size={15} /> },
+  { key: 'gbv',       kind: 'ring',   codes: ['SL16'],                         label: 'GBV corners',           sub: 'Established & operational',       sl: 'SL16',    icon: <ShieldPlus size={15} /> },
 ]
 
 interface Metric {
