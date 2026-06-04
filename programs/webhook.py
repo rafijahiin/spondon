@@ -54,6 +54,7 @@ from .models import (
     Referral,
     SafetyHygieneKit,
     TrainingEvent, CoordMeeting, MobileHealthCamp,
+    StockEntry, IECMaterial,
 )
 
 logger = logging.getLogger(__name__)
@@ -831,6 +832,145 @@ def _handle_client_reg(payload: dict, lat: float | None, lng: float | None) -> H
     return HttpResponse('Created' if created else 'OK', status=201 if created else 200)
 
 
+# ─── Stock & IEC handlers (models existed; handlers added for the combined
+#     Activity & Operations form) ──────────────────────────────────────────────
+
+def _handle_stock_entry(payload, lat, lng):
+    """Monthly stock summary. StockEntry is a plain TimestampedModel (no GPS /
+    SubmissionBase audit columns), so idempotency is on the natural key
+    (center, reporting_month, item_name) via update_or_create — not on
+    kobo_submission_id."""
+    org = _org(payload)
+    center = _get_center(payload, org)
+    if not center:
+        return HttpResponse('center not found', status=400)
+    item_name = _str(payload.get('item_name'))
+    if not item_name:
+        return HttpResponse('Bad Request — item_name required', status=400)
+    rmonth = _date(payload.get('reporting_month')) or timezone.now().date()
+    rmonth = rmonth.replace(day=1)  # normalise to first of month
+
+    StockEntry.objects.update_or_create(
+        center=center, reporting_month=rmonth, item_name=item_name,
+        defaults={
+            'organisation': org,
+            'item_category': _str(payload.get('item_category'), StockEntry.OTHER),
+            'batch_number': _str(payload.get('batch_number')),
+            'expiry_date': _date(payload.get('expiry_date')),
+            'delivery_challan_no': _str(payload.get('delivery_challan_no')),
+            'opening_balance': _int(payload.get('opening_balance')),
+            'quantity_received': _int(payload.get('quantity_received')),
+            'quantity_issued': _int(payload.get('quantity_issued')),
+            'quantity_expired_lost': _int(payload.get('quantity_expired_lost')),
+            'notes': _str(payload.get('notes')),
+            'approval_status': StockEntry.PENDING,
+        },
+    )
+    return HttpResponse('Created', status=201)
+
+
+def _handle_iec_material(payload, lat, lng):
+    """IEC / SBCC material installation (message boards, signboards, billboards,
+    posters …). Feeds PHD indicators 3.1a–d. IECMaterial is SubmissionBase, so
+    it uses the standard audit kwargs + the approval queue."""
+    org = _org(payload)
+    if not org:
+        return HttpResponse('Bad Request — organisation could not be resolved', status=400)
+    center = _get_center(payload, org)  # nullable FK; fallback is fine
+    if _already_exists(IECMaterial, payload):
+        return HttpResponse('OK', status=200)
+
+    from partners.models import Partner
+    partner = Partner.objects.filter(code=org).first()
+    if partner is None:
+        return HttpResponse('Bad Request — partner not found for IEC material', status=400)
+
+    IECMaterial.objects.create(
+        partner=partner, center=center, organisation=org,
+        material_type=_str(payload.get('material_type'), IECMaterial.OTHER),
+        quantity=_int(payload.get('quantity')),
+        date_distributed=_date(payload.get('date_distributed')) or timezone.now().date(),
+        district=_str(payload.get('district')),
+        notes=_str(payload.get('notes')),
+        **_base_kwargs(payload, lat, lng),
+    )
+    return HttpResponse('Created', status=201)
+
+
+# ─── Combined-form dispatchers ─────────────────────────────────────────────────
+#
+# Per the 3-form consolidation (registration + patient-service + activity-ops),
+# the two combined forms each carry an in-form selector and prefix every section
+# field with "<section>__". The dispatcher reads the selector, un-prefixes the
+# active section back to the flat field names the proven single-form handlers
+# expect, and delegates. NO change to the existing handlers.
+#
+# route value → (field_prefix, handler, primary_name_field)
+#   primary_name_field receives the shared enumerator_name when the section's own
+#   identity field is blank, so "who filled it" is always captured even with
+#   anonymous (login-less) submission.
+
+_PATIENT_SERVICE_ROUTES = {
+    'clinic':      ('clinic',      _handle_clinic_visit,           'prepared_by'),
+    'htc':         ('htc',         _handle_hiv_sti_test,           'counsellor_name'),
+    'counselling': ('counselling', _handle_individual_counselling, 'counsellor_name'),
+    'mh':          ('mh',          _handle_mh_screening,           'counsellor_name'),
+    'gbv':         ('gbv',         _handle_gbv_case,               'case_officer_name'),
+    'referral':    ('referral',    _handle_referral,               'referred_by_name'),
+}
+
+_ACTIVITY_ROUTES = {
+    'outreach':  ('outreach',  _handle_outreach_session, 'peer_educator_name'),
+    'group_edu': ('group_edu', _handle_group_education,  'facilitator_name'),
+    'training':  ('training',  _handle_training_event,   'facilitator'),
+    'meeting':   ('meeting',   _handle_coord_meeting,    'prepared_by'),
+    'camp':      ('camp',      _handle_mobile_camp,      'team_members'),
+    'stock':     ('stock',     _handle_stock_entry,      None),
+    'iec':       ('iec',       _handle_iec_material,     None),
+}
+
+
+def _unprefix(payload: dict, prefix: str) -> dict:
+    """Flatten a combined-form payload to one section. Keeps shared/system keys
+    (those without a "__" separator, e.g. client_id, center_code, _id,
+    _geolocation, _submitted_by) and strips "<prefix>__" off this section's
+    fields. Other sections' prefixed fields are dropped."""
+    p = prefix + '__'
+    sub: dict = {}
+    for k, v in payload.items():
+        if k.startswith(p):
+            sub[k[len(p):]] = v
+        elif '__' not in k:
+            sub[k] = v
+    return sub
+
+
+def _dispatch_combined(payload, lat, lng, selector_key: str, routes: dict):
+    selection = _str(payload.get(selector_key))
+    route = routes.get(selection)
+    if not route:
+        logger.warning('Combined webhook: unknown %s=%r', selector_key, selection)
+        return HttpResponse(f'Bad Request — unknown {selector_key}: {selection!r}', status=400)
+    prefix, handler, name_field = route
+    sub = _unprefix(payload, prefix)
+    # "Who populated it" — stamp the shared enumerator name into the section's
+    # natural identity field when the field worker left it blank.
+    enumerator = _str(payload.get('enumerator_name'))
+    if name_field and enumerator and not _str(sub.get(name_field)):
+        sub[name_field] = enumerator
+    return handler(sub, lat, lng)
+
+
+def _handle_patient_service(payload, lat, lng):
+    """Form 2 — routes on service_type to the patient-level handlers."""
+    return _dispatch_combined(payload, lat, lng, 'service_type', _PATIENT_SERVICE_ROUTES)
+
+
+def _handle_activity_ops(payload, lat, lng):
+    """Form 3 — routes on activity_type to the operational handlers."""
+    return _dispatch_combined(payload, lat, lng, 'activity_type', _ACTIVITY_ROUTES)
+
+
 # ─── Dispatch table ────────────────────────────────────────────────────────────
 
 # Keys are the XLS form id_string values (set in KoboToolbox form settings).
@@ -843,7 +983,11 @@ from fistula.webhook_handlers import (
 )
 
 FORM_HANDLERS: dict = {
-    'spondon_client_reg_v1':   _handle_client_reg,
+    # ── PHD 3-form consolidation (registration + 2 combined forms) ──
+    'spondon_client_reg_v1':       _handle_client_reg,
+    'spondon_patient_service_v1':  _handle_patient_service,
+    'spondon_activity_ops_v1':     _handle_activity_ops,
+    # ── Legacy single-purpose forms (still routable) ──
     'spondon_clinic_visit_v1':   _handle_clinic_visit,
     'spondon_hiv_sti_test_v1':   _handle_hiv_sti_test,
     'spondon_adr_record_v1':     _handle_adr_record,
@@ -962,7 +1106,9 @@ def _notify(org: str, form_label: str, kobo_id: str) -> None:
 # ─── Webhook view ──────────────────────────────────────────────────────────────
 
 _FORM_LABELS = {
-    'spondon_client_reg_v1':     'Client Registration (KF-01)',
+    'spondon_client_reg_v1':       'FSW Registration',
+    'spondon_patient_service_v1':  'Patient Service',
+    'spondon_activity_ops_v1':     'Activity & Operations',
     'spondon_clinic_visit_v1':   'Clinic Visit (KF-02)',
     'spondon_hiv_sti_test_v1':   'HIV/STI Test Result (KF-03)',
     'spondon_adr_record_v1':     'ADR Record (KF-13)',

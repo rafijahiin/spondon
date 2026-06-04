@@ -29,6 +29,7 @@ import { PartnerOverlapMap } from '@/components/maps/PartnerOverlapMap'
 import { DataSource } from '@/components/ui/DataSource'
 import { IndicatorGrid } from '@/components/indicators/IndicatorGrid'
 import { CumulativeAverageTile } from '@/components/indicators/CumulativeAverageTile'
+import { PhdHeadlineCards } from '@/components/phd/PhdHeadlineCards'
 import { formatDate } from '@/utils/format'
 import type { PartnerKPIs, CentresResponse, Alert, ProgramsSummary } from '@/types'
 import {
@@ -378,18 +379,25 @@ export function OrgDashboard({ partner }: Props) {
 
       {/* ═══════════════════════════════════════════════════════════════
            KPI TILES
+           PHD → the five SIDA headline indicators (FSWs / centres / outreach
+           / providers / GBV corners) via the indicator engine. Bandhu keeps
+           its legacy programme tiles until its own headline set is confirmed.
            ═══════════════════════════════════════════════════════════════ */}
       <section className="section" style={{ marginTop: 24 }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 18 }}>
-          {orgKpis.map((k, i) => (
-            <Tile key={i} {...k} />
-          ))}
-        </div>
-        <DataSource>
-          {isPHD
-            ? 'Aggregated from KF-01 (clients), KF-02 (clinic visits), KF-08 (outreach), KF-GBV, KF-ANC, KF-Fistula_Corner submissions'
-            : 'Aggregated from KF-01 (clients), KF-02 (clinic visits), KF-08 (outreach), KF-09 (counselling), KF-GBV submissions'}
-        </DataSource>
+        {isPHD ? (
+          <PhdHeadlineCards />
+        ) : (
+          <>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 18 }}>
+              {orgKpis.map((k, i) => (
+                <Tile key={i} {...k} />
+              ))}
+            </div>
+            <DataSource>
+              Aggregated from KF-01 (clients), KF-02 (clinic visits), KF-08 (outreach), KF-09 (counselling), KF-GBV submissions
+            </DataSource>
+          </>
+        )}
       </section>
 
       {/* "Programme delivery" stacked area removed per Animesh — categories
