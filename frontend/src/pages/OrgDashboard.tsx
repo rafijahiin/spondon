@@ -420,7 +420,9 @@ export function OrgDashboard({ partner }: Props) {
               <FormBox key={f.key} form={f} />
             ))}
           </div>
-          <DataSource>Per-form submission counts from KF-01 through KF-20 + GBV + ANC + Referral + Fistula Kobo XLSForms</DataSource>
+          <DataSource>{isPHD
+            ? 'Per-form counts from PHD-1 FSW Registration · PHD-2 Patient Services · PHD-3 Activity & Operations'
+            : 'Per-form submission counts from KF-01 through KF-20 + GBV + ANC + Referral Kobo XLSForms'}</DataSource>
         </section>
       )}
 

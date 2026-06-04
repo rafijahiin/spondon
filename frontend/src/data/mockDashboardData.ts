@@ -48,76 +48,61 @@ export interface MockPartnerKPIs {
 }
 
 // ─── PHD ─────────────────────────────────────────────────────────────────────
-// Focus: maternal health, ANC, MPDSR, fistula, community outreach
-// Areas: Cox's Bazar (Rohingya + host community), Chattogram, Sylhet
+// Brothel-based FSW SRHR programme (SIDA-funded, 11 brothels, 9 wellness centres).
+// Form types are the 9 actually produced by the 3 consolidated PHD Kobo forms.
+// Areas: Daulatdia (Rajbari), Tangail, Jessore, Faridpur, Mymensingh, etc.
 
 const PHD_COUNTS: MockProgramsSummary['counts'] = {
-  // Clinical
-  clinic_visit:       { count: 89,  label: 'Clinic Visits',         label_bn: 'ক্লিনিক পরিদর্শন',    category: 'Clinical'   },
-  antenatal_card:     { count: 67,  label: 'Antenatal Cards',       label_bn: 'প্রসব পূর্ব যত্ন',    category: 'Clinical'   },  // PHD only
-  hiv_sti_test:       { count: 24,  label: 'HIV/STI Tests',         label_bn: 'এইচআইভি পরীক্ষা',     category: 'Clinical'   },
-  htc_counselling:    { count: 18,  label: 'HTC Counselling',       label_bn: 'এইচটিসি পরামর্শ',     category: 'Clinical'   },
-  mh_screening:       { count: 15,  label: 'MH Screenings',         label_bn: 'মানসিক স্বাস্থ্য',    category: 'Clinical'   },
-  adr_record:         { count: 8,   label: 'ADR Records',           label_bn: 'পার্শ্বপ্রতিক্রিয়া', category: 'Clinical'   },
-  autoclave_log:      { count: 4,   label: 'Autoclave Logs',        label_bn: 'অটোক্লেভ লগ',         category: 'Clinical'   },
-  // Community
-  outreach_session:   { count: 45,  label: 'Outreach Sessions',     label_bn: 'আউটরিচ সেশন',         category: 'Community'  },
-  group_education:    { count: 28,  label: 'Group Education',       label_bn: 'গ্রুপ শিক্ষা',        category: 'Community'  },
-  individual_counselling: { count: 32,  label: 'Individual Counselling',label_bn: 'ব্যক্তিগত পরামর্শ',   category: 'Community'  },
-  referral:           { count: 21,  label: 'Referrals',             label_bn: 'রেফারেল',              category: 'Community'  },
-  gbv_case:           { count: 9,   label: 'GBV Cases',             label_bn: 'জিবিভি কেস',          category: 'Community'  },
-  // Operations (mobile_camp is PHD only)
-  training_event:     { count: 3,   label: 'Training Events',       label_bn: 'প্রশিক্ষণ',           category: 'Operations' },
-  coord_meeting:      { count: 4,   label: 'Coord. Meetings',       label_bn: 'সমন্বয় সভা',         category: 'Operations' },
-  mobile_camp:        { count: 2,   label: 'Mobile Health Camps',   label_bn: 'মোবাইল ক্যাম্প',     category: 'Operations' },
+  // Clinical — from Patient Services form
+  client_registration:{ count: 0,  label: 'FSW Registrations',     label_bn: 'যৌনকর্মী নিবন্ধন',   category: 'Clinical'   },
+  clinic_visit:       { count: 0,  label: 'Clinic Visits',         label_bn: 'ক্লিনিক পরিদর্শন',   category: 'Clinical'   },
+  hiv_sti_test:       { count: 0,  label: 'HIV / STI Tests',       label_bn: 'এইচআইভি পরীক্ষা',    category: 'Clinical'   },
+  // Community — from Patient Services + Activity & Ops
+  referral:           { count: 0,  label: 'Referrals',             label_bn: 'রেফারেল',             category: 'Community'  },
+  group_education:    { count: 0,  label: 'Group Education',       label_bn: 'দলগত স্বাস্থ্য শিক্ষা', category: 'Community'  },
+  // Operations — from Activity & Ops form
+  training_event:     { count: 0,  label: 'Events & Trainings',    label_bn: 'ইভেন্ট ও প্রশিক্ষণ',  category: 'Operations' },
+  iec_material:       { count: 0,  label: 'IEC Materials',         label_bn: 'আইইসি উপকরণ',         category: 'Operations' },
+  stock_entry:        { count: 0,  label: 'Stock Entries',         label_bn: 'স্টক এন্ট্রি',         category: 'Operations' },
+  gbv_corner:         { count: 0,  label: 'GBV Corners',           label_bn: 'জিবিভি কর্নার',        category: 'Operations' },
 }
 
 export const MOCK_PHD: MockProgramsSummary = {
   partner: 'PHD',
   year: 2026,
   month: 5,
-  total: 369,
-  prev_total: 353,
-  mom_change: 4.5,
-  categories: { Clinical: 225, Community: 135, Operations: 9 },
+  // No mock totals — the dashboard will show "awaiting submissions" until real
+  // submissions land on Railway. Don't display fake numbers on a programme dashboard.
+  total: 0,
+  prev_total: 0,
+  mom_change: 0,
+  categories: { Clinical: 0, Community: 0, Operations: 0 },
   counts: PHD_COUNTS,
   monthly_trend: [
-    { month: 12, year: 2025, month_name: 'Dec', clinical: 156, community:  70, operations:  9, total: 235 },
-    { month:  1, year: 2026, month_name: 'Jan', clinical: 178, community:  78, operations: 11, total: 267 },
-    { month:  2, year: 2026, month_name: 'Feb', clinical: 189, community:  90, operations: 13, total: 292 },
-    { month:  3, year: 2026, month_name: 'Mar', clinical: 201, community:  99, operations: 15, total: 315 },
-    { month:  4, year: 2026, month_name: 'Apr', clinical: 216, community: 128, operations:  9, total: 353 },
-    { month:  5, year: 2026, month_name: 'May', clinical: 225, community: 135, operations:  9, total: 369 },
+    { month: 12, year: 2025, month_name: 'Dec', clinical: 0, community: 0, operations: 0, total: 0 },
+    { month:  1, year: 2026, month_name: 'Jan', clinical: 0, community: 0, operations: 0, total: 0 },
+    { month:  2, year: 2026, month_name: 'Feb', clinical: 0, community: 0, operations: 0, total: 0 },
+    { month:  3, year: 2026, month_name: 'Mar', clinical: 0, community: 0, operations: 0, total: 0 },
+    { month:  4, year: 2026, month_name: 'Apr', clinical: 0, community: 0, operations: 0, total: 0 },
+    { month:  5, year: 2026, month_name: 'May', clinical: 0, community: 0, operations: 0, total: 0 },
   ],
-  top_forms: [
-    { key: 'clinic_visit',       count: 89,  label: 'Clinic Visits',          label_bn: 'ক্লিনিক পরিদর্শন',    category: 'Clinical'   },
-    { key: 'antenatal_card',     count: 67,  label: 'Antenatal Cards',        label_bn: 'প্রসব পূর্ব যত্ন',    category: 'Clinical'   },
-    { key: 'outreach_session',   count: 45,  label: 'Outreach Sessions',      label_bn: 'আউটরিচ সেশন',         category: 'Community'  },
-    { key: 'individual_counselling', count: 32,  label: 'Individual Counselling', label_bn: 'ব্যক্তিগত পরামর্শ',   category: 'Community'  },
-    { key: 'group_education',    count: 28,  label: 'Group Education',        label_bn: 'গ্রুপ শিক্ষা',        category: 'Community'  },
-    { key: 'hiv_sti_test',       count: 24,  label: 'HIV/STI Tests',          label_bn: 'এইচআইভি পরীক্ষা',     category: 'Clinical'   },
-    { key: 'referral',           count: 21,  label: 'Referrals',              label_bn: 'রেফারেল',              category: 'Community'  },
-    { key: 'htc_counselling',    count: 18,  label: 'HTC Counselling',        label_bn: 'এইচটিসি পরামর্শ',     category: 'Clinical'   },
-  ],
+  // top_forms intentionally empty so the "What's being submitted" grid hides
+  // until real form submissions exist. The 16-indicator panel still renders.
+  top_forms: [],
 }
 
 export const MOCK_PHD_KPIS: MockPartnerKPIs = {
-  submissions_this_month: 369,
-  pending: 12,
-  active_workers: 24,
-  fistula_cases: 15,
-  mpdsr_cases: 8,
+  submissions_this_month: 0,
+  pending: 0,
+  active_workers: 0,
+  fistula_cases: 0,
+  mpdsr_cases: 0,
 }
 
 export const MOCK_PHD_CENTRES: MockCentresResponse = {
-  month: 'May 2026',
-  districts: [
-    { district: "Cox's Bazar", count: 156, rank: 1 },
-    { district: 'Ukhiya',      count: 89,  rank: 2 },
-    { district: 'Chattogram',  count: 78,  rank: 3 },
-    { district: 'Sylhet',      count: 56,  rank: 4 },
-    { district: 'Teknaf',      count: 46,  rank: 5 },
-  ],
+  month: 'June 2026',
+  // Empty so the "active districts" table shows the empty-state, not stale data
+  districts: [],
 }
 
 // ─── Bandhu: Bandhu Social Welfare Society ────────────────────────────────────
