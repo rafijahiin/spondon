@@ -53,9 +53,13 @@ function rollup(partner: PartnerCode, rows: IndicatorProgress[] | null): Rollup 
   const totalIndicators = all.length
   const withTarget = all.filter(r => r.target_value !== null)
   if (withTarget.length === 0) return { ...empty, totalIndicators }
-  const achievement = withTarget.reduce((s, r) => s + (r.achievement ?? 0), 0)
-  const target = withTarget.reduce((s, r) => s + (r.target_value ?? 0), 0)
-  const percentage = target > 0 ? Math.round((achievement / target) * 1000) / 10 : 0
+  // Mean-of-per-indicator-percentages (Animesh's spec, same as
+  // CumulativeAverageTile on the org pages). NOT sum(ach)/sum(tgt) —
+  // that would let SL5a's 300k condoms target dominate the figure and
+  // hide progress on smaller indicators.
+  const percentage = Math.round(
+    (withTarget.reduce((s, r) => s + (r.percentage ?? 0), 0) / withTarget.length) * 10,
+  ) / 10
   const onTrack = withTarget.filter(r => (r.percentage ?? 0) >= 75).length
 
   const withMonth = all.filter(r => (r.month_target ?? null) !== null)
@@ -63,13 +67,12 @@ function rollup(partner: PartnerCode, rows: IndicatorProgress[] | null): Rollup 
   let monthlyPercentage: number | null = null
   let monthlyOnTrack = 0
   if (withMonth.length > 0) {
-    const monthAch = withMonth.reduce((s, r) => s + (r.month_achievement ?? 0), 0)
-    const monthTgt = withMonth.reduce((s, r) => s + (r.month_target ?? 0), 0)
-    if (monthTgt > 0) {
-      monthlyHasTargets = true
-      monthlyPercentage = Math.round((monthAch / monthTgt) * 1000) / 10
-      monthlyOnTrack = withMonth.filter(r => (r.month_percentage ?? 0) >= 75).length
-    }
+    monthlyHasTargets = true
+    // Same mean-of-percentages for monthly.
+    monthlyPercentage = Math.round(
+      (withMonth.reduce((s, r) => s + (r.month_percentage ?? 0), 0) / withMonth.length) * 10,
+    ) / 10
+    monthlyOnTrack = withMonth.filter(r => (r.month_percentage ?? 0) >= 75).length
   }
   return {
     hasTargets: true, percentage,

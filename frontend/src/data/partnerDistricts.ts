@@ -58,10 +58,18 @@ export const PARTNER_DISTRICTS: Record<PartnerCode, string[]> = {
     'Dhaka', 'Chittagong', 'Sylhet', 'Khulna',
     'Rajshahi', 'Barishal',
   ],
+  // PHD = SIDA-funded brothel-based wellness centres.
+  // 11 brothels are operated across these 7 districts. Daulatdia (the
+  // largest brothel) sits in Rajbari and is NOT a separate district;
+  // listing it would inflate the count and break the GeoJSON match.
   PHD: [
-    'Tangail', 'Rajbari', 'Jessore', 'Faridpur',
-    'Mymensingh', 'Jamalpur', 'Daulatdia', 'Madaripur',
-    'Dhaka', 'Khulna', 'Narayanganj',
+    'Tangail',     // Tangail Kandapara + Mokarrampur brothels
+    'Rajbari',     // Daulatdia brothel
+    'Jessore',
+    'Faridpur',
+    'Mymensingh',
+    'Jamalpur',
+    'Madaripur',
   ],
 }
 
