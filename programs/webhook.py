@@ -982,7 +982,17 @@ from fistula.webhook_handlers import (
     handle_fistula_campaign_visit as _handle_fistula_campaign_visit,
 )
 
+from .phd_handlers import (
+    handle_phd_registration,
+    handle_phd_patient_services,
+    handle_phd_activity_ops,
+)
+
 FORM_HANDLERS: dict = {
+    # ── PHD consolidated forms (new, from final source files) ──────────────────
+    'phd_registration_v1':      handle_phd_registration,
+    'phd_patient_services_v1':  handle_phd_patient_services,
+    'phd_activity_ops_v1':      handle_phd_activity_ops,
     # ── PHD 3-form consolidation (registration + 2 combined forms) ──
     'spondon_client_reg_v1':       _handle_client_reg,
     'spondon_patient_service_v1':  _handle_patient_service,
@@ -1106,6 +1116,9 @@ def _notify(org: str, form_label: str, kobo_id: str) -> None:
 # ─── Webhook view ──────────────────────────────────────────────────────────────
 
 _FORM_LABELS = {
+    'phd_registration_v1':      'PHD — FSW Registration',
+    'phd_patient_services_v1':  'PHD — Patient Services',
+    'phd_activity_ops_v1':      'PHD — Activity & Operations',
     'spondon_client_reg_v1':       'FSW Registration',
     'spondon_patient_service_v1':  'Patient Service',
     'spondon_activity_ops_v1':     'Activity & Operations',
