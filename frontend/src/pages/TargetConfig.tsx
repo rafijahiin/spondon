@@ -42,6 +42,30 @@ interface Grouped {
   }[]
 }
 
+/** Natural-sort key for activity codes.
+ *  Handles SL1, SL2 … SL16 (numeric ordering instead of lexicographic
+ *  which puts SL10 before SL2) and the SL5a/b/c sub-row suffix.
+ *  Also handles legacy "1.1", "1.5a" codes. */
+function codeKey(code: string): [number, number, string] {
+  // Strip "SL" prefix → number + optional letter
+  const m = code.match(/^(?:SL)?(\d+)(?:\.(\d+))?([a-z]*)$/i)
+  if (m) {
+    const major = parseInt(m[1], 10)
+    const minor = m[2] ? parseInt(m[2], 10) : 0
+    const suffix = (m[3] || '').toLowerCase()
+    return [major, minor, suffix]
+  }
+  return [Number.MAX_SAFE_INTEGER, 0, code]
+}
+
+function compareCodes(a: string, b: string): number {
+  const [a1, a2, a3] = codeKey(a)
+  const [b1, b2, b3] = codeKey(b)
+  if (a1 !== b1) return a1 - b1
+  if (a2 !== b2) return a2 - b2
+  return a3.localeCompare(b3)
+}
+
 function groupTargets(rows: IndicatorTarget[]): Grouped[] {
   const byPartner = new Map<string, IndicatorTarget[]>()
   for (const r of rows) {
@@ -58,25 +82,31 @@ function groupTargets(rows: IndicatorTarget[]): Grouped[] {
     if (!rs || rs.length === 0) continue
     const color = rs[0].partner_color
 
-    // Group by objective_number — sort numerically, but Bandhu's set is
-    // {1, 2, 4} not {1, 2, 3, 4}: do NOT renumber, do NOT insert obj 3.
+    // Group by objective_number — sort numerically. Bandhu's set is {1,2,4};
+    // PHD's new SIDA scheme is all objective_number=0 (one big group).
     const objNums = Array.from(new Set(rs.map(r => r.objective_number))).sort((a, b) => a - b)
 
     const objectives = objNums.map(num => {
       const objRows = rs.filter(r => r.objective_number === num)
       // Group rows under the same activity_label so commodity-split
-      // activities like PHD 1.5 (5 commodity rows) collapse under one
-      // accordion header.
+      // activities like SL5 (5 commodity rows) collapse under one header.
       const byAct = new Map<string, IndicatorTarget[]>()
       for (const r of objRows) {
         if (!byAct.has(r.activity_label)) byAct.set(r.activity_label, [])
         byAct.get(r.activity_label)!.push(r)
       }
-      const activities = Array.from(byAct.entries()).map(([label, list]) => ({
-        code: list[0].activity_code.split(/[a-z]/)[0] || list[0].activity_code,  // parent code
-        label,
-        rows: list,
-      }))
+      const activities = Array.from(byAct.entries()).map(([label, list]) => {
+        // Sort sub-rows naturally within each activity (SL5a, SL5b, ... SL5e)
+        const sorted = [...list].sort((a, b) => compareCodes(a.activity_code, b.activity_code))
+        return {
+          // Parent code = the smallest code in this activity (e.g. "SL5" for SL5a-e group)
+          code: sorted[0].activity_code.replace(/[a-z]+$/i, ''),
+          label,
+          rows: sorted,
+        }
+      })
+      // Sort activities themselves by their first row's code (naturally)
+      activities.sort((a, b) => compareCodes(a.rows[0].activity_code, b.rows[0].activity_code))
       return { number: num, activities }
     })
 
@@ -468,7 +498,11 @@ function TargetConfig() {
             {g.objectives.map(obj => (
               <div key={obj.number} className="mb-6 last:mb-0">
                 <h3 className="mb-2 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                  {t(objectiveI18nKey(obj.number), { n: obj.number })}
+                  {/* PHD uses the SIDA SL1–SL16 scheme — no objective subdivisions.
+                      All PHD rows have objective_number=0 ⇒ show one banner. */}
+                  {g.partnerCode === 'PHD'
+                    ? 'SIDA Framework — Activities & Indicators (SL1–SL16)'
+                    : t(objectiveI18nKey(obj.number), { n: obj.number })}
                 </h3>
                 <div className="overflow-x-auto rounded-lg border border-gray-100 dark:border-gray-700">
                   <table className="min-w-full divide-y divide-gray-100 dark:divide-gray-700">
