@@ -616,6 +616,8 @@ def _form3_survey():
         _sr('begin_group','sec_event',
             'Event Database','ইভেন্ট ডেটাবেস',
             relevant=REL_E),
+        _sr('select_one event_subtype','event_subtype',
+            'Type of event','ইভেন্টের ধরন', required='yes'),
         _sr('text','event_title',
             'Title of the event','ইভেন্টের শিরোনাম', required='yes'),
         _sr('date','event_date',
@@ -722,6 +724,13 @@ def _form3_choices():
         ('client',    'Clients of Sex Workers','যৌনকর্মীদের ক্লায়েন্ট'),
     ]:
         rows.append(_ch('gedu_audience', v, en, bn))
+    for v,en,bn in [
+        ('training',      'Training',              'প্রশিক্ষণ'),
+        ('orientation',   'Orientation/Workshop',  'ওরিয়েন্টেশন/কর্মশালা'),
+        ('camp',          'Mobile Health Camp',    'মোবাইল স্বাস্থ্য ক্যাম্প'),
+        ('coord_meeting', 'Coordination Meeting',  'সমন্বয় সভা'),
+    ]:
+        rows.append(_ch('event_subtype', v, en, bn))
     for v,en,bn in [
         ('group_edu','Group Health Education (per session)','দলগত স্বাস্থ্য শিক্ষা (প্রতি সেশন)'),
         ('event','Event','ইভেন্ট'),

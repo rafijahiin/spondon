@@ -8,12 +8,14 @@ from .outreach import OutreachSession, GroupEducationSession
 from .referral import Referral
 from .supply import StockEntry, TemperatureLog, SafetyHygieneKit, StoreRequisition
 from .operations import TrainingEvent, CoordMeeting, MobileHealthCamp, VisitorRegister
+from .gbv_corner import GBVCornerRecord
 
 __all__ = [
     'ServiceCenter', 'Client',
     'ClinicVisit', 'HIVSTITestResult', 'ADRRecord', 'AutoclaveLog', 'AntenatalCard',
     'HTCCounselling', 'IndividualCounselling', 'MHScreening',
     'GBVCase', 'GBVAccessLog',
+    'GBVCornerRecord',
     'IECMaterial',
     'OutreachSession', 'GroupEducationSession',
     'Referral',
