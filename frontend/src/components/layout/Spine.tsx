@@ -84,18 +84,24 @@ interface KoboForm {
 interface KoboGroup {
   heading: string
   forms: KoboForm[]
+  /** Optional visibility predicate. When omitted, the group is visible
+   *  to every authenticated user. When set, returns true only for users
+   *  who should see this group. */
+  visible?: (role: string, organisation: string) => boolean
+}
+
+// Allow CIPRB monitoring users (UNFPA supervisors + Developer) to see PHD's
+// dashboard. PHD-specific forms are visible to PHD organisations + UNFPA
+// supervisors + Developer (the same 'monitoring + own-org' rule applied
+// elsewhere). Bandhu and CIPRB org members never see PHD forms.
+const isPhdVisible = (role: string, organisation: string): boolean => {
+  if (role === 'developer' || role === 'supervisor') return true
+  if (organisation === 'PHD') return true
+  if (organisation === 'UNFPA') return true
+  return false
 }
 
 const KOBO_GROUPS: KoboGroup[] = [
-  {
-    heading: 'Daily Reporting',
-    forms: [
-      // Submitted once a day by every field worker — "Any activity today?".
-      // Answering "No" files a zero report (counts as the day's reporting
-      // touch). Feeds the daily compliance health flag.
-      { url: 'https://ee.kobotoolbox.org/bTZY1sGZ', label: 'Daily Activity Report', labelBn: 'দৈনিক কার্যক্রম রিপোর্ট' },
-    ],
-  },
   {
     heading: 'CIPRB Surveillance',
     forms: [
@@ -112,35 +118,17 @@ const KOBO_GROUPS: KoboGroup[] = [
     ],
   },
   {
-    heading: 'Clinical',
+    heading: 'PHD — FSW SRHR',
+    visible: isPhdVisible,
     forms: [
-      { url: 'https://ee.kobotoolbox.org/x/J1WaMhw9', label: 'KF-01 Client Reg.',   labelBn: 'ক্লায়েন্ট নিবন্ধন' },
-      { url: 'https://ee.kobotoolbox.org/x/bRmo6yVq', label: 'KF-02 Clinic Visit',  labelBn: 'ক্লিনিক পরিদর্শন' },
-      { url: 'https://ee.kobotoolbox.org/x/svhvZM4N', label: 'KF-03 HIV/STI Test',  labelBn: 'এইচআইভি/এসটিআই' },
-      { url: 'https://ee.kobotoolbox.org/x/ut3WZTdw', label: 'KF-04 HTC Counsell.', labelBn: 'এইচটিসি পরামর্শ' },
-      { url: 'https://ee.kobotoolbox.org/x/hVfZFf66', label: 'KF-05/06 MH Screen.', labelBn: 'মানসিক স্বাস্থ্য' },
-      { url: 'https://ee.kobotoolbox.org/x/33qxf43w', label: 'KF-13 ADR Record',    labelBn: 'পার্শ্বপ্রতিক্রিয়া' },
-      { url: 'https://ee.kobotoolbox.org/x/bdciLLr4', label: 'KF-16 Autoclave Log', labelBn: 'অটোক্লেভ লগ' },
-      { url: 'https://ee.kobotoolbox.org/x/DKpvTw58', label: 'KF-ANC Antenatal',    labelBn: 'প্রসব পূর্ব যত্ন' },
-    ],
-  },
-  {
-    heading: 'Outreach & Community',
-    forms: [
-      { url: 'https://ee.kobotoolbox.org/x/mL50QRl8', label: 'KF-08 Outreach',     labelBn: 'আউটরিচ সেশন' },
-      { url: 'https://ee.kobotoolbox.org/x/5X3kRnOV', label: 'KF-09 Counselling',  labelBn: 'ব্যক্তিগত পরামর্শ' },
-      { url: 'https://ee.kobotoolbox.org/x/VZ1iYrTd', label: 'KF-10 Group Edu.',    labelBn: 'গ্রুপ শিক্ষা' },
-      { url: 'https://ee.kobotoolbox.org/x/txflM4ZZ', label: 'KF-12 Hygiene Kit',  labelBn: 'হাইজিন কিট' },
-      { url: 'https://ee.kobotoolbox.org/x/VF7qdmTN', label: 'Referral Form',       labelBn: 'রেফারেল ফর্ম' },
-      { url: 'https://ee.kobotoolbox.org/x/v9gd1IPa', label: 'GBV Case Report',     labelBn: 'জিবিভি কেস' },
-    ],
-  },
-  {
-    heading: 'Programme Ops',
-    forms: [
-      { url: 'https://ee.kobotoolbox.org/x/Bc7XiGmm', label: 'KF-18 Mobile Camp', labelBn: 'মোবাইল ক্যাম্প' },
-      { url: 'https://ee.kobotoolbox.org/x/BW115Ila', label: 'KF-19 Coord. Mtg.', labelBn: 'সমন্বয় সভা' },
-      { url: 'https://ee.kobotoolbox.org/x/bRmo6yVq', label: 'KF-20 Training',     labelBn: 'প্রশিক্ষণ' },
+      // Registration — filled once per FSW (creates the permanent ID No).
+      { url: 'https://kf.kobotoolbox.org/#/forms/aGWfLrP2yNXqnAiBKuvVgv/landing',
+        label: 'PHD 1 — FSW Registration', labelBn: 'যৌনকর্মী নিবন্ধন' },
+      // Service Log — daily form with a "What are you recording?" selector
+      // that opens the correct section (clinic / HTC / counselling / referral
+      // / group education / event / IEC material / GBV corner / stock).
+      { url: 'https://kf.kobotoolbox.org/#/forms/aDv2CZapM2eSqijKr2WZKc/landing',
+        label: 'PHD 2 — Service Log', labelBn: 'সেবা ও কার্যক্রম লগ' },
     ],
   },
 ]
@@ -365,7 +353,10 @@ export function Spine() {
             </button>
           </div>
           <div className="kobo-panel-body scroll-thin">
-            {KOBO_GROUPS.map(group => (
+            {KOBO_GROUPS.filter(group =>
+              !group.visible ||
+              (user ? group.visible(user.role, user.organisation as string) : false),
+            ).map(group => (
               <div key={group.heading} className="kobo-group">
                 <div className="kobo-group-heading">{group.heading}</div>
                 {group.forms.map(form => (
