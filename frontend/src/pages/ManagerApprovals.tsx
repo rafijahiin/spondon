@@ -77,9 +77,39 @@ const _PREFIX_GROUPS: Array<[RegExp, string, string]> = [
   [/^centre_id$|^organisation$|^location$/, 'Submission info', ''],
 ]
 
-// Fields we never show — Kobo system, formhub, meta, the calculate "stubs"
-// the form generator emits for pulldata() targets that have no UI label.
-const _SKIP = new Set(['start','end','today','deviceid','username','__version__'])
+// Fields we never show. The Kobo /api/v2/data response is full of internal
+// metadata (Id, Uuid, InstanceID, _submission_time, _geolocation, Validation
+// status, Xform Id string, Submission time, etc.) that means nothing to a
+// clinical reviewer. Filter them out so the readout shows ONLY what the
+// field worker actually typed.
+function _isSystemKey(key: string, rawKey: string): boolean {
+  // Anything under formhub/, meta/, __ prefix → Kobo internals
+  if (rawKey.startsWith('formhub')) return true
+  if (rawKey.startsWith('meta')) return true
+  if (key.startsWith('__')) return true
+  // Anything starting with single underscore EXCEPT our _pull_* lookups
+  // (which are the auto-filled patient identity values we want to show).
+  if (key.startsWith('_') && !key.startsWith('_pull_')) return true
+  // Explicit Kobo metadata that doesn't start with _ but is still noise
+  const koboMeta = new Set([
+    'start','end','today','deviceid','username','__version__',
+    'instanceID',
+    'Id','Uuid','RootUuid','InstanceID',
+    'Tags','Notes','Attachments',
+    'Geolocation','Status',
+    'Submission time','SubmissionTime','submission_time',
+    'Xform Id string','XformIdString','xform_id_string',
+    'Validation status','ValidationStatus','validation_status',
+    'BootUuid',
+  ])
+  if (koboMeta.has(key)) return true
+  // Duplicates of fields already shown in the metadata cards above
+  const dupeOfCards = new Set([
+    'organisation','centre_id','location','enumerator_phone',
+  ])
+  if (dupeOfCards.has(key)) return true
+  return false
+}
 
 function _humanise(key: string, stripPrefix: string): string {
   let s = key
@@ -104,14 +134,7 @@ export function groupSubmittedFields(payload: Record<string, any>): FieldGroup[]
   const buckets = new Map<string, FieldRow[]>()
   for (const [rawKey, value] of Object.entries(payload)) {
     const key = rawKey.split('/').pop()!
-    // Hard-skip pure transport noise (formhub uuid, ODK meta, instance ID
-    // markers). Everything else — including 'unknown' fields that don't
-    // match a prefix — falls through into the 'Other' bucket so the
-    // manager still sees them.
-    if (key.startsWith('formhub')) continue
-    if (key.startsWith('meta')) continue
-    if (key.startsWith('__')) continue
-    if (_SKIP.has(key)) continue
+    if (_isSystemKey(key, rawKey)) continue
     let groupTitle = 'Other'
     let stripPrefix = ''
     for (const [re, title, strip] of _PREFIX_GROUPS) {
@@ -446,10 +469,13 @@ export default function ManagerApprovals() {
   // groups into Patient / Visit / Screenings / etc.
   // Previously program items were skipped here, so the Manager Approvals
   // page rendered the metadata cards but never the actual form fields.
+  const [detailError, setDetailError] = useState(false)
+  const [detailRetryKey, setDetailRetryKey] = useState(0)
   useEffect(() => {
     setReviewerNote('')
     setDetail(null)
     setShowRaw(false)
+    setDetailError(false)
     if (!selected) return
     let cancelled = false
     const url = selected.kind === 'legacy'
@@ -457,18 +483,21 @@ export default function ManagerApprovals() {
       : `/programs/${selected.endpoint}/${selected.id}/`
     api.get(url)
       .then((r) => { if (!cancelled) setDetail(r.data as SubmissionDetail) })
-      .catch(() => { if (!cancelled) setDetail(null) })
+      .catch(() => { if (!cancelled) { setDetail(null); setDetailError(true) } })
     return () => { cancelled = true }
-  }, [selected?.id, selected?.kind, selected?.endpoint])
+  }, [selected?.id, selected?.kind, selected?.endpoint, detailRetryKey])
 
   // ── Actions ─────────────────────────────────────────────────────────────────
 
   const decide = useCallback(async (item: QueueItem, action: 'approve' | 'reject') => {
     // A rejection must say why — the field worker needs to know what to fix,
-    // and the reason is permanently recorded as audit evidence.
-    if (action === 'reject' && item.kind === 'legacy' && !reviewerNote.trim()) {
+    // and the reason is permanently recorded as audit evidence. Applies to
+    // BOTH legacy KoboSubmissions AND program items (PHD/Bandhu/CIPRB).
+    // Previously this guard only checked legacy and program rejections went
+    // through with an empty reason — the field worker got "No reason
+    // provided" in their email.
+    if (action === 'reject' && !reviewerNote.trim()) {
       setError('Add a reviewer note explaining what to correct before rejecting.')
-      // Jump to the note box so it's obvious why nothing happened.
       noteRef.current?.focus()
       noteRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
       return
@@ -477,11 +506,19 @@ export default function ManagerApprovals() {
     const setter = action === 'approve' ? setApproving : setRejecting
     setter(true)
     try {
+      const note = reviewerNote.trim()
       if (item.kind === 'program') {
-        await api.post('/programs/pending-approvals/', { id: item.id, model_type: item.model_type, action })
+        // Pass the note as the `reason` so the backend stamps
+        // obj.rejected_reason and the rejection email carries it.
+        // Approves also send the note for the audit trail.
+        await api.post('/programs/pending-approvals/', {
+          id: item.id,
+          model_type: item.model_type,
+          action,
+          reason: note,
+        })
         refetchPrograms()
       } else {
-        const note = reviewerNote.trim()
         if (action === 'reject') {
           // Backend requires a non-blank rejection reason — it becomes the
           // worker-facing "what to fix" note and the audit-trail entry.
@@ -866,10 +903,27 @@ export default function ManagerApprovals() {
                     'View full record' toggle, no system-field clutter. */}
                 {(() => {
                   const _rd = (detail as any)?.raw_data ?? (detail as any)?.raw_payload;
-                  // Show the section unconditionally so the manager always
-                  // sees a status — either the grouped fields, an empty-payload
-                  // notice, or a 'still loading' notice. Silently returning
-                  // null caused the page to look like nothing was submitted.
+                  if (detailError) return (
+                    <div style={{
+                      padding: '20px 0', display: 'flex', alignItems: 'center', gap: 12,
+                      color: 'var(--coral)', fontSize: 13,
+                    }}>
+                      <AlertTriangle size={16} />
+                      <span>Failed to load submission details.</span>
+                      <button
+                        onClick={() => setDetailRetryKey(k => k + 1)}
+                        style={{
+                          marginLeft: 'auto', fontSize: 12,
+                          padding: '4px 12px', borderRadius: 8,
+                          border: '1px solid var(--hair)',
+                          background: 'var(--surface)', cursor: 'pointer',
+                          color: 'var(--ink)',
+                        }}
+                      >
+                        Retry
+                      </button>
+                    </div>
+                  );
                   if (!detail) return (
                     <div style={{ padding: '20px 0', color: 'var(--muted)', fontSize: 13 }}>
                       Loading submitted values…
@@ -1006,7 +1060,8 @@ export default function ManagerApprovals() {
                         <button
                           className="btn danger lg"
                           onClick={() => decide(selected, 'reject')}
-                          disabled={rejecting}
+                          disabled={rejecting || !reviewerNote.trim()}
+                          title={!reviewerNote.trim() ? 'Write a reviewer note first — the worker needs to know what to fix' : ''}
                           style={{ display: 'flex', alignItems: 'center', gap: 6 }}
                         >
                           {rejecting ? <LoadingSpinner size="sm" /> : <><X size={14} /> {t('approvals.btnReject')}</>}

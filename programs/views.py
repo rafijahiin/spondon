@@ -158,27 +158,49 @@ class OrgFilteredViewSet(viewsets.ModelViewSet):
 
             obj.save()
 
-        # Email the partner's managers/focal (+ the submitter if we resolved
-        # their account email) about the decision. Mirrors the KoboSubmission
-        # path so operational forms also notify. Defensive: never blocks the
-        # response if SMTP is off or recipients are empty.
+        # Email the partner's managers/focal + the submitter (resolved from
+        # the User FK OR the raw_payload's email-shaped field) about the
+        # decision. Rejection emails carry the Enketo collect link for the
+        # same form so the worker can submit a corrected entry in one click.
         try:
             from submissions.email_notify import _recipients_for, _send
             label = obj._meta.verbose_name.title()
             recipients = _recipients_for(obj.organisation)
+            # Worker notification: pull the email out of the User FK first,
+            # then fall back to whatever the form captured in raw_payload.
             sub_email = getattr(getattr(obj, 'submitted_by', None), 'email', '') or ''
+            if not sub_email:
+                payload = getattr(obj, 'raw_payload', None) or {}
+                for k in ('email', 'enumerator_email', 'submitter_email',
+                          'your_email', 'respondent_email'):
+                    v = str(payload.get(k, '') or '').strip()
+                    if '@' in v:
+                        sub_email = v
+                        break
             if sub_email and sub_email not in recipients:
                 recipients = recipients + [sub_email]
             if recipients:
                 if obj.approval_status == 'APPROVED':
                     subj = f'[SIMPLE] ✓ {label} approved — {obj.organisation}'
-                    body = (f'A {label} submission for {obj.organisation} has been approved '
-                            f'by {getattr(user, "full_name", "") or user.email}.')
+                    body = (
+                        f'A {label} submission for {obj.organisation} has been approved '
+                        f'by {getattr(user, "full_name", "") or user.email}.'
+                    )
                 else:
+                    # Resubmit link — for PHD models route to the new merged
+                    # Service Log / Registration; for legacy partners we leave
+                    # the link blank (their workflow predates this notifier).
+                    resubmit = _program_resubmit_url(model_type, obj.organisation)
+                    link_line = f'\nResubmit corrected entry: {resubmit}\n' if resubmit else ''
                     subj = f'[SIMPLE] ✗ {label} rejected — {obj.organisation}'
-                    body = (f'A {label} submission for {obj.organisation} was rejected.\n\n'
-                            f'Reason: {obj.rejected_reason or "No reason provided"}\n\n'
-                            f'Please correct the flagged field and submit a new corrected entry.')
+                    body = (
+                        f'A {label} submission for {obj.organisation} was rejected '
+                        f'by {getattr(user, "full_name", "") or user.email}.\n\n'
+                        f'Reviewer note: {obj.rejected_reason or "No reason provided"}\n'
+                        f'{link_line}\n'
+                        f'Please open the form again, fix the flagged field, and submit '
+                        f'a corrected entry. The rejected record is kept as the audit trail.'
+                    )
                 _send(subj, body, recipients)
         except Exception:
             pass
@@ -415,6 +437,22 @@ class VisitorRegisterViewSet(viewsets.ModelViewSet):
 
 # ─── Aggregated Pending Approvals ──────────────────────────────────────────────
 
+# Resubmit-link map per (model_type, partner). Points the field worker
+# at the Enketo form that produced the rejected record so they can submit
+# a corrected entry without hunting for the right link. PHD: Form 1 for
+# Client registrations, Form 2 (Service Log) for every other PHD model.
+_PHD_REG_URL  = 'https://ee.kobotoolbox.org/x/NesXOMsL'
+_PHD_LOG_URL  = 'https://ee.kobotoolbox.org/x/o7GhleIk'
+
+
+def _program_resubmit_url(model_type: str, organisation: str) -> str:
+    if organisation != 'PHD':
+        return ''
+    if model_type == 'client_reg':
+        return _PHD_REG_URL
+    return _PHD_LOG_URL  # every PHD service/activity flows through Service Log
+
+
 def _build_summary(obj, model_type: str) -> str:
     """Build a human-readable one-line summary for each model type."""
     try:
@@ -454,7 +492,18 @@ def _build_summary(obj, model_type: str) -> str:
         if model_type == 'group_education':
             return f"Group session {obj.session_date} · {obj.topic[:40]} · {obj.participant_count} participants"
         if model_type == 'referral':
-            return f"Referral {obj.referral_date} → {obj.referred_to[:40]} · {obj.referral_type} · {obj.outcome}"
+            # Defensive — `referred_to` and `outcome` are routinely blank on
+            # PHD referrals (the field worker fills only "Referred for") and
+            # used to render as the broken "Referral 2026-06-04 → · other ·
+            # pending" string. Drop the missing pieces instead of the dot.
+            parts = [f"Referral {obj.referral_date}"]
+            if (obj.referred_to or '').strip():
+                parts.append(f"→ {obj.referred_to[:40]}")
+            if (obj.referral_reason or '').strip():
+                parts.append(obj.referral_reason[:40])
+            if (obj.referral_type or '').strip() and obj.referral_type != 'other':
+                parts.append(obj.referral_type)
+            return ' · '.join(parts)
         if model_type == 'safety_hygiene_kit':
             return f"Kit distribution {obj.distribution_date} · {obj.condom_count} condoms"
         if model_type == 'training_event':
