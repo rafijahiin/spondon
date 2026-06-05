@@ -1147,6 +1147,38 @@ _FORM_LABELS = {
 }
 
 
+def _flatten_group_keys(payload: dict) -> dict:
+    """Expose a group-stripped alias for every nested KoboToolbox field.
+
+    Kobo serialises grouped questions as 'group/field' (and nested groups
+    as 'a/b/field'). Every PHD/Bandhu handler reads flat leaf names like
+    'id_no' or 'clinic_date', so without this they never match and the
+    handler 400s ('id_no required'). We keep the original keys intact and
+    add a leaf alias for each grouped key. On a leaf collision across
+    groups the first occurrence wins (PHD forms use unique leaf names, so
+    collisions are not expected) and we log it.
+
+    Meta keys (_id, _xform_id_string, _geolocation, _submitted_by, …)
+    contain no '/', so they pass through untouched.
+    """
+    if not isinstance(payload, dict):
+        return payload
+    flat = dict(payload)
+    for key, val in payload.items():
+        if '/' not in key:
+            continue
+        leaf = key.rsplit('/', 1)[-1]
+        if not leaf:
+            continue
+        if leaf in flat:
+            # Don't clobber a real flat key or an earlier group's leaf.
+            if flat[leaf] != val:
+                logger.debug('flatten: leaf %r collision (%r kept)', leaf, leaf)
+            continue
+        flat[leaf] = val
+    return flat
+
+
 @csrf_exempt
 @require_POST
 def programs_webhook(request, org_override: str = '', form_slug: str = ''):
@@ -1176,6 +1208,13 @@ def programs_webhook(request, org_override: str = '', form_slug: str = ''):
         payload = json.loads(request.body)
     except json.JSONDecodeError:
         return HttpResponse('Bad Request — expected JSON body', status=400)
+
+    # KoboToolbox nests every field under its XLSForm group, e.g.
+    # 'grp_fsw/id_no' rather than 'id_no'. Every handler reads flat leaf
+    # names, so expose a stripped alias for each grouped key here, once,
+    # centrally — this is the difference between a registration creating a
+    # Client and silently 400-ing with 'id_no required'.
+    payload = _flatten_group_keys(payload)
 
     kobo_id = str(payload.get('_id', '')).strip()
     if not kobo_id:

@@ -96,7 +96,12 @@ def handle_phd_registration(payload: dict, lat, lng) -> HttpResponse:
             'uses_fp_method':      _nullable_bool(payload, 'uses_fp'),
             'notes':               _str(payload.get('remarks')),
             'current_status':      Client.ACTIVE,
-            'approval_status':     Client.PENDING,
+            # Registration needs no manager approval — a field worker
+            # enrolling an FSW is the source of truth for the Master List.
+            # Auto-approving here is what lets her flow into phd_clients.csv
+            # (the exporter filters approval_status=APPROVED) so the Service
+            # Log's pulldata() finds her immediately after registration.
+            'approval_status':     Client.APPROVED,
             'kobo_submission_id':  kobo_id or None,
             'submitted_by_kobo_user': _str(payload.get('_submitted_by')),
             'latitude':  lat,
