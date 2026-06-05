@@ -25,6 +25,21 @@ logger = logging.getLogger(__name__)
 
 ORG = 'PHD'
 
+
+def _client_id(payload: dict) -> str:
+    """Read the unified Service Log client_id and normalise it (trim + upper).
+    Falls back to the legacy per-section ID fields if the unified one is
+    missing — gives one deploy of overlap during the form rollover."""
+    raw = (
+        payload.get('client_id')
+        or payload.get('clinic_id_no')
+        or payload.get('htc_client_id')
+        or payload.get('ref_id_no')
+        or ''
+    )
+    return str(raw).strip().upper()
+
+
 # Material name keywords → IECMaterial.material_type
 _MAT_TYPE_MAP = {
     'message board': 'message_board',
@@ -54,7 +69,11 @@ def handle_phd_registration(payload: dict, lat, lng) -> HttpResponse:
     if not center:
         return HttpResponse('center not found', status=400)
 
-    client_id = _str(payload.get('id_no'))
+    # Normalise the ID at write-time the same way the Service Log
+    # normalises at lookup-time (trim + upper). Guarantees that
+    # FSW-001 typed in registration matches fsw 001 typed in any
+    # service form's pulldata() call.
+    client_id = str(payload.get('id_no', '')).strip().upper()
     if not client_id:
         return HttpResponse('Bad Request — id_no required', status=400)
 
@@ -100,7 +119,7 @@ def _phd_clinic(payload: dict, lat, lng) -> HttpResponse:
 
     # Resolve or create client stub — always tag as FSW (target_group_code 05)
     client_payload = {
-        'client_id':   payload.get('clinic_id_no', ''),
+        'client_id':   _client_id(payload),
         'client_name': '',
         'target_group_code': '05',
     }
@@ -162,7 +181,7 @@ def _phd_htc(payload: dict, lat, lng) -> HttpResponse:
     if _already_exists(HIVSTITestResult, payload):
         return HttpResponse('OK', status=200)
 
-    client_payload = {'client_id': payload.get('htc_client_id', ''), 'client_name': ''}
+    client_payload = {'client_id': _client_id(payload), 'client_name': ''}
     client = _get_or_create_client(client_payload, center, ORG)
     if client.target_group_code != '05':
         Client.objects.filter(pk=client.pk).update(target_group_code='05')
@@ -191,7 +210,7 @@ def _phd_referral(payload: dict, lat, lng) -> HttpResponse:
     if _already_exists(Referral, payload):
         return HttpResponse('OK', status=200)
 
-    client_payload = {'client_id': payload.get('ref_id_no', ''), 'client_name': ''}
+    client_payload = {'client_id': _client_id(payload), 'client_name': ''}
     client = _get_or_create_client(client_payload, center, ORG)
 
     Referral.objects.create(

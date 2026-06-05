@@ -115,7 +115,19 @@ def _form1_survey():
         _sr('text','id_no',
             'ID No. (unique per FSW)',
             'আইডি নম্বর (অনন্য)',
-            required='yes'),
+            required='yes',
+            hint='Capitalisation does not matter — fsw 001 / FSW-001 are the same.'),
+
+        # Duplicate-ID warning. Looks up the typed ID in phd_clients.csv;
+        # if she's already there, blocks accidental re-registration.
+        _sr('calculate','_dup_name',
+            calc="pulldata('phd_clients','name','id_no',upper-case(${id_no}))"),
+        _sr('note','_dup_warn',
+            '⚠ This ID is already registered for ${_dup_name}. '
+            'Do not re-register her — use her existing ID in the Service Log instead.',
+            '⚠ এই আইডি ইতিমধ্যে ${_dup_name} এর জন্য নিবন্ধিত। '
+            'পুনঃনিবন্ধন করবেন না — সেবা লগে তাঁর বিদ্যমান আইডি ব্যবহার করুন।',
+            relevant="${id_no}!='' and ${_dup_name}!=''"),
 
         _sr('text','name',
             'Name','নাম', required='yes'),
@@ -248,9 +260,9 @@ def _form2_survey():
             relevant=REL_C),
 
         _sr('date','clinic_date','Date','তারিখ', required='yes'),
-        _sr('text','clinic_id_no','ID No.','আইডি নম্বর', required='yes'),
-        _sr('integer','clinic_age','Age (as per motherlist)','বয়স (মাদারলিস্ট অনুযায়ী)'),
-        _sr('select_one sex','clinic_sex','Sex','লিঙ্গ'),
+        # client_id + age + sex live in the shared patient_id_group at the
+        # top of the form — pulled from the Master List CSV via pulldata().
+        # Don't repeat them here.
 
         # Screenings
         _sr('begin_group','grp_clinic_screen','Screenings','স্ক্রিনিং'),
@@ -328,11 +340,9 @@ def _form2_survey():
             relevant=REL_H),
 
         _sr('date','htc_date','Date (dd/mm/yy)','তারিখ', required='yes'),
-        _sr('text','htc_client_id',
-            "Client's ID (partner: add 'P' prefix)",
-            'ক্লায়েন্ট আইডি (সঙ্গী হলে P যোগ করুন)', required='yes'),
-        _sr('integer','htc_age','Age (in years)','বয়স (বছরে)'),
-        _sr('select_one sex','htc_sex','Sex (M/F)','লিঙ্গ (পুরুষ/মহিলা)'),
+        # client_id + age + sex are in the shared patient_id_group at
+        # the top of the form. The partner-of-FSW case (P-prefix IDs) is
+        # handled by the normalised lookup — no separate field here.
         _sr('select_one test_occasion','htc_test_type',
             'New test or Re-test',
             'নতুন পরীক্ষা নাকি পুনরায় পরীক্ষা'),
@@ -442,7 +452,7 @@ def _form2_survey():
             'Month and Year','মাস ও বছর',
             required='yes', hint='e.g. June 2026'),
         _sr('date','ref_date','Date','তারিখ', required='yes'),
-        _sr('text','ref_id_no','ID No.','আইডি নম্বর', required='yes'),
+        # client_id lives in the shared patient_id_group at the top of the form.
         _sr('text','ref_referred_for',
             'Referred for','কী কারণে রেফার'),
         _sr('text','ref_referred_to',
@@ -755,13 +765,15 @@ def _form3_choices():
 
 def _form_service_log_survey():
     """Build the merged Service Log survey:
-       meta → record_type selector → 9 gated sections."""
+       meta → record_type selector → patient_id_group (pulldata)
+       → 9 gated sections."""
     rows = _meta(center_required=False)
     rows += [
         _sr('select_one record_type','record_type',
             'What are you recording today?',
             'আজ কী নথিভুক্ত করছেন?', required='yes'),
     ]
+    rows += _patient_id_group()
     # Reuse all 9 section bodies. _form2_survey() and _form3_survey() each
     # prepend their own meta + selector; strip those off so we don't repeat.
     f2 = _form2_survey()
@@ -769,6 +781,79 @@ def _form_service_log_survey():
     rows += _strip_meta_and_selector(f2)
     rows += _strip_meta_and_selector(f3)
     return rows
+
+
+def _patient_id_group():
+    """One ID field shared across all patient-level record types
+    (clinic / HTC / referral). pulldata() reads phd_clients.csv (uploaded
+    via 'manage.py export_phd_clients --upload') and shows her name,
+    mother, age, address read-only — so the enumerator confirms they
+    have the right woman BEFORE recording any clinical data.
+
+    Counselling is a monthly aggregate report (no per-client ID), so
+    this group is hidden for that record type.
+
+    Activity-level types (group_edu, event, material, gbv_corner,
+    stock) also hide this group — they aren't patient-specific.
+
+    ID format: free-text + upper-case() so 'fsw 001' / 'FSW-001' /
+    ' FSW-001 ' all match the canonical 'FSW-001' in the CSV.
+    """
+    REL = ("${record_type}='clinic' or ${record_type}='htc' "
+           "or ${record_type}='referral'")
+    PULL = "pulldata('phd_clients','{col}','id_no',upper-case(${{client_id}}))"
+    NOT_FOUND = "${client_id}!='' and ${_pull_name}=''"
+    FOUND     = "${_pull_name}!=''"
+    return [
+        _sr('begin_group','patient_id_group',
+            'FSW Identity (auto-fill from Master List)',
+            'যৌনকর্মীর পরিচয় (মাদারলিস্ট থেকে স্বয়ংক্রিয়)',
+            relevant=REL),
+
+        _sr('text','client_id',
+            'FSW ID No.','যৌনকর্মীর আইডি নম্বর',
+            required='yes',
+            hint='Type her registered ID (e.g. FSW-001). Capitalisation does not matter.'),
+
+        # pulldata() lookups — all keyed on the upper-cased client_id.
+        _sr('calculate','_pull_name',     calc=PULL.format(col='name')),
+        _sr('calculate','_pull_mother',   calc=PULL.format(col='mother_name')),
+        _sr('calculate','_pull_birth',    calc=PULL.format(col='birth_year')),
+        _sr('calculate','_pull_age',      calc=PULL.format(col='age')),
+        _sr('calculate','_pull_address',  calc=PULL.format(col='address')),
+        _sr('calculate','_pull_status',   calc=PULL.format(col='status')),
+
+        # Read-only confirmation block — appears when an ID matches.
+        _sr('note','_show_name',
+            'Name: ${_pull_name}','নাম: ${_pull_name}',
+            relevant=FOUND),
+        _sr('note','_show_mother',
+            "Mother's name: ${_pull_mother}",
+            'মাতার নাম: ${_pull_mother}',
+            relevant=FOUND + " and ${_pull_mother}!=''"),
+        _sr('note','_show_age',
+            'Age: ${_pull_age}   (Born: ${_pull_birth})',
+            'বয়স: ${_pull_age}   (জন্ম: ${_pull_birth})',
+            relevant=FOUND + " and ${_pull_age}!=''"),
+        _sr('note','_show_address',
+            'Address: ${_pull_address}',
+            'ঠিকানা: ${_pull_address}',
+            relevant=FOUND + " and ${_pull_address}!=''"),
+        _sr('note','_show_status',
+            'Status: ${_pull_status}',
+            'অবস্থা: ${_pull_status}',
+            relevant=FOUND + " and ${_pull_status}!=''"),
+
+        # Warning when ID typed but not found in CSV.
+        _sr('note','_id_not_found',
+            '⚠ This ID is NOT registered in the Master List. '
+            'Register her in PHD 1 (FSW Registration) first, then come back.',
+            '⚠ এই আইডি মাদারলিস্টে নিবন্ধিত নয়। '
+            'প্রথমে PHD 1 (যৌনকর্মী নিবন্ধন) ফর্মে নিবন্ধন করুন।',
+            relevant=NOT_FOUND),
+
+        _sr('end_group','patient_id_group'),
+    ]
 
 
 def _strip_meta_and_selector(rows):
