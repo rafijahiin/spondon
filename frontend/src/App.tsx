@@ -134,24 +134,24 @@ export default function App() {
             }
           >
             <Route index element={<RequireNotManager><Home /></RequireNotManager>} />
+            {/* PHD + Bandhu managers see their own org dashboard — read-only,
+                same KPIs/tables their org_lead sees. They still cannot reach
+                other orgs (RequireOrg enforces) or cross-org tools (reports,
+                tracker, training — those keep RequireNotManager). */}
             <Route
               path="phd"
               element={
-                <RequireNotManager>
-                  <RequireOrg allow={['PHD']}>
-                    <PHDDashboard />
-                  </RequireOrg>
-                </RequireNotManager>
+                <RequireOrg allow={['PHD']}>
+                  <PHDDashboard />
+                </RequireOrg>
               }
             />
             <Route
               path="bondhu"
               element={
-                <RequireNotManager>
-                  <RequireOrg allow={['Bandhu']}>
-                    <BondhuDashboard />
-                  </RequireOrg>
-                </RequireNotManager>
+                <RequireOrg allow={['Bandhu']}>
+                  <BondhuDashboard />
+                </RequireOrg>
               }
             />
             <Route path="approvals" element={<ManagerApprovals />} />

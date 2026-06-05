@@ -40,7 +40,38 @@ class ClientSerializer(serializers.ModelSerializer):
         ]
 
 
+class ClientSummarySerializer(serializers.ModelSerializer):
+    """Lean patient identity slice for Manager Approvals.
+
+    Every service submission (visit, referral, screening, kit) carries a
+    `client` FK to Client. The approval UI surfaces the linked patient
+    prominently above the raw form data so reviewers can identify her
+    without scrolling through field-by-field readouts.
+
+    Only safe identity + status fields are exposed — no PII beyond what
+    appears on the patient's PHD enrolment card, and nothing that
+    duplicates the encrypted GBVCase survivor fields.
+    """
+    status_label = serializers.CharField(source='get_current_status_display',
+                                          read_only=True)
+    target_group_label = serializers.CharField(
+        source='get_target_group_code_display', read_only=True)
+
+    class Meta:
+        model = Client
+        fields = [
+            'id', 'client_id', 'name', 'mother_name',
+            'birth_year', 'current_address',
+            'current_status', 'status_label',
+            'target_group_code', 'target_group_label',
+            'organisation',
+        ]
+        read_only_fields = fields
+
+
 class ClinicVisitSerializer(serializers.ModelSerializer):
+    patient = ClientSummarySerializer(source='client', read_only=True)
+
     class Meta:
         model = ClinicVisit
         # raw_payload kept in the response — Manager Approvals needs the
@@ -58,6 +89,8 @@ class ClinicVisitApprovalSerializer(serializers.ModelSerializer):
 
 
 class HIVSTITestResultSerializer(serializers.ModelSerializer):
+    patient = ClientSummarySerializer(source='client', read_only=True)
+
     class Meta:
         model = HIVSTITestResult
         # raw_payload kept in the response — Manager Approvals needs the
@@ -88,6 +121,8 @@ class AutoclaveLogSerializer(serializers.ModelSerializer):
 
 
 class AntenatalCardSerializer(serializers.ModelSerializer):
+    patient = ClientSummarySerializer(source='client', read_only=True)
+
     class Meta:
         model = AntenatalCard
         # raw_payload kept in the response — Manager Approvals needs the
@@ -98,6 +133,8 @@ class AntenatalCardSerializer(serializers.ModelSerializer):
 
 
 class HTCCounsellingSerializer(serializers.ModelSerializer):
+    patient = ClientSummarySerializer(source='client', read_only=True)
+
     class Meta:
         model = HTCCounselling
         # raw_payload kept in the response — Manager Approvals needs the
@@ -108,6 +145,8 @@ class HTCCounsellingSerializer(serializers.ModelSerializer):
 
 
 class IndividualCounsellingSerializer(serializers.ModelSerializer):
+    patient = ClientSummarySerializer(source='client', read_only=True)
+
     class Meta:
         model = IndividualCounselling
         # raw_payload kept in the response — Manager Approvals needs the
@@ -118,6 +157,8 @@ class IndividualCounsellingSerializer(serializers.ModelSerializer):
 
 
 class MHScreeningSerializer(serializers.ModelSerializer):
+    patient = ClientSummarySerializer(source='client', read_only=True)
+
     class Meta:
         model = MHScreening
         # raw_payload kept in the response — Manager Approvals needs the
@@ -176,6 +217,7 @@ class GroupEducationSessionSerializer(serializers.ModelSerializer):
 
 class ReferralSerializer(serializers.ModelSerializer):
     is_overdue = serializers.BooleanField(read_only=True)
+    patient = ClientSummarySerializer(source='client', read_only=True)
 
     class Meta:
         model = Referral
@@ -212,6 +254,8 @@ class TemperatureLogSerializer(serializers.ModelSerializer):
 
 
 class SafetyHygieneKitSerializer(serializers.ModelSerializer):
+    patient = ClientSummarySerializer(source='client', read_only=True)
+
     class Meta:
         model = SafetyHygieneKit
         # raw_payload kept in the response — Manager Approvals needs the

@@ -44,10 +44,13 @@ const PRIMARY_NAV: SpineItemDef[] = [
     visible: (r) => notManager(r) },
   { to: '/ciprb',    i18nKey: 'nav.ciprbDashboard',    icon: <HeartPulse size={18} />,
     visible: (r, o) => isAdminRole(r) || r === 'org_lead' || (notManager(r) && o === 'CIPRB') },
+  // Org dashboard: visible to anyone in that org (manager, focal, org_lead)
+  // plus cross-org admin roles. Managers see their own org's KPIs so they
+  // can spot-check trends before approving submissions.
   { to: '/phd',      i18nKey: 'nav.phdDashboard',      icon: <Building2 size={18} />,
-    visible: (r, o) => isAdminRole(r) || r === 'org_lead' || (notManager(r) && o === 'PHD') },
+    visible: (r, o) => isAdminRole(r) || r === 'org_lead' || o === 'PHD' },
   { to: '/bondhu',   i18nKey: 'nav.bondhuDashboard',   icon: <HeartHandshake size={18} />,
-    visible: (r, o) => isAdminRole(r) || r === 'org_lead' || (notManager(r) && o === 'Bandhu') },
+    visible: (r, o) => isAdminRole(r) || r === 'org_lead' || o === 'Bandhu' },
   // Approvals: managers + above. This is the ONLY nav item a manager sees.
   { to: '/approvals',i18nKey: 'nav.managerApprovals',  icon: <ClipboardCheck size={18} />,
     visible: (r) => ['developer','supervisor','org_lead','manager'].includes(r) },
