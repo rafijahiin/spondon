@@ -31,7 +31,9 @@ class ServiceCenterSerializer(serializers.ModelSerializer):
 class ClientSerializer(serializers.ModelSerializer):
     class Meta:
         model = Client
-        exclude = ['raw_payload']
+        # raw_payload kept in the response — Manager Approvals needs the
+        # full submitted form data so reviewers can verify before approving.
+        fields = '__all__'
         read_only_fields = [
             'id', 'approval_status', 'approved_by', 'approved_at',
             'kobo_submission_id', 'submitted_at',
@@ -41,7 +43,9 @@ class ClientSerializer(serializers.ModelSerializer):
 class ClinicVisitSerializer(serializers.ModelSerializer):
     class Meta:
         model = ClinicVisit
-        exclude = ['raw_payload']
+        # raw_payload kept in the response — Manager Approvals needs the
+        # full submitted form data so reviewers can verify before approving.
+        fields = '__all__'
         read_only_fields = ['approval_status', 'approved_by', 'approved_at',
                             'kobo_submission_id', 'submitted_at']
 
@@ -56,7 +60,9 @@ class ClinicVisitApprovalSerializer(serializers.ModelSerializer):
 class HIVSTITestResultSerializer(serializers.ModelSerializer):
     class Meta:
         model = HIVSTITestResult
-        exclude = ['raw_payload']
+        # raw_payload kept in the response — Manager Approvals needs the
+        # full submitted form data so reviewers can verify before approving.
+        fields = '__all__'
         read_only_fields = ['approval_status', 'approved_by', 'approved_at',
                             'kobo_submission_id', 'submitted_at']
 
@@ -64,7 +70,9 @@ class HIVSTITestResultSerializer(serializers.ModelSerializer):
 class ADRRecordSerializer(serializers.ModelSerializer):
     class Meta:
         model = ADRRecord
-        exclude = ['raw_payload']
+        # raw_payload kept in the response — Manager Approvals needs the
+        # full submitted form data so reviewers can verify before approving.
+        fields = '__all__'
         read_only_fields = ['approval_status', 'approved_by', 'approved_at',
                             'kobo_submission_id', 'submitted_at']
 
@@ -72,7 +80,9 @@ class ADRRecordSerializer(serializers.ModelSerializer):
 class AutoclaveLogSerializer(serializers.ModelSerializer):
     class Meta:
         model = AutoclaveLog
-        exclude = ['raw_payload']
+        # raw_payload kept in the response — Manager Approvals needs the
+        # full submitted form data so reviewers can verify before approving.
+        fields = '__all__'
         read_only_fields = ['approval_status', 'approved_by', 'approved_at',
                             'kobo_submission_id', 'submitted_at']
 
@@ -80,7 +90,9 @@ class AutoclaveLogSerializer(serializers.ModelSerializer):
 class AntenatalCardSerializer(serializers.ModelSerializer):
     class Meta:
         model = AntenatalCard
-        exclude = ['raw_payload']
+        # raw_payload kept in the response — Manager Approvals needs the
+        # full submitted form data so reviewers can verify before approving.
+        fields = '__all__'
         read_only_fields = ['approval_status', 'approved_by', 'approved_at',
                             'kobo_submission_id', 'submitted_at']
 
@@ -88,7 +100,9 @@ class AntenatalCardSerializer(serializers.ModelSerializer):
 class HTCCounsellingSerializer(serializers.ModelSerializer):
     class Meta:
         model = HTCCounselling
-        exclude = ['raw_payload']
+        # raw_payload kept in the response — Manager Approvals needs the
+        # full submitted form data so reviewers can verify before approving.
+        fields = '__all__'
         read_only_fields = ['approval_status', 'approved_by', 'approved_at',
                             'kobo_submission_id', 'submitted_at']
 
@@ -96,7 +110,9 @@ class HTCCounsellingSerializer(serializers.ModelSerializer):
 class IndividualCounsellingSerializer(serializers.ModelSerializer):
     class Meta:
         model = IndividualCounselling
-        exclude = ['raw_payload']
+        # raw_payload kept in the response — Manager Approvals needs the
+        # full submitted form data so reviewers can verify before approving.
+        fields = '__all__'
         read_only_fields = ['approval_status', 'approved_by', 'approved_at',
                             'kobo_submission_id', 'submitted_at']
 
@@ -104,7 +120,9 @@ class IndividualCounsellingSerializer(serializers.ModelSerializer):
 class MHScreeningSerializer(serializers.ModelSerializer):
     class Meta:
         model = MHScreening
-        exclude = ['raw_payload']
+        # raw_payload kept in the response — Manager Approvals needs the
+        # full submitted form data so reviewers can verify before approving.
+        fields = '__all__'
         read_only_fields = ['approval_status', 'approved_by', 'approved_at',
                             'kobo_submission_id', 'submitted_at']
 
@@ -129,7 +147,9 @@ class GBVCaseDetailSerializer(serializers.ModelSerializer):
     """Full serializer — only for GBV officers and super admins."""
     class Meta:
         model = GBVCase
-        exclude = ['raw_payload']
+        # raw_payload kept in the response — Manager Approvals needs the
+        # full submitted form data so reviewers can verify before approving.
+        fields = '__all__'
         read_only_fields = ['approval_status', 'approved_by', 'approved_at',
                             'kobo_submission_id', 'submitted_at']
 
@@ -137,7 +157,9 @@ class GBVCaseDetailSerializer(serializers.ModelSerializer):
 class OutreachSessionSerializer(serializers.ModelSerializer):
     class Meta:
         model = OutreachSession
-        exclude = ['raw_payload']
+        # raw_payload kept in the response — Manager Approvals needs the
+        # full submitted form data so reviewers can verify before approving.
+        fields = '__all__'
         read_only_fields = ['approval_status', 'approved_by', 'approved_at',
                             'kobo_submission_id', 'submitted_at']
 
@@ -145,7 +167,9 @@ class OutreachSessionSerializer(serializers.ModelSerializer):
 class GroupEducationSessionSerializer(serializers.ModelSerializer):
     class Meta:
         model = GroupEducationSession
-        exclude = ['raw_payload']
+        # raw_payload kept in the response — Manager Approvals needs the
+        # full submitted form data so reviewers can verify before approving.
+        fields = '__all__'
         read_only_fields = ['approval_status', 'approved_by', 'approved_at',
                             'kobo_submission_id', 'submitted_at']
 
@@ -155,7 +179,9 @@ class ReferralSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Referral
-        exclude = ['raw_payload']
+        # raw_payload kept in the response — Manager Approvals needs the
+        # full submitted form data so reviewers can verify before approving.
+        fields = '__all__'
         read_only_fields = ['approval_status', 'approved_by', 'approved_at',
                             'kobo_submission_id', 'submitted_at',
                             'outcome_updated_by']
@@ -188,7 +214,9 @@ class TemperatureLogSerializer(serializers.ModelSerializer):
 class SafetyHygieneKitSerializer(serializers.ModelSerializer):
     class Meta:
         model = SafetyHygieneKit
-        exclude = ['raw_payload']
+        # raw_payload kept in the response — Manager Approvals needs the
+        # full submitted form data so reviewers can verify before approving.
+        fields = '__all__'
         read_only_fields = ['approval_status', 'approved_by', 'approved_at',
                             'kobo_submission_id']
 
@@ -217,7 +245,9 @@ def _validate_photo_under_2mb(uploaded_file):
 class TrainingEventSerializer(serializers.ModelSerializer):
     class Meta:
         model = TrainingEvent
-        exclude = ['raw_payload']
+        # raw_payload kept in the response — Manager Approvals needs the
+        # full submitted form data so reviewers can verify before approving.
+        fields = '__all__'
         read_only_fields = ['approval_status', 'approved_by', 'approved_at',
                             'kobo_submission_id', 'submitted_at']
 
@@ -236,7 +266,9 @@ class TrainingEventSerializer(serializers.ModelSerializer):
 class CoordMeetingSerializer(serializers.ModelSerializer):
     class Meta:
         model = CoordMeeting
-        exclude = ['raw_payload']
+        # raw_payload kept in the response — Manager Approvals needs the
+        # full submitted form data so reviewers can verify before approving.
+        fields = '__all__'
         read_only_fields = ['approval_status', 'approved_by', 'approved_at',
                             'kobo_submission_id', 'submitted_at']
 
@@ -259,7 +291,9 @@ class CoordMeetingSerializer(serializers.ModelSerializer):
 class MobileHealthCampSerializer(serializers.ModelSerializer):
     class Meta:
         model = MobileHealthCamp
-        exclude = ['raw_payload']
+        # raw_payload kept in the response — Manager Approvals needs the
+        # full submitted form data so reviewers can verify before approving.
+        fields = '__all__'
         read_only_fields = ['approval_status', 'approved_by', 'approved_at',
                             'kobo_submission_id', 'submitted_at']
 

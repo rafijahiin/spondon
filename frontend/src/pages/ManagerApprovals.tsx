@@ -781,8 +781,10 @@ export default function ManagerApprovals() {
                 {/* Submitted field values — read-only. Lets the manager verify
                     actual clinical variables (e.g. mother's age = 14) against
                     the form before deciding. No editing: full visibility, no
-                    manipulation (Animesh). */}
-                {detail && detail.raw_data && (
+                    manipulation (Animesh).
+                    Programs records expose this as `raw_payload`; legacy
+                    KoboSubmission used `raw_data`. Read either. */}
+                {(() => { const _rd = (detail as any)?.raw_data ?? (detail as any)?.raw_payload; return detail && _rd && Object.keys(_rd).length > 0 && (
                   <div style={{ padding: '22px 0', borderBottom: '1px solid var(--hair)' }}>
                     <div className="kicker" style={{ marginBottom: 12 }}>
                       <span className="dot" />SUBMITTED VALUES (READ-ONLY)
@@ -791,7 +793,7 @@ export default function ManagerApprovals() {
                       display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 24px',
                       maxHeight: 280, overflowY: 'auto',
                     }}>
-                      {Object.entries(detail.raw_data)
+                      {Object.entries(_rd)
                         .filter(([k]) => !k.startsWith('_') && !k.startsWith('formhub') && !k.startsWith('meta'))
                         .map(([k, v]) => (
                           <div key={k} style={{
@@ -831,7 +833,7 @@ export default function ManagerApprovals() {
                             </tr>
                           </thead>
                           <tbody>
-                            {Object.entries(detail.raw_data).map(([k, v], i) => {
+                            {Object.entries(_rd).map(([k, v], i) => {
                               const label = k.split('/').pop()!.replace(/^_/, '').replace(/_/g, ' ')
                               const val = v === null || v === '' || v === undefined
                                 ? '—'
@@ -848,7 +850,7 @@ export default function ManagerApprovals() {
                       </div>
                     )}
                   </div>
-                )}
+                ); })()}
 
                 {/* Review history — immutable audit trail (who, what, when, note). */}
                 {detail && detail.review_history && detail.review_history.length > 0 && (

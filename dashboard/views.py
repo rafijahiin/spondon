@@ -104,6 +104,18 @@ class KPIView(APIView):
             # with legacy-only counts so the endpoint still responds.
             pass
         pending_count = pending.count()
+        # Also count PENDING rows from every programs model so the spine
+        # badge increments when PHD/Bandhu service-log submissions land
+        # (Referral, ClinicVisit, HIVSTITestResult, etc.). Without this,
+        # the queue had 2 pending Referrals but the badge stayed at 0.
+        try:
+            for Model in _PROGRAMS_MODELS:
+                pqs = Model.objects.filter(approval_status='PENDING')
+                if not request.user.can_see_all_orgs:
+                    pqs = pqs.filter(organisation=request.user.organisation)
+                pending_count += pqs.count()
+        except (NameError, Exception):
+            pass
         active_workers = (
             approved
             .filter(submitted_at__gte=thirty_days_ago)
