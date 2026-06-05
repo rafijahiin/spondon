@@ -458,7 +458,19 @@ html.dark ::selection { background: rgba(249, 96, 0, 0.30); color: var(--ink); }
   border: none;
 }
 
-.spine-foot { margin-top: auto; display: flex; flex-direction: column; align-items: center; gap: 6px; padding-top: 6px; }
+.spine-foot {
+  margin-top: auto;
+  display: flex; flex-direction: column;
+  align-items: center; gap: 6px;
+  padding-top: 6px;
+  /* Pin the footer to the bottom of the spine even when the expanded nav
+     list overflows the viewport. Without this Logout + Avatar would get
+     hidden below the scroll fold on short screens. */
+  position: sticky;
+  bottom: 0;
+  background: var(--surface);
+  padding-bottom: 8px;
+}
 .spine-avatar {
   width: 30px; height: 30px;
   border-radius: 50%;
