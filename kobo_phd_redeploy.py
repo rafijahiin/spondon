@@ -50,17 +50,39 @@ def replace_xlsx(uid: str, path: str) -> bool:
 
 
 def deploy(uid: str) -> bool:
-    a = requests.get(f"{API}/assets/{uid}/", headers=H, timeout=30)
-    if a.status_code != 200:
-        print(f"  fetch asset failed: {a.status_code}"); return False
-    vid = a.json().get("version_id")
-    r = requests.post(f"{API}/assets/{uid}/deployment/", headers=H,
-                      json={"active": True, "version_id": vid}, timeout=30)
-    if r.status_code in (200, 201): return True
-    r2 = requests.patch(f"{API}/assets/{uid}/deployment/", headers=H,
-                        json={"active": True, "version_id": vid}, timeout=30)
-    if r2.status_code in (200, 201): return True
-    print(f"  DEPLOY FAIL: {r.status_code} / {r2.status_code}"); return False
+    """Redeploy an already-deployed asset to its latest version.
+
+    POST /deployment/  → 405 once a deployment exists (Kobo rejects "create
+                          deployment" when one is already there). Expected.
+    PATCH /deployment/ {"version_id": <hash>, "active": true}
+                       → the canonical redeploy call.
+
+    The version_id must be the LATEST version's hash from
+    /api/v2/assets/<uid>/versions/?limit=1 — NOT the asset.version_id
+    field (which can lag right after an /imports/ post).
+    """
+    # Fetch the actual newest version from /versions/ — most reliable source.
+    v = requests.get(f"{API}/assets/{uid}/versions/?limit=1",
+                     headers=H, timeout=30)
+    results = (v.json() or {}).get("results", []) if v.status_code == 200 else []
+    if not results:
+        print(f"  no versions for {uid}"); return False
+    vhash = results[0].get("uid")
+    if not vhash:
+        print(f"  version has no uid: {results[0]}"); return False
+
+    r = requests.patch(f"{API}/assets/{uid}/deployment/", headers=H,
+                       json={"version_id": vhash, "active": True}, timeout=30)
+    if r.status_code in (200, 201):
+        return True
+    print(f"  PATCH /deployment/ → {r.status_code}: {r.text[:300]}")
+    # Last-resort fallback for forms with no prior deployment row.
+    r2 = requests.post(f"{API}/assets/{uid}/deployment/", headers=H,
+                       json={"version_id": vhash, "active": True}, timeout=30)
+    if r2.status_code in (200, 201):
+        return True
+    print(f"  POST  /deployment/ → {r2.status_code}: {r2.text[:300]}")
+    return False
 
 
 print()
