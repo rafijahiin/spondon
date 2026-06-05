@@ -5,7 +5,7 @@
  * Click to select; click Approve/Reject buttons to act.
  * Preserves both Programs and Legacy API flows.
  */
-import { useState, useEffect, useCallback, useRef } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import {
   X, Check, AlertTriangle, FileText,
 } from 'lucide-react'
@@ -40,6 +40,100 @@ function useCountUp(target: number, dur = 1300) {
 
 function CountUp({ value, dur }: { value: number; dur?: number }) {
   return <>{useCountUp(value, dur).toLocaleString()}</>
+}
+
+// ─── Submitted-values grouping ────────────────────────────────────────────────
+// Takes the raw_payload / raw_data from a Kobo submission and groups the
+// fields into clinically-meaningful sections so the manager reads a clean
+// readout instead of a flat alphabetical dump. Prefix-based — no per-field
+// config table to maintain.
+
+interface FieldRow { label: string; display: string; isEmpty: boolean; mono?: boolean }
+interface FieldGroup { title: string; rows: FieldRow[] }
+
+const _PREFIX_GROUPS: Array<[RegExp, string, string]> = [
+  // [match, group title, prefix to strip from label]
+  [/^_pull_/,           'Patient (from registry)', '_pull_'],
+  [/^clinic_ref_/,      'Referrals',               'clinic_ref_'],
+  [/^clinic_diag_/,     'Diagnoses',               'clinic_diag_'],
+  [/^clinic_fu_/,       'Follow-up',               'clinic_fu_'],
+  [/_screen$/,          'Screenings',              ''],            // suffix match
+  [/^clinic_treatment/, 'Treatment',               'clinic_'],
+  [/^clinic_contracep/, 'Contraception',           'clinic_'],
+  [/^clinic_condom/,    'Treatment',               'clinic_'],
+  [/^clinic_/,          'Visit',                   'clinic_'],
+  [/^htc_test/,         'HIV test algorithm',      'htc_'],
+  [/^htc_/,             'HTC',                     'htc_'],
+  [/^ref_/,             'Referral',                'ref_'],
+  [/^counsel_/,         'Counselling',             'counsel_'],
+  [/^gedu_/,            'Group education',         'gedu_'],
+  [/^event_/,           'Event',                   'event_'],
+  [/^stock_/,           'Stock',                   'stock_'],
+  [/^mat_/,             'Material',                'mat_'],
+  [/^gbv_/,             'GBV corner',              'gbv_'],
+  [/^record_type$|^service_type$|^activity_type$|^event_subtype$|^gedu_audience$|^client_id$/,
+                        'Patient (from registry)', ''],
+  [/^enumerator_/,      'Submitted by',            'enumerator_'],
+  [/^centre_id$|^organisation$|^location$/, 'Submission info', ''],
+]
+
+// Fields we never show — Kobo system, formhub, meta, the calculate "stubs"
+// the form generator emits for pulldata() targets that have no UI label.
+const _SKIP = new Set(['start','end','today','deviceid','username','__version__'])
+
+function _humanise(key: string, stripPrefix: string): string {
+  let s = key
+  if (stripPrefix) s = s.replace(stripPrefix, '')
+  s = s.replace(/_/g, ' ').trim()
+  if (!s) return key
+  return s.charAt(0).toUpperCase() + s.slice(1)
+}
+
+function _formatValue(v: any): { display: string; isEmpty: boolean; mono?: boolean } {
+  if (v === null || v === undefined || v === '') return { display: '—', isEmpty: true }
+  if (v === true || v === 'yes' || v === 'true' || v === 1 || v === '1')
+    return { display: '✓ Yes', isEmpty: false }
+  if (v === false || v === 'no' || v === 'false' || v === 0 || v === '0')
+    return { display: '— No', isEmpty: true }
+  if (typeof v === 'object') return { display: JSON.stringify(v), isEmpty: false, mono: true }
+  const s = String(v)
+  return { display: s, isEmpty: false, mono: /^[\d.\s,:/-]+$/.test(s) }
+}
+
+export function groupSubmittedFields(payload: Record<string, any>): FieldGroup[] {
+  const buckets = new Map<string, FieldRow[]>()
+  for (const [rawKey, value] of Object.entries(payload)) {
+    const key = rawKey.split('/').pop()!
+    if (key.startsWith('formhub')) continue
+    if (key.startsWith('meta')) continue
+    if (key.startsWith('__')) continue
+    if (_SKIP.has(key)) continue
+    let groupTitle = 'Other'
+    let stripPrefix = ''
+    for (const [re, title, strip] of _PREFIX_GROUPS) {
+      if (re.test(key)) { groupTitle = title; stripPrefix = strip; break }
+    }
+    const fmt = _formatValue(value)
+    const row: FieldRow = {
+      label: _humanise(key, stripPrefix),
+      display: fmt.display,
+      isEmpty: fmt.isEmpty,
+      mono: fmt.mono,
+    }
+    if (!buckets.has(groupTitle)) buckets.set(groupTitle, [])
+    buckets.get(groupTitle)!.push(row)
+  }
+  // Stable canonical ordering. Patient first, Other last.
+  const ORDER = [
+    'Patient (from registry)','Submission info','Submitted by',
+    'Visit','Screenings','Diagnoses','Treatment','Contraception',
+    'Follow-up','Referrals','HIV test algorithm','HTC','Referral',
+    'Counselling','Group education','Event','Material','Stock','GBV corner',
+    'Other',
+  ]
+  return ORDER
+    .filter(t => buckets.has(t))
+    .map(title => ({ title, rows: buckets.get(title)! }))
 }
 
 // Keyboard shortcuts were retired entirely — click-only interactions
@@ -722,135 +816,101 @@ export default function ManagerApprovals() {
                   </div>
                 </div>
 
-                {/* Validation trace + field diff */}
+                {/* One-line gate strip — replaces the old 2-column 'CHECKS AT
+                    INGEST' + 'FIELD-LEVEL DIFF' panels. Both were over-styled
+                    and the diff was redundant with the SUBMITTED BY / CENTRE
+                    cards above. A manager just needs to know "did the ingest
+                    rules pass" — yes/no per gate, one line. */}
                 <div style={{
-                  display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24,
-                  padding: '22px 0',
+                  display: 'flex', flexWrap: 'wrap', gap: 18,
+                  padding: '14px 0',
                   borderBottom: '1px solid var(--hair)',
+                  fontSize: 13,
                 }}>
-                  <div>
-                    <div className="kicker" style={{ marginBottom: 12 }}>
-                      <span className="dot" style={{ background: 'var(--emerald)' }} />CHECKS AT INGEST
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                      {([
-                        // Real gates the Kobo webhook enforces before a record
-                        // is created — derived from the actual submission, not
-                        // synthetic timings.
-                        ['Recognised form', true, String(selected.model_type || 'mpdsr')],
-                        ['GPS captured (mandatory)', !!(selected.latitude && selected.longitude),
-                          (selected.latitude && selected.longitude) ? 'yes' : 'missing'],
-                        ['Unique — no duplicate', !!selected.kobo_submission_id,
-                          selected.kobo_submission_id ? 'kobo id ✓' : '—'],
-                        ['Partner attributed', !!selected.organisation, String(selected.organisation || '—')],
-                      ] as [string, boolean, string][]).map(([label, ok, val]) => (
-                        <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13 }}>
-                          <span style={{
-                            width: 18, height: 18, borderRadius: 4,
-                            background: ok ? 'rgba(31,154,109,0.10)' : 'rgba(233,151,10,0.12)',
-                            color: ok ? 'var(--emerald)' : 'var(--amber)',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          }}>
-                            {ok ? <Check size={11} /> : <AlertTriangle size={11} />}
-                          </span>
-                          <span style={{ flex: 1 }}>{label}</span>
-                          <span className="mono mute" style={{ fontSize: 11 }}>{val}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="kicker" style={{ marginBottom: 12 }}><span className="dot" />FIELD-LEVEL DIFF</div>
-                    <div className="mono" style={{
-                      fontSize: 12, lineHeight: 1.8,
-                      background: 'var(--surface-2)', border: '1px solid var(--hair)',
-                      borderRadius: 10, padding: 14,
+                  {([
+                    ['Form recognised', true],
+                    ['Unique', !!selected.kobo_submission_id],
+                    ['GPS captured', !!(selected.latitude && selected.longitude)],
+                    [`Partner: ${selected.organisation || '—'}`, !!selected.organisation],
+                  ] as [string, boolean][]).map(([label, ok]) => (
+                    <span key={label} style={{
+                      display: 'inline-flex', alignItems: 'center', gap: 6,
+                      color: ok ? 'var(--emerald)' : 'var(--amber)',
                     }}>
-                      {selected.kobo_submission_id && (
-                        <div className="mute">+ kobo_id: <span style={{ color: 'var(--ink)' }}>{selected.kobo_submission_id}</span></div>
-                      )}
-                      <div className="mute">+ form_type: <span style={{ color: 'var(--ink)' }}>{selected.model_type}</span></div>
-                      <div className="mute">+ org: <span style={{ color: 'var(--ink)' }}>{selected.organisation}</span></div>
-                      <div className="mute">+ centre: <span style={{ color: 'var(--ink)' }}>{selected.center_name}</span></div>
-                      <div className="mute">+ submitted_by: <span style={{ color: 'var(--ink)' }}>{selected.submitted_by}</span></div>
-                      <div className="mute">+ submitted_at: <span style={{ color: 'var(--ink)' }}>{selected.created_at}</span></div>
-                    </div>
-                  </div>
+                      {ok ? <Check size={14} /> : <AlertTriangle size={14} />}
+                      <span style={{ color: 'var(--ink)' }}>{label}</span>
+                    </span>
+                  ))}
                 </div>
 
-                {/* Submitted field values — read-only. Lets the manager verify
-                    actual clinical variables (e.g. mother's age = 14) against
-                    the form before deciding. No editing: full visibility, no
-                    manipulation (Animesh).
-                    Programs records expose this as `raw_payload`; legacy
-                    KoboSubmission used `raw_data`. Read either. */}
-                {(() => { const _rd = (detail as any)?.raw_data ?? (detail as any)?.raw_payload; return detail && _rd && Object.keys(_rd).length > 0 && (
-                  <div style={{ padding: '22px 0', borderBottom: '1px solid var(--hair)' }}>
-                    <div className="kicker" style={{ marginBottom: 12 }}>
-                      <span className="dot" />SUBMITTED VALUES (READ-ONLY)
-                    </div>
-                    <div style={{
-                      display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 24px',
-                      maxHeight: 280, overflowY: 'auto',
-                    }}>
-                      {Object.entries(_rd)
-                        .filter(([k]) => !k.startsWith('_') && !k.startsWith('formhub') && !k.startsWith('meta'))
-                        .map(([k, v]) => (
-                          <div key={k} style={{
-                            display: 'flex', justifyContent: 'space-between', gap: 12,
-                            fontSize: 12.5, padding: '4px 0', borderBottom: '1px dotted var(--hair)',
-                          }}>
-                            <span className="mute" style={{ wordBreak: 'break-word' }}>{k.split('/').pop()}</span>
-                            <span className="mono" style={{ color: 'var(--ink)', textAlign: 'right', wordBreak: 'break-word' }}>
-                              {v === null || v === '' ? '—' : String(v)}
-                            </span>
-                          </div>
-                        ))}
-                    </div>
-                    {/* Full record as a plain table (every field, incl. Kobo
-                        system fields) — a manager reads this like a spreadsheet,
-                        not raw JSON. */}
-                    <button
-                      onClick={() => setShowRaw(v => !v)}
-                      style={{
-                        marginTop: 12, fontSize: 12, color: 'var(--unfpa)',
-                        background: 'none', border: 'none', cursor: 'pointer',
-                        padding: 0, fontFamily: 'var(--ui)',
-                      }}
-                    >
-                      {showRaw ? '▾ Hide full record' : '▸ View full record (every field)'}
-                    </button>
-                    {showRaw && (
+                {/* The clinical readout — single column, semantically grouped
+                    so the manager scans the right fields in the right order
+                    (Patient → Visit → Screenings → Diagnoses → Treatment →
+                    Referrals → Follow-up). No 2-column compression, no
+                    'View full record' toggle, no system-field clutter. */}
+                {(() => {
+                  const _rd = (detail as any)?.raw_data ?? (detail as any)?.raw_payload;
+                  if (!detail || !_rd || Object.keys(_rd).length === 0) return null;
+                  const groups = groupSubmittedFields(_rd);
+                  if (groups.length === 0) return null;
+                  return (
+                    <div style={{ padding: '20px 0', borderBottom: '1px solid var(--hair)' }}>
                       <div style={{
-                        marginTop: 10, borderRadius: 10, overflow: 'hidden',
-                        border: '1px solid var(--hair)', maxHeight: 360, overflowY: 'auto',
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                        marginBottom: 14,
                       }}>
-                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5 }}>
-                          <thead>
-                            <tr style={{ background: 'var(--surface-2)' }}>
-                              <th style={{ textAlign: 'left', padding: '8px 12px', color: 'var(--muted)', fontWeight: 600, position: 'sticky', top: 0, background: 'var(--surface-2)' }}>Field</th>
-                              <th style={{ textAlign: 'left', padding: '8px 12px', color: 'var(--muted)', fontWeight: 600, position: 'sticky', top: 0, background: 'var(--surface-2)' }}>Value</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {Object.entries(_rd).map(([k, v], i) => {
-                              const label = k.split('/').pop()!.replace(/^_/, '').replace(/_/g, ' ')
-                              const val = v === null || v === '' || v === undefined
-                                ? '—'
-                                : (typeof v === 'object' ? JSON.stringify(v) : String(v))
-                              return (
-                                <tr key={k} style={{ background: i % 2 ? 'transparent' : 'var(--surface-2)' }}>
-                                  <td style={{ padding: '7px 12px', color: 'var(--ink-2)', textTransform: 'capitalize', verticalAlign: 'top', wordBreak: 'break-word' }}>{label}</td>
-                                  <td className="mono" style={{ padding: '7px 12px', color: 'var(--ink)', wordBreak: 'break-word' }}>{val}</td>
-                                </tr>
-                              )
-                            })}
-                          </tbody>
-                        </table>
+                        <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--ink)' }}>
+                          What was submitted
+                        </div>
+                        <button
+                          onClick={() => setShowRaw(v => !v)}
+                          style={{
+                            fontSize: 12, color: 'var(--ink-3)',
+                            background: 'none', border: 'none', cursor: 'pointer',
+                            padding: 0, fontFamily: 'var(--ui)',
+                          }}
+                        >
+                          {showRaw ? 'Hide blanks' : 'Show empty fields too'}
+                        </button>
                       </div>
-                    )}
-                  </div>
-                ); })()}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+                        {groups.map(({ title, rows }) => {
+                          const visible = showRaw ? rows : rows.filter(r => !r.isEmpty);
+                          if (visible.length === 0) return null;
+                          return (
+                            <div key={title}>
+                              <div style={{
+                                fontSize: 11, fontWeight: 600,
+                                color: 'var(--unfpa)',
+                                letterSpacing: '0.12em',
+                                textTransform: 'uppercase',
+                                marginBottom: 8,
+                              }}>{title}</div>
+                              <div style={{
+                                display: 'grid',
+                                gridTemplateColumns: '180px 1fr',
+                                rowGap: 5, columnGap: 16,
+                                fontSize: 13.5,
+                              }}>
+                                {visible.map((r, i) => (
+                                  <React.Fragment key={i}>
+                                    <div style={{ color: 'var(--ink-3)' }}>{r.label}</div>
+                                    <div style={{
+                                      color: r.isEmpty ? 'var(--muted)' : 'var(--ink)',
+                                      fontFamily: r.mono ? 'var(--mono)' : 'inherit',
+                                    }}>
+                                      {r.display}
+                                    </div>
+                                  </React.Fragment>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 {/* Review history — immutable audit trail (who, what, when, note). */}
                 {detail && detail.review_history && detail.review_history.length > 0 && (

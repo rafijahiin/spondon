@@ -367,12 +367,10 @@ export function Spine() {
                     target="_blank"
                     rel="noopener noreferrer"
                     className="kobo-form-link"
+                    title={form.labelBn}  /* Bangla on hover — no more stacked dual labels */
                   >
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 12.5, fontWeight: 500 }}>{form.label}</div>
-                      <div className="bn" style={{ fontSize: 10, color: 'var(--muted)' }}>{form.labelBn}</div>
-                    </div>
-                    <ExternalLink size={12} style={{ color: 'var(--muted)', flexShrink: 0 }} />
+                    <span style={{ flex: 1, color: 'var(--ink)' }}>{form.label}</span>
+                    <ExternalLink size={13} style={{ color: 'var(--muted)', flexShrink: 0 }} />
                   </a>
                 ))}
               </div>
