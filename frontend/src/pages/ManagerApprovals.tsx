@@ -747,7 +747,103 @@ export default function ManagerApprovals() {
                     }}>
                       {selected.title}
                     </h2>
-                    <p className="hero-lede" style={{ marginTop: 12, maxWidth: 720 }}>
+
+                    {/* PATIENT IDENTITY BANNER — the single most important thing
+                        the manager needs to see on a clinical submission. Reads
+                        the auto-filled pulldata fields (_pull_name etc.) from
+                        the new PHD Service Log; falls back to whatever ID the
+                        old forms recorded (client_id / ref_id_no / etc.) so old
+                        records still show something. */}
+                    {(() => {
+                      const _rd: Record<string, any> = (detail as any)?.raw_data ?? (detail as any)?.raw_payload ?? {};
+                      const pName    = String(_rd._pull_name || '').trim();
+                      const pId      = String(_rd.client_id || _rd.ref_id_no || _rd.clinic_id_no || _rd.htc_client_id || _rd.id_no || '').trim().toUpperCase();
+                      const pMother  = String(_rd._pull_mother || _rd.mother_name || '').trim();
+                      const pAge     = String(_rd._pull_age || '').trim();
+                      const pBirth   = String(_rd._pull_birth || _rd.birth_year || '').trim();
+                      const pAddr    = String(_rd._pull_address || _rd.permanent_address || _rd.current_address || '').trim();
+                      const pStatus  = String(_rd._pull_status || '').trim();
+                      // If we have NEITHER an ID nor a name, this isn't a patient
+                      // record (e.g. it's an Event / Stock / IEC submission) — skip.
+                      if (!pName && !pId) return null;
+                      const isUnregistered = !!pId && !pName;
+                      return (
+                        <div style={{
+                          marginTop: 18,
+                          padding: '18px 22px',
+                          borderRadius: 14,
+                          background: isUnregistered
+                            ? 'linear-gradient(180deg, rgba(233,151,10,0.06) 0%, rgba(233,151,10,0.02) 100%)'
+                            : 'linear-gradient(180deg, rgba(249,96,0,0.06) 0%, rgba(249,96,0,0.02) 100%)',
+                          border: isUnregistered
+                            ? '1px solid rgba(233,151,10,0.30)'
+                            : '1px solid rgba(249,96,0,0.22)',
+                          maxWidth: 720,
+                        }}>
+                          {isUnregistered ? (
+                            <>
+                              <div style={{
+                                fontSize: 20, fontWeight: 600, color: 'var(--amber)',
+                                marginBottom: 6,
+                              }}>
+                                ⚠ Unregistered patient
+                              </div>
+                              <div style={{ fontSize: 15, color: 'var(--ink)' }}>
+                                Worker typed ID <span className="mono" style={{
+                                  background: 'var(--surface-2)', padding: '2px 8px',
+                                  borderRadius: 6, fontWeight: 600,
+                                }}>{pId}</span> — not found in the Master List.
+                              </div>
+                              <div style={{ fontSize: 13.5, color: 'var(--ink-3)', marginTop: 8 }}>
+                                Register her in PHD 1 (FSW Registration) before approving this submission.
+                              </div>
+                            </>
+                          ) : (
+                            <>
+                              <div style={{
+                                display: 'flex', alignItems: 'baseline', flexWrap: 'wrap',
+                                gap: 16, marginBottom: 8,
+                              }}>
+                                <div style={{
+                                  fontSize: 26, fontWeight: 700,
+                                  color: 'var(--ink)', lineHeight: 1.15,
+                                  letterSpacing: '-0.01em',
+                                }}>
+                                  {pName || 'Patient'}
+                                </div>
+                                {pStatus && (
+                                  <span className={`tag ${pStatus.toLowerCase() === 'active' ? 'emerald' : 'amber'}`}
+                                    style={{ fontSize: 11.5 }}>
+                                    {pStatus}
+                                  </span>
+                                )}
+                              </div>
+                              <div style={{
+                                fontSize: 15, color: 'var(--ink-2)',
+                                display: 'flex', flexWrap: 'wrap', gap: '4px 14px',
+                              }}>
+                                {pId && (
+                                  <span className="mono" style={{
+                                    background: 'var(--surface)', padding: '2px 10px',
+                                    borderRadius: 6, fontWeight: 600,
+                                    border: '1px solid var(--hair)',
+                                  }}>{pId}</span>
+                                )}
+                                {pAge && <span>Age <b>{pAge}</b>{pBirth ? ` (born ${pBirth})` : ''}</span>}
+                                {pAddr && <span style={{ color: 'var(--ink-3)' }}>{pAddr}</span>}
+                              </div>
+                              {pMother && (
+                                <div style={{ fontSize: 13.5, color: 'var(--ink-3)', marginTop: 6 }}>
+                                  Mother: {pMother}
+                                </div>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      );
+                    })()}
+
+                    <p className="hero-lede" style={{ marginTop: 14, maxWidth: 720 }}>
                       {selected.summary}
                     </p>
                     {/* Which Kobo form is being approved — the manager must
