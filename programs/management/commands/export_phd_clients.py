@@ -181,6 +181,56 @@ def upload_to_kobo(csv_bytes: bytes, stdout) -> bool:
     return all_ok
 
 
+def redeploy_forms(stdout) -> bool:
+    """Redeploy both PHD forms so Enketo re-transforms with the fresh CSV.
+
+    CRITICAL: replacing the form_media CSV via the API is NOT enough.
+    Enketo inlines the external CSV into its cached form transform at
+    DEPLOY time, keyed on the form version. Until the form is redeployed,
+    Enketo keeps serving the transform it built at the last deploy — with
+    the OLD CSV — so a newly-registered FSW shows 'not in Master List'
+    even though the attached CSV already contains her.
+
+    The redeploy (PATCH /deployment/ with the latest version hash) bumps
+    the Enketo form hash (which includes the media hash) and forces a
+    fresh transform that picks up the new CSV.
+    """
+    token = _kobo_token()
+    if not token:
+        return False
+    headers = {'Authorization': f'Token {token}'}
+    api = f'{KOBO_BASE}/api/v2'
+    all_ok = True
+
+    for uid, label in PHD_FORM_UIDS:
+        # Latest version hash from /versions/ — the only reliable source
+        # (asset.version_id can lag behind the newest content version).
+        v = requests.get(f'{api}/assets/{uid}/versions/?limit=1',
+                         headers=headers, timeout=30)
+        try:
+            vhash = v.json()['results'][0]['uid']
+        except (ValueError, KeyError, IndexError):
+            stdout.write(f'  redeploy {label}: no version found — skipped')
+            all_ok = False
+            continue
+
+        r = requests.patch(
+            f'{api}/assets/{uid}/deployment/',
+            headers=headers,
+            json={'version_id': vhash, 'active': True},
+            timeout=60,
+        )
+        if r.status_code in (200, 201):
+            stdout.write(f'  redeployed {label}')
+        else:
+            stdout.write(f'  redeploy {label} FAILED ({r.status_code}): {r.text[:160]}')
+            logger.error('Kobo redeploy failed for %s: %s %s',
+                         uid, r.status_code, r.text[:300])
+            all_ok = False
+
+    return all_ok
+
+
 class Command(BaseCommand):
     help = (
         'Export the PHD Master List (approved Client rows) as phd_clients.csv. '
@@ -225,7 +275,14 @@ class Command(BaseCommand):
 
         ok = upload_to_kobo(csv_bytes, self.stdout)
         if ok:
-            self.stdout.write(self.style.SUCCESS('\n  Done — CSV is live on both PHD forms.\n'))
+            # The redeploy is what actually makes Enketo pick up the new
+            # CSV — see redeploy_forms() docstring. Without it, the upload
+            # is invisible to the field forms.
+            self.stdout.write('\n  Redeploying so Enketo re-transforms with the new CSV…')
+            redeploy_forms(self.stdout)
+            self.stdout.write(self.style.SUCCESS(
+                '\n  Done — CSV live + forms redeployed.\n'
+            ))
         else:
             self.stdout.write(self.style.ERROR(
                 '\n  Upload failed (see errors above). Retry on the next sync.\n'

@@ -49,7 +49,7 @@ def _do_push() -> None:
     # requests library; keep import cost off the module-load path.
     try:
         from .management.commands.export_phd_clients import (
-            build_csv, upload_to_kobo,
+            build_csv, upload_to_kobo, redeploy_forms,
         )
     except Exception:
         logger.exception('phd-csv sync: failed to import export command')
@@ -69,6 +69,10 @@ def _do_push() -> None:
     try:
         csv_bytes, row_count = build_csv()
         ok = upload_to_kobo(csv_bytes, _SilentStdout())
+        if ok:
+            # Redeploy so Enketo re-transforms with the fresh CSV —
+            # the media swap alone is invisible to the field forms.
+            redeploy_forms(_SilentStdout())
         logger.info('phd-csv sync: pushed %d rows, ok=%s', row_count, ok)
     except Exception:
         logger.exception('phd-csv sync: push failed')
