@@ -120,8 +120,13 @@ def _form1_survey():
 
         # Duplicate-ID warning. Looks up the typed ID in phd_clients.csv;
         # if she's already there, blocks accidental re-registration.
+        # XPath 1.0 equivalent of trim+upper: translate(normalize-space(...)).
+        # (Kobo/ODK rejected upper-case() — that's XPath 2.0.)
         _sr('calculate','_dup_name',
-            calc="pulldata('phd_clients','name','id_no',upper-case(${id_no}))"),
+            calc=("pulldata('phd_clients','name','id_no',"
+                  "translate(normalize-space(${id_no}),"
+                  "'abcdefghijklmnopqrstuvwxyz',"
+                  "'ABCDEFGHIJKLMNOPQRSTUVWXYZ'))")),
         _sr('note','_dup_warn',
             '⚠ This ID is already registered for ${_dup_name}. '
             'Do not re-register her — use her existing ID in the Service Log instead.',
@@ -801,7 +806,11 @@ def _patient_id_group():
     """
     REL = ("${record_type}='clinic' or ${record_type}='htc' "
            "or ${record_type}='referral'")
-    PULL = "pulldata('phd_clients','{col}','id_no',upper-case(${{client_id}}))"
+    # XPath 1.0 trim+upper — Kobo's engine does not support upper-case().
+    NORM = ("translate(normalize-space(${{client_id}}),"
+            "'abcdefghijklmnopqrstuvwxyz',"
+            "'ABCDEFGHIJKLMNOPQRSTUVWXYZ')")
+    PULL = "pulldata('phd_clients','{col}','id_no'," + NORM + ")"
     NOT_FOUND = "${client_id}!='' and ${_pull_name}=''"
     FOUND     = "${_pull_name}!=''"
     return [
