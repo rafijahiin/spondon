@@ -104,6 +104,10 @@ export function groupSubmittedFields(payload: Record<string, any>): FieldGroup[]
   const buckets = new Map<string, FieldRow[]>()
   for (const [rawKey, value] of Object.entries(payload)) {
     const key = rawKey.split('/').pop()!
+    // Hard-skip pure transport noise (formhub uuid, ODK meta, instance ID
+    // markers). Everything else — including 'unknown' fields that don't
+    // match a prefix — falls through into the 'Other' bucket so the
+    // manager still sees them.
     if (key.startsWith('formhub')) continue
     if (key.startsWith('meta')) continue
     if (key.startsWith('__')) continue
@@ -208,6 +212,9 @@ interface QueueItem {
   // sees exactly which form they're approving, not a raw slug.
   form_type_display?: string
   kind: 'program' | 'legacy'
+  // For program items: the DRF endpoint slug (e.g. 'referrals',
+  // 'clinic-visits') so the detail fetcher can build the right URL.
+  endpoint?: string
   urgent?: boolean
   latitude?: string
   longitude?: string
@@ -237,6 +244,7 @@ function toQueueItems(programsData: ProgramPendingResponse | null, submissions: 
         submitted_by: it.submitted_by ?? '',
         created_at: it.created_at,
         kobo_submission_id: it.kobo_submission_id,
+        endpoint: (it as any).endpoint,  // DRF route slug from the API
         kind: 'program',
         urgent: it.model_type === 'gbv_case',
       })
@@ -431,19 +439,27 @@ export default function ManagerApprovals() {
   }, [filtered, selectedId])
 
   // When the selection changes, clear the draft note and pull the full
-  // submission detail (raw_data clinical variables + review_history). Only
-  // legacy/Kobo submissions carry this; program items are skipped.
+  // submission detail. For legacy KoboSubmission rows that means
+  // /submissions/<id>/; for programs records (PHD/Bandhu ClinicVisit,
+  // Referral, etc.) it's /programs/<endpoint>/<id>/ — both shapes carry
+  // raw_data / raw_payload + review_history, which the readout below
+  // groups into Patient / Visit / Screenings / etc.
+  // Previously program items were skipped here, so the Manager Approvals
+  // page rendered the metadata cards but never the actual form fields.
   useEffect(() => {
     setReviewerNote('')
     setDetail(null)
     setShowRaw(false)
-    if (!selected || selected.kind !== 'legacy') return
+    if (!selected) return
     let cancelled = false
-    api.get(`/submissions/${selected.id}/`)
+    const url = selected.kind === 'legacy'
+      ? `/submissions/${selected.id}/`
+      : `/programs/${selected.endpoint}/${selected.id}/`
+    api.get(url)
       .then((r) => { if (!cancelled) setDetail(r.data as SubmissionDetail) })
       .catch(() => { if (!cancelled) setDetail(null) })
     return () => { cancelled = true }
-  }, [selected?.id, selected?.kind])
+  }, [selected?.id, selected?.kind, selected?.endpoint])
 
   // ── Actions ─────────────────────────────────────────────────────────────────
 
@@ -850,9 +866,21 @@ export default function ManagerApprovals() {
                     'View full record' toggle, no system-field clutter. */}
                 {(() => {
                   const _rd = (detail as any)?.raw_data ?? (detail as any)?.raw_payload;
-                  if (!detail || !_rd || Object.keys(_rd).length === 0) return null;
+                  // Show the section unconditionally so the manager always
+                  // sees a status — either the grouped fields, an empty-payload
+                  // notice, or a 'still loading' notice. Silently returning
+                  // null caused the page to look like nothing was submitted.
+                  if (!detail) return (
+                    <div style={{ padding: '20px 0', color: 'var(--muted)', fontSize: 13 }}>
+                      Loading submitted values…
+                    </div>
+                  );
+                  if (!_rd || Object.keys(_rd).length === 0) return (
+                    <div style={{ padding: '20px 0', color: 'var(--muted)', fontSize: 13 }}>
+                      This submission carries no payload data — only the metadata above.
+                    </div>
+                  );
                   const groups = groupSubmittedFields(_rd);
-                  if (groups.length === 0) return null;
                   return (
                     <div style={{ padding: '20px 0', borderBottom: '1px solid var(--hair)' }}>
                       <div style={{
