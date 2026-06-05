@@ -56,7 +56,11 @@ def _wb(form_id, form_title, survey, choices):
     for sheet_name, headers, rows in [
         ('survey',  SURVEY_HDR,   survey),
         ('choices', CHOICES_HDR,  choices),
-        ('settings', SETTINGS_HDR, [[form_title, form_id, '20260606', 'English', 'pages theme-grid']]),
+        # 'theme-grid' (no 'pages') → single scrolling page like the MPDSR
+        # form. 'pages' makes Enketo show one section at a time with
+        # Next/Previous buttons — slow on phones and gets in the way of
+        # the relevant logic since the page boundary breaks visibility.
+        ('settings', SETTINGS_HDR, [[form_title, form_id, '20260606', 'English', 'theme-grid']]),
     ]:
         ws = wb.create_sheet(sheet_name)
         ws.append(headers)

@@ -78,10 +78,19 @@ def _norm_id(raw: str) -> str:
 
 
 def build_csv() -> tuple[bytes, int]:
-    """Generate the CSV in memory. Returns (csv_bytes, row_count)."""
+    """Generate the CSV in memory. Returns (csv_bytes, row_count).
+
+    Excludes 'stub' clients — placeholder Client rows that the webhook
+    auto-creates when a service form references an unregistered ID.
+    Stubs have no name (and usually no birth_year / address). If they
+    were exported the Service Log's pulldata() would find the row, see
+    an empty name field, and fire the 'not registered' warning anyway
+    — confusing the enumerator. A real registration must come from
+    Form 1 (FSW Registration), and that always sets at least name."""
     qs = (
         Client.objects
         .filter(organisation='PHD', approval_status=Client.APPROVED)
+        .exclude(name='')         # drop stubs
         .order_by('client_id')
     )
     this_year = datetime.date.today().year
