@@ -763,6 +763,47 @@ export default function ManagerApprovals() {
                       const currentYear = new Date().getFullYear();
                       const age = p.birth_year ? currentYear - Number(p.birth_year) : null;
                       const isActive = p.current_status === '1';
+                      // Webhook creates a STUB_* placeholder Client when the
+                      // worker types an ID that isn't in the master list — FK
+                      // satisfied, but name/mother/age are all empty. Surface
+                      // that as an amber warning so the manager knows to ask
+                      // for a proper registration before approving.
+                      const isStub = !p.name || /^STUB[_-]/i.test(String(p.client_id || ''));
+                      if (isStub) {
+                        const _rd = (detail as any)?.raw_data ?? (detail as any)?.raw_payload ?? {};
+                        const typedId = String(_rd.client_id || _rd.id_no || _rd.ref_id_no || _rd.clinic_id_no || _rd.htc_client_id || p.client_id || '').trim();
+                        return (
+                          <div style={{
+                            marginTop: 18,
+                            padding: '20px 24px',
+                            borderRadius: 14,
+                            background: 'linear-gradient(180deg, rgba(233,151,10,0.08) 0%, rgba(233,151,10,0.02) 100%)',
+                            border: '1px solid rgba(233,151,10,0.32)',
+                            maxWidth: 760,
+                          }}>
+                            <div style={{
+                              fontSize: 22, fontWeight: 700, color: 'var(--amber)',
+                              marginBottom: 8, letterSpacing: '-0.01em',
+                            }}>
+                              ⚠ Patient not in Master List
+                            </div>
+                            <div style={{ fontSize: 15.5, color: 'var(--ink)', lineHeight: 1.5 }}>
+                              The field worker typed ID{' '}
+                              <span className="mono" style={{
+                                background: 'var(--surface)', padding: '3px 11px',
+                                borderRadius: 6, fontWeight: 600,
+                                border: '1px solid var(--hair)', fontSize: 15,
+                              }}>{typedId}</span>{' '}
+                              but no client with this ID exists in the registry.
+                            </div>
+                            <div style={{ fontSize: 14, color: 'var(--ink-3)', marginTop: 10, lineHeight: 1.5 }}>
+                              Ask the field team to register this client through{' '}
+                              <b style={{ color: 'var(--ink-2)' }}>PHD 1 — FSW Registration</b>{' '}
+                              before approving this service record.
+                            </div>
+                          </div>
+                        );
+                      }
                       return (
                         <div style={{
                           marginTop: 18,
