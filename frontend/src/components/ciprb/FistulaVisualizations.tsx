@@ -447,8 +447,14 @@ export function FistulaVisualizations({
           <MetricTile icon={<Users      size={13} />} label={t('fistulaViz.population')} value={agg.population} sub={t('fistulaViz.populationSub')} />
           <MetricTile icon={<Search      size={13} />} label="Suspected (campaign)" value={agg.campaignSuspected} sub="Suspected cases found" />
           <MetricTile icon={<Stethoscope size={13} />} label="Diagnosed (campaign)" value={agg.campaignDiagnosed} sub="Confirmed during campaigns" />
+          {/* Pipeline-stage counts requested by CIPRB on the campaign card
+              (image5 "After"): the same Referred → Repaired → Rehabilitated
+              progression from Animesh's campaign report. */}
+          <MetricTile icon={<Send         size={13} />} label="Referred for Surgical Management" value={agg.referred}      sub="Sent to tertiary facility" />
+          <MetricTile icon={<Scissors     size={13} />} label="Surgically Repaired"             value={agg.repaired}      sub="Surgery outcome recorded" />
+          <MetricTile icon={<HeartHandshake size={13} />} label="Rehabilitated & Reintegrated"  value={agg.rehabilitated} sub="Rehabilitation support received" />
         </div>
-        <DataSource>Fistula Campaign Visit · daily rollups (campaigns, households, population, districts/upazilas, suspected + diagnosed cases) · {t('fistulaViz.providedBy')}</DataSource>
+        <DataSource>Fistula Campaign · campaigns / households / population / districts / suspected / diagnosed / referred / repaired / rehabilitated · {t('fistulaViz.providedBy')}</DataSource>
       </div>
 
       {/* ─── 2. Patient Funnel ─── */}
