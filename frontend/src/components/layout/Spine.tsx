@@ -104,20 +104,63 @@ const isPhdVisible = (role: string, organisation: string): boolean => {
   return false
 }
 
+// CIPRB Phase 2 — 9 new forms (Fistula QB + MPDSR 1/2/4/5 + Social Autopsy
+// + 2 notification slips + Maternal Near Miss). Visible to CIPRB org
+// users + UNFPA monitoring + Developer; never shown to PHD/Bandhu.
+const isCiprbVisible = (role: string, organisation: string): boolean => {
+  if (role === 'developer' || role === 'supervisor') return true
+  if (organisation === 'CIPRB') return true
+  if (organisation === 'UNFPA') return true
+  return false
+}
+
 const KOBO_GROUPS: KoboGroup[] = [
   {
-    heading: 'CIPRB Surveillance',
+    heading: 'CIPRB — MPDSR & Fistula',
+    visible: isCiprbVisible,
     forms: [
-      { url: 'https://ee.kobotoolbox.org/x/mc06MRIn', label: 'KF-Fistula Staged',     labelBn: 'ফিস্টুলা স্টেজড ট্র্যাকার' },
-      { url: 'https://ee.kobotoolbox.org/x/7kAJGedj', label: 'KF-MPDSR Response Plan', labelBn: 'MPDSR রেসপন্স প্ল্যান' },
+      // Phase 2 — the 9 new CIPRB XLSForms (bilingual Bangla + English).
+      // Offline Enketo URLs so they work without a constant network.
+      { url: 'https://ee.kobotoolbox.org/x/fgFVgdrF',
+        label: 'CIPRB 1 — Fistula Question Bank',
+        labelBn: 'সিআইপিআরবি ১ — ফিস্টুলা প্রশ্নাবলী' },
+      { url: 'https://ee.kobotoolbox.org/x/DwFp6Nhx',
+        label: 'CIPRB 2 — MPDSR Form 01 (Community Maternal)',
+        labelBn: 'সিআইপিআরবি ২ — এমপিডিএসআর ফর্ম-১ (কমিউনিটি মাতৃমৃত্যু)' },
+      { url: 'https://ee.kobotoolbox.org/x/ipUTJ9qH',
+        label: 'CIPRB 3 — MPDSR Form 02 (Community Neonatal)',
+        labelBn: 'সিআইপিআরবি ৩ — এমপিডিএসআর ফর্ম-২ (কমিউনিটি নবজাতক মৃত্যু)' },
+      { url: 'https://ee.kobotoolbox.org/x/5Z0xMqTa',
+        label: 'CIPRB 4 — MPDSR Form 04 (Facility Maternal)',
+        labelBn: 'সিআইপিআরবি ৪ — এমপিডিএসআর ফর্ম-৪ (ফ্যাসিলিটি মাতৃমৃত্যু)' },
+      { url: 'https://ee.kobotoolbox.org/x/b8FQVLdU',
+        label: 'CIPRB 5 — MPDSR Form 05 (Facility Neonatal)',
+        labelBn: 'সিআইপিআরবি ৫ — এমপিডিএসআর ফর্ম-৫ (ফ্যাসিলিটি নবজাতক মৃত্যু)' },
+      { url: 'https://ee.kobotoolbox.org/x/iPEeXGJt',
+        label: 'CIPRB 6 — Social Autopsy',
+        labelBn: 'সিআইপিআরবি ৬ — সামাজিক ময়নাতদন্ত' },
+      { url: 'https://ee.kobotoolbox.org/x/0riUz39q',
+        label: 'CIPRB 7 — Notification Slip 01',
+        labelBn: 'সিআইপিআরবি ৭ — অবহিতকরণ স্লিপ ০১' },
+      { url: 'https://ee.kobotoolbox.org/x/z12d0TVs',
+        label: 'CIPRB 8 — Notification Slip 02',
+        labelBn: 'সিআইপিআরবি ৮ — অবহিতকরণ স্লিপ ০২' },
+      { url: 'https://ee.kobotoolbox.org/x/UsS0Cwbi',
+        label: 'CIPRB 9 — Maternal Near Miss audit',
+        labelBn: 'সিআইপিআরবি ৯ — মাতৃ নিকট-মৃত্যু অডিট' },
     ],
   },
   {
-    heading: 'Legacy Forms',
+    // Pre-Phase-2 CIPRB forms still wired up — kept available for any
+    // in-flight data, but the 9 forms above are the canonical set.
+    heading: 'CIPRB Legacy',
+    visible: isCiprbVisible,
     forms: [
-      { url: 'https://ee.kobotoolbox.org/x/ZOBX0pKd', label: 'MPDSR Form',        labelBn: 'মাতৃমৃত্যু ফর্ম' },
-      { url: 'https://ee.kobotoolbox.org/x/MHkEKfzl', label: 'Fistula Campaign',   labelBn: 'ফিস্টুলা ফর্ম' },
-      { url: 'https://ee.kobotoolbox.org/x/MTvoZ3Hz', label: 'Baseline / Endline', labelBn: 'বেসলাইন ফর্ম' },
+      { url: 'https://ee.kobotoolbox.org/x/mc06MRIn', label: 'KF-Fistula Staged',     labelBn: 'ফিস্টুলা স্টেজড ট্র্যাকার' },
+      { url: 'https://ee.kobotoolbox.org/x/7kAJGedj', label: 'KF-MPDSR Response Plan', labelBn: 'MPDSR রেসপন্স প্ল্যান' },
+      { url: 'https://ee.kobotoolbox.org/x/ZOBX0pKd', label: 'MPDSR Form',             labelBn: 'মাতৃমৃত্যু ফর্ম' },
+      { url: 'https://ee.kobotoolbox.org/x/MHkEKfzl', label: 'Fistula Campaign',       labelBn: 'ফিস্টুলা ফর্ম' },
+      { url: 'https://ee.kobotoolbox.org/x/MTvoZ3Hz', label: 'Baseline / Endline',     labelBn: 'বেসলাইন ফর্ম' },
     ],
   },
   {
