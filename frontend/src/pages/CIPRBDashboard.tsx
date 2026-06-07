@@ -706,13 +706,15 @@ function MPDSRSection({
 // 3-district mention in meeting minutes).
 const DONOR_FILTERS = {
   all:  { label: 'All',  districts: null as string[] | null },
+  // Provided by CIPRB (Near Miss tool, June 2026) — donor splits sit
+  // inside the canonical 18 CIPRB working districts.
   GAC:  {
     label: 'GAC',
     districts: ['Sunamganj', 'Bhola', 'Sherpur', 'Kurigram', 'Khagrachari'],
   },
   SIDA: {
     label: 'SIDA',
-    districts: ['Noakhali', 'Chandpur', 'Bandarban', 'Dhaka', 'Sunamganj', "Cox's Bazar"],
+    districts: ['Noakhali', 'Chandpur', 'Bandarban', 'Patuakhali', 'Barguna'],
   },
 } as const
 type DonorKey = keyof typeof DONOR_FILTERS
