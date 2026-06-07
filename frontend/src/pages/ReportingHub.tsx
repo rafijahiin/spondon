@@ -382,6 +382,7 @@ export default function ReportingHub() {
                     <option value="">All Partners</option>
                     <option value="PHD">PHD</option>
                     <option value="Bandhu">Bandhu</option>
+                    <option value="CIPRB">CIPRB</option>
                   </select>
                   <ChevronDown size={14} style={{ position: 'absolute', right: 10, top: 10, pointerEvents: 'none', color: 'var(--muted)' }} />
                 </div>

@@ -1045,7 +1045,7 @@ export default function CIPRBDashboard() {
 
       {/* ───────────────── Maternal Near Miss ───────────────── */}
       <section className="section" id="nearmiss-section" style={{ marginBottom: 80, scrollMarginTop: 80 }}>
-        <NearMissPanel />
+        <NearMissPanel districts={activeDonor.districts} />
       </section>
     </div>
   )

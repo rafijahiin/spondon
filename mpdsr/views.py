@@ -322,8 +322,20 @@ def mnm_aggregates(request):
     mode of delivery, causes, contributory conditions) as district-rolled
     counts. Drop-in for the React MaternalNearMissPanel component."""
     from collections import Counter
+    from django.db.models import Q
     from .ciprb_models import MaternalNearMissCase
     qs = MaternalNearMissCase.objects.all()
+    # Honour the donor (GAC / SIDA) district filter so the Near Miss panel
+    # scopes with the rest of the CIPRB dashboard instead of always showing
+    # all 18 districts.
+    districts_param = request.query_params.get('districts')
+    if districts_param:
+        names = [n.strip() for n in districts_param.split(',') if n.strip()]
+        if names:
+            q = Q()
+            for n in names:
+                q |= Q(district__iexact=n)
+            qs = qs.filter(q)
     total = qs.count()
     by_district = Counter(qs.values_list('district', flat=True))
     # 6 severe maternal complications (boolean fields).

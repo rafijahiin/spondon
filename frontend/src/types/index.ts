@@ -107,6 +107,8 @@ export interface KPIs {
   total_nd_reviewed?: number
   total_fistula_patients?: number
   total_fistula_referred?: number
+  total_stillbirths_notified?: number
+  total_stillbirths_reviewed?: number
   as_of: string
 }
 

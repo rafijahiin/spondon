@@ -125,31 +125,36 @@ function CountSection({
   )
 }
 
-export function NearMissPanel() {
+export function NearMissPanel({ districts }: { districts?: readonly string[] | null }) {
   const { t } = useTranslation()
   const [data, setData] = useState<MNMAggregates | null>(null)
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState<string | null>(null)
 
+  // Thread the donor district filter to the endpoint so the Near Miss panel
+  // scopes with the GAC / SIDA / All pill like the rest of the dashboard.
+  const districtsKey = districts ? districts.join(',') : ''
   useEffect(() => {
     let cancelled = false
-    api.get<MNMAggregates>('/mpdsr/mnm/aggregates/')
+    const params: Record<string, string> = {}
+    if (districtsKey) params.districts = districtsKey
+    api.get<MNMAggregates>('/mpdsr/mnm/aggregates/', { params })
       .then(r => { if (!cancelled) { setData(r.data); setLoading(false) } })
       .catch(e => { if (!cancelled) { setErr(String(e?.message || e)); setLoading(false) } })
     return () => { cancelled = true }
-  }, [])
+  }, [districtsKey])
 
   if (loading) {
     return (
       <div style={{ padding: '40px 16px', textAlign: 'center', color: 'var(--muted)' }}>
-        Loading Maternal Near Miss data…
+        {t('nearMiss.loading', { defaultValue: 'Loading Maternal Near Miss data…' })}
       </div>
     )
   }
   if (err) {
     return (
       <div className="card" style={{ padding: 16, fontSize: 13, color: 'var(--coral)' }}>
-        Could not load Near Miss aggregates: {err}
+        {t('nearMiss.loadError', { defaultValue: 'Could not load Near Miss aggregates:' })} {err}
       </div>
     )
   }

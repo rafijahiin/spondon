@@ -552,42 +552,6 @@
     "invalidCreds": "Invalid username or password.",
     "footer": "UNFPA Bangladesh · CIPRB"
   },
-  "ciprbPage": {
-    "jumpFistula": "Jump to Fistula",
-    "jumpMpdsr": "Jump to MPDSR",
-    "jumpResponse": "Jump to Response Plan Tracker",
-    "subtitleOrg": "Centre for Injury Prevention and Research, Bangladesh",
-    "atAGlance": "FISTULA · AT A GLANCE",
-    "clickToExpand": "CLICK TO EXPAND",
-    "casesCount_one": "{{count}} case",
-    "casesCount_other": "{{count}} cases",
-    "rawRegistersTitle": "Open raw Fistula registers (Corner / Campaign)",
-    "rawCasesTitle": "Open raw MPDSR case register"
-  },
-  "attainment": {
-    "onTrack": "On track (≥ 75%)",
-    "behind": "Behind (40–74%)",
-    "critical": "Critical (< 40%)",
-    "notStarted": "Not yet started (0%)",
-    "pending": "Targets pending",
-    "centerLabel": "INDICATORS",
-    "empty": "Targets confirmed in the workshop — pie chart lights up once set."
-  },
-  "bentoExtra": {
-    "alertsActive": "need attention",
-    "alertsSteady": "all systems steady",
-    "indicatorsSub": "≥ 75% of target",
-    "attainment": "PROGRAMME ATTAINMENT · ALL PARTNERS",
-    "totalMDNotified": "MATERNAL DEATHS · NOTIFIED",
-    "totalMDNotifiedSub": "{{count}} this month",
-    "totalMDReviewed": "MATERNAL DEATHS · REVIEWED",
-    "totalMDReviewedRate": "{{pct}}% review rate",
-    "totalMDReviewedAwaiting": "awaiting data",
-    "totalFistula": "FISTULA PATIENTS · TOTAL",
-    "totalFistulaSub": "{{count}} referred for treatment",
-    "partnerOnTrack": "{{onTrack}} / {{withTarget}} indicators on track",
-    "partnerPending": "{{count}} indicators · targets pending"
-  },
   "partnerCard": {
     "sectionKicker": "IMPLEMENTING PARTNERS",
     "sectionTitle": "Implementing Partners at a Glance",
