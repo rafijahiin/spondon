@@ -121,8 +121,13 @@ function useFistulaKPIs(
       api.get<{ results?: CampaignVisitRow[] } | CampaignVisitRow[]>('/fistula/campaign-visits/', { params }),
       api.get<{ results?: CornerCaseRow[]    } | CornerCaseRow[]>('/fistula/corner-cases/', { params }),
       api.get<{ results?: any[] } | any[]>('/fistula/cases/', { params }),
-    ]).then(([campaignRes, cornerRes, rollupRes]) => {
+      // Monotonic pipeline from CIPRBFistulaCase (the canonical CIPRB
+      // source). When present it drives the whole At-a-glance band so it
+      // agrees with the funnel and the 17-indicator panel.
+      api.get<{ pipeline?: Record<string, number> }>('/fistula/aggregates/', { params }),
+    ]).then(([campaignRes, cornerRes, rollupRes, aggRes]) => {
       if (cancelled) return
+      const pipeline = (aggRes.status === 'fulfilled' && aggRes.value.data.pipeline) || null
 
       const campaignRows: CampaignVisitRow[] =
         campaignRes.status === 'fulfilled'
@@ -161,27 +166,26 @@ function useFistulaKPIs(
         (s: number, r: any) => s + (r.suspected_fistula_cases ?? 0), 0,
       )
 
-      const surgeryDone   = cornerFiltered.filter(c => c.surgery_performed === 'yes').length
-      // Use the SAME rehabilitated predicate as the Phase-1 pipeline funnel
-      // (FistulaVisualizations.tsx) so the bento KPI and the funnel can never
-      // disagree: rehabilitated = explicit rehab_received='yes' OR
-      // rehabilitation_date present. The legacy `received_rehab_support`
-      // boolean was unreliable on imported pre-CIPRB rows.
-      const rehabilitated = cornerFiltered.filter((c: any) =>
+      // Legacy fallbacks (only used when the CIPRBFistulaCase pipeline is
+      // empty — i.e. no new-form data yet).
+      const legacySurgery = cornerFiltered.filter(c => c.surgery_performed === 'yes').length
+      const legacyRehab = cornerFiltered.filter((c: any) =>
         c.rehabilitation_received === 'yes' || c.rehabilitation_date,
       ).length
-      // Each stage % uses the previous stage as denominator. Rehab is the
-      // stage after surgery, so denominator = surgeryDone. Null when 0.
+      const legacyIdentified = cornerFiltered.filter(c => c.identification_date || c.diagnosis_date).length
+      const legacyReferred = cornerFiltered.filter(c => c.referral_date || (c.referral_outcome ?? '').trim() !== '').length
+
+      // Prefer the monotonic pipeline. Every stage is then guaranteed
+      // suspected ≥ identified ≥ referred ≥ surgeryDone ≥ rehabilitated.
+      const suspected   = pipeline ? pipeline.suspected     : suspectedTotal
+      const identified  = pipeline ? pipeline.diagnosed     : legacyIdentified
+      const referred    = pipeline ? pipeline.referred      : legacyReferred
+      const surgeryDone = pipeline ? pipeline.repaired      : legacySurgery
+      const rehabilitated = pipeline ? pipeline.rehabilitated : legacyRehab
+      // Rehab % uses the previous stage (repaired) as denominator.
       const rehabPct = surgeryDone > 0 ? (rehabilitated / surgeryDone) * 100 : null
 
-      setKpis({
-        suspected:   suspectedTotal,
-        identified:  cornerFiltered.filter(c => c.identification_date || c.diagnosis_date).length,
-        referred:    cornerFiltered.filter(c => c.referral_date || (c.referral_outcome ?? '').trim() !== '').length,
-        surgeryDone,
-        rehabilitated,
-        rehabPct,
-      })
+      setKpis({ suspected, identified, referred, surgeryDone, rehabilitated, rehabPct })
       setLoading(false)
     })
     return () => { cancelled = true }
@@ -967,9 +971,9 @@ export default function CIPRBDashboard() {
           <KPITile icon={<Stethoscope size={14} />} label={t('ciprb.kpiIdentified')}  sub={t('ciprb.kpiIdentifiedSub')}   value={kpis.identified}
             pct={kpis.suspected > 0 ? (kpis.identified / kpis.suspected) * 100 : null} pctLabel="of suspected" />
           <KPITile icon={<Send size={14} />}        label={t('ciprb.kpiReferred')}    sub={t('ciprb.kpiReferredSub')}     value={kpis.referred}
-            pct={kpis.suspected > 0 ? (kpis.referred / kpis.suspected) * 100 : null} pctLabel="of suspected" />
+            pct={kpis.identified > 0 ? (kpis.referred / kpis.identified) * 100 : null} pctLabel="of diagnosed" />
           <KPITile icon={<Scissors size={14} />}    label={t('ciprb.kpiSurgeryDone')} sub={t('ciprb.kpiSurgeryDoneSub')}  value={kpis.surgeryDone}
-            pct={kpis.suspected > 0 ? (kpis.surgeryDone / kpis.suspected) * 100 : null} pctLabel="of suspected" />
+            pct={kpis.referred > 0 ? (kpis.surgeryDone / kpis.referred) * 100 : null} pctLabel="of referred" />
           {/* Rehabilitation % — Animesh's definition from the 2026-06-01
               meeting: rehabilitated = any of cash / training / psychosocial /
               reintegration / 5 other support types is Yes. Denominator =

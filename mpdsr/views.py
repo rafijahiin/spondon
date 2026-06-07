@@ -215,12 +215,25 @@ def mpdsr_aggregates(request):
     #    unchanged → no frontend regression.
     from collections import Counter as _Counter
 
+    # The 11 MPDSR indicators are MATERNAL-death indicators sourced from
+    # Form 01 (community, f1) + Form 04 (facility, f4) per the CIPRB spec.
+    # Restrict to that cohort so every indicator counts the SAME cases:
+    #  - death_type=maternal  → drop neonatal (f2/f5)
+    #  - sub_form_type in f1/f4 → drop Social Autopsy (sa_md, a re-review,
+    #    not a distinct death) and any historical verbal-autopsy import
+    #  This is what makes Place-of-Death consistent with the other 10
+    #  (previously it counted the whole cohort and showed ~495 vs ~18).
+    ind_qs = md_donor_qs.filter(
+        death_type=DeathType.MATERNAL,
+        sub_form_type__in=['f1', 'f4'],
+    )
+
     def _cnt(field):
         return dict(_Counter(
-            md_donor_qs.exclude(**{field: ''}).values_list(field, flat=True)))
+            ind_qs.exclude(**{field: ''}).values_list(field, flat=True)))
 
     def _band(field, edges, labels):
-        vals = [v for v in md_donor_qs.values_list(field, flat=True) if v is not None]
+        vals = [v for v in ind_qs.values_list(field, flat=True) if v is not None]
         out = {l: 0 for l in labels}
         for v in vals:
             for (lo, hi), l in zip(edges, labels):

@@ -298,7 +298,7 @@ function NotifyVsReview({
                 fontSize: 26, fontWeight: 800, color,
                 fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em', lineHeight: 1,
               }}>
-                {pctVal !== null ? `${pctVal.toFixed(0)}%` : '—'}
+                {pctVal !== null ? (pctVal > 100 ? '100%+' : `${pctVal.toFixed(0)}%`) : '—'}
               </div>
               <div style={{ fontSize: 11.5, color: 'var(--ink-3)', marginTop: 4 }}>
                 {value} of {base} notified
@@ -583,11 +583,12 @@ function CauseBreakdown({ cases }: { cases: MPDSRCase[] }) {
     return pool.filter(c => c.death_type === 'maternal')
   }, [cases, group])
 
-  // Split by death location. Form 1 = community (home / in-transit),
-  // Form 4 = facility. Once the dedicated MPDSR Kobo forms ship, this
-  // will also key off sub_form_type for the cleanest mapping.
-  const community = filtered.filter(c => c.place_of_death !== 'facility')
-  const facility  = filtered.filter(c => c.place_of_death === 'facility')
+  // Split by SOURCE FORM, not death location: Form 01 (f1) = community
+  // review, Form 04 (f4) = facility review (CIPRB spec "Source: Form 1 &
+  // Form 4"). Splitting by place_of_death misclassified in-transit
+  // community deaths and any facility-form home death.
+  const community = filtered.filter(c => c.sub_form_type === 'f1')
+  const facility  = filtered.filter(c => c.sub_form_type === 'f4')
 
   const noCasesInGroup = group !== 'cumulative' && filtered.length === 0
 
@@ -997,7 +998,9 @@ function ReportingRatePerDistrict({
                   textAlign: 'right', fontSize: 12.5,
                   fontVariantNumeric: 'tabular-nums', color: 'var(--ink-3)',
                 }}>
-                  <b style={{ color: colorFor(r.rate) }}>{r.rate.toFixed(0)}%</b>
+                  <b style={{ color: colorFor(r.rate) }}>
+                    {r.rate > 100 ? '100%+' : `${r.rate.toFixed(0)}%`}
+                  </b>
                   <span className="mute" style={{ marginLeft: 6, fontSize: 11 }}>
                     {r.reported}/{r.estimated}
                   </span>
@@ -1098,9 +1101,9 @@ function MPDSRIndicators({ indicators }: { indicators: Record<string, Record<str
       </div>
       <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
         <DonutBreakdown title="1. Place of death"          data={ind.place_of_death ?? z} labels={MPDSR_LABELS.place_of_death} />
-        <BarBreakdown   title="2. Time of death"           data={ind.time_of_death ?? z} labels={MPDSR_LABELS.time_of_death} />
+        <DonutBreakdown title="2. Time of death"           data={ind.time_of_death ?? z} labels={MPDSR_LABELS.time_of_death} />
         <Histogram      title="3. Gestational week at death" data={ind.gestational_weeks ?? z} />
-        <BarBreakdown   title="4. Antenatal care visits"   data={ind.anc_visits_count ?? z} labels={MPDSR_LABELS.anc} />
+        <BarBreakdown   title="4. Antenatal care visits"   data={ind.anc_visits_count ?? z} labels={MPDSR_LABELS.anc} ordered />
         <StatTile       title="5. Postnatal care"          data={ind.pnc_received ?? z} highlight="yes" labels={MPDSR_LABELS.pnc} />
         <DonutBreakdown title="6. Mode of delivery"        data={ind.mode_of_delivery ?? z} labels={MPDSR_LABELS.mode} />
         <StatTile       title="7. Delivery outcome"        data={ind.delivery_outcome ?? z} highlight="livebirth" labels={MPDSR_LABELS.outcome} />

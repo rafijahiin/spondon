@@ -119,8 +119,13 @@ function useFistulaAggregates(
       api.get<{ results?: CampaignVisit[] } | CampaignVisit[]>('/fistula/campaign-visits/', { params }),
       api.get<{ results?: CornerCase[]    } | CornerCase[]>('/fistula/corner-cases/', { params }),
       api.get<{ results?: CampaignRollup[] } | CampaignRollup[]>('/fistula/cases/', { params }),
-    ]).then(([campaignRes, cornerRes, rollupRes]) => {
+      // The monotonic pipeline from CIPRBFistulaCase.current_stage — the
+      // single source of truth for the 5 funnel stages (replaces the
+      // legacy dual-source split that broke monotonicity).
+      api.get<{ pipeline?: Record<string, number> }>('/fistula/aggregates/', { params }),
+    ]).then(([campaignRes, cornerRes, rollupRes, aggRes]) => {
       if (cancelled) return
+      const pipeline = (aggRes.status === 'fulfilled' && aggRes.value.data.pipeline) || null
 
       const campaign: CampaignVisit[] =
         campaignRes.status === 'fulfilled'
@@ -244,11 +249,15 @@ function useFistulaAggregates(
         population,
         campaignSuspected,
         campaignDiagnosed,
-        suspected,
-        identified,
-        referred,
-        repaired,
-        rehabilitated,
+        // Funnel stages — prefer the monotonic CIPRBFistulaCase pipeline
+        // when present (guarantees suspected ≥ diagnosed ≥ referred ≥
+        // repaired ≥ rehabilitated). Fall back to legacy derivation only
+        // when the new model has no cases yet.
+        suspected:     pipeline ? pipeline.suspected     : suspected,
+        identified:    pipeline ? pipeline.diagnosed     : identified,
+        referred:      pipeline ? pipeline.referred      : referred,
+        repaired:      pipeline ? pipeline.repaired      : repaired,
+        rehabilitated: pipeline ? pipeline.rehabilitated : rehabilitated,
         outcomeDry, outcomeNotDry, outcomeFailed,
         pieObstetric, pieIatrogenic, pieCongenital, pieTraumatic, piePending,
       })

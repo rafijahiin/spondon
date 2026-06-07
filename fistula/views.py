@@ -239,6 +239,18 @@ def fistula_aggregates(request):
                        qs.values_list('district', flat=True).distinct()
                        if d.lower() in wanted])
 
+    # ── Monotonic pipeline from current_stage. A case at a later stage has
+    #    passed through every earlier one, so the counts are cumulative and
+    #    can NEVER violate suspected ≥ diagnosed ≥ referred ≥ repaired ≥
+    #    rehabilitated. This is the single source of truth for the funnel and
+    #    the At-a-glance KPI band (replacing the legacy dual-source split that
+    #    produced the suspected=0 / diagnosed=6 contradiction).
+    ORDER = ['suspected', 'diagnosed', 'referred', 'repaired', 'rehabilitated']
+    stage_counts = dict(_Counter(qs.values_list('current_stage', flat=True)))
+    pipeline = {}
+    for i, st in enumerate(ORDER):
+        pipeline[st] = sum(stage_counts.get(s, 0) for s in ORDER[i:])
+
     ages   = list(qs.values_list('age', flat=True))
     aam    = list(qs.values_list('age_at_marriage', flat=True))
     aafd   = list(qs.values_list('age_at_first_delivery', flat=True))
@@ -254,6 +266,7 @@ def fistula_aggregates(request):
 
     return Response({
         'total': qs.count(),
+        'pipeline': pipeline,
         'age': _fis_band(ages, [(0,18),(18,25),(25,35),(35,45),(45,200)],
                          ['<18','18-24','25-34','35-44','45+']),                       # 1
         'education': _fis_count(qs, 'education'),                                       # 2
