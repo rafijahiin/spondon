@@ -14,7 +14,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Building2, MapPin, Home, Users, Search, Stethoscope, Send, ArrowRight, Scissors, Megaphone, HeartHandshake } from 'lucide-react'
-import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts'
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts'
 import { api } from '@/api/client'
 import { DataSource } from '@/components/ui/DataSource'
 
@@ -585,9 +585,18 @@ export function FistulaVisualizations({
                       startAngle={90} endAngle={-270} animationDuration={800}>
                       {pieData.map((d) => <Cell key={d.name} fill={d.color} />)}
                     </Pie>
-                    {/* No floating <Tooltip> — it collided with the centre
-                        EXAMINED total. The legend (right) lists every type
-                        with its count + %. */}
+                    {/* Tooltip lifted above the centre EXAMINED total with a
+                        zIndex wrapper + opaque card — the earlier collision
+                        was z-order only. Legend (right) still lists all types. */}
+                    <Tooltip
+                      wrapperStyle={{ zIndex: 50, outline: 'none' }}
+                      contentStyle={{
+                        background: 'var(--surface)', border: '1px solid var(--hair)',
+                        borderRadius: 8, fontSize: 12, boxShadow: '0 6px 20px rgba(0,0,0,0.18)',
+                      }}
+                      formatter={(value: number, name: string) =>
+                        [`${value} (${pieTotal ? Math.round((value / pieTotal) * 100) : 0}%)`, name]}
+                    />
                   </PieChart>
                 </ResponsiveContainer>
                 <div style={{

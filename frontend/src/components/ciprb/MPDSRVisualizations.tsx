@@ -515,9 +515,18 @@ function CauseDonut({
                   startAngle={90} endAngle={-270} animationDuration={800}>
                   {pieData.map((d) => <Cell key={d.name} fill={d.color} />)}
                 </Pie>
-                {/* No floating <Tooltip> — it rendered behind the centre
-                    total and the digit bled through the label text. The
-                    full legend (right) shows every slice's count + %. */}
+                {/* Tooltip lifted above the centre total via wrapperStyle
+                    zIndex — the earlier bleed-through was a pure z-order bug,
+                    not a dead tooltip. Opaque card so nothing shows through. */}
+                <Tooltip
+                  wrapperStyle={{ zIndex: 50, outline: 'none' }}
+                  contentStyle={{
+                    background: 'var(--surface)', border: '1px solid var(--hair)',
+                    borderRadius: 8, fontSize: 12, boxShadow: '0 6px 20px rgba(0,0,0,0.18)',
+                  }}
+                  formatter={(value: number, name: string) =>
+                    [`${value} (${total ? Math.round((value / total) * 100) : 0}%)`, name]}
+                />
               </PieChart>
             </ResponsiveContainer>
             <div style={{
