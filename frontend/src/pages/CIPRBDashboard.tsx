@@ -508,7 +508,7 @@ function MPDSRSection({
           marginTop: 10, marginBottom: 0,
           fontSize: 13, color: 'var(--ink-3)', fontWeight: 500,
         }}>
-          <span style={{ color: 'var(--muted)', fontWeight: 500 }}>Period: </span>
+          <span style={{ color: 'var(--muted)', fontWeight: 500 }}>{t('ciprbExtras.periodLabel')}</span>
           <span style={{ color: CIPRB_BLUE, fontWeight: 600 }}>{period.rangeLabel}</span>
         </p>
 
@@ -779,7 +779,7 @@ export default function CIPRBDashboard() {
 
           <div className="hero-right anim-rise d4">
             <div className="kicker" style={{ marginBottom: 8 }}>
-              <span className="dot" style={{ background: CIPRB_BLUE }} />COVERAGE
+              <span className="dot" style={{ background: CIPRB_BLUE }} />{t('ciprbExtras.coverage')}
             </div>
             <div className="card shimmer" style={{ padding: 10 }}>
               <PartnerOverlapMap
@@ -829,7 +829,7 @@ export default function CIPRBDashboard() {
             fontSize: 11, color: 'var(--muted)',
             textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600,
           }}>
-            Donor
+            {t('ciprbExtras.donor')}
           </span>
           {(Object.keys(DONOR_FILTERS) as DonorKey[]).map((k) => {
             const cfg = DONOR_FILTERS[k]
@@ -905,7 +905,7 @@ export default function CIPRBDashboard() {
           background: 'rgba(249,96,0,0.10)', color: CIPRB_BLUE,
           fontSize: 13, fontWeight: 600, textDecoration: 'none',
           border: '1px solid rgba(249,96,0,0.22)',
-        }}>Jump to Near Miss</a>
+        }}>{t('ciprbExtras.jumpNearMiss')}</a>
       </div>
 
       {/* ───────────────── Fistula KPI band ───────────────── */}

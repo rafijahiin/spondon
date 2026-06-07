@@ -26,10 +26,11 @@ export default function Home() {
   const [loadError, setLoadError] = useState(false)
 
   useEffect(() => {
+    // No hardcoded period — the backend defaults to the contract window
+    // (DEFAULT_PERIOD_START/END), so this stays correct after Nov 2026
+    // instead of freezing on a stale range.
     api
-      .get<IndicatorProgress[]>(
-        '/indicators/progress/?period_start=2026-05-21&period_end=2026-11-20',
-      )
+      .get<IndicatorProgress[]>('/indicators/progress/')
       .then((r) => setProgress(r.data))
       .catch(() => setLoadError(true))
   }, [])

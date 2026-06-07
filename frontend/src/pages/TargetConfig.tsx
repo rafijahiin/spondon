@@ -329,7 +329,15 @@ function TargetCell({ row, canEdit, onSaved }: TargetCellProps) {
     setSaving(true)
     setError('')
     try {
-      const value = draft.trim() === '' ? null : draft
+      const trimmed = String(draft).trim()
+      // Guard non-numeric input — without this a stray letter round-trips to
+      // the backend and re-renders as "NaN".
+      if (trimmed !== '' && (isNaN(Number(trimmed)) || Number(trimmed) < 0)) {
+        setError('Enter a non-negative number.')
+        setSaving(false)
+        return
+      }
+      const value = trimmed === '' ? null : trimmed
       const resp = await api.patch<IndicatorTarget>(
         `/indicators/targets/${row.id}/`,
         { target_value: value },
@@ -379,7 +387,9 @@ function TargetCell({ row, canEdit, onSaved }: TargetCellProps) {
   return (
     <div className="flex items-center gap-1.5">
       <input
-        type="text"
+        type="number"
+        min={0}
+        step={1}
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
         autoFocus

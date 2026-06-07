@@ -136,18 +136,18 @@ export function PartnerOverlapMap({
       const hits = subgroupKeys ? subgroupKeys.filter((s) => s.keys.has(key)) : []
       const inPartner = partners.includes(partner) || hits.length > 0
       if (!inPartner) {
-        label = 'Not covered'
+        label = t('home.legendNotCovered')
       } else if (hits.length >= 2) {
-        label = `${partner} · ${hits.map(h => h.name).join(' + ')} (donor overlap)`
+        label = `${partner} · ${hits.map(h => h.name).join(' + ')} (${t('home.donorOverlap')})`
       } else if (hits.length === 1) {
         label = `${partner} · ${hits[0].name}`
       } else {
-        label = `${partner} · Other`
+        label = `${partner} · ${t('home.legendOther')}`
       }
     } else {
       label = partners.length
         ? partners.map((p) => PARTNER_NAMES[p].en).join(', ')
-        : 'No partner coverage yet'
+        : t('home.noPartnerCoverage')
     }
 
     ;(layer as unknown as { bindTooltip: (s: string, o: object) => void }).bindTooltip(
@@ -178,7 +178,7 @@ export function PartnerOverlapMap({
           color: 'var(--muted)', fontSize: 13,
         }}
       >
-        Map unavailable — check internet connection.
+        {t('home.mapUnavailable')}
       </div>
     )
   }
@@ -233,13 +233,13 @@ export function PartnerOverlapMap({
               />
             ))}
             {subgroups.length >= 2 && (
-              <LegendSwatch color={subgroupOverlapColor} label="Donor overlap" />
+              <LegendSwatch color={subgroupOverlapColor} label={t('home.donorOverlap')} />
             )}
             <LegendSwatch
               color={PARTNER_TINTS[partner]}
-              label={`${PARTNER_NAMES[partner].en} (other)`}
+              label={`${PARTNER_NAMES[partner].en} (${t('home.legendOther')})`}
             />
-            <LegendSwatch color={NO_COVERAGE} label="Not covered" />
+            <LegendSwatch color={NO_COVERAGE} label={t('home.legendNotCovered')} />
           </>
         ) : partner ? (
           <>
@@ -247,7 +247,7 @@ export function PartnerOverlapMap({
               color={PARTNER_TINTS[partner]}
               label={`${PARTNER_NAMES[partner].en} · ${PARTNER_DISTRICTS[partner].length} districts`}
             />
-            <LegendSwatch color={NO_COVERAGE} label="Not covered" />
+            <LegendSwatch color={NO_COVERAGE} label={t('home.legendNotCovered')} />
             <span style={{ color: 'var(--ink-2)', fontSize: 12 }}>
               {PARTNER_DISTRICTS[partner].join(' · ')}
             </span>

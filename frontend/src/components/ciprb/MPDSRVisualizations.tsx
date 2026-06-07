@@ -751,6 +751,23 @@ function ResponsePlanTracker({ summaries }: { summaries: ActionPlanSummary[] }) 
         </p>
       </div>
 
+      {/* Visible data-note — implemented counts are interim placeholders
+          (executed ≈ planned/2) until a Kobo field-form for executed-activity
+          counts ships; surfaced so the numbers aren't read as confirmed. */}
+      {summaries.length > 0 && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 8,
+          margin: '0 0 14px', padding: '8px 12px',
+          background: 'rgba(249,96,0,0.08)', border: '1px solid rgba(249,96,0,0.22)',
+          borderRadius: 8, fontSize: 11.5, color: 'var(--ink-3)',
+        }}>
+          <Info size={13} style={{ color: CIPRB_BLUE, flexShrink: 0 }} />
+          {t('mpdsrViz.responseDataNote', {
+            defaultValue: 'Interim data — implemented counts are placeholders until the Kobo executed-activity form ships; treat as indicative, not confirmed.',
+          })}
+        </div>
+      )}
+
       {/* OVERALL IMPLEMENTATION summary tile — Animesh's accountability ask
           (2026-06-02 spec): if 10 actions planned and 6 implemented, show
           60%. Aggregates across every row in the table below. */}
