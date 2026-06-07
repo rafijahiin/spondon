@@ -263,7 +263,11 @@ export function PartnerOverlapMap({
           </>
         )}
         <span style={{ marginLeft: 'auto', color: 'var(--muted)', fontStyle: 'italic' }}>
-          {t('home.coveragePlaceholderNote')}
+          {partner === 'CIPRB'
+            ? `CIPRB: ${PARTNER_DISTRICTS.CIPRB.length} working districts`
+            : partner === 'Bandhu'
+            ? `Bandhu: ${PARTNER_DISTRICTS.Bandhu.length} working districts`
+            : t('home.coveragePlaceholderNote')}
         </span>
       </div>
     </div>

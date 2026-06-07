@@ -23,14 +23,16 @@ const GEOJSON_URL = '/bangladesh-adm2.geojson'
 // UNFPA branding — orange instead of CIPRB blue.
 const CIPRB_BLUE = '#F96000'
 
-// Mappings (mirrors MPDSRVisualizations — single source eventually).
-const GAC = ['Sunamganj', 'Bhola', 'Sherpur', 'Kurigram', 'Khagrachari']
-const SIDA = ['Noakhali', 'Chandpur', 'Bandarban', 'Dhaka', 'Sunamganj', "Cox's Bazar"]
-// CP-10 priority districts per the 10th UNFPA Bangladesh Country Programme
-// Evaluation report (2026), paragraph 491. Exactly 10 districts.
-const CP = [
-  "Cox's Bazar", 'Bandarban', 'Noakhali', 'Dhaka', 'Sirajganj',
-  'Jamalpur', 'Gaibandha', 'Patuakhali', 'Barguna', 'Bagerhat',
+// Mappings — must mirror MPDSRVisualizations.tsx DISTRICT_MAPPING.
+// Provided by CIPRB (Near Miss tool, June 2026): GAC + SIDA sit inside
+// the canonical 18 CIPRB working districts. CP = the full 18.
+const GAC  = ['Sunamganj', 'Bhola', 'Sherpur', 'Kurigram', 'Khagrachari']
+const SIDA = ['Noakhali', 'Chandpur', 'Bandarban', 'Patuakhali', 'Barguna']
+const CP   = [
+  'Sunamganj', 'Sherpur', 'Bhola', 'Kurigram', 'Gaibandha',
+  'Khagrachari', 'Noakhali', 'Patuakhali', 'Sirajganj', 'Barguna',
+  'Jamalpur', 'Bagerhat', 'Habiganj', 'Moulavibazar', 'Sylhet',
+  'Bandarban', 'Chandpur', 'Rangpur',
 ]
 
 function normalise(s: string): string {

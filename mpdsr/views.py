@@ -218,3 +218,46 @@ def mpdsr_aggregates(request):
         'totals': totals,
         'review_counts': review_counts,
     })
+
+
+@api_view(['GET'])
+@drf_permission_classes([IsAuthenticated, CanAccessMPDSR])
+def mnm_aggregates(request):
+    """Aggregate endpoint for the Maternal Near Miss panel on /ciprb.
+
+    Returns the 6 CIPRB-requested indicators (severe maternal
+    complications, critical interventions, life-threatening conditions,
+    mode of delivery, causes, contributory conditions) as district-rolled
+    counts. Drop-in for the React MaternalNearMissPanel component."""
+    from collections import Counter
+    from .ciprb_models import MaternalNearMissCase
+    qs = MaternalNearMissCase.objects.all()
+    total = qs.count()
+    by_district = Counter(qs.values_list('district', flat=True))
+    # 6 severe maternal complications (boolean fields).
+    severe = {f: qs.filter(**{f: True}).count() for f in (
+        'sev_pph', 'sev_preec', 'eclampsia', 'sepsis',
+        'rupt_uterus', 'sev_abortion',
+    )}
+    critical = {f: qs.filter(**{f: True}).count() for f in (
+        'crit_blood', 'crit_radiol', 'crit_laparot', 'crit_icu',
+    )}
+    life_threat = {f: qs.filter(**{f: True}).count() for f in (
+        'life_cardio', 'life_resp', 'life_renal', 'life_coag',
+        'life_hepatic', 'life_neuro', 'life_uterine',
+    )}
+    mode_of_delivery = Counter(
+        qs.exclude(mode_of_delivery='').values_list('mode_of_delivery', flat=True)
+    )
+    causes = Counter(
+        qs.exclude(cause_of_near_miss='').values_list('cause_of_near_miss', flat=True)
+    )
+    return Response({
+        'total': total,
+        'by_district': dict(by_district),
+        'severe_complications': severe,
+        'critical_interventions': critical,
+        'life_threatening': life_threat,
+        'mode_of_delivery': dict(mode_of_delivery),
+        'causes': dict(causes),
+    })

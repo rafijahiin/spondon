@@ -7,4 +7,5 @@ router.register(r'cases', views.MPDSRCaseViewSet, basename='mpdsr')
 
 urlpatterns = router.urls + [
     path('aggregates/', views.mpdsr_aggregates, name='mpdsr-aggregates'),
+    path('mnm/aggregates/', views.mnm_aggregates, name='mnm-aggregates'),
 ]

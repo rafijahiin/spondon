@@ -29,6 +29,7 @@ import { PartnerOverlapMap } from '@/components/maps/PartnerOverlapMap'
 import { DataSource } from '@/components/ui/DataSource'
 import { FistulaVisualizations } from '@/components/ciprb/FistulaVisualizations'
 import { MPDSRVisualizations } from '@/components/ciprb/MPDSRVisualizations'
+import { NearMissPanel } from '@/components/ciprb/NearMissPanel'
 import { MPDSRDistrictMap } from '@/components/ciprb/MPDSRDistrictMap'
 import type { MPDSRCase, AuditEntry } from '@/types/index'
 
@@ -160,10 +161,16 @@ function useFistulaKPIs(
       )
 
       const surgeryDone   = cornerFiltered.filter(c => c.surgery_performed === 'yes').length
-      const rehabilitated = cornerFiltered.filter(c => c.received_rehab_support === true).length
-      // Animesh's funnel rule: each stage % uses the previous stage as
-      // denominator. Rehab is the stage after surgery, so denominator =
-      // surgeryDone. Null when surgeryDone == 0 (avoid /0 nonsense).
+      // Use the SAME rehabilitated predicate as the Phase-1 pipeline funnel
+      // (FistulaVisualizations.tsx) so the bento KPI and the funnel can never
+      // disagree: rehabilitated = explicit rehab_received='yes' OR
+      // rehabilitation_date present. The legacy `received_rehab_support`
+      // boolean was unreliable on imported pre-CIPRB rows.
+      const rehabilitated = cornerFiltered.filter((c: any) =>
+        c.rehabilitation_received === 'yes' || c.rehabilitation_date,
+      ).length
+      // Each stage % uses the previous stage as denominator. Rehab is the
+      // stage after surgery, so denominator = surgeryDone. Null when 0.
       const rehabPct = surgeryDone > 0 ? (rehabilitated / surgeryDone) * 100 : null
 
       setKpis({
@@ -734,10 +741,6 @@ export default function CIPRBDashboard() {
           <span>Centre for Injury Prevention and Research, Bangladesh</span>
           <span className="sep">/</span>
           <span>{new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' }).toUpperCase()}</span>
-          <span className="sep">/</span>
-          <span className="tag amber" style={{ marginLeft: 4, fontSize: 10.5 }}>
-            <Info size={10} style={{ marginRight: 3 }} />{t('org.demoData', { defaultValue: 'DEMO DATA' })}
-          </span>
         </div>
 
         <div className="hero-grid">
@@ -774,6 +777,8 @@ export default function CIPRBDashboard() {
                 height={340}
                 partner="CIPRB"
                 subgroups={[
+                  // Provided by CIPRB (Near Miss tool, June 2026) — donor
+                  // splits sit inside the canonical 18-district footprint.
                   {
                     name: 'GAC',
                     color: '#F96000',
@@ -782,7 +787,7 @@ export default function CIPRBDashboard() {
                   {
                     name: 'SIDA',
                     color: '#2171EC',
-                    districts: ['Noakhali', 'Chandpur', 'Bandarban', 'Dhaka', 'Sunamganj', "Cox's Bazar"],
+                    districts: ['Noakhali', 'Chandpur', 'Bandarban', 'Patuakhali', 'Barguna'],
                   },
                 ]}
               />
@@ -816,6 +821,16 @@ export default function CIPRBDashboard() {
             border: '1px solid rgba(249,96,0,0.20)',
           }}>
             {t('ciprbExtras.jumpMpdsr')}
+          </a>
+          <a href="#nearmiss-section" style={{
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+            padding: '6px 14px', borderRadius: 999,
+            background: 'rgba(249,96,0,0.10)',
+            color: CIPRB_BLUE,
+            fontSize: 12.5, fontWeight: 600, textDecoration: 'none',
+            border: '1px solid rgba(249,96,0,0.20)',
+          }}>
+            Jump to Near Miss
           </a>
           {/* Jump-to-Response-Plan pill removed — tracker is hidden until
               a Kobo form is wired for live executed-count submissions. */}
@@ -971,7 +986,7 @@ export default function CIPRBDashboard() {
             />
           )}
         </div>
-        <DataSource>KF-Fistula_Corner.xlsx · KF-Fistula_Campaign_Visit.xlsx</DataSource>
+        <DataSource>Fistula Question Bank · Fistula Campaign · {t('fistulaViz.providedBy')}</DataSource>
       </section>
 
       {/* ───────────────── Fistula visualizations (campaign / funnel / pie) ───────────────── */}
@@ -1060,8 +1075,13 @@ export default function CIPRBDashboard() {
       <div style={{ height: 1, background: 'var(--hair)', margin: '24px 0' }} />
 
       {/* ───────────────── MPDSR ───────────────── */}
-      <section className="section" id="mpdsr-section" style={{ marginBottom: 80, scrollMarginTop: 80 }}>
+      <section className="section" id="mpdsr-section" style={{ marginBottom: 40, scrollMarginTop: 80 }}>
         <MPDSRSection period={activePeriod} districts={activeDonor.districts} />
+      </section>
+
+      {/* ───────────────── Maternal Near Miss ───────────────── */}
+      <section className="section" id="nearmiss-section" style={{ marginBottom: 80, scrollMarginTop: 80 }}>
+        <NearMissPanel />
       </section>
     </div>
   )
