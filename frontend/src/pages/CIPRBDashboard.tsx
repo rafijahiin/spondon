@@ -539,7 +539,7 @@ function MPDSRSection({
       </div>
 
       {/* ─── Visualizations: Notify vs Review · Cause breakdown · Response Plan ─── */}
-      <MPDSRVisualizations cases={cases ?? []} period={{ from: period.from, to: period.to }} />
+      <MPDSRVisualizations cases={cases ?? []} period={{ from: period.from, to: period.to }} districts={districts} />
 
       {/* Cause panels REMOVED per Rafi 2026-06-02 — Maternal Causes pie
           inside MPDSRVisualizations already shows the same breakdown with

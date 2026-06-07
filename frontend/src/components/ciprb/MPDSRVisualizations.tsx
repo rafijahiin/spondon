@@ -97,20 +97,30 @@ interface AggregatesPayload {
   }
 }
 
-function useAggregates(period?: { from: string; to: string }): AggregatesPayload | null {
+function useAggregates(
+  period?: { from: string; to: string },
+  districts?: readonly string[] | null,
+): AggregatesPayload | null {
   const [data, setData] = useState<AggregatesPayload | null>(null)
   const periodFrom = period?.from
   const periodTo = period?.to
+  // Donor filter (GAC / SIDA / All) must reach the aggregate endpoint too,
+  // or every aggregate-derived visual (reporting rate, facility deep-dive,
+  // 11 indicators, response plan) would silently show ALL-donor totals while
+  // the donor pill is set — the bug the audit surfaced. The endpoint already
+  // honours ?districts= via apply_donor().
+  const districtsKey = districts ? districts.join(',') : ''
   useEffect(() => {
     let cancelled = false
     const params: Record<string, string> = {}
     if (periodFrom) params.from = periodFrom
     if (periodTo) params.to = periodTo
+    if (districtsKey) params.districts = districtsKey
     api.get<AggregatesPayload>('/mpdsr/aggregates/', { params })
       .then(r => { if (!cancelled) setData(r.data) })
       .catch(() => { /* leave null; visualisations fall back to live-only */ })
     return () => { cancelled = true }
-  }, [periodFrom, periodTo])
+  }, [periodFrom, periodTo, districtsKey])
   return data
 }
 
@@ -1041,17 +1051,20 @@ export interface ReportingPeriod {
 export function MPDSRVisualizations({
   cases,
   period,
+  districts,
 }: {
   cases: MPDSRCase[]
   period?: ReportingPeriod
+  districts?: readonly string[] | null
 }) {
   const { t } = useTranslation()
-  // Threading reporting-period through to the aggregate endpoint so the
-  // MPDSR visualisations follow the CIPRB Dashboard's Contract / Annual
-  // toggle. NotifyVsReview and ReportingRatePerDistrict re-derive from
-  // `cases` (already period-filtered by the parent) and the period-scoped
+  // Threading reporting-period AND the donor district filter through to the
+  // aggregate endpoint so the MPDSR visualisations follow the CIPRB
+  // Dashboard's Contract / Annual toggle and the GAC / SIDA / All pill.
+  // NotifyVsReview and ReportingRatePerDistrict re-derive from `cases`
+  // (already period- + donor-filtered by the parent) and the scoped
   // aggregates returned here.
-  const agg = useAggregates(period)
+  const agg = useAggregates(period, districts)
   // Response Plan tracker is re-enabled for Animesh's Wednesday review.
   // Data source is still Sayeed's MPDSR Action Plan Excel — 7 of 8 rows
   // carry placeholder executed = planned/2 values because no Kobo form
