@@ -173,48 +173,10 @@ function PartnerFlagTile({ flag, thresholdHours }: { flag: PartnerFlag; threshol
         )}
       </div>
 
-      {/* Silent centres drill-down */}
-      {flag.silent_centres.length > 0 && (
-        <div style={{
-          marginTop: 4, paddingTop: 12,
-          borderTop: '1px solid var(--hair)',
-        }}>
-          <div className="mono" style={{
-            fontSize: 9.5, color: 'var(--muted)',
-            letterSpacing: '0.1em', marginBottom: 8,
-          }}>
-            {t('health.silentCentresHeading')}
-          </div>
-          <ul style={{
-            margin: 0, padding: 0, listStyle: 'none',
-            display: 'flex', flexDirection: 'column', gap: 4,
-          }}>
-            {flag.silent_centres.slice(0, 4).map((c, i) => (
-              <li key={i} style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                fontSize: 12, gap: 8,
-              }}>
-                <span style={{ color: 'var(--ink-2)' }}>
-                  {c.name}{c.district ? <span style={{ color: 'var(--muted)' }}> · {c.district}</span> : null}
-                </span>
-                {c.hours_silent !== null && (
-                  <span className="mono" style={{
-                    fontSize: 10, color: 'var(--muted)',
-                    fontVariantNumeric: 'tabular-nums',
-                  }}>
-                    {c.hours_silent.toFixed(1)}h
-                  </span>
-                )}
-              </li>
-            ))}
-            {flag.silent_centres.length > 4 && (
-              <li style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>
-                {t('health.moreCount', { count: flag.silent_centres.length - 4 })}
-              </li>
-            )}
-          </ul>
-        </div>
-      )}
+      {/* Per-centre silent drill-down removed — it was extra detail for the
+          homepage. The compliance card above (status pill, recent count,
+          today, hours-since-last-touch) carries the daily-reporting signal;
+          the granular silent-centre list belongs on the tracker, not here. */}
     </div>
   )
 }
