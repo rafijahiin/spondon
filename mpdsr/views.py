@@ -209,6 +209,46 @@ def mpdsr_aggregates(request):
     notified_md = review_counts.get('f1', 0) + review_counts.get('f2', 0)
     review_counts['notified_md'] = notified_md
 
+    # ── CIPRB dashboard "major indicators" (11) — per-case breakdowns from
+    #    the donor-filtered maternal cohort (Form 01 community + Form 04
+    #    facility). Categorical counts + integer histograms. Existing keys
+    #    unchanged → no frontend regression.
+    from collections import Counter as _Counter
+
+    def _cnt(field):
+        return dict(_Counter(
+            md_donor_qs.exclude(**{field: ''}).values_list(field, flat=True)))
+
+    def _band(field, edges, labels):
+        vals = [v for v in md_donor_qs.values_list(field, flat=True) if v is not None]
+        out = {l: 0 for l in labels}
+        for v in vals:
+            for (lo, hi), l in zip(edges, labels):
+                if lo <= v < hi:
+                    out[l] += 1
+                    break
+        return out
+
+    indicators = {
+        'place_of_death':           _cnt('place_of_death'),            # 1
+        'time_of_death':            _cnt('time_of_death'),             # 2
+        'gestational_weeks':        _band('gestational_weeks',
+            [(0, 28), (28, 34), (34, 37), (37, 42), (42, 99)],
+            ['<28', '28-33', '34-36', '37-41', '42+']),                # 3
+        'anc_visits_count':         _cnt('anc_visits_count'),          # 4
+        'pnc_received':             _cnt('pnc_received'),              # 5 (PNC)
+        'mode_of_delivery':         _cnt('mode_of_delivery'),          # 6
+        'delivery_outcome':         _cnt('delivery_outcome'),          # 7
+        'place_of_delivery':        _cnt('place_of_delivery'),         # 8
+        'person_assisted_delivery': _cnt('person_assisted_delivery'),  # 9
+        'maternal_age': _band('age_years',
+            [(0, 20), (20, 25), (25, 30), (30, 35), (35, 40), (40, 45), (45, 99)],
+            ['<20', '20-24', '25-29', '30-34', '35-39', '40-44', '45+']),  # 10
+        'time_death_after_birth_hours': _band('time_death_after_birth_hours',
+            [(0, 24), (24, 48), (48, 168), (168, 99999)],
+            ['0-24h', '24-48h', '2-7d', '7d+']),                       # 11
+    }
+
     return Response({
         'denominators': denominators,
         'facility_counts': facility_counts,
@@ -217,6 +257,7 @@ def mpdsr_aggregates(request):
         'action_plan_summaries': action_plan_summaries,
         'totals': totals,
         'review_counts': review_counts,
+        'indicators': indicators,
     })
 
 
@@ -252,6 +293,12 @@ def mnm_aggregates(request):
     causes = Counter(
         qs.exclude(cause_of_near_miss='').values_list('cause_of_near_miss', flat=True)
     )
+    # Indicator 6 — Contributory / associated conditions. Free text; expose
+    # the non-empty excerpts as a read-only list for the dashboard notes panel.
+    contributory = list(
+        qs.exclude(contributory_conditions='')
+          .values_list('contributory_conditions', flat=True)[:200]
+    )
     return Response({
         'total': total,
         'by_district': dict(by_district),
@@ -260,4 +307,5 @@ def mnm_aggregates(request):
         'life_threatening': life_threat,
         'mode_of_delivery': dict(mode_of_delivery),
         'causes': dict(causes),
+        'contributory_conditions': contributory,
     })

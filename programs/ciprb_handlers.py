@@ -240,6 +240,21 @@ def _save_mpdsr_case(payload, lat, lng, *, sub_form_type, death_type,
         )
         if serial:
             case.case_hash = serial[:30]
+
+        # ── CIPRB dashboard "major indicators" — persist the 9 fields that
+        #    were previously dropped. The forms emit these slugs directly.
+        case.time_of_death            = _s(payload.get('time_of_death'))
+        gw = _int(payload.get('gestational_weeks'))
+        if gw is not None: case.gestational_weeks = gw
+        case.anc_visits_count         = _s(payload.get('anc_visits_count'))
+        case.pnc_received             = _s(payload.get('pnc_received'))
+        case.mode_of_delivery         = _s(payload.get('mode_of_delivery'))
+        case.delivery_outcome         = _s(payload.get('delivery_outcome'))
+        case.place_of_delivery        = _s(payload.get('place_of_delivery'))
+        case.person_assisted_delivery = _s(payload.get('person_assisted_delivery'))
+        tdab = _int(payload.get('time_death_after_birth_hours'))
+        if tdab is not None: case.time_death_after_birth_hours = tdab
+
         case.latitude, case.longitude = lat, lng
         case.source = 'kobo'
         case.save()

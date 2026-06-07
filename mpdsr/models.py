@@ -216,6 +216,21 @@ class MPDSRCase(models.Model):
     facility_name = models.CharField(max_length=200, blank=True)
     age_years = models.PositiveSmallIntegerField(null=True, blank=True)
 
+    # ── CIPRB dashboard "major indicators" (MPDSR Form 01 community +
+    #    Form 04 facility). 9 of the 11 indicators were previously lost —
+    #    captured by Kobo but never persisted to a queryable column.
+    #    All nullable/blank → non-destructive migration. CharFields keep
+    #    the raw choice slug; histograms bucket the integers downstream.
+    time_of_death = models.CharField(max_length=20, blank=True, db_index=True)         # antepartum/intrapartum/postpartum_42d/unknown
+    gestational_weeks = models.PositiveSmallIntegerField(null=True, blank=True)
+    anc_visits_count = models.CharField(max_length=10, blank=True)                     # none/1/2/3/4_plus/unknown
+    pnc_received = models.CharField(max_length=10, blank=True)                         # yes/no/unknown (3-state — keep as char)
+    mode_of_delivery = models.CharField(max_length=20, blank=True, db_index=True)      # nvd/csection/assisted_vaginal/undelivered
+    delivery_outcome = models.CharField(max_length=20, blank=True)                     # livebirth/stillbirth/na
+    place_of_delivery = models.CharField(max_length=20, blank=True)                    # home/gov_facility/private_facility/in_transit/na
+    person_assisted_delivery = models.CharField(max_length=20, blank=True)            # doctor/nurse/midwife/tba/relatives/self/none
+    time_death_after_birth_hours = models.PositiveSmallIntegerField(null=True, blank=True)
+
     status = models.CharField(
         max_length=30,
         choices=ReviewStatus.choices,

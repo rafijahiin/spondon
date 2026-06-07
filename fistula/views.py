@@ -161,3 +161,121 @@ class FistulaCampaignVisitViewSet(ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(submitted_by=self.request.user)
+
+
+# ─── CIPRB Fistula Question Bank aggregates — the 17 dashboard indicators ─────
+from rest_framework.decorators import api_view, permission_classes as _drf_perms
+from rest_framework.permissions import IsAuthenticated
+from collections import Counter as _Counter
+import re as _re
+from .ciprb_models import CIPRBFistulaCase
+
+
+def _fis_band(values, edges, labels):
+    """Histogram helper: bucket integers into labelled bands."""
+    out = {l: 0 for l in labels}
+    for v in values:
+        if v is None:
+            continue
+        for (lo, hi), l in zip(edges, labels):
+            if lo <= v < hi:
+                out[l] += 1
+                break
+    return out
+
+
+def _fis_count(qs, field):
+    return dict(_Counter(qs.exclude(**{field: ''}).values_list(field, flat=True)))
+
+
+_DUR_LABELS = ['<1mo', '1-6mo', '6-12mo', '1-3yr', '3yr+', 'unparsed']
+
+
+def _parse_duration_months(text):
+    """Free-text duration ('2 months' / '3 years' / '6 mo') → months int, or None."""
+    if not text:
+        return None
+    s = str(text).lower()
+    m = _re.search(r'(\d+(?:\.\d+)?)', s)
+    if not m:
+        return None
+    n = float(m.group(1))
+    if 'year' in s or 'yr' in s or 'বছর' in s:
+        return n * 12
+    if 'week' in s or 'wk' in s or 'সপ্তাহ' in s:
+        return n / 4.345
+    if 'day' in s or 'দিন' in s:
+        return n / 30.0
+    return n  # assume months
+
+
+def _dur_band(values):
+    out = {l: 0 for l in _DUR_LABELS}
+    for v in values:
+        mo = _parse_duration_months(v)
+        if mo is None:
+            if v and str(v).strip():
+                out['unparsed'] += 1
+            continue
+        if mo < 1:        out['<1mo'] += 1
+        elif mo < 6:      out['1-6mo'] += 1
+        elif mo < 12:     out['6-12mo'] += 1
+        elif mo < 36:     out['1-3yr'] += 1
+        else:             out['3yr+'] += 1
+    return out
+
+
+@api_view(['GET'])
+@_drf_perms([IsAuthenticated])
+def fistula_aggregates(request):
+    """All 17 CIPRB Fistula Question Bank indicators, aggregated for the
+    dashboard. Optional ?districts=A,B,C donor filter for parity with
+    /api/mpdsr/aggregates/."""
+    qs = CIPRBFistulaCase.objects.all()
+    districts = request.GET.get('districts', '').strip()
+    if districts:
+        wanted = {d.strip().lower() for d in districts.split(',') if d.strip()}
+        qs = qs.filter(district__in=[d for d in
+                       qs.values_list('district', flat=True).distinct()
+                       if d.lower() in wanted])
+
+    ages   = list(qs.values_list('age', flat=True))
+    aam    = list(qs.values_list('age_at_marriage', flat=True))
+    aafd   = list(qs.values_list('age_at_first_delivery', flat=True))
+    nchild = list(qs.values_list('number_of_children', flat=True))
+
+    # ind 10 — select_multiple stored pipe/space-separated.
+    reasons = _Counter()
+    for raw in qs.exclude(reasons_no_institutional_delivery='').values_list(
+            'reasons_no_institutional_delivery', flat=True):
+        for tok in _re.split(r'[|\s,]+', str(raw).strip()):
+            if tok:
+                reasons[tok] += 1
+
+    return Response({
+        'total': qs.count(),
+        'age': _fis_band(ages, [(0,18),(18,25),(25,35),(35,45),(45,200)],
+                         ['<18','18-24','25-34','35-44','45+']),                       # 1
+        'education': _fis_count(qs, 'education'),                                       # 2
+        'marital_status': _fis_count(qs, 'marital_status'),                            # 3
+        'age_at_marriage': _fis_band(aam, [(0,15),(15,18),(18,21),(21,200)],
+                                     ['<15','15-17','18-20','21+']),                    # 4
+        'age_at_first_delivery': _fis_band(aafd, [(0,16),(16,19),(19,22),(22,200)],
+                                           ['<16','16-18','19-21','22+']),              # 5
+        'number_of_children': _fis_band(nchild, [(0,1),(1,2),(2,3),(3,4),(4,200)],
+                                        ['0','1','2','3','4+']),                        # 6
+        'mode_of_last_delivery': _fis_count(qs, 'mode_of_last_delivery'),              # 7
+        'place_of_last_delivery': _fis_count(qs, 'place_of_last_delivery'),            # 8
+        'conducted_last_delivery': _fis_count(qs, 'conducted_last_delivery'),          # 9
+        'reasons_no_institutional_delivery': dict(reasons),                            # 10
+        'time_duration_fistula_occurrence': _dur_band(
+            qs.values_list('time_duration_fistula_occurrence', flat=True)),            # 11
+        'duration_suffering': _dur_band(
+            qs.values_list('duration_suffering', flat=True)),                          # 12
+        'delivery_outcome': _fis_count(qs, 'delivery_outcome'),                        # 13
+        'fistula_type_v2': _fis_count(qs, 'fistula_type_v2'),                          # 14
+        'iatrogenic_cause': _fis_count(
+            qs.filter(fistula_type_v2='iatrogenic'), 'iatrogenic_cause'),              # 15
+        'genital_fistula_type': _fis_count(qs, 'genital_fistula_type'),               # 16
+        'surgery_outcome_v2': _fis_count(qs, 'surgery_outcome_v2'),                    # 17
+    })

@@ -8,5 +8,6 @@ router.register('corner-cases', views.FistulaCornerCaseViewSet, basename='fistul
 router.register('campaign-visits', views.FistulaCampaignVisitViewSet, basename='fistula-campaign-visit')
 
 urlpatterns = [
+    path('aggregates/', views.fistula_aggregates, name='fistula-aggregates'),
     path('', include(router.urls)),
 ]
