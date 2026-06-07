@@ -1011,7 +1011,35 @@ def _lazy_phd(name):
     return wrapper
 
 
+def _lazy_ciprb(name):
+    """Lazy import — keeps webhook.py import-cycle-free."""
+    def wrapper(payload, lat, lng):
+        from . import ciprb_handlers
+        return getattr(ciprb_handlers, name)(payload, lat, lng)
+    return wrapper
+
+
 FORM_HANDLERS: dict = {
+    # ── CIPRB Phase 2 — 9 new forms (Fistula QB, MPDSR 1/2/4/5, Social
+    #    Autopsy, 2 notification slips, Maternal Near Miss). ──
+    'ciprb_fistula_questions_v1':
+        _lazy_ciprb('handle_ciprb_fistula'),
+    'ciprb_mpdsr_community_maternal_v1':
+        _lazy_ciprb('handle_ciprb_mpdsr_community_maternal'),
+    'ciprb_mpdsr_community_neonatal_v1':
+        _lazy_ciprb('handle_ciprb_mpdsr_community_neonatal'),
+    'ciprb_mpdsr_facility_maternal_v1':
+        _lazy_ciprb('handle_ciprb_mpdsr_facility_maternal'),
+    'ciprb_mpdsr_facility_neonatal_v1':
+        _lazy_ciprb('handle_ciprb_mpdsr_facility_neonatal'),
+    'ciprb_social_autopsy_v1':
+        _lazy_ciprb('handle_ciprb_social_autopsy'),
+    'ciprb_notification_slip_01_v1':
+        _lazy_ciprb('handle_ciprb_notification_slip_01'),
+    'ciprb_notification_slip_02_v1':
+        _lazy_ciprb('handle_ciprb_notification_slip_02'),
+    'ciprb_near_miss_v1':
+        _lazy_ciprb('handle_ciprb_near_miss'),
     # ── PHD consolidated forms (new, from final source files) ──────────────────
     'phd_registration_v1':      _lazy_phd('handle_phd_registration'),
     'phd_service_log_v1':       _lazy_phd('handle_phd_service_log'),

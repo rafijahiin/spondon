@@ -503,3 +503,8 @@ class FistulaCampaignVisit(models.Model):
 
     def __str__(self):
         return f'{self.case_hash} — {self.district} ({self.visit_date})'
+
+
+# ── CIPRB Phase 2 model (Fistula Question Bank). Imported here so it
+#    appears in Django's model registry alongside the legacy fistula models.
+from .ciprb_models import CIPRBFistulaCase  # noqa: F401,E402

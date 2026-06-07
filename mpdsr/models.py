@@ -419,3 +419,10 @@ class MPDSRActionPlanSummary(models.Model):
         if not self.activities_planned:
             return 0.0
         return round(100.0 * self.activities_implemented / self.activities_planned, 1)
+
+
+# ── CIPRB Phase 2 models (notification slips + Maternal Near Miss).
+from .ciprb_models import (  # noqa: F401,E402
+    MPDSRDeathNotification,
+    MaternalNearMissCase,
+)
