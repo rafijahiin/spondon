@@ -727,11 +727,13 @@ type DonorKey = keyof typeof DONOR_FILTERS
 export default function CIPRBDashboard() {
   const { t } = useTranslation()
   const [active, setActive] = useState<FistulaTabKey>('corner')
-  const [periodKey, setPeriodKey] = useState<ReportingPeriodKey>('contract')
   const [donorKey, setDonorKey] = useState<DonorKey>('all')
   const reduce = useReducedMotion()
   const activeTab = FISTULA_TABS.find((tab) => tab.key === active)!
-  const activePeriod = REPORTING_PERIODS.find((p) => p.key === periodKey)!
+  // Reporting-period selector retired — everything reports on the contract
+  // window. activePeriod is fixed to that window so downstream filters still
+  // receive a from/to range.
+  const activePeriod = REPORTING_PERIODS.find((p) => p.key === 'contract')!
   const activeDonor = DONOR_FILTERS[donorKey]
   const { kpis } = useFistulaKPIs(activePeriod, activeDonor.districts)
 
@@ -811,62 +813,8 @@ export default function CIPRBDashboard() {
             GLANCE" band (see below) so the two programmes are reachable
             without scrolling the long hero first. */}
 
-        {/* ─── Reporting period toggle ───
-            Per Animesh Q8: default stays contract window; MPDSR + Fistula
-            need to be filterable for the annual cycle ahead of September
-            annual reporting. Visual toggle for Wednesday MVP — backend
-            wiring is a follow-up.
-            TODO BN: add Bangla copy via i18n. Latin acronyms stay Latin. */}
-        <div
-          role="radiogroup"
-          aria-label="Reporting period"
-          style={{
-            display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 10,
-            marginTop: 16,
-          }}
-        >
-          <span style={{
-            fontSize: 11, color: 'var(--muted)',
-            textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600,
-          }}>
-            {/* TODO BN */}
-            Reporting period
-          </span>
-          {REPORTING_PERIODS.map((p) => {
-            const isActive = periodKey === p.key
-            return (
-              <button
-                key={p.key}
-                role="radio"
-                aria-checked={isActive}
-                onClick={() => setPeriodKey(p.key)}
-                style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 6,
-                  padding: '6px 14px', borderRadius: 999,
-                  background: isActive ? 'rgba(249,96,0,0.10)' : 'var(--surface-2)',
-                  color: isActive ? CIPRB_BLUE : 'var(--ink-3)',
-                  fontSize: 14,
-                  fontWeight: isActive ? 600 : 500,
-                  border: isActive
-                    ? '1px solid rgba(249,96,0,0.32)'
-                    : '1px solid var(--hair)',
-                  cursor: 'pointer',
-                  transitionProperty: 'background-color, color, border-color',
-                  transitionDuration: '180ms',
-                }}
-              >
-                <span>{p.shortLabel}</span>
-                <span style={{
-                  color: isActive ? CIPRB_BLUE : 'var(--muted)',
-                  fontWeight: 500,
-                  fontVariantNumeric: 'tabular-nums',
-                }}>
-                  · {p.rangeLabel}
-                </span>
-              </button>
-            )
-          })}
-        </div>
+        {/* Reporting-period toggle removed per request — all surfaces report
+            on the contract window (activePeriod is fixed to it). */}
 
         {/* ─── Donor filter pills (Animesh's one-click GAC/SIDA ask) ─── */}
         <div
@@ -951,6 +899,13 @@ export default function CIPRBDashboard() {
           fontSize: 13, fontWeight: 600, textDecoration: 'none',
           border: '1px solid rgba(249,96,0,0.22)',
         }}>{t('ciprbExtras.jumpMpdsr')}</a>
+        <a href="#nearmiss-section" style={{
+          display: 'inline-flex', alignItems: 'center', gap: 6,
+          padding: '6px 16px', borderRadius: 999,
+          background: 'rgba(249,96,0,0.10)', color: CIPRB_BLUE,
+          fontSize: 13, fontWeight: 600, textDecoration: 'none',
+          border: '1px solid rgba(249,96,0,0.22)',
+        }}>Jump to Near Miss</a>
       </div>
 
       {/* ───────────────── Fistula KPI band ───────────────── */}
