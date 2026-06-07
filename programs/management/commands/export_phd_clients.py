@@ -4,7 +4,7 @@ upload it as a form_media attachment to the PHD Kobo forms so they can
 auto-fill demographics via pulldata().
 
 This is the digital equivalent of the paper "Master List" lookup — when
-an enumerator types FSW-001 in Form 2 (Service Log), Kobo reads this CSV
+an enumerator types 1-0001 in Form 2 (Service Log), Kobo reads this CSV
 and displays her name / age / address / status read-only, confirming they
 have the right woman before she fills any clinical fields.
 
@@ -72,8 +72,8 @@ def _yes_no(v) -> str:
 
 def _norm_id(raw: str) -> str:
     """Same normalisation rule the backend handlers will apply on submission:
-    strip whitespace, uppercase. Lets enumerators type 'fsw 001' or
-    ' FSW-001 ' and still match the canonical 'FSW-001'."""
+    strip whitespace, uppercase. Lets enumerators type ' 1-0001 '
+    and still match the canonical '1-0001'."""
     return (raw or '').strip().upper()
 
 

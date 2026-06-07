@@ -94,7 +94,8 @@ def _meta(center_required=True):
         # backend ServiceCenter table into the form.
         _sr('text','centre_id',
             'Wellness Centre (type the name)',
-            'ওয়েলনেস সেন্টার (নাম লিখুন)', required=req),
+            'ওয়েলনেস সেন্টার (নাম লিখুন)', required=req,
+            hint='e.g. Daulatdia Wellness Center — or its ID, e.g. R001.'),
         _sr('text','enumerator_name',
             'Your name (person filling this form)',
             'আপনার নাম (কে পূরণ করছেন)', required='yes'),
@@ -120,7 +121,8 @@ def _form1_survey():
             'ID No. (unique per FSW)',
             'আইডি নম্বর (অনন্য)',
             required='yes',
-            hint='Capitalisation does not matter — fsw 001 / FSW-001 are the same.'),
+            hint='Format: centre number + serial, e.g. 1-0001 (Daulatdia), '
+                 '2-0001 (Jashore). Use the same ID in every Service Log.'),
 
         # Duplicate-ID warning. Looks up the typed ID in phd_clients.csv;
         # if she's already there, blocks accidental re-registration.
@@ -805,8 +807,9 @@ def _patient_id_group():
     Activity-level types (group_edu, event, material, gbv_corner,
     stock) also hide this group — they aren't patient-specific.
 
-    ID format: free-text + upper-case() so 'fsw 001' / 'FSW-001' /
-    ' FSW-001 ' all match the canonical 'FSW-001' in the CSV.
+    ID format: '{centre number}-{4-digit serial}', e.g. 1-0001 (Daulatdia).
+    Free-text + trim/upper normalisation so ' 1-0001 ' still matches the
+    canonical '1-0001' in the CSV.
     """
     REL = ("${record_type}='clinic' or ${record_type}='htc' "
            "or ${record_type}='referral'")
@@ -826,7 +829,7 @@ def _patient_id_group():
         _sr('text','client_id',
             'FSW ID No.','যৌনকর্মীর আইডি নম্বর',
             required='yes',
-            hint='Type her registered ID (e.g. FSW-001). Capitalisation does not matter.'),
+            hint='Type her registered ID, e.g. 1-0001 (centre number + serial).'),
 
         # pulldata() lookups — all keyed on the upper-cased client_id.
         _sr('calculate','_pull_name',     calc=PULL.format(col='name')),

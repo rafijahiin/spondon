@@ -78,39 +78,55 @@ BONDHU_DICS = [
     },
 ]
 
-# SIDA target: 9 brothel-based wellness centres (SL8).
-# Was previously 11 from an earlier placeholder count; corrected to 9 to
-# match PHD_SIDA_Activities_Indicators_Output_Outcome.docx exactly.
+# PHD's 9 brothel-based wellness centres — the real Master List from
+# "Name and ID Number Of Wellness Center.docx" (PHD, May 2026).
+# code = the official Wellness Centre ID (first-letter-of-district + SL).
+# These 9 are the SL8 target. Beneficiary IDs use the SL-based prefix
+# ({SL}-{4-digit}, e.g. Daulatdia = 1-0001).
 PHD_BROTHELS = [
-    {
-        'code': f'PHD-BROTHEL-{i:02d}',
-        'name': f'PHD Brothel {i:02d}',
-        'name_bangla': f'পিএইচডি পল্লী {i:02d}',
-        'center_type': 'BROTHEL',
-        'district': 'Tangail',
-        'upazila': 'Tangail Sadar',
-        'lat': 24.2513 + (i * 0.02),
-        'lng': 89.9167 + (i * 0.01),
-    }
-    for i in range(1, 10)  # 9 brothels (SL8 target)
+    {'sl': 1, 'code': 'R001', 'name': 'Daulatdia Wellness Center',
+     'name_bangla': 'দৌলতদিয়া ওয়েলনেস সেন্টার',
+     'center_type': 'BROTHEL', 'district': 'Rajbari', 'upazila': 'Goalanda',
+     'lat': 23.7560, 'lng': 89.7800},
+    {'sl': 2, 'code': 'J002', 'name': 'Maroawary Mandir Wellness Center',
+     'name_bangla': 'মাড়োয়ারি মন্দির ওয়েলনেস সেন্টার',
+     'center_type': 'BROTHEL', 'district': 'Jashore', 'upazila': 'Jashore Sadar',
+     'lat': 23.1700, 'lng': 89.2100},
+    {'sl': 3, 'code': 'B003', 'name': 'Kuchuyapotti Wellness Center',
+     'name_bangla': 'কুচুয়াপট্টি ওয়েলনেস সেন্টার',
+     'center_type': 'BROTHEL', 'district': 'Bagerhat', 'upazila': 'Bagerhat Sadar',
+     'lat': 22.6500, 'lng': 89.7900},
+    {'sl': 4, 'code': 'P004', 'name': 'Old Hospital Road Wellness Center',
+     'name_bangla': 'ওল্ড হসপিটাল রোড ওয়েলনেস সেন্টার',
+     'center_type': 'BROTHEL', 'district': 'Patuakhali', 'upazila': 'Patuakhali Sadar',
+     'lat': 22.3600, 'lng': 90.3300},
+    {'sl': 5, 'code': 'F005', 'name': 'Rathkhola Wellness Center',
+     'name_bangla': 'রথখোলা ওয়েলনেস সেন্টার',
+     'center_type': 'BROTHEL', 'district': 'Faridpur', 'upazila': 'Faridpur Sadar',
+     'lat': 23.6000, 'lng': 89.8400},
+    {'sl': 6, 'code': 'M006', 'name': 'Ganginerpar Wellness Center',
+     'name_bangla': 'গাঙ্গিনারপাড় ওয়েলনেস সেন্টার',
+     'center_type': 'BROTHEL', 'district': 'Mymensingh', 'upazila': 'Mymensingh Sadar',
+     'lat': 24.7500, 'lng': 90.4000},
+    {'sl': 7, 'code': 'J007', 'name': 'Raniganj Wellness Center',
+     'name_bangla': 'রাণীগঞ্জ ওয়েলনেস সেন্টার',
+     'center_type': 'BROTHEL', 'district': 'Jamalpur', 'upazila': 'Jamalpur Sadar',
+     'lat': 24.9400, 'lng': 89.9400},
+    {'sl': 8, 'code': 'T008', 'name': 'Kandapara Wellness Center',
+     'name_bangla': 'কান্দাপাড়া ওয়েলনেস সেন্টার',
+     'center_type': 'BROTHEL', 'district': 'Tangail', 'upazila': 'Tangail Sadar',
+     'lat': 24.2500, 'lng': 89.9200},
+    {'sl': 9, 'code': 'D009', 'name': 'Banishanta Wellness Center',
+     'name_bangla': 'বানিশান্তা ওয়েলনেস সেন্টার',
+     'center_type': 'BROTHEL', 'district': 'Khulna', 'upazila': 'Dacope',
+     'lat': 22.5700, 'lng': 89.5000},
 ]
 
-PHD_SUB_DICS = [
-    {
-        'code': 'PHD-SRHR-01',
-        'name': 'PHD SRHR Service Centre 01',
-        'name_bangla': 'পিএইচডি এসআরএইচআর সেবা কেন্দ্র ০১',
-        'center_type': 'SUB_DIC',
-        'district': 'Tangail',
-        'upazila': 'Tangail Sadar',
-        'lat': 24.2513,
-        'lng': 89.9167,
-    },
-]
+PHD_SUB_DICS = []  # PHD's real Master List has exactly the 9 wellness centres above.
 
 
 class Command(BaseCommand):
-    help = 'Seed ServiceCenter records for Bandhu (5 DICs) and PHD (11 brothels + 1 SRHR centre)'
+    help = 'Seed ServiceCenter records for Bandhu (5 DICs) and PHD (9 wellness centres R001..D009)'
 
     def handle(self, *args, **options):
         if not _seed_db_enabled():

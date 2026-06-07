@@ -143,9 +143,17 @@ def _org(payload: dict) -> str:
 
 def _get_center(payload: dict, org: str):
     """
-    Resolve ServiceCenter.  Tries center_code first; falls back to the org's
-    first active centre (with a warning) rather than dropping the submission.
-    Returns None only if the org has zero active centres (setup issue).
+    Resolve ServiceCenter. Matches, in order:
+      1. center_code (exact ServiceCenter.code, e.g. 'R001')
+      2. centre_id / center_name as typed in the form — either the
+         Wellness Centre ID ('R001') or its name ('Daulatdia Wellness
+         Center'), case-insensitive, scoped to the org.
+      3. the org's first active centre (fallback, warns)
+    Returns None only if there are zero active centres (setup issue).
+
+    PHD field workers type the wellness-centre NAME (or its ID) in the
+    'centre_id' field — there is no center_code on the wire — so the
+    name/ID match in step 2 is what actually assigns the right centre.
     """
     code = _str(payload.get('center_code'))
     if code:
@@ -153,6 +161,19 @@ def _get_center(payload: dict, org: str):
         if center:
             return center
         logger.warning('Programs webhook: center_code %r not found; trying fallback', code)
+
+    # Step 2 — match the free-text centre the worker typed (ID or name).
+    typed = _str(payload.get('centre_id')) or _str(payload.get('center_name'))
+    if typed:
+        qs = ServiceCenter.objects.filter(organisation=org, is_active=True)
+        center = (
+            qs.filter(code__iexact=typed).first()
+            or qs.filter(name__iexact=typed).first()
+            or qs.filter(name__icontains=typed).first()
+        )
+        if center:
+            return center
+        logger.warning('Programs webhook: centre %r not matched for org %r; trying fallback', typed, org)
 
     center = ServiceCenter.objects.filter(organisation=org, is_active=True).first()
     if center:

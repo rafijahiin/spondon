@@ -59,17 +59,18 @@ export const PARTNER_DISTRICTS: Record<PartnerCode, string[]> = {
     'Rajshahi', 'Barishal',
   ],
   // PHD = SIDA-funded brothel-based wellness centres.
-  // 11 brothels are operated across these 7 districts. Daulatdia (the
-  // largest brothel) sits in Rajbari and is NOT a separate district;
-  // listing it would inflate the count and break the GeoJSON match.
+  // The 9 official wellness centres (Master List, PHD May 2026) sit in
+  // these 9 districts (one centre each). Names match the national GeoJSON.
   PHD: [
-    'Tangail',     // Tangail Kandapara + Mokarrampur brothels
-    'Rajbari',     // Daulatdia brothel
-    'Jessore',
-    'Faridpur',
-    'Mymensingh',
-    'Jamalpur',
-    'Madaripur',
+    'Rajbari',     // R001 Daulatdia Wellness Center (Goalanda)
+    'Jessore',     // J002 Maroawary Mandir (GeoJSON uses 'Jessore')
+    'Bagerhat',    // B003 Kuchuyapotti
+    'Patuakhali',  // P004 Old Hospital Road
+    'Faridpur',    // F005 Rathkhola
+    'Mymensingh',  // M006 Ganginerpar
+    'Jamalpur',    // J007 Raniganj
+    'Tangail',     // T008 Kandapara
+    'Khulna',      // D009 Banishanta (Dacope)
   ],
 }
 

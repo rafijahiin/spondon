@@ -50,7 +50,7 @@
     "coverageKicker": "COVERAGE",
     "coverageTitle": "Partner footprint by district",
     "coverageSubtitle": "Each colour shows where one or more partners operate. Click a district to jump to that partner's page. Overlap shading flags districts where two or three partners overlap.",
-    "coveragePlaceholderNote": "Placeholder districts — confirmed at workshop",
+    "coveragePlaceholderNote": "PHD: 9 wellness centres across 9 districts",
     "legendNoCoverage": "No coverage",
     "legendTwoOrgs": "2-org overlap",
     "legendThreeOrgs": "3-org overlap",

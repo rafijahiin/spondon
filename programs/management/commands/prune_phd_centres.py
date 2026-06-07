@@ -5,8 +5,9 @@ The earlier seed created 11 brothels + 1 SUB_DIC, plus the webhook fallback
 auto-created stub centres ('AUTO-PHD'). Result: 14 active PHD centres on
 Railway, making compute_SL8 return 14/9 = 156%.
 
-This command keeps PHD-BROTHEL-01..09 active, deactivates everything else
-PHD-tagged. Idempotent.
+This command keeps the 9 real wellness-centre codes (R001..D009) active and
+deactivates everything else PHD-tagged — including the old PHD-BROTHEL-NN
+placeholders and any AUTO-PHD webhook stubs. Idempotent.
 
 Run on Railway:
     PRUNE_PHD_CENTRES=1 → set in Variables → redeploy → unset.
@@ -15,7 +16,8 @@ from django.core.management.base import BaseCommand
 from programs.models import ServiceCenter
 
 
-KEEP_CODES = {f'PHD-BROTHEL-{i:02d}' for i in range(1, 10)}
+# The 9 official Wellness Centre IDs (see seed_centers.PHD_BROTHELS).
+KEEP_CODES = {'R001', 'J002', 'B003', 'P004', 'F005', 'M006', 'J007', 'T008', 'D009'}
 
 
 class Command(BaseCommand):
@@ -35,7 +37,7 @@ class Command(BaseCommand):
         drop = active.exclude(code__in=KEEP_CODES)
 
         self.stdout.write(f'\nPHD centres — ' + ('PRUNING' if confirm else 'DRY RUN') + '\n')
-        self.stdout.write(f'  keep   : {keep.count()} (PHD-BROTHEL-01..09)')
+        self.stdout.write(f'  keep   : {keep.count()} (R001..D009 wellness centres)')
         self.stdout.write(f'  to drop: {drop.count()} (other PHD centres)')
         if drop.exists():
             self.stdout.write('  drop codes:')

@@ -71,7 +71,7 @@ def handle_phd_registration(payload: dict, lat, lng) -> HttpResponse:
 
     # Normalise the ID at write-time the same way the Service Log
     # normalises at lookup-time (trim + upper). Guarantees that
-    # FSW-001 typed in registration matches fsw 001 typed in any
+    # '1-0001' typed in registration matches ' 1-0001 ' typed in any
     # service form's pulldata() call.
     client_id = str(payload.get('id_no', '')).strip().upper()
     if not client_id:
