@@ -164,10 +164,17 @@ export function DonutBreakdown({
                   // zIndex lifts the tooltip above the centre-total overlay so
                   // the digit no longer bleeds through the label text.
                   wrapperStyle={{ zIndex: 50, outline: 'none' }}
+                  // itemStyle/labelStyle force readable text in BOTH themes —
+                  // without them Recharts paints the value in the (often pale)
+                  // slice colour and the label in its default dark, both of
+                  // which are unreadable on the dark-mode surface.
                   contentStyle={{
                     background: 'var(--surface)', border: '1px solid var(--hair)',
-                    borderRadius: 8, fontSize: 12, boxShadow: '0 6px 20px rgba(0,0,0,0.18)',
+                    borderRadius: 8, fontSize: 12, color: 'var(--ink)',
+                    boxShadow: '0 6px 20px rgba(0,0,0,0.18)',
                   }}
+                  itemStyle={{ color: 'var(--ink)' }}
+                  labelStyle={{ color: 'var(--ink)' }}
                   formatter={(value: number, name: string) =>
                     [`${value} (${pct(value)}%)`, name]}
                 />

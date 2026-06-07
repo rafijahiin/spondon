@@ -618,8 +618,11 @@ export function FistulaVisualizations({
                       wrapperStyle={{ zIndex: 50, outline: 'none' }}
                       contentStyle={{
                         background: 'var(--surface)', border: '1px solid var(--hair)',
-                        borderRadius: 8, fontSize: 12, boxShadow: '0 6px 20px rgba(0,0,0,0.18)',
+                        borderRadius: 8, fontSize: 12, color: 'var(--ink)',
+                        boxShadow: '0 6px 20px rgba(0,0,0,0.18)',
                       }}
+                      itemStyle={{ color: 'var(--ink)' }}
+                      labelStyle={{ color: 'var(--ink)' }}
                       formatter={(value: number, name: string) =>
                         [`${value} (${pieTotal ? Math.round((value / pieTotal) * 100) : 0}%)`, name]}
                     />
