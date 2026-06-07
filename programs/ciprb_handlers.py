@@ -67,6 +67,21 @@ def _geo(payload):
     return None, None
 
 
+def _district(payload):
+    """Canonicalise the district to proper case.
+
+    The Kobo `district` question is a select_one whose choice *values* are
+    lowercase slugs ('sunamganj', 'moulavibazar'), so a live submission would
+    otherwise store 'sunamganj' while seed / Excel rows use 'Sunamganj' —
+    splitting per-district groupings and showing lowercase in tables. All 18
+    CIPRB districts are single words, so slug→proper is a clean title-case.
+    """
+    raw = _s(payload.get('district'))
+    if not raw:
+        return ''
+    return raw.replace('_', ' ').title()
+
+
 # ╔══════════════════════════════════════════════════════════════════════════╗
 # ║   Form 1 — CIPRB Fistula Question Bank                                  ║
 # ║   The form is staged: each submission carries data for ONE stage.        ║
@@ -79,7 +94,7 @@ def handle_ciprb_fistula(payload, lat, lng):
     if stage not in dict(CIPRBFistulaCase.STAGE_CHOICES):
         return HttpResponse(f'Bad Request — unknown stage {stage!r}', status=400)
 
-    district = _s(payload.get('district'))
+    district = _district(payload)
     serial   = _s(payload.get('case_serial'))
     name     = _s(payload.get('name'))
     if not (district and name):
@@ -192,7 +207,7 @@ def _save_mpdsr_case(payload, lat, lng, *, sub_form_type, death_type,
                      death_field_name='cause_of_death'):
     """Common upsert for any MPDSR review form."""
     serial   = _s(payload.get('case_serial'))
-    district = _s(payload.get('district'))
+    district = _district(payload)
     dod = _date(payload.get('date_of_death'))
     if not (district and dod):
         return HttpResponse('Bad Request — district and date_of_death required',
@@ -307,7 +322,7 @@ def handle_ciprb_social_autopsy(payload, lat, lng):
 # ╚══════════════════════════════════════════════════════════════════════════╝
 
 def _save_notification(payload, lat, lng, slip_variant: str):
-    district = _s(payload.get('district'))
+    district = _district(payload)
     dod = _date(payload.get('date_of_death'))
     name = _s(payload.get('deceased_name'))
     if not (district and dod and name):
@@ -361,7 +376,7 @@ _MNM_BOOL_FIELDS = (
 
 
 def handle_ciprb_near_miss(payload, lat, lng):
-    district = _s(payload.get('district'))
+    district = _district(payload)
     event_date = _date(payload.get('event_date'))
     name = _s(payload.get('woman_name'))
     if not (district and event_date and name):
