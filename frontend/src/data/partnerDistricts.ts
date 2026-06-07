@@ -45,14 +45,14 @@ export const OVERLAP_THREE_ORGS = '#F10F45'  // UNFPA Red
 export const NO_COVERAGE = '#E5E7EB'         // light grey
 
 export const PARTNER_DISTRICTS: Record<PartnerCode, string[]> = {
+  // CIPRB — the 18 working districts provided by CIPRB (Near Miss tool,
+  // June 2026). These 18 are the canonical list across Fistula, MPDSR,
+  // Social Autopsy, and Maternal Near Miss alike.
   CIPRB: [
-    // GAC (5)
-    'Sunamganj', 'Bhola', 'Sherpur', 'Kurigram', 'Khagrachari',
-    // SIDA (6) — Sunamganj overlaps GAC
-    'Noakhali', 'Chandpur', 'Bandarban', 'Dhaka', "Cox's Bazar",
-    // Other CIPRB-covered districts (11) — confirmed by Rafi 2026-06-02
-    'Sirajganj', 'Jamalpur', 'Gaibandha', 'Patuakhali', 'Barguna', 'Bagerhat',
-    'Habiganj', 'Sylhet', 'Bogura', 'Rajshahi', 'Rangpur',
+    'Sunamganj', 'Sherpur', 'Bhola', 'Kurigram', 'Gaibandha',
+    'Khagrachari', 'Noakhali', 'Patuakhali', 'Sirajganj', 'Barguna',
+    'Jamalpur', 'Bagerhat', 'Habiganj', 'Moulavibazar', 'Sylhet',
+    'Bandarban', 'Chandpur', 'Rangpur',
   ],
   Bandhu: [
     'Dhaka', 'Chittagong', 'Sylhet', 'Khulna',

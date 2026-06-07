@@ -58,15 +58,20 @@ interface DistrictDenominator {
 }
 
 interface ReviewCounts {
-  /** Community Verbal Autopsy (Animesh's "Community MD Review / CDN") */
+  /** Community Maternal Death Reviewed (MPDSR Form 1 / verbal autopsy). */
   va_md?: number
-  /** Social Autopsy (Animesh's "Social Autopsy") */
+  /** Community Neonatal Death Reviewed (MPDSR Form 2). */
+  va_nd?: number
+  /** Social Autopsy (Maternal Death). */
   sa_md?: number
-  /** F4 Facility Maternal Death Review (Animesh's "Facility MD Review / FDR") */
+  /** Facility Maternal Death Reviewed (MPDSR Form 4). */
   f4?: number
-  /** F1 + F2 notification rows summed — denominator for review rates */
+  /** Facility Neonatal Death Reviewed (MPDSR Form 5). */
+  f5?: number
+  /** F1 + F2 notification rows summed — denominator for review rates. */
   notified_md?: number
-  /** Per-sub-form raw counts also returned for transparency */
+  notified_nd?: number
+  /** Per-sub-form raw counts also returned for transparency. */
   f1?: number
   f2?: number
 }
@@ -193,7 +198,7 @@ function NotifyVsReview({
             'MD = (Live Birth × 136) / 100,000\n' +
             'ND = (Live Birth × 20) / 1,000\n' +
             'SB = (Live Birth × 21) / 1,000\n\n' +
-            "Source: Sayed's MPDSR M&E Framework (email 2 Jun 2026).\n" +
+            'Source: MPDSR M&E Framework · Provided by CIPRB.\n' +
             'Decimals come from per-upazila Live Birth counts × ratio; rounded for display.'
           )
           const rateTile = (label: string, rate: number | null, reported: number, estimated: number) => (
@@ -256,45 +261,58 @@ function NotifyVsReview({
           </div>
         )}
 
-        {/* MD Review subdivision — Animesh's 2026-06-02 spec splits the
-            single MD Review Rate into three tiles:
-              CDN = Community MD Review (verbal autopsy / va_md)
-              FDR = Facility MD Review (f4)
-              SA  = Social Autopsy (sa_md)
-            All three use MD notified (f1 + f2) as the denominator. */}
+        {/* MPDSR review breakdown — 5 tiles, full names per CIPRB:
+              · Community Maternal Death Reviewed (MPDSR Form 1)
+              · Community Neonatal Death Reviewed (MPDSR Form 2)
+              · Facility Maternal Death Reviewed  (MPDSR Form 4)
+              · Facility Neonatal Death Reviewed  (MPDSR Form 5)
+              · Social Autopsy (Maternal Death)
+            MD tiles use MD-notified as the denominator; ND tiles use
+            ND-notified. SA shares the MD denominator. */}
         {(() => {
-          const notifiedMD_kobo = reviewCounts?.notified_md ?? 0
-          const baseMD = notifiedMD_kobo > 0 ? notifiedMD_kobo : d.notifiedMD
-          const cdn = reviewCounts?.va_md ?? 0
-          const fdr = reviewCounts?.f4 ?? d.reviewedMD
-          const sa  = reviewCounts?.sa_md ?? 0
-          const cdnPct = baseMD > 0 ? (cdn / baseMD) * 100 : null
-          const fdrPct = baseMD > 0 ? (fdr / baseMD) * 100 : null
-          const saPct  = baseMD > 0 ? (sa / baseMD) * 100  : null
-          const tile = (label: string, value: number, pct: number | null, color: string) => (
+          const baseMD = (reviewCounts?.notified_md ?? 0) > 0
+            ? (reviewCounts!.notified_md as number)
+            : d.notifiedMD
+          const baseND = (reviewCounts?.notified_nd ?? 0) > 0
+            ? (reviewCounts!.notified_nd as number)
+            : d.notifiedND
+          const cmd = reviewCounts?.va_md ?? 0                              // Form 1
+          const cnd = reviewCounts?.va_nd ?? 0                              // Form 2
+          const fmd = reviewCounts?.f4 ?? d.reviewedMD                      // Form 4
+          const fnd = reviewCounts?.f5 ?? d.reviewedND                      // Form 5
+          const sa  = reviewCounts?.sa_md ?? 0                              // Social Autopsy
+          const pct = (n: number, base: number) => base > 0 ? (n / base) * 100 : null
+          const tile = (label: string, value: number, pctVal: number | null, base: number, color: string) => (
             <div>
-              <div className="mono" style={{ fontSize: 9.5, color: 'var(--muted)', letterSpacing: '0.08em', marginBottom: 4 }}>
+              <div className="mono" style={{
+                fontSize: 9.5, color: 'var(--muted)',
+                letterSpacing: '0.08em', marginBottom: 4,
+                minHeight: 22, lineHeight: 1.2,
+              }}>
                 {label}
               </div>
               <div style={{
-                fontSize: 28, fontWeight: 800, color,
+                fontSize: 26, fontWeight: 800, color,
                 fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em', lineHeight: 1,
               }}>
-                {pct !== null ? `${pct.toFixed(0)}%` : '—'}
+                {pctVal !== null ? `${pctVal.toFixed(0)}%` : '—'}
               </div>
               <div style={{ fontSize: 11.5, color: 'var(--ink-3)', marginTop: 4 }}>
-                {value} of {baseMD} notified
+                {value} of {base} notified
               </div>
             </div>
           )
           return (
             <div style={{
-              display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 18,
-              marginBottom: 24,
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))',
+              gap: 18, marginBottom: 24,
             }}>
-              {tile('COMMUNITY MD REVIEW (CDN)', cdn, cdnPct, CIPRB_BLUE)}
-              {tile('FACILITY MD REVIEW (FDR)',  fdr, fdrPct, '#C44E00')}
-              {tile('SOCIAL AUTOPSY (SA)',       sa,  saPct,  CIPRB_BLUE_LIGHT)}
+              {tile(t('mpdsrViz.reviewCommunityMaternal'), cmd, pct(cmd, baseMD), baseMD, CIPRB_BLUE)}
+              {tile(t('mpdsrViz.reviewCommunityNeonatal'), cnd, pct(cnd, baseND), baseND, CIPRB_BLUE_LIGHT)}
+              {tile(t('mpdsrViz.reviewFacilityMaternal'),  fmd, pct(fmd, baseMD), baseMD, '#C44E00')}
+              {tile(t('mpdsrViz.reviewFacilityNeonatal'),  fnd, pct(fnd, baseND), baseND, '#E8881C')}
+              {tile(t('mpdsrViz.reviewSocialAutopsy'),     sa,  pct(sa,  baseMD), baseMD, CIPRB_BLUE)}
             </div>
           )
         })()}
@@ -416,14 +434,16 @@ function bucketForCause(raw: string): string {
 // "Cox's Bazar" / "Coxsbazar" / "Cox Bazar" all collapse to the same key.
 const DISTRICT_MAPPING: Record<DistrictGroup, string[] | null> = {
   cumulative: null,    // null = no filter (all districts)
+  // Provided by CIPRB (Near Miss tool, June 2026) — these 18 districts are
+  // the canonical CIPRB working footprint. GAC and SIDA splits below sit
+  // inside this 18-district set.
   gac:  ['Sunamganj', 'Bhola', 'Sherpur', 'Kurigram', 'Khagrachari'],
-  sida: ['Noakhali', 'Chandpur', 'Bandarban', 'Dhaka', 'Sunamganj', "Cox's Bazar"],
+  sida: ['Noakhali', 'Chandpur', 'Bandarban', 'Patuakhali', 'Barguna'],
   cp:   [
-    // Full Country Programme footprint — 16 MPDSR districts. CP includes
-    // GAC and SIDA plus the broader regional coverage.
-    'Sunamganj', 'Sylhet', 'Hobiganj', 'Bhola', 'Bagerhat', 'Patuakhali',
-    'Barguna', 'Bandarban', 'Khagrachari', 'Noakhali', 'Chandpur', 'Sherpur',
-    'Sirajganj', 'Jamalpur', 'Gaibandha', 'Kurigram', "Cox's Bazar", 'Dhaka',
+    'Sunamganj', 'Sherpur', 'Bhola', 'Kurigram', 'Gaibandha',
+    'Khagrachari', 'Noakhali', 'Patuakhali', 'Sirajganj', 'Barguna',
+    'Jamalpur', 'Bagerhat', 'Habiganj', 'Moulavibazar', 'Sylhet',
+    'Bandarban', 'Chandpur', 'Rangpur',
   ],
 }
 
@@ -431,26 +451,23 @@ function normaliseDistrict(s: string): string {
   return (s ?? '').toLowerCase().replace(/[^a-z0-9]/g, '')
 }
 
-function CauseBreakdown({ cases }: { cases: MPDSRCase[] }) {
+/** A single cause-of-death donut. Used twice side-by-side by
+ *  CauseBreakdown — left = Community deaths (MPDSR Form 1),
+ *  right = Facility deaths (MPDSR Form 4). */
+function CauseDonut({
+  cases, title, sub,
+}: {
+  cases: MPDSRCase[]
+  title: string
+  sub: string
+}) {
   const { t } = useTranslation()
-  const [group, setGroup] = useState<DistrictGroup>('cumulative')
-
-  const filtered = useMemo(() => {
-    const allow = DISTRICT_MAPPING[group]
-    if (allow === null) return cases
-    if (allow.length === 0) return []
-    const set = new Set(allow.map(normaliseDistrict))
-    return cases.filter(c => set.has(normaliseDistrict(c.district ?? '')))
-  }, [cases, group])
-
   const counts: Record<string, number> = {}
-  for (const c of filtered) {
-    if (c.death_type !== 'maternal') continue   // cause analysis is MD-specific
+  for (const c of cases) {
     const k = bucketForCause(c.cause_of_death ?? '')
     counts[k] = (counts[k] ?? 0) + 1
   }
   const total = Object.values(counts).reduce((s, v) => s + v, 0)
-
   // GoB ICD-10 ordering — most-common first, "other direct" last.
   const causeKeys = ['haemorrhage', 'eclampsia', 'sepsis', 'obstructed_labour', 'abortion_related', 'other_direct']
   const causeLabels: Record<string, string> = {
@@ -467,9 +484,108 @@ function CauseBreakdown({ cases }: { cases: MPDSRCase[] }) {
     color: CAUSE_PALETTE[k],
   }))
 
-  // Sayeed has delivered GAC/SIDA/CP mappings — no more pending placeholder.
-  // The empty state only triggers when the filter genuinely yields zero
-  // cases (no maternal-death data recorded for that district group yet).
+  return (
+    <div className="card" style={{
+      padding: 22, flex: '1 1 360px', minWidth: 320,
+      display: 'flex', flexDirection: 'column',
+    }}>
+      <div style={{ marginBottom: 14 }}>
+        <h4 style={{
+          margin: '0 0 4px', fontSize: 15, fontWeight: 700, color: 'var(--ink)',
+        }}>{title}</h4>
+        <div className="mono" style={{
+          fontSize: 10.5, color: 'var(--muted)', letterSpacing: '0.08em',
+          textTransform: 'uppercase',
+        }}>{sub}</div>
+      </div>
+
+      {total > 0 ? (
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'flex-start',
+          gap: 24, flexWrap: 'wrap', flex: 1,
+        }}>
+          <div style={{ position: 'relative', width: 180, height: 180, flexShrink: 0 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%"
+                  innerRadius={58} outerRadius={86} paddingAngle={2} stroke="none"
+                  startAngle={90} endAngle={-270} animationDuration={800}>
+                  {pieData.map((d) => <Cell key={d.name} fill={d.color} />)}
+                </Pie>
+                <Tooltip contentStyle={{
+                  background: 'var(--surface)', border: '1px solid var(--hair)',
+                  borderRadius: 8, fontSize: 12,
+                }} />
+              </PieChart>
+            </ResponsiveContainer>
+            <div style={{
+              position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column',
+              alignItems: 'center', justifyContent: 'center', pointerEvents: 'none',
+            }}>
+              <span style={{
+                fontSize: 28, fontWeight: 800, lineHeight: 1, color: 'var(--ink)',
+                fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em',
+              }}>{total.toLocaleString()}</span>
+              <span className="mono" style={{
+                fontSize: 9, color: 'var(--muted)', letterSpacing: '0.08em', marginTop: 4,
+              }}>{t('mpdsrViz.mdCases')}</span>
+            </div>
+          </div>
+          <div style={{
+            display: 'flex', flexDirection: 'column', gap: 8,
+            fontSize: 12.5, minWidth: 200, flex: 1,
+          }}>
+            {pieData.map(d => (
+              <div key={d.name} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ width: 10, height: 10, borderRadius: 3, background: d.color, flexShrink: 0 }} />
+                <span style={{ flex: 1, color: 'var(--ink-2)' }}>{d.name}</span>
+                <b style={{ fontVariantNumeric: 'tabular-nums' }}>{d.value.toLocaleString()}</b>
+                <span className="mute" style={{ fontSize: 11, width: 38, textAlign: 'right' }}>
+                  {total ? Math.round((d.value / total) * 100) : 0}%
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div style={{ padding: '40px 16px', textAlign: 'center', fontSize: 12.5, color: 'var(--muted)' }}>
+          {t('mpdsrViz.causeEmpty')}
+        </div>
+      )}
+    </div>
+  )
+}
+
+/** Two cause-of-death donuts side-by-side, split by death location:
+ *  Community (MPDSR Form 1) vs Facility (MPDSR Form 4). The shared
+ *  district-group tabs (Cumulative / SIDA / GAC / CP) filter BOTH.
+ *  Per CIPRB correction: "two pie charts are needed — Causes of
+ *  Maternal Deaths and Distribution of Causes of Maternal Deaths,
+ *  Source: Form 1 & Form 4". */
+function CauseBreakdown({ cases }: { cases: MPDSRCase[] }) {
+  const { t } = useTranslation()
+  const [group, setGroup] = useState<DistrictGroup>('cumulative')
+
+  const filtered = useMemo(() => {
+    const allow = DISTRICT_MAPPING[group]
+    let pool = cases
+    if (allow !== null) {
+      if (allow.length === 0) pool = []
+      else {
+        const set = new Set(allow.map(normaliseDistrict))
+        pool = cases.filter(c => set.has(normaliseDistrict(c.district ?? '')))
+      }
+    }
+    // MD-only — cause analysis is maternal-death-specific.
+    return pool.filter(c => c.death_type === 'maternal')
+  }, [cases, group])
+
+  // Split by death location. Form 1 = community (home / in-transit),
+  // Form 4 = facility. Once the dedicated MPDSR Kobo forms ship, this
+  // will also key off sub_form_type for the cleanest mapping.
+  const community = filtered.filter(c => c.place_of_death !== 'facility')
+  const facility  = filtered.filter(c => c.place_of_death === 'facility')
+
   const noCasesInGroup = group !== 'cumulative' && filtered.length === 0
 
   return (
@@ -487,7 +603,7 @@ function CauseBreakdown({ cases }: { cases: MPDSRCase[] }) {
         </p>
       </div>
 
-      {/* Group tabs */}
+      {/* Group tabs — filter both donuts at once. */}
       <div style={{
         display: 'flex', flexWrap: 'wrap', gap: 6,
         padding: 5,
@@ -523,8 +639,8 @@ function CauseBreakdown({ cases }: { cases: MPDSRCase[] }) {
         })}
       </div>
 
-      <div className="card" style={{ padding: 24 }}>
-        {noCasesInGroup ? (
+      {noCasesInGroup ? (
+        <div className="card" style={{ padding: 24 }}>
           <div style={{
             padding: '40px 16px', textAlign: 'center',
             color: 'var(--ink-3)',
@@ -538,60 +654,22 @@ function CauseBreakdown({ cases }: { cases: MPDSRCase[] }) {
               dangerouslySetInnerHTML={{ __html: t('mpdsrViz.groupEmptySub', { group: group.toUpperCase() }) }}
             />
           </div>
-        ) : total > 0 ? (
-          <div style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            gap: 40, flexWrap: 'wrap',
-          }}>
-            <div style={{ position: 'relative', width: 220, height: 220, flexShrink: 0 }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%"
-                    innerRadius={70} outerRadius={104} paddingAngle={2} stroke="none"
-                    startAngle={90} endAngle={-270} animationDuration={800}>
-                    {pieData.map((d) => <Cell key={d.name} fill={d.color} />)}
-                  </Pie>
-                  <Tooltip
-                    contentStyle={{
-                      background: 'var(--surface)',
-                      border: '1px solid var(--hair)',
-                      borderRadius: 8, fontSize: 12,
-                    }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-              <div style={{
-                position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column',
-                alignItems: 'center', justifyContent: 'center', pointerEvents: 'none',
-              }}>
-                <span style={{
-                  fontSize: 36, fontWeight: 800, lineHeight: 1, color: 'var(--ink)',
-                  fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em',
-                }}>{total.toLocaleString()}</span>
-                <span className="mono" style={{ fontSize: 9.5, color: 'var(--muted)', letterSpacing: '0.08em', marginTop: 4 }}>
-                  {t('mpdsrViz.mdCases')}
-                </span>
-              </div>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, fontSize: 13, minWidth: 220, flex: 1 }}>
-              {pieData.map(d => (
-                <div key={d.name} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <span style={{ width: 11, height: 11, borderRadius: 3, background: d.color, flexShrink: 0 }} />
-                  <span style={{ flex: 1, color: 'var(--ink-2)' }}>{d.name}</span>
-                  <b style={{ fontVariantNumeric: 'tabular-nums' }}>{d.value.toLocaleString()}</b>
-                  <span className="mute" style={{ fontSize: 11.5, width: 44, textAlign: 'right' }}>
-                    {total ? Math.round((d.value / total) * 100) : 0}%
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        ) : (
-          <div style={{ padding: '40px 16px', textAlign: 'center', fontSize: 13, color: 'var(--muted)' }}>
-            {t('mpdsrViz.causeEmpty')}
-          </div>
-        )}
-      </div>
+        </div>
+      ) : (
+        // Two donuts, one row. Wraps to stacked on narrow screens.
+        <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap' }}>
+          <CauseDonut
+            cases={community}
+            title={t('mpdsrViz.causeCommunityTitle')}
+            sub={t('mpdsrViz.causeCommunitySub')}
+          />
+          <CauseDonut
+            cases={facility}
+            title={t('mpdsrViz.causeFacilityTitle')}
+            sub={t('mpdsrViz.causeFacilitySub')}
+          />
+        </div>
+      )}
     </div>
   )
 }
@@ -965,20 +1043,20 @@ export function MPDSRVisualizations({
           notificationByLevel={agg?.notification_by_level ?? null}
         />
         <DataSource>
-          spondon_mpdsr_combined_v1 (F1 community + F2 facility notifications, F4 facility review, va_md community verbal autopsy, sa_md social autopsy) · Denominator: CIPRB Project Deaths 2026
+          MPDSR Form 1 (Community Maternal), Form 2 (Community Neonatal), Form 4 (Facility Maternal), Form 5 (Facility Neonatal), Social Autopsy · {t('mpdsrViz.providedBy')}
         </DataSource>
       </div>
       <div>
         <ReportingRatePerDistrict cases={cases} denominators={agg?.denominators ?? []} />
-        <DataSource>spondon_mpdsr_combined_v1 (F1+F2 notifications grouped by district) · Denominator: CIPRB Project Deaths 2026 (Live Birth × 136/100k)</DataSource>
+        <DataSource>MPDSR Forms 1 + 2 grouped by district · denominators {t('mpdsrViz.providedBy')}</DataSource>
       </div>
       <div>
         <CauseBreakdown cases={cases} />
-        <DataSource>spondon_mpdsr_combined_v1 · F4 cause_of_death field (ICD-10 codes per Sayed's MPDSR Form 01)</DataSource>
+        <DataSource>MPDSR Form 1 (community deaths) and Form 4 (facility deaths) · cause_of_death field · {t('mpdsrViz.providedBy')}</DataSource>
       </div>
       <div id="response-plan">
         <ResponsePlanTracker summaries={agg?.action_plan_summaries ?? []} />
-        <DataSource>KF-MPDSR_Response_Plan.xlsx (3 sections × 5 actions × 7 fields per Sayed's MPDSR Response Plan_2026 docx)</DataSource>
+        <DataSource>MPDSR Response Plan 2026 · {t('mpdsrViz.providedBy')}</DataSource>
       </div>
     </div>
   )

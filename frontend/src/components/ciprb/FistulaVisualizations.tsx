@@ -13,7 +13,7 @@
  */
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Building2, MapPin, Home, Users, Search, Stethoscope, Send, ArrowRight, Scissors, Megaphone } from 'lucide-react'
+import { Building2, MapPin, Home, Users, Search, Stethoscope, Send, ArrowRight, Scissors, Megaphone, HeartHandshake } from 'lucide-react'
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts'
 import { api } from '@/api/client'
 import { DataSource } from '@/components/ui/DataSource'
@@ -65,28 +65,33 @@ interface AggregateData {
   population: number
   campaignSuspected: number
   campaignDiagnosed: number
-  // Funnel (Animesh's 4-stage pipeline)
+  // Funnel — CIPRB's 5-stage pipeline:
+  //   Suspected → Diagnosed → Referred for Surgical Management →
+  //   Surgically Repaired → Rehabilitated & Reintegrated
   suspected: number
   identified: number
   referred: number
   repaired: number
-  // Surgical outcome (Animesh's 3 categories; report the two successful)
+  rehabilitated: number
+  // Surgical outcome — 3 categories; the two successful are reported.
   outcomeDry: number
   outcomeNotDry: number
   outcomeFailed: number
-  // Diagnosis pie (corner cases) — Animesh's exact 3 slices
-  pieObstetric: number   // VVF → mapped to Obstetric Fistula
-  pieIatrogenic: number  // pending — no 'cause' field on Kobo form yet; stays 0
-  pieOther: number       // RVF / BOTH / OTHER / unconfirmed (diagnosed but no type)
+  // Diagnosis pie — 4 fistula types per CIPRB Fistula Question Bank.
+  pieObstetric: number
+  pieIatrogenic: number
+  pieCongenital: number
+  pieTraumatic: number
   piePending: number     // no diagnosis_date — kept out of pie, shown beside it
 }
 
 const EMPTY: AggregateData = {
   campaigns: 0, districts: 0, upazilas: 0, households: 0, population: 0,
   campaignSuspected: 0, campaignDiagnosed: 0,
-  suspected: 0, identified: 0, referred: 0, repaired: 0,
+  suspected: 0, identified: 0, referred: 0, repaired: 0, rehabilitated: 0,
   outcomeDry: 0, outcomeNotDry: 0, outcomeFailed: 0,
-  pieObstetric: 0, pieIatrogenic: 0, pieOther: 0, piePending: 0,
+  pieObstetric: 0, pieIatrogenic: 0, pieCongenital: 0, pieTraumatic: 0,
+  piePending: 0,
 }
 
 export interface ReportingPeriod {
@@ -178,52 +183,56 @@ function useFistulaAggregates(
       const identified = cornerFil.filter(c => c.identification_date || c.diagnosis_date).length
       const referred   = cornerFil.filter(c => c.referral_date || (c.referral_outcome ?? '').trim() !== '').length
       const repaired   = cornerFil.filter(c => c.surgery_performed === 'yes').length
-      // Surgical outcome categories (Animesh: dry / not-dry / failed)
+      // Rehabilitated & Reintegrated — the new 5th stage per CIPRB.
+      // Source field (`rehabilitation_received`) will be populated by the
+      // new CIPRB Fistula Question Bank form. Until that form ships,
+      // count stays 0 — empty-state shows on the card.
+      const rehabilitated = cornerFil.filter((c: any) =>
+        c.rehabilitation_received === 'yes' || c.rehabilitation_date,
+      ).length
+      // Surgical outcome categories (dry / not-dry / failed)
       const outcomeDry    = cornerFil.filter(c => c.surgery_outcome === 'success_dry').length
       const outcomeNotDry = cornerFil.filter(c => c.surgery_outcome === 'success_not_dry').length
       const outcomeFailed = cornerFil.filter(c => c.surgery_outcome === 'failed').length
 
-      // Diagnosis pie — Animesh's exact three slices, classified from
-      // the Kobo 'Cause of Fistula' radio (which DOES exist on the
-      // Fistula Campaign form — confirmed June 2026):
-      //   Prolonged/Obstructed Labour, Early Marriage, Unsafe Abortion,
-      //   Gender-Based Violence  →  Obstetric Fistula
-      //   Surgical Injury                                  →  Iatrogenic Fistula
-      //   Unknown, Other, blank                            →  Other
-      //
-      // Fallback for legacy rows with no cause data (Sayeed's pre-Kobo
-      // historical Excel imports — 75 cases): map by anatomy.
-      //   VVF                       →  Obstetric (VVF is almost always
-      //                                 obstetric in this region)
-      //   RVF / BOTH / OTHER / ''   →  Other
-      //
-      // Either path delivers the three labelled slices Animesh asked for.
+      // Diagnosis pie — 4 fistula-type slices per CIPRB Fistula Question
+      // Bank: Obstetric, Iatrogenic, Congenital, Traumatic (the legacy
+      // "Other" bucket has been retired). Classification keys off
+      // `fistula_type_v2` (new field on the upcoming CIPRB form) and
+      // falls back to the existing `fistula_cause` / `fistula_type`
+      // fields for historical rows.
       let pieObstetric = 0
       let pieIatrogenic = 0
-      let pieOther = 0
+      let pieCongenital = 0
+      let pieTraumatic = 0
       let piePending = 0
       for (const c of cornerFil) {
         if (!c.diagnosis_date) { piePending++; continue }
+        const newType = ((c as any).fistula_type_v2 ?? '').toLowerCase().trim()
+        if (newType) {
+          if      (newType.startsWith('obs')) pieObstetric++
+          else if (newType.startsWith('iat')) pieIatrogenic++
+          else if (newType.startsWith('con')) pieCongenital++
+          else if (newType.startsWith('tra')) pieTraumatic++
+          else piePending++
+          continue
+        }
+        // Legacy fallback — historical rows lack fistula_type_v2.
         const cause = (c.fistula_cause ?? '').toLowerCase().trim()
         if (cause) {
-          // Live Kobo path — classify by cause.
-          if (cause.includes('surgical')) {
-            pieIatrogenic++
-          } else if (
+          if (cause.includes('surgical')) pieIatrogenic++
+          else if (cause.includes('trauma') || cause.includes('accident')) pieTraumatic++
+          else if (cause.includes('congenital') || cause.includes('birth defect')) pieCongenital++
+          else if (
             cause.includes('labour') || cause.includes('labor') ||
             cause.includes('marriage') || cause.includes('abortion') ||
             cause.includes('violence') || cause.includes('gbv')
-          ) {
-            pieObstetric++
-          } else {
-            // unknown / other / unrecognised
-            pieOther++
-          }
+          ) pieObstetric++
+          else piePending++
         } else {
-          // Legacy path — no cause captured; fall back to anatomy.
           const t = (c.fistula_type ?? '').toUpperCase().trim()
           if (t === 'VVF') pieObstetric++
-          else pieOther++
+          else piePending++
         }
       }
 
@@ -239,8 +248,9 @@ function useFistulaAggregates(
         identified,
         referred,
         repaired,
+        rehabilitated,
         outcomeDry, outcomeNotDry, outcomeFailed,
-        pieObstetric, pieIatrogenic, pieOther, piePending,
+        pieObstetric, pieIatrogenic, pieCongenital, pieTraumatic, piePending,
       })
     })
     return () => { cancelled = true }
@@ -337,14 +347,15 @@ function FunnelArrow({ conversionPct }: { conversionPct?: number }) {
 // ─── Diagnosis Pie ───────────────────────────────────────────────────────────
 
 // Diagnosis pie — UNFPA orange tonal scale. Primary case (obstetric)
-// gets the brand orange; iatrogenic a mid shade (rendered even at 0 so
-// Animesh's three-slice structure is visible); other stays a lighter
-// orange — folding in former "no fistula confirmed" per spec.
+// Four fistula-type slices per CIPRB Question Bank: Obstetric,
+// Iatrogenic, Congenital, Traumatic. All four render in the legend
+// even when a slice = 0 so the structure CIPRB asked for is visible.
 const PIE_COLORS = {
-  obstetric: '#F96000',     // UNFPA orange
-  iatrogenic: '#FDB37D',    // UNFPA pale (rendered in legend even when 0)
-  other: '#FB904D',         // UNFPA bright
-  pending: 'var(--surface-3)',
+  obstetric:  '#F96000',  // UNFPA orange (primary)
+  iatrogenic: '#FB904D',  // UNFPA bright
+  congenital: '#FDB37D',  // UNFPA pale
+  traumatic:  '#C44E00',  // deeper accent
+  pending:    'var(--surface-3)',
 }
 
 function DiagnosisLegend({ data }: { data: { name: string; value: number; color: string }[] }) {
@@ -392,15 +403,15 @@ export function FistulaVisualizations({
   // sequential funnel. Quoting % between them was misleading. Tiles now
   // stand alone; the arrow is decorative only.
 
-  // Pie shows Animesh's exact three slices — Obstetric / Iatrogenic / Other.
-  // Iatrogenic is rendered in the legend with em-dash until the Kobo Fistula
-  // Corner form gains a 'cause' field (Sayeed). 'Awaiting diagnosis' is
-  // reported beside the donut so the % totals stay honest (denominator =
-  // patients who have actually been examined).
+  // Pie shows the four fistula-type slices per CIPRB Question Bank:
+  // Obstetric / Iatrogenic / Congenital / Traumatic. "Awaiting
+  // diagnosis" is reported beside the donut so % totals stay honest
+  // (denominator = patients who have actually been examined).
   const pieData = [
     { name: t('fistulaViz.pieObstetric'),  value: agg.pieObstetric,  color: PIE_COLORS.obstetric },
     { name: t('fistulaViz.pieIatrogenic'), value: agg.pieIatrogenic, color: PIE_COLORS.iatrogenic },
-    { name: t('fistulaViz.pieOther'),      value: agg.pieOther,      color: PIE_COLORS.other },
+    { name: t('fistulaViz.pieCongenital'), value: agg.pieCongenital, color: PIE_COLORS.congenital },
+    { name: t('fistulaViz.pieTraumatic'),  value: agg.pieTraumatic,  color: PIE_COLORS.traumatic },
   ]
   // Recharts will draw a zero-value slice as nothing — so when iatrogenic = 0
   // the donut still renders correctly with the two real slices. The legend
@@ -437,7 +448,7 @@ export function FistulaVisualizations({
           <MetricTile icon={<Search      size={13} />} label="Suspected (campaign)" value={agg.campaignSuspected} sub="Suspected cases found" />
           <MetricTile icon={<Stethoscope size={13} />} label="Diagnosed (campaign)" value={agg.campaignDiagnosed} sub="Confirmed during campaigns" />
         </div>
-        <DataSource>KF-Fistula_Campaign_Visit.xlsx (daily rollups: campaigns, households, population, districts/upazilas, suspected + diagnosed cases)</DataSource>
+        <DataSource>Fistula Campaign Visit · daily rollups (campaigns, households, population, districts/upazilas, suspected + diagnosed cases) · {t('fistulaViz.providedBy')}</DataSource>
       </div>
 
       {/* ─── 2. Patient Funnel ─── */}
@@ -473,6 +484,10 @@ export function FistulaVisualizations({
             agg.referred > 0 ? Math.round((agg.repaired / agg.referred) * 100) : undefined
           } />
           <FunnelStage icon={<Scissors size={14} />}    label={t('fistulaViz.repaired')}    value={agg.repaired}   sub={t('fistulaViz.repairedSub')} />
+          <FunnelArrow conversionPct={
+            agg.repaired > 0 ? Math.round((agg.rehabilitated / agg.repaired) * 100) : undefined
+          } />
+          <FunnelStage icon={<HeartHandshake size={14} />} label={t('fistulaViz.rehabilitated')} value={agg.rehabilitated} sub={t('fistulaViz.rehabilitatedSub')} />
         </div>
         <p style={{
           fontSize: 11.5, color: 'var(--muted)', margin: '8px 4px 0',
@@ -480,7 +495,7 @@ export function FistulaVisualizations({
         }}>
           Each percentage uses the previous stage as the denominator — e.g. the share of suspected cases that go on to be diagnosed, referred, and repaired.
         </p>
-        <DataSource>KF-Fistula_Campaign_Visit.xlsx (Suspected) · KF-Fistula_Corner.xlsx (Identified/Referred/Repaired)</DataSource>
+        <DataSource>Fistula Campaign (Suspected) · Fistula Question Bank (Diagnosed / Referred for Surgical Management / Surgically Repaired / Rehabilitated & Reintegrated) · {t('fistulaViz.providedBy')}</DataSource>
       </div>
 
       {/* ─── 2b. Surgical Outcome (Animesh's 3 categories) ─── */}
@@ -523,7 +538,7 @@ export function FistulaVisualizations({
               </div>
             )
           })()}
-          <DataSource>KF-Fistula_Corner.xlsx · op_outcome field (Animesh + Sayed: report the two successful categories; Failed tracked but de-emphasised)</DataSource>
+          <DataSource>Fistula Question Bank · outcome-of-surgery field (two successful categories reported; Failed tracked but de-emphasised) · {t('fistulaViz.providedBy')}</DataSource>
         </div>
       )}
 
@@ -609,7 +624,7 @@ export function FistulaVisualizations({
         }}>
           {t('fistulaViz.pieCaption')}
         </p>
-        <DataSource>KF-Fistula_Corner.xlsx (fistula_cause field) · pre-Kobo rows fall back to fistula_type anatomy</DataSource>
+        <DataSource>Fistula Question Bank · fistula type (Obstetric, Iatrogenic, Congenital, Traumatic) · {t('fistulaViz.providedBy')}</DataSource>
       </div>
 
     </div>
