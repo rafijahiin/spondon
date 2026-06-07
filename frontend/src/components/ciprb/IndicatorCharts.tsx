@@ -14,7 +14,7 @@
  */
 import { useState } from 'react'
 import {
-  ResponsiveContainer, PieChart, Pie, Cell,
+  ResponsiveContainer, PieChart, Pie, Cell, Tooltip,
 } from 'recharts'
 
 const CIPRB_ORANGE = '#F96000'
@@ -128,10 +128,13 @@ export function DonutBreakdown({
   const pie = Object.entries(data || {})
     .map(([k, v], i) => ({ name: labels[k] || k, value: v || 0, color: PALETTE[i % PALETTE.length] }))
     .filter(d => d.value > 0)
-  // Hover state drives BOTH the center readout and a slice/legend highlight.
-  // We deliberately do NOT use Recharts <Tooltip> — its floating box rendered
-  // on top of (actually under) the absolutely-positioned centre label and the
-  // total digit bled through the tooltip text. The donut centre IS the tooltip.
+  // Two independent, both-reliable hover affordances:
+  //  (a) Recharts <Tooltip> on the Pie — fires on slice hover. The ORIGINAL
+  //      bug was purely z-order: the absolutely-positioned centre total
+  //      rendered ABOVE the tooltip, so the digit bled through its text.
+  //      Fixed with wrapperStyle zIndex + an opaque card.
+  //  (b) legend-row hover (real React onMouseEnter on a div) — dims the
+  //      other slices and swaps the centre readout to that slice.
   const [active, setActive] = useState<number | null>(null)
   const sel = active !== null ? pie[active] : null
   const pct = (v: number) => total > 0 ? Math.round((v / total) * 100) : 0
@@ -157,6 +160,17 @@ export function DonutBreakdown({
                       style={{ cursor: 'pointer', transition: 'opacity 150ms' }} />
                   ))}
                 </Pie>
+                <Tooltip
+                  // zIndex lifts the tooltip above the centre-total overlay so
+                  // the digit no longer bleeds through the label text.
+                  wrapperStyle={{ zIndex: 50, outline: 'none' }}
+                  contentStyle={{
+                    background: 'var(--surface)', border: '1px solid var(--hair)',
+                    borderRadius: 8, fontSize: 12, boxShadow: '0 6px 20px rgba(0,0,0,0.18)',
+                  }}
+                  formatter={(value: number, name: string) =>
+                    [`${value} (${pct(value)}%)`, name]}
+                />
               </PieChart>
             </ResponsiveContainer>
             {/* Centre readout: total by default, hovered slice on hover. */}
