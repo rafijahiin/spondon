@@ -210,7 +210,7 @@ function NotifyVsReview({
                 {label}
               </div>
               <div style={{ fontSize: 28, fontWeight: 800, color: '#AE4300', fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em', lineHeight: 1 }}>
-                {rate !== null ? `${rate.toFixed(0)}%` : '—'}
+                {rate !== null ? (rate > 100 ? '100%+' : `${rate.toFixed(0)}%`) : '—'}
               </div>
               <div style={{ fontSize: 11.5, color: 'var(--ink-3)', marginTop: 4, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                 {reported} reported of {Math.round(estimated)} estimated
@@ -848,7 +848,7 @@ function ResponsePlanTracker({ summaries }: { summaries: ActionPlanSummary[] }) 
                       minWidth: 40, fontVariantNumeric: 'tabular-nums',
                       fontWeight: 600, fontSize: 12.5, color: colorFor(s.completion_pct),
                     }}>
-                      {s.completion_pct.toFixed(0)}%
+                      {s.completion_pct > 100 ? '100%+' : `${s.completion_pct.toFixed(0)}%`}
                     </span>
                   </div>
                 </td>
