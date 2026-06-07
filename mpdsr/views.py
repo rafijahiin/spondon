@@ -262,6 +262,43 @@ def mpdsr_aggregates(request):
             ['0-24h', '24-48h', '2-7d', '7d+']),                       # 11
     }
 
+    # ── Facility (Form 04) deep-dive — the facility maternal-death form
+    #    carries richer review data than the community form. Two extra
+    #    breakdowns surfaced next to the facility cause donut:
+    #      (a) admission→death interval — care-timeliness signal
+    #      (b) facility review committee progress + action-plan coverage
+    fac_qs = md_donor_qs.filter(
+        death_type=DeathType.MATERNAL, sub_form_type='f4',
+    )
+
+    # (a) admission→death interval. days = date_of_death - admission_date.
+    _adm_labels = ['<1 day', '1-2 days', '3-7 days', '7+ days']
+    admission_to_death = {l: 0 for l in _adm_labels}
+    admission_to_death['Unknown'] = 0
+    for adm, dod in fac_qs.values_list('admission_date', 'date_of_death'):
+        if not adm or not dod:
+            admission_to_death['Unknown'] += 1
+            continue
+        days = (dod - adm).days
+        if days < 1:      admission_to_death['<1 day'] += 1
+        elif days < 3:    admission_to_death['1-2 days'] += 1
+        elif days < 8:    admission_to_death['3-7 days'] += 1
+        else:             admission_to_death['7+ days'] += 1
+
+    # (b) review committee progress (status distribution) + action-plan reach.
+    review_status_dist = dict(_Counter(fac_qs.values_list('status', flat=True)))
+    fac_total = fac_qs.count()
+    with_plan = fac_qs.exclude(action_plan='').count()
+    facility = {
+        'total': fac_total,
+        'admission_to_death': admission_to_death,
+        'review_status': review_status_dist,
+        'action_plan_coverage': {
+            'with_plan': with_plan,
+            'without_plan': fac_total - with_plan,
+        },
+    }
+
     return Response({
         'denominators': denominators,
         'facility_counts': facility_counts,
@@ -271,6 +308,7 @@ def mpdsr_aggregates(request):
         'totals': totals,
         'review_counts': review_counts,
         'indicators': indicators,
+        'facility': facility,
     })
 
 

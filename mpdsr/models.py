@@ -200,6 +200,10 @@ class MPDSRCase(models.Model):
 
     sub_form_type = models.CharField(max_length=10, blank=True, db_index=True)
     date_of_death = models.DateField()
+    # Facility (Form 04) admission date — paired with date_of_death to derive
+    # the admission→death interval (a care-timeliness signal). Nullable:
+    # community Form 01 deaths have no facility admission.
+    admission_date = models.DateField(null=True, blank=True)
     death_type = models.CharField(
         max_length=20,
         choices=DeathType.choices,

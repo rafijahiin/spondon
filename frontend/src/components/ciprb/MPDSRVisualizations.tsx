@@ -87,6 +87,14 @@ interface AggregatesPayload {
   review_counts?: ReviewCounts
   // CIPRB Phase 3 — the 11 MPDSR major indicators (per-case breakdowns).
   indicators?: Record<string, Record<string, number>>
+  // Facility (Form 04) deep-dive — admission→death interval + review
+  // committee progress. Only the facility form carries these.
+  facility?: {
+    total: number
+    admission_to_death: Record<string, number>
+    review_status: Record<string, number>
+    action_plan_coverage: { with_plan: number; without_plan: number }
+  }
 }
 
 function useAggregates(period?: { from: string; to: string }): AggregatesPayload | null {
@@ -1069,6 +1077,12 @@ export function MPDSRVisualizations({
         <CauseBreakdown cases={cases} />
         <DataSource>MPDSR Form 1 (community deaths) and Form 4 (facility deaths) · cause_of_death field · {t('mpdsrViz.providedBy')}</DataSource>
       </div>
+      {agg?.facility && agg.facility.total > 0 && (
+        <div>
+          <FacilityDeepDive facility={agg.facility} />
+          <DataSource>MPDSR Form 04 (Facility Maternal) · admission→death interval + facility review committee progress · {t('mpdsrViz.providedBy')}</DataSource>
+        </div>
+      )}
       <div>
         <MPDSRIndicators indicators={agg?.indicators ?? null} />
         <DataSource>MPDSR Form 01 (Community Maternal) + Form 04 (Facility Maternal) · 11 major indicators · {t('mpdsrViz.providedBy')}</DataSource>
@@ -1076,6 +1090,72 @@ export function MPDSRVisualizations({
       <div id="response-plan">
         <ResponsePlanTracker summaries={agg?.action_plan_summaries ?? []} />
         <DataSource>MPDSR Response Plan 2026 · {t('mpdsrViz.providedBy')}</DataSource>
+      </div>
+    </div>
+  )
+}
+
+// ─── Facility (Form 04) deep-dive ────────────────────────────────────────────
+// The facility maternal-death form carries richer review data than the
+// community form. Two breakdowns the community form can't provide:
+//   • Admission→death interval — how long after admission the woman died
+//     (a care-timeliness signal). Ordered histogram.
+//   • Facility review committee progress — where each death sits in the
+//     review pipeline, plus what share has a documented action plan.
+const REVIEW_STATUS_LABELS: Record<string, string> = {
+  reported: 'Reported',
+  under_review: 'Under review',
+  committee_review: 'Committee review',
+  action_plan_drafted: 'Action plan drafted',
+  closed: 'Closed',
+}
+
+function FacilityDeepDive({ facility }: {
+  facility: {
+    total: number
+    admission_to_death: Record<string, number>
+    review_status: Record<string, number>
+    action_plan_coverage: { with_plan: number; without_plan: number }
+  }
+}) {
+  return (
+    <div>
+      <div style={{ marginBottom: 14 }}>
+        <div className="kicker">
+          <span className="dot" style={{ background: CIPRB_BLUE }} />
+          FACILITY DEATHS · MPDSR FORM 4
+        </div>
+        <h3 style={{ margin: '6px 0 2px', fontSize: 18, fontWeight: 700, color: 'var(--ink)' }}>
+          Facility review deep-dive
+        </h3>
+        <p style={{ fontSize: 12.5, color: 'var(--muted)', margin: 0 }}>
+          The extra detail Form 4 captures beyond cause of death — how quickly
+          deaths followed admission, and how far each has moved through the
+          facility review committee. Based on {facility.total.toLocaleString()} facility maternal {facility.total === 1 ? 'death' : 'deaths'}.
+        </p>
+      </div>
+      <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+        <Histogram
+          title="Admission → death interval"
+          kicker="Care timeliness"
+          data={facility.admission_to_death}
+        />
+        <DonutBreakdown
+          title="Review committee progress"
+          kicker="Review pipeline"
+          data={facility.review_status}
+          labels={REVIEW_STATUS_LABELS}
+        />
+        <StatTile
+          title="Action plan documented"
+          kicker="Committee follow-through"
+          data={{
+            with_plan: facility.action_plan_coverage.with_plan,
+            without_plan: facility.action_plan_coverage.without_plan,
+          }}
+          highlight="with_plan"
+          labels={{ with_plan: 'With action plan', without_plan: 'No action plan yet' }}
+        />
       </div>
     </div>
   )

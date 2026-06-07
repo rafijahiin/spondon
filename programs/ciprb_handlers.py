@@ -221,6 +221,10 @@ def _save_mpdsr_case(payload, lat, lng, *, sub_form_type, death_type,
         case.upazila = _s(payload.get('upazila'))
         case.union   = _s(payload.get('union'))
         case.date_of_death = dod
+        # Facility admission date (Form 04 only) — drives the admission→death
+        # interval visual. Absent on community forms → stays null.
+        adm = _date(payload.get('admission_date'))
+        if adm: case.admission_date = adm
         case.death_type    = death_type
         case.cause_of_death = _s(payload.get(death_field_name))
         place = _PLACE_MAP.get(_s(payload.get('place_of_death')), '')

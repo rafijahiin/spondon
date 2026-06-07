@@ -242,7 +242,32 @@ class Command(BaseCommand):
                 if want_va: reviews.append(('VAMD', 'va_md', f'{district} community'))
                 if want_sa: reviews.append(('SAMD', 'sa_md', f'{district} community'))
                 if want_f4: reviews.append(('F4',   'f4',    f'{district} UHC'))
+                # Facility (Form 04) deep-dive needs an admission date (to
+                # derive the admission→death interval), a spread of review-
+                # committee statuses, and action plans on the cases that have
+                # progressed. Cycle deterministically so the visuals are
+                # stable across reseeds.
+                _F4_STATUSES = [
+                    ReviewStatus.REPORTED, ReviewStatus.UNDER_REVIEW,
+                    ReviewStatus.COMMITTEE_REVIEW, ReviewStatus.ACTION_PLAN_DRAFTED,
+                    ReviewStatus.CLOSED,
+                ]
                 for prefix, sub, fac in reviews:
+                    extra = {}
+                    if sub == 'f4':
+                        f4_status = _F4_STATUSES[i % len(_F4_STATUSES)]
+                        extra = dict(
+                            status=f4_status,
+                            admission_date=dod - datetime.timedelta(
+                                days=irng.choice([0, 0, 1, 1, 2, 4, 6, 9, 12])),
+                            action_plan=(
+                                f'Facility action plan: strengthen referral & '
+                                f'blood availability ({district} UHC).'
+                                if f4_status in (ReviewStatus.ACTION_PLAN_DRAFTED,
+                                                 ReviewStatus.CLOSED)
+                                else ''
+                            ),
+                        )
                     _, r_new = MPDSRCase.objects.get_or_create(
                         case_hash=f'DEMO-{prefix}-{district}-{i}',
                         defaults=dict(
@@ -250,7 +275,7 @@ class Command(BaseCommand):
                             date_of_death=dod, death_type=DeathType.MATERNAL,
                             cause_of_death=cause, place_of_death=place,
                             facility_name=fac, status=ReviewStatus.UNDER_REVIEW,
-                            source='demo_seed',
+                            source='demo_seed', **extra,
                         ),
                     )
                     created += 1 if r_new else 0
