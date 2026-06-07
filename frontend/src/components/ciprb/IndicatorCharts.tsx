@@ -12,8 +12,9 @@
  * map (slug -> human label). Empty / all-zero data renders a quiet
  * empty-state instead of a broken chart.
  */
+import { useState } from 'react'
 import {
-  ResponsiveContainer, PieChart, Pie, Cell, Tooltip,
+  ResponsiveContainer, PieChart, Pie, Cell,
 } from 'recharts'
 
 const CIPRB_ORANGE = '#F96000'
@@ -127,6 +128,13 @@ export function DonutBreakdown({
   const pie = Object.entries(data || {})
     .map(([k, v], i) => ({ name: labels[k] || k, value: v || 0, color: PALETTE[i % PALETTE.length] }))
     .filter(d => d.value > 0)
+  // Hover state drives BOTH the center readout and a slice/legend highlight.
+  // We deliberately do NOT use Recharts <Tooltip> — its floating box rendered
+  // on top of (actually under) the absolutely-positioned centre label and the
+  // total digit bled through the tooltip text. The donut centre IS the tooltip.
+  const [active, setActive] = useState<number | null>(null)
+  const sel = active !== null ? pie[active] : null
+  const pct = (v: number) => total > 0 ? Math.round((v / total) * 100) : 0
   return (
     <Frame kicker={kicker} title={title}>
       {total === 0 ? <Empty label={title} /> : (
@@ -136,33 +144,52 @@ export function DonutBreakdown({
               <PieChart>
                 <Pie data={pie} dataKey="value" nameKey="name" cx="50%" cy="50%"
                   innerRadius={48} outerRadius={72} paddingAngle={2} stroke="none"
-                  startAngle={90} endAngle={-270}>
-                  {pie.map(d => <Cell key={d.name} fill={d.color} />)}
+                  startAngle={90} endAngle={-270}
+                  isAnimationActive={false}
+                  onMouseLeave={() => setActive(null)}>
+                  {pie.map((d, idx) => (
+                    <Cell key={d.name} fill={d.color}
+                      opacity={active === null || active === idx ? 1 : 0.35}
+                      style={{ cursor: 'pointer', transition: 'opacity 150ms' }}
+                      onMouseEnter={() => setActive(idx)} />
+                  ))}
                 </Pie>
-                <Tooltip contentStyle={{
-                  background: 'var(--surface)', border: '1px solid var(--hair)',
-                  borderRadius: 8, fontSize: 12,
-                }} />
               </PieChart>
             </ResponsiveContainer>
+            {/* Centre readout: total by default, hovered slice on hover. */}
             <div style={{
               position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column',
               alignItems: 'center', justifyContent: 'center', pointerEvents: 'none',
+              padding: '0 18px', textAlign: 'center',
             }}>
-              <span style={{
-                fontSize: 24, fontWeight: 800, lineHeight: 1, color: 'var(--ink)',
-                fontVariantNumeric: 'tabular-nums',
-              }}>{total}</span>
+              {sel ? (
+                <>
+                  <span style={{ fontSize: 22, fontWeight: 800, lineHeight: 1, color: sel.color, fontVariantNumeric: 'tabular-nums' }}>{sel.value}</span>
+                  <span style={{ fontSize: 9.5, color: 'var(--ink-3)', marginTop: 2 }}>{pct(sel.value)}%</span>
+                  <span style={{ fontSize: 9, color: 'var(--muted)', marginTop: 2, lineHeight: 1.15 }}>{sel.name}</span>
+                </>
+              ) : (
+                <>
+                  <span style={{ fontSize: 24, fontWeight: 800, lineHeight: 1, color: 'var(--ink)', fontVariantNumeric: 'tabular-nums' }}>{total}</span>
+                  <span className="mono" style={{ fontSize: 8.5, color: 'var(--muted)', letterSpacing: '0.08em', marginTop: 3 }}>TOTAL</span>
+                </>
+              )}
             </div>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 12.5, flex: 1, minWidth: 140 }}>
-            {pie.map(d => (
-              <div key={d.name} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {pie.map((d, idx) => (
+              <div key={d.name}
+                onMouseEnter={() => setActive(idx)} onMouseLeave={() => setActive(null)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer',
+                  opacity: active === null || active === idx ? 1 : 0.45,
+                  transition: 'opacity 150ms',
+                }}>
                 <span style={{ width: 10, height: 10, borderRadius: 3, background: d.color, flexShrink: 0 }} />
                 <span style={{ flex: 1, color: 'var(--ink-2)' }}>{d.name}</span>
                 <b style={{ fontVariantNumeric: 'tabular-nums' }}>{d.value}</b>
                 <span className="mute" style={{ fontSize: 11, width: 36, textAlign: 'right' }}>
-                  {Math.round((d.value / total) * 100)}%
+                  {pct(d.value)}%
                 </span>
               </div>
             ))}
