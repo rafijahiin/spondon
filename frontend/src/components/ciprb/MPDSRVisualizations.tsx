@@ -1020,6 +1020,7 @@ export function MPDSRVisualizations({
   cases: MPDSRCase[]
   period?: ReportingPeriod
 }) {
+  const { t } = useTranslation()
   // Threading reporting-period through to the aggregate endpoint so the
   // MPDSR visualisations follow the CIPRB Dashboard's Contract / Annual
   // toggle. NotifyVsReview and ReportingRatePerDistrict re-derive from
