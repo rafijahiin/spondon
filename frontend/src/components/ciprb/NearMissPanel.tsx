@@ -256,30 +256,16 @@ export function NearMissPanel() {
         </div>
       )}
 
-      {/* Indicators 4, 5, 6 — mode of delivery, causes, contributory conditions */}
+      {/* Indicators 4, 5 — mode of delivery, causes.
+          The old indicator 6 ("Contributory / associated conditions") was
+          removed: it rendered a raw, repeating free-text list (e.g. "Severe
+          anemia" three times over) that carried no analytical value on the
+          dashboard. The field is still captured on the Kobo form and remains
+          available in the case register for narrative review. */}
       {total > 0 && (
         <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginTop: 14 }}>
           <DonutBreakdown title="4. Mode of delivery" data={data?.mode_of_delivery ?? {}} labels={MODE_LABELS} />
           <DonutBreakdown title="5. Causes of near miss" data={data?.causes ?? {}} labels={CAUSE_LABELS} />
-          <div className="card" style={{ padding: 18, flex: '1 1 320px', minWidth: 280 }}>
-            <div style={{ marginBottom: 10 }}>
-              <div className="kicker"><span className="dot" style={{ background: CIPRB_BLUE }} />NOTES</div>
-              <h4 style={{ margin: '4px 0 0', fontSize: 14.5, fontWeight: 700, color: 'var(--ink)' }}>
-                6. Contributory / associated conditions
-              </h4>
-            </div>
-            {(data?.contributory_conditions ?? []).length === 0 ? (
-              <div style={{ padding: '20px 8px', fontSize: 12, color: 'var(--muted)' }}>
-                No contributory conditions recorded yet.
-              </div>
-            ) : (
-              <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12.5, color: 'var(--ink-2)', display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 200, overflowY: 'auto' }}>
-                {(data?.contributory_conditions ?? []).slice(0, 30).map((c, i) => (
-                  <li key={i}>{c}</li>
-                ))}
-              </ul>
-            )}
-          </div>
         </div>
       )}
 

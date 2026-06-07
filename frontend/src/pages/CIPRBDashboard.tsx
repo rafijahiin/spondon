@@ -792,8 +792,13 @@ export default function CIPRBDashboard() {
                     districts: ['Sunamganj', 'Bhola', 'Sherpur', 'Kurigram', 'Khagrachari'],
                   },
                   {
+                    // SIDA was #2171EC (blue), nearly identical to the CIPRB
+                    // "other" base tint (#0072BC) — indistinguishable on the
+                    // map. Switched to a clearly separate green so the three
+                    // footprints (GAC orange / SIDA green / CIPRB-other blue)
+                    // are readable, mirroring the proven homepage palette.
                     name: 'SIDA',
-                    color: '#2171EC',
+                    color: '#16A34A',
                     districts: ['Noakhali', 'Chandpur', 'Bandarban', 'Patuakhali', 'Barguna'],
                   },
                 ]}
@@ -802,46 +807,9 @@ export default function CIPRBDashboard() {
           </div>
         </div>
 
-        {/* Jump-link strip — Animesh's two named surveillance programmes
-            need to be discoverable without scrolling past three Fistula
-            visualisations to find MPDSR. */}
-        <div style={{
-          display: 'flex', flexWrap: 'wrap', gap: 8,
-          marginTop: 18,
-        }}>
-          <a href="#fistula-section" style={{
-            display: 'inline-flex', alignItems: 'center', gap: 6,
-            padding: '6px 14px', borderRadius: 999,
-            background: 'rgba(249,96,0,0.10)',
-            color: CIPRB_BLUE,
-            fontSize: 12.5, fontWeight: 600, textDecoration: 'none',
-            border: '1px solid rgba(249,96,0,0.20)',
-          }}>
-            {t('ciprbExtras.jumpFistula')}
-          </a>
-          <a href="#mpdsr-section" style={{
-            display: 'inline-flex', alignItems: 'center', gap: 6,
-            padding: '6px 14px', borderRadius: 999,
-            background: 'rgba(249,96,0,0.10)',
-            color: CIPRB_BLUE,
-            fontSize: 12.5, fontWeight: 600, textDecoration: 'none',
-            border: '1px solid rgba(249,96,0,0.20)',
-          }}>
-            {t('ciprbExtras.jumpMpdsr')}
-          </a>
-          <a href="#nearmiss-section" style={{
-            display: 'inline-flex', alignItems: 'center', gap: 6,
-            padding: '6px 14px', borderRadius: 999,
-            background: 'rgba(249,96,0,0.10)',
-            color: CIPRB_BLUE,
-            fontSize: 12.5, fontWeight: 600, textDecoration: 'none',
-            border: '1px solid rgba(249,96,0,0.20)',
-          }}>
-            Jump to Near Miss
-          </a>
-          {/* Jump-to-Response-Plan pill removed — tracker is hidden until
-              a Kobo form is wired for live executed-count submissions. */}
-        </div>
+        {/* Jump strip relocated to sit directly above the Fistula "AT A
+            GLANCE" band (see below) so the two programmes are reachable
+            without scrolling the long hero first. */}
 
         {/* ─── Reporting period toggle ───
             Per Animesh Q8: default stays contract window; MPDSR + Fistula
@@ -955,6 +923,35 @@ export default function CIPRBDashboard() {
         </div>
 
       </section>
+
+      {/* ─── Programme jump nav (sticky) ───
+          Two pills — Fistula + MPDSR — pinned just above the AT A GLANCE
+          band. Sticky so they stay reachable while scrolling through the
+          long Fistula stack, killing the scroll-back-up problem. */}
+      <div style={{
+        position: 'sticky', top: 8, zIndex: 30,
+        display: 'flex', flexWrap: 'wrap', gap: 8,
+        padding: '8px 10px', marginBottom: 12,
+        background: 'var(--surface)',
+        border: '1px solid var(--hair)', borderRadius: 999,
+        boxShadow: '0 4px 14px rgba(0,0,0,0.06)',
+        width: 'fit-content',
+      }}>
+        <a href="#fistula-section" style={{
+          display: 'inline-flex', alignItems: 'center', gap: 6,
+          padding: '6px 16px', borderRadius: 999,
+          background: 'rgba(249,96,0,0.10)', color: CIPRB_BLUE,
+          fontSize: 13, fontWeight: 600, textDecoration: 'none',
+          border: '1px solid rgba(249,96,0,0.22)',
+        }}>{t('ciprbExtras.jumpFistula')}</a>
+        <a href="#mpdsr-section" style={{
+          display: 'inline-flex', alignItems: 'center', gap: 6,
+          padding: '6px 16px', borderRadius: 999,
+          background: 'rgba(249,96,0,0.10)', color: CIPRB_BLUE,
+          fontSize: 13, fontWeight: 600, textDecoration: 'none',
+          border: '1px solid rgba(249,96,0,0.22)',
+        }}>{t('ciprbExtras.jumpMpdsr')}</a>
+      </div>
 
       {/* ───────────────── Fistula KPI band ───────────────── */}
       <section className="section" id="fistula-section" style={{ marginTop: 0, scrollMarginTop: 80 }}>

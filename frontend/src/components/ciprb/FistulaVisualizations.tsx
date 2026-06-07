@@ -270,8 +270,12 @@ function useFistulaAggregates(
 
 // ─── Campaign Metrics tiles ──────────────────────────────────────────────────
 
-function MetricTile({ icon, label, value, sub }: {
+function MetricTile({ icon, label, value, sub, pct, pctLabel }: {
   icon: React.ReactNode; label: string; value: number; sub: string;
+  // When set, a "<pct>% <pctLabel>" line renders under the value — used on
+  // the funnel-stage tiles so each stage is read as a share of suspected,
+  // not just a raw count.
+  pct?: number | null; pctLabel?: string;
 }) {
   return (
     <div className="card" style={{ padding: 18, display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -287,11 +291,21 @@ function MetricTile({ icon, label, value, sub }: {
         }}>{icon}</span>
         {label}
       </div>
-      <div style={{
-        fontSize: 32, fontWeight: 800, color: 'var(--ink)',
-        fontVariantNumeric: 'tabular-nums', lineHeight: 1, letterSpacing: '-0.02em',
-      }}>{value.toLocaleString()}</div>
-      <div style={{ fontSize: 11.5, color: 'var(--ink-3)' }}>{sub}</div>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
+        <span style={{
+          fontSize: 32, fontWeight: 800, color: 'var(--ink)',
+          fontVariantNumeric: 'tabular-nums', lineHeight: 1, letterSpacing: '-0.02em',
+        }}>{value.toLocaleString()}</span>
+        {pct != null && (
+          <span style={{
+            fontSize: 14, fontWeight: 700, color: CIPRB_BLUE,
+            fontVariantNumeric: 'tabular-nums',
+          }}>{Math.round(pct)}%</span>
+        )}
+      </div>
+      <div style={{ fontSize: 11.5, color: 'var(--ink-3)' }}>
+        {pct != null && pctLabel ? `${pctLabel} · ${sub}` : sub}
+      </div>
     </div>
   )
 }
@@ -427,6 +441,11 @@ export function FistulaVisualizations({
   // carries the three-slice structure Animesh asked for.
   const pieTotal = pieData.reduce((s, d) => s + d.value, 0)
 
+  // Share of suspected for the funnel-stage tiles. Null when there is no
+  // suspected base yet (avoids divide-by-zero / nonsense percentages).
+  const pctOfSuspected = (v: number): number | null =>
+    agg.suspected > 0 ? (v / agg.suspected) * 100 : null
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 36 }}>
 
@@ -454,14 +473,21 @@ export function FistulaVisualizations({
           <MetricTile icon={<Building2  size={13} />} label={t('fistulaViz.upazilas')}   value={agg.upazilas}   sub={t('fistulaViz.upazilasSub')} />
           <MetricTile icon={<Home       size={13} />} label={t('fistulaViz.households')} value={agg.households} sub={t('fistulaViz.householdsSub')} />
           <MetricTile icon={<Users      size={13} />} label={t('fistulaViz.population')} value={agg.population} sub={t('fistulaViz.populationSub')} />
-          <MetricTile icon={<Search      size={13} />} label="Suspected (campaign)" value={agg.campaignSuspected} sub="Suspected cases found" />
-          <MetricTile icon={<Stethoscope size={13} />} label="Diagnosed (campaign)" value={agg.campaignDiagnosed} sub="Confirmed during campaigns" />
-          {/* Pipeline-stage counts requested by CIPRB on the campaign card
-              (image5 "After"): the same Referred → Repaired → Rehabilitated
-              progression from Animesh's campaign report. */}
-          <MetricTile icon={<Send         size={13} />} label="Referred for Surgical Management" value={agg.referred}      sub="Sent to tertiary facility" />
-          <MetricTile icon={<Scissors     size={13} />} label="Surgically Repaired"             value={agg.repaired}      sub="Surgery outcome recorded" />
-          <MetricTile icon={<HeartHandshake size={13} />} label="Rehabilitated & Reintegrated"  value={agg.rehabilitated} sub="Rehabilitation support received" />
+          {/* The five pipeline stages all read from the SAME monotonic
+              source (CIPRBFistulaCase pipeline → agg.suspected…rehabilitated)
+              so they can never contradict each other (the old "suspected 0
+              but referred 19" bug came from mixing campaign-form counts with
+              case-pipeline counts). Each downstream stage shows its share of
+              suspected, so the funnel is read as % not just raw numbers. */}
+          <MetricTile icon={<Search      size={13} />} label="Suspected (campaign)" value={agg.suspected} sub="Suspected cases found" />
+          <MetricTile icon={<Stethoscope size={13} />} label="Diagnosed (campaign)" value={agg.identified} sub="Confirmed during campaigns"
+            pct={pctOfSuspected(agg.identified)} pctLabel="of suspected" />
+          <MetricTile icon={<Send         size={13} />} label="Referred for Surgical Management" value={agg.referred}      sub="Sent to tertiary facility"
+            pct={pctOfSuspected(agg.referred)} pctLabel="of suspected" />
+          <MetricTile icon={<Scissors     size={13} />} label="Surgically Repaired"             value={agg.repaired}      sub="Surgery outcome recorded"
+            pct={pctOfSuspected(agg.repaired)} pctLabel="of suspected" />
+          <MetricTile icon={<HeartHandshake size={13} />} label="Rehabilitated & Reintegrated"  value={agg.rehabilitated} sub="Rehabilitation support received"
+            pct={pctOfSuspected(agg.rehabilitated)} pctLabel="of suspected" />
         </div>
         <DataSource>Fistula Campaign · campaigns / households / population / districts / suspected / diagnosed / referred / repaired / rehabilitated · {t('fistulaViz.providedBy')}</DataSource>
       </div>
