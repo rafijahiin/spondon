@@ -146,12 +146,15 @@ export function DonutBreakdown({
                   innerRadius={48} outerRadius={72} paddingAngle={2} stroke="none"
                   startAngle={90} endAngle={-270}
                   isAnimationActive={false}
+                  // Hover handlers belong on the Pie (Recharts gives the slice
+                  // index); per-Cell onMouseEnter does not fire reliably.
+                  onMouseEnter={(_, idx: number) => setActive(idx)}
+                  onMouseMove={(_, idx: number) => setActive(idx)}
                   onMouseLeave={() => setActive(null)}>
                   {pie.map((d, idx) => (
                     <Cell key={d.name} fill={d.color}
                       opacity={active === null || active === idx ? 1 : 0.35}
-                      style={{ cursor: 'pointer', transition: 'opacity 150ms' }}
-                      onMouseEnter={() => setActive(idx)} />
+                      style={{ cursor: 'pointer', transition: 'opacity 150ms' }} />
                   ))}
                 </Pie>
               </PieChart>
