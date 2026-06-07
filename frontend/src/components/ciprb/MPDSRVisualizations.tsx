@@ -24,6 +24,7 @@ import { Info, Database, AlertTriangle } from 'lucide-react'
 import { api } from '@/api/client'
 import { DataSource } from '@/components/ui/DataSource'
 import type { MPDSRCase } from '@/types/index'
+import { BarBreakdown, DonutBreakdown, Histogram, StatTile } from './IndicatorCharts'
 
 // ─── Aggregates fetched from /api/mpdsr/aggregates/ ─────────────────────────
 
@@ -84,6 +85,8 @@ interface AggregatesPayload {
   action_plan_summaries: ActionPlanSummary[]
   totals: { mpdsr_cases: number; fistula_corner_cases: number; fistula_campaign_visits: number }
   review_counts?: ReviewCounts
+  // CIPRB Phase 3 — the 11 MPDSR major indicators (per-case breakdowns).
+  indicators?: Record<string, Record<string, number>>
 }
 
 function useAggregates(period?: { from: string; to: string }): AggregatesPayload | null {
@@ -1055,9 +1058,56 @@ export function MPDSRVisualizations({
         <CauseBreakdown cases={cases} />
         <DataSource>MPDSR Form 1 (community deaths) and Form 4 (facility deaths) · cause_of_death field · {t('mpdsrViz.providedBy')}</DataSource>
       </div>
+      <div>
+        <MPDSRIndicators indicators={agg?.indicators ?? null} />
+        <DataSource>MPDSR Form 01 (Community Maternal) + Form 04 (Facility Maternal) · 11 major indicators · {t('mpdsrViz.providedBy')}</DataSource>
+      </div>
       <div id="response-plan">
         <ResponsePlanTracker summaries={agg?.action_plan_summaries ?? []} />
         <DataSource>MPDSR Response Plan 2026 · {t('mpdsrViz.providedBy')}</DataSource>
+      </div>
+    </div>
+  )
+}
+
+// ─── MPDSR 11 major indicators (CIPRB corrections doc) ───────────────────────
+const MPDSR_LABELS = {
+  place_of_death: { home: 'Home', facility: 'Health facility', in_transit: 'In transit', other: 'Other' },
+  time_of_death: { antepartum: 'Antepartum', intrapartum: 'Intrapartum', postpartum_42d: 'Postpartum (≤42d)', unknown: 'Unknown' },
+  anc: { none: 'None', '1': '1 visit', '2': '2 visits', '3': '3 visits', '4_plus': '4+ visits', unknown: 'Unknown' },
+  pnc: { yes: 'Received', no: 'Not received', unknown: 'Unknown' },
+  mode: { nvd: 'NVD', csection: 'C-section', assisted_vaginal: 'Assisted vaginal', undelivered: 'Undelivered' },
+  outcome: { livebirth: 'Live birth', stillbirth: 'Stillbirth', na: 'N/A (undelivered)' },
+  place_delivery: { home: 'Home', gov_facility: 'Govt facility', private_facility: 'Private facility', in_transit: 'In transit', na: 'N/A' },
+  person: { doctor: 'Doctor', nurse: 'Nurse', midwife: 'Midwife', tba: 'TBA', relatives: 'Relatives', self: 'Self', none: 'No-one' },
+} as const
+
+function MPDSRIndicators({ indicators }: { indicators: Record<string, Record<string, number>> | null }) {
+  const ind = indicators ?? {}
+  const z = {} as Record<string, number>
+  return (
+    <div>
+      <div style={{ marginBottom: 14 }}>
+        <div className="kicker"><span className="dot" style={{ background: CIPRB_BLUE }} />MPDSR · 11 MAJOR INDICATORS</div>
+        <h3 style={{ margin: '6px 0 2px', fontSize: 18, fontWeight: 700, color: 'var(--ink)' }}>
+          Maternal death indicator breakdown
+        </h3>
+        <p style={{ fontSize: 12.5, color: 'var(--muted)', margin: 0 }}>
+          The 11 dashboard indicators CIPRB specified, from MPDSR Form 01 (Community Maternal) + Form 04 (Facility Maternal).
+        </p>
+      </div>
+      <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+        <DonutBreakdown title="1. Place of death"          data={ind.place_of_death ?? z} labels={MPDSR_LABELS.place_of_death} />
+        <BarBreakdown   title="2. Time of death"           data={ind.time_of_death ?? z} labels={MPDSR_LABELS.time_of_death} />
+        <Histogram      title="3. Gestational week at death" data={ind.gestational_weeks ?? z} />
+        <BarBreakdown   title="4. Antenatal care visits"   data={ind.anc_visits_count ?? z} labels={MPDSR_LABELS.anc} />
+        <StatTile       title="5. Postnatal care"          data={ind.pnc_received ?? z} highlight="yes" labels={MPDSR_LABELS.pnc} />
+        <DonutBreakdown title="6. Mode of delivery"        data={ind.mode_of_delivery ?? z} labels={MPDSR_LABELS.mode} />
+        <StatTile       title="7. Delivery outcome"        data={ind.delivery_outcome ?? z} highlight="livebirth" labels={MPDSR_LABELS.outcome} />
+        <DonutBreakdown title="8. Place of delivery"       data={ind.place_of_delivery ?? z} labels={MPDSR_LABELS.place_delivery} />
+        <BarBreakdown   title="9. Person assisted delivery" data={ind.person_assisted_delivery ?? z} labels={MPDSR_LABELS.person} />
+        <Histogram      title="10. Maternal age distribution" data={ind.maternal_age ?? z} />
+        <Histogram      title="11. Time of death after birth" data={ind.time_death_after_birth_hours ?? z} />
       </div>
     </div>
   )

@@ -30,6 +30,7 @@ import { DataSource } from '@/components/ui/DataSource'
 import { FistulaVisualizations } from '@/components/ciprb/FistulaVisualizations'
 import { MPDSRVisualizations } from '@/components/ciprb/MPDSRVisualizations'
 import { NearMissPanel } from '@/components/ciprb/NearMissPanel'
+import { FistulaIndicators } from '@/components/ciprb/FistulaIndicators'
 import { MPDSRDistrictMap } from '@/components/ciprb/MPDSRDistrictMap'
 import type { MPDSRCase, AuditEntry } from '@/types/index'
 
@@ -994,6 +995,11 @@ export default function CIPRBDashboard() {
       {/* ───────────────── Fistula visualizations (campaign / funnel / pie) ───────────────── */}
       <section className="section" style={{ marginTop: 8 }}>
         <FistulaVisualizations period={{ from: activePeriod.from, to: activePeriod.to }} districts={activeDonor.districts} />
+      </section>
+
+      {/* ───────────────── Fistula 17 major indicators (CIPRB spec) ───────────────── */}
+      <section className="section" style={{ marginTop: 8 }}>
+        <FistulaIndicators districts={activeDonor.districts} />
       </section>
 
       {/* ───────────────── Fistula registers (collapsible — raw data) ───────────────── */}

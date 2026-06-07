@@ -13,6 +13,7 @@ import { api } from '@/api/client'
 import { DataSource } from '@/components/ui/DataSource'
 import { useTranslation } from 'react-i18next'
 import { ShieldAlert, Activity, HeartPulse, Info } from 'lucide-react'
+import { DonutBreakdown } from './IndicatorCharts'
 
 const CIPRB_BLUE = '#F96000'
 const CIPRB_BLUE_LIGHT = '#FB904D'
@@ -25,6 +26,16 @@ interface MNMAggregates {
   life_threatening: Record<string, number>
   mode_of_delivery: Record<string, number>
   causes: Record<string, number>
+  contributory_conditions?: string[]
+}
+
+const MODE_LABELS: Record<string, string> = {
+  nvd: 'NVD', csection: 'C-section', assisted_vaginal: 'Assisted vaginal', undelivered: 'Undelivered',
+}
+const CAUSE_LABELS: Record<string, string> = {
+  haemorrhage: 'Haemorrhage', eclampsia: 'Eclampsia / pre-eclampsia', sepsis: 'Sepsis',
+  obstructed_labour: 'Obstructed labour', abortion_related: 'Abortion-related',
+  embolism: 'Embolism', indirect: 'Indirect cause', other: 'Other',
 }
 
 const SEVERE_LABELS: Record<string, string> = {
@@ -245,7 +256,34 @@ export function NearMissPanel() {
         </div>
       )}
 
-      <DataSource>CIPRB 9 — Maternal Near Miss audit · WHO MNM screening (severe / critical / life-threatening) · {t('mpdsrViz.providedBy', { defaultValue: 'Provided by CIPRB' })}</DataSource>
+      {/* Indicators 4, 5, 6 — mode of delivery, causes, contributory conditions */}
+      {total > 0 && (
+        <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginTop: 14 }}>
+          <DonutBreakdown title="4. Mode of delivery" data={data?.mode_of_delivery ?? {}} labels={MODE_LABELS} />
+          <DonutBreakdown title="5. Causes of near miss" data={data?.causes ?? {}} labels={CAUSE_LABELS} />
+          <div className="card" style={{ padding: 18, flex: '1 1 320px', minWidth: 280 }}>
+            <div style={{ marginBottom: 10 }}>
+              <div className="kicker"><span className="dot" style={{ background: CIPRB_BLUE }} />NOTES</div>
+              <h4 style={{ margin: '4px 0 0', fontSize: 14.5, fontWeight: 700, color: 'var(--ink)' }}>
+                6. Contributory / associated conditions
+              </h4>
+            </div>
+            {(data?.contributory_conditions ?? []).length === 0 ? (
+              <div style={{ padding: '20px 8px', fontSize: 12, color: 'var(--muted)' }}>
+                No contributory conditions recorded yet.
+              </div>
+            ) : (
+              <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12.5, color: 'var(--ink-2)', display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 200, overflowY: 'auto' }}>
+                {(data?.contributory_conditions ?? []).slice(0, 30).map((c, i) => (
+                  <li key={i}>{c}</li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+      )}
+
+      <DataSource>CIPRB 9 — Maternal Near Miss audit · WHO MNM screening + mode / causes / contributory · {t('mpdsrViz.providedBy', { defaultValue: 'Provided by CIPRB' })}</DataSource>
     </div>
   )
 }
