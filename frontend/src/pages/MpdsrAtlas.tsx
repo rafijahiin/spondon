@@ -14,7 +14,7 @@
  */
 import { useRef, useState } from 'react'
 import { domToPng } from 'modern-screenshot'
-import { Download } from 'lucide-react'
+import { Download, Info } from 'lucide-react'
 import { ChoroplethMap, useDistrictGeo, type RenderKind } from '@/components/atlas/ChoroplethMap'
 import { BivariateMap } from '@/components/atlas/BivariateMap'
 import { MPDSR_2024, MPDSR_TOTALS, type Indicator } from '@/data/mpdsr2024'
@@ -38,14 +38,29 @@ function Pill({ active, onClick, children }: { active: boolean; onClick: () => v
   )
 }
 
-function SectionHead({ kicker, title, sub }: { kicker: string; title: string; sub: string }) {
+function SectionHead({ kicker, title, sub, read, take }: {
+  kicker: string; title: string; sub: string; read?: string; take?: string
+}) {
   return (
     <div style={{ margin: '34px 0 14px' }}>
       <div className="kicker" style={{ marginBottom: 6 }}>
         <span className="dot" style={{ background: '#a50f15' }} />{kicker}
       </div>
       <h2 style={{ margin: 0, fontSize: 19, fontWeight: 700, color: 'var(--ink)' }}>{title}</h2>
-      <p style={{ margin: '4px 0 0', fontSize: 12.5, color: 'var(--muted)', maxWidth: 760 }}>{sub}</p>
+      <p style={{ margin: '4px 0 0', fontSize: 12.5, color: 'var(--muted)', maxWidth: 820 }}>{sub}</p>
+      {(read || take) && (
+        <div style={{
+          marginTop: 10, display: 'flex', gap: 10, alignItems: 'flex-start',
+          background: 'rgba(249,96,0,0.06)', border: '1px solid rgba(249,96,0,0.18)',
+          borderRadius: 10, padding: '10px 13px', maxWidth: 820,
+        }}>
+          <Info size={15} style={{ color: 'var(--unfpa, #F96000)', flexShrink: 0, marginTop: 1 }} />
+          <div style={{ fontSize: 12.5, lineHeight: 1.55, color: 'var(--ink-2)' }}>
+            {read && <div><b>How to read it:</b> {read}</div>}
+            {take && <div style={{ marginTop: read ? 3 : 0 }}><b>What it tells you:</b> {take}</div>}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -99,11 +114,27 @@ export default function MpdsrAtlas() {
         </div>
       </div>
 
+      {/* What's on this page — plain guide */}
+      <div style={{
+        background: 'var(--surface-2)', border: '1px solid var(--hair)', borderRadius: 12,
+        padding: '14px 16px', marginTop: 6, fontSize: 12.5, color: 'var(--ink-2)', lineHeight: 1.6,
+      }}>
+        <div style={{ fontWeight: 700, color: 'var(--ink)', marginBottom: 4 }}>What's on this page</div>
+        Four sections, simplest first:
+        <b> 1) Death notification</b> — where deaths were reported (the 4 maps requested).
+        <b> 2) What changed since 2023</b> — did reporting go up or down vs last year.
+        <b> 3) Where to act first</b> — districts with many deaths but very few reviewed.
+        <b> 4) Top-10 districts</b> — the highest-burden districts in a list.
+        Every map has a legend (bottom-left) and a <b>Download PNG</b> button for your reports.
+      </div>
+
       {/* ── Section 1: Notification (the 4 requested maps) ── */}
       <SectionHead
         kicker="REQUESTED · 4 MAPS"
         title="Death notification"
-        sub="District and divisional notification — the four maps requested. Toggle the indicator and switch between filled choropleth and proportional symbols."
+        sub="District and divisional notification — the four maps requested. Toggle the indicator, or switch between a filled map (choropleth) and sized circles (proportional symbols)."
+        read="Each area is shaded by how many deaths were reported there in 2024. Darker = more deaths reported. Maternal maps are red, neonatal maps are blue. Hover any district for its exact numbers."
+        take="Where the most maternal / neonatal deaths are being reported across the country."
       />
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, alignItems: 'center', marginBottom: 16 }}>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -134,7 +165,9 @@ export default function MpdsrAtlas() {
       <SectionHead
         kicker="INNOVATION · PROGRESS"
         title="What changed since 2023"
-        sub="Diverging maps of the 2023→2024 change in community notifications. Blue = more deaths notified (better surveillance), red = fewer."
+        sub="The same districts, but coloured by how this year's reporting compares with last year's."
+        read="We subtracted each district's 2023 reported deaths from its 2024 number. BLUE = more deaths were reported in 2024 than 2023 (usually means reporting / surveillance improved). RED = fewer were reported this year. GREY = little change. Hover a district to see '2023 → 2024'."
+        take="Blue districts are reporting better than last year; red districts reported fewer than last year — worth asking whether deaths are being missed there."
       />
       <div className="atlas-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 18 }}>
         <ChoroplethMap metric="maternal" level="district" indicator="notified" mode="change" geoData={geoData} geoError={geoError} />
@@ -145,7 +178,9 @@ export default function MpdsrAtlas() {
       <SectionHead
         kicker="INNOVATION · TARGETING"
         title="Where to act first"
-        sub="Bivariate priority: burden (deaths notified) × review gap (low % reviewed). The dark corner flags districts with many deaths that are barely being reviewed."
+        sub="One map that combines two things at once: how many deaths a district has, and how few of them are being reviewed."
+        read="Colour mixes two scales. Going UP = more deaths (bigger problem). Going RIGHT = fewer of those deaths reviewed (bigger gap). So the DARK-BLUE corner = many deaths AND almost none reviewed. Pale grey = few deaths and most reviewed. The little 3×3 key (bottom-left) shows the mix."
+        take="Dark-blue districts are where review is weakest relative to need — act there first. Example: Chittagong had 107 maternal deaths but only ~1% reviewed."
       />
       <div className="atlas-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 18 }}>
         <BivariateMap metric="maternal" geoData={geoData} geoError={geoError} />

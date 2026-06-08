@@ -215,7 +215,9 @@ export function ChoroplethMap({
   const title = mode === 'change'
     ? `${METRIC_LABEL[metric]} deaths — change in notifications, 2023→2024`
     : `${METRIC_LABEL[metric]} deaths — ${INDICATOR_LABEL[indicator]} (2024)`
-  const subtitle = level === 'district' ? 'By district · 64 districts' : 'By division · 8 divisions'
+  const subtitle = mode === 'change'
+    ? 'Blue = more reported than 2023 · Red = fewer · Grey = little change'
+    : level === 'district' ? 'By district · 64 districts' : 'By division · 8 divisions'
 
   const handleExport = async () => {
     if (!exportRef.current) return
