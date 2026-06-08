@@ -12,6 +12,7 @@ import {
 import { useReducedMotion } from 'motion/react'
 import { useTranslation } from 'react-i18next'
 import { api, apiErrorMessage } from '@/api/client'
+import { bandhuField, isBandhuForm } from '@/data/bandhuFieldLabels'
 import { usePolling } from '@/hooks/usePolling'
 import { PageLoader, LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { formatDateTime } from '@/utils/format'
@@ -130,25 +131,43 @@ function _formatValue(v: any): { display: string; isEmpty: boolean; mono?: boole
   return { display: s, isEmpty: false, mono: /^[\d.\s,:/-]+$/.test(s) }
 }
 
-export function groupSubmittedFields(payload: Record<string, any>): FieldGroup[] {
+export function groupSubmittedFields(payload: Record<string, any>, formType?: string): FieldGroup[] {
+  const bandhu = isBandhuForm(formType)
   const buckets = new Map<string, FieldRow[]>()
+  const order: string[] = []   // first-seen group order (used for Bandhu)
   for (const [rawKey, value] of Object.entries(payload)) {
     const key = rawKey.split('/').pop()!
     if (_isSystemKey(key, rawKey)) continue
+
     let groupTitle = 'Other'
-    let stripPrefix = ''
-    for (const [re, title, strip] of _PREFIX_GROUPS) {
-      if (re.test(key)) { groupTitle = title; stripPrefix = strip; break }
+    let label = ''
+    // Bandhu fields carry per-tool prefixes — resolve them to the source tool
+    // group with abbreviations expanded, instead of the generic "Pr tg".
+    const bf = bandhu ? bandhuField(key) : null
+    if (bf) {
+      groupTitle = bf.group
+      label = bf.label
+    } else {
+      let stripPrefix = ''
+      for (const [re, title, strip] of _PREFIX_GROUPS) {
+        if (re.test(key)) { groupTitle = title; stripPrefix = strip; break }
+      }
+      label = _humanise(key, stripPrefix)
     }
+
     const fmt = _formatValue(value)
-    const row: FieldRow = {
-      label: _humanise(key, stripPrefix),
-      display: fmt.display,
-      isEmpty: fmt.isEmpty,
-      mono: fmt.mono,
-    }
-    if (!buckets.has(groupTitle)) buckets.set(groupTitle, [])
+    const row: FieldRow = { label, display: fmt.display, isEmpty: fmt.isEmpty, mono: fmt.mono }
+    if (!buckets.has(groupTitle)) { buckets.set(groupTitle, []); order.push(groupTitle) }
     buckets.get(groupTitle)!.push(row)
+  }
+  // Bandhu: group titles already encode their source tool — keep first-seen
+  // order (Submission first), 'Other' last.
+  if (bandhu) {
+    const titles = order.filter(t => t !== 'Other')
+    if (buckets.has('Other')) titles.push('Other')
+    const submissionFirst = titles.sort((a, b) =>
+      (a === 'Submission' ? -1 : 0) - (b === 'Submission' ? -1 : 0))
+    return submissionFirst.map(title => ({ title, rows: buckets.get(title)! }))
   }
   // Stable canonical ordering. Patient first, Other last.
   const ORDER = [
@@ -1087,7 +1106,7 @@ export default function ManagerApprovals() {
                   const _rdForReadout = hasPatientBanner
                     ? Object.fromEntries(Object.entries(_rd).filter(([k]) => !DUP_KEYS.has(k)))
                     : _rd;
-                  const groups = groupSubmittedFields(_rdForReadout);
+                  const groups = groupSubmittedFields(_rdForReadout, selected.organisation);
                   return (
                     <div style={{ padding: '20px 0', borderBottom: '1px solid var(--hair)' }}>
                       <div style={{

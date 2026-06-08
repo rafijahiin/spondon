@@ -30,6 +30,7 @@ import { DataSource } from '@/components/ui/DataSource'
 import { IndicatorGrid } from '@/components/indicators/IndicatorGrid'
 import { CumulativeAverageTile } from '@/components/indicators/CumulativeAverageTile'
 import { PhdHeadlineCards } from '@/components/phd/PhdHeadlineCards'
+import { BandhuHeadlineCards } from '@/components/bandhu/BandhuHeadlineCards'
 import { formatDate } from '@/utils/format'
 import type { PartnerKPIs, CentresResponse, Alert, ProgramsSummary } from '@/types'
 import {
@@ -298,20 +299,6 @@ export function OrgDashboard({ partner }: Props) {
 
   if (kpisLoading && !kpis && programsLoading) return <PageLoader />
 
-  // ── KPI tiles ─────────────────────────────────────────────────────────────
-
-  const orgKpis: TileProps[] = isPHD ? [
-    { label: t('org.kpiSubmissions'),   sub: t('org.kpiSubmissionsSub'),    value: totalSubmissions, delta: momChange, color: 'unfpa-bright', icon: <FileText size={16} />, spark: sparkClinical.length > 1 ? sparkClinical : [0, 10, 20, 30, 40, totalSubmissions] },
-    { label: t('org.kpiAnc'),           sub: t('org.kpiAncSub'),            value: categories.Clinical ?? 0, delta: undefined, color: 'coral', icon: <Heart size={16} />, spark: sparkClinical },
-    { label: t('org.kpiActiveWorkers'), sub: t('org.kpiActiveWorkersPhd'),  value: displayKpis.active_workers, delta: undefined, color: 'emerald', icon: <Activity size={16} />, spark: sparkCommunity },
-    { label: t('org.kpiFistula'),       sub: t('org.kpiFistulaSub'),        value: displayKpis.fistula_cases, delta: undefined, color: 'amber', icon: <Heart size={16} /> },
-  ] : [
-    { label: t('org.kpiSubmissions'),   sub: t('org.kpiSubmissionsSub'),     value: totalSubmissions, delta: momChange, color: 'violet', icon: <FileText size={16} />, spark: sparkClinical.length > 1 ? sparkClinical : [0, 10, 20, 30, 40, totalSubmissions] },
-    { label: t('org.kpiOutreach'),      sub: t('org.kpiOutreachSub'),        value: categories.Community ?? 0, delta: undefined, color: 'coral', icon: <Megaphone size={16} />, spark: sparkCommunity },
-    { label: t('org.kpiActiveWorkers'), sub: t('org.kpiActiveWorkersBondhu'),value: displayKpis.active_workers, delta: undefined, color: 'emerald', icon: <Activity size={16} /> },
-    { label: t('org.kpiGbv'),           sub: t('org.kpiGbvSub'),             value: displayKpis.fistula_cases, delta: undefined, color: 'rose', icon: <HeartHandshake size={16} /> },
-  ]
-
   const dateStr = new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' }).toUpperCase()
 
   return (
@@ -384,20 +371,7 @@ export function OrgDashboard({ partner }: Props) {
            its legacy programme tiles until its own headline set is confirmed.
            ═══════════════════════════════════════════════════════════════ */}
       <section className="section" style={{ marginTop: 24 }}>
-        {isPHD ? (
-          <PhdHeadlineCards />
-        ) : (
-          <>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 18 }}>
-              {orgKpis.map((k, i) => (
-                <Tile key={i} {...k} />
-              ))}
-            </div>
-            <DataSource>
-              Aggregated from Bandhu service tools — F-01 Wellness Centre Logbook, F-05 Patient Record, F-04 Daily Outreach, F-02 GBV Register, F-06 HTC Register submissions
-            </DataSource>
-          </>
-        )}
+        {isPHD ? <PhdHeadlineCards /> : <BandhuHeadlineCards />}
       </section>
 
       {/* "Programme delivery" stacked area removed per Animesh — categories
