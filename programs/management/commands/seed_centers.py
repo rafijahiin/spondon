@@ -25,57 +25,39 @@ def _seed_db_enabled() -> bool:
     raw = os.environ.get('SEED_DB', '').strip().lower()
     return raw not in ('', '0', 'false', 'no', 'off')
 
+# Bandhu's 8 project districts each host a community-friendly Drop-In Centre
+# (MIS Requirements doc, indicator 1.8 = 8 centres). The Dhaka Key Population
+# Clinic (indicator 1.6 = 1) is a SEPARATE centre type so it never inflates
+# the 8-DIC count.
 BONDHU_DICS = [
-    {
-        'code': 'BND-DIC-01',
-        'name': 'Bandhu DIC Sunamganj',
-        'name_bangla': 'বন্ধু ডিআইসি সুনামগঞ্জ',
-        'center_type': 'DIC',
-        'district': 'Sunamganj',
-        'upazila': 'Sunamganj Sadar',
-        'lat': 24.8817,
-        'lng': 91.4053,
-    },
-    {
-        'code': 'BND-DIC-02',
-        'name': 'Bandhu DIC Bandarban',
-        'name_bangla': 'বন্ধু ডিআইসি বান্দরবান',
-        'center_type': 'DIC',
-        'district': 'Bandarban',
-        'upazila': 'Bandarban Sadar',
-        'lat': 22.1953,
-        'lng': 92.2184,
-    },
-    {
-        'code': 'BND-DIC-03',
-        'name': 'Bandhu DIC Chandpur',
-        'name_bangla': 'বন্ধু ডিআইসি চাঁদপুর',
-        'center_type': 'DIC',
-        'district': 'Chandpur',
-        'upazila': 'Chandpur Sadar',
-        'lat': 23.2333,
-        'lng': 90.6500,
-    },
-    {
-        'code': 'BND-DIC-04',
-        'name': 'Bandhu DIC Noakhali',
-        'name_bangla': 'বন্ধু ডিআইসি নোয়াখালী',
-        'center_type': 'DIC',
-        'district': 'Noakhali',
-        'upazila': 'Noakhali Sadar',
-        'lat': 22.8697,
-        'lng': 91.0994,
-    },
-    {
-        'code': 'BND-DIC-05',
-        'name': 'Bandhu DIC Dhaka',
-        'name_bangla': 'বন্ধু ডিআইসি ঢাকা',
-        'center_type': 'DIC',
-        'district': 'Dhaka',
-        'upazila': 'Dhaka Sadar',
-        'lat': 23.7104,
-        'lng': 90.4074,
-    },
+    {'code': 'BND-DIC-01', 'name': 'Bandhu DIC Sunamganj',
+     'name_bangla': 'বন্ধু ডিআইসি সুনামগঞ্জ', 'center_type': 'DIC',
+     'district': 'Sunamganj', 'upazila': 'Sunamganj Sadar', 'lat': 24.8817, 'lng': 91.4053},
+    {'code': 'BND-DIC-02', 'name': 'Bandhu DIC Bandarban',
+     'name_bangla': 'বন্ধু ডিআইসি বান্দরবান', 'center_type': 'DIC',
+     'district': 'Bandarban', 'upazila': 'Bandarban Sadar', 'lat': 22.1953, 'lng': 92.2184},
+    {'code': 'BND-DIC-03', 'name': 'Bandhu DIC Chandpur',
+     'name_bangla': 'বন্ধু ডিআইসি চাঁদপুর', 'center_type': 'DIC',
+     'district': 'Chandpur', 'upazila': 'Chandpur Sadar', 'lat': 23.2333, 'lng': 90.6500},
+    {'code': 'BND-DIC-04', 'name': 'Bandhu DIC Noakhali',
+     'name_bangla': 'বন্ধু ডিআইসি নোয়াখালী', 'center_type': 'DIC',
+     'district': 'Noakhali', 'upazila': 'Noakhali Sadar', 'lat': 22.8697, 'lng': 91.0994},
+    {'code': 'BND-DIC-05', 'name': 'Bandhu DIC Chattogram',
+     'name_bangla': 'বন্ধু ডিআইসি চট্টগ্রাম', 'center_type': 'DIC',
+     'district': 'Chittagong', 'upazila': 'Kotwali', 'lat': 22.3569, 'lng': 91.7832},
+    {'code': 'BND-DIC-06', 'name': 'Bandhu DIC Narayanganj',
+     'name_bangla': 'বন্ধু ডিআইসি নারায়ণগঞ্জ', 'center_type': 'DIC',
+     'district': 'Narayanganj', 'upazila': 'Narayanganj Sadar', 'lat': 23.6238, 'lng': 90.5000},
+    {'code': 'BND-DIC-07', 'name': 'Bandhu DIC Habiganj',
+     'name_bangla': 'বন্ধু ডিআইসি হবিগঞ্জ', 'center_type': 'DIC',
+     'district': 'Habiganj', 'upazila': 'Habiganj Sadar', 'lat': 24.3745, 'lng': 91.4155},
+    {'code': 'BND-DIC-08', 'name': 'Bandhu DIC Manikganj',
+     'name_bangla': 'বন্ধু ডিআইসি মানিকগঞ্জ', 'center_type': 'DIC',
+     'district': 'Manikganj', 'upazila': 'Manikganj Sadar', 'lat': 23.8617, 'lng': 90.0003},
+    # Dhaka Key Population Clinic — distinct type (not a DIC).
+    {'code': 'BND-KPC-01', 'name': 'Bandhu KP Clinic Dhaka',
+     'name_bangla': 'বন্ধু কেপি ক্লিনিক ঢাকা', 'center_type': 'KP_CLINIC',
+     'district': 'Dhaka', 'upazila': 'Dhaka Sadar', 'lat': 23.7104, 'lng': 90.4074},
 ]
 
 # PHD's 9 brothel-based wellness centres — the real Master List from
@@ -126,7 +108,7 @@ PHD_SUB_DICS = []  # PHD's real Master List has exactly the 9 wellness centres a
 
 
 class Command(BaseCommand):
-    help = 'Seed ServiceCenter records for Bandhu (5 DICs) and PHD (9 wellness centres R001..D009)'
+    help = 'Seed ServiceCenter records for Bandhu (8 DICs + 1 Dhaka KP clinic) and PHD (9 wellness centres R001..D009)'
 
     def handle(self, *args, **options):
         if not _seed_db_enabled():

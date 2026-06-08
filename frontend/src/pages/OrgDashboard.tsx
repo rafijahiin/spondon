@@ -351,7 +351,7 @@ export function OrgDashboard({ partner }: Props) {
             }}>
               {isPHD
                 ? 'Partners in Health and Development'
-                : 'Gender Diverse Population'}
+                : 'Key Population SRHR, HIV & GBV Response'}
             </p>
             <p className="hero-lede anim-rise d2">
               {partner} delivered <b><CountUp value={totalSubmissions} /> submissions</b> this
@@ -394,7 +394,7 @@ export function OrgDashboard({ partner }: Props) {
               ))}
             </div>
             <DataSource>
-              Aggregated from KF-01 (clients), KF-02 (clinic visits), KF-08 (outreach), KF-09 (counselling), KF-GBV submissions
+              Aggregated from Bandhu service tools — F-01 Wellness Centre Logbook, F-05 Patient Record, F-04 Daily Outreach, F-02 GBV Register, F-06 HTC Register submissions
             </DataSource>
           </>
         )}
@@ -422,7 +422,7 @@ export function OrgDashboard({ partner }: Props) {
           </div>
           <DataSource>{isPHD
             ? 'Per-form counts from PHD-1 FSW Registration · PHD-2 Patient Services · PHD-3 Activity & Operations'
-            : 'Per-form submission counts from KF-01 through KF-20 + GBV + ANC + Referral Kobo XLSForms'}</DataSource>
+            : 'Per-form submission counts from Bandhu tools F-01 to F-13, Referral & Counseling Kobo XLSForms'}</DataSource>
         </section>
       )}
 
@@ -443,7 +443,7 @@ export function OrgDashboard({ partner }: Props) {
         />
         {/* Cumulative average tile — Animesh's "single unified progress %"
             for the whole partner. Simple mean of every indicator's %.
-            Bandhu (19 indicators) gets the most value here, but PHD also
+            Bandhu (20 indicators) gets the most value here, but PHD also
             sees its 22-indicator average at a glance. */}
         <CumulativeAverageTile
           org={partner}

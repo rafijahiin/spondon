@@ -14,11 +14,13 @@ class ServiceCenter(TimestampedModel):
     BROTHEL = 'BROTHEL'
     SUB_DIC = 'SUB_DIC'
     MOBILE = 'MOBILE'
+    KP_CLINIC = 'KP_CLINIC'
     CENTER_TYPE_CHOICES = [
         (DIC, 'Drop-In Center'),
         (BROTHEL, 'Brothel-Based Center'),
         (SUB_DIC, 'Sub Drop-In Center'),
         (MOBILE, 'Mobile Outreach'),
+        (KP_CLINIC, 'Key Population Clinic'),
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

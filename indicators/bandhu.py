@@ -34,7 +34,7 @@ def compute_I_BND_1_1(org, period_start, period_end):
 
 
 def compute_I_BND_1_2(org, period_start, period_end):
-    """GBV survivors screened and referred. Target: 200"""
+    """GBV survivors screened and referred. Target: 120 (MIS doc)."""
     return GBVCase.objects.filter(
         organisation=org, approval_status=APPROVED,
         incident_date__range=(period_start, period_end),
@@ -42,7 +42,7 @@ def compute_I_BND_1_2(org, period_start, period_end):
 
 
 def compute_I_BND_1_3(org, period_start, period_end):
-    """MHPSS counselling sessions. Target: 75"""
+    """Individuals receiving MHPSS counselling. Target: 48 persons (MIS doc)."""
     individual = IndividualCounselling.objects.filter(
         organisation=org, approval_status=APPROVED,
         session_date__range=(period_start, period_end),
@@ -79,17 +79,27 @@ def compute_I_BND_1_4B(org, period_start, period_end):
     return outreach + group
 
 
-def compute_I_BND_1_5(org, period_start, period_end):
-    """HIV/STI tests conducted. Target: 2,000"""
+def compute_I_BND_1_5_hiv(org, period_start, period_end):
+    """KP receiving HIV testing services. Target: 2,000 (MIS doc, code 1.5b).
+
+    Counts HIV test records from the HTC Service Register (F-06)."""
     return HIVSTITestResult.objects.filter(
         organisation=org, approval_status=APPROVED,
         testing_date__range=(period_start, period_end),
     ).count()
 
 
-def compute_I_BND_1_5_centers(org):
-    """SRHR service centres. Target: 5"""
-    return ServiceCenter.objects.filter(organisation=org, is_active=True).count()
+def compute_I_BND_1_5_sti(org, period_start, period_end):
+    """KP receiving STI services. Target: 2,000 (MIS doc, code 1.5a).
+
+    Counts clinic visits where an STI service was delivered (Patient Record
+    Register F-05). Proxy on sti_screening_done until the register's
+    STI-case fields are wired in P1."""
+    return ClinicVisit.objects.filter(
+        organisation=org, approval_status=APPROVED,
+        visit_date__range=(period_start, period_end),
+        sti_screening_done=True,
+    ).count()
 
 
 def compute_I_BND_1_6(org):
@@ -100,7 +110,7 @@ def compute_I_BND_1_6(org):
 
 
 def compute_I_BND_1_7(org, period_start, period_end):
-    """KP referred and linked to ART/treatment. Target: 175"""
+    """KP referred and linked to ART/treatment. Target: 25 (MIS doc)."""
     return Referral.objects.filter(
         organisation=org, approval_status=APPROVED,
         referral_date__range=(period_start, period_end),
@@ -110,18 +120,22 @@ def compute_I_BND_1_7(org, period_start, period_end):
 
 
 def compute_I_BND_1_8(org):
-    """DICs established. Target: 5"""
+    """Community-friendly drop-in centres established/strengthened.
+    Target: 8 (MIS doc — one per project district)."""
     return ServiceCenter.objects.filter(
         organisation=org, is_active=True, center_type='DIC'
     ).count()
 
 
 def compute_I_BND_1_9(org, period_start, period_end):
-    """KP individuals reached via mobile outreach. Target: 200"""
+    """Mobile outreach health camps conducted. Target: 40 camps (MIS doc).
+
+    Counts camp events (rows), not individuals served — the indicator unit
+    is camps."""
     return MobileHealthCamp.objects.filter(
         organisation=org, approval_status=APPROVED,
         camp_date__range=(period_start, period_end),
-    ).aggregate(t=Sum('clients_served'))['t'] or 0
+    ).count()
 
 
 def compute_I_BND_2_1(org, period_start, period_end):
@@ -213,17 +227,28 @@ def compute_I_BND_4_1(org, period_start, period_end):
     return iec + outreach + clinic
 
 
-def compute_I_BND_4_3(org, period_start, period_end):
-    """E-billboards / digital displays installed at hospitals. Target: 4.
+def compute_I_BND_4_2(org, period_start, period_end):
+    """Printed billboards installed. Target: 40 (MIS doc, code 4.2).
 
-    Filters IECMaterial by material_type=DIGITAL — covers the Bandhu
-    e-billboard rollout. Counts installations (rows), not units (sum of
-    quantity) because the indicator unit is 'installations'."""
+    Counts IECMaterial rows of type BILLBOARD (printed) — distinct from the
+    DIGITAL e-billboards counted by 4.3."""
+    return IECMaterial.objects.filter(
+        organisation=org, approval_status=APPROVED,
+        date_distributed__range=(period_start, period_end),
+        material_type=IECMaterial.BILLBOARD,
+    ).aggregate(t=Sum('quantity'))['t'] or 0
+
+
+def compute_I_BND_4_3(org, period_start, period_end):
+    """E-billboards / digital displays installed at hospitals. Target: 16.
+
+    Filters IECMaterial by material_type=DIGITAL — the Bandhu e-billboard
+    rollout. Sums quantity (installations) across rows."""
     return IECMaterial.objects.filter(
         organisation=org, approval_status=APPROVED,
         date_distributed__range=(period_start, period_end),
         material_type=IECMaterial.DIGITAL,
-    ).count()
+    ).aggregate(t=Sum('quantity'))['t'] or 0
 
 
 # ─── Activity-code registry ──────────────────────────────────────────────────
@@ -246,8 +271,8 @@ ACTIVITY_REGISTRY = {
     '1.3':  compute_I_BND_1_3,
     '1.4a': compute_I_BND_1_4A,
     '1.4b': compute_I_BND_1_4B,
-    '1.5a': compute_I_BND_1_5_centers,  # org-only, no period
-    '1.5b': compute_I_BND_1_5,
+    '1.5a': compute_I_BND_1_5_sti,      # STI services (clinic)
+    '1.5b': compute_I_BND_1_5_hiv,      # HIV testing (HTC register)
     '1.6':  compute_I_BND_1_6,          # org-only, no period
     '1.7':  compute_I_BND_1_7,
     '1.8':  compute_I_BND_1_8,          # org-only, no period
@@ -259,8 +284,9 @@ ACTIVITY_REGISTRY = {
     '2.5':  compute_I_BND_2_5,
     '2.6':  compute_I_BND_2_6,
     '4.1':  compute_I_BND_4_1,
+    '4.2':  compute_I_BND_4_2,
     '4.3':  compute_I_BND_4_3,
 }
 
 # Codes whose compute function takes only (org) — no period args.
-ORG_ONLY_CODES = {'1.5a', '1.6', '1.8'}
+ORG_ONLY_CODES = {'1.6', '1.8'}
