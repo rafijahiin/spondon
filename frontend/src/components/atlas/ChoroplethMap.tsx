@@ -25,12 +25,13 @@ import 'leaflet/dist/leaflet.css'
 import { FitToData } from '@/components/maps/FitToData'
 import { normaliseDistrict } from '@/data/partnerDistricts'
 import {
-  MPDSR_2024, MPDSR_SOURCE, type Metric, type Indicator,
-  districtValues, divisionValues, divisionOfDistrict,
+  MPDSR_2024, MPDSR_SOURCE, DIVISIONS, type Metric, type Indicator,
+  districtValues, divisionValues,
 } from '@/data/mpdsr2024'
 import { NOTIFIED_2023 } from '@/data/mpdsr2023'
 
 const GEOJSON_URL = '/bangladesh-adm2.geojson'
+const GEOJSON_ADM1_URL = '/bangladesh-adm1.geojson'
 export const ATLAS_FONT = "'Atkinson Hyperlegible', system-ui, -apple-system, Segoe UI, sans-serif"
 
 const RAMPS: Record<Metric, string[]> = {
@@ -85,31 +86,32 @@ export function ChoroplethMap({ metric, level, indicator, mode = 'value', geoDat
     return o
   }, [])
 
+  // Keyed by the FEATURE identity: district name for district maps, division
+  // name for division maps (which now render real adm1 division polygons).
   const valueByKey = useMemo(() => {
     const o: Record<string, number> = {}
-    if (mode === 'change') {
-      if (level === 'district') {
-        for (const r of MPDSR_2024) {
-          const prev = NOTIFIED_2023[r.district]?.[metric] ?? 0
-          o[normaliseDistrict(r.district)] = r[metric].notified - prev
-        }
-      } else {
-        const byDiv = divisionOfDistrict()
+    if (level === 'division') {
+      if (mode === 'change') {
         const cur: Record<string, number> = {}, prev: Record<string, number> = {}
         for (const r of MPDSR_2024) {
           cur[r.division] = (cur[r.division] ?? 0) + r[metric].notified
           prev[r.division] = (prev[r.division] ?? 0) + (NOTIFIED_2023[r.district]?.[metric] ?? 0)
         }
-        for (const [name, d] of Object.entries(byDiv)) o[normaliseDistrict(name)] = (cur[d] ?? 0) - (prev[d] ?? 0)
+        for (const d of DIVISIONS) o[normaliseDistrict(d)] = (cur[d] ?? 0) - (prev[d] ?? 0)
+      } else {
+        const dv = divisionValues(metric, indicator)
+        for (const d of DIVISIONS) o[normaliseDistrict(d)] = dv[d]
       }
       return o
     }
-    if (level === 'district') {
+    if (mode === 'change') {
+      for (const r of MPDSR_2024) {
+        const prev = NOTIFIED_2023[r.district]?.[metric] ?? 0
+        o[normaliseDistrict(r.district)] = r[metric].notified - prev
+      }
+    } else {
       const dv = districtValues(metric, indicator)
       for (const [name, val] of Object.entries(dv)) o[normaliseDistrict(name)] = val
-    } else {
-      const dv = divisionValues(metric, indicator); const map = divisionOfDistrict()
-      for (const [name, div] of Object.entries(map)) o[normaliseDistrict(name)] = dv[div]
     }
     return o
   }, [metric, level, indicator, mode])
@@ -150,22 +152,53 @@ export function ChoroplethMap({ metric, level, indicator, mode = 'value', geoDat
 
   const styleFeature = (feature?: GeoJSON.Feature): PathOptions => {
     const key = normaliseDistrict((feature?.properties?.shapeName as string) ?? '')
-    return {
-      fillColor: colorFor(key), fillOpacity: 0.92,
-      color: '#ffffff', weight: level === 'division' ? 0.5 : 0.7,
+    if (level === 'division') {
+      // Real division polygons — bold dark boundaries so all 8 read distinctly
+      // even when two neighbours fall in the same colour class.
+      return { fillColor: colorFor(key), fillOpacity: 0.9, color: '#374151', weight: 1.6 }
     }
+    return { fillColor: colorFor(key), fillOpacity: 0.92, color: '#ffffff', weight: 0.7 }
   }
+
+  const fmtChange = (d: number) => `${d >= 0 ? '+' : ''}${d}`
 
   const onEach = (feature: GeoJSON.Feature, layer: Layer) => {
     const name = (feature.properties?.shapeName as string) ?? 'Unknown'
     const key = normaliseDistrict(name)
+
+    if (level === 'division') {
+      // Division feature — tooltip + a permanent centred label so every one of
+      // the eight divisions is named on the map.
+      const v = valueByKey[key]
+      let html: string, label: string
+      if (mode === 'change') {
+        let cur = 0, prev = 0
+        for (const r of MPDSR_2024) if (r.division === name) { cur += r[metric].notified; prev += NOTIFIED_2023[r.district]?.[metric] ?? 0 }
+        html = `<b>${name} division</b><br/>2023: <b>${prev}</b> → 2024: <b>${cur}</b> (${fmtChange(cur - prev)})`
+        label = `${name}<br/>${fmtChange(v ?? 0)}`
+      } else {
+        const n = divisionValues(metric, 'notified')[name as any]
+        const rv = divisionValues(metric, 'reviewed')[name as any]
+        const p = divisionValues(metric, 'pct')[name as any]
+        html = `<b>${name} division</b><br/>Notified: <b>${n}</b> · Reviewed: <b>${rv}</b> · ${p}% reviewed`
+        label = `${name}<br/>${v ?? 0}${indicator === 'pct' ? '%' : ''}`
+      }
+      ;(layer as unknown as { bindTooltip: (s: string, o: object) => void })
+        .bindTooltip(label, { permanent: true, direction: 'center', className: 'atlas-div-label' })
+      void html
+      ;(layer as unknown as { on: (e: string, fn: (ev: any) => void) => void }).on('click', () => {
+        const lyr = layer as unknown as { getBounds: () => any; _map?: any }
+        if (lyr._map && lyr.getBounds) lyr._map.fitBounds(lyr.getBounds().pad(0.15))
+      })
+      return
+    }
+
     const row = rowByKey[key]
     let html: string
     if (mode === 'change' && row) {
       const cur = row[metric].notified
       const prev = NOTIFIED_2023[row.district]?.[metric] ?? 0
-      const d = cur - prev
-      html = `<b>${name}</b> · ${row.division}<br/>2023: <b>${prev}</b> → 2024: <b>${cur}</b> (${d >= 0 ? '+' : ''}${d})`
+      html = `<b>${name}</b> · ${row.division}<br/>2023: <b>${prev}</b> → 2024: <b>${cur}</b> (${fmtChange(cur - prev)})`
     } else if (row) {
       const c = row[metric]
       html = `<b>${name}</b> · ${row.division}<br/>Notified: <b>${c.notified}</b> · Reviewed: <b>${c.reviewed}</b> · ${c.pct}% reviewed`
@@ -297,16 +330,21 @@ export function ChoroplethMap({ metric, level, indicator, mode = 'value', geoDat
   )
 }
 
-export function useDistrictGeo(): { geoData: GeoJSON.FeatureCollection | null; geoError: boolean } {
+function useGeo(url: string) {
   const [geoData, setGeoData] = useState<GeoJSON.FeatureCollection | null>(null)
   const [geoError, setGeoError] = useState(false)
   useEffect(() => {
     let cancelled = false
-    fetch(GEOJSON_URL)
+    fetch(url)
       .then(r => { if (!r.ok) throw new Error('geojson'); return r.json() })
       .then(d => { if (!cancelled) setGeoData(d) })
       .catch(() => { if (!cancelled) setGeoError(true) })
     return () => { cancelled = true }
-  }, [])
+  }, [url])
   return { geoData, geoError }
 }
+
+/** District (adm2) boundaries. */
+export const useDistrictGeo = () => useGeo(GEOJSON_URL)
+/** Division (adm1) boundaries — 8 dissolved divisions. */
+export const useDivisionGeo = () => useGeo(GEOJSON_ADM1_URL)

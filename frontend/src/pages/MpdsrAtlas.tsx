@@ -15,7 +15,7 @@
 import { useRef, useState } from 'react'
 import { domToPng } from 'modern-screenshot'
 import { Download, Info } from 'lucide-react'
-import { ChoroplethMap, useDistrictGeo, ATLAS_FONT } from '@/components/atlas/ChoroplethMap'
+import { ChoroplethMap, useDistrictGeo, useDivisionGeo, ATLAS_FONT } from '@/components/atlas/ChoroplethMap'
 import { BivariateMap } from '@/components/atlas/BivariateMap'
 import { MPDSR_2024, MPDSR_TOTALS, type Indicator } from '@/data/mpdsr2024'
 
@@ -68,6 +68,7 @@ function SectionHead({ kicker, title, sub, read, take }: {
 export default function MpdsrAtlas() {
   const [indicator, setIndicator] = useState<Indicator>('notified')
   const { geoData, geoError } = useDistrictGeo()
+  const { geoData: divGeo, geoError: divErr } = useDivisionGeo()
   const sheetRef = useRef<HTMLDivElement>(null)
   const [sheetBusy, setSheetBusy] = useState(false)
 
@@ -151,8 +152,8 @@ export default function MpdsrAtlas() {
       <div ref={sheetRef} className="atlas-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 18 }}>
         <ChoroplethMap metric="maternal" level="district" indicator={indicator} geoData={geoData} geoError={geoError} />
         <ChoroplethMap metric="neonatal" level="district" indicator={indicator} geoData={geoData} geoError={geoError} />
-        <ChoroplethMap metric="maternal" level="division" indicator={indicator} geoData={geoData} geoError={geoError} />
-        <ChoroplethMap metric="neonatal" level="division" indicator={indicator} geoData={geoData} geoError={geoError} />
+        <ChoroplethMap metric="maternal" level="division" indicator={indicator} geoData={divGeo} geoError={divErr} />
+        <ChoroplethMap metric="neonatal" level="division" indicator={indicator} geoData={divGeo} geoError={divErr} />
       </div>
 
       {/* ── Section 2: Year-on-year change ── */}
@@ -188,7 +189,16 @@ export default function MpdsrAtlas() {
         <LeaderTable title="Neonatal" color="#08519c" rows={topNeonatal.map(r => ({ d: r.district, n: r.neonatal.notified, p: r.neonatal.pct }))} />
       </div>
 
-      <style>{`@media (max-width: 920px){ .atlas-grid{ grid-template-columns: 1fr !important; } }`}</style>
+      <style>{`
+        @media (max-width: 920px){ .atlas-grid{ grid-template-columns: 1fr !important; } }
+        .leaflet-tooltip.atlas-div-label{
+          background: rgba(255,255,255,0.82); border: none; box-shadow: none;
+          color: #111827; font-weight: 700; font-size: 10px; line-height: 1.15;
+          text-align: center; padding: 1px 4px; border-radius: 3px;
+          font-family: ${ATLAS_FONT};
+        }
+        .leaflet-tooltip.atlas-div-label::before{ display: none; }
+      `}</style>
     </div>
   )
 }
