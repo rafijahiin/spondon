@@ -192,12 +192,15 @@ export default function MpdsrAtlas() {
       <style>{`
         @media (max-width: 920px){ .atlas-grid{ grid-template-columns: 1fr !important; } }
         .leaflet-tooltip.atlas-div-label{
-          background: rgba(255,255,255,0.82); border: none; box-shadow: none;
-          color: #111827; font-weight: 700; font-size: 10px; line-height: 1.15;
-          text-align: center; padding: 1px 4px; border-radius: 3px;
-          font-family: ${ATLAS_FONT};
+          background: transparent; border: none; box-shadow: none;
+          color: #1f2937; text-align: center; line-height: 1.05; padding: 0;
+          white-space: nowrap; font-family: ${ATLAS_FONT};
+          text-shadow: 0 0 2px #fff, 0 0 2px #fff, 0 0 3px #fff, 0 0 4px #fff;
+          display: flex; flex-direction: column; align-items: center;
         }
         .leaflet-tooltip.atlas-div-label::before{ display: none; }
+        .atlas-div-label .dn{ font-size: 8px; font-weight: 600; letter-spacing: .2px; text-transform: uppercase; opacity: .9; }
+        .atlas-div-label .dv{ font-size: 11px; font-weight: 800; }
       `}</style>
     </div>
   )

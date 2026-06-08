@@ -175,13 +175,13 @@ export function ChoroplethMap({ metric, level, indicator, mode = 'value', geoDat
         let cur = 0, prev = 0
         for (const r of MPDSR_2024) if (r.division === name) { cur += r[metric].notified; prev += NOTIFIED_2023[r.district]?.[metric] ?? 0 }
         html = `<b>${name} division</b><br/>2023: <b>${prev}</b> → 2024: <b>${cur}</b> (${fmtChange(cur - prev)})`
-        label = `${name}<br/>${fmtChange(v ?? 0)}`
+        label = `<span class="dn">${name}</span><span class="dv">${fmtChange(v ?? 0)}</span>`
       } else {
         const n = divisionValues(metric, 'notified')[name as any]
         const rv = divisionValues(metric, 'reviewed')[name as any]
         const p = divisionValues(metric, 'pct')[name as any]
         html = `<b>${name} division</b><br/>Notified: <b>${n}</b> · Reviewed: <b>${rv}</b> · ${p}% reviewed`
-        label = `${name}<br/>${v ?? 0}${indicator === 'pct' ? '%' : ''}`
+        label = `<span class="dn">${name}</span><span class="dv">${v ?? 0}${indicator === 'pct' ? '%' : ''}</span>`
       }
       ;(layer as unknown as { bindTooltip: (s: string, o: object) => void })
         .bindTooltip(label, { permanent: true, direction: 'center', className: 'atlas-div-label' })
