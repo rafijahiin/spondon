@@ -13,6 +13,7 @@ import { Download } from 'lucide-react'
 import 'leaflet/dist/leaflet.css'
 
 import { FitToData } from '@/components/maps/FitToData'
+import { ATLAS_FONT } from '@/components/atlas/ChoroplethMap'
 import { normaliseDistrict } from '@/data/partnerDistricts'
 import { MPDSR_2024, MPDSR_SOURCE, type Metric } from '@/data/mpdsr2024'
 
@@ -109,8 +110,8 @@ export function BivariateMap({ metric, geoData, geoError }: Props) {
   }
 
   return (
-    <div className="card" style={{ padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-      <div ref={exportRef} style={{ background: '#ffffff', padding: 16, color: '#111827' }}>
+    <div className="card" style={{ padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', fontFamily: ATLAS_FONT }}>
+      <div ref={exportRef} style={{ background: '#ffffff', padding: 16, color: '#111827', fontFamily: ATLAS_FONT }}>
         <div style={{ marginBottom: 8 }}>
           <div style={{ fontSize: 15, fontWeight: 700, color: '#111827' }}>
             {METRIC_LABEL[metric]} — response priority (burden × review gap, 2024)

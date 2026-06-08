@@ -15,7 +15,7 @@
 import { useRef, useState } from 'react'
 import { domToPng } from 'modern-screenshot'
 import { Download, Info } from 'lucide-react'
-import { ChoroplethMap, useDistrictGeo, type RenderKind } from '@/components/atlas/ChoroplethMap'
+import { ChoroplethMap, useDistrictGeo, ATLAS_FONT } from '@/components/atlas/ChoroplethMap'
 import { BivariateMap } from '@/components/atlas/BivariateMap'
 import { MPDSR_2024, MPDSR_TOTALS, type Indicator } from '@/data/mpdsr2024'
 
@@ -67,7 +67,6 @@ function SectionHead({ kicker, title, sub, read, take }: {
 
 export default function MpdsrAtlas() {
   const [indicator, setIndicator] = useState<Indicator>('notified')
-  const [render, setRender] = useState<RenderKind>('fill')
   const { geoData, geoError } = useDistrictGeo()
   const sheetRef = useRef<HTMLDivElement>(null)
   const [sheetBusy, setSheetBusy] = useState(false)
@@ -95,7 +94,7 @@ export default function MpdsrAtlas() {
   const topNeonatal = [...MPDSR_2024].sort((a, b) => b.neonatal.notified - a.neonatal.notified).slice(0, 10)
 
   return (
-    <div className="mx-auto max-w-7xl px-4 pt-6 sm:px-6 lg:px-8" style={{ paddingBottom: 72 }}>
+    <div className="mx-auto max-w-7xl px-4 pt-6 sm:px-6 lg:px-8" style={{ paddingBottom: 72, fontFamily: ATLAS_FONT }}>
       {/* Header */}
       <div style={{ marginBottom: 16 }}>
         <div className="kicker" style={{ marginBottom: 8 }}>
@@ -132,7 +131,7 @@ export default function MpdsrAtlas() {
       <SectionHead
         kicker="REQUESTED · 4 MAPS"
         title="Death notification"
-        sub="District and divisional notification — the four maps requested. Toggle the indicator, or switch between a filled map (choropleth) and sized circles (proportional symbols)."
+        sub="District and divisional notification — the four maps requested. Use the toggle to shade by deaths notified, reviewed, or % reviewed."
         read="Each area is shaded by how many deaths were reported there in 2024. Darker = more deaths reported. Maternal maps are red, neonatal maps are blue. Hover any district for its exact numbers."
         take="Where the most maternal / neonatal deaths are being reported across the country."
       />
@@ -140,11 +139,6 @@ export default function MpdsrAtlas() {
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           <span style={{ fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>Shade by</span>
           {INDICATORS.map(({ key, label }) => <Pill key={key} active={indicator === key} onClick={() => setIndicator(key)}>{label}</Pill>)}
-        </div>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <span style={{ fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>Render</span>
-          <Pill active={render === 'fill'} onClick={() => setRender('fill')}>Choropleth</Pill>
-          <Pill active={render === 'symbol'} onClick={() => setRender('symbol')}>Symbols</Pill>
         </div>
         <button onClick={downloadSheet} disabled={sheetBusy} style={{
           marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12.5, fontWeight: 600,
@@ -155,10 +149,10 @@ export default function MpdsrAtlas() {
       </div>
 
       <div ref={sheetRef} className="atlas-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 18 }}>
-        <ChoroplethMap metric="maternal" level="district" indicator={indicator} render={render} geoData={geoData} geoError={geoError} />
-        <ChoroplethMap metric="neonatal" level="district" indicator={indicator} render={render} geoData={geoData} geoError={geoError} />
-        <ChoroplethMap metric="maternal" level="division" indicator={indicator} render={render} geoData={geoData} geoError={geoError} />
-        <ChoroplethMap metric="neonatal" level="division" indicator={indicator} render={render} geoData={geoData} geoError={geoError} />
+        <ChoroplethMap metric="maternal" level="district" indicator={indicator} geoData={geoData} geoError={geoError} />
+        <ChoroplethMap metric="neonatal" level="district" indicator={indicator} geoData={geoData} geoError={geoError} />
+        <ChoroplethMap metric="maternal" level="division" indicator={indicator} geoData={geoData} geoError={geoError} />
+        <ChoroplethMap metric="neonatal" level="division" indicator={indicator} geoData={geoData} geoError={geoError} />
       </div>
 
       {/* ── Section 2: Year-on-year change ── */}
