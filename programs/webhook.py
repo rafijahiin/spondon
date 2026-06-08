@@ -1322,9 +1322,20 @@ def programs_webhook(request, org_override: str = '', form_slug: str = ''):
                     org_override or _org(payload) or '?')
         try:
             org = org_override or _org(payload)
-            _notify(org, _FORM_LABELS.get(xform_id, xform_id), kobo_id)
+            # Fire the email/Telegram alert off the request thread. SMTP or
+            # Telegram can be slow or unreachable from the host (observed:
+            # email_notify blocking ~2 min on "Network is unreachable"), which
+            # would otherwise stall the webhook response long after the row is
+            # already saved — making Kobo time out and retry. The submission is
+            # persisted before this point, so notification is pure side-effect.
+            import threading as _threading
+            _threading.Thread(
+                target=_notify,
+                args=(org, _FORM_LABELS.get(xform_id, xform_id), kobo_id),
+                daemon=True, name='programs-notify',
+            ).start()
         except Exception as exc:
-            logger.error('Programs webhook Telegram dispatch error: %s', exc)
+            logger.error('Programs webhook notify dispatch error: %s', exc)
 
     return response
 
