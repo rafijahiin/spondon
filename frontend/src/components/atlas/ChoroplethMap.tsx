@@ -185,6 +185,12 @@ export function ChoroplethMap({ metric, level, indicator, mode = 'value', geoDat
       }
       ;(layer as unknown as { bindTooltip: (s: string, o: object) => void })
         .bindTooltip(label, { permanent: true, direction: 'center', className: 'atlas-div-label' })
+      // Anchor the label at a guaranteed-interior point (representative_point)
+      // so concave coastal divisions like Barishal don't get a stray centroid.
+      const p: any = feature.properties || {}
+      if (p.labelLat != null && p.labelLng != null) {
+        ;(layer as unknown as { openTooltip?: (ll: [number, number]) => void }).openTooltip?.([p.labelLat, p.labelLng])
+      }
       void html
       ;(layer as unknown as { on: (e: string, fn: (ev: any) => void) => void }).on('click', () => {
         const lyr = layer as unknown as { getBounds: () => any; _map?: any }
@@ -247,7 +253,7 @@ export function ChoroplethMap({ metric, level, indicator, mode = 'value', geoDat
           <div style={{ fontSize: 11.5, color: '#6b7280' }}>{subtitle}</div>
         </div>
 
-        <div style={{ position: 'relative', height: 460, borderRadius: 8, overflow: 'hidden', background: '#ffffff' }}>
+        <div style={{ position: 'relative', height: 580, borderRadius: 8, overflow: 'hidden', background: '#ffffff' }}>
           {geoError ? (
             <div style={{ display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center', color: '#6b7280', fontSize: 13 }}>
               Map unavailable — could not load district boundaries.

@@ -119,7 +119,7 @@ export function BivariateMap({ metric, geoData, geoError }: Props) {
           <div style={{ fontSize: 11.5, color: '#6b7280' }}>By district · dark = many deaths + low review</div>
         </div>
 
-        <div style={{ position: 'relative', height: 460, borderRadius: 8, overflow: 'hidden', background: '#ffffff' }}>
+        <div style={{ position: 'relative', height: 580, borderRadius: 8, overflow: 'hidden', background: '#ffffff' }}>
           {geoError ? (
             <div style={{ display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center', color: '#6b7280', fontSize: 13 }}>
               Map unavailable — could not load district boundaries.
