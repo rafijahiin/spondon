@@ -245,6 +245,17 @@ def _shared_choices():
     for v, en in [('in_person', 'In person'), ('online', 'Online'), ('hybrid', 'Hybrid')]:
         rows.append(_ch('event_modality', v, en))
 
+    # F-12 event kind — routes the report to the right capacity-building indicator
+    for v, en in [
+        ('orientation_managers', 'Orientation — health managers/supervisors (2.1)'),
+        ('training_midwives',    'Training — midwives/providers (2.2)'),
+        ('training_peers',       'Training — community leaders/peer educators (2.5)'),
+        ('coord_gob',            'Coordination meeting — GOB/NGO (2.3)'),
+        ('coord_cbo',            'Coordination meeting — CBO/network (2.4)'),
+        ('observance',           'Observance event — World AIDS Day etc. (2.6)'),
+    ]:
+        rows.append(_ch('event_kind', v, en))
+
     return rows
 
 
@@ -530,6 +541,9 @@ def _activity_ops_survey():
             'F-12 · ইভেন্ট রিপোর্ট', relevant=R('event_report')),
         _sr('text', 'ev_objective', 'Objective', 'উদ্দেশ্য', app='multiline'),
         _sr('text', 'ev_activity', 'Activity name', 'কার্যক্রমের নাম'),
+        _sr('select_one event_kind', 'ev_kind',
+            'Event type', 'ইভেন্টের ধরন', required='yes',
+            hint='Which kind of event is this? Routes to the right indicator.'),
         _sr('text', 'ev_place', 'Place', 'স্থান'),
         _sr('date', 'ev_date', 'Date', 'তারিখ'),
         _sr('note', '_ev_part', 'Participants by gender (enter count):', 'জেন্ডার অনুযায়ী অংশগ্রহণকারী:'),

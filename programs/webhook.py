@@ -1019,6 +1019,14 @@ def _lazy_ciprb(name):
     return wrapper
 
 
+def _lazy_bandhu(name):
+    """Lazy import — bandhu_handlers imports from webhook."""
+    def wrapper(payload, lat, lng):
+        from . import bandhu_handlers
+        return getattr(bandhu_handlers, name)(payload, lat, lng)
+    return wrapper
+
+
 FORM_HANDLERS: dict = {
     # ── CIPRB Phase 2 — 9 new forms (Fistula QB, MPDSR 1/2/4/5, Social
     #    Autopsy, 2 notification slips, Maternal Near Miss). ──
@@ -1041,6 +1049,10 @@ FORM_HANDLERS: dict = {
     'ciprb_near_miss_v1':
         _lazy_ciprb('handle_ciprb_near_miss'),
     # ── PHD consolidated forms (new, from final source files) ──────────────────
+    # ── Bandhu consolidated forms (faithful from UNFPA Tools.xlsx) ─────────────
+    'bandhu_service_log_v1':    _lazy_bandhu('handle_bandhu_service_log'),
+    'bandhu_activity_ops_v1':   _lazy_bandhu('handle_bandhu_activity_ops'),
+    # ── PHD consolidated forms (new, from final source files) ─────────────────
     'phd_registration_v1':      _lazy_phd('handle_phd_registration'),
     'phd_service_log_v1':       _lazy_phd('handle_phd_service_log'),
     # Legacy 3-form variants — kept registered so any in-flight submissions

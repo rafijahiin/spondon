@@ -24,9 +24,12 @@ def compute_I_BND_1_1(org, period_start, period_end):
         Q(hiv_screening_done=True) | Q(sti_screening_done=True)
     ).values_list('client_id', flat=True).distinct()
 
-    htc_clients = HTCCounselling.objects.filter(
+    # HIV testing services (F-06 → HIVSTITestResult) also count as a KP who
+    # received an integrated service; union by client so a person screened in
+    # clinic AND tested at HTC is counted once.
+    htc_clients = HIVSTITestResult.objects.filter(
         organisation=org, approval_status=APPROVED,
-        session_date__range=(period_start, period_end),
+        testing_date__range=(period_start, period_end),
     ).values_list('client_id', flat=True).distinct()
 
     all_client_ids = set(list(clinic_clients) + list(htc_clients))
@@ -129,12 +132,12 @@ def compute_I_BND_1_8(org):
 def compute_I_BND_1_9(org, period_start, period_end):
     """Mobile outreach health camps conducted. Target: 40 camps (MIS doc).
 
-    Counts camp events (rows), not individuals served — the indicator unit
-    is camps."""
+    The F-10 form records one row per patient, so a camp = a distinct
+    (centre, date) pair — count those, not patient rows."""
     return MobileHealthCamp.objects.filter(
         organisation=org, approval_status=APPROVED,
         camp_date__range=(period_start, period_end),
-    ).count()
+    ).values('center', 'camp_date').distinct().count()
 
 
 def compute_I_BND_2_1(org, period_start, period_end):
