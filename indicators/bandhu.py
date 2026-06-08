@@ -64,19 +64,9 @@ def compute_I_BND_1_4A(org, period_start, period_end):
     ).count()
 
 
-def compute_I_BND_1_4B(org, period_start, period_end):
-    """KP members reached via outreach. Target: 5,000"""
-    outreach = OutreachSession.objects.filter(
-        organisation=org, approval_status=APPROVED,
-        session_date__range=(period_start, period_end),
-    ).aggregate(t=Sum('individual_contacts'))['t'] or 0
-
-    group = GroupEducationSession.objects.filter(
-        organisation=org, approval_status=APPROVED,
-        session_date__range=(period_start, period_end),
-    ).aggregate(t=Sum('participant_count'))['t'] or 0
-
-    return outreach + group
+# NOTE: indicator 1.4b ("KP reached via outreach", 4,000) was retired per the
+# framework review — it duplicated 1.1 (KP receiving services, also 4,000).
+# Only 1.4a (outreach sessions conducted) remains for the outreach activity.
 
 
 def compute_I_BND_1_5_hiv(org, period_start, period_end):
@@ -228,26 +218,15 @@ def compute_I_BND_4_1(org, period_start, period_end):
 
 
 def compute_I_BND_4_2(org, period_start, period_end):
-    """Printed billboards installed. Target: 40 (MIS doc, code 4.2).
+    """Public messaging displays installed. Target: 56 (MIS doc, code 4.2 —
+    40 printed billboards + 16 e-billboards).
 
-    Counts IECMaterial rows of type BILLBOARD (printed) — distinct from the
-    DIGITAL e-billboards counted by 4.3."""
+    The framework lists displays as ONE indicator, so this sums both the
+    printed (BILLBOARD) and digital (DIGITAL) IEC material types."""
     return IECMaterial.objects.filter(
         organisation=org, approval_status=APPROVED,
         date_distributed__range=(period_start, period_end),
-        material_type=IECMaterial.BILLBOARD,
-    ).aggregate(t=Sum('quantity'))['t'] or 0
-
-
-def compute_I_BND_4_3(org, period_start, period_end):
-    """E-billboards / digital displays installed at hospitals. Target: 16.
-
-    Filters IECMaterial by material_type=DIGITAL — the Bandhu e-billboard
-    rollout. Sums quantity (installations) across rows."""
-    return IECMaterial.objects.filter(
-        organisation=org, approval_status=APPROVED,
-        date_distributed__range=(period_start, period_end),
-        material_type=IECMaterial.DIGITAL,
+        material_type__in=[IECMaterial.BILLBOARD, IECMaterial.DIGITAL],
     ).aggregate(t=Sum('quantity'))['t'] or 0
 
 
@@ -270,7 +249,6 @@ ACTIVITY_REGISTRY = {
     '1.2':  compute_I_BND_1_2,
     '1.3':  compute_I_BND_1_3,
     '1.4a': compute_I_BND_1_4A,
-    '1.4b': compute_I_BND_1_4B,
     '1.5a': compute_I_BND_1_5_sti,      # STI services (clinic)
     '1.5b': compute_I_BND_1_5_hiv,      # HIV testing (HTC register)
     '1.6':  compute_I_BND_1_6,          # org-only, no period
@@ -285,7 +263,6 @@ ACTIVITY_REGISTRY = {
     '2.6':  compute_I_BND_2_6,
     '4.1':  compute_I_BND_4_1,
     '4.2':  compute_I_BND_4_2,
-    '4.3':  compute_I_BND_4_3,
 }
 
 # Codes whose compute function takes only (org) — no period args.

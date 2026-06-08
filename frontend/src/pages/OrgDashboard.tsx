@@ -443,7 +443,7 @@ export function OrgDashboard({ partner }: Props) {
         />
         {/* Cumulative average tile — Animesh's "single unified progress %"
             for the whole partner. Simple mean of every indicator's %.
-            Bandhu (20 indicators) gets the most value here, but PHD also
+            Bandhu (18 indicators) gets the most value here, but PHD also
             sees its 22-indicator average at a glance. */}
         <CumulativeAverageTile
           org={partner}
