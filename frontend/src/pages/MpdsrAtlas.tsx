@@ -15,7 +15,7 @@
 import { useRef, useState } from 'react'
 import { domToPng } from 'modern-screenshot'
 import { Download, Info } from 'lucide-react'
-import { ChoroplethMap, useDistrictGeo, ATLAS_FONT } from '@/components/atlas/ChoroplethMap'
+import { ChoroplethMap, useDistrictGeo, useDivisionBoundaries, ATLAS_FONT } from '@/components/atlas/ChoroplethMap'
 import { BivariateMap } from '@/components/atlas/BivariateMap'
 import { MPDSR_2024, MPDSR_TOTALS, type Indicator } from '@/data/mpdsr2024'
 
@@ -68,6 +68,7 @@ function SectionHead({ kicker, title, sub, read, take }: {
 export default function MpdsrAtlas() {
   const [indicator, setIndicator] = useState<Indicator>('notified')
   const { geoData, geoError } = useDistrictGeo()
+  const divBounds = useDivisionBoundaries()
   const sheetRef = useRef<HTMLDivElement>(null)
   const [sheetBusy, setSheetBusy] = useState(false)
 
@@ -151,8 +152,8 @@ export default function MpdsrAtlas() {
       <div ref={sheetRef} className="atlas-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 18 }}>
         <ChoroplethMap metric="maternal" level="district" indicator={indicator} geoData={geoData} geoError={geoError} />
         <ChoroplethMap metric="neonatal" level="district" indicator={indicator} geoData={geoData} geoError={geoError} />
-        <ChoroplethMap metric="maternal" level="division" indicator={indicator} geoData={geoData} geoError={geoError} />
-        <ChoroplethMap metric="neonatal" level="division" indicator={indicator} geoData={geoData} geoError={geoError} />
+        <ChoroplethMap metric="maternal" level="division" indicator={indicator} geoData={geoData} geoError={geoError} boundaryGeo={divBounds} />
+        <ChoroplethMap metric="neonatal" level="division" indicator={indicator} geoData={geoData} geoError={geoError} boundaryGeo={divBounds} />
       </div>
 
       {/* ── Section 2: Year-on-year change ── */}

@@ -31,6 +31,7 @@ import {
 import { NOTIFIED_2023 } from '@/data/mpdsr2023'
 
 const GEOJSON_URL = '/bangladesh-adm2.geojson'
+const GEOJSON_ADM1_URL = '/bangladesh-adm1.geojson'
 export const ATLAS_FONT = "'Atkinson Hyperlegible', system-ui, -apple-system, Segoe UI, sans-serif"
 
 const RAMPS: Record<Metric, string[]> = {
@@ -73,9 +74,12 @@ interface Props {
   mode?: AtlasMode
   geoData: GeoJSON.FeatureCollection | null
   geoError?: boolean
+  /** Optional overlay drawn as thin black outlines on top of the fills —
+   *  used on division maps to show the 8 division boundaries. */
+  boundaryGeo?: GeoJSON.FeatureCollection | null
 }
 
-export function ChoroplethMap({ metric, level, indicator, mode = 'value', geoData, geoError }: Props) {
+export function ChoroplethMap({ metric, level, indicator, mode = 'value', geoData, geoError, boundaryGeo }: Props) {
   const exportRef = useRef<HTMLDivElement>(null)
   const [busy, setBusy] = useState(false)
 
@@ -230,6 +234,13 @@ export function ChoroplethMap({ metric, level, indicator, mode = 'value', geoDat
                 <>
                   <FitToData data={geoData} />
                   <GeoJSON key={`${metric}-${level}-${indicator}-${mode}`} data={geoData} style={styleFeature} onEachFeature={onEach} />
+                  {boundaryGeo && (
+                    <GeoJSON
+                      key="div-bounds"
+                      data={boundaryGeo}
+                      style={{ color: '#000000', weight: 1, opacity: 0.9, fill: false, interactive: false } as PathOptions}
+                    />
+                  )}
                 </>
               )}
             </MapContainer>
@@ -297,16 +308,21 @@ export function ChoroplethMap({ metric, level, indicator, mode = 'value', geoDat
   )
 }
 
-export function useDistrictGeo(): { geoData: GeoJSON.FeatureCollection | null; geoError: boolean } {
+function useGeo(url: string) {
   const [geoData, setGeoData] = useState<GeoJSON.FeatureCollection | null>(null)
   const [geoError, setGeoError] = useState(false)
   useEffect(() => {
     let cancelled = false
-    fetch(GEOJSON_URL)
+    fetch(url)
       .then(r => { if (!r.ok) throw new Error('geojson'); return r.json() })
       .then(d => { if (!cancelled) setGeoData(d) })
       .catch(() => { if (!cancelled) setGeoError(true) })
     return () => { cancelled = true }
-  }, [])
+  }, [url])
   return { geoData, geoError }
 }
+
+/** District (adm2) boundaries — the choropleth fill layer. */
+export const useDistrictGeo = () => useGeo(GEOJSON_URL)
+/** Division (adm1) outlines — overlaid as thin black boundaries. */
+export const useDivisionBoundaries = () => useGeo(GEOJSON_ADM1_URL).geoData
