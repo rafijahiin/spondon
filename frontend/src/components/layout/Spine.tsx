@@ -12,7 +12,7 @@ import {
   Home, Building2, HeartHandshake, ClipboardCheck, FileBarChart2,
   ShieldAlert, LogOut, ExternalLink,
   HeartPulse, ClipboardList, GraduationCap, Smartphone,
-  Target, Settings, UserCog, X, Menu,
+  Target, Settings, UserCog, X, Menu, Map,
 } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { api } from '@/api/client'
@@ -43,6 +43,9 @@ const PRIMARY_NAV: SpineItemDef[] = [
   { to: '/',         i18nKey: 'nav.programmeOverview', icon: <Home size={18} />,
     visible: (r) => notManager(r) },
   { to: '/ciprb',    i18nKey: 'nav.ciprbDashboard',    icon: <HeartPulse size={18} />,
+    visible: (r, o) => isAdminRole(r) || r === 'org_lead' || (notManager(r) && o === 'CIPRB') },
+  // National MPDSR GIS Atlas (2024 district/division death maps).
+  { to: '/atlas',    i18nKey: 'nav.mpdsrAtlas',        icon: <Map size={18} />,
     visible: (r, o) => isAdminRole(r) || r === 'org_lead' || (notManager(r) && o === 'CIPRB') },
   // Org dashboard: visible to anyone in that org (manager, focal, org_lead)
   // plus cross-org admin roles. Managers see their own org's KPIs so they

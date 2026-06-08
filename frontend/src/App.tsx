@@ -22,6 +22,7 @@ const RecordList = lazy(() => import('@/pages/RecordList'))
 const Infographics = lazy(() => import('@/pages/Infographics'))
 const Profile = lazy(() => import('@/pages/Profile'))
 const CIPRBDashboard = lazy(() => import('@/pages/CIPRBDashboard'))
+const MpdsrAtlas = lazy(() => import('@/pages/MpdsrAtlas'))
 const OpenQuestions = lazy(() => import('@/pages/OpenQuestions'))
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
@@ -158,6 +159,7 @@ export default function App() {
             {/* Unified CIPRB Dashboard — Fistula KPIs + registers + MPDSR in
                 one place, mirroring /phd and /bondhu structure. */}
             <Route path="ciprb"    element={<RequireCIPRBOrg><CIPRBDashboard /></RequireCIPRBOrg>} />
+            <Route path="atlas"    element={<RequireCIPRBOrg><MpdsrAtlas /></RequireCIPRBOrg>} />
             {/* Legacy redirects so old bookmarks still work. */}
             <Route path="fistula"  element={<Navigate to="/ciprb" replace />} />
             <Route path="mpdsr"    element={<Navigate to="/ciprb" replace />} />
