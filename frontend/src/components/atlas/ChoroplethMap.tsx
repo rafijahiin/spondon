@@ -165,7 +165,15 @@ export function ChoroplethMap({ metric, level, indicator, geoData, geoError }: P
       const png = await domToPng(exportRef.current, {
         scale: 2,
         backgroundColor: '#ffffff',
-        filter: (n) => !(n instanceof HTMLElement && n.dataset?.noExport === 'true'),
+        filter: (n) => {
+          if (n instanceof HTMLElement) {
+            if (n.dataset?.noExport === 'true') return false
+            // Drop Leaflet UI chrome (zoom +/- buttons, attribution) so the
+            // exported map stays clean for reports.
+            if (n.classList?.contains('leaflet-control')) return false
+          }
+          return true
+        },
       })
       const a = document.createElement('a')
       a.href = png
@@ -192,8 +200,9 @@ export function ChoroplethMap({ metric, level, indicator, geoData, geoError }: P
             </div>
           ) : (
             <MapContainer
-              center={[23.7, 90.4]} zoom={6} maxZoom={9}
-              zoomControl={false} scrollWheelZoom={false} attributionControl={false}
+              center={[23.7, 90.4]} zoom={6} minZoom={6} maxZoom={10}
+              zoomControl={true} scrollWheelZoom={false} doubleClickZoom={true}
+              dragging={true} attributionControl={false}
               style={{ height: '100%', width: '100%', background: '#ffffff' }}
             >
               {geoData && (
