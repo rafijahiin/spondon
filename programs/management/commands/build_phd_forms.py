@@ -17,13 +17,16 @@ Rules:
 """
 import os
 import openpyxl
+import requests
 from openpyxl.styles import Font, PatternFill, Alignment
 from openpyxl.utils import get_column_letter
+from django.conf import settings
 from django.core.management.base import BaseCommand
 from programs.models import ServiceCenter
 
 HERE   = os.path.dirname(os.path.abspath(__file__))
 OUTDIR = os.path.normpath(os.path.join(HERE, '..', '..', '..', '..', 'koboforms'))
+KOBO_BASE = 'https://kf.kobotoolbox.org'
 
 _HFILL = PatternFill("solid", fgColor="003F72")
 _HFONT = Font(color="FFFFFF", bold=True, size=10)
@@ -89,13 +92,14 @@ def _meta(center_required=True):
         _sr('geopoint','location',
             'GPS location (required — step outside if no signal)',
             'জিপিএস অবস্থান (প্রয়োজনীয়)', required='yes'),
-        # Free-text — enumerators type the wellness-centre name themselves
-        # (no dropdown). Avoids any auto-listed centre data leaking from the
-        # backend ServiceCenter table into the form.
-        _sr('text','centre_id',
-            'Wellness Centre (type the name)',
-            'ওয়েলনেস সেন্টার (নাম লিখুন)', required=req,
-            hint='e.g. Daulatdia Wellness Center — or its ID, e.g. R001.'),
+        # Dropdown of PHD's 9 wellness centres (PHD request, 2026-06-08).
+        # The choice VALUE is the official Wellness Centre ID (R001..D009);
+        # the webhook _get_center resolves it via code__iexact. Only PHD's
+        # own centres are listed — nothing else leaks from the backend.
+        _sr('select_one wellness_centre','centre_id',
+            'Wellness Centre',
+            'ওয়েলনেস সেন্টার', required=req,
+            hint='Select your wellness centre.'),
         _sr('text','enumerator_name',
             'Your name (person filling this form)',
             'আপনার নাম (কে পূরণ করছেন)', required='yes'),
@@ -104,9 +108,17 @@ def _meta(center_required=True):
 
 
 def _centre_choices():
-    """Centre is now a free-text question — no choice list needed.
-    Kept as an empty-returning helper so the existing callers compile."""
-    return []
+    """The 9 PHD wellness centres as a select_one 'wellness_centre' list.
+    Single-sourced from seed_centers.PHD_BROTHELS so the dropdown can never
+    drift from the seeded ServiceCenter rows. Choice value = Wellness Centre
+    ID (R001..D009); label shows the name + ID for the field worker."""
+    from .seed_centers import PHD_BROTHELS
+    return [
+        _ch('wellness_centre', c['code'],
+            f"{c['name']} ({c['code']})",
+            f"{c.get('name_bangla', c['name'])} ({c['code']})")
+        for c in PHD_BROTHELS
+    ]
 
 
 # ─── FORM 1: FSW Registration ─────────────────────────────────────────────────
@@ -937,6 +949,57 @@ def _form_service_log_choices():
     return rows
 
 
+# ─── Kobo upload helpers (mirror build_ciprb_forms) ───────────────────────────
+
+def _kobo_token():
+    return (getattr(settings, 'KOBO_API_TOKEN', '')
+            or os.environ.get('KOBO_TOKEN', '')).strip()
+
+
+def _import_xlsform(xlsx_path, asset_uid, token, stdout):
+    """Replace an existing asset's survey by importing the xlsx into it."""
+    headers = {'Authorization': f'Token {token}'}
+    api = f'{KOBO_BASE}/api/v2'
+    with open(xlsx_path, 'rb') as fh:
+        files = {'file': (os.path.basename(xlsx_path), fh,
+                          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')}
+        data = {'destination': f'{api}/assets/{asset_uid}/', 'library': 'false'}
+        r = requests.post(f'{api}/imports/', headers=headers,
+                          files=files, data=data, timeout=120)
+    if r.status_code not in (200, 201):
+        stdout.write(f'    import FAILED ({r.status_code}): {r.text[:200]}')
+        return False
+    stdout.write('    imported')
+    return True
+
+
+def _deploy(asset_uid, token, stdout):
+    """Redeploy the asset's latest version so Enketo serves the new form."""
+    headers = {'Authorization': f'Token {token}'}
+    api = f'{KOBO_BASE}/api/v2'
+    v = requests.get(f'{api}/assets/{asset_uid}/versions/?limit=1',
+                     headers=headers, timeout=30)
+    try:
+        vhash = v.json()['results'][0]['uid']
+    except Exception:
+        stdout.write('    no version yet — skipping deploy')
+        return False
+    r = requests.patch(
+        f'{api}/assets/{asset_uid}/deployment/',
+        headers=headers, json={'version_id': vhash, 'active': True}, timeout=60)
+    if r.status_code in (200, 201):
+        stdout.write('    redeployed')
+        return True
+    r2 = requests.post(
+        f'{api}/assets/{asset_uid}/deployment/',
+        headers=headers, json={'version_id': vhash, 'active': True}, timeout=60)
+    if r2.status_code in (200, 201):
+        stdout.write('    deployed (POST)')
+        return True
+    stdout.write(f'    deploy FAILED ({r.status_code}/{r2.status_code}): {r2.text[:160]}')
+    return False
+
+
 # ─── Command ──────────────────────────────────────────────────────────────────
 
 FORMS = [
@@ -962,10 +1025,17 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument('--output-dir', default=OUTDIR)
+        parser.add_argument('--upload', action='store_true',
+            help='Import each xlsx into its existing Kobo asset and redeploy.')
 
     def handle(self, *args, **options):
         out = options['output_dir']
         os.makedirs(out, exist_ok=True)
+        token = _kobo_token() if options['upload'] else ''
+        if options['upload'] and not token:
+            self.stdout.write(self.style.ERROR('KOBO_TOKEN not set — cannot --upload.'))
+            return
+
         for f in FORMS:
             survey  = f['survey']()
             choices = f['choices']()
@@ -974,4 +1044,36 @@ class Command(BaseCommand):
             wb.save(path)
             self.stdout.write(self.style.SUCCESS(
                 f"  OK  {f['file']:35s}  {len(survey)} rows  id: {f['id']}"))
+
+            if options['upload']:
+                self.stdout.write('     uploading…')
+                api = f'{KOBO_BASE}/api/v2'
+                headers = {'Authorization': f'Token {token}'}
+                # Resolve the asset by its id_string (form_id in settings).
+                q = requests.get(
+                    f'{api}/assets/?q=settings__id_string:{f["id"]}',
+                    headers=headers, timeout=30).json()
+                asset_uid = None
+                for a in q.get('results', []):
+                    if a.get('settings', {}).get('id_string') == f['id']:
+                        asset_uid = a.get('uid')
+                        break
+                if not asset_uid:
+                    # Kobo often auto-generates its own id_string on first
+                    # upload, so the id_string query returns nothing. Fall back
+                    # to a FRESH asset listing matched by title (the em-dash in
+                    # the title is preserved on both sides).
+                    allq = requests.get(f'{api}/assets/?limit=300',
+                                        headers=headers, timeout=30).json()
+                    for a in allq.get('results', []):
+                        if (a.get('name') or '') == f['title']:
+                            asset_uid = a.get('uid')
+                            break
+                if not asset_uid:
+                    self.stdout.write(self.style.ERROR(
+                        f'    no Kobo asset found for {f["id"]} — skipping.'))
+                    continue
+                if _import_xlsform(path, asset_uid, token, self.stdout):
+                    _deploy(asset_uid, token, self.stdout)
+
         self.stdout.write(f'\nWritten to {os.path.abspath(out)}/')
