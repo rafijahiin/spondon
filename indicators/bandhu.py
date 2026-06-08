@@ -57,11 +57,20 @@ def compute_I_BND_1_3(org, period_start, period_end):
 
 
 def compute_I_BND_1_4A(org, period_start, period_end):
-    """Group outreach/education sessions. Target: 400"""
-    return GroupEducationSession.objects.filter(
+    """Outreach + health-education sessions conducted. Target: 480 (MIS doc).
+
+    Counts both the daily outreach monitoring submissions (OutreachSession,
+    F-04) and any group health-education sessions (GroupEducationSession) —
+    each row is one session conducted."""
+    outreach = OutreachSession.objects.filter(
         organisation=org, approval_status=APPROVED,
         session_date__range=(period_start, period_end),
     ).count()
+    group = GroupEducationSession.objects.filter(
+        organisation=org, approval_status=APPROVED,
+        session_date__range=(period_start, period_end),
+    ).count()
+    return outreach + group
 
 
 # NOTE: indicator 1.4b ("KP reached via outreach", 4,000) was retired per the
