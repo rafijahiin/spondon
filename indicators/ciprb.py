@@ -4,14 +4,15 @@ compute functions.
 
 Three activity codes from the fixture:
 
-  F.C    — Fistula Corner: women diagnosed at District Hospital
-           Counted from fistula.FistulaCornerCase rows whose
-           diagnosis_date falls within the period. Target_value is
-           NULL in the seed (workshop confirms).
+  F.C    — Fistula Corner: women diagnosed at District Hospital.
+           Counted from fistula.CIPRBFistulaCase (current_stage diagnosed
+           and later) — the SAME source as the CIPRB dashboard funnel, so
+           the tracker and dashboard never disagree. Target_value is NULL
+           in the seed (workshop confirms).
 
-  F.Camp — Fistula Campaign: suspected fistula cases identified via
-           house visits. Counted from fistula.FistulaCampaignVisit
-           rows whose visit_date falls within the period.
+  F.Camp — Fistula Campaign: suspected fistula cases identified via house
+           visits. Counted from fistula.CIPRBFistulaCase (all stages =
+           the dashboard funnel's 'suspected' total).
 
   B      — Baseline assessment: CIPRB-managed survey instrument. Maps
            to baseline.BaselineSurvey rows (already exists) — kept here
@@ -23,19 +24,35 @@ from django.db.models import Q
 APPROVED = 'APPROVED'
 
 
+# Monotonic pipeline stages, oldest → latest. A case at a later stage has
+# passed through every earlier one (mirrors fistula.views.fistula_aggregates,
+# the single source of truth for the CIPRB dashboard funnel + KPI band).
+_STAGES = ['suspected', 'diagnosed', 'referred', 'repaired', 'rehabilitated']
+
+
 def compute_F_C(org, period_start, period_end):
-    """Fistula Corner — diagnosed cases at District Hospital."""
-    from fistula.models import FistulaCornerCase
-    return FistulaCornerCase.objects.filter(
-        diagnosis_date__range=(period_start, period_end),
+    """Fistula Corner — diagnosed cases at District Hospital.
+
+    Reads the SAME source as the CIPRB dashboard (CIPRBFistulaCase, the
+    Fistula Question Bank), not the legacy FistulaCornerCase. 'Diagnosed' is
+    cumulative across diagnosed → rehabilitated, so this equals the dashboard
+    funnel's 'diagnosed' count. Counts all cases (the funnel is all-time, like
+    the dashboard) so the tracker and dashboard never disagree."""
+    from fistula.ciprb_models import CIPRBFistulaCase
+    return CIPRBFistulaCase.objects.filter(
+        current_stage__in=_STAGES[1:],  # diagnosed and later
     ).count()
 
 
 def compute_F_Camp(org, period_start, period_end):
-    """Fistula Campaign — suspected cases identified via house visits."""
-    from fistula.models import FistulaCampaignVisit
-    return FistulaCampaignVisit.objects.filter(
-        visit_date__range=(period_start, period_end),
+    """Fistula Campaign — suspected cases identified via house visits.
+
+    Same source as the dashboard (CIPRBFistulaCase). 'Suspected' is the whole
+    cohort (every case is suspected first), so this equals the dashboard
+    funnel's 'suspected' total."""
+    from fistula.ciprb_models import CIPRBFistulaCase
+    return CIPRBFistulaCase.objects.filter(
+        current_stage__in=_STAGES,  # all identified cases
     ).count()
 
 

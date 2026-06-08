@@ -435,11 +435,14 @@ export function OrgDashboard({ partner }: Props) {
 
       {/* ═══════════════════════════════════════════════════════════════
            CENTRES TABLE
-           Hide the whole section for PHD when there's no district data yet —
-           the empty table reads as broken on a freshly-launched programme.
-           Bandhu keeps the existing empty-state row.
+           Show ONLY when there is genuine district-level submission data.
+           Before any real submissions, the centres list falls back to demo
+           data ("6 active districts" etc.) which is misleading on a
+           freshly-launched programme — so hide the whole section (all orgs)
+           until field workers actually submit. It reappears automatically
+           once /api/dashboard/centres/ returns real districts.
            ═══════════════════════════════════════════════════════════════ */}
-      {!(isPHD && (displayCentres.districts?.length ?? 0) === 0) && (
+      {!!(centres && centres.districts.length > 0) && (
       <section className="section" style={{ marginTop: 56, marginBottom: 80 }}>
         <SectionHead
           kicker={t('org.sectionCentresKicker')}

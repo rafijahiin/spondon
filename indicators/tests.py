@@ -26,11 +26,11 @@ class SeedShapeTest(TestCase):
     correct partner split and the correct null-target counts."""
 
     def test_total_rows(self):
-        self.assertEqual(IndicatorTarget.objects.count(), 44)
+        self.assertEqual(IndicatorTarget.objects.count(), 43)
 
     def test_partner_counts(self):
         self.assertEqual(IndicatorTarget.objects.filter(partner__code='PHD').count(), 22)
-        self.assertEqual(IndicatorTarget.objects.filter(partner__code='Bandhu').count(), 19)
+        self.assertEqual(IndicatorTarget.objects.filter(partner__code='Bandhu').count(), 18)
         self.assertEqual(IndicatorTarget.objects.filter(partner__code='CIPRB').count(), 3)
 
     def test_phd_overall_row_obj_zero(self):
@@ -190,9 +190,9 @@ class PartnerProgressShapeTest(TestCase):
         rows = get_partner_indicator_progress('PHD', P_START, P_END)
         self.assertEqual(len(rows), 22)
 
-    def test_bandhu_returns_19_rows(self):
+    def test_bandhu_returns_18_rows(self):
         rows = get_partner_indicator_progress('Bandhu', P_START, P_END)
-        self.assertEqual(len(rows), 19)
+        self.assertEqual(len(rows), 18)
 
     def test_ciprb_returns_3_rows_all_linked(self):
         # Migration 0007 + indicators.ciprb wired all 3 CIPRB rows

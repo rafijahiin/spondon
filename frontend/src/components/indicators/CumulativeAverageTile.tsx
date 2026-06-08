@@ -2,7 +2,7 @@
  * CumulativeAverageTile — Animesh's "single unified progress %" for a partner.
  *
  * Calculation is a SIMPLE MEAN of each indicator's percentage (confirmed
- * with the user). For a partner like Bandhu with 19 indicators at 20%,
+ * with the user). For a partner like Bandhu with 18 indicators at 20%,
  * 15%, 10%, 25%, ... the tile averages them and shows one figure for
  * the whole project.
  *
