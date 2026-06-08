@@ -313,7 +313,7 @@ export function ChoroplethMap({ metric, level, indicator, mode = 'value', geoDat
 
         <div style={{ marginTop: 8, fontSize: 9.5, color: '#9ca3af', lineHeight: 1.4 }}>
           Source: {MPDSR_SOURCE}.{mode === 'change' ? ' Δ vs MPDSR 2023 report (community notified).' : ` Classes: quantile (5).`}
-          {level === 'division' ? ' Districts shaded by division aggregate.' : ''}
+          {level === 'division' ? ' Each division shaded by its total (8 divisions).' : ''}
         </div>
       </div>
 
