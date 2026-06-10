@@ -289,7 +289,10 @@ export function OrgDashboard({ partner }: Props) {
 
   const categories = displayPrograms.categories ?? {}
   const monthlyTrend = displayPrograms.monthly_trend ?? []
-  const topForms = displayPrograms.top_forms ?? []
+  // Form grid always uses the LIVE programs data (never the mock fallback), so
+  // it shows this org's REAL form types — at 0 before launch — instead of the
+  // generic demo list. Empty only while the first request is still loading.
+  const topForms = programs?.top_forms ?? []
 
   const sparkClinical = monthlyTrend.map((m) => m.clinical)
   const sparkCommunity = monthlyTrend.map((m) => m.community)
@@ -382,7 +385,7 @@ export function OrgDashboard({ partner }: Props) {
       {/* ═══════════════════════════════════════════════════════════════
            FORM GRID
            ═══════════════════════════════════════════════════════════════ */}
-      {!usingMock && topForms.length > 0 && (
+      {topForms.length > 0 && (
         <section className="section" style={{ marginTop: 56 }}>
           <SectionHead
             kicker={t('org.sectionFormsKicker')}
