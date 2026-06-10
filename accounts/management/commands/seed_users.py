@@ -117,6 +117,16 @@ USERS = [
         'role':         'manager',
         'password_env': 'HABIB_PASSWORD',
     },
+    # ── Bandhu staff. Role is 'manager' (stage-1 approver): with UNFPA as the
+    #    guaranteed 2nd layer, the focal/manager split is moot for Bandhu, so all
+    #    Bandhu staff are managers and can approve at stage 1; UNFPA finalises. ─
+    {
+        'email':        'iqbal@bandhu-bd.org',
+        'full_name':    'Mohammed Iqbal Hossain',
+        'organisation': 'Bandhu',
+        'role':         'manager',
+        'password_env': 'BANDHU_IQBAL_PASSWORD',
+    },
 ]
 
 

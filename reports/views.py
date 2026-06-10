@@ -195,18 +195,38 @@ class ReportViewSet(ModelViewSet):
             narrative_source = narrative_meta.get('source', NarrativeSource.TEMPLATE),
             model_used       = narrative_meta.get('model', ''),
             generated_by     = request.user,
+            file_bytes       = file_bytes,        # durable copy in Postgres
+            original_filename = filename,
         )
         report.file.save(filename, ContentFile(file_bytes), save=True)
 
         return Response(ReportSerializer(report).data, status=status.HTTP_201_CREATED)
 
+    _CONTENT_TYPES = {
+        'pdf':  'application/pdf',
+        'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    }
+
     @action(detail=True, methods=['get'])
     def download(self, request, pk=None):
         report = self.get_object()
-        if not report.file:
-            return Response({'detail': 'No file attached.'}, status=status.HTTP_404_NOT_FOUND)
-        return FileResponse(report.file.open('rb'), as_attachment=True,
-                            filename=report.file.name.split('/')[-1])
+        ctype = self._CONTENT_TYPES.get(report.format, 'application/octet-stream')
+        fname = (report.original_filename
+                 or (report.file.name.split('/')[-1] if report.file else f'report-{report.id}.{report.format}'))
+        # Durable path — serve the bytes persisted in Postgres (survive redeploys).
+        if report.file_bytes:
+            resp = HttpResponse(bytes(report.file_bytes), content_type=ctype)
+            resp['Content-Disposition'] = f'attachment; filename="{fname}"'
+            return resp
+        # Legacy fallback — a file on disk (may be gone after a Railway redeploy).
+        if report.file:
+            try:
+                return FileResponse(report.file.open('rb'), as_attachment=True, filename=fname)
+            except (FileNotFoundError, OSError):
+                pass
+        return Response({'detail': 'This report file is no longer available — regenerate it.'},
+                        status=status.HTTP_404_NOT_FOUND)
 
     @action(detail=False, methods=['get'], url_path='demo')
     def demo(self, request):

@@ -55,6 +55,11 @@ class Report(models.Model):
     title = models.CharField(max_length=300)
     narrative = models.TextField(blank=True)
     file = models.FileField(upload_to='reports/%Y/%m/', null=True, blank=True)
+    # Durable copy of the report bytes in Postgres. Railway's container
+    # filesystem is EPHEMERAL (wiped on every redeploy/restart), so the bytes
+    # behind `file` do not survive — these do. `download` serves from here.
+    file_bytes = models.BinaryField(null=True, blank=True, editable=False)
+    original_filename = models.CharField(max_length=200, blank=True)
 
     # Provenance — see NarrativeSource for values
     narrative_source = models.CharField(
