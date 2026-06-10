@@ -96,6 +96,79 @@ def _send_approval_telegram(org: str, form_label: str, reviewer_name: str, appro
         logger.error('Programs approval Telegram error: %s', exc)
 
 
+def _apply_decision(obj, user, action_type, reason):
+    """Apply an approve/reject decision with the org-aware two-stage rules.
+
+    Bandhu Service Log + Activity & Operations (and NilReport) are two-stage:
+        PENDING --manager--> MANAGER_APPROVED --UNFPA--> APPROVED
+    PHD / CIPRB are single-stage (PENDING --> APPROVED). Used by BOTH approval
+    entrypoints (PendingApprovalsView and the per-model viewset action) so a
+    Bandhu record can never bypass the UNFPA gate.
+
+    Mutates `obj` in place on success and returns None; returns a DRF Response
+    on any authorisation / state error (caller returns it as-is).
+    """
+    uorg = user.organisation
+    is_unfpa = (uorg == 'UNFPA')
+    is_super = bool(getattr(user, 'can_see_all_orgs', False)) and not is_unfpa
+    if not user.can_approve_submissions:
+        return Response({'detail': 'Not authorised.'}, status=status.HTTP_403_FORBIDDEN)
+    if not (is_super or obj.organisation == uorg
+            or (is_unfpa and obj.organisation == 'Bandhu')):
+        return Response({'detail': 'Not authorised.'}, status=status.HTTP_403_FORBIDDEN)
+
+    two_stage = (obj.organisation == 'Bandhu')
+    cur = obj.approval_status
+    now = timezone.now()
+
+    if action_type == 'approve':
+        if two_stage and cur == 'PENDING':
+            if not (is_super or uorg == 'Bandhu'):
+                return Response({'detail': 'Manager-stage approval is for the Bandhu manager.'},
+                                status=status.HTTP_403_FORBIDDEN)
+            obj.approval_status = 'MANAGER_APPROVED'
+            obj.manager_approved_by = user
+            obj.manager_approved_at = now
+            obj.rejected_reason = ''
+        elif two_stage and cur == 'MANAGER_APPROVED':
+            if not (is_super or is_unfpa):
+                return Response({'detail': 'Final approval is for UNFPA.'},
+                                status=status.HTTP_403_FORBIDDEN)
+            obj.approval_status = 'APPROVED'
+            obj.approved_by = user
+            obj.approved_at = now
+            obj.rejected_reason = ''
+        elif cur == 'PENDING':
+            obj.approval_status = 'APPROVED'
+            obj.approved_by = user
+            obj.approved_at = now
+            obj.rejected_reason = ''
+        else:
+            return Response({'status': cur, 'detail': 'Already processed.'},
+                            status=status.HTTP_409_CONFLICT)
+    elif action_type == 'reject':
+        if not str(reason).strip():
+            return Response({'detail': 'A reason is required to reject.'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        if two_stage and cur == 'MANAGER_APPROVED':
+            if not (is_super or is_unfpa):
+                return Response({'detail': 'Not authorised.'}, status=status.HTTP_403_FORBIDDEN)
+            obj.approval_status = 'PENDING'
+            obj.manager_approved_by = None
+            obj.manager_approved_at = None
+            obj.rejected_reason = reason
+        elif cur == 'PENDING':
+            obj.approval_status = 'REJECTED'
+            obj.rejected_reason = reason
+        else:
+            return Response({'status': cur, 'detail': 'Already processed.'},
+                            status=status.HTTP_409_CONFLICT)
+    else:
+        return Response({'detail': "action must be 'approve' or 'reject'."},
+                        status=status.HTTP_400_BAD_REQUEST)
+    return None
+
+
 def _org_filter(queryset, request):
     """Apply organisation filter based on user permissions.
 
@@ -132,31 +205,12 @@ class OrgFilteredViewSet(viewsets.ModelViewSet):
             except Exception:
                 return Response({'detail': 'Record not found.'}, status=status.HTTP_404_NOT_FOUND)
 
-            # Capability layer — checks role bucket (manager/org_lead/supervisor/dev).
-            # Plus an org-scoping gate so a manager can't approve another org's
-            # row even if the URL is guessed (defence-in-depth alongside the
-            # queryset filter, which would have 404'd already).
-            if not user.can_approve_submissions:
-                return Response({'detail': 'Not authorised.'}, status=status.HTTP_403_FORBIDDEN)
-            if not user.can_see_all_orgs and obj.organisation != user.organisation:
-                return Response({'detail': 'Not authorised.'}, status=status.HTTP_403_FORBIDDEN)
-
-            if obj.approval_status != 'PENDING':
-                return Response(
-                    {'status': obj.approval_status, 'detail': 'Already processed.'},
-                    status=status.HTTP_409_CONFLICT,
-                )
-
-            if action_type == 'approve':
-                obj.approval_status = 'APPROVED'
-                obj.approved_by = user
-                obj.approved_at = timezone.now()
-                obj.rejected_reason = ''
-            else:
-                reason = request.data.get('reason', '')
-                obj.approval_status = 'REJECTED'
-                obj.rejected_reason = reason
-
+            # Shared two-stage decision (Bandhu manager → UNFPA; PHD/CIPRB
+            # single-stage). Defence-in-depth: same rules as the queue endpoint.
+            reason = request.data.get('reason', '')
+            err = _apply_decision(obj, user, action_type, reason)
+            if err is not None:
+                return err
             obj.save()
 
         # Email the partner's managers/focal + the submitter (resolved from
@@ -686,72 +740,9 @@ class PendingApprovalsView(views.APIView):
                 return Response({'detail': 'Record not found.'}, status=status.HTTP_404_NOT_FOUND)
 
             user = request.user
-            uorg = user.organisation
-            is_unfpa = (uorg == 'UNFPA')
-            is_super = bool(getattr(user, 'can_see_all_orgs', False)) and not is_unfpa
-            if not user.can_approve_submissions:
-                return Response({'detail': 'Not authorised.'}, status=status.HTTP_403_FORBIDDEN)
-            # Own org, OR super (all orgs), OR a UNFPA user acting on Bandhu
-            # (the second gate).
-            if not (is_super or obj.organisation == uorg
-                    or (is_unfpa and obj.organisation == 'Bandhu')):
-                return Response({'detail': 'Not authorised.'}, status=status.HTTP_403_FORBIDDEN)
-
-            two_stage = (obj.organisation == 'Bandhu')
-            cur = obj.approval_status
-            now = timezone.now()
-
-            if action_type == 'approve':
-                if two_stage and cur == 'PENDING':
-                    # Stage 1 — Bandhu manager gate.
-                    if not (is_super or uorg == 'Bandhu'):
-                        return Response({'detail': 'Manager-stage approval is for the Bandhu manager.'},
-                                        status=status.HTTP_403_FORBIDDEN)
-                    obj.approval_status = 'MANAGER_APPROVED'
-                    obj.manager_approved_by = user
-                    obj.manager_approved_at = now
-                    obj.rejected_reason = ''
-                elif two_stage and cur == 'MANAGER_APPROVED':
-                    # Stage 2 — UNFPA final gate (releases to the dashboard).
-                    if not (is_super or is_unfpa):
-                        return Response({'detail': 'Final approval is for UNFPA.'},
-                                        status=status.HTTP_403_FORBIDDEN)
-                    obj.approval_status = 'APPROVED'
-                    obj.approved_by = user
-                    obj.approved_at = now
-                    obj.rejected_reason = ''
-                elif cur == 'PENDING':
-                    # Single-stage (PHD / CIPRB).
-                    obj.approval_status = 'APPROVED'
-                    obj.approved_by = user
-                    obj.approved_at = now
-                    obj.rejected_reason = ''
-                else:
-                    return Response({'status': cur, 'detail': 'Already processed.'},
-                                    status=status.HTTP_409_CONFLICT)
-            elif action_type == 'reject':
-                if not str(reason).strip():
-                    return Response({'detail': 'A reason is required to reject.'},
-                                    status=status.HTTP_400_BAD_REQUEST)
-                if two_stage and cur == 'MANAGER_APPROVED':
-                    # UNFPA returns it to the Bandhu manager (reopen stage 1).
-                    if not (is_super or is_unfpa):
-                        return Response({'detail': 'Not authorised.'}, status=status.HTTP_403_FORBIDDEN)
-                    obj.approval_status = 'PENDING'
-                    obj.manager_approved_by = None
-                    obj.manager_approved_at = None
-                    obj.rejected_reason = reason
-                elif cur == 'PENDING':
-                    # Manager (or single-stage) rejects → back to the field worker.
-                    obj.approval_status = 'REJECTED'
-                    obj.rejected_reason = reason
-                else:
-                    return Response({'status': cur, 'detail': 'Already processed.'},
-                                    status=status.HTTP_409_CONFLICT)
-            else:
-                return Response({'detail': "action must be 'approve' or 'reject'."},
-                                status=status.HTTP_400_BAD_REQUEST)
-
+            err = _apply_decision(obj, user, action_type, reason)
+            if err is not None:
+                return err
             obj.save()
 
         # Telegram — notify org chat of approval/rejection
@@ -791,3 +782,69 @@ class PendingApprovalsView(views.APIView):
             logger.error('Telegram notification failed after approval: %s', exc)
 
         return Response({'status': obj.approval_status, 'id': str(obj.id)})
+
+
+class NilReportView(views.APIView):
+    """
+    GET  /api/programs/nil-reports/   — list nil-reports the user can see
+                                        (own org; super sees all).
+    POST /api/programs/nil-reports/   — a Bandhu manager logs a "no reporting
+                                        today" entry { center_id, report_date,
+                                        reason }. It is created already at the
+                                        manager gate (MANAGER_APPROVED) and then
+                                        flows to the UNFPA approval queue.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        qs = NilReport.objects.select_related('center', 'approved_by', 'manager_approved_by')
+        if not getattr(user, 'can_see_all_orgs', False):
+            qs = qs.filter(organisation=user.organisation)
+        out = []
+        for n in qs.order_by('-report_date', '-created_at')[:300]:
+            out.append({
+                'id': str(n.id),
+                'organisation': n.organisation,
+                'center_name': n.center.name if n.center_id else 'All centres',
+                'center_code': n.center.code if n.center_id else '',
+                'report_date': n.report_date.isoformat(),
+                'reason': n.reason,
+                'approval_status': n.approval_status,
+                'created_at': n.created_at.isoformat(),
+            })
+        return Response({'count': len(out), 'items': out})
+
+    def post(self, request):
+        user = request.user
+        if not user.can_approve_submissions:
+            return Response({'detail': 'Only managers can log nil-reports.'},
+                            status=status.HTTP_403_FORBIDDEN)
+        org = user.organisation if not getattr(user, 'can_see_all_orgs', False) else \
+            (request.data.get('organisation') or 'Bandhu')
+        center_id = request.data.get('center_id')
+        report_date = request.data.get('report_date')
+        reason = (request.data.get('reason') or '').strip()
+        if not report_date or not reason:
+            return Response({'detail': 'report_date and reason are required.'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        center = None
+        if center_id:
+            center = ServiceCenter.objects.filter(code=center_id).first() \
+                or ServiceCenter.objects.filter(id=center_id).first()
+        defaults = {
+            'reason': reason,
+            # Manager authored it → manager gate done; awaiting UNFPA.
+            'approval_status': 'MANAGER_APPROVED',
+            'manager_approved_by': user,
+            'manager_approved_at': timezone.now(),
+            'submitted_by': user,
+        }
+        obj, created = NilReport.objects.update_or_create(
+            organisation=org, center=center, report_date=report_date,
+            defaults=defaults,
+        )
+        return Response(
+            {'id': str(obj.id), 'created': created, 'status': obj.approval_status},
+            status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
+        )

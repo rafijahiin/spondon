@@ -7,12 +7,14 @@
  */
 import React, { useState, useEffect, useCallback, useRef } from 'react'
 import {
-  X, Check, AlertTriangle, FileText,
+  X, Check, AlertTriangle, FileText, Plus,
 } from 'lucide-react'
 import { useReducedMotion } from 'motion/react'
 import { useTranslation } from 'react-i18next'
 import { api, apiErrorMessage } from '@/api/client'
 import { bandhuField, isBandhuForm } from '@/data/bandhuFieldLabels'
+import { useAuth } from '@/context/AuthContext'
+import { NilReportModal } from '@/components/approvals/NilReportModal'
 import { usePolling } from '@/hooks/usePolling'
 import { PageLoader, LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { formatDateTime } from '@/utils/format'
@@ -267,6 +269,10 @@ interface QueueItem {
   // (e.g. 'AGE_LOW', 'CAUSE_EMPTY'). Renders amber AlertTriangle pill in
   // the queue spine + expanded human-readable list in the focus panel.
   logic_flags?: string[]
+  // Two-stage approval (Bandhu): which gate this item is at.
+  two_stage?: boolean
+  stage?: 'manager' | 'unfpa'
+  approval_status?: string
 }
 
 function toQueueItems(programsData: ProgramPendingResponse | null, submissions: Submission[] | null): QueueItem[] {
@@ -289,6 +295,9 @@ function toQueueItems(programsData: ProgramPendingResponse | null, submissions: 
         endpoint: (it as any).endpoint,  // DRF route slug from the API
         kind: 'program',
         urgent: it.model_type === 'gbv_case',
+        two_stage: (it as any).two_stage,
+        stage: (it as any).stage,
+        approval_status: (it as any).approval_status,
       })
     }
   }
@@ -392,7 +401,14 @@ function Toast({ action, item, onClose }: {
 
 export default function ManagerApprovals() {
   const { t } = useTranslation()
+  const { user } = useAuth()
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [nilOpen, setNilOpen] = useState(false)
+  // Nil-report ("No reporting today") is a Bandhu manager action; super roles
+  // can also log it. UNFPA approves it (in the queue), they don't create it.
+  const canLogNil = !!user && (
+    user.organisation === 'Bandhu' || ['developer', 'supervisor'].includes(user.role)
+  )
   // Filter state persisted to localStorage so navigating away and
   // back restores the user's last selected filter (§9 state-preservation).
   const FILTER_KEY = 'approvals.filter'
@@ -599,6 +615,12 @@ export default function ManagerApprovals() {
               lineHeight: 1.1, color: 'var(--ink-2)',
               letterSpacing: '-0.012em', marginBottom: 16,
             }}>{t('approvals.headlineSub')}</div>
+            {canLogNil && (
+              <button className="btn ghost" onClick={() => setNilOpen(true)}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: 13 }}>
+                <Plus size={15} /> Log “no reporting today”
+              </button>
+            )}
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, auto)', gap: 24, flexShrink: 0 }}>
             <Stat label={t('approvals.statQueue')}    value={allItems.length}                 sub={t('approvals.statQueueSub',    { count: filtered.length })} />
@@ -607,6 +629,8 @@ export default function ManagerApprovals() {
           </div>
         </div>
       </section>
+
+      <NilReportModal open={nilOpen} onClose={() => setNilOpen(false)} onSaved={refetchPrograms} />
 
       {/* ═══════════════════════════════════════════════════════════════
            ERROR BAR
@@ -885,6 +909,28 @@ export default function ManagerApprovals() {
                     <p className="hero-lede" style={{ marginTop: 14, maxWidth: 720 }}>
                       {selected.summary}
                     </p>
+                    {/* Two-stage approval banner (Bandhu): tells the reviewer
+                        which gate this is and what approving does. */}
+                    {selected.two_stage && (
+                      <div style={{
+                        marginTop: 14, display: 'flex', alignItems: 'center', gap: 10,
+                        padding: '10px 14px', borderRadius: 10,
+                        background: 'var(--violet)14', border: '1px solid var(--violet)',
+                        maxWidth: 720,
+                      }}>
+                        <span style={{
+                          fontSize: 11, fontWeight: 700, color: '#fff', background: 'var(--violet)',
+                          borderRadius: 999, padding: '2px 9px', whiteSpace: 'nowrap',
+                        }}>
+                          {selected.stage === 'unfpa' ? 'STAGE 2 / 2' : 'STAGE 1 / 2'}
+                        </span>
+                        <span style={{ fontSize: 13, color: 'var(--ink-2)' }}>
+                          {selected.stage === 'unfpa'
+                            ? 'UNFPA final approval — approving releases this to the dashboard.'
+                            : 'Bandhu manager review — after you approve, it goes to UNFPA for final sign-off.'}
+                        </span>
+                      </div>
+                    )}
                     {/* Which Kobo form is being approved — the manager must
                         see the form name + its KoboToolbox id, read-only. */}
                     {selected.kind === 'legacy' && (
@@ -1138,26 +1184,38 @@ export default function ManagerApprovals() {
                                 color: 'var(--ink-3)',
                                 letterSpacing: '0.10em',
                                 textTransform: 'uppercase',
-                                marginBottom: 10,
+                                marginBottom: 8,
                               }}>{title}</div>
-                              <div style={{
-                                display: 'grid',
-                                gridTemplateColumns: '210px 1fr',
-                                rowGap: 8, columnGap: 18,
-                                fontSize: 15,
+                              {/* Register-style table (rows × columns) so the
+                                  reviewer reads the data exactly like the paper
+                                  form before approving. */}
+                              <table style={{
+                                width: '100%', borderCollapse: 'collapse',
+                                fontSize: 14.5, border: '1px solid var(--hair)',
+                                borderRadius: 8, overflow: 'hidden',
                               }}>
-                                {visible.map((r, i) => (
-                                  <React.Fragment key={i}>
-                                    <div style={{ color: 'var(--ink-3)' }}>{r.label}</div>
-                                    <div style={{
-                                      color: r.isEmpty ? 'var(--muted)' : 'var(--ink)',
-                                      fontFamily: r.mono ? 'var(--mono)' : 'inherit',
+                                <tbody>
+                                  {visible.map((r, i) => (
+                                    <tr key={i} style={{
+                                      borderTop: i === 0 ? 'none' : '1px solid var(--hair)',
+                                      background: i % 2 ? 'var(--surface-2)' : 'transparent',
                                     }}>
-                                      {r.display}
-                                    </div>
-                                  </React.Fragment>
-                                ))}
-                              </div>
+                                      <th style={{
+                                        textAlign: 'left', verticalAlign: 'top',
+                                        width: 230, padding: '8px 14px',
+                                        color: 'var(--ink-3)', fontWeight: 500,
+                                        borderRight: '1px solid var(--hair)',
+                                      }}>{r.label}</th>
+                                      <td style={{
+                                        padding: '8px 14px',
+                                        color: r.isEmpty ? 'var(--muted)' : 'var(--ink)',
+                                        fontFamily: r.mono ? 'var(--mono)' : 'inherit',
+                                        fontVariantNumeric: 'tabular-nums',
+                                      }}>{r.display}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
                             </div>
                           );
                         })}
@@ -1244,7 +1302,13 @@ export default function ManagerApprovals() {
                           disabled={approving}
                           style={{ display: 'flex', alignItems: 'center', gap: 6 }}
                         >
-                          {approving ? <LoadingSpinner size="sm" /> : <><Check size={14} /> {t('approvals.btnApprove')}</>}
+                          {approving ? <LoadingSpinner size="sm" /> : (
+                            <><Check size={14} /> {
+                              selected.two_stage
+                                ? (selected.stage === 'unfpa' ? 'Final approve (UNFPA)' : 'Approve → send to UNFPA')
+                                : t('approvals.btnApprove')
+                            }</>
+                          )}
                         </button>
                       </div>
                     </div>
