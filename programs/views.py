@@ -109,8 +109,12 @@ def _apply_decision(obj, user, action_type, reason):
     on any authorisation / state error (caller returns it as-is).
     """
     uorg = user.organisation
-    is_unfpa = (uorg == 'UNFPA')
-    is_super = bool(getattr(user, 'can_see_all_orgs', False)) and not is_unfpa
+    urole = getattr(user, 'role', '')
+    # A developer is the system super-admin (acts on any stage / org), even
+    # though their org is UNFPA. UNFPA NON-developers (e.g. supervisors) are
+    # the dedicated stage-2 gate.
+    is_super = (urole == 'developer') or (bool(getattr(user, 'can_see_all_orgs', False)) and uorg != 'UNFPA')
+    is_unfpa = (uorg == 'UNFPA') and urole != 'developer'
     if not user.can_approve_submissions:
         return Response({'detail': 'Not authorised.'}, status=status.HTTP_403_FORBIDDEN)
     if not (is_super or obj.organisation == uorg
@@ -676,8 +680,9 @@ class PendingApprovalsView(views.APIView):
     def get(self, request):
         user = request.user
         org = user.organisation
-        is_unfpa = (org == 'UNFPA')
-        is_super = bool(getattr(user, 'can_see_all_orgs', False)) and not is_unfpa
+        urole = getattr(user, 'role', '')
+        is_super = (urole == 'developer') or (bool(getattr(user, 'can_see_all_orgs', False)) and org != 'UNFPA')
+        is_unfpa = (org == 'UNFPA') and urole != 'developer'
 
         # Per-role review lanes (two-stage Bandhu flow):
         #   UNFPA  → stage-2 queue: Bandhu items at MANAGER_APPROVED only.
