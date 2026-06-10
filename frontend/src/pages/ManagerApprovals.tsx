@@ -12,7 +12,7 @@ import {
 import { useReducedMotion } from 'motion/react'
 import { useTranslation } from 'react-i18next'
 import { api, apiErrorMessage } from '@/api/client'
-import { bandhuField, isBandhuForm } from '@/data/bandhuFieldLabels'
+import { bandhuField, isBandhuForm, decodeBandhuValue } from '@/data/bandhuFieldLabels'
 import { useAuth } from '@/context/AuthContext'
 import { NilReportModal } from '@/components/approvals/NilReportModal'
 import { usePolling } from '@/hooks/usePolling'
@@ -161,7 +161,10 @@ export function groupSubmittedFields(payload: Record<string, any>, formType?: st
       label = _humanise(key, stripPrefix)
     }
 
-    const fmt = _formatValue(value)
+    // Decode coded Bandhu values (TG="03"→"FSW", referral codes→labels) so the
+    // reviewer reads what was recorded, not a code, before approving.
+    const decoded = bandhu ? decodeBandhuValue(key, value) : value
+    const fmt = _formatValue(decoded)
     const row: FieldRow = { label, display: fmt.display, isEmpty: fmt.isEmpty, mono: fmt.mono }
     if (!buckets.has(groupTitle)) { buckets.set(groupTitle, []); order.push(groupTitle) }
     buckets.get(groupTitle)!.push(row)

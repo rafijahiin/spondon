@@ -13,11 +13,11 @@ Approval:
 """
 import json
 import logging
+import uuid as _uuid
 
 import requests as _requests
 from django.conf import settings as _settings
 from django.db import transaction as _tx
-from django.db.models import Q
 from django.utils import timezone
 from rest_framework import viewsets, views, status
 from rest_framework.decorators import action
@@ -874,8 +874,18 @@ class NilReportView(views.APIView):
         # attribute a nil-report to another team's centre (cross-org integrity).
         center = None
         if center_id:
-            center = (ServiceCenter.objects.filter(organisation=org)
-                      .filter(Q(code=center_id) | Q(id=center_id)).first())
+            # Match on CODE first — the form always sends the centre code. Only
+            # try the UUID primary key when center_id actually parses as a UUID:
+            # comparing a code like 'BND-DIC-01' against the UUID id column
+            # raises ValidationError, which DRF surfaces as an uncaught 500.
+            center = ServiceCenter.objects.filter(organisation=org, code=center_id).first()
+            if center is None:
+                try:
+                    _uuid.UUID(str(center_id))
+                except (ValueError, TypeError, AttributeError):
+                    pass
+                else:
+                    center = ServiceCenter.objects.filter(organisation=org, id=center_id).first()
             if center is None:
                 return Response({'detail': 'Centre not found for your organisation.'},
                                 status=status.HTTP_400_BAD_REQUEST)
