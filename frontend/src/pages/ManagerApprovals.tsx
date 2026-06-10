@@ -610,7 +610,11 @@ export default function ManagerApprovals() {
   useEffect(() => {
     setReviewerNote('')
     setDetail(null)
-    setShowRaw(false)
+    // Managers (the stage-1 reviewers) see the COMPLETE uploaded submission —
+    // every field as it came from Kobo, nothing collapsed — so they verify the
+    // raw data, not a summary. UNFPA (stage-2) keeps the curated view + the
+    // plain-language narrative for the final sign-off.
+    setShowRaw(user?.organisation !== 'UNFPA')
     setDetailError(false)
     if (!selected) return
     let cancelled = false
