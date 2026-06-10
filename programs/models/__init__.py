@@ -9,6 +9,7 @@ from .referral import Referral
 from .supply import StockEntry, TemperatureLog, SafetyHygieneKit, StoreRequisition
 from .operations import TrainingEvent, CoordMeeting, MobileHealthCamp, VisitorRegister
 from .gbv_corner import GBVCornerRecord
+from .nil_report import NilReport
 
 __all__ = [
     'ServiceCenter', 'Client',
@@ -21,4 +22,5 @@ __all__ = [
     'Referral',
     'StockEntry', 'TemperatureLog', 'SafetyHygieneKit', 'StoreRequisition',
     'TrainingEvent', 'CoordMeeting', 'MobileHealthCamp', 'VisitorRegister',
+    'NilReport',
 ]

@@ -36,6 +36,7 @@ from .models import (
     IECMaterial,
     StockEntry, TemperatureLog, SafetyHygieneKit, StoreRequisition,
     TrainingEvent, CoordMeeting, MobileHealthCamp, VisitorRegister,
+    NilReport,
 )
 from .serializers import (
     ServiceCenterSerializer, ClientSerializer,
@@ -524,9 +525,14 @@ def _build_summary(obj, model_type: str) -> str:
     return f"{model_type.replace('_', ' ').title()} record"
 
 
-def _pending_for_model(queryset, model_type: str, org_filter_org=None):
-    """Return list of pending approval dicts for a given queryset."""
-    qs = queryset.filter(approval_status='PENDING').select_related('center', 'approved_by')
+def _pending_for_model(queryset, model_type: str, org_filter_org=None,
+                       statuses=('PENDING',)):
+    """Return approval dicts for a queryset at the given approval stage(s).
+
+    statuses lets the queue show stage-1 (PENDING) and/or stage-2
+    (MANAGER_APPROVED) items depending on who is looking — see
+    PendingApprovalsView.get for the per-role lanes."""
+    qs = queryset.filter(approval_status__in=list(statuses)).select_related('center', 'approved_by')
     if org_filter_org:
         qs = qs.filter(organisation=org_filter_org)
     results = []
@@ -538,6 +544,13 @@ def _pending_for_model(queryset, model_type: str, org_filter_org=None):
             'endpoint': model_type.replace('_', '-') + 's',
             'organisation': obj.organisation,
             'approval_status': obj.approval_status,
+            # Two-stage flag + which gate this item is waiting on, so the UI
+            # can split the Manager queue from the UNFPA queue.
+            'two_stage': obj.organisation == 'Bandhu',
+            'stage': ('unfpa' if obj.approval_status == 'MANAGER_APPROVED'
+                      else 'manager'),
+            'manager_approved_at': (obj.manager_approved_at.isoformat()
+                                    if getattr(obj, 'manager_approved_at', None) else None),
             'submitted_by': obj.submitted_by_kobo_user or '–',
             'center_name': obj.center.name if obj.center_id else '–',
             'center_code': obj.center.code if obj.center_id else '',
@@ -569,6 +582,7 @@ _APPROVAL_MODELS = [
     ('training_event',       lambda: TrainingEvent.objects),
     ('coord_meeting',        lambda: CoordMeeting.objects),
     ('mobile_camp',          lambda: MobileHealthCamp.objects),
+    ('nil_report',           lambda: NilReport.objects),
 ]
 
 # Fix endpoint slugs for DRF router (plural URLs)
@@ -590,6 +604,7 @@ _ENDPOINT_OVERRIDES = {
     'training_event': 'training-events',
     'coord_meeting': 'coord-meetings',
     'mobile_camp': 'mobile-camps',
+    'nil_report': 'nil-reports',
 }
 
 
@@ -606,11 +621,26 @@ class PendingApprovalsView(views.APIView):
 
     def get(self, request):
         user = request.user
-        org = None if user.can_see_all_orgs else user.organisation
+        org = user.organisation
+        is_unfpa = (org == 'UNFPA')
+        is_super = bool(getattr(user, 'can_see_all_orgs', False)) and not is_unfpa
+
+        # Per-role review lanes (two-stage Bandhu flow):
+        #   UNFPA  → stage-2 queue: Bandhu items at MANAGER_APPROVED only.
+        #   super  → everything actionable: all PENDING + Bandhu MANAGER_APPROVED.
+        #   Bandhu manager → stage-1: own-org PENDING.
+        #   PHD/CIPRB manager/org_lead → own-org PENDING (single stage).
+        def lane(qs, model_type):
+            if is_unfpa:
+                return _pending_for_model(qs, model_type, 'Bandhu', statuses=('MANAGER_APPROVED',))
+            if is_super:
+                return _pending_for_model(qs, model_type, None,
+                                          statuses=('PENDING', 'MANAGER_APPROVED'))
+            return _pending_for_model(qs, model_type, org, statuses=('PENDING',))
 
         all_pending = []
         for model_type, qs_fn in _APPROVAL_MODELS:
-            items = _pending_for_model(qs_fn(), model_type, org)
+            items = lane(qs_fn(), model_type)
             for item in items:
                 item['endpoint'] = _ENDPOINT_OVERRIDES.get(model_type, model_type + 's')
             all_pending.extend(items)
@@ -656,27 +686,71 @@ class PendingApprovalsView(views.APIView):
                 return Response({'detail': 'Record not found.'}, status=status.HTTP_404_NOT_FOUND)
 
             user = request.user
+            uorg = user.organisation
+            is_unfpa = (uorg == 'UNFPA')
+            is_super = bool(getattr(user, 'can_see_all_orgs', False)) and not is_unfpa
             if not user.can_approve_submissions:
                 return Response({'detail': 'Not authorised.'}, status=status.HTTP_403_FORBIDDEN)
-            if not user.can_see_all_orgs and obj.organisation != user.organisation:
+            # Own org, OR super (all orgs), OR a UNFPA user acting on Bandhu
+            # (the second gate).
+            if not (is_super or obj.organisation == uorg
+                    or (is_unfpa and obj.organisation == 'Bandhu')):
                 return Response({'detail': 'Not authorised.'}, status=status.HTTP_403_FORBIDDEN)
 
-            if obj.approval_status != 'PENDING':
-                return Response(
-                    {'status': obj.approval_status, 'detail': 'Already processed.'},
-                    status=status.HTTP_409_CONFLICT,
-                )
+            two_stage = (obj.organisation == 'Bandhu')
+            cur = obj.approval_status
+            now = timezone.now()
 
             if action_type == 'approve':
-                obj.approval_status = 'APPROVED'
-                obj.approved_by = user
-                obj.approved_at = timezone.now()
-                obj.rejected_reason = ''
+                if two_stage and cur == 'PENDING':
+                    # Stage 1 — Bandhu manager gate.
+                    if not (is_super or uorg == 'Bandhu'):
+                        return Response({'detail': 'Manager-stage approval is for the Bandhu manager.'},
+                                        status=status.HTTP_403_FORBIDDEN)
+                    obj.approval_status = 'MANAGER_APPROVED'
+                    obj.manager_approved_by = user
+                    obj.manager_approved_at = now
+                    obj.rejected_reason = ''
+                elif two_stage and cur == 'MANAGER_APPROVED':
+                    # Stage 2 — UNFPA final gate (releases to the dashboard).
+                    if not (is_super or is_unfpa):
+                        return Response({'detail': 'Final approval is for UNFPA.'},
+                                        status=status.HTTP_403_FORBIDDEN)
+                    obj.approval_status = 'APPROVED'
+                    obj.approved_by = user
+                    obj.approved_at = now
+                    obj.rejected_reason = ''
+                elif cur == 'PENDING':
+                    # Single-stage (PHD / CIPRB).
+                    obj.approval_status = 'APPROVED'
+                    obj.approved_by = user
+                    obj.approved_at = now
+                    obj.rejected_reason = ''
+                else:
+                    return Response({'status': cur, 'detail': 'Already processed.'},
+                                    status=status.HTTP_409_CONFLICT)
             elif action_type == 'reject':
-                obj.approval_status = 'REJECTED'
-                obj.rejected_reason = reason
+                if not str(reason).strip():
+                    return Response({'detail': 'A reason is required to reject.'},
+                                    status=status.HTTP_400_BAD_REQUEST)
+                if two_stage and cur == 'MANAGER_APPROVED':
+                    # UNFPA returns it to the Bandhu manager (reopen stage 1).
+                    if not (is_super or is_unfpa):
+                        return Response({'detail': 'Not authorised.'}, status=status.HTTP_403_FORBIDDEN)
+                    obj.approval_status = 'PENDING'
+                    obj.manager_approved_by = None
+                    obj.manager_approved_at = None
+                    obj.rejected_reason = reason
+                elif cur == 'PENDING':
+                    # Manager (or single-stage) rejects → back to the field worker.
+                    obj.approval_status = 'REJECTED'
+                    obj.rejected_reason = reason
+                else:
+                    return Response({'status': cur, 'detail': 'Already processed.'},
+                                    status=status.HTTP_409_CONFLICT)
             else:
-                return Response({'detail': "action must be 'approve' or 'reject'."}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({'detail': "action must be 'approve' or 'reject'."},
+                                status=status.HTTP_400_BAD_REQUEST)
 
             obj.save()
 

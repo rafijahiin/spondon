@@ -1050,6 +1050,7 @@ FORM_HANDLERS: dict = {
         _lazy_ciprb('handle_ciprb_near_miss'),
     # ── PHD consolidated forms (new, from final source files) ──────────────────
     # ── Bandhu consolidated forms (faithful from UNFPA Tools.xlsx) ─────────────
+    'bandhu_mother_list_v1':    _lazy_bandhu('handle_bandhu_mother_list'),
     'bandhu_service_log_v1':    _lazy_bandhu('handle_bandhu_service_log'),
     'bandhu_activity_ops_v1':   _lazy_bandhu('handle_bandhu_activity_ops'),
     # ── PHD consolidated forms (new, from final source files) ─────────────────

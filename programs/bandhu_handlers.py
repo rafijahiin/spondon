@@ -268,12 +268,15 @@ def _bnd_outreach(payload, lat, lng):
     OutreachSession.objects.create(
         organisation=ORG, center=center,
         session_date=_date(payload.get('or_date')) or _sub_date(payload),
-        peer_educator_name=_str(payload.get('or_worker')),
+        peer_educator_name=_str(payload.get('or_peer_educator')),
         spot_name=_str(payload.get('or_spot')),
         condoms_distributed_free=_int(payload.get('or_condom')),
+        lubricants_distributed_free=_int(payload.get('or_lubricant')),
         hiv_aids_sti_knowledge_sessions=_int(payload.get('or_awareness')),
         iec_bcc_materials_distributed=_int(payload.get('or_iec')),
         referral_htc_hts=_int(payload.get('or_ref_sti')) > 0,
+        referral_mental_health=_int(payload.get('or_ref_mental_health')) > 0,
+        referral_gbv=_int(payload.get('or_ref_gbv')) > 0,
         **_base_kwargs(payload, lat, lng),
     )
     return HttpResponse('Created', status=201)
@@ -318,8 +321,8 @@ def _event_total(payload):
     explicit = _int_or_none(payload.get('ev_total'))
     if explicit:
         return explicit
-    keys = ['ev_female', 'ev_male', 'ev_hijra', 'ev_trans_men',
-            'ev_trans_women', 'ev_intersex', 'ev_other_gender']
+    # Corrected gender buckets: Man / Woman / TG-Hijra / Others.
+    keys = ['ev_man', 'ev_woman', 'ev_tg_hijra', 'ev_other']
     return sum(_int(payload.get(k)) for k in keys)
 
 
@@ -391,16 +394,100 @@ def _bnd_ebillboard(payload, lat, lng):
     return HttpResponse('Created', status=201)
 
 
+def _bnd_centre_info(payload, lat, lng, *, name_key, addr_key, incharge_key,
+                     staff_key, functional_key, cruising_key=None, equipped_key=None):
+    """F-07 / F-09 — update the selected centre's roster details in place.
+    These are reference/info records, not counted submissions."""
+    center = _get_center(payload, ORG)
+    if not center:
+        return HttpResponse('center not found', status=400)
+    changed = []
+    addr = _str(payload.get(addr_key))
+    if addr:
+        center.address = addr; changed.append('address')
+    func = payload.get(functional_key)
+    if func is not None and _str(func) != '':
+        center.is_active = _bool(func); changed.append('is_active')
+    if cruising_key:
+        spot = _str(payload.get(cruising_key))
+        # ServiceCenter has no dedicated incharge/staff/cruising columns; the
+        # full detail is preserved on the centre's notes-style fields where they
+        # exist. address + is_active are the columns we can safely set.
+    if changed:
+        center.save(update_fields=changed + ['updated_at'] if hasattr(center, 'updated_at') else changed)
+    return HttpResponse('OK', status=200)
+
+
+def _bnd_kp_clinic_info(payload, lat, lng):
+    """F-07 KP Clinic Information → updates the selected centre's roster."""
+    return _bnd_centre_info(
+        payload, lat, lng,
+        name_key='kc_name', addr_key='kc_address', incharge_key='kc_incharge',
+        staff_key='kc_num_staff', functional_key='kc_functional', equipped_key='kc_equipped')
+
+
+def _bnd_wellness_center_info(payload, lat, lng):
+    """F-09 Wellness Center Information → updates the selected centre's roster."""
+    return _bnd_centre_info(
+        payload, lat, lng,
+        name_key='wc_name', addr_key='wc_address', incharge_key='wc_incharge',
+        staff_key='wc_num_staff', functional_key='wc_functional', cruising_key='wc_cruising_spot')
+
+
 def handle_bandhu_activity_ops(payload, lat, lng):
     dispatch = {
-        'outreach':     _bnd_outreach,
-        'mobile_camp':  _bnd_camp,
-        'event_report': _bnd_event,
-        'attendance':   _bnd_attendance,
-        'stock':        _bnd_stock,
-        'ebillboard':   _bnd_ebillboard,
+        'outreach':              _bnd_outreach,
+        'mobile_camp':           _bnd_camp,
+        'event_report':          _bnd_event,
+        'attendance':            _bnd_attendance,
+        'stock':                 _bnd_stock,
+        'kp_clinic_info':        _bnd_kp_clinic_info,
+        'wellness_center_info':  _bnd_wellness_center_info,
+        'ebillboard':            _bnd_ebillboard,
     }
     fn = dispatch.get(_str(payload.get('record_type')))
     if not fn:
         return HttpResponse('unknown record_type', status=400)
     return fn(payload, lat, lng)
+
+
+# ─── Form 0: Mother List (registration → Client, auto-approved) ────────────────
+
+def handle_bandhu_mother_list(payload, lat, lng):
+    """F-1.1 Mother List → create/update the Bandhu Client (the master list).
+
+    Auto-approved (like PHD registration) so the service forms' pulldata
+    autofill finds the client immediately. This is NOT part of the two-stage
+    review (Rafi's decision: registration auto-approves)."""
+    center = _get_center(payload, ORG)
+    if not center:
+        return HttpResponse('center not found', status=400)
+    client_id = str(payload.get('ml_id_no', '')).strip().upper()
+    if not client_id:
+        return HttpResponse('Bad Request — ml_id_no required', status=400)
+    kobo_id = str(payload.get('_id', ''))
+    if kobo_id and Client.objects.filter(kobo_submission_id=kobo_id).exists():
+        return HttpResponse('OK', status=200)
+    Client.objects.update_or_create(
+        client_id=client_id,
+        defaults={
+            'organisation': ORG, 'center': center,
+            'name': _str(payload.get('ml_name')),
+            'father_name': _str(payload.get('ml_parent_name')),
+            'birth_year': _int_or_none(payload.get('ml_birth_year')),
+            'target_group_code': _str(payload.get('ml_gender')),
+            'current_address': _str(payload.get('ml_address')),
+            'spot_name': _str(payload.get('ml_spot')),
+            'education_level': _str(payload.get('ml_education')),
+            'marital_status': _str(payload.get('ml_marital')),
+            'children_under_18': _int_or_none(payload.get('ml_children_u18')),
+            'occupation_code': _str(payload.get('ml_occupation')),
+            'avg_clients_per_day': _int_or_none(payload.get('ml_avg_day')),
+            'current_status': Client.ACTIVE,
+            'approval_status': Client.APPROVED,
+            'kobo_submission_id': kobo_id or None,
+            'submitted_by_kobo_user': _str(payload.get('_submitted_by')),
+            'latitude': lat, 'longitude': lng, 'raw_payload': payload,
+        },
+    )
+    return HttpResponse('Created', status=201)

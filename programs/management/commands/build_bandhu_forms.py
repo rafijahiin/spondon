@@ -1,37 +1,30 @@
 # -*- coding: utf-8 -*-
 """
-Build Bandhu's KoboToolbox XLSForms — a FAITHFUL transcription of the 16
-tools in UNFPA Tools.xlsx (Bandhu Social Welfare Society / UNFPA — "Men,
-Boys & Transgender SRHR response").
+Build Bandhu's KoboToolbox XLSForms — corrective rebuild from the FINAL tools
+(MIS Tools_100626.xlsx) + Bandhu's marked corrections (M&E Tools correction).
 
-Strict rules (per Rafi, 2026-06-08):
-  - Fields come ONLY from the actual tool columns. Nothing invented.
-  - Every coded column becomes a dropdown (select_one / select_multiple)
-    using the EXACT codes printed on the tool.
-  - Each tool keeps its own TG-code scheme (they differ across tools).
+Three forms now (was two):
 
-Two consolidated forms (a record_type selector gates each tool's section):
+  bandhu_mother_list_v1     — F-1.1 Mother List (beneficiary registration →
+                              creates the Client; source for pulldata autofill)
+  bandhu_service_log_v1     — per-client registers (F-01, F-05, F-06, F-02,
+                              F-03, Counseling, Referral, F-08)
+  bandhu_activity_ops_v1    — aggregate/event/ops (F-04, F-10, F-11, F-12,
+                              F-13, F-07 KP Clinic Info, F-09 Wellness Center
+                              Info, F-14 e-billboard)
 
-  bandhu_service_log_v1   — per-client registers:
-      F-01 Wellness Center Service Logbook
-      F-05 Patient Record Register
-      F-06 HTC Service Register
-      F-02 GBV Register
-      F-03 Mental Health Counseling Register
-      Counseling — Daily Counseling form
-      Referral Register
-      F-08 Detailed data of HIV identified
-
-  bandhu_activity_ops_v1  — aggregate / event / operations:
-      F-04 Daily Outreach Monitoring
-      F-10 Mobile Health Camp Patient Record
-      F-11 Attendance Sheet
-      F-12 Event Report
-      F-13 Stock Register
-      F-14 e-billboard screenshot (image upload only — F-14 has no fields)
-
-Reference rosters (F-07 KP Clinic Info, F-09 Wellness Center Info) are seeded
-ServiceCenter rows, not field forms.
+Corrections applied:
+  - TG codes UNIFIED everywhere: MSM=01, MSW=02, FSW=03, EVA=04, TG/Hijra=05,
+    Others=06 (the per-form schemes are gone).
+  - "DIC" → "Wellness Center" (centre dropdown shows the name only).
+  - F-01: drop Host/Rohingya, add Lubricant, Referral is multi-select.
+  - F-04: add Lubricant distribution + Mental Health & GBV referrals;
+    "Peer Educator".
+  - F-08: "Wellness Center"; Linked with = AAS/MAB/CAAP/Bandhu/Govt. ART
+    Center/Others.
+  - F-11: "Name" (not Legal Name); Gender adds TG/Hijra.
+  - F-12: participants by gender = Man / Woman / TG/Hijra / Others.
+  - F-07 & F-09 added as info forms (update the centre roster).
 """
 import os
 import openpyxl
@@ -45,7 +38,7 @@ HERE   = os.path.dirname(os.path.abspath(__file__))
 OUTDIR = os.path.normpath(os.path.join(HERE, '..', '..', '..', '..', 'koboforms'))
 KOBO_BASE = 'https://kf.kobotoolbox.org'
 
-_HFILL = PatternFill("solid", fgColor="6A1B9A")   # Bandhu violet
+_HFILL = PatternFill("solid", fgColor="6A1B9A")
 _HFONT = Font(color="FFFFFF", bold=True, size=10)
 
 SURVEY_HDR = [
@@ -73,7 +66,7 @@ def _wb(form_id, form_title, survey, choices):
     for sheet_name, headers, rows in [
         ('survey',   SURVEY_HDR,   survey),
         ('choices',  CHOICES_HDR,  choices),
-        ('settings', SETTINGS_HDR, [[form_title, form_id, '20260608', 'English', 'theme-grid']]),
+        ('settings', SETTINGS_HDR, [[form_title, form_id, '20260610', 'English', 'theme-grid']]),
     ]:
         ws = wb.create_sheet(sheet_name)
         ws.append(headers)
@@ -91,9 +84,10 @@ def _wb(form_id, form_title, survey, choices):
     return wb
 
 
-# ─── Shared submission header (GPS + Bandhu hidden + centre + enumerator) ─────
+# ─── Shared submission header ─────────────────────────────────────────────────
 
-def _meta():
+def _meta(filler_label_en='Your name (person filling this form)',
+          filler_label_bn='আপনার নাম'):
     return [
         _sr('begin_group', 'grp_meta', 'Submission info', 'তথ্য প্রেরণ'),
         _sr('calculate', 'organisation', '', '', calc="'Bandhu'"),
@@ -101,91 +95,66 @@ def _meta():
             'GPS location (required — step outside if no signal)',
             'জিপিএস অবস্থান (প্রয়োজনীয়)', required='yes'),
         _sr('select_one bandhu_centre', 'centre_id',
-            'Service centre', 'সেবা কেন্দ্র', required='yes',
-            hint='Select your drop-in centre / KP clinic.'),
-        _sr('text', 'enumerator_name',
-            'Your name (person filling this form)',
-            'আপনার নাম (কে পূরণ করছেন)', required='yes'),
+            'Wellness Centre', 'ওয়েলনেস সেন্টার', required='yes',
+            hint='Select your Wellness Centre / KP clinic.'),
+        _sr('text', 'enumerator_name', filler_label_en, filler_label_bn, required='yes'),
         _sr('end_group', 'grp_meta'),
     ]
 
 
 def _centre_choices():
-    """Bandhu's 8 DICs + Dhaka KP clinic, single-sourced from seed_centers so
-    the dropdown never drifts from the seeded ServiceCenter rows."""
+    """Bandhu's 8 Wellness Centres + Dhaka KP clinic. Label = name only (no
+    internal code, so 'DIC' never shows); value = code for webhook resolution."""
     from .seed_centers import BONDHU_DICS
     return [
-        _ch('bandhu_centre', c['code'],
-            f"{c['name']} ({c['code']})",
-            f"{c.get('name_bangla', c['name'])} ({c['code']})")
+        _ch('bandhu_centre', c['code'], c['name'], c.get('name_bangla', c['name']))
         for c in BONDHU_DICS
     ]
 
 
-# ─── Reusable choice lists (EXACT codes from each tool) ───────────────────────
+# ─── Reusable choice lists (corrected, unified) ───────────────────────────────
 
 def _shared_choices():
     rows = []
     rows += [_ch('yes_no', 'yes', 'Yes', 'হ্যাঁ'), _ch('yes_no', 'no', 'No', 'না')]
 
-    # TG code — F-01 Wellness logbook (Men=01..Other=06)
-    for v, en in [('01', 'Men'), ('02', 'Boy'), ('03', 'TG'), ('04', 'MSM'),
-                  ('05', 'MSW/Kothi'), ('06', 'Other')]:
-        rows.append(_ch('tg_logbook', v, f'{en} ({v})'))
-
-    # TG code — F-02/03/05/06/08/10 clinical (MSM=01..TG/Hijra=05)
+    # UNIFIED TG code — every tool now uses this exact list.
     for v, en in [('01', 'MSM'), ('02', 'MSW'), ('03', 'FSW'),
-                  ('04', 'EVA'), ('05', 'TG/Hijra')]:
-        rows.append(_ch('tg_clinical', v, f'{en} ({v})'))
+                  ('04', 'EVA'), ('05', 'TG/Hijra'), ('06', 'Others')]:
+        rows.append(_ch('tg_code', v, f'{en} ({v})'))
 
-    # TG code — Counseling daily form (Men=01..Other=07, incl. Lesbian=06)
-    for v, en in [('01', 'Men'), ('02', 'Boy'), ('03', 'TG'), ('04', 'MSM'),
-                  ('05', 'MSW/Kothi'), ('06', 'Lesbian'), ('07', 'Other')]:
-        rows.append(_ch('tg_counseling', v, f'{en} ({v})'))
-
-    # Host / Rohingya
-    for v, en in [('01', 'Host Community'), ('02', 'Rohingya Community')]:
-        rows.append(_ch('host_rohingya', v, f'{en} ({v})'))
-
-    # General / Diverse
     for v, en in [('01', 'General'), ('02', 'Diverse')]:
         rows.append(_ch('general_diverse', v, f'{en} ({v})'))
 
-    # F-01 referral codes
+    # F-01 referral codes (now multi-select)
     for v, en in [('01', 'STI'), ('02', 'GH'), ('03', 'Counseling'),
                   ('04', 'Mental Health'), ('05', 'FP'), ('06', 'Legal'),
                   ('07', 'Lab Test'), ('08', 'Other')]:
         rows.append(_ch('f01_referral', v, f'{en} ({v})'))
 
-    # HIV test result
     for v, en, bn in [('negative', 'HIV-', 'এইচআইভি নেগেটিভ'),
                       ('positive', 'HIV+', 'এইচআইভি পজিটিভ'),
                       ('indeterminate', 'Indeterminate', 'অনির্ণেয়')]:
         rows.append(_ch('hiv_result', v, en, bn))
 
-    # STI case type (F-05)
     for v, en in [('new', 'New'), ('follow_up', 'Follow up'),
                   ('recurrent', 'Recurrent (within last 6 months)')]:
         rows.append(_ch('sti_case', v, en))
 
-    # Diagnosis (F-05) — select_multiple
     for v, en in [('uds', 'UDS'), ('vds', 'VDS'), ('gu', 'GU'), ('pid', 'PID'),
                   ('ss', 'SS'), ('ib', 'IB'), ('anal_sti', 'Anal STIs'),
                   ('sti_other', 'Other STI'), ('gh', 'GH'), ('psd', 'PSD'),
                   ('mental_health', 'Mental health')]:
         rows.append(_ch('diagnosis', v, en))
 
-    # Seeking treatment timing (F-05/F-10)
     for v, en in [('within_7', 'Within 7 days'), ('more_7', 'More than 7 days')]:
         rows.append(_ch('seek_timing', v, en))
 
-    # Partner management (F-05/F-10)
     for v, en in [('treat_center', 'Treatment at centre'),
                   ('medicine_gdp_pe', 'Medicine through GDP/PE'),
                   ('prescription_only', 'Only prescription provided')]:
         rows.append(_ch('partner_mgmt', v, en))
 
-    # Referral 'Referred for' (Referral Register) — select_multiple
     for v, en in [('tb', 'TB (suspected, for diagnosis/management)'),
                   ('sti_kp', 'STI-KP (non-responsive, complicated)'),
                   ('sti_partner', 'STI-Partner (non-responsive, complicated)'),
@@ -195,57 +164,48 @@ def _shared_choices():
                   ('legal', 'Legal Support'), ('other', 'Others')]:
         rows.append(_ch('referred_for', v, en))
 
-    # F-03 — recently had sex with (select_multiple)
-    for v, en in [('man', 'Man'), ('women', 'Women'), ('hijras', 'Hijras'),
-                  ('others', 'Others')]:
+    for v, en in [('man', 'Man'), ('women', 'Women'), ('hijras', 'Hijras'), ('others', 'Others')]:
         rows.append(_ch('sex_with', v, en))
-    # F-03 — type of sexual activity (select_multiple)
     for v, en in [('anal', 'Anal'), ('oral', 'Oral'), ('peno_vaginal', 'Peno-Vaginal')]:
         rows.append(_ch('sex_activity', v, en))
-    # F-03 — practice of condom use
     for v, en in [('some_times', 'Some times'), ('all_times', 'All Times'),
                   ('use_last_sex', 'Used last sex'),
                   ('not_use_last_sex', 'Not used last sex'), ('never', 'Never')]:
         rows.append(_ch('condom_use', v, en))
-    # F-03 — counseling type (select_multiple)
     for v, en in [('mental_health', 'Mental Health'), ('gbv', 'GBV')]:
         rows.append(_ch('mh_counsel_type', v, en))
 
-    # F-08 — receiving ART
     for v, en in [('yes', 'Yes'), ('no', 'No'), ('drop_out', 'Drop out')]:
         rows.append(_ch('receiving_art', v, en))
-    # F-08 — linked with
-    for v, en in [('aas', 'AAS'), ('mab', 'MAB'), ('caap', 'CAAP')]:
+    # F-08 Linked with — corrected list
+    for v, en in [('aas', 'AAS'), ('mab', 'MAB'), ('caap', 'CAAP'),
+                  ('bandhu', 'Bandhu'), ('govt_art', 'Govt. ART Center'),
+                  ('others', 'Others')]:
         rows.append(_ch('linked_with', v, en))
 
-    # Counseling issues (select_multiple)
     for v, en in [('sti', 'STI'), ('general_health', 'General Health'),
                   ('fp', 'FP (Family Planning)'), ('mental_health', 'Mental Health'),
                   ('harmful_drug', 'Harmful drug use'),
                   ('psychosocial', 'Psychosocial Counseling'),
                   ('gbv', 'GBV'), ('other', 'Others')]:
         rows.append(_ch('counsel_issue', v, en))
-    # Counseling — condom (select_multiple)
     for v, en in [('demonstration', 'Demonstration'), ('distribution', 'Distribution')]:
         rows.append(_ch('counsel_condom', v, en))
-    # Counseling — referral (select_multiple)
     for v, en in [('mental_health', 'Mental Health'), ('legal', 'Legal Services'),
                   ('htc_hts', 'HTC/HTS'), ('gbv', 'GBV'),
                   ('complicated_sti', 'Complicated STI'), ('other', 'Others (specify)')]:
         rows.append(_ch('counsel_referral', v, en))
 
-    # F-11 attendance gender + age band
-    for v, en in [('man', 'Man'), ('woman', 'Woman'), ('others', 'Others')]:
+    # F-11 attendance gender (TG/Hijra added) + age band
+    for v, en in [('man', 'Man'), ('woman', 'Woman'),
+                  ('tg_hijra', 'TG/Hijra'), ('others', 'Others')]:
         rows.append(_ch('att_gender', v, en))
     for v, en in [('18_24', '18-24'), ('25_30', '25-30'),
                   ('31_35', '31-35'), ('gt35', '>35')]:
         rows.append(_ch('age_band', v, en))
 
-    # F-12 event modality
     for v, en in [('in_person', 'In person'), ('online', 'Online'), ('hybrid', 'Hybrid')]:
         rows.append(_ch('event_modality', v, en))
-
-    # F-12 event kind — routes the report to the right capacity-building indicator
     for v, en in [
         ('orientation_managers', 'Orientation — health managers/supervisors (2.1)'),
         ('training_midwives',    'Training — midwives/providers (2.2)'),
@@ -256,37 +216,80 @@ def _shared_choices():
     ]:
         rows.append(_ch('event_kind', v, en))
 
+    # Mother List parameters
+    for v, en in [('1', 'Illiterate'), ('2', 'Primary'), ('3', 'Secondary'),
+                  ('4', 'Higher Secondary'), ('5', 'Graduate / Masters')]:
+        rows.append(_ch('education', v, f'{en} ({v})'))
+    for v, en in [('1', 'Single (never married)'), ('2', 'Married'),
+                  ('3', 'Widowed'), ('4', 'Separated'), ('5', 'Divorced / Others')]:
+        rows.append(_ch('marital', v, f'{en} ({v})'))
+
     return rows
 
 
-# ─── FORM 1 — Service Log (8 per-client registers) ────────────────────────────
+# ─── FORM 0 — Mother List (registration) ──────────────────────────────────────
 
-def _id_field(branch):
-    return _sr('text', f'{branch}_client_id', 'Client ID #', 'ক্লায়েন্ট আইডি',
-               required='yes', relevant=f"${{record_type}}='{branch}'")
+def _mother_list_survey():
+    rows = _meta('Information collector (Peer Educator)', 'তথ্য সংগ্রাহক (পিয়ার এডুকেটর)')
+    rows += [
+        _sr('begin_group', 'grp_ml', 'Mother List — Beneficiary Registration',
+            'মাদার লিস্ট — সুবিধাভোগী নিবন্ধন'),
+        _sr('text', 'ml_id_no', 'ID No.', 'আইডি নম্বর', required='yes',
+            hint='Unique ID for this beneficiary. Use the same ID in every service form.'),
+        # Duplicate-ID warning from the bandhu_clients.csv attachment.
+        _sr('calculate', '_dup_name',
+            calc=("pulldata('bandhu_clients','name','id_no',"
+                  "translate(normalize-space(${ml_id_no}),"
+                  "'abcdefghijklmnopqrstuvwxyz','ABCDEFGHIJKLMNOPQRSTUVWXYZ'))")),
+        _sr('note', '_dup_warn',
+            '⚠ This ID is already registered for ${_dup_name}. Use the existing ID in service forms.',
+            '⚠ এই আইডি ইতিমধ্যে ${_dup_name} এর জন্য নিবন্ধিত।',
+            relevant="${ml_id_no}!='' and ${_dup_name}!=''"),
+        _sr('text', 'ml_name', 'Name', 'নাম', required='yes'),
+        _sr('text', 'ml_parent_name', "Father's / Mother's name", 'পিতা/মাতার নাম'),
+        _sr('integer', 'ml_birth_year', 'Birth year', 'জন্ম সাল',
+            constraint='. >= 1940 and . <= 2012', cmsg='1940–2012'),
+        _sr('select_one tg_code', 'ml_gender', 'Gender (TG code)', 'লিঙ্গ (টিজি কোড)'),
+        _sr('text', 'ml_address', 'Current address (area name)', 'বর্তমান ঠিকানা (এলাকার নাম)'),
+        _sr('text', 'ml_spot', 'Spot name', 'স্পটের নাম'),
+        _sr('select_one education', 'ml_education', 'Education', 'শিক্ষা'),
+        _sr('select_one marital', 'ml_marital', 'Marital status', 'বৈবাহিক অবস্থা'),
+        _sr('integer', 'ml_children_u18', 'Number of children under 18', '১৮ বছরের নিচে সন্তান সংখ্যা'),
+        _sr('text', 'ml_occupation', 'Income source (occupation)', 'আয়ের উৎস (পেশা)'),
+        _sr('note', '_ml_avg', 'Average sex-work contacts (fill the applicable period):', ''),
+        _sr('integer', 'ml_avg_day', 'Per day', 'দৈনিক'),
+        _sr('integer', 'ml_avg_week', 'Per week', 'সপ্তাহে'),
+        _sr('integer', 'ml_avg_month', 'Per month', 'মাসে'),
+        _sr('integer', 'ml_avg_year', 'Per year', 'বছরে'),
+        _sr('end_group', 'grp_ml'),
+    ]
+    return rows
 
+
+def _mother_list_choices():
+    return list(_centre_choices()) + _shared_choices()
+
+
+# ─── FORM 1 — Service Log ──────────────────────────────────────────────────────
 
 def _service_log_survey():
     R = lambda b: f"${{record_type}}='{b}'"
     rows = _meta()
-    rows += [
-        _sr('select_one sl_record_type', 'record_type',
-            'Which register are you recording?', 'কোন রেজিস্টার পূরণ করছেন?',
-            required='yes'),
-    ]
+    rows += [_sr('select_one sl_record_type', 'record_type',
+                 'Which register are you recording?', 'কোন রেজিস্টার পূরণ করছেন?', required='yes')]
 
-    # ── F-01 Wellness Center Service Logbook ──
+    # F-01 Wellness Centre Service Logbook
     rows += [
         _sr('begin_group', 'grp_logbook', 'F-01 · Wellness Centre Service Logbook',
             'F-01 · ওয়েলনেস সেন্টার সার্ভিস লগবুক', relevant=R('wellness_logbook')),
         _sr('date', 'log_date', 'Date', 'তারিখ'),
         _sr('text', 'log_client_id', 'ID #', 'আইডি'),
-        _sr('select_one tg_logbook', 'log_tg', 'TG (Code)', 'টিজি কোড'),
-        _sr('select_one host_rohingya', 'log_host_rohingya', 'Host / Rohingya', 'হোস্ট / রোহিঙ্গা'),
+        _sr('select_one tg_code', 'log_tg', 'TG (Code)', 'টিজি কোড'),
         _sr('select_one general_diverse', 'log_general_diverse', 'General / Diverse', 'সাধারণ / বৈচিত্র্যময়'),
         _sr('note', '_log_services', 'Services provided (enter count where applicable):', ''),
         _sr('integer', 'log_condom', 'Condom', 'কনডম'),
         _sr('integer', 'log_condom_demo', 'Condom demo', 'কনডম ডেমো'),
+        _sr('integer', 'log_lubricant', 'Lubricant', 'লুব্রিকেন্ট'),
         _sr('integer', 'log_awareness', 'Awareness session', 'সচেতনতা সেশন'),
         _sr('integer', 'log_iec', 'IEC distribution', 'আইইসি বিতরণ'),
         _sr('select_one yes_no', 'log_clinical', 'Clinical services', 'ক্লিনিক্যাল সেবা'),
@@ -297,18 +300,18 @@ def _service_log_survey():
         _sr('select_one yes_no', 'log_counseling', 'Counseling', 'কাউন্সেলিং'),
         _sr('select_one yes_no', 'log_recreation', 'Recreation', 'বিনোদন'),
         _sr('select_one yes_no', 'log_group_edu', 'Attended group education session', 'দলগত শিক্ষা সেশন'),
-        _sr('select_one f01_referral', 'log_referral', 'Referral', 'রেফারেল'),
+        _sr('select_multiple f01_referral', 'log_referral', 'Referral', 'রেফারেল'),
         _sr('text', 'log_remarks', 'Remarks', 'মন্তব্য', app='multiline'),
         _sr('end_group', 'grp_logbook'),
     ]
 
-    # ── F-05 Patient Record Register ──
+    # F-05 Patient Record Register
     rows += [
         _sr('begin_group', 'grp_patient', 'F-05 · Patient Record Register',
             'F-05 · রোগীর রেকর্ড রেজিস্টার', relevant=R('patient_record')),
         _sr('date', 'pr_date', 'Date', 'তারিখ'),
         _sr('text', 'pr_client_id', 'ID No.', 'আইডি নম্বর'),
-        _sr('select_one tg_clinical', 'pr_tg', 'TG Code', 'টিজি কোড'),
+        _sr('select_one tg_code', 'pr_tg', 'TG Code', 'টিজি কোড'),
         _sr('select_one general_diverse', 'pr_general_diverse', 'General / Diverse', 'সাধারণ / বৈচিত্র্যময়'),
         _sr('integer', 'pr_age', 'Age (as per mother list)', 'বয়স'),
         _sr('select_one yes_no', 'pr_screening_sti_hiv', 'Screening (STI & HIV) Health', 'এসটিআই ও এইচআইভি স্ক্রিনিং'),
@@ -324,18 +327,18 @@ def _service_log_survey():
         _sr('select_one partner_mgmt', 'pr_partner_mgmt', 'Partner management', 'পার্টনার ম্যানেজমেন্ট'),
         _sr('date', 'pr_followup_due', 'Follow-up due date', 'ফলোআপ নির্ধারিত তারিখ'),
         _sr('date', 'pr_followup_done', 'Follow-up done date', 'ফলোআপ সম্পন্ন তারিখ'),
-        _sr('select_one yes_no', 'pr_adr', 'Adverse Drug Reaction monitoring', 'ওষুধের বিরূপ প্রতিক্রিয়া পর্যবেক্ষণ'),
+        _sr('select_one yes_no', 'pr_adr', 'Adverse Drug Reaction monitoring', 'ওষুধের বিরূপ প্রতিক্রিয়া'),
         _sr('select_multiple referred_for', 'pr_referral', 'Referral cases', 'রেফারেল'),
         _sr('end_group', 'grp_patient'),
     ]
 
-    # ── F-06 HTC Service Register ──
+    # F-06 HTC Service Register
     rows += [
         _sr('begin_group', 'grp_htc', 'F-06 · HTC Service Register',
             'F-06 · এইচটিসি সার্ভিস রেজিস্টার', relevant=R('htc')),
         _sr('text', 'htc_client_id', "Client's ID", 'ক্লায়েন্ট আইডি'),
         _sr('integer', 'htc_age', 'Age (in years)', 'বয়স'),
-        _sr('select_one tg_clinical', 'htc_tg', 'TG Code', 'টিজি কোড'),
+        _sr('select_one tg_code', 'htc_tg', 'TG Code', 'টিজি কোড'),
         _sr('select_one yes_no', 'htc_partner_testing', 'Partner testing', 'পার্টনার টেস্টিং'),
         _sr('select_one yes_no', 'htc_pretest', 'Pretest counseling', 'প্রি-টেস্ট কাউন্সেলিং'),
         _sr('date', 'htc_date_tested', 'Date tested', 'পরীক্ষার তারিখ'),
@@ -346,13 +349,13 @@ def _service_log_survey():
         _sr('end_group', 'grp_htc'),
     ]
 
-    # ── F-02 GBV Register ──
+    # F-02 GBV Register
     rows += [
         _sr('begin_group', 'grp_gbv', 'F-02 · GBV Register',
             'F-02 · জিবিভি রেজিস্টার', relevant=R('gbv')),
         _sr('text', 'gbv_client_id', "Client's ID", 'ক্লায়েন্ট আইডি'),
         _sr('integer', 'gbv_age', 'Age', 'বয়স'),
-        _sr('select_one tg_clinical', 'gbv_tg', 'TG Code', 'টিজি কোড'),
+        _sr('select_one tg_code', 'gbv_tg', 'TG Code', 'টিজি কোড'),
         _sr('text', 'gbv_complaint', 'Complaint on GBV', 'জিবিভি অভিযোগ', app='multiline'),
         _sr('text', 'gbv_primary_service', 'Primary service provided on GBV', 'প্রাথমিক সেবা'),
         _sr('select_one yes_no', 'gbv_ref_other_center', 'Referred to GBV service (other centre)', 'অন্য কেন্দ্রে রেফার'),
@@ -361,13 +364,13 @@ def _service_log_survey():
         _sr('end_group', 'grp_gbv'),
     ]
 
-    # ── F-03 Mental Health Counseling Register ──
+    # F-03 Mental Health Counseling Register
     rows += [
         _sr('begin_group', 'grp_mh', 'F-03 · Mental Health Counseling Register',
-            'F-03 · মানসিক স্বাস্থ্য কাউন্সেলিং রেজিস্টার', relevant=R('mh_counseling')),
+            'F-03 · মানসিক স্বাস্থ্য কাউন্সেলিং', relevant=R('mh_counseling')),
         _sr('date', 'mh_date', 'Date', 'তারিখ'),
         _sr('text', 'mh_client_id', 'Client ID #', 'ক্লায়েন্ট আইডি'),
-        _sr('select_one tg_clinical', 'mh_tg', 'TG Code', 'টিজি কোড'),
+        _sr('select_one tg_code', 'mh_tg', 'TG Code', 'টিজি কোড'),
         _sr('integer', 'mh_age', 'Age', 'বয়স'),
         _sr('text', 'mh_cruising_spot', 'Cruising spot', 'ক্রুজিং স্পট'),
         _sr('select_multiple sex_with', 'mh_sex_with', 'Recently had sex with', 'সম্প্রতি যৌন সম্পর্ক'),
@@ -386,23 +389,23 @@ def _service_log_survey():
         _sr('end_group', 'grp_mh'),
     ]
 
-    # ── Counseling — Daily Counseling form ──
+    # Daily Counseling form
     rows += [
-        _sr('begin_group', 'grp_counsel', 'Daily Counseling Form',
-            'দৈনিক কাউন্সেলিং ফর্ম', relevant=R('counseling_daily')),
+        _sr('begin_group', 'grp_counsel', 'Daily Counseling Form', 'দৈনিক কাউন্সেলিং ফর্ম',
+            relevant=R('counseling_daily')),
         _sr('date', 'cn_date', 'Date', 'তারিখ'),
         _sr('text', 'cn_client_id', 'ID # of client', 'ক্লায়েন্ট আইডি'),
-        _sr('select_one tg_counseling', 'cn_tg', 'Target Group (TG) Code', 'টিজি কোড'),
+        _sr('select_one tg_code', 'cn_tg', 'Target Group (TG) Code', 'টিজি কোড'),
         _sr('select_multiple counsel_issue', 'cn_issues', 'Issues of counseling', 'কাউন্সেলিং বিষয়'),
         _sr('select_multiple counsel_condom', 'cn_condom', 'Condom', 'কনডম'),
         _sr('select_multiple counsel_referral', 'cn_referral', 'Referral', 'রেফারেল'),
         _sr('end_group', 'grp_counsel'),
     ]
 
-    # ── Referral Register ──
+    # Referral Register
     rows += [
-        _sr('begin_group', 'grp_referral', 'Referral Register',
-            'রেফারেল রেজিস্টার', relevant=R('referral')),
+        _sr('begin_group', 'grp_referral', 'Referral Register', 'রেফারেল রেজিস্টার',
+            relevant=R('referral')),
         _sr('date', 'rf_date', 'Date', 'তারিখ'),
         _sr('text', 'rf_client_id', 'ID No.', 'আইডি নম্বর'),
         _sr('text', 'rf_reason', 'Reasons for referral (problem)', 'রেফারেলের কারণ', app='multiline'),
@@ -414,7 +417,7 @@ def _service_log_survey():
         _sr('end_group', 'grp_referral'),
     ]
 
-    # ── F-08 Detailed data of HIV identified ──
+    # F-08 Detailed data of HIV identified
     rows += [
         _sr('begin_group', 'grp_hiv', 'F-08 · Detailed Data of HIV Identified',
             'F-08 · এইচআইভি শনাক্তের বিস্তারিত', relevant=R('hiv_identified')),
@@ -422,7 +425,6 @@ def _service_log_survey():
         _sr('date', 'hv_date_testing', 'Date of testing', 'পরীক্ষার তারিখ'),
         _sr('text', 'hv_name', 'Name', 'নাম'),
         _sr('text', 'hv_client_uid', 'Client UID', 'ক্লায়েন্ট ইউআইডি'),
-        _sr('text', 'hv_dic', 'DIC', 'ডিআইসি'),
         _sr('text', 'hv_service_package', 'Service package', 'সেবা প্যাকেজ'),
         _sr('text', 'hv_gender', 'Gender', 'লিঙ্গ'),
         _sr('integer', 'hv_age', 'Age', 'বয়স'),
@@ -449,8 +451,7 @@ def _service_log_survey():
 
 
 def _service_log_choices():
-    rows = list(_centre_choices())
-    rows += _shared_choices()
+    rows = list(_centre_choices()) + _shared_choices()
     for v, en, bn in [
         ('wellness_logbook', 'F-01 Wellness Centre Service Logbook', 'F-01 লগবুক'),
         ('patient_record',   'F-05 Patient Record Register', 'F-05 রোগীর রেকর্ড'),
@@ -465,42 +466,43 @@ def _service_log_choices():
     return rows
 
 
-# ─── FORM 2 — Activity & Operations (6 aggregate / event tools) ───────────────
+# ─── FORM 2 — Activity & Operations ───────────────────────────────────────────
 
 def _activity_ops_survey():
     R = lambda b: f"${{record_type}}='{b}'"
     rows = _meta()
-    rows += [
-        _sr('select_one ao_record_type', 'record_type',
-            'What are you recording?', 'কী নথিভুক্ত করছেন?', required='yes'),
-    ]
+    rows += [_sr('select_one ao_record_type', 'record_type',
+                 'What are you recording?', 'কী নথিভুক্ত করছেন?', required='yes')]
 
-    # ── F-04 Daily Outreach Monitoring ──
+    # F-04 Daily Outreach Monitoring
     rows += [
         _sr('begin_group', 'grp_outreach', 'F-04 · Daily Outreach Monitoring',
             'F-04 · দৈনিক আউটরীচ মনিটরিং', relevant=R('outreach')),
         _sr('date', 'or_date', 'Date', 'তারিখ'),
-        _sr('text', 'or_worker', 'Outreach worker name', 'আউটরীচ কর্মীর নাম'),
+        _sr('text', 'or_peer_educator', 'Peer Educator name', 'পিয়ার এডুকেটরের নাম'),
         _sr('text', 'or_spot', 'Spot name', 'স্পটের নাম'),
         _sr('integer', 'or_condom', 'Condom distributed', 'কনডম বিতরণ'),
+        _sr('integer', 'or_lubricant', 'Lubricant distributed', 'লুব্রিকেন্ট বিতরণ'),
         _sr('integer', 'or_awareness', 'Awareness (single) education sessions', 'সচেতনতা শিক্ষা'),
         _sr('integer', 'or_iec', 'IEC/BCC distribution (number)', 'আইইসি/বিসিসি বিতরণ'),
         _sr('note', '_or_ref', 'Referrals (from outreach to service centre):', 'রেফারেল:'),
         _sr('integer', 'or_ref_sti', 'Referral — STI', 'রেফারেল — যৌনরোগ'),
         _sr('integer', 'or_ref_gh', 'Referral — General Health', 'রেফারেল — সাধারণ স্বাস্থ্য'),
+        _sr('integer', 'or_ref_mental_health', 'Referral — Mental Health', 'রেফারেল — মানসিক স্বাস্থ্য'),
+        _sr('integer', 'or_ref_gbv', 'Referral — GBV', 'রেফারেল — জিবিভি'),
         _sr('integer', 'or_ref_counseling', 'Referral — Counseling', 'রেফারেল — কাউন্সেলিং'),
         _sr('integer', 'or_ref_recreation', 'Referral — Recreation', 'রেফারেল — বিনোদন'),
         _sr('text', 'or_remarks', 'Remarks', 'মন্তব্য'),
         _sr('end_group', 'grp_outreach'),
     ]
 
-    # ── F-10 Mobile Health Camp Patient Record ──
+    # F-10 Mobile Health Camp — Patient Record
     rows += [
         _sr('begin_group', 'grp_camp', 'F-10 · Mobile Health Camp — Patient Record',
             'F-10 · মোবাইল হেলথ ক্যাম্প', relevant=R('mobile_camp')),
         _sr('date', 'mc_date', 'Date', 'তারিখ'),
         _sr('text', 'mc_client_id', 'ID No.', 'আইডি নম্বর'),
-        _sr('select_one tg_clinical', 'mc_tg', 'TG Code', 'টিজি কোড'),
+        _sr('select_one tg_code', 'mc_tg', 'TG Code', 'টিজি কোড'),
         _sr('select_one general_diverse', 'mc_general_diverse', 'General / Diverse', 'সাধারণ / বৈচিত্র্যময়'),
         _sr('integer', 'mc_age', 'Age (as per mother list)', 'বয়স'),
         _sr('select_one yes_no', 'mc_screening_sti_hiv', 'Screening (STI & HIV) Health', 'স্ক্রিনিং'),
@@ -520,13 +522,13 @@ def _activity_ops_survey():
         _sr('end_group', 'grp_camp'),
     ]
 
-    # ── F-11 Attendance Sheet ──
+    # F-11 Attendance Sheet
     rows += [
-        _sr('begin_group', 'grp_attendance', 'F-11 · Attendance Sheet',
-            'F-11 · উপস্থিতি শিট', relevant=R('attendance')),
+        _sr('begin_group', 'grp_attendance', 'F-11 · Attendance Sheet', 'F-11 · উপস্থিতি শিট',
+            relevant=R('attendance')),
         _sr('text', 'at_event_title', 'Event / session title', 'ইভেন্টের নাম'),
         _sr('date', 'at_date', 'Date', 'তারিখ'),
-        _sr('text', 'at_name', 'Legal name', 'পূর্ণ নাম'),
+        _sr('text', 'at_name', 'Name', 'নাম'),
         _sr('text', 'at_designation', 'Designation and organization', 'পদবি ও সংস্থা'),
         _sr('text', 'at_contact', 'Email ID and contact number', 'ইমেইল ও যোগাযোগ'),
         _sr('select_one att_gender', 'at_gender', 'Gender', 'লিঙ্গ'),
@@ -535,30 +537,25 @@ def _activity_ops_survey():
         _sr('end_group', 'grp_attendance'),
     ]
 
-    # ── F-12 Event Report ──
+    # F-12 Event Report
     rows += [
-        _sr('begin_group', 'grp_event', 'F-12 · Event Report',
-            'F-12 · ইভেন্ট রিপোর্ট', relevant=R('event_report')),
-        _sr('text', 'ev_objective', 'Objective', 'উদ্দেশ্য', app='multiline'),
+        _sr('begin_group', 'grp_event', 'F-12 · Event Report', 'F-12 · ইভেন্ট রিপোর্ট',
+            relevant=R('event_report')),
         _sr('text', 'ev_activity', 'Activity name', 'কার্যক্রমের নাম'),
-        _sr('select_one event_kind', 'ev_kind',
-            'Event type', 'ইভেন্টের ধরন', required='yes',
-            hint='Which kind of event is this? Routes to the right indicator.'),
+        _sr('select_one event_kind', 'ev_kind', 'Event type', 'ইভেন্টের ধরন', required='yes',
+            hint='Routes to the right indicator.'),
         _sr('text', 'ev_place', 'Place', 'স্থান'),
         _sr('date', 'ev_date', 'Date', 'তারিখ'),
         _sr('note', '_ev_part', 'Participants by gender (enter count):', 'জেন্ডার অনুযায়ী অংশগ্রহণকারী:'),
-        _sr('integer', 'ev_female', 'Female', 'নারী'),
-        _sr('integer', 'ev_male', 'Male', 'পুরুষ'),
-        _sr('integer', 'ev_hijra', 'Hijra', 'হিজড়া'),
-        _sr('integer', 'ev_trans_men', 'Transgender Men', 'রূপান্তরিত পুরুষ'),
-        _sr('integer', 'ev_trans_women', 'Transgender Women', 'রূপান্তরিত নারী'),
-        _sr('integer', 'ev_intersex', 'Intersex', 'আন্তঃলিঙ্গ'),
-        _sr('integer', 'ev_other_gender', 'Others', 'অন্যান্য'),
+        _sr('integer', 'ev_man', 'Man', 'পুরুষ'),
+        _sr('integer', 'ev_woman', 'Woman', 'নারী'),
+        _sr('integer', 'ev_tg_hijra', 'TG/Hijra', 'টিজি/হিজড়া'),
+        _sr('integer', 'ev_other', 'Others', 'অন্যান্য'),
         _sr('integer', 'ev_total', 'Total participants', 'মোট অংশগ্রহণকারী'),
         _sr('select_one event_modality', 'ev_modality', 'Event modality', 'ইভেন্টের ধরন'),
         _sr('integer', 'ev_attend_ge80', 'Attendance ≥ 80% (count)', '৮০%+ উপস্থিতি'),
         _sr('integer', 'ev_attend_lt80', 'Attendance < 80% (count)', '৮০%-এর কম উপস্থিতি'),
-        _sr('integer', 'ev_iec_distributed', 'IEC/BCC distribution (number)', 'আইইসি বিতরণ'),
+        _sr('integer', 'ev_iec', 'IEC/BCC distribution (number)', 'আইইসি বিতরণ'),
         _sr('text', 'ev_chief_guest', 'Chief guest (name, organization, designation)', 'প্রধান অতিথি'),
         _sr('text', 'ev_chair', 'Chair / facilitator', 'সভাপতি'),
         _sr('text', 'ev_discussion', 'Discussion and decision', 'আলোচনা ও সিদ্ধান্ত', app='multiline'),
@@ -570,10 +567,10 @@ def _activity_ops_survey():
         _sr('end_group', 'grp_event'),
     ]
 
-    # ── F-13 Stock Register ──
+    # F-13 Stock Register
     rows += [
-        _sr('begin_group', 'grp_stock', 'F-13 · Stock Register',
-            'F-13 · স্টক রেজিস্টার', relevant=R('stock')),
+        _sr('begin_group', 'grp_stock', 'F-13 · Stock Register', 'F-13 · স্টক রেজিস্টার',
+            relevant=R('stock')),
         _sr('text', 'st_item', 'Item description', 'পণ্যের বিবরণ'),
         _sr('date', 'st_date', 'Date', 'তারিখ'),
         _sr('text', 'st_from_to', 'Received from / Issued to', 'গ্রহণ/বিতরণ'),
@@ -585,10 +582,38 @@ def _activity_ops_survey():
         _sr('end_group', 'grp_stock'),
     ]
 
-    # ── F-14 e-billboard screenshot (image only — tool has no fields) ──
+    # F-07 KP Clinic Information
     rows += [
-        _sr('begin_group', 'grp_ebillboard', 'F-14 · e-Billboard Screenshot',
-            'F-14 · ই-বিলবোর্ড স্ক্রিনশট', relevant=R('ebillboard')),
+        _sr('begin_group', 'grp_kpc', 'F-07 · KP Clinic Information', 'F-07 · কেপি ক্লিনিক তথ্য',
+            relevant=R('kp_clinic_info')),
+        _sr('text', 'kc_name', 'Name of KP Clinic', 'কেপি ক্লিনিকের নাম'),
+        _sr('text', 'kc_address', 'Address', 'ঠিকানা', app='multiline'),
+        _sr('text', 'kc_incharge', 'Name of Incharge & Contact #', 'ইনচার্জের নাম ও যোগাযোগ'),
+        _sr('integer', 'kc_num_staff', 'Number of staff', 'কর্মী সংখ্যা'),
+        _sr('select_one yes_no', 'kc_equipped', 'Well equipped with all logistics', 'সব লজিস্টিকসসহ সুসজ্জিত'),
+        _sr('select_one yes_no', 'kc_functional', 'Functional', 'কার্যকর'),
+        _sr('text', 'kc_remarks', 'Remarks', 'মন্তব্য'),
+        _sr('end_group', 'grp_kpc'),
+    ]
+
+    # F-09 Wellness Center Information
+    rows += [
+        _sr('begin_group', 'grp_wci', 'F-09 · Wellness Center Information', 'F-09 · ওয়েলনেস সেন্টার তথ্য',
+            relevant=R('wellness_center_info')),
+        _sr('text', 'wc_name', 'Name of Wellness Center', 'ওয়েলনেস সেন্টারের নাম'),
+        _sr('text', 'wc_address', 'Address', 'ঠিকানা', app='multiline'),
+        _sr('text', 'wc_incharge', 'Name of Incharge & Contact #', 'ইনচার্জের নাম ও যোগাযোগ'),
+        _sr('integer', 'wc_num_staff', 'Number of staff', 'কর্মী সংখ্যা'),
+        _sr('text', 'wc_cruising_spot', 'Name of cruising spot(s)', 'ক্রুজিং স্পটের নাম'),
+        _sr('select_one yes_no', 'wc_functional', 'Functional', 'কার্যকর'),
+        _sr('text', 'wc_remarks', 'Remarks', 'মন্তব্য'),
+        _sr('end_group', 'grp_wci'),
+    ]
+
+    # F-14 e-billboard screenshot
+    rows += [
+        _sr('begin_group', 'grp_ebillboard', 'F-14 · e-Billboard Screenshot', 'F-14 · ই-বিলবোর্ড স্ক্রিনশট',
+            relevant=R('ebillboard')),
         _sr('note', '_eb_note',
             'F-14 has no data fields — attach the screenshot of the displayed e-billboard message.',
             'F-14 তে কোনো তথ্য ক্ষেত্র নেই — প্রদর্শিত ই-বিলবোর্ডের স্ক্রিনশট সংযুক্ত করুন।'),
@@ -601,21 +626,22 @@ def _activity_ops_survey():
 
 
 def _activity_ops_choices():
-    rows = list(_centre_choices())
-    rows += _shared_choices()
+    rows = list(_centre_choices()) + _shared_choices()
     for v, en, bn in [
-        ('outreach',     'F-04 Daily Outreach Monitoring', 'F-04 আউটরীচ'),
-        ('mobile_camp',  'F-10 Mobile Health Camp', 'F-10 মোবাইল ক্যাম্প'),
-        ('attendance',   'F-11 Attendance Sheet', 'F-11 উপস্থিতি'),
-        ('event_report', 'F-12 Event Report', 'F-12 ইভেন্ট রিপোর্ট'),
-        ('stock',        'F-13 Stock Register', 'F-13 স্টক'),
-        ('ebillboard',   'F-14 e-Billboard Screenshot', 'F-14 ই-বিলবোর্ড'),
+        ('outreach',            'F-04 Daily Outreach Monitoring', 'F-04 আউটরীচ'),
+        ('mobile_camp',         'F-10 Mobile Health Camp', 'F-10 মোবাইল ক্যাম্প'),
+        ('attendance',          'F-11 Attendance Sheet', 'F-11 উপস্থিতি'),
+        ('event_report',        'F-12 Event Report', 'F-12 ইভেন্ট রিপোর্ট'),
+        ('stock',               'F-13 Stock Register', 'F-13 স্টক'),
+        ('kp_clinic_info',      'F-07 KP Clinic Information', 'F-07 কেপি ক্লিনিক তথ্য'),
+        ('wellness_center_info','F-09 Wellness Center Information', 'F-09 ওয়েলনেস সেন্টার তথ্য'),
+        ('ebillboard',          'F-14 e-Billboard Screenshot', 'F-14 ই-বিলবোর্ড'),
     ]:
         rows.append(_ch('ao_record_type', v, en, bn))
     return rows
 
 
-# ─── Kobo upload helpers (mirror build_phd_forms) ─────────────────────────────
+# ─── Kobo upload helpers ──────────────────────────────────────────────────────
 
 def _kobo_token():
     return (getattr(settings, 'KOBO_API_TOKEN', '')
@@ -663,25 +689,17 @@ def _deploy(asset_uid, token, stdout):
 # ─── Command ──────────────────────────────────────────────────────────────────
 
 FORMS = [
-    {
-        'file': 'Bandhu-1_Service_Log.xlsx',
-        'id':   'bandhu_service_log_v1',
-        'title': 'Bandhu 1 — Service Log',
-        'survey': _service_log_survey,
-        'choices': _service_log_choices,
-    },
-    {
-        'file': 'Bandhu-2_Activity_Operations.xlsx',
-        'id':   'bandhu_activity_ops_v1',
-        'title': 'Bandhu 2 — Activity & Operations',
-        'survey': _activity_ops_survey,
-        'choices': _activity_ops_choices,
-    },
+    {'file': 'Bandhu-0_Mother_List.xlsx', 'id': 'bandhu_mother_list_v1',
+     'title': 'Bandhu 0 — Mother List', 'survey': _mother_list_survey, 'choices': _mother_list_choices},
+    {'file': 'Bandhu-1_Service_Log.xlsx', 'id': 'bandhu_service_log_v1',
+     'title': 'Bandhu 1 — Service Log', 'survey': _service_log_survey, 'choices': _service_log_choices},
+    {'file': 'Bandhu-2_Activity_Operations.xlsx', 'id': 'bandhu_activity_ops_v1',
+     'title': 'Bandhu 2 — Activity & Operations', 'survey': _activity_ops_survey, 'choices': _activity_ops_choices},
 ]
 
 
 class Command(BaseCommand):
-    help = 'Build the 2 Bandhu XLSForms (Service Log + Activity & Operations) faithfully from UNFPA Tools.xlsx.'
+    help = 'Build the 3 Bandhu XLSForms (Mother List + Service Log + Activity & Operations).'
 
     def add_arguments(self, parser):
         parser.add_argument('--output-dir', default=OUTDIR)
@@ -724,7 +742,7 @@ class Command(BaseCommand):
                             break
                 if not asset_uid:
                     self.stdout.write(self.style.ERROR(
-                        f'    no Kobo asset found for {f["id"]} — create a blank asset named "{f["title"]}" first, then re-run --upload.'))
+                        f'    no Kobo asset for {f["id"]} — create a blank asset named "{f["title"]}" first.'))
                     continue
                 if _import_xlsform(path, asset_uid, token, self.stdout):
                     _deploy(asset_uid, token, self.stdout)
