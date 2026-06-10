@@ -382,7 +382,7 @@ export function OrgDashboard({ partner }: Props) {
       {/* ═══════════════════════════════════════════════════════════════
            FORM GRID
            ═══════════════════════════════════════════════════════════════ */}
-      {topForms.length > 0 && (
+      {!usingMock && topForms.length > 0 && (
         <section className="section" style={{ marginTop: 56 }}>
           <SectionHead
             kicker={t('org.sectionFormsKicker')}
