@@ -65,14 +65,20 @@ ORG_FORM_TYPES: dict[str, list[str]] = {
         'training_event', 'iec_material', 'stock_entry', 'gbv_corner',
     ],
     'Bandhu': [
+        # Only the models Bandhu's 2 Kobo forms actually write to (per
+        # bandhu_handlers.py). The Service Log → ClinicVisit (F-05),
+        # HIVSTITestResult (F-06), GBVCase (F-02), IndividualCounselling
+        # (F-03/Counseling), Referral (Referral/F-08). The Activity & Ops
+        # form → OutreachSession (F-04), MobileHealthCamp (F-10),
+        # TrainingEvent/CoordMeeting (F-12), IECMaterial (F-14).
+        # (Autoclave / ADR / MH-screening / HTC-counselling / group-education
+        # / hygiene-kit are NOT Bandhu tools — removed.)
         # Clinical
-        'clinic_visit', 'hiv_sti_test', 'htc_counselling',
-        'mh_screening', 'adr_record', 'autoclave_log',
+        'clinic_visit', 'hiv_sti_test',
         # Community
-        'outreach_session', 'group_education', 'individual_counselling',
-        'gbv_case', 'referral', 'hygiene_kit',
+        'individual_counselling', 'gbv_case', 'referral', 'outreach_session',
         # Operations
-        'training_event', 'coord_meeting',
+        'mobile_camp', 'training_event', 'coord_meeting', 'iec_material',
     ],
 }
 
