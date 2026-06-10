@@ -123,13 +123,17 @@ function _humanise(key: string, stripPrefix: string): string {
 }
 
 function _formatValue(v: any): { display: string; isEmpty: boolean; mono?: boolean } {
+  // ONLY a genuinely absent answer (null / undefined / "") is "empty" and may
+  // be collapsed by default. An explicit "No" or a 0 is real data the worker
+  // entered and must stay visible — hiding it loses negative screenings,
+  // declined referrals, zero counts, etc. (the reviewer needs to see those).
   if (v === null || v === undefined || v === '') return { display: '—', isEmpty: true }
-  if (v === true || v === 'yes' || v === 'true' || v === 1 || v === '1')
-    return { display: '✓ Yes', isEmpty: false }
-  if (v === false || v === 'no' || v === 'false' || v === 0 || v === '0')
-    return { display: '— No', isEmpty: true }
+  if (v === true || v === 'yes' || v === 'true') return { display: '✓ Yes', isEmpty: false }
+  if (v === false || v === 'no' || v === 'false') return { display: 'No', isEmpty: false }
   if (typeof v === 'object') return { display: JSON.stringify(v), isEmpty: false, mono: true }
   const s = String(v)
+  // Numbers (including 0) are real values — render the figure as-is, never
+  // collapse a count to a Yes/No, and never treat it as empty.
   return { display: s, isEmpty: false, mono: /^[\d.\s,:/-]+$/.test(s) }
 }
 
