@@ -1027,6 +1027,14 @@ def _lazy_bandhu(name):
     return wrapper
 
 
+def _lazy_nil(name):
+    """Lazy import — nil_handlers imports from webhook."""
+    def wrapper(payload, lat, lng):
+        from . import nil_handlers
+        return getattr(nil_handlers, name)(payload, lat, lng)
+    return wrapper
+
+
 FORM_HANDLERS: dict = {
     # ── CIPRB Phase 2 — 9 new forms (Fistula QB, MPDSR 1/2/4/5, Social
     #    Autopsy, 2 notification slips, Maternal Near Miss). ──
@@ -1053,6 +1061,9 @@ FORM_HANDLERS: dict = {
     'bandhu_mother_list_v1':    _lazy_bandhu('handle_bandhu_mother_list'),
     'bandhu_service_log_v1':    _lazy_bandhu('handle_bandhu_service_log'),
     'bandhu_activity_ops_v1':   _lazy_bandhu('handle_bandhu_activity_ops'),
+
+    # ── Shared "No Reporting Today" form (any centre, any partner). ──
+    'no_report_v1':             _lazy_nil('handle_no_report'),
     # ── PHD consolidated forms (new, from final source files) ─────────────────
     'phd_registration_v1':      _lazy_phd('handle_phd_registration'),
     'phd_service_log_v1':       _lazy_phd('handle_phd_service_log'),
