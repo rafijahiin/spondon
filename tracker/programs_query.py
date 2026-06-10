@@ -143,6 +143,45 @@ def has_recent_programs(form_type_key: str, organisation: str,
         return True
 
 
+def daily_reporting_activity(organisation: str, threshold_dt, today_start):
+    """Field-reporting activity from the PROGRAMS submission models, for the
+    daily-reporting health widget.
+
+    Counts ALL submissions (any approval status) — a centre that submitted but
+    is not yet approved has still *reported*; approval is a separate gate. The
+    legacy KoboSubmission table holds none of the partners' current data, so
+    without this the widget reads 0/silent for PHD/Bandhu/CIPRB forever.
+
+    Returns (recent_count, today_count, today_centre_codes, last_submitted_at).
+    """
+    from django.apps import apps
+    recent_count = today_count = 0
+    today_codes: set[str] = set()
+    last = None
+    for model in apps.get_app_config('programs').get_models():
+        fields = {f.name for f in model._meta.get_fields()}
+        if not {'organisation', 'created_at', 'approval_status'} <= fields:
+            continue
+        try:
+            base = model.objects.all()
+            if organisation:
+                base = base.filter(organisation=organisation)
+            recent_count += base.filter(created_at__gte=threshold_dt).count()
+            today_qs = base.filter(created_at__gte=today_start)
+            today_count += today_qs.count()
+            if 'center' in fields:
+                today_codes.update(
+                    c for c in today_qs.values_list('center__code', flat=True) if c
+                )
+            obj = base.order_by('-created_at').values_list('created_at', flat=True).first()
+            if obj and (last is None or obj > last):
+                last = obj
+        except Exception as exc:
+            logger.debug('daily_reporting_activity(%s, %s): %s',
+                         organisation, model.__name__, exc)
+    return recent_count, today_count, today_codes, last
+
+
 def count_legacy(form_type_key: str, organisation: str,
                  year: int, month: int) -> int:
     """Count approved legacy KoboSubmission records."""

@@ -251,10 +251,13 @@ class Command(BaseCommand):
                 file_bytes       = file_bytes,     # durable copy in Postgres
                 original_filename = filename,
             )
-            # Durable bytes live in Postgres (file_bytes above) so reports survive
-            # Railway redeploys; file.save() keeps the on-disk copy + filename for
-            # the listing/backward-compat (the download endpoint prefers bytes).
-            report.file.save(filename, ContentFile(file_bytes), save=True)
+            # Durable bytes are already in Postgres (file_bytes above) and the
+            # download endpoint serves those, so the on-disk copy is best-effort:
+            # a flaky/ephemeral filesystem write must never fail a complete report.
+            try:
+                report.file.save(filename, ContentFile(file_bytes), save=True)
+            except Exception as exc:  # noqa: BLE001
+                logger.warning('disk file.save failed for %s (bytes safe in DB): %s', label, exc)
 
             self.stdout.write(self.style.SUCCESS(
                 f'  OK    {label} -> {filename} '
@@ -265,6 +268,13 @@ class Command(BaseCommand):
         except Exception as exc:  # noqa: BLE001 — batch must survive any one failure
             logger.exception('scheduled report generation failed for %s', label)
             self.stdout.write(self.style.ERROR(f'  FAIL  {label}: {type(exc).__name__}: {exc}'))
+            # If the DB connection dropped, reset it so the NEXT report reconnects
+            # instead of cascading the same closed-connection failure across the batch.
+            try:
+                from django.db import connection
+                connection.close()
+            except Exception:  # noqa: BLE001
+                pass
             return 'failed'
 
     # ── Narrative (mirrors views.generate, with offline opt-out) ─────────────

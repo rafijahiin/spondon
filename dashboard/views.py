@@ -1058,6 +1058,21 @@ class ProgrammeHealthFlagView(APIView):
                 .values_list('submitted_at', flat=True)
                 .first()
             )
+
+            # Merge in PROGRAMS submissions. The partners' live field data lives
+            # in the programs models, NOT the legacy KoboSubmission table queried
+            # above, so the legacy-only counts read 0/silent for them otherwise.
+            # Counts all statuses — submitting is "reporting"; approval is separate.
+            from tracker.programs_query import daily_reporting_activity
+            p_recent, p_today, p_today_codes, p_last = daily_reporting_activity(
+                partner, threshold_dt, today_start,
+            )
+            recent_submissions += p_recent
+            todays_submissions += p_today
+            todays_centre_codes |= p_today_codes
+            if p_last and (last_submission is None or p_last > last_submission):
+                last_submission = p_last
+
             partner_silent_hours = None
             if last_submission:
                 partner_silent_hours = round(
