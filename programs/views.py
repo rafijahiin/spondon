@@ -853,3 +853,18 @@ class NilReportView(views.APIView):
             {'id': str(obj.id), 'created': created, 'status': obj.approval_status},
             status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
         )
+
+    def delete(self, request):
+        """Remove a nil-report (?id=). Own org, or a super/UNFPA reviewer."""
+        user = request.user
+        pk = request.query_params.get('id') or request.data.get('id')
+        if not pk:
+            return Response({'detail': 'id is required.'}, status=status.HTTP_400_BAD_REQUEST)
+        obj = NilReport.objects.filter(id=pk).first()
+        if not obj:
+            return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
+        if not (getattr(user, 'can_see_all_orgs', False)
+                or obj.organisation == user.organisation):
+            return Response({'detail': 'Not authorised.'}, status=status.HTTP_403_FORBIDDEN)
+        obj.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
