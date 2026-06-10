@@ -280,8 +280,18 @@ html.dark ::selection { background: rgba(249, 96, 0, 0.30); color: var(--ink); }
   padding: 8px 0;
   z-index: 60;
   transition: width 0.25s cubic-bezier(0.22, 1, 0.36, 1);
-  overflow: visible;
+  /* Scroll vertically when nav items exceed the viewport height (e.g. a
+     developer/admin sees every item) so the Kobo Forms button + footer stay
+     reachable. The Kobo slide-out panel is position:fixed so it is never
+     clipped, and the rail expands on hover to show inline labels. */
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: var(--hair) transparent;
 }
+.spine::-webkit-scrollbar { width: 6px; }
+.spine::-webkit-scrollbar-thumb { background: var(--hair); border-radius: 3px; }
+.spine::-webkit-scrollbar-track { background: transparent; }
 
 /* Expanded state — overlays content, doesn't push grid */
 .spine-expanded {

@@ -378,7 +378,8 @@ export function Spine() {
 
       {/* Footer */}
       <div className="spine-foot">
-        {user && isAdminRole(user.role) ? (
+        {/* Admin Panel — only for system admins (developer / supervisor). */}
+        {user && isAdminRole(user.role) && (
           <NavLink
             to="/admin"
             className={({ isActive }) => `spine-item ${isActive ? 'active' : ''}`}
@@ -387,18 +388,20 @@ export function Spine() {
             <UserCog size={18} />
             {expanded ? <span className="spine-label">{t('nav.adminPanel')}</span> : <span className="spine-tip">{t('nav.adminPanel')}</span>}
           </NavLink>
-        ) : (
-          <NavLink
-            to="/profile"
-            className={({ isActive }) => `spine-item ${isActive ? 'active' : ''}`}
-            title={t('nav.profile', { defaultValue: 'Profile & password' })}
-          >
-            <Settings size={18} />
-            {expanded
-              ? <span className="spine-label">{t('nav.profile', { defaultValue: 'Profile' })}</span>
-              : <span className="spine-tip">{t('nav.profile', { defaultValue: 'Profile' })}</span>}
-          </NavLink>
         )}
+        {/* Profile & password — available to EVERY authenticated user
+            (including UNFPA supervisors, who previously only saw Admin Panel
+            and had no visible Profile entry). */}
+        <NavLink
+          to="/profile"
+          className={({ isActive }) => `spine-item ${isActive ? 'active' : ''}`}
+          title={t('nav.profile', { defaultValue: 'Profile & password' })}
+        >
+          <Settings size={18} />
+          {expanded
+            ? <span className="spine-label">{t('nav.profile', { defaultValue: 'Profile' })}</span>
+            : <span className="spine-tip">{t('nav.profile', { defaultValue: 'Profile' })}</span>}
+        </NavLink>
         <button className="spine-item" onClick={handleLogout} title={t('nav.logout')}>
           <LogOut size={18} />
           {expanded ? <span className="spine-label">{t('nav.logout')}</span> : <span className="spine-tip">{t('nav.logout')}</span>}
