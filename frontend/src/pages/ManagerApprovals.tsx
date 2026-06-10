@@ -5,7 +5,7 @@
  * Click to select; click Approve/Reject buttons to act.
  * Preserves both Programs and Legacy API flows.
  */
-import React, { useState, useEffect, useCallback, useRef } from 'react'
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import {
   X, Check, AlertTriangle, FileText, Plus,
 } from 'lucide-react'
@@ -401,6 +401,94 @@ function Toast({ action, item, onClose }: {
   )
 }
 
+// ─── UNFPA final sign-off digest ──────────────────────────────────────────────
+// One breakdown column (centre / form / date). Pulled out so UnfpaSummaryBanner
+// stays small and the column isn't re-declared on every render.
+function DigestColumn({ title, rows, oldestKey }: {
+  title: string; rows: [string, number][]; oldestKey?: string | null
+}) {
+  return (
+    <div style={{ minWidth: 150 }}>
+      <div style={{
+        fontSize: 11, fontWeight: 700, letterSpacing: '0.08em',
+        textTransform: 'uppercase', color: 'var(--ink-3)', marginBottom: 6,
+      }}>{title}</div>
+      {rows.slice(0, 5).map(([k, n]) => (
+        <div key={k} style={{
+          display: 'flex', justifyContent: 'space-between', gap: 14,
+          fontSize: 13, padding: '2px 0',
+          color: k === oldestKey ? 'var(--rose, #e5484d)' : 'var(--ink-2)',
+        }}>
+          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 170 }}>{k}</span>
+          <span style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>{n}</span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// At-a-glance triage summary shown ONLY to a UNFPA stage-2 reviewer (gated at
+// the mount site). UNFPA performs the final sign-off on Bandhu records a manager
+// already approved; this digest shows the shape of that queue — total, and
+// breakdowns by centre, form, and waiting date (oldest first) — so they can
+// triage before opening every record.
+function UnfpaSummaryBanner({ items }: { items: QueueItem[] }) {
+  const digest = useMemo(() => {
+    const byCentre = new Map<string, number>()
+    const byForm = new Map<string, number>()
+    const byDate = new Map<string, number>()
+    let nilAwaiting = 0
+    for (const it of items) {
+      const centre = it.center_name || '—'
+      byCentre.set(centre, (byCentre.get(centre) ?? 0) + 1)
+      const form = it.model_label || it.model_type || '—'
+      byForm.set(form, (byForm.get(form) ?? 0) + 1)
+      const day = (it.created_at || '').slice(0, 10) || '—'
+      byDate.set(day, (byDate.get(day) ?? 0) + 1)
+      if (it.model_type === 'nil_report') nilAwaiting++
+    }
+    const desc = (m: Map<string, number>) => [...m.entries()].sort((a, b) => b[1] - a[1])
+    const dates = [...byDate.entries()].sort((a, b) => (a[0] < b[0] ? -1 : 1)) // oldest first
+    return {
+      total: items.length,
+      byCentre: desc(byCentre), byForm: desc(byForm), byDate: dates,
+      nilAwaiting, oldest: dates[0]?.[0] ?? null,
+    }
+  }, [items])
+
+  if (digest.total === 0) return null
+
+  return (
+    <div className="card" style={{
+      margin: '0 0 18px', padding: '16px 20px', borderRadius: 14,
+      border: '1px solid rgba(124,108,240,0.5)',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 12 }}>
+        <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.1em', color: 'var(--violet, #7c6cf0)' }}>STAGE 2 / 2 · UNFPA</span>
+        <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--ink)' }}>Final sign-off digest</span>
+      </div>
+      <div style={{ display: 'flex', gap: 30, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+        <div style={{ minWidth: 120 }}>
+          <div style={{ fontSize: 36, fontWeight: 800, lineHeight: 1, color: 'var(--ink)', fontVariantNumeric: 'tabular-nums' }}>{digest.total}</div>
+          <div style={{ fontSize: 12, color: 'var(--ink-3)', marginTop: 2 }}>awaiting final approval</div>
+          {digest.nilAwaiting > 0 && (
+            <div style={{
+              marginTop: 8, display: 'inline-block', fontSize: 12, fontWeight: 600,
+              color: 'var(--violet, #7c6cf0)', background: 'rgba(124,108,240,0.12)',
+              padding: '3px 9px', borderRadius: 999,
+            }}>
+              {digest.nilAwaiting} nil-report{digest.nilAwaiting > 1 ? 's' : ''} awaiting
+            </div>
+          )}
+        </div>
+        <DigestColumn title="By centre" rows={digest.byCentre} />
+        <DigestColumn title="By form" rows={digest.byForm} />
+        <DigestColumn title="By date (oldest first)" rows={digest.byDate} oldestKey={digest.oldest} />
+      </div>
+    </div>
+  )
+}
+
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function ManagerApprovals() {
@@ -408,10 +496,13 @@ export default function ManagerApprovals() {
   const { user } = useAuth()
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [nilOpen, setNilOpen] = useState(false)
-  // Nil-report ("No reporting today") is a Bandhu manager action; super roles
-  // can also log it. UNFPA approves it (in the queue), they don't create it.
+  // Nil-report ("No reporting today") is a per-org manager action — a manager
+  // or org-lead of any AUTHORING org (Bandhu/PHD/CIPRB) logs one for their OWN
+  // org, plus super roles. UNFPA approves Bandhu's in the queue; they don't
+  // author them. Each org only ever sees/logs its own centres (org isolation).
   const canLogNil = !!user && (
-    user.organisation === 'Bandhu' || ['developer', 'supervisor'].includes(user.role)
+    (['Bandhu', 'PHD', 'CIPRB'].includes(user.organisation) && ['manager', 'org_lead'].includes(user.role))
+    || ['developer', 'supervisor'].includes(user.role)
   )
   // Filter state persisted to localStorage so navigating away and
   // back restores the user's last selected filter (§9 state-preservation).
@@ -633,6 +724,16 @@ export default function ManagerApprovals() {
           </div>
         </div>
       </section>
+
+      {/* UNFPA final-sign-off digest — only for a genuine stage-2 UNFPA reviewer
+          (org = UNFPA AND every queued program item is at the UNFPA gate). Hidden
+          for Bandhu stage-1 managers, single-stage PHD/CIPRB, and super/developer
+          (whose merged lane carries mixed stages, so .every() is false). */}
+      {user?.organisation === 'UNFPA'
+        && (programsData?.items?.length ?? 0) > 0
+        && programsData!.items.every((it: any) => it.stage === 'unfpa') && (
+          <UnfpaSummaryBanner items={allItems.filter((i) => i.kind === 'program')} />
+        )}
 
       <NilReportModal open={nilOpen} onClose={() => setNilOpen(false)} onSaved={refetchPrograms} />
 

@@ -139,10 +139,14 @@ def _gather_context(partner: str) -> dict:
     alerts: list[str] = []
     try:
         from tracker.models import Alert
-        for a in (
-            Alert.objects.filter(acknowledged=False)
-                .order_by('-created_at')[:6]
-        ):
+        from django.db.models import Q
+        alert_qs = Alert.objects.filter(acknowledged=False)
+        if partner:
+            # Org isolation — a single-org manager must not see another team's
+            # alerts in their AI chat context. Programme-wide alerts (blank
+            # partner) stay visible to everyone.
+            alert_qs = alert_qs.filter(Q(partner=partner) | Q(partner=''))
+        for a in alert_qs.order_by('-created_at')[:6]:
             scope = f' [{a.partner}]' if a.partner else ''
             alerts.append(f'{a.get_severity_display().upper()}: {a.title}{scope}')
     except Exception as exc:

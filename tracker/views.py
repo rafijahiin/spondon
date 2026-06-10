@@ -342,6 +342,12 @@ class ComplianceView(APIView):
             year, month = now.year, now.month
 
         partner_filter = request.query_params.get('partner', '')
+        # Org isolation — a single-org manager/field user may only ever see
+        # their own partner's targets + actuals, never another team's. Mirrors
+        # ProgressView and AnomaliesView; oversight roles (developer/supervisor)
+        # keep the optional ?partner filter.
+        if not request.user.can_see_all_orgs:
+            partner_filter = request.user.organisation
         targets = MonthlyTarget.objects.filter(year=year, month=month)
         if partner_filter:
             targets = targets.filter(partner=partner_filter)

@@ -17,6 +17,7 @@ import logging
 import requests as _requests
 from django.conf import settings as _settings
 from django.db import transaction as _tx
+from django.db.models import Q
 from django.utils import timezone
 from rest_framework import viewsets, views, status
 from rest_framework.decorators import action
@@ -162,6 +163,14 @@ def _apply_decision(obj, user, action_type, reason):
             obj.manager_approved_at = None
             obj.rejected_reason = reason
         elif cur == 'PENDING':
+            # Symmetric with the approve guard above: for a two-stage (Bandhu)
+            # record only the Bandhu manager / super may issue the STAGE-1
+            # rejection. UNFPA acts strictly at stage 2 — without this it could
+            # reject a PENDING item its GET lane never showed it (TOCTOU),
+            # skipping the manager gate entirely.
+            if two_stage and not (is_super or uorg == 'Bandhu'):
+                return Response({'detail': 'Stage-1 rejection is for the Bandhu manager.'},
+                                status=status.HTTP_403_FORBIDDEN)
             obj.approval_status = 'REJECTED'
             obj.rejected_reason = reason
         else:
@@ -249,7 +258,7 @@ class OrgFilteredViewSet(viewsets.ModelViewSet):
                     # Resubmit link — for PHD models route to the new merged
                     # Service Log / Registration; for legacy partners we leave
                     # the link blank (their workflow predates this notifier).
-                    resubmit = _program_resubmit_url(model_type, obj.organisation)
+                    resubmit = _program_resubmit_url(_MODEL_TO_SLUG.get(type(obj), ''), obj.organisation)
                     link_line = f'\nResubmit corrected entry: {resubmit}\n' if resubmit else ''
                     subj = f'[SIMPLE] ✗ {label} rejected — {obj.organisation}'
                     body = (
@@ -261,8 +270,8 @@ class OrgFilteredViewSet(viewsets.ModelViewSet):
                         f'a corrected entry. The rejected record is kept as the audit trail.'
                     )
                 _send(subj, body, recipients)
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.warning('Per-model decision email failed: %s', exc)
 
         return Response({'status': obj.approval_status})
 
@@ -643,6 +652,10 @@ _APPROVAL_MODELS = [
     ('nil_report',           lambda: NilReport.objects),
 ]
 
+# Reverse map model class → slug, for code paths that hold a model INSTANCE but
+# not its slug (e.g. the per-model viewset reject-email resubmit link).
+_MODEL_TO_SLUG = {qs_fn().model: mt for mt, qs_fn in _APPROVAL_MODELS}
+
 # Fix endpoint slugs for DRF router (plural URLs)
 _ENDPOINT_OVERRIDES = {
     'client_reg': 'clients',
@@ -776,13 +789,17 @@ class PendingApprovalsView(views.APIView):
             form_key = _model_to_form.get(model_type, '')
             form_label = _FORM_LABELS.get(form_key, model_type.replace('_', ' ').title())
             reviewer_name = getattr(user, 'full_name', None) or user.email
-            _send_approval_telegram(
-                org=obj.organisation,
-                form_label=form_label,
-                reviewer_name=reviewer_name,
-                approved=(action_type == 'approve'),
-                reason=reason,
-            )
+            # Only announce a TERMINAL decision to the org chat. A Bandhu
+            # stage-1 manager-approval (MANAGER_APPROVED) is still awaiting
+            # UNFPA, so we must not yet tell the field chat it is "approved".
+            if obj.approval_status in ('APPROVED', 'REJECTED'):
+                _send_approval_telegram(
+                    org=obj.organisation,
+                    form_label=form_label,
+                    reviewer_name=reviewer_name,
+                    approved=(obj.approval_status == 'APPROVED'),
+                    reason=reason,
+                )
         except Exception as exc:
             logger.error('Telegram notification failed after approval: %s', exc)
 
@@ -820,42 +837,99 @@ class NilReportView(views.APIView):
             })
         return Response({'count': len(out), 'items': out})
 
+    # Orgs allowed to log a nil-report. Bandhu is two-stage (manager logs →
+    # awaiting UNFPA); PHD and CIPRB are single-stage (the authoring manager /
+    # lead is authoritative, so it is recorded immediately).
+    NIL_ALLOWED_ORGS = ('Bandhu', 'PHD', 'CIPRB')
+
     def post(self, request):
         user = request.user
         if not user.can_approve_submissions:
             return Response({'detail': 'Only managers can log nil-reports.'},
                             status=status.HTTP_403_FORBIDDEN)
-        org = user.organisation if not getattr(user, 'can_see_all_orgs', False) else \
-            (request.data.get('organisation') or 'Bandhu')
+
+        # Org is derived STRICTLY from the user for everyone except oversight
+        # super-admins (developer/supervisor). A single-org manager can never
+        # write another team's nil-report — any client-supplied organisation is
+        # ignored for them. This is the org-isolation boundary.
+        if getattr(user, 'can_see_all_orgs', False):
+            org = (request.data.get('organisation') or user.organisation or 'Bandhu')
+            if org not in self.NIL_ALLOWED_ORGS:
+                return Response({'detail': f'organisation must be one of {self.NIL_ALLOWED_ORGS}.'},
+                                status=status.HTTP_400_BAD_REQUEST)
+        else:
+            org = user.organisation
+            if org not in self.NIL_ALLOWED_ORGS:
+                return Response({'detail': 'Your organisation cannot log nil-reports.'},
+                                status=status.HTTP_403_FORBIDDEN)
+
         center_id = request.data.get('center_id')
         report_date = request.data.get('report_date')
         reason = (request.data.get('reason') or '').strip()
         if not report_date or not reason:
             return Response({'detail': 'report_date and reason are required.'},
                             status=status.HTTP_400_BAD_REQUEST)
+
+        # Resolve the centre WITHIN the report's org so a manager cannot
+        # attribute a nil-report to another team's centre (cross-org integrity).
         center = None
         if center_id:
-            center = ServiceCenter.objects.filter(code=center_id).first() \
-                or ServiceCenter.objects.filter(id=center_id).first()
-        defaults = {
-            'reason': reason,
-            # Manager authored it → manager gate done; awaiting UNFPA.
-            'approval_status': 'MANAGER_APPROVED',
-            'manager_approved_by': user,
-            'manager_approved_at': timezone.now(),
-            'submitted_by': user,
-        }
-        obj, created = NilReport.objects.update_or_create(
+            center = (ServiceCenter.objects.filter(organisation=org)
+                      .filter(Q(code=center_id) | Q(id=center_id)).first())
+            if center is None:
+                return Response({'detail': 'Centre not found for your organisation.'},
+                                status=status.HTTP_400_BAD_REQUEST)
+
+        # Two-stage (Bandhu) → created at the manager gate, awaiting UNFPA.
+        # Single-stage (PHD/CIPRB) → recorded as APPROVED immediately.
+        two_stage = (org == 'Bandhu')
+        now = timezone.now()
+
+        # Idempotent on (organisation, centre, date) — but a re-POST must NEVER
+        # downgrade a record that already passed (or is awaiting) its gate, nor
+        # rewrite its audit FKs. So we get_or_create and guard the update path.
+        obj, created = NilReport.objects.get_or_create(
             organisation=org, center=center, report_date=report_date,
-            defaults=defaults,
+            defaults={
+                'reason': reason,
+                'submitted_by': user,
+                'manager_approved_by': user,
+                'manager_approved_at': now,
+                'approval_status': 'MANAGER_APPROVED' if two_stage else 'APPROVED',
+                **({} if two_stage else {'approved_by': user, 'approved_at': now}),
+            },
         )
+        if not created:
+            if obj.approval_status in ('MANAGER_APPROVED', 'APPROVED'):
+                return Response(
+                    {'detail': 'A nil-report for this centre and date already exists.'},
+                    status=status.HTTP_409_CONFLICT)
+            # Re-logging a previously rejected/pending entry — re-arm it.
+            obj.reason = reason
+            obj.submitted_by = user
+            obj.manager_approved_by = user
+            obj.manager_approved_at = now
+            obj.rejected_reason = ''
+            if two_stage:
+                obj.approval_status = 'MANAGER_APPROVED'
+            else:
+                obj.approval_status = 'APPROVED'
+                obj.approved_by = user
+                obj.approved_at = now
+            obj.save()
+
         return Response(
             {'id': str(obj.id), 'created': created, 'status': obj.approval_status},
             status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
         )
 
     def delete(self, request):
-        """Remove a nil-report (?id=). Own org, or a super/UNFPA reviewer."""
+        """Remove a nil-report (?id=). Own org only (or oversight). A Bandhu
+        record UNFPA has already APPROVED is immutable to a stage-1 manager —
+        only oversight (developer/supervisor/UNFPA) may delete a finalised,
+        UNFPA-signed record, so a stage-1 actor can't erase a stage-2 decision.
+        PHD/CIPRB records are single-stage, so their own manager may delete them.
+        """
         user = request.user
         pk = request.query_params.get('id') or request.data.get('id')
         if not pk:
@@ -863,8 +937,14 @@ class NilReportView(views.APIView):
         obj = NilReport.objects.filter(id=pk).first()
         if not obj:
             return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
-        if not (getattr(user, 'can_see_all_orgs', False)
-                or obj.organisation == user.organisation):
+        is_oversight = (getattr(user, 'can_see_all_orgs', False)
+                        or user.organisation == 'UNFPA')
+        if not (is_oversight or obj.organisation == user.organisation):
             return Response({'detail': 'Not authorised.'}, status=status.HTTP_403_FORBIDDEN)
+        if (not is_oversight and obj.organisation == 'Bandhu'
+                and obj.approval_status == 'APPROVED'):
+            return Response(
+                {'detail': 'This nil-report has been approved by UNFPA and cannot be deleted here.'},
+                status=status.HTTP_403_FORBIDDEN)
         obj.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
