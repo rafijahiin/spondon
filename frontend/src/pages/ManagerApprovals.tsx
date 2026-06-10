@@ -280,6 +280,8 @@ interface QueueItem {
   two_stage?: boolean
   stage?: 'manager' | 'unfpa'
   approval_status?: string
+  // One-paragraph plain-language narrative of the activity (UNFPA-only view).
+  narrative?: string
 }
 
 function toQueueItems(programsData: ProgramPendingResponse | null, submissions: Submission[] | null): QueueItem[] {
@@ -305,6 +307,7 @@ function toQueueItems(programsData: ProgramPendingResponse | null, submissions: 
         two_stage: (it as any).two_stage,
         stage: (it as any).stage,
         approval_status: (it as any).approval_status,
+        narrative: (it as any).narrative,
       })
     }
   }
@@ -1204,6 +1207,28 @@ export default function ManagerApprovals() {
                     </span>
                   ))}
                 </div>
+
+                {/* Plain-language narrative of the activity — shown ONLY to the
+                    UNFPA stage-2 reviewer (not Bandhu managers), so the approver
+                    reads what happened before signing off, on top of the field
+                    table below. */}
+                {user?.organisation === 'UNFPA' && selected?.narrative && (
+                  <div style={{
+                    padding: '15px 18px', margin: '6px 0',
+                    borderRadius: 12, border: '1px solid rgba(124,108,240,0.4)',
+                    background: 'rgba(124,108,240,0.06)',
+                  }}>
+                    <div style={{
+                      fontSize: 11, fontWeight: 700, letterSpacing: '0.08em',
+                      textTransform: 'uppercase', color: 'var(--violet, #7c6cf0)',
+                      marginBottom: 6,
+                    }}>In plain language</div>
+                    <p style={{
+                      margin: 0, fontSize: 14.5, lineHeight: 1.6,
+                      color: 'var(--ink)', textWrap: 'pretty' as any,
+                    }}>{selected.narrative}</p>
+                  </div>
+                )}
 
                 {/* The clinical readout — single column, semantically grouped
                     so the manager scans the right fields in the right order

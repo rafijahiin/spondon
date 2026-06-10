@@ -592,6 +592,90 @@ def _build_summary(obj, model_type: str) -> str:
     return f"{model_type.replace('_', ' ').title()} record"
 
 
+_TG_LABELS = {'01': 'MSM', '02': 'MSW', '03': 'FSW', '04': 'EVA',
+              '05': 'TG/Hijra', '06': 'Others'}
+
+
+def _tg_phrase(obj) -> str:
+    """Decode the target group from the raw payload (or client) to a label."""
+    rp = getattr(obj, 'raw_payload', None) or {}
+    for k in ('pr_tg', 'htc_tg', 'hv_tg', 'mc_tg', 'tg', 'target_group'):
+        v = str(rp.get(k, '') or '').strip()
+        if v:
+            return _TG_LABELS.get(v, v)
+    c = getattr(obj, 'client', None)
+    if c is not None and getattr(c, 'target_group_code', None):
+        try:
+            return c.get_target_group_code_display()
+        except Exception:
+            return ''
+    return ''
+
+
+def _build_narrative(obj, model_type: str) -> str:
+    """One-paragraph, plain-language description of the activity for the UNFPA
+    final reviewer — so they understand what they are signing off, not just a
+    field table. Falls back to the short summary for unmapped types."""
+    try:
+        tg = _tg_phrase(obj)
+        who = f"a {tg} client" if tg else "a client"
+        rp = getattr(obj, 'raw_payload', None) or {}
+        if model_type == 'clinic_visit':
+            bits = []
+            screens = [s for s, f in [('HIV', 'hiv_screening_done'),
+                                      ('STI', 'sti_screening_done'),
+                                      ('TB', 'tb_screening_done')] if getattr(obj, f, False)]
+            if screens:
+                bits.append(f"{', '.join(screens)} screening was carried out")
+            if getattr(obj, 'sti_counselling_provided', False):
+                bits.append("STI counselling was provided")
+            services = []
+            if getattr(obj, 'condoms_distributed', 0):
+                services.append(f"{obj.condoms_distributed} condoms")
+            lub = str(rp.get('pr_lubricant', '') or '').strip()
+            if lub and lub != '0':
+                services.append(f"{lub} lubricants")
+            if services:
+                bits.append("distributed " + " and ".join(services))
+            refs = [r for r, f in [('TB', 'referral_tb'), ('STI (KP)', 'referral_sti_kp'),
+                                   ('general health', 'referral_general_health'),
+                                   ('HIV testing', 'referral_hiv_testing'),
+                                   ('mental health', 'referral_mental_health'),
+                                   ('GBV', 'referral_gbv'), ('family planning', 'referral_fp')]
+                    if getattr(obj, f, False)]
+            if refs:
+                bits.append("referred to " + ", ".join(refs))
+            if (getattr(obj, 'treatment_provided', '') or '').strip():
+                bits.append(f"treatment was given ({obj.treatment_provided.strip()})")
+            body = "; ".join(bits) if bits else "no further services were recorded"
+            fu = f" A follow-up is due on {obj.follow_up_due_date}." if getattr(obj, 'follow_up_due_date', None) else ""
+            return f"On {obj.visit_date}, a clinical patient visit (F-05) was recorded for {who}: {body}.{fu}"
+        if model_type == 'hiv_sti_result':
+            return (f"On {obj.testing_date}, an HIV/STI test was recorded for {who} — "
+                    f"HIV result {obj.hiv_result or 'not stated'}, syphilis {obj.syphilis_result or 'not stated'}.")
+        if model_type == 'outreach_session':
+            return (f"On {obj.session_date}, an outreach session reached {obj.individual_contacts} individual "
+                    f"contact(s) and distributed {obj.condoms_distributed_free} condoms.")
+        if model_type == 'referral':
+            dest = (getattr(obj, 'referred_to', '') or '').strip() or 'a service'
+            reason = (getattr(obj, 'referral_reason', '') or '').strip()
+            return f"On {obj.referral_date}, {who} was referred to {dest}" + (f" for {reason}" if reason else "") + "."
+        if model_type == 'gbv_case':
+            types = [t for t, f in [('sexual', 'gbv_sexual'), ('physical', 'gbv_physical'),
+                                    ('economic', 'gbv_economic'), ('psychological', 'gbv_psychological')]
+                     if getattr(obj, f, False)]
+            return (f"On {obj.incident_date}, a GBV case was recorded for {who}"
+                    + (f" ({', '.join(types)} violence)" if types else "") + ".")
+        if model_type == 'mobile_camp':
+            return f"On {obj.camp_date}, a mobile health camp served {obj.clients_served} client(s)."
+        if model_type == 'nil_report':
+            where = obj.center.name if obj.center_id else 'all centres'
+            return f"No activity was reported for {where} on {obj.report_date}. Reason given: {obj.reason}."
+    except Exception as exc:
+        logger.warning('_build_narrative(%s): %s', model_type, exc)
+    return _build_summary(obj, model_type)
+
+
 def _pending_for_model(queryset, model_type: str, org_filter_org=None,
                        statuses=('PENDING',)):
     """Return approval dicts for a queryset at the given approval stage(s).
@@ -623,6 +707,9 @@ def _pending_for_model(queryset, model_type: str, org_filter_org=None,
             'center_code': obj.center.code if obj.center_id else '',
             'created_at': obj.created_at.isoformat(),
             'summary': _build_summary(obj, model_type),
+            # One-paragraph plain-language narrative — the frontend shows it
+            # ONLY to UNFPA (the stage-2 reviewer), alongside the field table.
+            'narrative': _build_narrative(obj, model_type),
             'latitude': float(obj.latitude) if obj.latitude else None,
             'longitude': float(obj.longitude) if obj.longitude else None,
             'kobo_submission_id': obj.kobo_submission_id or '',
