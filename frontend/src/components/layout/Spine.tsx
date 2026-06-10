@@ -188,6 +188,10 @@ const KOBO_GROUPS: KoboGroup[] = [
       // / group education / event / IEC material / GBV corner / stock).
       { url: 'https://ee.kobotoolbox.org/x/o7GhleIk',
         label: 'PHD 2 — Service Log', labelBn: 'সেবা ও কার্যক্রম লগ' },
+      // Zero-day return — filed when a centre has nothing to report that day.
+      // Shared PHD + Bandhu form; each team picks its own centre.
+      { url: 'https://ee.kobotoolbox.org/x/3Ke0ktqc',
+        label: 'No Reporting Today', labelBn: 'আজ রিপোর্ট করার কিছু নেই' },
     ],
   },
   {
@@ -202,6 +206,9 @@ const KOBO_GROUPS: KoboGroup[] = [
       // attendance, F-12 event report, F-13 stock, F-14 e-billboard.
       { url: 'https://ee.kobotoolbox.org/x/WoHgXucH',
         label: 'Bandhu 2 — Activity & Operations', labelBn: 'বন্ধু ২ — কার্যক্রম ও পরিচালন' },
+      // Zero-day return — shared PHD + Bandhu form; each team picks its own centre.
+      { url: 'https://ee.kobotoolbox.org/x/3Ke0ktqc',
+        label: 'No Reporting Today', labelBn: 'আজ রিপোর্ট করার কিছু নেই' },
     ],
   },
 ]

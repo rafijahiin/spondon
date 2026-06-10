@@ -924,10 +924,10 @@ class NilReportView(views.APIView):
             })
         return Response({'count': len(out), 'items': out})
 
-    # Orgs allowed to log a nil-report. Bandhu is two-stage (manager logs →
-    # awaiting UNFPA); PHD and CIPRB are single-stage (the authoring manager /
-    # lead is authoritative, so it is recorded immediately).
-    NIL_ALLOWED_ORGS = ('Bandhu', 'PHD', 'CIPRB')
+    # Orgs allowed to log a nil-report — the field-collecting partners only.
+    # Bandhu is two-stage (manager logs → awaiting UNFPA); PHD is single-stage.
+    # CIPRB (monitoring) and UNFPA (oversight) do not file zero-day returns.
+    NIL_ALLOWED_ORGS = ('Bandhu', 'PHD')
 
     def post(self, request):
         user = request.user

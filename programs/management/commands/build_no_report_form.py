@@ -63,7 +63,12 @@ def _survey():
 
 def _choices():
     rows = []
-    for c in ServiceCenter.objects.filter(is_active=True).order_by('organisation', 'name'):
+    # PHD + Bandhu only — CIPRB (monitoring) and UNFPA (oversight) do not do
+    # field collection, so they have no zero-day return to file.
+    centres = (ServiceCenter.objects
+               .filter(is_active=True, organisation__in=['PHD', 'Bandhu'])
+               .order_by('organisation', 'name'))
+    for c in centres:
         label = f'{c.name} ({c.organisation})'
         rows.append(_ch('nr_centre', c.code, label, label))
     for v, en, bn in _REASONS:

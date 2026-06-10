@@ -1,18 +1,20 @@
 """
 NilReport — a "No reporting today" record.
 
-When a Bandhu Wellness Centre has no field upload for a day, the Bandhu
-manager logs a nil-report in-system (centre + date + reason) so missing days
-are explained rather than silently blank. It follows the SAME two-stage
-approval as Bandhu data: the manager creates it (manager gate done), then a
-UNFPA user approves it (final gate) before it counts in the reporting /
-compliance view.
+When a Wellness Centre has no field upload for a day, a zero-day return is
+filed (centre + date + reason) so missing days are explained rather than
+silently blank. Two routes create one:
 
-Extends SubmissionBase only for the approval machinery + audit fields; it is
-NOT a KoboToolbox webhook record (created via the API), so kobo_submission_id
-stays null.
+  - the field "No Reporting Today" Kobo form → webhook (programs.nil_handlers),
+    which records it at PENDING (so kobo_submission_id is set), then
+  - a manager logs it in-system via the API.
+
+Either way it follows its org's normal approval (PHD single-stage; Bandhu
+two-stage: manager then UNFPA) before it counts in the reporting / compliance
+view, and it counts toward the centre's daily reporting the moment it lands.
 """
 from django.db import models
+from django.db.models import Q
 
 from ._base import SubmissionBase
 from .._base_choices import ORG_CHOICES
@@ -40,6 +42,13 @@ class NilReport(SubmissionBase):
             models.UniqueConstraint(
                 fields=['organisation', 'center', 'report_date'],
                 name='uniq_nil_report_per_centre_day',
+            ),
+            # Postgres treats NULLs as distinct, so the constraint above does
+            # NOT cover org-wide (null-centre) nil days — add a partial one.
+            models.UniqueConstraint(
+                fields=['organisation', 'report_date'],
+                condition=Q(center__isnull=True),
+                name='uniq_nil_report_org_day_no_centre',
             ),
         ]
 

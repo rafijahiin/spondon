@@ -507,7 +507,7 @@ export default function ManagerApprovals() {
   // org, plus super roles. UNFPA approves Bandhu's in the queue; they don't
   // author them. Each org only ever sees/logs its own centres (org isolation).
   const canLogNil = !!user && (
-    (['Bandhu', 'PHD', 'CIPRB'].includes(user.organisation) && ['manager', 'org_lead'].includes(user.role))
+    (['Bandhu', 'PHD'].includes(user.organisation) && ['manager', 'org_lead'].includes(user.role))
     || ['developer', 'supervisor'].includes(user.role)
   )
   // Filter state persisted to localStorage so navigating away and
