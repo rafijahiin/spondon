@@ -198,6 +198,11 @@ const KOBO_GROUPS: KoboGroup[] = [
     heading: 'Bandhu — Key Population SRHR',
     visible: isBandhuVisible,
     forms: [
+      // Mother List — beneficiary registration; builds the client master list
+      // the Service Log/Activity forms autofill from (Bandhu's PHD-registration
+      // equivalent). F-1.1.
+      { url: 'https://ee.kobotoolbox.org/x/VO1m2jh1',
+        label: 'Bandhu 0 — Mother List', labelBn: 'বন্ধু ০ — মাদার লিস্ট' },
       // Service Log — per-client registers (F-01 logbook, F-05 patient record,
       // F-06 HTC, F-02 GBV, F-03 MH counselling, Counseling, Referral, F-08).
       { url: 'https://ee.kobotoolbox.org/x/DMOqdJFx',

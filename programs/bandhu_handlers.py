@@ -96,8 +96,8 @@ def _bnd_patient(payload, lat, lng):
         referral_tb=('tb' in refs),
         referral_sti_kp=('sti_kp' in refs),
         referral_general_health=('general_health' in refs),
-        referral_hiv_testing=('htc_hts' in refs),
-        referral_mental_health=('other' in refs and False) or ('mental_health' in refs),
+        referral_hiv_testing=('hiv_testing' in refs),
+        referral_mental_health=('mental_health' in refs),
         referral_gbv=('gbv' in refs),
         referral_fp=('fp' in refs),
         **_base_kwargs(payload, lat, lng),
@@ -468,7 +468,11 @@ def handle_bandhu_mother_list(payload, lat, lng):
     kobo_id = str(payload.get('_id', ''))
     if kobo_id and Client.objects.filter(kobo_submission_id=kobo_id).exists():
         return HttpResponse('OK', status=200)
-    Client.objects.update_or_create(
+    # First registration wins — same rule as handle_phd_registration. A second
+    # Mother List entry on the same ml_id_no is a DUPLICATE and must NOT
+    # overwrite the existing client (that would silently replace one person's
+    # record with another's). get_or_create only writes `defaults` on create.
+    client, created = Client.objects.get_or_create(
         client_id=client_id,
         defaults={
             'organisation': ORG, 'center': center,
@@ -490,4 +494,11 @@ def handle_bandhu_mother_list(payload, lat, lng):
             'latitude': lat, 'longitude': lng, 'raw_payload': payload,
         },
     )
+    if not created:
+        logger.warning(
+            'Duplicate Bandhu Mother List ml_id_no=%s (kobo=%s) ignored — '
+            'existing client %s (%r) kept.',
+            client_id, kobo_id or '-', client.pk, client.name,
+        )
+        return HttpResponse('Duplicate ml_id_no — existing registration kept', status=200)
     return HttpResponse('Created', status=201)

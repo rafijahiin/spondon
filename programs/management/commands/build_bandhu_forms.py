@@ -164,6 +164,31 @@ def _shared_choices():
                   ('legal', 'Legal Support'), ('other', 'Others')]:
         rows.append(_ch('referred_for', v, en))
 
+    # F-05 Patient Record — its OWN Referral Cases column set (tool F-05 r7);
+    # not the Referral Register list. Exactly: TB | STI-KP | STI-Partner |
+    # General Health | HIV Testing | Mental Health | HTC | FP methods.
+    for v, en in [('tb', 'TB (suspected, for diagnosis/management)'),
+                  ('sti_kp', 'STI-KP (non-responsive, complicated)'),
+                  ('sti_partner', 'STI-Partner (non-responsive, complicated)'),
+                  ('general_health', 'General Health'),
+                  ('hiv_testing', 'HIV Testing'),
+                  ('mental_health', 'Mental Health'),
+                  ('htc', 'HTC'),
+                  ('fp', 'FP methods')]:
+        rows.append(_ch('f05_referral', v, en))
+
+    # F-10 Mobile Health Camp — its OWN Referral Cases column set (tool F-10 r7):
+    # TB | STI | General Health | ART Linkage | Mental Health | GBV | Legal | FP.
+    for v, en in [('tb', 'TB (suspected, for diagnosis/management)'),
+                  ('sti', 'STI (non-responsive, complicated)'),
+                  ('general_health', 'General Health'),
+                  ('art_linkage', 'ART Linkage (if HIV+)'),
+                  ('mental_health', 'Mental Health'),
+                  ('gbv', 'GBV'),
+                  ('legal', 'Legal Support'),
+                  ('fp', 'FP methods')]:
+        rows.append(_ch('f10_referral', v, en))
+
     for v, en in [('man', 'Man'), ('women', 'Women'), ('hijras', 'Hijras'), ('others', 'Others')]:
         rows.append(_ch('sex_with', v, en))
     for v, en in [('anal', 'Anal'), ('oral', 'Oral'), ('peno_vaginal', 'Peno-Vaginal')]:
@@ -206,6 +231,10 @@ def _shared_choices():
 
     for v, en in [('in_person', 'In person'), ('online', 'Online'), ('hybrid', 'Hybrid')]:
         rows.append(_ch('event_modality', v, en))
+    # event_kind: NOT a column on the F-12 paper tool, but the backend routes
+    # F-12 events to the right indicator (Training vs Coordination vs Observance)
+    # by this value (bandhu_handlers._bnd_event). Kept deliberately for that
+    # reason — flagged to Rafi as a fidelity exception, not an accidental field.
     for v, en in [
         ('orientation_managers', 'Orientation — health managers/supervisors (2.1)'),
         ('training_midwives',    'Training — midwives/providers (2.2)'),
@@ -223,6 +252,14 @@ def _shared_choices():
     for v, en in [('1', 'Single (never married)'), ('2', 'Married'),
                   ('3', 'Widowed'), ('4', 'Separated'), ('5', 'Divorced / Others')]:
         rows.append(_ch('marital', v, f'{en} ({v})'))
+
+    # Mother List col 17 — current status (tool F-1.1 r5).
+    for v, en in [('1', 'Not found'), ('2', 'In jail'), ('3', 'Left the place'),
+                  ('4', 'Others'), ('5', 'Dead')]:
+        rows.append(_ch('ml_status', v, f'{en} ({v})'))
+    # Yes-1 / No-0 coded (Mother List cols 14-16).
+    for v, en in [('1', 'Yes (1)'), ('0', 'No (0)')]:
+        rows.append(_ch('yn_code', v, en))
 
     return rows
 
@@ -261,6 +298,18 @@ def _mother_list_survey():
         _sr('integer', 'ml_avg_week', 'Per week', 'সপ্তাহে'),
         _sr('integer', 'ml_avg_month', 'Per month', 'মাসে'),
         _sr('integer', 'ml_avg_year', 'Per year', 'বছরে'),
+        # Tool F-1.1 cols 14–17.
+        _sr('select_one yn_code', 'ml_needle_drug',
+            'Takes any drug/intoxicant via needle-syringe? (Yes-1/No-0)',
+            'সুঁই-সিরিঞ্জের মাধ্যমে কোনো নেশা গ্রহণ করেন কি না? (হ্যাঁ-১/না-০)'),
+        _sr('select_one yn_code', 'ml_has_nid',
+            'Has a National ID card? (Yes-1/No-0)',
+            'জাতীয় পরিচয়পত্র আছে কি না? (হ্যাঁ-১/না-০)'),
+        _sr('select_one yn_code', 'ml_fp_method',
+            'Uses any family-planning method? (Yes-1/No-0)',
+            'পরিবার পরিকল্পনার কোনো পদ্ধতি ব্যবহার করেন কি না? (হ্যাঁ-১/না-০)'),
+        _sr('select_one ml_status', 'ml_current_status',
+            'Current status', 'বর্তমান অবস্থা'),
         _sr('end_group', 'grp_ml'),
     ]
     return rows
@@ -285,7 +334,6 @@ def _service_log_survey():
         _sr('date', 'log_date', 'Date', 'তারিখ'),
         _sr('text', 'log_client_id', 'ID #', 'আইডি'),
         _sr('select_one tg_code', 'log_tg', 'TG (Code)', 'টিজি কোড'),
-        _sr('select_one general_diverse', 'log_general_diverse', 'General / Diverse', 'সাধারণ / বৈচিত্র্যময়'),
         _sr('note', '_log_services', 'Services provided (enter count where applicable):', ''),
         _sr('integer', 'log_condom', 'Condom', 'কনডম'),
         _sr('integer', 'log_condom_demo', 'Condom demo', 'কনডম ডেমো'),
@@ -328,7 +376,7 @@ def _service_log_survey():
         _sr('date', 'pr_followup_due', 'Follow-up due date', 'ফলোআপ নির্ধারিত তারিখ'),
         _sr('date', 'pr_followup_done', 'Follow-up done date', 'ফলোআপ সম্পন্ন তারিখ'),
         _sr('select_one yes_no', 'pr_adr', 'Adverse Drug Reaction monitoring', 'ওষুধের বিরূপ প্রতিক্রিয়া'),
-        _sr('select_multiple referred_for', 'pr_referral', 'Referral cases', 'রেফারেল'),
+        _sr('select_multiple f05_referral', 'pr_referral', 'Referral cases', 'রেফারেল'),
         _sr('end_group', 'grp_patient'),
     ]
 
@@ -384,7 +432,7 @@ def _service_log_survey():
         _sr('text', 'mh_issue', 'Complaint / Query / Issue(s)', 'অভিযোগ / সমস্যা', app='multiline'),
         _sr('text', 'mh_description', 'Description (in detail)', 'বিস্তারিত বিবরণ', app='multiline'),
         _sr('text', 'mh_counsel_details', 'Counselling details', 'কাউন্সেলিং বিবরণ', app='multiline'),
-        _sr('select_one f01_referral', 'mh_referral', 'Referral', 'রেফারেল'),
+        _sr('text', 'mh_referral', 'Referral', 'রেফারেল'),
         _sr('text', 'mh_remarks', 'Remarks', 'মন্তব্য'),
         _sr('end_group', 'grp_mh'),
     ]
@@ -479,6 +527,7 @@ def _activity_ops_survey():
         _sr('begin_group', 'grp_outreach', 'F-04 · Daily Outreach Monitoring',
             'F-04 · দৈনিক আউটরীচ মনিটরিং', relevant=R('outreach')),
         _sr('date', 'or_date', 'Date', 'তারিখ'),
+        _sr('text', 'or_id', 'ID No. (write name if new)', 'আইডি নম্বর (নতুন হলে নাম লিখুন)'),
         _sr('text', 'or_peer_educator', 'Peer Educator name', 'পিয়ার এডুকেটরের নাম'),
         _sr('text', 'or_spot', 'Spot name', 'স্পটের নাম'),
         _sr('integer', 'or_condom', 'Condom distributed', 'কনডম বিতরণ'),
@@ -509,6 +558,8 @@ def _activity_ops_survey():
         _sr('select_one yes_no', 'mc_tb_screening', 'TB Screening', 'টিবি স্ক্রিনিং'),
         _sr('select_one yes_no', 'mc_gh_screening', 'GH Screening', 'জিএইচ স্ক্রিনিং'),
         _sr('select_one yes_no', 'mc_sti_service', 'Service provided — STI', 'এসটিআই সেবা'),
+        _sr('select_one yes_no', 'mc_psd_service', 'Service provided — PSD', 'সেবা — পিএসডি'),
+        _sr('select_one yes_no', 'mc_mental_health_service', 'Service provided — Mental health', 'সেবা — মানসিক স্বাস্থ্য'),
         _sr('select_one hiv_result', 'mc_hiv_result', 'HIV testing result', 'এইচআইভি ফলাফল'),
         _sr('text', 'mc_treatment', 'Treatment provided (medicine name & quantity)', 'চিকিৎসা'),
         _sr('select_one seek_timing', 'mc_seek_timing', 'Seeking treatment after onset of STI symptoms', 'চিকিৎসা গ্রহণ'),
@@ -518,7 +569,7 @@ def _activity_ops_survey():
         _sr('date', 'mc_followup_due', 'Follow-up due date', 'ফলোআপ তারিখ'),
         _sr('date', 'mc_followup_done', 'Follow-up done date', 'ফলোআপ সম্পন্ন'),
         _sr('select_one yes_no', 'mc_art_linkage', 'ART linkage (if HIV positive)', 'এআরটি লিংকেজ'),
-        _sr('select_multiple referred_for', 'mc_referral', 'Referral cases', 'রেফারেল'),
+        _sr('select_multiple f10_referral', 'mc_referral', 'Referral cases', 'রেফারেল'),
         _sr('end_group', 'grp_camp'),
     ]
 
@@ -542,8 +593,9 @@ def _activity_ops_survey():
         _sr('begin_group', 'grp_event', 'F-12 · Event Report', 'F-12 · ইভেন্ট রিপোর্ট',
             relevant=R('event_report')),
         _sr('text', 'ev_activity', 'Activity name', 'কার্যক্রমের নাম'),
+        _sr('text', 'ev_objective', 'Objectives', 'উদ্দেশ্য', app='multiline'),
         _sr('select_one event_kind', 'ev_kind', 'Event type', 'ইভেন্টের ধরন', required='yes',
-            hint='Routes to the right indicator.'),
+            hint='Required so the report routes to the correct indicator.'),
         _sr('text', 'ev_place', 'Place', 'স্থান'),
         _sr('date', 'ev_date', 'Date', 'তারিখ'),
         _sr('note', '_ev_part', 'Participants by gender (enter count):', 'জেন্ডার অনুযায়ী অংশগ্রহণকারী:'),
@@ -556,6 +608,9 @@ def _activity_ops_survey():
         _sr('integer', 'ev_attend_ge80', 'Attendance ≥ 80% (count)', '৮০%+ উপস্থিতি'),
         _sr('integer', 'ev_attend_lt80', 'Attendance < 80% (count)', '৮০%-এর কম উপস্থিতি'),
         _sr('integer', 'ev_iec', 'IEC/BCC distribution (number)', 'আইইসি বিতরণ'),
+        _sr('select_one yes_no', 'ev_as_per_plan', 'Activity done as per plan?', 'পরিকল্পনা অনুযায়ী হয়েছে?'),
+        _sr('text', 'ev_status_explain', 'If not as per plan, please explain', 'না হলে ব্যাখ্যা করুন',
+            app='multiline', relevant="${ev_as_per_plan}='no'"),
         _sr('text', 'ev_chief_guest', 'Chief guest (name, organization, designation)', 'প্রধান অতিথি'),
         _sr('text', 'ev_chair', 'Chair / facilitator', 'সভাপতি'),
         _sr('text', 'ev_discussion', 'Discussion and decision', 'আলোচনা ও সিদ্ধান্ত', app='multiline'),
