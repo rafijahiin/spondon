@@ -166,15 +166,20 @@ export const MOCK_BONDHU_KPIS: MockPartnerKPIs = {
   mpdsr_cases: 2,
 }
 
+// Bandhu's 8 confirmed working districts (Ashis K. Acharjee, June 2026).
+// Demo fallback only — shown behind the "demo data" badge until real Bandhu
+// submissions arrive. Kept consistent with PARTNER_DISTRICTS.Bandhu.
 export const MOCK_BONDHU_CENTRES: MockCentresResponse = {
   month: 'May 2026',
   districts: [
-    { district: 'Dhaka',       count: 312, rank: 1 },
-    { district: 'Chittagong',  count: 198, rank: 2 },
-    { district: 'Sylhet',      count: 145, rank: 3 },
-    { district: 'Narayanganj', count: 89,  rank: 4 },
-    { district: 'Comilla',     count: 67,  rank: 5 },
-    { district: 'Khulna',      count: 45,  rank: 6 },
+    { district: 'Narayanganj', count: 198, rank: 1 },
+    { district: 'Chattogram',  count: 167, rank: 2 },
+    { district: 'Noakhali',    count: 134, rank: 3 },
+    { district: 'Chandpur',    count: 98,  rank: 4 },
+    { district: 'Manikganj',   count: 76,  rank: 5 },
+    { district: 'Habiganj',    count: 61,  rank: 6 },
+    { district: 'Sunamganj',   count: 47,  rank: 7 },
+    { district: 'Bandarban',   count: 29,  rank: 8 },
   ],
 }
 

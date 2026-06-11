@@ -54,9 +54,12 @@ export const PARTNER_DISTRICTS: Record<PartnerCode, string[]> = {
     'Jamalpur', 'Bagerhat', 'Habiganj', 'Moulavibazar', 'Sylhet',
     'Bandarban', 'Chandpur', 'Rangpur',
   ],
+  // Bandhu — the 8 working districts confirmed by Bandhu (Ashis K. Acharjee,
+  // June 2026), replacing the earlier divisional-city placeholder. 'Chattogram'
+  // matches the GeoJSON's 'Chittagong' via the alias table below.
   Bandhu: [
-    'Dhaka', 'Chittagong', 'Sylhet', 'Khulna',
-    'Rajshahi', 'Barishal',
+    'Sunamganj', 'Habiganj', 'Manikganj', 'Narayanganj',
+    'Chattogram', 'Bandarban', 'Chandpur', 'Noakhali',
   ],
   // PHD = SIDA-funded brothel-based wellness centres.
   // The 9 official wellness centres (Master List, PHD May 2026) sit in
