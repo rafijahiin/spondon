@@ -129,22 +129,34 @@ def _form1_survey():
     rows += [
         _sr('begin_group','grp_fsw','FSW Registration','যৌনকর্মী নিবন্ধন'),
 
+        # Expected ID prefix for the chosen centre: the last digit of the
+        # centre code is its serial → '1-' (R001) … '9-' (D009). Forces the
+        # typed ID to belong to the selected wellness centre (1- Daulatdia,
+        # 2- Maroawary, …). NOTE: use ODK 'substr' (0-indexed), NOT the XPath
+        # 'substring' — JavaRosa/Enketo cannot evaluate 'substring'.
+        _sr('calculate','_exp_prefix',
+            calc="concat(substr(${centre_id},3),'-')"),
+
         _sr('text','id_no',
             'ID No. (unique per FSW)',
             'আইডি নম্বর (অনন্য)',
             required='yes',
-            # Hard block: the ID must NOT already exist in the Master List
-            # (phd_clients.csv). Same trim+upper normalisation as _dup_name
-            # below, so '1-0001' / ' 1-0001 ' / '1-0001 ' all collide. If the
-            # ID is taken, the form will not advance. The developer reassigns
-            # IDs from the dashboard, not this field form, so they are exempt.
-            constraint=("pulldata('phd_clients','name','id_no',"
+            # Two hard rules — the form will not advance unless BOTH hold:
+            #   (1) the ID starts with the selected centre's serial prefix
+            #       (_exp_prefix), so a Daulatdia worker can't file a 2-… ID;
+            #   (2) the ID is not already in the Master List (phd_clients.csv).
+            # Same trim+upper normalisation as _dup_name below, so '1-0001' /
+            # ' 1-0001 ' all collide. The developer reassigns IDs from the
+            # dashboard, not this field form, so they are exempt.
+            constraint=("starts-with(normalize-space(.), ${_exp_prefix}) and "
+                        "pulldata('phd_clients','name','id_no',"
                         "translate(normalize-space(.),"
                         "'abcdefghijklmnopqrstuvwxyz',"
                         "'ABCDEFGHIJKLMNOPQRSTUVWXYZ'))=''"),
-            cmsg='⚠ This ID already exists in the Master List — do not re-register. '
-                 'Use her existing ID in the Service Log. / '
-                 'এই আইডি ইতিমধ্যে মাস্টার তালিকায় আছে — পুনঃনিবন্ধন করবেন না।',
+            cmsg='⚠ Invalid ID No. It must match the selected centre — start with '
+                 'its number (e.g. 1- Daulatdia, 2- Maroawary) — and must not '
+                 'already be registered. / ভুল আইডি — নির্বাচিত কেন্দ্রের নম্বর দিয়ে শুরু '
+                 'হতে হবে (যেমন ১- দৌলতদিয়া) এবং আগে থেকে নিবন্ধিত থাকা যাবে না।',
             hint='Format: centre number + serial, e.g. 1-0001 (Daulatdia), '
                  '2-0001 (Jashore). Use the same ID in every Service Log.'),
 
@@ -163,6 +175,15 @@ def _form1_survey():
             '⚠ এই আইডি ইতিমধ্যে ${_dup_name} এর জন্য নিবন্ধিত। '
             'পুনঃনিবন্ধন করবেন না — সেবা লগে তাঁর বিদ্যমান আইডি ব্যবহার করুন।',
             relevant="${id_no}!='' and ${_dup_name}!=''"),
+
+        # Centre-mismatch warning — inline hint shown the moment the typed ID
+        # does not start with the selected centre's prefix (the constraint
+        # above also blocks it; this just tells her the expected prefix).
+        _sr('note','_centre_warn',
+            '⚠ This ID does not match the selected centre. It must start with ${_exp_prefix}',
+            '⚠ এই আইডি নির্বাচিত কেন্দ্রের সাথে মেলে না। এটি ${_exp_prefix} দিয়ে শুরু হতে হবে।',
+            relevant=("${id_no}!='' and ${centre_id}!='' and "
+                      "not(starts-with(normalize-space(${id_no}), ${_exp_prefix}))")),
 
         _sr('text','name',
             'Name','নাম', required='yes'),
