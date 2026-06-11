@@ -347,7 +347,10 @@ export function OrgDashboard({ partner }: Props) {
               {partner} delivered <b><CountUp value={totalSubmissions} /> submissions</b> this
               month &mdash; {momChange > 0 ? '+' : ''}{momChange.toFixed(1)}% compared
               to last month. Field staff submitting from{' '}
-              <b>{displayCentres.districts?.length ?? 0} centres</b>, GPS-verified, validated
+              {/* Centre count must follow the SAME usingMock flag as the demo
+                  badge — otherwise real submissions + an empty centres response
+                  printed the mock "6 centres" as fact with no badge. */}
+              <b>{(usingMock ? displayCentres.districts?.length : centres?.districts?.length) ?? 0} centres</b>, GPS-verified, validated
               through KoboToolbox before reaching M&amp;E.
             </p>
 

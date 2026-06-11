@@ -25,6 +25,13 @@ def generate_below_target_alerts(dry_run: bool = False) -> list[dict]:
     year, month = now.year, now.month
 
     targets = MonthlyTarget.objects.filter(year=year, month=month)
+    if not targets.exists():
+        # Below-target alerts compare achievement to the numeric target, so we
+        # can't forward-fill another month's values. But warn loudly so a missing
+        # seed is visible instead of looking identical to a healthy "all on track".
+        logger.warning(
+            'No MonthlyTarget rows for %s-%02d — below-target alerts are a no-op '
+            'this month. Run manage.py seed_targets.', year, month)
     created_alerts = []
 
     for t in targets:
@@ -136,6 +143,26 @@ def detect_submission_gaps(dry_run: bool = False) -> list[dict]:
     year, month = now.year, now.month
 
     targets = MonthlyTarget.objects.filter(year=year, month=month)
+    if not targets.exists():
+        # Gap detection only needs the (partner, form_type) PAIRS to watch — it
+        # never reads the numeric target. So if this month's targets haven't been
+        # seeded yet, fall back to the most recently configured month rather than
+        # silently checking nothing. Without this, a forgotten monthly seed makes
+        # the 48h-gap alerts disappear with NO signal (the loop just never runs).
+        latest = (MonthlyTarget.objects
+                  .order_by('-year', '-month')
+                  .values_list('year', 'month').first())
+        if latest:
+            ly, lm = latest
+            targets = MonthlyTarget.objects.filter(year=ly, month=lm)
+            logger.warning(
+                'No MonthlyTarget rows for %s-%02d — using the %s-%02d '
+                'partner/form_type set for 48h gap detection. Seed this month '
+                '(manage.py seed_targets) to silence this.', year, month, ly, lm)
+        else:
+            logger.warning(
+                'No MonthlyTarget rows exist at all — 48h submission-gap '
+                'detection is a no-op. Run manage.py seed_targets to enable it.')
     created_alerts = []
 
     for t in targets:

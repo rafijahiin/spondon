@@ -1910,10 +1910,27 @@ html.dark .leaflet-control-zoom a {
   .hero-right { height: 360px; }
 }
 
+/* ─── Manager Approvals: queue + focus layout ────────────────────────── */
+/* Class-based (not inline) so the media query below can collapse it on phones —
+   inline grid-template-columns can't be overridden, which pinned the focus
+   panel to a ~20px sliver on mobile (the screen managers approve from). */
+.appr-layout {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 28px;
+  align-items: start;
+}
+.appr-spine { position: sticky; top: 76px; }
+
 /* ─── Mobile phone (<=768px) ─────────────────────────────────────────── */
 
 @media (max-width: 768px) {
   .app-shell { grid-template-columns: 1fr; }
+
+  /* Approvals: stack the queue spine above the focus panel so the Approve/
+     Reject column gets full width instead of collapsing. */
+  .appr-layout { grid-template-columns: 1fr; gap: 18px; }
+  .appr-spine { position: static; top: auto; max-height: none; }
   .hero { padding: 64px 16px 24px; }   /* extra top padding for hamburger */
   .section { padding: 0 16px; }
   .topbar { padding-left: 60px; }       /* room for hamburger */

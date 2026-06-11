@@ -769,10 +769,10 @@ export default function ManagerApprovals() {
            QUEUE + FOCUS PANEL
            ═══════════════════════════════════════════════════════════════ */}
       <section className="section" style={{ marginBottom: 80 }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: 28, alignItems: 'start' }}>
+        <div className="appr-layout">
 
           {/* ── QUEUE SPINE ────────────────────────────────────────── */}
-          <div className="card flush" style={{ position: 'sticky', top: 76 }}>
+          <div className="card flush appr-spine">
             <div className="card-head" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 10, paddingBottom: 10 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div className="card-title" style={{ fontSize: 14, fontWeight: 600 }}>{t('approvals.queueHeading')}</div>
