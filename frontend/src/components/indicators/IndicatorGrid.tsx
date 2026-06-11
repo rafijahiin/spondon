@@ -82,8 +82,13 @@ export function IndicatorGrid({ org, periodStart = '2026-05-21', periodEnd = '20
 
   useEffect(() => {
     fetchIndicators()
-    // Refresh every 15 minutes
-    const timer = setInterval(fetchIndicators, 15 * 60 * 1000)
+    // Refresh every 60s so a manager's approval shows on the target-vs-actual
+    // cards within a minute (the backend invalidates this partner's indicator
+    // cache on approval; 15 min here made the dashboard feel "stuck" even after
+    // the server data was fresh). Mount also fires an immediate fetch, so
+    // navigating to the dashboard right after approving shows the new totals at
+    // once. Cached server-side, so frequent polls are cheap until the next bump.
+    const timer = setInterval(fetchIndicators, 60 * 1000)
     return () => clearInterval(timer)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [org, periodStart, periodEnd])
