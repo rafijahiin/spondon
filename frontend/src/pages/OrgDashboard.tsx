@@ -363,14 +363,31 @@ export function OrgDashboard({ partner }: Props) {
               <div className="anim-rise d3" style={{ marginTop: 20, paddingTop: 18, borderTop: '1px solid var(--hair)', maxWidth: 560 }}>
                 <div className="kicker" style={{ marginBottom: 8 }}><span className="dot" />ABOUT THE PARTNER</div>
                 <p style={{ fontSize: 12.5, lineHeight: 1.62, color: 'var(--ink-3)', marginBottom: 16, textWrap: 'pretty' }}>
-                 Partner in Health and Development (PHD) is a non-profit that has spent over three decades improving the lives of marginalized communities in Bangladesh. 
-                  Through strategic partnerships, they implement development and livelihood programs, provide humanitarian response, and deliver technical assistance to strengthen government and development sectors. 
-                  Their core expertise includes fund management, systems strengthening, HR development, capacity building, and research.
-                  PHD, with support from UNFPA | Sida, is implementing a project titled "Strengthening access to integrated Sexual and Reproductive Health and Rights (SRHR) services for brothel-based female sex workers (FSWs) in selected districts of Bangladesh."
-                  Operating across 11 brothels in 9 districts (Rajbari, Faridpur, Khulna, Tangail, Jashore, Jamalpur, Mymensingh, Bagerhat, and Patuakhali), the initiative aims to improve health outcomes for marginalized FSWs. 
-                  To achieve this, the project will establish 9 community-led wellness centers and 44 Gender-Based Violence (GBV) Corners within public facilities, delivering integrated, rights-based, and stigma-free services covering SRHR, HIV/STI prevention, mental health, and GBV response.
-                  Ultimately, the intervention leverages peer-led outreach and enhanced government linkages to build an equitable, survivor-centered healthcare support system.
+                  Partner in Health and Development (PHD) is a non-profit that has spent over three
+                  decades improving the lives of marginalized communities in Bangladesh. Through
+                  strategic partnerships, they implement development and livelihood programs, provide
+                  humanitarian response, and deliver technical assistance to strengthen government and
+                  development sectors. Their core expertise includes fund management, systems
+                  strengthening, HR development, capacity building, and research.
                 </p>
+                <div className="kicker" style={{ marginBottom: 8 }}><span className="dot" />THE PROJECT</div>
+                <p style={{ fontSize: 12.5, lineHeight: 1.62, color: 'var(--ink-3)', marginBottom: 0, textWrap: 'pretty' }}>
+                  PHD, with support from <b style={{ color: 'var(--ink-2)' }}>UNFPA&nbsp;|&nbsp;Sida</b>, is
+                  implementing a project titled{' '}
+                  <span style={{ color: 'var(--ink-2)', fontStyle: 'italic' }}>&ldquo;Strengthening access
+                  to integrated Sexual and Reproductive Health and Rights (SRHR) services for
+                  brothel-based female sex workers (FSWs) in selected districts of Bangladesh.&rdquo;</span>{' '}
+                  Operating across <b style={{ color: 'var(--ink-2)' }}>11 brothels in 9 districts</b>{' '}
+                  (Rajbari, Faridpur, Khulna, Tangail, Jashore, Jamalpur, Mymensingh, Bagerhat, and
+                  Patuakhali), the initiative aims to improve health outcomes for marginalized FSWs. To
+                  achieve this, the project will establish <b style={{ color: 'var(--ink-2)' }}>9
+                  community-led wellness centers</b> and <b style={{ color: 'var(--ink-2)' }}>44
+                  Gender-Based Violence (GBV) Corners</b> within public facilities, delivering integrated,
+                  rights-based, and stigma-free services covering SRHR, HIV/STI prevention, mental health,
+                  and GBV response. Ultimately, the intervention leverages peer-led outreach and enhanced
+                  government linkages to build an equitable, survivor-centered healthcare support system.
+                </p>
+              </div>
             )}
           </div>
 
@@ -381,7 +398,7 @@ export function OrgDashboard({ partner }: Props) {
             <div className="card shimmer" style={{ padding: 10 }}>
               <PartnerOverlapMap height={340} partner={partner} />
             </div>
-    
+            <DataSource>Configured at validation workshop (3-4 June 2026) · placeholder until final list confirmed</DataSource>
           </div>
         </div>
       </section>
