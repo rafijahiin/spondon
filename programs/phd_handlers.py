@@ -81,7 +81,14 @@ def handle_phd_registration(payload: dict, lat, lng) -> HttpResponse:
     if kobo_id and Client.objects.filter(kobo_submission_id=kobo_id).exists():
         return HttpResponse('OK', status=200)
 
-    Client.objects.update_or_create(
+    # First registration wins. The ID is unique per FSW, so a second
+    # registration on the same id_no is a DUPLICATE — never overwrite the
+    # existing record (that would silently replace one FSW's data with
+    # another's). The form's hard constraint blocks duplicates already in the
+    # Master List; this backstops the case the form can't see — two workers
+    # inventing the same NEW id offline on the same day (the attached CSV is a
+    # snapshot). get_or_create only writes `defaults` when creating.
+    client, created = Client.objects.get_or_create(
         client_id=client_id,
         defaults={
             'organisation':        ORG,
@@ -109,6 +116,16 @@ def handle_phd_registration(payload: dict, lat, lng) -> HttpResponse:
             'raw_payload': payload,
         },
     )
+    if not created:
+        # Duplicate ID — keep the original FSW and flag the collision rather
+        # than clobbering her. Return 200 so Kobo does not retry forever.
+        logger.warning(
+            'Duplicate PHD registration id_no=%s (kobo=%s) ignored — '
+            'existing client %s (%r, centre %s) kept.',
+            client_id, kobo_id or '-', client.pk, client.name,
+            client.center.code if client.center_id else '-',
+        )
+        return HttpResponse('Duplicate id_no — existing registration kept', status=200)
     return HttpResponse('Created', status=201)
 
 

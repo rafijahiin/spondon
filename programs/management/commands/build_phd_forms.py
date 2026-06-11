@@ -133,6 +133,18 @@ def _form1_survey():
             'ID No. (unique per FSW)',
             'আইডি নম্বর (অনন্য)',
             required='yes',
+            # Hard block: the ID must NOT already exist in the Master List
+            # (phd_clients.csv). Same trim+upper normalisation as _dup_name
+            # below, so '1-0001' / ' 1-0001 ' / '1-0001 ' all collide. If the
+            # ID is taken, the form will not advance. The developer reassigns
+            # IDs from the dashboard, not this field form, so they are exempt.
+            constraint=("pulldata('phd_clients','name','id_no',"
+                        "translate(normalize-space(.),"
+                        "'abcdefghijklmnopqrstuvwxyz',"
+                        "'ABCDEFGHIJKLMNOPQRSTUVWXYZ'))=''"),
+            cmsg='⚠ This ID already exists in the Master List — do not re-register. '
+                 'Use her existing ID in the Service Log. / '
+                 'এই আইডি ইতিমধ্যে মাস্টার তালিকায় আছে — পুনঃনিবন্ধন করবেন না।',
             hint='Format: centre number + serial, e.g. 1-0001 (Daulatdia), '
                  '2-0001 (Jashore). Use the same ID in every Service Log.'),
 
