@@ -370,11 +370,13 @@ export function OrgDashboard({ partner }: Props) {
                   expertise spans fund management, systems strengthening, HR development, capacity
                   building, and research.
                 </p>
-                <div className="kicker" style={{ marginBottom: 8 }}><span className="dot" />THE PROJECT &middot; SUKH PAKHI</div>
+                <div className="kicker" style={{ marginBottom: 8 }}><span className="dot" />THE PROJECT</div>
                 <p style={{ fontSize: 12.5, lineHeight: 1.62, color: 'var(--ink-3)', marginBottom: 0, textWrap: 'pretty' }}>
-                  With support from <b style={{ color: 'var(--ink-2)' }}>UNFPA&nbsp;|&nbsp;Sida</b>, PHD is
-                  <i> strengthening access to integrated SRHR services for brothel-based female sex
-                  workers</i> across <b style={{ color: 'var(--ink-2)' }}>11 brothels in 9 districts</b>{' '}
+                  With support from <b style={{ color: 'var(--ink-2)' }}>UNFPA&nbsp;|&nbsp;Sida</b>, PHD is implementing{' '}
+                  <span style={{ color: 'var(--ink-2)', fontStyle: 'italic' }}>&ldquo;Strengthening access to
+                  integrated Sexual and Reproductive Health and Rights (SRHR) services for brothel-based
+                  female sex workers (FSWs) in selected districts of Bangladesh&rdquo;</span> — across{' '}
+                  <b style={{ color: 'var(--ink-2)' }}>11 brothels in 9 districts</b>{' '}
                   (Rajbari, Faridpur, Khulna, Tangail, Jashore, Jamalpur, Mymensingh, Bagerhat &amp;
                   Patuakhali). The initiative establishes <b style={{ color: 'var(--ink-2)' }}>9 community-led
                   wellness centres</b> and <b style={{ color: 'var(--ink-2)' }}>44 GBV corners</b> in public
