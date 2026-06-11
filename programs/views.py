@@ -179,6 +179,16 @@ def _apply_decision(obj, user, action_type, reason):
     else:
         return Response({'detail': "action must be 'approve' or 'reject'."},
                         status=status.HTTP_400_BAD_REQUEST)
+
+    # Decision is valid and about to be committed by the caller. Once it commits,
+    # invalidate THIS partner's cached indicator achievements so the dashboard
+    # recomputes the new totals on its next load — instant with a shared Redis
+    # cache (the bump is seen by every worker); CACHE_TTL backstops the per-worker
+    # LocMem fallback. on_commit so we never invalidate ahead of a rolled-back txn.
+    from django.db import transaction as _txn
+    from indicators.service import bump_partner_version
+    _org = obj.organisation
+    _txn.on_commit(lambda: bump_partner_version(_org))
     return None
 
 

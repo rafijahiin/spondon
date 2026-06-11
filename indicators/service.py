@@ -60,8 +60,39 @@ _REGISTRIES: dict[str, tuple[dict, set]] = {
 }
 
 
+def _ver_key(partner_code: str) -> str:
+    return f'indicator-ver:{partner_code}'
+
+
+def _partner_version(partner_code: str) -> int:
+    """Per-partner cache version, folded into every achievement cache key.
+    Bumping it (on approval) invalidates ALL of that partner's cached
+    achievements at once — no pattern-delete needed, so it works on any cache
+    backend. With a SHARED cache (Redis) the bump is visible to every worker, so
+    an approval clears the stale numbers everywhere instantly; with the default
+    per-worker LocMemCache it only clears the current worker, and CACHE_TTL is
+    the cross-worker backstop."""
+    key = _ver_key(partner_code)
+    v = cache.get(key)
+    if v is None:
+        cache.add(key, 1, None)        # set only if still absent (race-safe)
+        v = cache.get(key) or 1
+    return v
+
+
+def bump_partner_version(partner_code: str) -> None:
+    """Invalidate every cached achievement for one partner — call when a
+    submission's approval state changes so the dashboard recomputes at once."""
+    key = _ver_key(partner_code)
+    try:
+        cache.incr(key)
+    except ValueError:                 # key absent/expired
+        cache.set(key, 2, None)
+
+
 def _cache_key(partner_code: str, activity_code: str, period_start, period_end) -> str:
-    return f'indicator-v3:{partner_code}:{activity_code}:{period_start}:{period_end}'
+    return (f'indicator-v3:{partner_code}:{_partner_version(partner_code)}:'
+            f'{activity_code}:{period_start}:{period_end}')
 
 
 def _compute_achievement(partner_code: str, activity_code: str, period_start, period_end):

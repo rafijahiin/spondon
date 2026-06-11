@@ -118,6 +118,28 @@ else:
         )
     }
 
+# ── Cache ─────────────────────────────────────────────────────────────────────
+# A SHARED Redis cache (set REDIS_URL — e.g. add a Railway Redis service and
+# reference its connection URL) lets an approval invalidate the indicator cache
+# for EVERY worker at once (indicators.service.bump_partner_version), so the
+# dashboard totals update instantly. Without REDIS_URL we fall back to per-worker
+# in-memory caching, where the short CACHE_TTL is the cross-worker backstop.
+_redis_url = (os.environ.get('REDIS_URL', '') or os.environ.get('REDIS_PRIVATE_URL', '')).strip()
+if _redis_url:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+            'LOCATION': _redis_url,
+        }
+    }
+else:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'LOCATION': 'simple-indicators',
+        }
+    }
+
 AUTH_USER_MODEL = 'accounts.User'
 
 AUTH_PASSWORD_VALIDATORS = [
