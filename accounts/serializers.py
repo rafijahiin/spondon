@@ -42,9 +42,17 @@ class LoginSerializer(serializers.Serializer):
     password = serializers.CharField(write_only=True)
 
     def validate(self, data):
+        # Email login is case-INSENSITIVE. Django's default ModelBackend does an
+        # exact match on the stored email, and BaseUserManager.normalize_email
+        # only lowercases the domain — so a user seeded with a mixed-case local
+        # part (e.g. 'Habib.ahsan1992@gmail.com') could never log in by typing
+        # the address in lowercase. Resolve the stored address first, then
+        # authenticate against it so the password check is unchanged.
+        match = User.objects.filter(email__iexact=data['email']).first()
+        lookup_email = match.email if match else data['email']
         user = authenticate(
             request=self.context.get('request'),
-            username=data['email'],
+            username=lookup_email,
             password=data['password'],
         )
         if not user:

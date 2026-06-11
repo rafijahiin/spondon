@@ -157,6 +157,27 @@ class CanWriteOutreach(BasePermission):
         return u.can_enter_outreach_records
 
 
+class CanWriteOrgRecord(BasePermission):
+    """
+    Fail-closed default write gate for org-scoped submission records that feed
+    indicators. Read access is open to all authenticated users (org isolation
+    is enforced by the queryset filter). Writes are denied to the view-only
+    role (focal) and the survey-only role (ciprb_baseline) — neither should be
+    able to create or alter records that drive the dashboards.
+
+    Applied as OrgFilteredViewSet's default so a subclass that forgets an
+    explicit permission_classes fails closed instead of inheriting the old bare
+    IsAuthenticated (which let any logged-in role POST/PATCH/DELETE).
+    """
+    def has_permission(self, request, view):
+        u = request.user
+        if not u.is_authenticated:
+            return False
+        if request.method in SAFE_METHODS:
+            return True
+        return u.can_write_org_records
+
+
 class CanAccessMPDSR(BasePermission):
     """
     MPDSR is CIPRB-owned. Dev + Supervisor see all; Org Lead only if

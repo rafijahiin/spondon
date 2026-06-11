@@ -88,37 +88,61 @@ def handle_phd_registration(payload: dict, lat, lng) -> HttpResponse:
     # Master List; this backstops the case the form can't see — two workers
     # inventing the same NEW id offline on the same day (the attached CSV is a
     # snapshot). get_or_create only writes `defaults` when creating.
+    defaults = {
+        'organisation':        ORG,
+        'center':              center,
+        'name':                _str(payload.get('name')),
+        'mother_name':         _str(payload.get('mother_name')),
+        'birth_year':          _int_or_none(payload.get('birth_year')),
+        'gender':              '02',    # all PHD registrations = Female (FSW)
+        'target_group_code':   '05',    # FSW
+        'current_address':     _str(payload.get('permanent_address')),
+        'has_nid':             _nullable_bool(payload, 'has_nid'),
+        'uses_fp_method':      _nullable_bool(payload, 'uses_fp'),
+        'notes':               _str(payload.get('remarks')),
+        'current_status':      Client.ACTIVE,
+        # Registration needs no manager approval — a field worker
+        # enrolling an FSW is the source of truth for the Master List.
+        # Auto-approving here is what lets her flow into phd_clients.csv
+        # (the exporter filters approval_status=APPROVED) so the Service
+        # Log's pulldata() finds her immediately after registration.
+        'approval_status':     Client.APPROVED,
+        'kobo_submission_id':  kobo_id or None,
+        'submitted_by_kobo_user': _str(payload.get('_submitted_by')),
+        'latitude':  lat,
+        'longitude': lng,
+        'raw_payload': payload,
+    }
     client, created = Client.objects.get_or_create(
-        client_id=client_id,
-        defaults={
-            'organisation':        ORG,
-            'center':              center,
-            'name':                _str(payload.get('name')),
-            'mother_name':         _str(payload.get('mother_name')),
-            'birth_year':          _int_or_none(payload.get('birth_year')),
-            'gender':              '02',    # all PHD registrations = Female (FSW)
-            'target_group_code':   '05',    # FSW
-            'current_address':     _str(payload.get('permanent_address')),
-            'has_nid':             _nullable_bool(payload, 'has_nid'),
-            'uses_fp_method':      _nullable_bool(payload, 'uses_fp'),
-            'notes':               _str(payload.get('remarks')),
-            'current_status':      Client.ACTIVE,
-            # Registration needs no manager approval — a field worker
-            # enrolling an FSW is the source of truth for the Master List.
-            # Auto-approving here is what lets her flow into phd_clients.csv
-            # (the exporter filters approval_status=APPROVED) so the Service
-            # Log's pulldata() finds her immediately after registration.
-            'approval_status':     Client.APPROVED,
-            'kobo_submission_id':  kobo_id or None,
-            'submitted_by_kobo_user': _str(payload.get('_submitted_by')),
-            'latitude':  lat,
-            'longitude': lng,
-            'raw_payload': payload,
-        },
+        client_id=client_id, defaults=defaults,
     )
     if not created:
-        # Duplicate ID — keep the original FSW and flag the collision rather
-        # than clobbering her. Return 200 so Kobo does not retry forever.
+        # A Service Log referencing this id may have arrived FIRST and created
+        # an auto-approved STUB (name 'Unknown'/'') with no demographics — Kobo
+        # does not guarantee inter-form delivery order. Registration is the
+        # source of truth for identity, so UPGRADE the stub in place rather than
+        # silently dropping the demographic payload (the stub is excluded from
+        # phd_clients.csv by .exclude(name=''), so without this the Service Log
+        # pulldata() keeps firing "not registered" forever). A real, *named*
+        # existing record is a genuine duplicate — keep it (never clobber one
+        # FSW with another). Return 200 so Kobo does not retry forever.
+        from django.db import transaction
+        with transaction.atomic():
+            locked = Client.objects.select_for_update().get(pk=client.pk)
+            if (locked.name or '').strip() in ('', 'Unknown'):
+                for f in ('center', 'name', 'mother_name', 'birth_year',
+                          'gender', 'target_group_code', 'current_address',
+                          'has_nid', 'uses_fp_method', 'notes',
+                          'submitted_by_kobo_user', 'latitude', 'longitude',
+                          'raw_payload'):
+                    setattr(locked, f, defaults[f])
+                locked.current_status = Client.ACTIVE
+                locked.approval_status = Client.APPROVED
+                locked.save()
+                logger.info(
+                    'PHD registration upgraded stub client %s (id_no=%s) → %r',
+                    locked.pk, client_id, locked.name)
+                return HttpResponse('Stub upgraded to full registration', status=200)
         logger.warning(
             'Duplicate PHD registration id_no=%s (kobo=%s) ignored — '
             'existing client %s (%r, centre %s) kept.',

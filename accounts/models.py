@@ -100,8 +100,15 @@ class User(AbstractBaseUser, PermissionsMixin):
     @property
     def can_read_other_orgs(self):
         """Read-only visibility into other orgs' aggregated dashboards.
-        Includes ORG_LEAD (CIPRB Sayeed-style — full own org, read-only others)."""
-        return self.role in (Role.DEVELOPER, Role.SUPERVISOR, Role.ORG_LEAD)
+        Includes ORG_LEAD (CIPRB Sayeed-style — full own org, read-only others),
+        but ONLY when that org lead belongs to CIPRB. Same org-binding rule as
+        can_access_mpdsr / can_access_fistula_cases — without it, an org lead
+        provisioned at PHD or Bandhu would read every other partner's rows."""
+        if self.role in (Role.DEVELOPER, Role.SUPERVISOR):
+            return True
+        if self.role == Role.ORG_LEAD:
+            return self.organisation == Organisation.CIPRB
+        return False
 
     @property
     def can_approve_submissions(self):
@@ -139,6 +146,21 @@ class User(AbstractBaseUser, PermissionsMixin):
         Dev/Supervisor/OrgLead retain write for admin scenarios."""
         return self.role in (
             Role.DEVELOPER, Role.SUPERVISOR, Role.ORG_LEAD, Role.MANAGER,
+        )
+
+    @property
+    def can_write_org_records(self):
+        """Default write gate for org-scoped submission records that feed
+        indicators (autoclave, antenatal, referral, stock, temperature,
+        requisition, visitor, etc.). Anyone who legitimately enters programme
+        data — field staff OR managers — plus oversight roles. EXCLUDES the
+        view-only role (focal) and the survey-only role (ciprb_baseline), which
+        must never fabricate/alter records that drive the dashboards. This is
+        the fail-closed default for OrgFilteredViewSet so a viewset that forgets
+        an explicit permission_classes still denies focal/baseline writes."""
+        return self.role in (
+            Role.DEVELOPER, Role.SUPERVISOR, Role.ORG_LEAD,
+            Role.MANAGER, Role.FIELD_STAFF,
         )
 
     @property

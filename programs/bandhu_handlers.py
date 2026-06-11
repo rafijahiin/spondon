@@ -478,29 +478,55 @@ def handle_bandhu_mother_list(payload, lat, lng):
     # Mother List entry on the same ml_id_no is a DUPLICATE and must NOT
     # overwrite the existing client (that would silently replace one person's
     # record with another's). get_or_create only writes `defaults` on create.
+    defaults = {
+        'organisation': ORG, 'center': center,
+        'name': _str(payload.get('ml_name')),
+        'father_name': _str(payload.get('ml_parent_name')),
+        'birth_year': _int_or_none(payload.get('ml_birth_year')),
+        'target_group_code': _str(payload.get('ml_gender')),
+        'current_address': _str(payload.get('ml_address')),
+        'spot_name': _str(payload.get('ml_spot')),
+        'education_level': _str(payload.get('ml_education')),
+        'marital_status': _str(payload.get('ml_marital')),
+        'children_under_18': _int_or_none(payload.get('ml_children_u18')),
+        'occupation_code': _str(payload.get('ml_occupation')),
+        'avg_clients_per_day': _int_or_none(payload.get('ml_avg_day')),
+        'current_status': Client.ACTIVE,
+        'approval_status': Client.APPROVED,
+        'kobo_submission_id': kobo_id or None,
+        'submitted_by_kobo_user': _str(payload.get('_submitted_by')),
+        'latitude': lat, 'longitude': lng, 'raw_payload': payload,
+    }
     client, created = Client.objects.get_or_create(
-        client_id=client_id,
-        defaults={
-            'organisation': ORG, 'center': center,
-            'name': _str(payload.get('ml_name')),
-            'father_name': _str(payload.get('ml_parent_name')),
-            'birth_year': _int_or_none(payload.get('ml_birth_year')),
-            'target_group_code': _str(payload.get('ml_gender')),
-            'current_address': _str(payload.get('ml_address')),
-            'spot_name': _str(payload.get('ml_spot')),
-            'education_level': _str(payload.get('ml_education')),
-            'marital_status': _str(payload.get('ml_marital')),
-            'children_under_18': _int_or_none(payload.get('ml_children_u18')),
-            'occupation_code': _str(payload.get('ml_occupation')),
-            'avg_clients_per_day': _int_or_none(payload.get('ml_avg_day')),
-            'current_status': Client.ACTIVE,
-            'approval_status': Client.APPROVED,
-            'kobo_submission_id': kobo_id or None,
-            'submitted_by_kobo_user': _str(payload.get('_submitted_by')),
-            'latitude': lat, 'longitude': lng, 'raw_payload': payload,
-        },
+        client_id=client_id, defaults=defaults,
     )
     if not created:
+        # A Service Log referencing this id may have arrived FIRST and created
+        # an auto-approved STUB (name 'Unknown'/'') with no demographics — Kobo
+        # does not guarantee inter-form delivery order. The Mother List is the
+        # source of truth for identity, so UPGRADE the stub in place rather than
+        # dropping the demographic payload (the exporter excludes name in
+        # ''/'Unknown', so without this the Service Log pulldata() keeps firing
+        # "not in Mother List" forever). A real, *named* record is a genuine
+        # duplicate — keep it (never clobber one person with another).
+        from django.db import transaction
+        with transaction.atomic():
+            locked = Client.objects.select_for_update().get(pk=client.pk)
+            if (locked.name or '').strip() in ('', 'Unknown'):
+                for f in ('center', 'name', 'father_name', 'birth_year',
+                          'target_group_code', 'current_address', 'spot_name',
+                          'education_level', 'marital_status', 'children_under_18',
+                          'occupation_code', 'avg_clients_per_day',
+                          'submitted_by_kobo_user', 'latitude', 'longitude',
+                          'raw_payload'):
+                    setattr(locked, f, defaults[f])
+                locked.current_status = Client.ACTIVE
+                locked.approval_status = Client.APPROVED
+                locked.save()
+                logger.info(
+                    'Bandhu Mother List upgraded stub client %s (ml_id_no=%s) → %r',
+                    locked.pk, client_id, locked.name)
+                return HttpResponse('Stub upgraded to full registration', status=200)
         logger.warning(
             'Duplicate Bandhu Mother List ml_id_no=%s (kobo=%s) ignored — '
             'existing client %s (%r) kept.',

@@ -24,7 +24,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from accounts.permissions import (
-    CanWriteFieldRecord, CanWriteOutreach,
+    CanWriteFieldRecord, CanWriteOutreach, CanWriteOrgRecord,
 )
 
 from .models import (
@@ -214,8 +214,15 @@ def _org_filter(queryset, request):
 
 
 class OrgFilteredViewSet(viewsets.ModelViewSet):
-    """Base viewset that filters by org and handles approval actions."""
-    permission_classes = [IsAuthenticated]
+    """Base viewset that filters by org and handles approval actions.
+
+    Default permission is CanWriteOrgRecord (fail-closed): reads open to all
+    authenticated users, writes denied to focal (view-only) and ciprb_baseline
+    (survey-only). Subclasses carrying stricter rules (CanWriteFieldRecord /
+    CanWriteOutreach) override below; the ones that previously relied on the
+    bare IsAuthenticated default now inherit this safe gate instead of letting
+    any logged-in role POST/PATCH/DELETE records that feed the indicators."""
+    permission_classes = [CanWriteOrgRecord]
 
     def get_queryset(self):
         return _org_filter(super().get_queryset(), self.request)
@@ -257,7 +264,11 @@ class OrgFilteredViewSet(viewsets.ModelViewSet):
                         break
             if sub_email and sub_email not in recipients:
                 recipients = recipients + [sub_email]
-            if recipients:
+            # Three-way guard: only a FINAL decision emails anyone. A Bandhu
+            # stage-1 manager approve sets MANAGER_APPROVED (not yet APPROVED) —
+            # it must NOT fall through to the rejected branch and blast everyone
+            # a false "rejected" notice. It silently awaits UNFPA stage-2.
+            if recipients and obj.approval_status in ('APPROVED', 'REJECTED'):
                 if obj.approval_status == 'APPROVED':
                     subj = f'[SIMPLE] ✓ {label} approved — {obj.organisation}'
                     body = (
@@ -295,10 +306,16 @@ class OrgFilteredViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         user = self.request.user
-        if user.role == 'manager':
-            serializer.save(organisation=user.organisation)
-        else:
+        # Force organisation to the writer's own org for every org-bound role
+        # (manager, field_staff, focal). Only cross-org oversight roles
+        # (developer/supervisor, and CIPRB org leads) may set it explicitly —
+        # otherwise a non-oversight user could POST organisation=<other partner>
+        # in the body (serializers use fields='__all__' and don't mark
+        # organisation read-only) and forge a record under a foreign org.
+        if user.can_see_all_orgs or user.can_read_other_orgs:
             serializer.save()
+        else:
+            serializer.save(organisation=user.organisation)
 
 
 # ─── Service Centres ───────────────────────────────────────────────────────────
@@ -507,7 +524,7 @@ class MobileHealthCampViewSet(OrgFilteredViewSet):
 class VisitorRegisterViewSet(viewsets.ModelViewSet):
     queryset = VisitorRegister.objects.select_related('center').all()
     serializer_class = VisitorRegisterSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [CanWriteOrgRecord]
 
     def get_queryset(self):
         return _org_filter(VisitorRegister.objects.select_related('center').all(), self.request)

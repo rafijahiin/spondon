@@ -67,6 +67,7 @@ def compute_SL4(org, period_start, period_end):
 def _kit_issued(org, period_start, period_end, fragment):
     return StockEntry.objects.filter(
         organisation=org,
+        approval_status=APPROVED,   # only manager-approved stock counts (system rule)
         reporting_month__range=(period_start, period_end),
         item_name__icontains=fragment,
     ).aggregate(t=Sum('quantity_issued'))['t'] or 0
@@ -103,6 +104,7 @@ def compute_SL6(org, period_start, period_end):
     return Referral.objects.filter(
         organisation=org,
         approval_status=APPROVED,
+        referral_date__range=(period_start, period_end),   # scope referrals to the period too
         client_id__in=positive_clients,
     ).values('client_id').distinct().count()
 
