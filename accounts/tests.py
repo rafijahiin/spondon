@@ -66,8 +66,12 @@ class UserModelTest(TestCase):
         self.assertTrue(sup.can_configure_targets('Bandhu'))
         self.assertTrue(sup.can_configure_targets('CIPRB'))
 
+        # Per Animesh's 2026-06-01 directive, org leads do NOT configure targets
+        # (UNFPA sets them; partners track against them) — can_configure_targets
+        # returns True only for DEVELOPER/SUPERVISOR. A CIPRB org lead is denied
+        # for every partner, including its own.
         lead_ciprb = make_user('lead@ciprb.org', Organisation.CIPRB, Role.ORG_LEAD)
-        self.assertTrue(lead_ciprb.can_configure_targets('CIPRB'))
+        self.assertFalse(lead_ciprb.can_configure_targets('CIPRB'))
         self.assertFalse(lead_ciprb.can_configure_targets('PHD'))
         self.assertFalse(lead_ciprb.can_configure_targets('Bandhu'))
 

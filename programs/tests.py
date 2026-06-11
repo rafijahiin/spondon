@@ -128,8 +128,11 @@ class OrgIsolationSmokeTest(TestCase):
         resp = self.client.get('/api/programs/centers/')
         self.assertEqual(resp.status_code, 200)
         rows = self._rows(resp)
-        self.assertEqual(len(rows), 1)
-        self.assertEqual(rows[0]['organisation'], 'Bandhu')
+        # Assert the isolation PROPERTY, not a hardcoded count — migrations seed
+        # real Bandhu wellness centres, so the count is > 1. What matters is that
+        # a Bandhu manager sees ONLY Bandhu centres and the test's own is present.
+        self.assertGreaterEqual(len(rows), 1)
+        self.assertTrue(all(r['organisation'] == 'Bandhu' for r in rows))
 
     def test_centers_supervisor_sees_both(self):
         self.client.force_authenticate(user=self.supervisor)
