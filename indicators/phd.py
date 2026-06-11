@@ -95,16 +95,20 @@ def compute_SL5e(org, period_start, period_end):   # HIV kits
 
 # ── SL6 — HIV/STI positive cases referred and enrolled in treatment ──────────
 def compute_SL6(org, period_start, period_end):
+    # Anchor the period on the REFERRAL (the action this indicator counts), not
+    # the test. Scoping BOTH the positive test AND the referral to the window
+    # dropped anyone who tested positive in one month but was referred the next.
+    # positive_clients is therefore all-time positives; we count those referred
+    # within the period.
     positive_clients = HIVSTITestResult.objects.filter(
         organisation=org,
         approval_status=APPROVED,
-        testing_date__range=(period_start, period_end),
         hiv_result='positive',
     ).values_list('client_id', flat=True)
     return Referral.objects.filter(
         organisation=org,
         approval_status=APPROVED,
-        referral_date__range=(period_start, period_end),   # scope referrals to the period too
+        referral_date__range=(period_start, period_end),
         client_id__in=positive_clients,
     ).values('client_id').distinct().count()
 

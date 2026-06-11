@@ -22,6 +22,7 @@ both is harmless because the command is idempotent.
 """
 import logging
 import os
+import sys
 import threading
 import time
 
@@ -29,6 +30,19 @@ logger = logging.getLogger(__name__)
 
 _started = False
 _lock = threading.Lock()
+
+# Short-lived manage.py subcommands whose process also calls AppConfig.ready().
+# They exit within seconds (before the loop's initial delay), so their threads
+# die harmlessly — but starting them is pointless noise. Skip them; anything
+# not in this set (gunicorn, runserver) is treated as a long-lived server and
+# DOES start the loop, so we never accidentally disable the real path.
+_ONE_SHOT_COMMANDS = {
+    'migrate', 'makemigrations', 'seed_users', 'seed_centers',
+    'backfill_f4_facility', 'backfill_worker_name', 'purge_phd_data',
+    'prune_phd_centres', 'seed_demo_mpdsr', 'seed_demo_phd_bandhu',
+    'seed_demo_fistula', 'seed_targets', 'collectstatic', 'check',
+    'resync_client_csvs', 'shell', 'test', 'createsuperuser',
+}
 
 # Wait past the boot/migrate window before the first run, so a thread spawned in
 # the short-lived `migrate` process (ready() runs there too) never fires before
@@ -45,6 +59,9 @@ def start_resync_loop() -> None:
     ENABLE_CSV_RESYNC_LOOP is set. Safe to call repeatedly (idempotent)."""
     global _started
     if not _truthy(os.environ.get('ENABLE_CSV_RESYNC_LOOP')):
+        return
+    argv = sys.argv or []
+    if len(argv) > 1 and argv[1] in _ONE_SHOT_COMMANDS:
         return
     with _lock:
         if _started:

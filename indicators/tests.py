@@ -66,19 +66,29 @@ class IndicatorTargetReadTest(TestCase):
             return r.data['results']
         return r.data
 
-    def test_supervisor_sees_all_44(self):
+    def test_supervisor_sees_all_43(self):
         self.client.force_authenticate(user=self.sup)
         r = self.client.get(TARGETS_URL)
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(len(self._rows(r)), 44)
+        self.assertEqual(len(self._rows(r)), 43)
 
-    def test_org_lead_reads_all_partners(self):
-        # ORG_LEAD has can_read_other_orgs=True — read isn't restricted,
-        # only writes are scoped to own partner (covered in write tests).
+    def test_ciprb_org_lead_reads_all_partners(self):
+        # ORG_LEAD cross-org read is now bound to CIPRB (the monitoring org),
+        # mirroring can_access_mpdsr/fistula. A CIPRB lead still reads all 44.
+        ciprb_lead = _user('lead@ciprb', Organisation.CIPRB, Role.ORG_LEAD)
+        self.client.force_authenticate(user=ciprb_lead)
+        r = self.client.get(TARGETS_URL)
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(len(self._rows(r)), 43)
+
+    def test_non_ciprb_org_lead_sees_only_own_partner(self):
+        # A PHD/Bandhu org lead is org-bound (can_read_other_orgs=False) — no
+        # cross-partner read. This is the security fix being asserted.
         self.client.force_authenticate(user=self.phd_lead)
         r = self.client.get(TARGETS_URL)
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(len(self._rows(r)), 44)
+        codes = {row['partner_code'] for row in self._rows(r)}
+        self.assertEqual(codes, {'PHD'})
 
     def test_manager_only_sees_own_partner(self):
         self.client.force_authenticate(user=self.bandhu_mgr)

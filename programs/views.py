@@ -3,7 +3,8 @@ Programs API views.
 
 Organisation filtering:
   - developer / supervisor (can_see_all_orgs) → no org filter
-  - org_lead (can_read_other_orgs) → no filter (read-only on other partners)
+  - CIPRB org_lead (can_read_other_orgs) → no filter (read-only on other
+    partners); a PHD/Bandhu org_lead is org-bound like a manager
   - manager / field_staff → filtered to their own org
 
 Approval:
@@ -461,7 +462,14 @@ class IECMaterialViewSet(OrgFilteredViewSet):
         return qs.order_by('-date_distributed', '-created_at')
 
     def perform_create(self, serializer):
-        serializer.save(submitted_by=self.request.user)
+        # Same org-forgery guard as OrgFilteredViewSet.perform_create — this
+        # override must NOT reopen the hole: pin organisation for org-bound
+        # roles, let only cross-org oversight set it explicitly.
+        user = self.request.user
+        if user.can_see_all_orgs or user.can_read_other_orgs:
+            serializer.save(submitted_by=user)
+        else:
+            serializer.save(submitted_by=user, organisation=user.organisation)
 
 
 # ─── Referrals ─────────────────────────────────────────────────────────────────
