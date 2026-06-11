@@ -199,8 +199,14 @@ EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'true').lower() == 'true'
 DEFAULT_FROM_EMAIL = os.environ.get(
     'DEFAULT_FROM_EMAIL', 'SIMPLE <noreply@simple.unfpa.org.bd>'
 )
+# The real Railway web domain. The old default 'simple.up.railway.app' is now
+# a DIFFERENT app (a third party's govuk-prototype-kit) — every email link
+# (approval review, submission-received) that fell back to it pointed managers
+# at a stranger's site. Always set SIMPLE_PUBLIC_URL on Railway; this default is
+# the current working domain so a missing env var degrades safely, not to a
+# foreign app.
 SIMPLE_PUBLIC_URL = os.environ.get(
-    'SIMPLE_PUBLIC_URL', 'https://simple.up.railway.app'
+    'SIMPLE_PUBLIC_URL', 'https://web-production-091fa.up.railway.app'
 )
 KOBO_WEBHOOK_SECRET = os.environ.get('KOBO_WEBHOOK_SECRET', '')
 KOBO_ASSET_UID_MPDSR = os.environ.get('KOBO_ASSET_UID_MPDSR', 'placeholder')

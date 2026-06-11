@@ -230,9 +230,16 @@ class OrgFilteredViewSet(viewsets.ModelViewSet):
     def _approve_or_reject(self, request, pk, action_type):
         user = request.user
         with _tx.atomic():
+            qs = self.get_queryset()
             try:
-                obj = self.get_queryset().select_for_update().get(pk=pk)
-            except Exception:
+                # of=('self',) locks ONLY the base row. Several querysets here
+                # select_related('approved_by'), a nullable FK → LEFT OUTER JOIN;
+                # a bare select_for_update() would try to lock that join's
+                # nullable side and Postgres raises NotSupportedError, which a
+                # blanket except would mask as a misleading 404. Lock self only,
+                # and only treat a genuine missing row as 404.
+                obj = qs.select_for_update(of=('self',)).get(pk=pk)
+            except qs.model.DoesNotExist:
                 return Response({'detail': 'Record not found.'}, status=status.HTTP_404_NOT_FOUND)
 
             # Shared two-stage decision (Bandhu manager → UNFPA; PHD/CIPRB
