@@ -371,21 +371,6 @@ export function OrgDashboard({ partner }: Props) {
                   To achieve this, the project will establish 9 community-led wellness centers and 44 Gender-Based Violence (GBV) Corners within public facilities, delivering integrated, rights-based, and stigma-free services covering SRHR, HIV/STI prevention, mental health, and GBV response.
                   Ultimately, the intervention leverages peer-led outreach and enhanced government linkages to build an equitable, survivor-centered healthcare support system.
                 </p>
-                <div className="kicker" style={{ marginBottom: 8 }}><span className="dot" />THE PROJECT</div>
-                <p style={{ fontSize: 12.5, lineHeight: 1.62, color: 'var(--ink-3)', marginBottom: 0, textWrap: 'pretty' }}>
-                  With support from <b style={{ color: 'var(--ink-2)' }}>UNFPA&nbsp;|&nbsp;Sida</b>, PHD is implementing{' '}
-                  <span style={{ color: 'var(--ink-2)', fontStyle: 'italic' }}>&ldquo;Strengthening access to
-                  integrated Sexual and Reproductive Health and Rights (SRHR) services for brothel-based
-                  female sex workers (FSWs) in selected districts of Bangladesh&rdquo;</span> — across{' '}
-                  <b style={{ color: 'var(--ink-2)' }}>11 brothels in 9 districts</b>{' '}
-                  (Rajbari, Faridpur, Khulna, Tangail, Jashore, Jamalpur, Mymensingh, Bagerhat &amp;
-                  Patuakhali). The initiative establishes <b style={{ color: 'var(--ink-2)' }}>9 community-led
-                  wellness centres</b> and <b style={{ color: 'var(--ink-2)' }}>44 GBV corners</b> in public
-                  facilities, delivering rights-based, stigma-free care across SRHR, HIV/STI prevention,
-                  mental health and GBV response — leveraging peer-led outreach and stronger government
-                  linkages toward an equitable, survivor-centered system.
-                </p>
-              </div>
             )}
           </div>
 
