@@ -347,10 +347,12 @@ export function OrgDashboard({ partner }: Props) {
               {partner} delivered <b><CountUp value={totalSubmissions} /> submissions</b> this
               month &mdash; {momChange > 0 ? '+' : ''}{momChange.toFixed(1)}% compared
               to last month. Field staff submitting from{' '}
-              {/* Centre count must follow the SAME usingMock flag as the demo
-                  badge — otherwise real submissions + an empty centres response
-                  printed the mock "6 centres" as fact with no badge. */}
-              <b>{(usingMock ? displayCentres.districts?.length : centres?.districts?.length) ?? 0} centres</b>, GPS-verified, validated
+              {/* Real count of the partner's active ServiceCentres (same source
+                  as SL8 and the coverage map). The legacy districts list is
+                  empty for programs-model partners, which made this read
+                  "0 centres" next to a 9-centre map; total_centres is truthful
+                  and consistent. Fall back to the mock count only while loading. */}
+              <b>{centres?.total_centres ?? displayCentres.districts?.length ?? 0} centres</b>, GPS-verified, validated
               through KoboToolbox before reaching M&amp;E.
             </p>
 

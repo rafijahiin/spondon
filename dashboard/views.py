@@ -523,9 +523,23 @@ class CentresView(APIView):
                 'trend': trend,
             })
 
+        # Authoritative centre count for the hero lede ("submitting from N
+        # centres"). The `districts` list above is derived from legacy
+        # KoboSubmission rows and is empty for partners whose data flows through
+        # the programs models — which made the hero read "0 centres" next to a
+        # 9-centre map. Count the partner's ACTIVE ServiceCenters instead, the
+        # same source SL8 uses, so the number is real and consistent everywhere.
+        from programs.models import ServiceCenter
+        centre_qs = ServiceCenter.objects.filter(
+            is_active=True, organisation__in=allowed_partners(request.user))
+        if partner and partner in allowed_partners(request.user):
+            centre_qs = centre_qs.filter(organisation=partner)
+        total_centres = centre_qs.count()
+
         return Response({
             'month': now.strftime('%B %Y'),
             'districts': districts,
+            'total_centres': total_centres,
         })
 
 

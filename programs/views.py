@@ -719,15 +719,23 @@ def _build_narrative(obj, model_type: str) -> str:
 
 
 def _pending_for_model(queryset, model_type: str, org_filter_org=None,
-                       statuses=('PENDING',)):
+                       statuses=('PENDING',), reviewed_only=False):
     """Return approval dicts for a queryset at the given approval stage(s).
 
     statuses lets the queue show stage-1 (PENDING) and/or stage-2
     (MANAGER_APPROVED) items depending on who is looking — see
-    PendingApprovalsView.get for the per-role lanes."""
+    PendingApprovalsView.get for the per-role lanes.
+
+    reviewed_only (for the Reviewed tab) keeps only records a PERSON actually
+    decided — approved_by set, or rejected — so auto-approved records (e.g. FSW
+    registrations, which never go through a manual review) don't flood the
+    audit trail with decisions nobody made."""
     qs = queryset.filter(approval_status__in=list(statuses)).select_related('center', 'approved_by')
     if org_filter_org:
         qs = qs.filter(organisation=org_filter_org)
+    if reviewed_only:
+        from django.db.models import Q
+        qs = qs.filter(Q(approved_by__isnull=False) | Q(approval_status='REJECTED'))
     results = []
     for obj in qs.order_by('created_at')[:200]:
         results.append({
@@ -831,7 +839,19 @@ class PendingApprovalsView(views.APIView):
         #   super  → everything actionable: all PENDING + Bandhu MANAGER_APPROVED.
         #   Bandhu manager → stage-1: own-org PENDING.
         #   PHD/CIPRB manager/org_lead → own-org PENDING (single stage).
+        # ?status=reviewed → the final-decision history (APPROVED/REJECTED) for
+        # this user's org scope, so the Approvals "Reviewed" tab surfaces the
+        # programs-model audit trail (registrations, clinic visits, referrals,
+        # etc.) — not just legacy KoboSubmissions, which left the tab empty even
+        # after dozens of decisions.
+        review_mode = request.query_params.get('status', '') == 'reviewed'
+        REVIEWED = ('APPROVED', 'REJECTED')
+
         def lane(qs, model_type):
+            if review_mode:
+                scope = None if is_super else ('Bandhu' if is_unfpa else org)
+                return _pending_for_model(qs, model_type, scope,
+                                          statuses=REVIEWED, reviewed_only=True)
             if is_unfpa:
                 return _pending_for_model(qs, model_type, 'Bandhu', statuses=('MANAGER_APPROVED',))
             if is_super:
@@ -846,8 +866,13 @@ class PendingApprovalsView(views.APIView):
                 item['endpoint'] = _ENDPOINT_OVERRIDES.get(model_type, model_type + 's')
             all_pending.extend(items)
 
-        # Sort by created_at ascending (oldest first)
-        all_pending.sort(key=lambda x: x['created_at'])
+        if review_mode:
+            # Newest decision first; cap so the history stays bounded as it grows.
+            all_pending.sort(key=lambda x: x['created_at'], reverse=True)
+            all_pending = all_pending[:100]
+        else:
+            # Oldest first — work the queue FIFO.
+            all_pending.sort(key=lambda x: x['created_at'])
 
         # Summary counts by model_type
         counts = {}

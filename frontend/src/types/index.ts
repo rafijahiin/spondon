@@ -140,6 +140,7 @@ export interface ActivityItem {
 export interface CentresResponse {
   month: string
   districts: { district: string; count: number; rank: number; trend?: number[] }[]
+  total_centres?: number
 }
 
 export interface PartnerKPIs {

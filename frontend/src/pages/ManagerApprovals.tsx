@@ -576,10 +576,23 @@ export default function ManagerApprovals() {
     interval: 60_000,
   })
 
+  // Programs-model decisions (registrations excluded; clinic visits, referrals,
+  // GBV, outreach, etc. that a manager/UNFPA actually approved or rejected) so
+  // the Reviewed tab shows the real audit trail, not just legacy submissions.
+  const { data: reviewedProgramsData } = usePolling<ProgramPendingResponse>({
+    fetcher: () =>
+      api.get('/programs/pending-approvals/', { params: { status: 'reviewed' } })
+         .then((r) => r.data),
+    interval: 60_000,
+  })
+
   // ── Queue ───────────────────────────────────────────────────────────────────
 
   const allItems = toQueueItems(programsData ?? null, submissions ?? null)
-  const reviewedItems = reviewedQueueItems(reviewedSubs ?? null)
+  const reviewedItems = [
+    ...toQueueItems(reviewedProgramsData ?? null, null),
+    ...reviewedQueueItems(reviewedSubs ?? null),
+  ].sort((a, b) => (b.created_at ?? '').localeCompare(a.created_at ?? ''))
 
   const filtered = (filter === 'reviewed' ? reviewedItems : allItems).filter(it => {
     if (filter === 'urgent') return it.urgent
