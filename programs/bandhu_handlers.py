@@ -39,10 +39,16 @@ ORG = 'Bandhu'
 # ─── helpers ──────────────────────────────────────────────────────────────────
 
 def _client(payload, center, id_value):
-    """Resolve/create the Bandhu Client by the inline ID typed on the tool.
-    Bandhu has no master-list registration tool, so the client row is a stub
-    keyed on the ID the field worker enters (trim + upper), auto-approved so
-    FK constraints hold and the submission is never lost."""
+    """Resolve the Bandhu Client by the inline ID typed on the service tool.
+    The Mother List (F-1.1 → handle_bandhu_mother_list) is the registration
+    tool, so a registered ID resolves to that real client (get_or_create finds
+    the existing row). A service that references an UNREGISTERED ID still gets a
+    placeholder 'Unknown' stub (auto-approved) so the FK holds and the
+    submission is never lost — it surfaces as 'Unknown' until the client is
+    registered via the Mother List. The service forms also warn the worker
+    in-form when the ID is not in bandhu_clients.csv (see build_bandhu_forms
+    _id_lookup), and bandhu_clients.csv is kept current by the Client post_save
+    signal → export_bandhu_clients."""
     cid = (str(id_value or '').strip().upper()
            or f'STUB_{_uuid.uuid4().hex[:8].upper()}')
     client, _ = Client.objects.get_or_create(

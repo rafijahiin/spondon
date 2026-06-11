@@ -60,6 +60,27 @@ def _ch(lst, name, en, bn=''):
     return [lst, name, en, bn]
 
 
+def _id_lookup(idfield):
+    """Autofill rows for a service-form client ID — read the registered name
+    from bandhu_clients.csv (the Mother List, synced via export_bandhu_clients)
+    and show it read-only, or warn the ID is not registered. Mirrors the PHD
+    Service Log lookup. Spread into a survey list right after the ID field:
+    `_sr('text','pr_client_id',...), *_id_lookup('pr_client_id'),`."""
+    nm = '_%s_name' % idfield
+    norm = ("translate(normalize-space(${%s}),"
+            "'abcdefghijklmnopqrstuvwxyz','ABCDEFGHIJKLMNOPQRSTUVWXYZ')" % idfield)
+    return [
+        _sr('calculate', nm, calc="pulldata('bandhu_clients','name','id_no',%s)" % norm),
+        _sr('note', '_%s_ok' % idfield,
+            '👤 Client: ${%s}' % nm, '👤 ক্লায়েন্ট: ${%s}' % nm,
+            relevant="${%s}!='' and ${%s}!=''" % (idfield, nm)),
+        _sr('note', '_%s_warn' % idfield,
+            '⚠ This ID is not in the Mother List — register the client first, or check the ID.',
+            '⚠ এই আইডি মাদার লিস্টে নেই — আগে ক্লায়েন্ট নিবন্ধন করুন বা আইডি যাচাই করুন।',
+            relevant="${%s}!='' and ${%s}=''" % (idfield, nm)),
+    ]
+
+
 def _wb(form_id, form_title, survey, choices):
     wb = openpyxl.Workbook()
     wb.remove(wb.active)
@@ -333,6 +354,7 @@ def _service_log_survey():
             'F-01 · ওয়েলনেস সেন্টার সার্ভিস লগবুক', relevant=R('wellness_logbook')),
         _sr('date', 'log_date', 'Date', 'তারিখ'),
         _sr('text', 'log_client_id', 'ID #', 'আইডি'),
+        *_id_lookup('log_client_id'),
         _sr('select_one tg_code', 'log_tg', 'TG (Code)', 'টিজি কোড'),
         _sr('note', '_log_services', 'Services provided (enter count where applicable):', ''),
         _sr('integer', 'log_condom', 'Condom', 'কনডম'),
@@ -359,6 +381,7 @@ def _service_log_survey():
             'F-05 · রোগীর রেকর্ড রেজিস্টার', relevant=R('patient_record')),
         _sr('date', 'pr_date', 'Date', 'তারিখ'),
         _sr('text', 'pr_client_id', 'ID No.', 'আইডি নম্বর'),
+        *_id_lookup('pr_client_id'),
         _sr('select_one tg_code', 'pr_tg', 'TG Code', 'টিজি কোড'),
         _sr('select_one general_diverse', 'pr_general_diverse', 'General / Diverse', 'সাধারণ / বৈচিত্র্যময়'),
         _sr('integer', 'pr_age', 'Age (as per mother list)', 'বয়স'),
@@ -385,6 +408,7 @@ def _service_log_survey():
         _sr('begin_group', 'grp_htc', 'F-06 · HTC Service Register',
             'F-06 · এইচটিসি সার্ভিস রেজিস্টার', relevant=R('htc')),
         _sr('text', 'htc_client_id', "Client's ID", 'ক্লায়েন্ট আইডি'),
+        *_id_lookup('htc_client_id'),
         _sr('integer', 'htc_age', 'Age (in years)', 'বয়স'),
         _sr('select_one tg_code', 'htc_tg', 'TG Code', 'টিজি কোড'),
         _sr('select_one yes_no', 'htc_partner_testing', 'Partner testing', 'পার্টনার টেস্টিং'),
@@ -402,6 +426,7 @@ def _service_log_survey():
         _sr('begin_group', 'grp_gbv', 'F-02 · GBV Register',
             'F-02 · জিবিভি রেজিস্টার', relevant=R('gbv')),
         _sr('text', 'gbv_client_id', "Client's ID", 'ক্লায়েন্ট আইডি'),
+        *_id_lookup('gbv_client_id'),
         _sr('integer', 'gbv_age', 'Age', 'বয়স'),
         _sr('select_one tg_code', 'gbv_tg', 'TG Code', 'টিজি কোড'),
         _sr('text', 'gbv_complaint', 'Complaint on GBV', 'জিবিভি অভিযোগ', app='multiline'),
@@ -418,6 +443,7 @@ def _service_log_survey():
             'F-03 · মানসিক স্বাস্থ্য কাউন্সেলিং', relevant=R('mh_counseling')),
         _sr('date', 'mh_date', 'Date', 'তারিখ'),
         _sr('text', 'mh_client_id', 'Client ID #', 'ক্লায়েন্ট আইডি'),
+        *_id_lookup('mh_client_id'),
         _sr('select_one tg_code', 'mh_tg', 'TG Code', 'টিজি কোড'),
         _sr('integer', 'mh_age', 'Age', 'বয়স'),
         _sr('text', 'mh_cruising_spot', 'Cruising spot', 'ক্রুজিং স্পট'),
@@ -443,6 +469,7 @@ def _service_log_survey():
             relevant=R('counseling_daily')),
         _sr('date', 'cn_date', 'Date', 'তারিখ'),
         _sr('text', 'cn_client_id', 'ID # of client', 'ক্লায়েন্ট আইডি'),
+        *_id_lookup('cn_client_id'),
         _sr('select_one tg_code', 'cn_tg', 'Target Group (TG) Code', 'টিজি কোড'),
         _sr('select_multiple counsel_issue', 'cn_issues', 'Issues of counseling', 'কাউন্সেলিং বিষয়'),
         _sr('select_multiple counsel_condom', 'cn_condom', 'Condom', 'কনডম'),
@@ -456,6 +483,7 @@ def _service_log_survey():
             relevant=R('referral')),
         _sr('date', 'rf_date', 'Date', 'তারিখ'),
         _sr('text', 'rf_client_id', 'ID No.', 'আইডি নম্বর'),
+        *_id_lookup('rf_client_id'),
         _sr('text', 'rf_reason', 'Reasons for referral (problem)', 'রেফারেলের কারণ', app='multiline'),
         _sr('select_multiple referred_for', 'rf_referred_for', 'Referred for', 'যে কারণে রেফার'),
         _sr('text', 'rf_where', 'Where referred?', 'কোথায় রেফার'),
@@ -551,6 +579,7 @@ def _activity_ops_survey():
             'F-10 · মোবাইল হেলথ ক্যাম্প', relevant=R('mobile_camp')),
         _sr('date', 'mc_date', 'Date', 'তারিখ'),
         _sr('text', 'mc_client_id', 'ID No.', 'আইডি নম্বর'),
+        *_id_lookup('mc_client_id'),
         _sr('select_one tg_code', 'mc_tg', 'TG Code', 'টিজি কোড'),
         _sr('select_one general_diverse', 'mc_general_diverse', 'General / Diverse', 'সাধারণ / বৈচিত্র্যময়'),
         _sr('integer', 'mc_age', 'Age (as per mother list)', 'বয়স'),
@@ -577,7 +606,6 @@ def _activity_ops_survey():
     rows += [
         _sr('begin_group', 'grp_attendance', 'F-11 · Attendance Sheet', 'F-11 · উপস্থিতি শিট',
             relevant=R('attendance')),
-        _sr('text', 'at_event_title', 'Event / session title', 'ইভেন্টের নাম'),
         _sr('date', 'at_date', 'Date', 'তারিখ'),
         _sr('text', 'at_name', 'Name', 'নাম'),
         _sr('text', 'at_designation', 'Designation and organization', 'পদবি ও সংস্থা'),
