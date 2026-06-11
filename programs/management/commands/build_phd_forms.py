@@ -100,9 +100,23 @@ def _meta(center_required=True):
             'Wellness Centre',
             'ওয়েলনেস সেন্টার', required=req,
             hint='Select your wellness centre.'),
-        _sr('text','enumerator_name',
+        _sr('select_one medical_assistant','enumerator',
             'Your name (person filling this form)',
-            'আপনার নাম (কে পূরণ করছেন)', required='yes'),
+            'আপনার নাম (কে পূরণ করছেন)', required='yes',
+            hint='Select your name from the list.'),
+        _sr('text','enumerator_other',
+            'If your name is not in the list, type it here',
+            'আপনার নাম তালিকায় না থাকলে এখানে লিখুন',
+            required='yes',
+            relevant="${enumerator}='other'"),
+        # The rest of the system reads enumerator_name (counsellor_name,
+        # facilitator_name, the webhook name-stamp …). Resolve it to the human
+        # name: the typed name for 'Other', else the chosen slug with its
+        # underscores turned back into spaces ('Nilufar_Yesmin' → 'Nilufar
+        # Yesmin'). translate() is already used elsewhere in this form.
+        _sr('calculate','enumerator_name',
+            calc="if(${enumerator}='other', ${enumerator_other}, "
+                 "translate(${enumerator},'_',' '))"),
         _sr('end_group','grp_meta'),
     ]
 
@@ -119,6 +133,38 @@ def _centre_choices():
             f"{c.get('name_bangla', c['name'])} ({c['code']})")
         for c in PHD_BROTHELS
     ]
+
+
+# Medical Assistants (PHD field staff) — source "List Of Medical Assistants.xlsx"
+# (2026-06). enumerator_name is a dropdown of these so (a) we know which MA
+# submitted — they all share the one ciprb123 KoboCollect login — and (b) the
+# names stay consistent. Tuple = (value slug, display name, centre/location).
+PHD_MEDICAL_ASSISTANTS = [
+    ('Nilufar_Yesmin',       'Nilufar Yesmin',       'Daulatdia'),
+    ('AL_Mondna_Mim',        'AL Mondna Mim',        'Daulatdia'),
+    ('Mst_Munzira_Khatun',   'Mst. Munzira Khatun',  'Faridpur'),
+    ('Sharmin_Akter_Asa',    'Sharmin Akter Asa',    'Tangail'),
+    ('Mansura_Khatun',       'Mansura Khatun',        'Jeshore'),
+    ('Shipra_Roy',           'Shipra Roy',            'Baniashanta'),
+    ('Mahaboba_Sharin_Moni', 'Mahaboba Sharin Moni',  'Jamalpur'),
+    ('Sathi_Khatun',         'Sathi Khatun',          'Moymonsing'),
+    ('Khukumoni_Adhikary',   'Khukumoni Adhikary',    'Pouthokhilae'),
+    ('Moumita_Montho',       'Moumita Montho',        'Bagharhat'),
+]
+
+
+def _ma_choices():
+    """select_one 'medical_assistant' — the PHD field staff who fill the forms.
+    Label = name + location so each MA finds herself; value = a stable slug
+    stored in enumerator_name. Plus an 'Other' escape so an unlisted submitter
+    is never blocked (she types her name in enumerator_other)."""
+    rows = [
+        _ch('medical_assistant', slug, f'{name} ({loc})', f'{name} ({loc})')
+        for slug, name, loc in PHD_MEDICAL_ASSISTANTS
+    ]
+    rows.append(_ch('medical_assistant', 'other',
+                    'Other (not in the list)', 'অন্য (তালিকায় নেই)'))
+    return rows
 
 
 # ─── FORM 1: FSW Registration ─────────────────────────────────────────────────
@@ -288,6 +334,7 @@ def _form1_choices():
     ]:
         rows.append(_ch('marital_status', v, en, bn))
     rows += _centre_choices()
+    rows += _ma_choices()
     return rows
 
 
@@ -940,6 +987,8 @@ def _form_service_log_choices():
     rows = []
     # yes_no — used everywhere
     rows += [_ch('yes_no','yes','Yes','হ্যাঁ'), _ch('yes_no','no','No','না')]
+    # Medical Assistant dropdown (same enumerator list as Form 1).
+    rows += _ma_choices()
 
     # ── record_type — the top-level "What are you recording today?" ──
     for v, en, bn in [
