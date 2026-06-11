@@ -43,7 +43,12 @@ from . import bandhu, ciprb, phd
 
 logger = logging.getLogger(__name__)
 
-CACHE_TTL = 3600  # 1 hour
+# 60s, not 1h: indicator achievements are cached (the per-page compute hits each
+# (partner, code) repeatedly), but a 1-hour window meant a manager's approval
+# didn't show on the dashboard for up to an hour. The cache is the default
+# per-worker LocMemCache, so there's no reliable cross-worker invalidation on
+# approval — a short TTL is what makes new approvals appear promptly everywhere.
+CACHE_TTL = 60
 
 # Per-partner compute-function registries. CIPRB activities (F.C, F.Camp, B)
 # now have compute fns backed by fistula.FistulaCornerCase,
