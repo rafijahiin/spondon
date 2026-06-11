@@ -356,8 +356,34 @@ export function OrgDashboard({ partner }: Props) {
               through KoboToolbox before reaching M&amp;E.
             </p>
 
-            {/* Agreement + Submission Mode meta block removed per Animesh —
-                operational chrome, no programmatic insight. */}
+            {/* Partner & project brief (PHD) — supplied by PHD Project Director
+                K.S.M. Tarique. Fills the hero's left column and gives context
+                next to the live numbers. PHD-only; Bandhu keeps its own copy. */}
+            {isPHD && (
+              <div className="anim-rise d3" style={{ marginTop: 20, paddingTop: 18, borderTop: '1px solid var(--hair)', maxWidth: 560 }}>
+                <div className="kicker" style={{ marginBottom: 8 }}><span className="dot" />ABOUT THE PARTNER</div>
+                <p style={{ fontSize: 12.5, lineHeight: 1.62, color: 'var(--ink-3)', marginBottom: 16, textWrap: 'pretty' }}>
+                  Partner in Health and Development (PHD) is a non-profit that has spent over three
+                  decades improving the lives of marginalized communities in Bangladesh — implementing
+                  development and livelihood programmes, delivering humanitarian response, and providing
+                  technical assistance to strengthen government and development sectors. Its core
+                  expertise spans fund management, systems strengthening, HR development, capacity
+                  building, and research.
+                </p>
+                <div className="kicker" style={{ marginBottom: 8 }}><span className="dot" />THE PROJECT &middot; SUKH PAKHI</div>
+                <p style={{ fontSize: 12.5, lineHeight: 1.62, color: 'var(--ink-3)', marginBottom: 0, textWrap: 'pretty' }}>
+                  With support from <b style={{ color: 'var(--ink-2)' }}>UNFPA&nbsp;|&nbsp;Sida</b>, PHD is
+                  <i> strengthening access to integrated SRHR services for brothel-based female sex
+                  workers</i> across <b style={{ color: 'var(--ink-2)' }}>11 brothels in 9 districts</b>{' '}
+                  (Rajbari, Faridpur, Khulna, Tangail, Jashore, Jamalpur, Mymensingh, Bagerhat &amp;
+                  Patuakhali). The initiative establishes <b style={{ color: 'var(--ink-2)' }}>9 community-led
+                  wellness centres</b> and <b style={{ color: 'var(--ink-2)' }}>44 GBV corners</b> in public
+                  facilities, delivering rights-based, stigma-free care across SRHR, HIV/STI prevention,
+                  mental health and GBV response — leveraging peer-led outreach and stronger government
+                  linkages toward an equitable, survivor-centered system.
+                </p>
+              </div>
+            )}
           </div>
 
           <div className="hero-right anim-rise d4">
