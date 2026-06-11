@@ -348,13 +348,24 @@ def _phd_event(payload: dict, lat, lng) -> HttpResponse:
     }
     event_type = etype_map.get(subtype, TrainingEvent.TRAINING)
 
-    # participant_type from subtype
-    ptype_map = {
-        'orientation': 'HM',
-        'camp':        TrainingEvent.MIXED,
-        'coord_meeting': TrainingEvent.MIXED,
+    # participant_type — prefer the explicit category the form now captures
+    # (event_participant_type) so SL10/SL11/SL12/SL13 route correctly. Fall back
+    # to the old subtype-derived default for legacy submissions that predate the
+    # field (those still land as HM/MIXED, unchanged behaviour).
+    ptype_form_map = {
+        'hm': 'HM', 'gob': 'GOB', 'mw': 'MW', 'pe': 'PE',
+        'mixed': TrainingEvent.MIXED,
     }
-    participant_type = ptype_map.get(subtype, TrainingEvent.MIXED)
+    ptype_form = _str(payload.get('event_participant_type', '')).lower()
+    if ptype_form in ptype_form_map:
+        participant_type = ptype_form_map[ptype_form]
+    else:
+        ptype_map = {
+            'orientation': 'HM',
+            'camp':        TrainingEvent.MIXED,
+            'coord_meeting': TrainingEvent.MIXED,
+        }
+        participant_type = ptype_map.get(subtype, TrainingEvent.MIXED)
 
     TrainingEvent.objects.create(
         organisation=ORG,

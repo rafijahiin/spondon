@@ -730,6 +730,13 @@ def _form3_survey():
             relevant=REL_E),
         _sr('select_one event_subtype','event_subtype',
             'Type of event','ইভেন্টের ধরন', required='yes'),
+        # Participant category — shown only for training/orientation, where the
+        # category routes the indicator (SL10 HM, SL11 GOB, SL12 MW, SL13 PE).
+        # Without it SL11/SL12/SL13 sum over an empty set and read 0 forever.
+        _sr('select_one event_ptype','event_participant_type',
+            'Who were the participants?','অংশগ্রহণকারী কারা ছিলেন?',
+            relevant="${event_subtype}='training' or ${event_subtype}='orientation'",
+            required='yes'),
         _sr('text','event_title',
             'Title of the event','ইভেন্টের শিরোনাম', required='yes'),
         _sr('date','event_date',
@@ -843,6 +850,14 @@ def _form3_choices():
         ('coord_meeting', 'Coordination Meeting',  'সমন্বয় সভা'),
     ]:
         rows.append(_ch('event_subtype', v, en, bn))
+    for v,en,bn in [
+        ('hm',    'Health managers (DGFP/DGHS/DGNM focal points)', 'স্বাস্থ্য ব্যবস্থাপক (ডিজিএফপি/ডিজিএইচএস/ডিজিএনএম ফোকাল)'),
+        ('gob',   'District/Upazila GOB health staff',             'জেলা/উপজেলা সরকারি স্বাস্থ্যকর্মী'),
+        ('mw',    'Medical Assistants / Midwives / Counsellors',   'মেডিকেল অ্যাসিস্ট্যান্ট/মিডওয়াইফ/কাউন্সেলর'),
+        ('pe',    'Peer educators / community leaders',            'পিয়ার এডুকেটর/কমিউনিটি লিডার'),
+        ('mixed', 'Mixed / other',                                 'মিশ্র/অন্যান্য'),
+    ]:
+        rows.append(_ch('event_ptype', v, en, bn))
     for v,en,bn in [
         ('group_edu','Group Health Education (per session)','দলগত স্বাস্থ্য শিক্ষা (প্রতি সেশন)'),
         ('event','Event','ইভেন্ট'),
