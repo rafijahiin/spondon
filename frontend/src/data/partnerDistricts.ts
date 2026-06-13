@@ -107,6 +107,7 @@ const DISTRICT_ALIASES: Record<string, string> = {
   bogura:         'bogra',
   jashore:        'jessore',
   noakhli:        'noakhali',
+  moulavibazar:   'maulvibazar',      // CIPRB/MPDSR data 'Moulavibazar' vs GeoJSON 'Maulvibazar'
 }
 
 /** Normalise a district name for matching against GeoJSON shapeName.

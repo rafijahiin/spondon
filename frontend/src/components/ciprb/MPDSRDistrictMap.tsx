@@ -15,6 +15,7 @@ import { useTranslation } from 'react-i18next'
 import { motion, AnimatePresence } from 'motion/react'
 import { MapContainer, GeoJSON } from 'react-leaflet'
 import { api } from '@/api/client'
+import { normaliseDistrict } from '@/data/partnerDistricts'
 import type { Layer, PathOptions, LeafletEvent } from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { Info } from 'lucide-react'
@@ -35,9 +36,11 @@ const CP   = [
   'Bandarban', 'Chandpur', 'Rangpur',
 ]
 
-function normalise(s: string): string {
-  return (s ?? '').toLowerCase().replace(/[^a-z0-9]/g, '')
-}
+// Use the shared alias-aware normaliser (partnerDistricts.ts) so spelling
+// variants match the GeoJSON — e.g. Khagrachari→Khagrachhari,
+// Moulavibazar→Maulvibazar. The previous local version had no alias table,
+// so those two districts silently never highlighted on this map.
+const normalise = normaliseDistrict
 
 const GAC_SET = new Set(GAC.map(normalise))
 const SIDA_SET = new Set(SIDA.map(normalise))
