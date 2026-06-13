@@ -403,7 +403,7 @@ export function ExecutiveBento({ progress }: Props) {
         {indCard('PHD', 'SL1', 'PHD · FSWs reached', 'HIV/STI screening & FP', 0.05)}
         {indCard('PHD', 'SL2', 'PHD · GBV survivors', 'supported & referred', 0.1)}
         {/* Bandhu — reach + GBV */}
-        {indCard('Bandhu', '1.1', 'Bandhu · KP reached', 'HIV/STI screening & FP', 0.15)}
+        {indCard('Bandhu', '1.1', 'Bandhu · KP reached', 'HIV prevention services', 0.15)}
         {indCard('Bandhu', '1.2', 'Bandhu · GBV survivors', 'supported & referred', 0.2)}
         {/* CIPRB — fistula outcomes + maternal surveillance (counts) */}
         <Card
