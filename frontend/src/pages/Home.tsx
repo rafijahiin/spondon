@@ -123,8 +123,12 @@ export default function Home() {
         }
       `}</style>
 
-      {/* ── DAILY REPORTING — sits directly under the hero per the SIMPLE
-           Homepage design. Daily 24h compliance per partner: submitted /
+      {/* ── EXECUTIVE SUMMARY — programme-at-a-glance headline numbers. Moved
+           directly under the hero so leadership sees overall status FIRST,
+           instead of scrolling past every section to find it at the bottom. */}
+      <ExecutiveBento progress={progress} />
+
+      {/* ── DAILY REPORTING — daily 24h compliance per partner: submitted /
            total centres today + silent ones. ─────────────────────────── */}
       <ProgrammeHealthFlags />
 
@@ -141,10 +145,6 @@ export default function Home() {
            Total Fistula patients, MD notified / reviewed, ND notified /
            reviewed, stillbirths, cases managed / referred. ──────────── */}
       <ProgrammeTotals />
-
-      {/* ── PROGRAMME-WIDE HEALTH (bento) — 'Programme at a glance'
-           anchor at the bottom of the page per the design. ──────────── */}
-      <ExecutiveBento progress={progress} />
 
       {/* AnomalyCards removed per Animesh: the Programme Health Flags block
           above is the single source of programmatic alerts. Anomaly
