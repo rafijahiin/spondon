@@ -53,6 +53,19 @@ class KPIView(APIView):
     permission_classes = [IsSupervisorOrManager]
 
     def get(self, request):
+        # This endpoint runs ~80 COUNT queries across every submission model and
+        # is polled every 30s by every open home page, so on a single gunicorn
+        # worker it dominates load and slows the whole site. Cache the assembled
+        # payload for 60s, keyed by the caller's org scope (so PHD/Bandhu/super
+        # each get the right view). KPI numbers are leadership headlines —
+        # ~60s of staleness is fine.
+        from django.core.cache import cache
+        scope = ':'.join(sorted(allowed_partners(request.user))) or 'none'
+        cache_key = f'dash-kpis:v1:{scope}'
+        cached = cache.get(cache_key)
+        if cached is not None:
+            return Response(cached)
+
         now = timezone.now()
         month_start, month_end = current_month_bounds()
         prev_start, prev_end = previous_month_bounds()
@@ -228,7 +241,7 @@ class KPIView(APIView):
         except Exception:
             pass
 
-        return Response({
+        payload = {
             'submissions_this_month': this_month_count,
             'submissions_pending': pending_count,
             'active_workers': active_workers,
@@ -251,7 +264,9 @@ class KPIView(APIView):
             'fistula_reintegrated': fistula_reintegrated,
             'near_miss_total': near_miss_total,
             'as_of': now.isoformat(),
-        })
+        }
+        cache.set(cache_key, payload, 60)
+        return Response(payload)
 
 
 # ---------------------------------------------------------------------------
