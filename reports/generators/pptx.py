@@ -186,10 +186,11 @@ def _slide_01_cover(prs, data: dict):
         line_spacing=0.92,
     )
 
-    # Bengali subtitle
+    # Period subtitle — English only (no Bengali in exported files), drawn
+    # from the live report period so it is never a stale hardcoded date.
     _add_text(
         slide, Inches(0.7), Inches(5.5), Inches(11), Inches(0.5),
-        'মে ২০২৬ · কর্মসূচি প্রতিবেদন',
+        f"{data.get('organisation', 'All Partners')} · {data.get('period_label', '')}",
         font=UI_FONT, size=14, color=RGBColor(0xCC, 0xDD, 0xE8),
     )
 
@@ -294,9 +295,9 @@ def _slide_04_big_number(prs, data: dict):
               font=MONO_FONT, size=14, bold=True, color=EMERALD,
               align=PP_ALIGN.CENTER)
 
-    # Italic context line
+    # Italic context line — factual, no fabricated superlative
     _add_text(slide, Inches(2.0), Inches(6.4), Inches(9.3), Inches(0.5),
-              'The strongest monthly total since the programme launched.',
+              f"Approved field submissions for {data.get('organisation', 'All Partners')}.",
               font=DISPLAY_FONT, size=16, italic=True, color=INK_2,
               align=PP_ALIGN.CENTER)
 
@@ -304,24 +305,26 @@ def _slide_04_big_number(prs, data: dict):
 
 
 def _slide_05_quote(prs, data: dict):
-    """05 — Editorial pull quote."""
+    """05 — Real activity callout (was a fabricated attributed pull quote)."""
     slide = prs.slides.add_slide(prs.slide_layouts[6])
     _add_rect(slide, 0, 0, SLIDE_W, SLIDE_H, WHITE)
+
+    workers = data.get('active_workers', 0)
+    pending = data.get('pending', 0)
 
     # Top/bottom rules
     _add_rect(slide, Inches(2.0), Inches(2.5), SLIDE_W - Inches(4), Inches(0.015), INK)
 
-    # Quote
+    # Factual headline derived from live data — no attributed quote
     _add_text(slide, Inches(2.0), Inches(3.0), SLIDE_W - Inches(4), Inches(2.5),
-              '"The numbers held;\nthe system responded.\nBoth matter."',
+              f'{workers} field workers\nactive this period.',
               font=DISPLAY_FONT, size=44, italic=True, color=INK,
               align=PP_ALIGN.CENTER, line_spacing=1.1)
 
     _add_rect(slide, Inches(2.0), Inches(5.8), SLIDE_W - Inches(4), Inches(0.015), INK)
 
-    # Attribution
     _add_text(slide, Inches(2.0), Inches(6.0), SLIDE_W - Inches(4), Inches(0.4),
-              '— DR. SHAHIN BEGUM · PHD FOCAL POINT',
+              f'{pending} submission(s) awaiting manager review',
               font=MONO_FONT, size=10, color=MUTED, align=PP_ALIGN.CENTER)
 
     _section_header(slide, '01', 'Key indicators', 5)
@@ -338,10 +341,14 @@ def _slide_06_kpi_dashboard(prs, data: dict):
 
     counts = data.get('counts', {})
     total = data.get('total_submissions', 0)
+    mom = data.get('mom_pct', 0)
+    # Only the overall period-over-period change is computed; per-metric deltas
+    # are NOT, so show '—' rather than inventing them.
+    mom_str = f"{'+' if mom >= 0 else ''}{mom:.1f}%"
     cards = [
-        (str(total),                          'SUBMISSIONS',  UNFPA,   '+8.4%'),
-        (str(counts.get('clinic_visits', 0)), 'CLINIC VISITS', CORAL,  '+4.5%'),
-        (str(counts.get('outreach_sessions', 0)), 'OUTREACH', VIOLET,  '+8.4%'),
+        (str(total),                          'SUBMISSIONS',  UNFPA,   mom_str),
+        (str(counts.get('clinic_visits', 0)), 'CLINIC VISITS', CORAL,  '—'),
+        (str(counts.get('outreach_sessions', 0)), 'OUTREACH', VIOLET,  '—'),
         (str(counts.get('referrals', 0)),     'REFERRALS',    AMBER,   '—'),
     ]
     card_w = (SLIDE_W - Inches(1.4) - Inches(0.45)) / 4
@@ -358,9 +365,10 @@ def _slide_06_kpi_dashboard(prs, data: dict):
                   delta, font=MONO_FONT, size=10, bold=True, color=EMERALD)
         x += card_w + Inches(0.15)
 
-    # Note below
+    # Note below — factual, from the real period-over-period change only
+    trend_word = 'up' if mom > 0 else ('down' if mom < 0 else 'flat')
     _add_text(slide, Inches(0.7), Inches(5.0), SLIDE_W - Inches(1.4), Inches(0.4),
-              'All four trend up vs the previous period — Bondhu outreach is the largest driver.',
+              f'Total submissions are {trend_word} {abs(mom):.1f}% versus the previous period.',
               font=DISPLAY_FONT, size=15, italic=True, color=INK_2)
 
     _section_header(slide, '01', 'Key indicators', 6)
@@ -553,14 +561,11 @@ def _slide_12_centres(prs, data: dict):
     _add_rect(slide, x, y, col_w, Inches(4.3), SURFACE_2, border=HAIR)
     _add_text(slide, x + Inches(0.3), y + Inches(0.3), col_w - Inches(0.6), Inches(0.3),
               'PHD', font=MONO_FONT, size=10, color=MUTED)
+    by_partner = data.get('by_partner', {})
     _add_text(slide, x + Inches(0.3), y + Inches(0.6), col_w - Inches(0.6), Inches(1.6),
-              '369', font=DISPLAY_FONT, size=110, italic=True, color=UNFPA)
+              str(by_partner.get('PHD', 0)), font=DISPLAY_FONT, size=110, italic=True, color=UNFPA)
     _add_text(slide, x + Inches(0.3), y + Inches(2.4), col_w - Inches(0.6), Inches(0.3),
-              'SUBMISSIONS · CLINICAL EMPHASIS', font=MONO_FONT, size=9, color=MUTED)
-    _add_text(slide, x + Inches(0.3), y + Inches(2.9), col_w - Inches(0.6), Inches(1.2),
-              'Driven by clinic visits and antenatal cards in Cox\'s Bazar.',
-              font=DISPLAY_FONT, size=18, italic=True, color=INK_2,
-              line_spacing=1.2)
+              'SUBMISSIONS · THIS PERIOD', font=MONO_FONT, size=9, color=MUTED)
 
     # Bondhu column
     x2 = x + col_w + Inches(0.3)
@@ -568,13 +573,9 @@ def _slide_12_centres(prs, data: dict):
     _add_text(slide, x2 + Inches(0.3), y + Inches(0.3), col_w - Inches(0.6), Inches(0.3),
               'BONDHU', font=MONO_FONT, size=10, color=MUTED)
     _add_text(slide, x2 + Inches(0.3), y + Inches(0.6), col_w - Inches(0.6), Inches(1.6),
-              '287', font=DISPLAY_FONT, size=110, italic=True, color=CORAL)
+              str(by_partner.get('Bandhu', 0)), font=DISPLAY_FONT, size=110, italic=True, color=CORAL)
     _add_text(slide, x2 + Inches(0.3), y + Inches(2.4), col_w - Inches(0.6), Inches(0.3),
-              'SUBMISSIONS · COMMUNITY EMPHASIS', font=MONO_FONT, size=9, color=MUTED)
-    _add_text(slide, x2 + Inches(0.3), y + Inches(2.9), col_w - Inches(0.6), Inches(1.2),
-              'Outreach and counselling at Chattogram and Daulatdia.',
-              font=DISPLAY_FONT, size=18, italic=True, color=INK_2,
-              line_spacing=1.2)
+              'SUBMISSIONS · THIS PERIOD', font=MONO_FONT, size=9, color=MUTED)
 
     _section_header(slide, '03', 'Geography', 12)
 
@@ -612,13 +613,15 @@ def _slide_14_closing_quote(prs, data: dict):
               'SECTION 04 · CLOSING', font=MONO_FONT, size=10,
               color=RGBColor(0xFF, 0xE6, 0xD8))
 
+    total = data.get('total_submissions', 0)
+    pending = data.get('pending', 0)
     _add_text(slide, Inches(0.9), Inches(2.4), Inches(11.5), Inches(3.5),
-              '"We are on track to exceed Q2 targets —\nbut Ukhiya needs attention this week."',
+              f'{total} approved submissions this period —\n{pending} still awaiting review.',
               font=DISPLAY_FONT, size=44, italic=True, color=WHITE,
               line_spacing=1.15)
 
     _add_text(slide, Inches(0.9), Inches(6.2), Inches(11), Inches(0.3),
-              '— DR. SHAHIN BEGUM · PHD FOCAL POINT',
+              'SIMPLE · LIVE PROGRAMME DATA',
               font=MONO_FONT, size=11,
               color=RGBColor(0xFF, 0xE6, 0xD8))
 
@@ -634,10 +637,9 @@ def _slide_15_forward(prs, data: dict, narrative_sections: dict):
               font=DISPLAY_FONT, size=36, italic=True, color=INK)
 
     forward = narrative_sections.get('FORWARD LOOK', '').strip() or (
-        'Field teams will expand outreach coverage in Cox\'s Bazar and Daulatdia. '
-        'PHD will close the ANC follow-up gap at Ukhiya within the first two weeks. '
         'All partners are requested to submit field data within 48 hours of activity '
-        'completion. The M&E team will publish the next bulletin on the first Monday.'
+        'completion so the next reporting period reflects complete coverage. '
+        'The M&E team will publish the next bulletin at the start of the coming month.'
     )
 
     _add_text(slide, Inches(0.7), Inches(2.0), SLIDE_W - Inches(1.4), Inches(4.5),

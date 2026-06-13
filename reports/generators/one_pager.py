@@ -431,8 +431,9 @@ def build_infographic(data: dict, narrative: str = '', narrative_source: str = '
                 quote = f'"{line}"'
                 break
     if not quote:
-        quote = ('"The month closed with the strongest field activity in twelve months — '
-                 'the GBV referral loop held, and operations resumed despite early monsoon flooding."')
+        org = data.get('organisation', 'All Partners')
+        quote = (f'"This period\'s field submissions for {org} are summarised above, '
+                 'drawn live from approved programme data."')
     _draw_editorial_quote(c, quote, quote_top)
 
     # ─── FOOTER ───────────────────────────────────────────────────────────────

@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 
 # Human-readable labels for each form type key
 LABEL_MAP: dict[str, str] = {
+    'registrations':          'Registrations',
     'clinic_visits':          'Clinic Visits',
     'hiv_sti_tests':          'HIV/STI Tests',
     'adr_records':            'ADR Records',
@@ -59,6 +60,7 @@ def collect_programme_data(
     (infographic PDF, newsletter PDF, PPTX).
     """
     from programs.models import (
+        Client,
         ClinicVisit, HIVSTITestResult, ADRRecord, AutoclaveLog, AntenatalCard,
         HTCCounselling, IndividualCounselling, MHScreening,
         GBVCase,
@@ -68,7 +70,11 @@ def collect_programme_data(
         TrainingEvent, CoordMeeting, MobileHealthCamp,
     )
 
+    # Client (FSW / mother registration) is a submission too — omitting it made
+    # the report read "7 field submissions" while the dashboard counted 23.
+    # Include it everywhere the dashboard does, so report totals reconcile.
     _models = [
+        Client,
         ClinicVisit, HIVSTITestResult, ADRRecord, AutoclaveLog, AntenatalCard,
         HTCCounselling, IndividualCounselling, MHScreening, GBVCase,
         OutreachSession, GroupEducationSession, Referral, SafetyHygieneKit,
@@ -79,6 +85,7 @@ def collect_programme_data(
         return _count_model(model, period_start, period_end, organisation)
 
     counts = {
+        'registrations':          _m(Client),
         'clinic_visits':          _m(ClinicVisit),
         'hiv_sti_tests':          _m(HIVSTITestResult),
         'adr_records':            _m(ADRRecord),
@@ -231,6 +238,14 @@ def collect_programme_data(
     except Exception as exc:
         logger.debug('mpdsr aggregation skipped: %s', exc)
 
+    # Per-partner submission totals for the board partner-split slide — real
+    # counts per org, replacing the deck's hardcoded 369/287 demo numbers.
+    by_partner: dict[str, int] = {}
+    for _code in ('PHD', 'Bandhu', 'CIPRB'):
+        by_partner[_code] = sum(
+            _count_model(m, period_start, period_end, _code) for m in _models
+        )
+
     # --- Top-4 KPI tiles ---
     top_kpis = [
         {'label': 'Total Activities',   'value': total},
@@ -273,4 +288,5 @@ def collect_programme_data(
         'mom_pct':           mom_pct,
         'monthly_trend':     monthly_trend,
         'top_districts':     top_districts,
+        'by_partner':        by_partner,
     }
