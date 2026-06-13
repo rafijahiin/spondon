@@ -231,7 +231,7 @@ function NotifyVsReview({
                 {rate !== null ? (rate > 100 ? '100%+' : `${rate.toFixed(0)}%`) : '—'}
               </div>
               <div style={{ fontSize: 11.5, color: 'var(--ink-3)', marginTop: 4, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                {reported} reported of {Math.round(estimated)} estimated
+                {reported.toLocaleString()} reported of {Math.round(estimated).toLocaleString()} estimated
                 <span title={FORMULA} aria-label="Show denominator formula" style={{
                   display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                   width: 14, height: 14, borderRadius: 999, background: 'var(--surface-3)',
@@ -319,7 +319,7 @@ function NotifyVsReview({
                 {pctVal !== null ? (pctVal > 100 ? '100%+' : `${pctVal.toFixed(0)}%`) : '—'}
               </div>
               <div style={{ fontSize: 11.5, color: 'var(--ink-3)', marginTop: 4 }}>
-                {value} of {base} notified
+                {value.toLocaleString()} of {base.toLocaleString()} notified
               </div>
             </div>
           )

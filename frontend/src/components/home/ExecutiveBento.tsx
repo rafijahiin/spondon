@@ -204,12 +204,21 @@ export function ExecutiveBento({ progress }: Props) {
     const pending = all.length - withTarget.length
     if (withTarget.length === 0) return { ...empty, pending, totalIndicators: all.length }
 
+    // Pace-to-date: "on track" means an indicator has achieved at least the
+    // share of its target that the contract period (21 May – 20 Nov 2026) has
+    // elapsed — i.e. it's on pace for today, not measured against the full
+    // six-month target (which nothing can reach in month one).
+    const CONTRACT_START = new Date('2026-05-21').getTime()
+    const CONTRACT_END = new Date('2026-11-20').getTime()
+    const elapsedPct = Math.max(0, Math.min(100,
+      ((now.getTime() - CONTRACT_START) / (CONTRACT_END - CONTRACT_START)) * 100,
+    ))
     let onTrack = 0, behind = 0, critical = 0, notStarted = 0
     for (const p of withTarget) {
       const pct = p.percentage ?? 0
       if (pct === 0) notStarted++
-      else if (pct >= 75) onTrack++
-      else if (pct >= 40) behind++
+      else if (pct >= elapsedPct) onTrack++
+      else if (pct >= elapsedPct * 0.5) behind++
       else critical++
     }
     const avgPct = Math.round(withTarget.reduce((s, p) => s + (p.percentage ?? 0), 0) / withTarget.length)
@@ -330,7 +339,7 @@ export function ExecutiveBento({ progress }: Props) {
               {t('bento.indicators', { defaultValue: 'INDICATORS ON TRACK' })}
               <span
                 title={t('bento.indicatorsHelp', {
-                  defaultValue: 'On track = an indicator whose cumulative result has reached 75% or more of its full contract-period target. Early in the programme most indicators sit below this; the count rises as delivery continues to November 2026.',
+                  defaultValue: 'On track = an indicator that has reached at least the share of its target the contract period has elapsed — i.e. it is on pace for today, not measured against the full six-month target. Indicators below that have fallen behind the expected run-rate for this point in the programme.',
                 })}
                 aria-label="What counts as on track"
                 style={{
@@ -344,7 +353,7 @@ export function ExecutiveBento({ progress }: Props) {
           }
           value={hasTargets ? `${stats.onTrack} / ${stats.total}` : '—'}
           sub={hasTargets
-            ? t('bento.indicatorsSub', { defaultValue: '≥75% of full target' })
+            ? t('bento.indicatorsSub', { defaultValue: 'on pace to date' })
             : t('bento.indicatorEmpty', { defaultValue: 'no targets confirmed yet' })}
           icon={<TrendingUp size={12} />}
           delay={0.15}
