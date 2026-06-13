@@ -75,13 +75,18 @@ class KPIView(APIView):
         # page. Add their created_at counts to the same buckets.
         try:
             from programs.models import (
+                Client,
                 ClinicVisit, HIVSTITestResult, ADRRecord, AutoclaveLog, AntenatalCard,
                 HTCCounselling, IndividualCounselling, MHScreening,
                 GBVCase, OutreachSession, GroupEducationSession, Referral,
                 SafetyHygieneKit, TrainingEvent, CoordMeeting, MobileHealthCamp,
                 IECMaterial,
             )
+            # Client (FSW Registration / Mother List) is a submission too —
+            # omitting it made the home "submissions this month" read 7 while
+            # the partner dashboard counted registrations and showed 23.
             _PROGRAMS_MODELS = [
+                Client,
                 ClinicVisit, HIVSTITestResult, ADRRecord, AutoclaveLog, AntenatalCard,
                 HTCCounselling, IndividualCounselling, MHScreening,
                 GBVCase, OutreachSession, GroupEducationSession, Referral,
@@ -116,14 +121,29 @@ class KPIView(APIView):
                 pending_count += pqs.count()
         except (NameError, Exception):
             pass
-        active_workers = (
+        # Active workers (last 30 days) — distinct submitters. Count the legacy
+        # KoboSubmission worker_name AND the programs-model submitted_by_kobo_user,
+        # because PHD/Bandhu field data lands in the programs models; the
+        # legacy-only count read 0 even while partners were actively submitting.
+        # (This reflects active submitting accounts; per-individual-worker
+        # precision arrives once each org collects under its own Kobo account.)
+        worker_set = set(
             approved
             .filter(submitted_at__gte=thirty_days_ago)
             .exclude(worker_name='')
-            .values('worker_name')
-            .distinct()
-            .count()
+            .values_list('worker_name', flat=True)
         )
+        try:
+            for Model in _PROGRAMS_MODELS:
+                wqs = Model.objects.filter(
+                    approval_status='APPROVED', created_at__gte=thirty_days_ago,
+                ).exclude(submitted_by_kobo_user='')
+                if not request.user.can_see_all_orgs:
+                    wqs = wqs.filter(organisation=request.user.organisation)
+                worker_set.update(wqs.values_list('submitted_by_kobo_user', flat=True))
+        except (NameError, Exception):
+            pass
+        active_workers = len(worker_set)
         fistula_count = this_month_qs.filter(form_type=FormType.FISTULA).count()
         mpdsr_count = this_month_qs.filter(form_type=FormType.MPDSR).count()
 

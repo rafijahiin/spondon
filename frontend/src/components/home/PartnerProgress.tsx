@@ -40,6 +40,7 @@ interface Rollup {
   monthlyHasTargets: boolean
   monthlyPercentage: number | null
   monthlyOnTrack: number
+  monthlyTotal: number
 }
 
 function rollup(partner: PartnerCode, rows: IndicatorProgress[] | null): Rollup {
@@ -47,6 +48,7 @@ function rollup(partner: PartnerCode, rows: IndicatorProgress[] | null): Rollup 
     hasTargets: false, percentage: null,
     onTrack: 0, total: 0, totalIndicators: 0,
     monthlyHasTargets: false, monthlyPercentage: null, monthlyOnTrack: 0,
+    monthlyTotal: 0,
   }
   if (!rows) return empty
   const all = rows.filter(r => r.organisation === partner && !r.unlinked)
@@ -78,6 +80,7 @@ function rollup(partner: PartnerCode, rows: IndicatorProgress[] | null): Rollup 
     hasTargets: true, percentage,
     onTrack, total: withTarget.length, totalIndicators,
     monthlyHasTargets, monthlyPercentage, monthlyOnTrack,
+    monthlyTotal: withMonth.length,
   }
 }
 
@@ -201,7 +204,7 @@ function ThisMonthPanel({ data, loading, t }: { data: Rollup; loading: boolean; 
         <>
           <div className="tf-row">
             <span className="tf-stat">
-              {t('partnerCard.indicatorsOnTrack', { onTrack: data.monthlyOnTrack, total: data.total })}
+              {t('partnerCard.indicatorsOnTrack', { onTrack: data.monthlyOnTrack, total: data.monthlyTotal })}
             </span>
             <span className="tf-pct">{data.monthlyPercentage}%</span>
           </div>
