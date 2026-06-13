@@ -249,6 +249,26 @@ export function ExecutiveBento({ progress }: Props) {
   const alertsValue = openAlerts == null ? '—' : fmtNum(openAlerts)
   const alertsCritical = (openAlerts ?? 0) > 0
 
+  // Render a PHD/Bandhu major-indicator card from the loaded progress array:
+  // cumulative achievement vs the programme target, with a status-banded bar.
+  const indCard = (org: PartnerCode, code: string, label: string, note: string, delay: number) => {
+    const p = (progress ?? []).find(r => r.organisation === org && r.activity_code === code)
+    const ach = typeof p?.achievement === 'number' ? p.achievement : 0
+    const tgt = p?.target_value ?? null
+    const pct = p?.percentage ?? null
+    return (
+      <Card
+        key={`${org}-${code}`}
+        kicker={label.toUpperCase()}
+        value={fmtNum(ach)}
+        sub={tgt != null ? `of ${fmtNum(tgt)} · ${note}` : note}
+        progressPct={pct}
+        progressColor={bandColor(pct)}
+        delay={delay}
+      />
+    )
+  }
+
   return (
     <section className="section bento-section" style={{ marginTop: 36 }}>
       <div className="section-head">
@@ -359,44 +379,62 @@ export function ExecutiveBento({ progress }: Props) {
           delay={0.2}
         />
 
-        {/* Cumulative programme totals (Animesh's high-level executive numbers):
-            Total MD Notified, Total MD Reviewed, Total Fistula Patients,
-            Total Fistula Referred. THIS MONTH numbers retained inline as
-            sub-text so the executive can see both. */}
+      </div>
+
+      {/* ── MAJOR INDICATORS · ALL PARTNERS · TILL DATE ──────────────────
+          Merged into the executive summary so the headline status (above) and
+          the programme's signature numbers read as one block. Two reach metrics
+          each for PHD & Bandhu (cumulative vs target, with a bar); four CIPRB
+          surveillance outputs (counts — CIPRB targets are not set). */}
+      <div className="kicker" style={{ margin: '30px 0 12px' }}>
+        <span className="dot" style={{ background: 'var(--unfpa)' }} />
+        {t('bento.majorKicker', { defaultValue: 'MAJOR INDICATORS · ALL PARTNERS · TILL DATE' })}
+      </div>
+      <div
+        className="bento-grid"
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+          gridAutoRows: 'minmax(120px, auto)',
+          gap: 14,
+        }}
+      >
+        {/* PHD — reach + GBV */}
+        {indCard('PHD', 'SL1', 'PHD · FSWs reached', 'HIV/STI screening & FP', 0.05)}
+        {indCard('PHD', 'SL2', 'PHD · GBV survivors', 'supported & referred', 0.1)}
+        {/* Bandhu — reach + GBV */}
+        {indCard('Bandhu', '1.1', 'Bandhu · KP reached', 'HIV/STI screening & FP', 0.15)}
+        {indCard('Bandhu', '1.2', 'Bandhu · GBV survivors', 'supported & referred', 0.2)}
+        {/* CIPRB — fistula outcomes + maternal surveillance (counts) */}
         <Card
-          kicker={t('bento.totalMDNotified', { defaultValue: 'MATERNAL DEATHS · NOTIFIED' })}
-          value={fmtNum(kpis?.total_md_notified ?? 0)}
-          sub={t('bento.totalMDNotifiedSub', {
-            defaultValue: `${fmtNum(kpis?.mpdsr_cases_this_month ?? 0)} this month`,
-          })}
-          icon={<ShieldAlert size={12} />}
+          kicker="CIPRB · FISTULA REPAIRED"
+          value={fmtNum(kpis?.fistula_repaired ?? 0)}
+          sub={t('bento.fistulaRepairedSub', { defaultValue: 'surgically repaired (dry + not-dry)' })}
+          icon={<Heart size={12} />}
           delay={0.25}
         />
         <Card
-          kicker={t('bento.totalMDReviewed', { defaultValue: 'MATERNAL DEATHS · REVIEWED' })}
-          value={fmtNum(kpis?.total_md_reviewed ?? 0)}
-          sub={t('bento.totalMDReviewedSub', {
-            defaultValue: kpis?.total_md_notified
-              ? `${Math.round(((kpis.total_md_reviewed ?? 0) / kpis.total_md_notified) * 100)}% review rate`
-              : 'awaiting data',
-          })}
-          icon={<Activity size={12} />}
+          kicker="CIPRB · REHABILITATED"
+          value={fmtNum(kpis?.fistula_reintegrated ?? 0)}
+          sub={t('bento.fistulaReintegratedSub', { defaultValue: '& reintegrated' })}
+          icon={<Users size={12} />}
           delay={0.3}
         />
         <Card
-          kicker={t('bento.totalFistula', { defaultValue: 'FISTULA PATIENTS · TOTAL' })}
-          value={fmtNum(kpis?.total_fistula_patients ?? 0)}
-          sub={t('bento.totalFistulaSub', {
-            defaultValue: `${fmtNum(kpis?.total_fistula_referred ?? 0)} referred for treatment`,
-          })}
-          icon={<Heart size={12} />}
+          kicker="CIPRB · NEAR-MISS CASES"
+          value={fmtNum(kpis?.near_miss_total ?? 0)}
+          sub={t('bento.nearMissSub', { defaultValue: 'maternal near-miss (WHO MNM)' })}
+          icon={<Activity size={12} />}
           delay={0.35}
         />
         <Card
-          kicker={t('bento.activeWorkers', { defaultValue: 'ACTIVE WORKERS' })}
-          value={fmtNum(kpis?.active_workers ?? 0)}
-          sub={t('bento.workersSub', { defaultValue: '≤ 30 days' })}
-          icon={<Users size={12} />}
+          kicker="CIPRB · MATERNAL DEATHS REVIEWED"
+          value={fmtNum(kpis?.total_md_reviewed ?? 0)}
+          sub={t('bento.mdReviewedSub', {
+            defaultValue: 'of {{n}} notified',
+            n: fmtNum(kpis?.total_md_notified ?? 0),
+          })}
+          icon={<ShieldAlert size={12} />}
           delay={0.4}
         />
       </div>

@@ -16,7 +16,6 @@ import { PageLoader } from '@/components/ui/LoadingSpinner'
 import { ExecutiveBento } from '@/components/home/ExecutiveBento'
 import { PartnerProgress } from '@/components/home/PartnerProgress'
 import { ProgrammeHealthFlags } from '@/components/home/ProgrammeHealthFlags'
-import { ProgrammeTotals } from '@/components/home/ProgrammeTotals'
 import { PartnerOverlapMap } from '@/components/maps/PartnerOverlapMap'
 import type { IndicatorProgress } from '@/types'
 
@@ -141,10 +140,8 @@ export default function Home() {
         </p>
       )}
 
-      {/* ── PROGRAMME TOTALS — Animesh's 'till date' headline numbers.
-           Total Fistula patients, MD notified / reviewed, ND notified /
-           reviewed, stillbirths, cases managed / referred. ──────────── */}
-      <ProgrammeTotals />
+      {/* Programme totals are now merged into the Executive Summary above
+          (Major indicators · all partners), so there is no separate section. */}
 
       {/* AnomalyCards removed per Animesh: the Programme Health Flags block
           above is the single source of programmatic alerts. Anomaly

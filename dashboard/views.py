@@ -183,6 +183,9 @@ class KPIView(APIView):
         total_fistula_referred = 0
         total_stillbirths_notified = 0
         total_stillbirths_reviewed = 0
+        fistula_repaired = 0
+        fistula_reintegrated = 0
+        near_miss_total = 0
         try:
             from mpdsr.models import MPDSRFacilityCount
             from django.db.models import Sum
@@ -207,6 +210,21 @@ class KPIView(APIView):
             ).count() + FistulaCornerCase.objects.exclude(
                 referral_outcome='',
             ).exclude(referral_date__isnull=False).count()
+            # Surgically repaired = the two "successful" outcome categories
+            # (dry + not-dry), excluding failed. Rehabilitated & reintegrated =
+            # any cash/livestock/training/reintegration support recorded.
+            fistula_repaired = FistulaCornerCase.objects.filter(
+                surgery_outcome__in=[FistulaCornerCase.OUTCOME_DRY,
+                                     FistulaCornerCase.OUTCOME_NOT_DRY],
+            ).count()
+            fistula_reintegrated = FistulaCornerCase.objects.filter(
+                received_rehab_support=True,
+            ).count()
+        except Exception:
+            pass
+        try:
+            from mpdsr.ciprb_models import MaternalNearMissCase
+            near_miss_total = MaternalNearMissCase.objects.count()
         except Exception:
             pass
 
@@ -229,6 +247,9 @@ class KPIView(APIView):
             'total_fistula_referred': total_fistula_referred,
             'total_stillbirths_notified': total_stillbirths_notified,
             'total_stillbirths_reviewed': total_stillbirths_reviewed,
+            'fistula_repaired': fistula_repaired,
+            'fistula_reintegrated': fistula_reintegrated,
+            'near_miss_total': near_miss_total,
             'as_of': now.isoformat(),
         })
 
