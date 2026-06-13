@@ -278,7 +278,7 @@ export function ExecutiveBento({ progress }: Props) {
             {t('bento.kicker', { defaultValue: 'EXECUTIVE SUMMARY' })}
           </div>
           <h2 className="section-title">
-            {t('bento.title', { defaultValue: 'Programme at a glance' })}
+            {t('bento.title', { defaultValue: 'Executive summary' })}
           </h2>
           <p className="section-sub">
             {t('bento.subtitle', {
