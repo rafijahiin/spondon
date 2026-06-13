@@ -11,7 +11,7 @@ import { useEffect, useState } from 'react'
 import { api } from '@/api/client'
 import { DataSource } from '@/components/ui/DataSource'
 import { useTranslation } from 'react-i18next'
-import { BarBreakdown, DonutBreakdown, Histogram } from './IndicatorCharts'
+import { BarBreakdown, DonutBreakdown, Histogram, StatTile } from './IndicatorCharts'
 
 const CIPRB_ORANGE = '#F96000'
 
@@ -69,23 +69,27 @@ export function FistulaIndicators({ districts }: { districts?: readonly string[]
       </div>
 
       <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+        {/* Mixed visual types so the 17 read as distinct cards, not one wall
+            of bars: histograms for numeric distributions, donuts for
+            mutually-exclusive proportions, stat-tiles for the headline
+            binary/outcome ratios, bars for ranked many-category lists. */}
         <Histogram      title="1. Age of patient"            data={data.age} />
         <BarBreakdown   title="2. Education"                 data={data.education} labels={L.education} />
-        <BarBreakdown   title="3. Marital status"           data={data.marital_status} labels={L.marital} />
+        <DonutBreakdown title="3. Marital status"           data={data.marital_status} labels={L.marital} />
         <Histogram      title="4. Age at marriage"          data={data.age_at_marriage} />
         <Histogram      title="5. Age at first delivery"    data={data.age_at_first_delivery} />
         <Histogram      title="6. Number of children"       data={data.number_of_children} />
-        <BarBreakdown   title="7. Mode of last delivery"    data={data.mode_of_last_delivery} labels={L.mode} />
-        <BarBreakdown   title="8. Place of last delivery"   data={data.place_of_last_delivery} labels={L.place} />
+        <DonutBreakdown title="7. Mode of last delivery"    data={data.mode_of_last_delivery} labels={L.mode} />
+        <DonutBreakdown title="8. Place of last delivery"   data={data.place_of_last_delivery} labels={L.place} />
         <BarBreakdown   title="9. Delivery conducted by"    data={data.conducted_last_delivery} labels={L.conductor} />
         <BarBreakdown   title="10. Reasons for no institutional delivery" data={data.reasons_no_institutional_delivery} labels={L.reasons} />
         <Histogram      title="11. Time fistula occurred after delivery" data={data.time_duration_fistula_occurrence} />
         <Histogram      title="12. Duration of suffering"   data={data.duration_suffering} />
-        <BarBreakdown   title="13. Outcome of last delivery" data={data.delivery_outcome} labels={L.outcome} />
+        <StatTile       title="13. Outcome of last delivery" data={data.delivery_outcome} highlight="livebirth" labels={L.outcome} />
         <DonutBreakdown title="14. Cause of fistula (type)" data={data.fistula_type_v2} labels={L.ftype} />
         <BarBreakdown   title="15. Cause of iatrogenic fistula" data={data.iatrogenic_cause} labels={L.iatro} />
-        <BarBreakdown   title="16. Type of genital fistula" data={data.genital_fistula_type} labels={L.genital} />
-        <BarBreakdown   title="17. Outcome of surgery"      data={data.surgery_outcome_v2} labels={L.surgery} />
+        <DonutBreakdown title="16. Type of genital fistula" data={data.genital_fistula_type} labels={L.genital} />
+        <StatTile       title="17. Outcome of surgery"      data={data.surgery_outcome_v2} highlight="success_dry" labels={L.surgery} />
       </div>
       <DataSource>CIPRB Fistula Question Bank · 17 major indicators · {t('fistulaViz.providedBy', { defaultValue: 'Provided by CIPRB' })}</DataSource>
     </div>

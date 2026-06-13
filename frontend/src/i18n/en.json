@@ -275,7 +275,7 @@
   "bento": {
     "kicker": "EXECUTIVE SUMMARY",
     "title": "Executive summary",
-    "subtitle": "The headline numbers across all three partners, refreshed every 30 seconds.",
+    "subtitle": "The headline numbers across all three partners.",
     "submissionsMtd": "SUBMISSIONS · THIS MONTH",
     "vsLastMonth": "vs {{prev}} last month",
     "pending": "AWAITING REVIEW",

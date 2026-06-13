@@ -282,7 +282,7 @@ export function ExecutiveBento({ progress }: Props) {
           </h2>
           <p className="section-sub">
             {t('bento.subtitle', {
-              defaultValue: 'Is the programme on track, and does anything need attention — refreshed every 30 seconds.',
+              defaultValue: 'Is the programme on track, and does anything need attention.',
             })}
           </p>
         </div>
@@ -325,10 +325,26 @@ export function ExecutiveBento({ progress }: Props) {
 
         {/* Indicators on track + submissions activity */}
         <Card
-          kicker={t('bento.indicators', { defaultValue: 'INDICATORS ON TRACK' })}
+          kicker={
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              {t('bento.indicators', { defaultValue: 'INDICATORS ON TRACK' })}
+              <span
+                title={t('bento.indicatorsHelp', {
+                  defaultValue: 'On track = an indicator whose cumulative result has reached 75% or more of its full contract-period target. Early in the programme most indicators sit below this; the count rises as delivery continues to November 2026.',
+                })}
+                aria-label="What counts as on track"
+                style={{
+                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                  width: 13, height: 13, borderRadius: 999, background: 'var(--surface-3)',
+                  color: 'var(--muted)', fontSize: 9, fontWeight: 700, cursor: 'help',
+                  border: '1px solid var(--hair)', textTransform: 'none', letterSpacing: 0,
+                }}
+              >i</span>
+            </span>
+          }
           value={hasTargets ? `${stats.onTrack} / ${stats.total}` : '—'}
           sub={hasTargets
-            ? t('bento.indicatorsSub', { defaultValue: '≥ 75% of target' })
+            ? t('bento.indicatorsSub', { defaultValue: '≥75% of full target' })
             : t('bento.indicatorEmpty', { defaultValue: 'no targets confirmed yet' })}
           icon={<TrendingUp size={12} />}
           delay={0.15}

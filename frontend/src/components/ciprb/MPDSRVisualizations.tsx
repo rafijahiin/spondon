@@ -246,9 +246,9 @@ function NotifyVsReview({
               display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 18,
               marginBottom: 18, paddingBottom: 18, borderBottom: '1px solid var(--hair)',
             }}>
-              {rateTile('MD REPORTING RATE', reportingRateMD, d.notifiedMD, estimatedMD)}
-              {rateTile('ND REPORTING RATE', reportingRateND, d.notifiedND, estimatedND)}
-              {rateTile('SB REPORTING RATE', reportingRateSB, d.notifiedSB, estimatedSB)}
+              {rateTile('MATERNAL DEATH REPORTING RATE', reportingRateMD, d.notifiedMD, estimatedMD)}
+              {rateTile('NEONATAL DEATH REPORTING RATE', reportingRateND, d.notifiedND, estimatedND)}
+              {rateTile('STILLBIRTH REPORTING RATE', reportingRateSB, d.notifiedSB, estimatedSB)}
             </div>
           ) : null
         })()}
@@ -260,10 +260,10 @@ function NotifyVsReview({
             marginBottom: 18, paddingBottom: 18, borderBottom: '1px solid var(--hair)',
           }}>
             <div className="mono" style={{ fontSize: 9.5, color: 'var(--muted)', letterSpacing: '0.08em', marginBottom: 10 }}>
-              NOTIFICATIONS BY LEVEL · COMMUNITY (CDN) vs FACILITY (FDN)
+              NOTIFICATIONS BY LEVEL · COMMUNITY DEATH NOTIFICATION (CDN) vs FACILITY DEATH NOTIFICATION (FDN)
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 18 }}>
-              {([['Maternal (MD)', notificationByLevel.md], ['Neonatal (ND)', notificationByLevel.nd], ['Stillbirth (SB)', notificationByLevel.sb]] as const).map(([lbl, lv]) => (
+              {([['Maternal Death (MD)', notificationByLevel.md], ['Neonatal Death (ND)', notificationByLevel.nd], ['Stillbirth (SB)', notificationByLevel.sb]] as const).map(([lbl, lv]) => (
                 <div key={lbl}>
                   <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--ink-2)', marginBottom: 6 }}>{lbl}</div>
                   <div style={{ display: 'flex', gap: 14 }}>
