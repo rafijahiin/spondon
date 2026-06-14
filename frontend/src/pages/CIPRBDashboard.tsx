@@ -772,13 +772,12 @@ export default function CIPRBDashboard() {
             }} className="anim-rise d1">
               {t('ciprbExtras.subtitle')}
             </p>
-            <p className="hero-lede anim-rise d2" style={{ maxWidth: 720 }}>
-              {t('ciprb.heroLede')}
-            </p>
-
             {/* Partner brief (CIPRB) — RCH Department description supplied by
-                CIPRB. Mirrors the PHD "ABOUT THE PARTNER" hero block. */}
-            <div className="anim-rise d3" style={{ marginTop: 20, paddingTop: 18, borderTop: '1px solid var(--hair)', maxWidth: 560 }}>
+                CIPRB. Replaces the old technical lede (Kobo form list, form
+                numbers, district count) which read as internal jargon in a
+                hero. This human-readable brief stands in its place, in the
+                same typography as the PHD hero's ABOUT THE PARTNER block. */}
+            <div className="anim-rise d2" style={{ marginTop: 12, maxWidth: 560 }}>
               <div className="kicker" style={{ marginBottom: 8 }}><span className="dot" style={{ background: CIPRB_BLUE }} />ABOUT THE PARTNER</div>
               <p style={{ fontSize: 12.5, lineHeight: 1.62, color: 'var(--ink-3)', marginBottom: 0, textWrap: 'pretty' }}>
                 The Reproductive and Child Health (RCH) Department of CIPRB aims to improve maternal and newborn health through high-quality research, innovation, and health systems strengthening. In collaboration with UNFPA the department leads key initiatives such as MPDSR, Maternal Near-Miss reviews, and fistula prevention and management programs. Its work generates evidence to inform policy and improve the quality of reproductive, maternal, and newborn healthcare services in Bangladesh.
