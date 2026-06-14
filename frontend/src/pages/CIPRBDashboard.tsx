@@ -777,10 +777,10 @@ export default function CIPRBDashboard() {
                 numbers, district count) which read as internal jargon in a
                 hero. This human-readable brief stands in its place, in the
                 same typography as the PHD hero's ABOUT THE PARTNER block. */}
-            <div className="anim-rise d2" style={{ marginTop: 12, maxWidth: 560 }}>
+            <div className="anim-rise d2" style={{ marginTop: 12, maxWidth: 640 }}>
               <div className="kicker" style={{ marginBottom: 8 }}><span className="dot" style={{ background: CIPRB_BLUE }} />ABOUT THE PARTNER</div>
               <p style={{ fontSize: 12.5, lineHeight: 1.62, color: 'var(--ink-3)', marginBottom: 0, textWrap: 'pretty' }}>
-                The Reproductive and Child Health (RCH) Department of CIPRB aims to improve maternal and newborn health through high-quality research, innovation, and health systems strengthening. In collaboration with UNFPA the department leads key initiatives such as MPDSR, Maternal Near-Miss reviews, and fistula prevention and management programs. Its work generates evidence to inform policy and improve the quality of reproductive, maternal, and newborn healthcare services in Bangladesh.
+                Centre for Injury Prevention and Research, Bangladesh (CIPRB) is a nationally recognized development organization with more than 21 years of experience in implementing programme, public health, MNCAH, nutrition, injury prevention, and health systems strengthening programmes across Bangladesh. CIPRB has successfully implemented more than 100 projects in all 64 districts of Bangladesh in collaboration with the Ministry of Health and Family Welfare, DGHS, DGFP, UN agencies, donors, and international academic institutions. The Reproductive and Child Health (RCH) Department of CIPRB aims to improve maternal and newborn health through high-quality research, innovation, and health systems strengthening. In collaboration with UNFPA the department leads key initiatives such as MPDSR, Maternal Near-Miss reviews, and fistula prevention and management programs. Its work generates evidence to inform policy and improve the quality of reproductive, maternal, and newborn healthcare services in Bangladesh.
               </p>
             </div>
           </div>
