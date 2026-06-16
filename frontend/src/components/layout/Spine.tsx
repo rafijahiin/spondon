@@ -160,6 +160,9 @@ const KOBO_GROUPS: KoboGroup[] = [
       { url: 'https://ee.kobotoolbox.org/x/UsS0Cwbi',
         label: 'CIPRB 9 — Maternal Near Miss audit',
         labelBn: 'সিআইপিআরবি ৯ — মাতৃ নিকট-মৃত্যু অডিট' },
+      { url: 'https://ee.kobotoolbox.org/x/S07hvhWy',
+        label: 'CIPRB 10 — MPDSR Response Plan',
+        labelBn: 'সিআইপিআরবি ১০ — এমপিডিএসআর রেসপন্স প্ল্যান' },
     ],
   },
   {
