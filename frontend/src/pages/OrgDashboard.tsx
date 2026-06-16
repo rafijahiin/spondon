@@ -274,18 +274,15 @@ export function OrgDashboard({ partner }: Props) {
 
   // ── Mock fallback ──────────────────────────────────────────────────────────
 
-  const usingMock = !programsLoading && (programs?.total ?? 0) === 0
-  const displayPrograms: ProgramsSummary = usingMock
-    ? MOCK_PROGRAMS[partner]
-    : (programs ?? MOCK_PROGRAMS[partner])
-
-  const displayKpis: PartnerKPIs = (kpis && (kpis.submissions_this_month > 0 || kpis.fistula_cases > 0))
-    ? kpis
-    : MOCK_KPIS[partner]
-
-  const displayCentres: CentresResponse = (centres && centres.districts.length > 0)
-    ? centres
-    : MOCK_CENTRES[partner]
+  // Demo fallback retired — the system is live, so the dashboard shows REAL
+  // data even when it's zero/sparse. Showing illustrative numbers (e.g.
+  // "1,156 submissions") behind a small badge is misleading in a partner
+  // review. The mock structures remain only as a transient shape-default
+  // while the very first request is still in flight (programs/kpis null).
+  const usingMock = false
+  const displayPrograms: ProgramsSummary = programs ?? MOCK_PROGRAMS[partner]
+  const displayKpis: PartnerKPIs = kpis ?? MOCK_KPIS[partner]
+  const displayCentres: CentresResponse = centres ?? MOCK_CENTRES[partner]
 
   const categories = displayPrograms.categories ?? {}
   const monthlyTrend = displayPrograms.monthly_trend ?? []
