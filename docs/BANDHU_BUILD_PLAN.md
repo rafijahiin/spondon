@@ -1,5 +1,28 @@
 # Bandhu Subsystem — Build Plan
 
+> ## ⚠ SUPERSEDED — as-built differs from this plan
+>
+> **This document is a historical planning artifact. The Bandhu subsystem has
+> since been built and deployed, and the as-built design differs from the plan
+> below in several material ways. Read the code (and migration 0014) as the
+> source of truth, not this file.** Key differences:
+>
+> - **Built, not "plan only".** The "PLAN ONLY — no code written yet" status
+>   below is stale; handlers, models, indicators and forms are all implemented
+>   (`programs/bandhu_handlers.py`, `programs/management/commands/build_bandhu_forms.py`,
+>   `indicators/bandhu.py`).
+> - **Unified TG/gender codes**, NOT per-form schemes. Every tool uses one
+>   shared `tg_code` list (01 MSM · 02 MSW · 03 FSW · 04 EVA · 05 TG/Hijra ·
+>   06 Others) — see `_shared_choices()` in build_bandhu_forms.py.
+> - **3 Kobo forms**, not 2 per-form-TG forms: `bandhu_mother_list_v1`
+>   (registration), `bandhu_service_log_v1`, `bandhu_activity_ops_v1`.
+> - **18 indicators** computed per migration `0014` (compute functions in
+>   `indicators/bandhu.py`; indicator 1.4b was retired as a duplicate of 1.1).
+>
+> Everything below is retained for context only.
+
+---
+
 Project: "Men, Boys & Transgender SRHR response amongst Rohingya & Host Community"
 Implementer: Bandhu Social Welfare Society · Funder: UNFPA
 Status: **PLAN ONLY — no code written yet. Awaiting approval.**

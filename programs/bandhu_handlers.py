@@ -8,12 +8,21 @@ Webhook handlers for the 2 consolidated Bandhu XLSForms.
 
 Design (agreed with Rafi 2026-06-08):
   - ONE canonical tool per indicator → no double-counting.
-  - The FULL form payload is kept in raw_payload on every row, so no tool
-    question is ever lost (Manager Approvals shows the complete readout).
+  - For rows that ARE persisted, the FULL form payload is kept in raw_payload
+    (Manager Approvals shows the complete readout).
   - Only fields the 18 indicators need are mapped to model columns; nothing
     invented.
-  - F-01 logbook and F-08/attendance detail are stored (raw) but not
-    re-counted — their services are already counted via the canonical tool.
+
+NOT RETAINED IN SIMPLE (audit H1):
+  - F-01 Wellness Centre Service Logbook (_bnd_logbook), F-11 Attendance
+    (_bnd_attendance) and F-13 Stock Register (_bnd_stock) return 200 with NO
+    database write. The programs webhook does not persist a KoboSubmission
+    either, so these three forms currently live ONLY in KoboToolbox — they are
+    NOT retained anywhere in SIMPLE (the earlier "kept in raw_payload" claim was
+    inaccurate). Their service/participant volumes are counted via the canonical
+    tools (F-05/F-06 for logbook, F-12 Event Report for attendance), and no
+    indicator counts stock. Proper retention needs a new raw-payload model +
+    migration — see the per-function TODOs.
 """
 import logging
 import uuid as _uuid
@@ -22,7 +31,7 @@ from django.http import HttpResponse
 from django.utils import timezone
 
 from .webhook import (
-    _str, _bool, _int, _int_or_none, _date,
+    _str, _bool, _int, _int_or_none, _nullable_bool, _date,
     _already_exists, _base_kwargs, _get_center,
 )
 from .models import (
@@ -151,9 +160,10 @@ def _bnd_gbv(payload, lat, lng):
     return HttpResponse('Created', status=201)
 
 
-def _bnd_counsel_common(payload, lat, lng, date_key, issues, ref_key=None):
+def _bnd_counsel_common(payload, lat, lng, date_key, issues, *, extra=None):
     """Shared writer for F-03 + Counseling → IndividualCounselling. Drives 1.3
-    (issue_psychosocial)."""
+    (issue_psychosocial). `extra` carries any tool-specific column values
+    (e.g. F-03's drug-history fields) the caller wants persisted."""
     center = _get_center(payload, ORG)
     if not center:
         return HttpResponse('center not found', status=400)
@@ -169,6 +179,7 @@ def _bnd_counsel_common(payload, lat, lng, date_key, issues, ref_key=None):
         issue_psychosocial=('psychosocial' in issues or 'mental_health' in issues),
         issue_gbv=('gbv' in issues),
         issue_other=('other' in issues),
+        **(extra or {}),
         **_base_kwargs(payload, lat, lng),
     )
     return HttpResponse('Created', status=201)
@@ -177,7 +188,13 @@ def _bnd_counsel_common(payload, lat, lng, date_key, issues, ref_key=None):
 def _bnd_mh(payload, lat, lng):
     """F-03 Mental Health Counseling → IndividualCounselling (psychosocial)."""
     issues = ['mental_health'] + _multi(payload, 'mh_counsel_type')
-    return _bnd_counsel_common(payload, lat, lng, 'mh_date', issues)
+    # F-03 drug-history fields persisted onto the model's existing columns.
+    drug_noted = _bool(payload.get('mh_drug_history'))
+    extra = {
+        'drug_habit_noted': drug_noted,
+        'drug_names': _str(payload.get('mh_drug_names')),
+    }
+    return _bnd_counsel_common(payload, lat, lng, 'mh_date', issues, extra=extra)
 
 
 def _bnd_counsel(payload, lat, lng):
@@ -236,11 +253,15 @@ def _bnd_hiv_identified(payload, lat, lng):
 
 
 def _bnd_logbook(payload, lat, lng):
-    """F-01 Wellness Centre Service Logbook — stored (raw_payload) but NOT
-    re-counted; its services are counted via F-05/F-06. A lightweight
-    OutreachSession is created only so the submission appears in the centre's
-    activity stream without inflating any indicator."""
-    # Intentionally no model write to a counted source — keep audit trail only.
+    """F-01 Wellness Centre Service Logbook — Kobo-only, NOT retained in SIMPLE.
+
+    This returns 200 with no database write: the logbook's services are already
+    counted via the canonical Patient Record (F-05) and HTC (F-06) tools, so
+    re-persisting would double-count, and the programs webhook stores no
+    KoboSubmission. The raw payload therefore exists ONLY in KoboToolbox.
+    TODO(audit H1): add a raw-payload retention model + migration so the F-01
+    submission is preserved in SIMPLE for audit, without feeding any indicator.
+    """
     return HttpResponse('OK', status=200)
 
 
@@ -280,9 +301,18 @@ def _bnd_outreach(payload, lat, lng):
         lubricants_distributed_free=_int(payload.get('or_lubricant')),
         hiv_aids_sti_knowledge_sessions=_int(payload.get('or_awareness')),
         iec_bcc_materials_distributed=_int(payload.get('or_iec')),
-        referral_htc_hts=_int(payload.get('or_ref_sti')) > 0,
-        referral_mental_health=_int(payload.get('or_ref_mental_health')) > 0,
-        referral_gbv=_int(payload.get('or_ref_gbv')) > 0,
+        # F-04 referral counts (PositiveSmallIntegerField → store the count, not
+        # a bool). OutreachSession has no STI/GH/counseling/recreation columns,
+        # so those go to referral_other rather than being aliased onto the wrong
+        # field (H2: or_ref_sti was previously mis-written to referral_htc_hts).
+        referral_mental_health=_int(payload.get('or_ref_mental_health')),
+        referral_gbv=_int(payload.get('or_ref_gbv')),
+        referral_other=(
+            _int(payload.get('or_ref_sti'))
+            + _int(payload.get('or_ref_gh'))
+            + _int(payload.get('or_ref_counseling'))
+            + _int(payload.get('or_ref_recreation'))
+        ),
         **_base_kwargs(payload, lat, lng),
     )
     return HttpResponse('Created', status=201)
@@ -372,15 +402,30 @@ def _bnd_event(payload, lat, lng):
 
 
 def _bnd_attendance(payload, lat, lng):
-    """F-11 Attendance — per-participant roster. Stored (raw) only; the event's
-    participant total is captured by the F-12 Event Report (the counted
-    source for 2.1/2.2/2.5), so attendance rows must not inflate it."""
+    """F-11 Attendance — per-participant roster. Kobo-only, NOT retained in
+    SIMPLE.
+
+    Returns 200 with no database write. The event's participant total is the
+    counted source (F-12 Event Report → 2.1/2.2/2.5), so attendance rows must
+    not inflate it; and the programs webhook stores no KoboSubmission, so this
+    roster exists ONLY in KoboToolbox.
+    TODO(audit H1): add a raw-payload retention model + migration to preserve
+    the F-11 roster in SIMPLE for audit, without feeding any indicator.
+    """
     return HttpResponse('OK', status=200)
 
 
 def _bnd_stock(payload, lat, lng):
-    """F-13 Stock Register — commodity ledger. Stored (raw) only; no indicator
-    counts stock directly."""
+    """F-13 Stock Register — commodity ledger. Kobo-only, NOT retained in
+    SIMPLE.
+
+    Returns 200 with no database write. No Bandhu indicator counts stock, and
+    the programs webhook stores no KoboSubmission, so this ledger exists ONLY in
+    KoboToolbox.
+    TODO(audit H1): add a raw-payload retention model + migration to preserve
+    the F-13 ledger in SIMPLE for audit (the existing StockEntry model is a
+    monthly-summary shape with a unique_together, not a drop-in fit).
+    """
     return HttpResponse('OK', status=200)
 
 
@@ -404,9 +449,12 @@ def _bnd_ebillboard(payload, lat, lng):
 
 
 def _bnd_centre_info(payload, lat, lng, *, name_key, addr_key, incharge_key,
-                     staff_key, functional_key, cruising_key=None, equipped_key=None):
+                     staff_key, functional_key, equipped_key=None):
     """F-07 / F-09 — update the selected centre's roster details in place.
-    These are reference/info records, not counted submissions."""
+    These are reference/info records, not counted submissions.
+
+    ServiceCenter has no dedicated incharge/staff/cruising-spot columns, so
+    address + is_active are the only fields safely persisted here."""
     center = _get_center(payload, ORG)
     if not center:
         return HttpResponse('center not found', status=400)
@@ -417,11 +465,6 @@ def _bnd_centre_info(payload, lat, lng, *, name_key, addr_key, incharge_key,
     func = payload.get(functional_key)
     if func is not None and _str(func) != '':
         center.is_active = _bool(func); changed.append('is_active')
-    if cruising_key:
-        spot = _str(payload.get(cruising_key))
-        # ServiceCenter has no dedicated incharge/staff/cruising columns; the
-        # full detail is preserved on the centre's notes-style fields where they
-        # exist. address + is_active are the columns we can safely set.
     if changed:
         center.save(update_fields=changed + ['updated_at'] if hasattr(center, 'updated_at') else changed)
     return HttpResponse('OK', status=200)
@@ -440,7 +483,7 @@ def _bnd_wellness_center_info(payload, lat, lng):
     return _bnd_centre_info(
         payload, lat, lng,
         name_key='wc_name', addr_key='wc_address', incharge_key='wc_incharge',
-        staff_key='wc_num_staff', functional_key='wc_functional', cruising_key='wc_cruising_spot')
+        staff_key='wc_num_staff', functional_key='wc_functional')
 
 
 def handle_bandhu_activity_ops(payload, lat, lng):
@@ -494,6 +537,9 @@ def handle_bandhu_mother_list(payload, lat, lng):
         'children_under_18': _int_or_none(payload.get('ml_children_u18')),
         'occupation_code': _str(payload.get('ml_occupation')),
         'avg_clients_per_day': _int_or_none(payload.get('ml_avg_day')),
+        # ml_fp_method (yn_code, skipped for never-married) → uses_fp_method.
+        # Nullable: absent/empty stays None rather than defaulting to False.
+        'uses_fp_method': _nullable_bool(payload, 'ml_fp_method'),
         'current_status': Client.ACTIVE,
         'approval_status': Client.APPROVED,
         'kobo_submission_id': kobo_id or None,
@@ -519,7 +565,7 @@ def handle_bandhu_mother_list(payload, lat, lng):
                 for f in ('center', 'name', 'father_name', 'birth_year',
                           'target_group_code', 'current_address', 'spot_name',
                           'education_level', 'marital_status', 'children_under_18',
-                          'occupation_code', 'avg_clients_per_day',
+                          'occupation_code', 'avg_clients_per_day', 'uses_fp_method',
                           'submitted_by_kobo_user', 'latitude', 'longitude',
                           'raw_payload'):
                     setattr(locked, f, defaults[f])

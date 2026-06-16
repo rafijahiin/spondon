@@ -175,16 +175,18 @@ def _get_center(payload: dict, org: str):
             return center
         logger.warning('Programs webhook: centre %r not matched for org %r; trying fallback', typed, org)
 
+    # Never drop a submission just because the centre can't be matched — fall
+    # back to the org's first active centre, then to an org-scoped auto-created
+    # placeholder. (Workshop fix: forms whose centre list doesn't match seeded
+    # centres were 400'ing with "center not found".)
+    #
+    # M1: every fallback is scoped to the submission's OWN org. A cross-org
+    # fallback (ANY active centre) previously let a Bandhu submission bind to a
+    # PHD centre, and the auto-create defaulted to org='PHD'. Both are now
+    # org-bound so a Bandhu submission can never land on/create a PHD centre.
     center = ServiceCenter.objects.filter(organisation=org, is_active=True).first()
     if center:
-        return center
-    # Never drop a submission just because the centre can't be matched —
-    # fall back to ANY active centre, then to an auto-created placeholder.
-    # (Workshop fix: forms whose centre list doesn't match seeded centres
-    # were 400'ing with "center not found".)
-    center = ServiceCenter.objects.filter(is_active=True).first()
-    if center:
-        logger.warning('Programs webhook: no centre for org %r; using fallback %r', org, center.code)
+        logger.warning('Programs webhook: no matched centre for org %r; using org fallback %r', org, center.code)
         return center
     center = ServiceCenter.objects.create(
         code=f'AUTO-{(org or "NA")[:8].upper()}',
@@ -194,7 +196,7 @@ def _get_center(payload: dict, org: str):
         district='',
         is_active=True,
     )
-    logger.warning('Programs webhook: auto-created placeholder centre %r', center.code)
+    logger.warning('Programs webhook: auto-created placeholder centre %r for org %r', center.code, org or 'PHD')
     return center
 
 

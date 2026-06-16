@@ -155,6 +155,9 @@ export default function App() {
                 </RequireOrg>
               }
             />
+            {/* Modern-spelling alias — /bandhu resolves to the Bandhu org
+                dashboard at /bondhu (the legacy slug). */}
+            <Route path="bandhu" element={<Navigate to="/bondhu" replace />} />
             <Route path="approvals" element={<ManagerApprovals />} />
             {/* Unified CIPRB Dashboard — Fistula KPIs + registers + MPDSR in
                 one place, mirroring /phd and /bondhu structure. */}

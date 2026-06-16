@@ -90,6 +90,36 @@ const REFERRAL_CODES: Record<string, string> = {
   gbv: 'GBV', fp: 'Family planning',
 }
 
+// F-01 Wellness Logbook referral codes (select_multiple f01_referral, field
+// log_referral). Numeric 01-08 per build_bandhu_forms.py.
+const F01_REFERRAL_CODES: Record<string, string> = {
+  '01': 'STI', '02': 'General health', '03': 'Counseling',
+  '04': 'Mental health', '05': 'Family planning', '06': 'Legal',
+  '07': 'Lab test', '08': 'Other',
+}
+
+// Mother List coded demographics (build_bandhu_forms.py choice lists).
+const EDUCATION_CODES: Record<string, string> = {
+  '1': 'Illiterate', '2': 'Primary', '3': 'Secondary',
+  '4': 'Higher Secondary', '5': 'Graduate / Masters',
+}
+
+const MARITAL_CODES: Record<string, string> = {
+  '1': 'Single (never married)', '2': 'Married', '3': 'Widowed',
+  '4': 'Separated', '5': 'Divorced / Others',
+}
+
+// Mother List col 17 — current status (ml_current_status).
+const ML_STATUS_CODES: Record<string, string> = {
+  '1': 'Not found', '2': 'In jail', '3': 'Left the place',
+  '4': 'Others', '5': 'Dead',
+}
+
+/** Wrap a decoded label with its raw code, e.g. "Married (2)". */
+function withCode(label: string, code: string): string {
+  return `${label} (${code})`
+}
+
 /**
  * Decode a coded Bandhu field VALUE to a readable label, given the leaf field
  * key (e.g. 'pr_tg', 'record_type', 'pr_referral'). Returns the value unchanged
@@ -99,14 +129,26 @@ export function decodeBandhuValue(key: string, value: any): any {
   if (value === null || value === undefined || value === '') return value
   const v = String(value).trim()
   if (key === 'record_type') return RECORD_TYPES[v] || value
-  // Target-group code fields: pr_tg, htc_tg, hv_tg, mc_tg, …
-  if (/(^|_)tg$/.test(key) || key === 'target_group') {
-    return TG_CODES[v] ? `${TG_CODES[v]} (${v})` : value
+  // Target-group code fields: pr_tg, htc_tg, hv_tg, mc_tg, … plus the Mother
+  // List gender field (ml_gender), which uses the same unified tg_code list.
+  if (/(^|_)tg$/.test(key) || key === 'target_group' || key === 'ml_gender') {
+    return TG_CODES[v] ? withCode(TG_CODES[v], v) : value
+  }
+  // F-01 Wellness Logbook referral (log_referral) — select_multiple of numeric
+  // f01_referral codes, Kobo-joined by spaces. Checked before the generic
+  // *_referral rule below so the numeric codes decode correctly.
+  if (key === 'log_referral') {
+    const labels = v.split(/\s+/).filter(Boolean).map((c) => F01_REFERRAL_CODES[c] || c)
+    return labels.length ? labels.join(', ') : value
   }
   // Referral select_multiple — Kobo joins selected codes with spaces.
   if (key === 'pr_referral' || key.endsWith('_referral') || key.endsWith('referral')) {
     const labels = v.split(/\s+/).filter(Boolean).map((c) => REFERRAL_CODES[c] || c)
     return labels.length ? labels.join(', ') : value
   }
+  // Mother List coded demographics.
+  if (key === 'ml_education') return EDUCATION_CODES[v] ? withCode(EDUCATION_CODES[v], v) : value
+  if (key === 'ml_marital') return MARITAL_CODES[v] ? withCode(MARITAL_CODES[v], v) : value
+  if (key === 'ml_current_status') return ML_STATUS_CODES[v] ? withCode(ML_STATUS_CODES[v], v) : value
   return value
 }

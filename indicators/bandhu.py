@@ -45,18 +45,18 @@ def compute_I_BND_1_2(org, period_start, period_end):
 
 
 def compute_I_BND_1_3(org, period_start, period_end):
-    """Individuals receiving MHPSS counselling. Target: 48 persons (MIS doc)."""
-    individual = IndividualCounselling.objects.filter(
+    """Individuals receiving MHPSS counselling. Target: 48 persons (MIS doc).
+
+    M2: counts ONLY IndividualCounselling(issue_psychosocial=True) — the F-03
+    Mental Health Counseling tool is the single canonical source. The previous
+    GroupEducationSession(topic~'mental') term was dead weight (no Bandhu
+    handler writes GroupEducationSession) that could inflate 1.3 if a generic
+    group-ed row ever landed under org=Bandhu, so it is removed."""
+    return IndividualCounselling.objects.filter(
         organisation=org, approval_status=APPROVED,
         session_date__range=(period_start, period_end),
         issue_psychosocial=True,
     ).count()
-    group_mh = GroupEducationSession.objects.filter(
-        organisation=org, approval_status=APPROVED,
-        session_date__range=(period_start, period_end),
-        topic__icontains='mental',
-    ).count()
-    return individual + group_mh
 
 
 def compute_I_BND_1_4A(org, period_start, period_end):
@@ -84,7 +84,12 @@ def compute_I_BND_1_4A(org, period_start, period_end):
 def compute_I_BND_1_5_hiv(org, period_start, period_end):
     """KP receiving HIV testing services. Target: 2,000 (MIS doc, code 1.5b).
 
-    Counts HIV test records from the HTC Service Register (F-06)."""
+    Counts EVERY HTC Service Register (F-06) row as one HIV test received —
+    there is NO hiv_result gate, so records with any result (or no result yet)
+    are all counted as a testing-service delivered. M4: this is the M&E
+    framework's definition of "received HIV testing services" and is a
+    DEFINITION choice for UNFPA to confirm, not a bug — do not add a result
+    filter without their sign-off."""
     return HIVSTITestResult.objects.filter(
         organisation=org, approval_status=APPROVED,
         testing_date__range=(period_start, period_end),
@@ -94,9 +99,11 @@ def compute_I_BND_1_5_hiv(org, period_start, period_end):
 def compute_I_BND_1_5_sti(org, period_start, period_end):
     """KP receiving STI services. Target: 2,000 (MIS doc, code 1.5a).
 
-    Counts clinic visits where an STI service was delivered (Patient Record
-    Register F-05). Proxy on sti_screening_done until the register's
-    STI-case fields are wired in P1."""
+    Counts clinic visits where STI screening was done (Patient Record Register
+    F-05, sti_screening_done=True). M3: sti_screening_done is used as the proxy
+    for "received STI services" — this is a DEFINITION choice for UNFPA to
+    confirm (screening vs treatment/case), not a bug. Do not narrow to
+    STI-case/treatment fields without their sign-off."""
     return ClinicVisit.objects.filter(
         organisation=org, approval_status=APPROVED,
         visit_date__range=(period_start, period_end),
