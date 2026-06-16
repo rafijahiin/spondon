@@ -92,6 +92,7 @@ def _meta(center_required=True):
         _sr('geopoint','location',
             'GPS location (required — step outside if no signal)',
             'জিপিএস অবস্থান (প্রয়োজনীয়)', required='yes'),
+        _sr('date','collection_date','Date','তারিখ', required='yes'),
         # Dropdown of PHD's 9 wellness centres (PHD request, 2026-06-08).
         # The choice VALUE is the official Wellness Centre ID (R001..D009);
         # the webhook _get_center resolves it via code__iexact. Only PHD's

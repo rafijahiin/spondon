@@ -135,6 +135,7 @@ def _meta(form_id_visible, form_id_visible_bn=''):
         _sr('geopoint', 'location',
             'GPS location (required — step outside if no signal)',
             'জিপিএস অবস্থান (প্রয়োজনীয়)', required='yes'),
+        _sr('date', 'collection_date', 'Date', 'তারিখ', required='yes'),
         _sr('select_one district', 'district',
             'District', 'জেলা', required='yes'),
         _sr('text', 'upazila',  'Upazila',  'উপজেলা'),
