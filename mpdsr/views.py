@@ -185,6 +185,10 @@ def mpdsr_aggregates(request):
             'activities_implemented': a.activities_implemented,
             'completion_pct': a.completion_pct,
             'actions': a.actions or [],
+            # Lets the frontend show the "interim placeholder" caveat only for
+            # seed/Excel rows — real Kobo submissions (source kobo_response_plan)
+            # carry true implemented counts, so the banner auto-hides for them.
+            'source': a.source,
         })
 
     # Exclude F3 / F6 stillbirth reviews from dashboard surface counts

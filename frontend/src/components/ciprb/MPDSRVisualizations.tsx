@@ -49,6 +49,7 @@ interface ActionPlanSummary {
   actions?: ActionItem[]
   meetings_planned: number; activities_planned: number; activities_implemented: number
   completion_pct: number
+  source?: string
 }
 
 interface DistrictDenominator {
@@ -791,10 +792,11 @@ function ResponsePlanTracker({ summaries }: { summaries: ActionPlanSummary[] }) 
         <SourceChip>CIPRB 10 — Response Plan</SourceChip>
       </div>
 
-      {/* Visible data-note — implemented counts are interim placeholders
-          (executed ≈ planned/2) until a Kobo field-form for executed-activity
-          counts ships; surfaced so the numbers aren't read as confirmed. */}
-      {summaries.length > 0 && (
+      {/* Interim-data caveat — shown ONLY while seed/Excel placeholder rows are
+          present (executed ≈ planned/2). Real Kobo submissions carry true
+          implemented counts (source 'kobo_response_plan'), so this auto-hides
+          once the tracker is driven entirely by live field data. */}
+      {summaries.some(s => s.source && s.source !== 'kobo_response_plan') && (
         <div style={{
           display: 'flex', alignItems: 'center', gap: 8,
           margin: '0 0 14px', padding: '8px 12px',
