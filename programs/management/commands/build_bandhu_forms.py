@@ -81,13 +81,31 @@ def _id_lookup(idfield):
     ]
 
 
+def _age_from_ml(idfield, agefield, label_en='Age (as per Mother List)',
+                 label_bn='বয়স (মাদার লিস্ট অনুযায়ী)'):
+    """Auto-fill a client's age from bandhu_clients.csv (the Mother List) rather
+    than typing it (Ashis review pt 4). Returns a hidden calculate that pulls the
+    registered age by ID + a read-only note showing it. Use in place of a manual
+    age field: `*_age_from_ml('pr_client_id', 'pr_age'),`. The backend still reads
+    the same field name — the value now comes from the lookup, not manual entry."""
+    norm = ("translate(normalize-space(${%s}),"
+            "'abcdefghijklmnopqrstuvwxyz','ABCDEFGHIJKLMNOPQRSTUVWXYZ')" % idfield)
+    return [
+        _sr('calculate', agefield,
+            calc="pulldata('bandhu_clients','age','id_no',%s)" % norm),
+        _sr('note', '_%s_show' % agefield,
+            '%s: ${%s}' % (label_en, agefield), '%s: ${%s}' % (label_bn, agefield),
+            relevant="${%s}!=''" % agefield),
+    ]
+
+
 def _wb(form_id, form_title, survey, choices):
     wb = openpyxl.Workbook()
     wb.remove(wb.active)
     for sheet_name, headers, rows in [
         ('survey',   SURVEY_HDR,   survey),
         ('choices',  CHOICES_HDR,  choices),
-        ('settings', SETTINGS_HDR, [[form_title, form_id, '20260610', 'English', 'theme-grid']]),
+        ('settings', SETTINGS_HDR, [[form_title, form_id, '20260615', 'English', 'theme-grid']]),
     ]:
         ws = wb.create_sheet(sheet_name)
         ws.append(headers)
@@ -263,6 +281,7 @@ def _shared_choices():
         ('coord_gob',            'Coordination meeting — GOB/NGO (2.3)'),
         ('coord_cbo',            'Coordination meeting — CBO/network (2.4)'),
         ('observance',           'Observance event — World AIDS Day etc. (2.6)'),
+        ('other',                'Other'),   # Ashis review pt 6 — routed to INTERNAL (no indicator)
     ]:
         rows.append(_ch('event_kind', v, en))
 
@@ -312,7 +331,9 @@ def _mother_list_survey():
         _sr('text', 'ml_spot', 'Spot name', 'স্পটের নাম'),
         _sr('select_one education', 'ml_education', 'Education', 'শিক্ষা'),
         _sr('select_one marital', 'ml_marital', 'Marital status', 'বৈবাহিক অবস্থা'),
-        _sr('integer', 'ml_children_u18', 'Number of children under 18', '১৮ বছরের নিচে সন্তান সংখ্যা'),
+        # Skip children count for never-married (marital '1') — Ashis review pt 2.
+        _sr('integer', 'ml_children_u18', 'Number of children under 18', '১৮ বছরের নিচে সন্তান সংখ্যা',
+            relevant="${ml_marital}!='1'"),
         _sr('text', 'ml_occupation', 'Income source (occupation)', 'আয়ের উৎস (পেশা)'),
         _sr('note', '_ml_avg', 'Average sex-work contacts (fill the applicable period):', ''),
         _sr('integer', 'ml_avg_day', 'Per day', 'দৈনিক'),
@@ -326,9 +347,11 @@ def _mother_list_survey():
         _sr('select_one yn_code', 'ml_has_nid',
             'Has a National ID card? (Yes-1/No-0)',
             'জাতীয় পরিচয়পত্র আছে কি না? (হ্যাঁ-১/না-০)'),
+        # FP not asked for never-married (marital '1') — Ashis review pt 2.
         _sr('select_one yn_code', 'ml_fp_method',
             'Uses any family-planning method? (Yes-1/No-0)',
-            'পরিবার পরিকল্পনার কোনো পদ্ধতি ব্যবহার করেন কি না? (হ্যাঁ-১/না-০)'),
+            'পরিবার পরিকল্পনার কোনো পদ্ধতি ব্যবহার করেন কি না? (হ্যাঁ-১/না-০)',
+            relevant="${ml_marital}!='1'"),
         _sr('select_one ml_status', 'ml_current_status',
             'Current status', 'বর্তমান অবস্থা'),
         _sr('end_group', 'grp_ml'),
@@ -353,7 +376,7 @@ def _service_log_survey():
         _sr('begin_group', 'grp_logbook', 'F-01 · Wellness Centre Service Logbook',
             'F-01 · ওয়েলনেস সেন্টার সার্ভিস লগবুক', relevant=R('wellness_logbook')),
         _sr('date', 'log_date', 'Date', 'তারিখ'),
-        _sr('text', 'log_client_id', 'ID #', 'আইডি'),
+        _sr('text', 'log_client_id', 'ID #', 'আইডি', required='yes'),
         *_id_lookup('log_client_id'),
         _sr('select_one tg_code', 'log_tg', 'TG (Code)', 'টিজি কোড'),
         _sr('note', '_log_services', 'Services provided (enter count where applicable):', ''),
@@ -380,11 +403,11 @@ def _service_log_survey():
         _sr('begin_group', 'grp_patient', 'F-05 · Patient Record Register',
             'F-05 · রোগীর রেকর্ড রেজিস্টার', relevant=R('patient_record')),
         _sr('date', 'pr_date', 'Date', 'তারিখ'),
-        _sr('text', 'pr_client_id', 'ID No.', 'আইডি নম্বর'),
+        _sr('text', 'pr_client_id', 'ID No.', 'আইডি নম্বর', required='yes'),
         *_id_lookup('pr_client_id'),
         _sr('select_one tg_code', 'pr_tg', 'TG Code', 'টিজি কোড'),
         _sr('select_one general_diverse', 'pr_general_diverse', 'General / Diverse', 'সাধারণ / বৈচিত্র্যময়'),
-        _sr('integer', 'pr_age', 'Age (as per mother list)', 'বয়স'),
+        *_age_from_ml('pr_client_id', 'pr_age'),
         _sr('select_one yes_no', 'pr_screening_sti_hiv', 'Screening (STI & HIV) Health', 'এসটিআই ও এইচআইভি স্ক্রিনিং'),
         _sr('select_one yes_no', 'pr_tb_screening', 'TB Screening', 'টিবি স্ক্রিনিং'),
         _sr('select_one yes_no', 'pr_gh_screening', 'GH Screening', 'জিএইচ স্ক্রিনিং'),
@@ -407,9 +430,9 @@ def _service_log_survey():
     rows += [
         _sr('begin_group', 'grp_htc', 'F-06 · HTC Service Register',
             'F-06 · এইচটিসি সার্ভিস রেজিস্টার', relevant=R('htc')),
-        _sr('text', 'htc_client_id', "Client's ID", 'ক্লায়েন্ট আইডি'),
+        _sr('text', 'htc_client_id', "Client's ID", 'ক্লায়েন্ট আইডি', required='yes'),
         *_id_lookup('htc_client_id'),
-        _sr('integer', 'htc_age', 'Age (in years)', 'বয়স'),
+        *_age_from_ml('htc_client_id', 'htc_age'),
         _sr('select_one tg_code', 'htc_tg', 'TG Code', 'টিজি কোড'),
         _sr('select_one yes_no', 'htc_partner_testing', 'Partner testing', 'পার্টনার টেস্টিং'),
         _sr('select_one yes_no', 'htc_pretest', 'Pretest counseling', 'প্রি-টেস্ট কাউন্সেলিং'),
@@ -425,9 +448,9 @@ def _service_log_survey():
     rows += [
         _sr('begin_group', 'grp_gbv', 'F-02 · GBV Register',
             'F-02 · জিবিভি রেজিস্টার', relevant=R('gbv')),
-        _sr('text', 'gbv_client_id', "Client's ID", 'ক্লায়েন্ট আইডি'),
+        _sr('text', 'gbv_client_id', "Client's ID", 'ক্লায়েন্ট আইডি', required='yes'),
         *_id_lookup('gbv_client_id'),
-        _sr('integer', 'gbv_age', 'Age', 'বয়স'),
+        *_age_from_ml('gbv_client_id', 'gbv_age'),
         _sr('select_one tg_code', 'gbv_tg', 'TG Code', 'টিজি কোড'),
         _sr('text', 'gbv_complaint', 'Complaint on GBV', 'জিবিভি অভিযোগ', app='multiline'),
         _sr('text', 'gbv_primary_service', 'Primary service provided on GBV', 'প্রাথমিক সেবা'),
@@ -442,10 +465,10 @@ def _service_log_survey():
         _sr('begin_group', 'grp_mh', 'F-03 · Mental Health Counseling Register',
             'F-03 · মানসিক স্বাস্থ্য কাউন্সেলিং', relevant=R('mh_counseling')),
         _sr('date', 'mh_date', 'Date', 'তারিখ'),
-        _sr('text', 'mh_client_id', 'Client ID #', 'ক্লায়েন্ট আইডি'),
+        _sr('text', 'mh_client_id', 'Client ID #', 'ক্লায়েন্ট আইডি', required='yes'),
         *_id_lookup('mh_client_id'),
         _sr('select_one tg_code', 'mh_tg', 'TG Code', 'টিজি কোড'),
-        _sr('integer', 'mh_age', 'Age', 'বয়স'),
+        *_age_from_ml('mh_client_id', 'mh_age'),
         _sr('text', 'mh_cruising_spot', 'Cruising spot', 'ক্রুজিং স্পট'),
         _sr('select_multiple sex_with', 'mh_sex_with', 'Recently had sex with', 'সম্প্রতি যৌন সম্পর্ক'),
         _sr('text', 'mh_sex_since', 'Practicing sexual activities since', 'কবে থেকে যৌন কার্যকলাপ'),
@@ -453,7 +476,9 @@ def _service_log_survey():
         _sr('select_one condom_use', 'mh_condom_use', 'Practice of condom use', 'কনডম ব্যবহার'),
         _sr('text', 'mh_condom_since', 'Continuously using condom since', 'কবে থেকে নিয়মিত কনডম'),
         _sr('select_one yes_no', 'mh_drug_history', 'History of drug use', 'মাদক ব্যবহারের ইতিহাস'),
-        _sr('text', 'mh_drug_names', 'What drugs/substances used', 'কোন মাদক'),
+        # Only ask which drugs when history of drug use = Yes — Ashis review pt 5.
+        _sr('text', 'mh_drug_names', 'What drugs/substances used', 'কোন মাদক',
+            relevant="${mh_drug_history}='yes'"),
         _sr('select_multiple mh_counsel_type', 'mh_counsel_type', 'Counseling', 'কাউন্সেলিং'),
         _sr('text', 'mh_issue', 'Complaint / Query / Issue(s)', 'অভিযোগ / সমস্যা', app='multiline'),
         _sr('text', 'mh_description', 'Description (in detail)', 'বিস্তারিত বিবরণ', app='multiline'),
@@ -468,7 +493,7 @@ def _service_log_survey():
         _sr('begin_group', 'grp_counsel', 'Daily Counseling Form', 'দৈনিক কাউন্সেলিং ফর্ম',
             relevant=R('counseling_daily')),
         _sr('date', 'cn_date', 'Date', 'তারিখ'),
-        _sr('text', 'cn_client_id', 'ID # of client', 'ক্লায়েন্ট আইডি'),
+        _sr('text', 'cn_client_id', 'ID # of client', 'ক্লায়েন্ট আইডি', required='yes'),
         *_id_lookup('cn_client_id'),
         _sr('select_one tg_code', 'cn_tg', 'Target Group (TG) Code', 'টিজি কোড'),
         _sr('select_multiple counsel_issue', 'cn_issues', 'Issues of counseling', 'কাউন্সেলিং বিষয়'),
@@ -482,7 +507,7 @@ def _service_log_survey():
         _sr('begin_group', 'grp_referral', 'Referral Register', 'রেফারেল রেজিস্টার',
             relevant=R('referral')),
         _sr('date', 'rf_date', 'Date', 'তারিখ'),
-        _sr('text', 'rf_client_id', 'ID No.', 'আইডি নম্বর'),
+        _sr('text', 'rf_client_id', 'ID No.', 'আইডি নম্বর', required='yes'),
         *_id_lookup('rf_client_id'),
         _sr('text', 'rf_reason', 'Reasons for referral (problem)', 'রেফারেলের কারণ', app='multiline'),
         _sr('select_multiple referred_for', 'rf_referred_for', 'Referred for', 'যে কারণে রেফার'),
@@ -578,11 +603,11 @@ def _activity_ops_survey():
         _sr('begin_group', 'grp_camp', 'F-10 · Mobile Health Camp — Patient Record',
             'F-10 · মোবাইল হেলথ ক্যাম্প', relevant=R('mobile_camp')),
         _sr('date', 'mc_date', 'Date', 'তারিখ'),
-        _sr('text', 'mc_client_id', 'ID No.', 'আইডি নম্বর'),
+        _sr('text', 'mc_client_id', 'ID No.', 'আইডি নম্বর', required='yes'),
         *_id_lookup('mc_client_id'),
         _sr('select_one tg_code', 'mc_tg', 'TG Code', 'টিজি কোড'),
         _sr('select_one general_diverse', 'mc_general_diverse', 'General / Diverse', 'সাধারণ / বৈচিত্র্যময়'),
-        _sr('integer', 'mc_age', 'Age (as per mother list)', 'বয়স'),
+        *_age_from_ml('mc_client_id', 'mc_age'),
         _sr('select_one yes_no', 'mc_screening_sti_hiv', 'Screening (STI & HIV) Health', 'স্ক্রিনিং'),
         _sr('select_one yes_no', 'mc_tb_screening', 'TB Screening', 'টিবি স্ক্রিনিং'),
         _sr('select_one yes_no', 'mc_gh_screening', 'GH Screening', 'জিএইচ স্ক্রিনিং'),
@@ -624,6 +649,9 @@ def _activity_ops_survey():
         _sr('text', 'ev_objective', 'Objectives', 'উদ্দেশ্য', app='multiline'),
         _sr('select_one event_kind', 'ev_kind', 'Event type', 'ইভেন্টের ধরন', required='yes',
             hint='Required so the report routes to the correct indicator.'),
+        # If "Other", capture what kind of event it was — Ashis review pt 6.
+        _sr('text', 'ev_kind_other', 'If Other, specify the event type', 'অন্যান্য হলে ধরন উল্লেখ করুন',
+            relevant="${ev_kind}='other'", required='yes'),
         _sr('text', 'ev_place', 'Place', 'স্থান'),
         _sr('date', 'ev_date', 'Date', 'তারিখ'),
         _sr('note', '_ev_part', 'Participants by gender (enter count):', 'জেন্ডার অনুযায়ী অংশগ্রহণকারী:'),

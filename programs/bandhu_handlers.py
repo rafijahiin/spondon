@@ -320,6 +320,9 @@ _MEETING_KINDS = {
     'coord_gob':  'GOB',
     'coord_cbo':  'CBO',
     'observance': CoordMeeting.DAY_OBSERVANCE,
+    # F-12 "Other" (Ashis review pt 6): record the event but keep it out of the
+    # 2.3/2.4/2.6 indicator buckets — store as INTERNAL, not the GOB fallback.
+    'other':      CoordMeeting.INTERNAL,
 }
 
 

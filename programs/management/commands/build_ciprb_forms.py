@@ -1426,6 +1426,87 @@ def _near_miss_choices():
 
 # ─── Form catalogue ──────────────────────────────────────────────────────────
 
+# ╔══════════════════════════════════════════════════════════════════════════╗
+# ║   FORM 10 — MPDSR Response Plan (review-meeting action tracker)         ║
+# ║   Source: MPDSR Response Plan_2026 (1).docx — district/meeting header + ║
+# ║   3 sections (System Strengthening, Community-VA & Facility modifiable  ║
+# ║   factors); each section is a repeat of agreed actions.                 ║
+# ╚══════════════════════════════════════════════════════════════════════════╝
+
+def _response_plan_survey():
+    # Flat schema to match the existing submissions dispatcher
+    # (_create_mpdsr_response_plan): meeting meta + 3 sections × up to 5
+    # actions, each {sec}_a{i}_{field}. Slots reveal progressively (a2 once
+    # a1's action is filled) so the form stays short in practice.
+    rows = _meta('MPDSR Response Plan serial number', 'রেসপন্স প্ল্যান ক্রমিক নং')
+    rows += [
+        _sr('select_one rp_level', 'meeting_level', 'MPDSR review level',
+            'এমপিডিএসআর পর্যালোচনার স্তর', required='yes'),
+        _sr('date', 'meeting_date', 'Date of review meeting',
+            'পর্যালোচনা সভার তারিখ', required='yes'),
+        _sr('text', 'place_of_meeting', 'Place of meeting', 'সভার স্থান'),
+        _sr('integer', 'participants_count', 'Number of participants',
+            'অংশগ্রহণকারীর সংখ্যা', constraint='. >= 0 and . <= 500'),
+    ]
+    # (field-prefix, EN section, BN section, has_indicator) — only System
+    # Strengthening carries the Indicator column (per the source doc).
+    sections = [
+        ('sys_strengthen', 'MPDSR System Strengthening',
+         'এমপিডিএসআর সিস্টেম শক্তিশালীকরণ', True),
+        ('community_va', 'Common modifiable factors (Community verbal autopsy)',
+         'সাধারণ পরিবর্তনযোগ্য কারণ (কমিউনিটি ভার্বাল অটোপসি)', False),
+        ('facility_dr', 'Common modifiable factors (Facility death review)',
+         'সাধারণ পরিবর্তনযোগ্য কারণ (ফ্যাসিলিটি ডেথ রিভিউ)', False),
+    ]
+    for sec, en, bn, has_ind in sections:
+        rows.append(_sr('begin_group', 'grp_%s' % sec, en, bn))
+        rows.append(_sr('note', '_%s_note' % sec,
+            'Enter up to 5 agreed actions. Fill Action 1 first; the next appears as you go.',
+            'সর্বোচ্চ ৫টি সম্মত পদক্ষেপ লিখুন। আগে পদক্ষেপ ১ পূরণ করুন; পরেরটি আপনাআপনি আসবে।'))
+        for i in range(1, 6):
+            rel = '' if i == 1 else "${%s_a%d_action_taken}!=''" % (sec, i - 1)
+            rows.append(_sr('begin_group', 'grp_%s_a%d' % (sec, i),
+                            'Action %d' % i, 'পদক্ষেপ %d' % i, relevant=rel))
+            rows.append(_sr('text', '%s_a%d_action_taken' % (sec, i),
+                            'Action to be taken', 'গৃহীত পদক্ষেপ', app='multiline'))
+            rows.append(_sr('text', '%s_a%d_responsible' % (sec, i),
+                            'Responsible (person / office)', 'দায়িত্বপ্রাপ্ত (ব্যক্তি / দপ্তর)'))
+            rows.append(_sr('date', '%s_a%d_timeline' % (sec, i),
+                            'Timeline (target date)', 'সময়সীমা (লক্ষ্য তারিখ)'))
+            if has_ind:
+                rows.append(_sr('text', '%s_a%d_indicator' % (sec, i),
+                                'Indicator', 'নির্দেশক'))
+            rows.append(_sr('text', '%s_a%d_milestone' % (sec, i),
+                            'Milestone', 'মাইলফলক'))
+            rows.append(_sr('text', '%s_a%d_considerations' % (sec, i),
+                            'Considerations', 'বিবেচ্য বিষয়', app='multiline'))
+            rows.append(_sr('select_one rp_status', '%s_a%d_status' % (sec, i),
+                            'Implementation status', 'বাস্তবায়ন অবস্থা'))
+            rows.append(_sr('end_group', 'grp_%s_a%d' % (sec, i)))
+        rows.append(_sr('end_group', 'grp_%s' % sec))
+    return rows
+
+
+def _response_plan_choices():
+    ch = list(DISTRICT_CHOICES) + list(YES_NO)
+    for k, en, bn in [
+        ('DM', 'District MPDSR (DM)', 'জেলা এমপিডিএসআর'),
+        ('UM', 'Upazila MPDSR (UM)', 'উপজেলা এমপিডিএসআর'),
+    ]:
+        ch.append(_ch('rp_level', k, en, bn))
+    # Status values match the tracker: 'implemented' = green; 'in_progress' =
+    # amber; anything else + past-timeline = red (Overdue) on the dashboard.
+    for k, en, bn in [
+        ('implemented', 'Implemented', 'বাস্তবায়িত'),
+        ('in_progress', 'In progress', 'চলমান'),
+        ('pending',     'Pending / not started', 'অপেক্ষমাণ / শুরু হয়নি'),
+        ('delayed',     'Delayed', 'বিলম্বিত'),
+        ('dropped',     'Dropped', 'বাতিল'),
+    ]:
+        ch.append(_ch('rp_status', k, en, bn))
+    return ch
+
+
 FORMS = [
     dict(file='CIPRB-1_Fistula_Question_Bank.xlsx',
          id='ciprb_fistula_questions_v1',
@@ -1470,6 +1551,10 @@ FORMS = [
          id='ciprb_near_miss_v1',
          title='CIPRB 9 — Maternal Near Miss audit',
          survey=_near_miss_survey, choices=_near_miss_choices),
+    dict(file='CIPRB-10_MPDSR_Response_Plan.xlsx',
+         id='ciprb_mpdsr_response_plan_v1',
+         title='CIPRB 10 — MPDSR Response Plan',
+         survey=_response_plan_survey, choices=_response_plan_choices),
 ]
 
 
@@ -1555,6 +1640,9 @@ class Command(BaseCommand):
         parser.add_argument('--output-dir', default=OUTDIR)
         parser.add_argument('--upload', action='store_true',
             help='Upload to Kobo, create assets when missing, deploy.')
+        parser.add_argument('--only', default='',
+            help='Build/deploy ONLY the form with this id (e.g. '
+                 'ciprb_mpdsr_response_plan_v1). Avoids touching the others.')
 
     def handle(self, *args, **opts):
         out = opts['output_dir']
@@ -1566,7 +1654,10 @@ class Command(BaseCommand):
                 'KOBO_TOKEN not set — cannot --upload.'))
             return
 
+        only = opts.get('only', '')
         for f in FORMS:
+            if only and f['id'] != only:
+                continue
             survey  = f['survey']()
             choices = f['choices']()
             wb = _wb(f['id'], f['title'], survey, choices)

@@ -34,6 +34,8 @@ def _form_type_from_payload(payload: dict) -> str | None:
         'spondon_fistula_v1': FormType.FISTULA,
         'spondon_fistula_staged_v1': FormType.FISTULA_STAGED,
         'spondon_mpdsr_response_plan_v1': FormType.MPDSR_RESPONSE_PLAN,
+        # CIPRB 10 — the live MPDSR Response Plan form (deployed 2026-06-15).
+        'ciprb_mpdsr_response_plan_v1': FormType.MPDSR_RESPONSE_PLAN,
         # Daily Activity / zero-report form — field staff submit once a day,
         # answering "Any activity today?". 'no' is tagged is_zero_report by
         # _is_zero_report(). Routes to ACTIVITY → lands in the manager queue.
@@ -48,6 +50,7 @@ def _form_type_from_payload(payload: dict) -> str | None:
     asset_uid_map = {
         # Hardcoded UIDs for the new staged forms (Rafi confirmed 2026-06-02)
         'aVMRPKVUdwcVAcixBszUKU': FormType.MPDSR_RESPONSE_PLAN,
+        'auFCf7bfBDtrP6xeW5F2KJ': FormType.MPDSR_RESPONSE_PLAN,  # CIPRB 10 live asset
         'a4N3C9eZvUM5UJetngf5h7': FormType.FISTULA_STAGED,
         # Daily Activity / zero-report form asset UID (deployed 2026-06-03).
         # Kobo may send the asset UID as _xform_id_string instead of the
