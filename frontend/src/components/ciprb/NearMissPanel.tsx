@@ -10,7 +10,7 @@
  */
 import { useEffect, useState } from 'react'
 import { api } from '@/api/client'
-import { DataSource } from '@/components/ui/DataSource'
+import { SourceChip } from '@/components/ui/SourceChip'
 import { useTranslation } from 'react-i18next'
 import { ShieldAlert, Activity, HeartPulse, Info } from 'lucide-react'
 import { DonutBreakdown } from './IndicatorCharts'
@@ -164,17 +164,24 @@ export function NearMissPanel({ districts }: { districts?: readonly string[] | n
   return (
     <div>
       {/* ─── Header ─── */}
-      <div style={{ marginBottom: 14 }}>
-        <div className="kicker">
-          <span className="dot" style={{ background: CIPRB_BLUE }} />
-          MATERNAL NEAR MISS · WHO MNM AUDIT
+      <div style={{
+        marginBottom: 14,
+        display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
+        gap: 8, flexWrap: 'wrap',
+      }}>
+        <div>
+          <div className="kicker">
+            <span className="dot" style={{ background: CIPRB_BLUE }} />
+            MATERNAL NEAR MISS · WHO MNM AUDIT
+          </div>
+          <h3 style={{ margin: '6px 0 2px', fontSize: 18, fontWeight: 700, color: 'var(--ink)' }}>
+            Maternal Near Miss surveillance
+          </h3>
+          <p style={{ fontSize: 12.5, color: 'var(--muted)', margin: 0 }}>
+            Women who survived a severe complication of pregnancy, childbirth or the puerperium. Six indicators per CIPRB request — severe complications, critical interventions, life-threatening conditions, mode of delivery, causes, contributory conditions.
+          </p>
         </div>
-        <h3 style={{ margin: '6px 0 2px', fontSize: 18, fontWeight: 700, color: 'var(--ink)' }}>
-          Maternal Near Miss surveillance
-        </h3>
-        <p style={{ fontSize: 12.5, color: 'var(--muted)', margin: 0 }}>
-          Women who survived a severe complication of pregnancy, childbirth or the puerperium. Six indicators per CIPRB request — severe complications, critical interventions, life-threatening conditions, mode of delivery, causes, contributory conditions.
-        </p>
+        <SourceChip>CIPRB 9 — Near Miss</SourceChip>
       </div>
 
       {/* ─── Total + by-district top row ─── */}
@@ -273,8 +280,6 @@ export function NearMissPanel({ districts }: { districts?: readonly string[] | n
           <DonutBreakdown title="5. Causes of near miss" data={data?.causes ?? {}} labels={CAUSE_LABELS} />
         </div>
       )}
-
-      <DataSource>CIPRB 9 — Maternal Near Miss audit · WHO MNM screening + mode / causes / contributory · {t('mpdsrViz.providedBy', { defaultValue: 'Provided by CIPRB' })}</DataSource>
     </div>
   )
 }

@@ -22,7 +22,7 @@ import {
 } from 'recharts'
 import { Info, Database, AlertTriangle } from 'lucide-react'
 import { api } from '@/api/client'
-import { DataSource } from '@/components/ui/DataSource'
+import { SourceChip } from '@/components/ui/SourceChip'
 import type { MPDSRCase } from '@/types/index'
 import { BarBreakdown, DonutBreakdown, Histogram, StatTile } from './IndicatorCharts'
 
@@ -198,17 +198,24 @@ function NotifyVsReview({
 
   return (
     <div>
-      <div style={{ marginBottom: 14 }}>
-        <div className="kicker">
-          <span className="dot" style={{ background: CIPRB_BLUE }} />
-          {t('mpdsrViz.notifyKicker')}
+      <div style={{
+        marginBottom: 14,
+        display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
+        gap: 8, flexWrap: 'wrap',
+      }}>
+        <div>
+          <div className="kicker">
+            <span className="dot" style={{ background: CIPRB_BLUE }} />
+            {t('mpdsrViz.notifyKicker')}
+          </div>
+          <h3 style={{ margin: '6px 0 2px', fontSize: 18, fontWeight: 700, color: 'var(--ink)' }}>
+            {t('mpdsrViz.notifyTitle')}
+          </h3>
+          <p style={{ fontSize: 12.5, color: 'var(--muted)', margin: 0 }}>
+            {t('mpdsrViz.notifySub')}
+          </p>
         </div>
-        <h3 style={{ margin: '6px 0 2px', fontSize: 18, fontWeight: 700, color: 'var(--ink)' }}>
-          {t('mpdsrViz.notifyTitle')}
-        </h3>
-        <p style={{ fontSize: 12.5, color: 'var(--muted)', margin: 0 }}>
-          {t('mpdsrViz.notifySub')}
-        </p>
+        <SourceChip>CIPRB 2 + CIPRB 3</SourceChip>
       </div>
 
       <div className="card" style={{ padding: 24 }}>
@@ -623,17 +630,24 @@ function CauseBreakdown({ cases }: { cases: MPDSRCase[] }) {
 
   return (
     <div>
-      <div style={{ marginBottom: 14 }}>
-        <div className="kicker">
-          <span className="dot" style={{ background: CIPRB_BLUE }} />
-          {t('mpdsrViz.causeKicker')}
+      <div style={{
+        marginBottom: 14,
+        display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
+        gap: 8, flexWrap: 'wrap',
+      }}>
+        <div>
+          <div className="kicker">
+            <span className="dot" style={{ background: CIPRB_BLUE }} />
+            {t('mpdsrViz.causeKicker')}
+          </div>
+          <h3 style={{ margin: '6px 0 2px', fontSize: 18, fontWeight: 700, color: 'var(--ink)' }}>
+            {t('mpdsrViz.causeTitle')}
+          </h3>
+          <p style={{ fontSize: 12.5, color: 'var(--muted)', margin: 0 }}>
+            {t('mpdsrViz.causeSub')}
+          </p>
         </div>
-        <h3 style={{ margin: '6px 0 2px', fontSize: 18, fontWeight: 700, color: 'var(--ink)' }}>
-          {t('mpdsrViz.causeTitle')}
-        </h3>
-        <p style={{ fontSize: 12.5, color: 'var(--muted)', margin: 0 }}>
-          {t('mpdsrViz.causeSub')}
-        </p>
+        <SourceChip>CIPRB 2 + CIPRB 4</SourceChip>
       </div>
 
       {/* Group tabs — filter both donuts at once. */}
@@ -738,17 +752,24 @@ function ResponsePlanTracker({ summaries }: { summaries: ActionPlanSummary[] }) 
 
   return (
     <div>
-      <div style={{ marginBottom: 14 }}>
-        <div className="kicker">
-          <span className="dot" style={{ background: CIPRB_BLUE }} />
-          {t('mpdsrViz.responseKicker')}
+      <div style={{
+        marginBottom: 14,
+        display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
+        gap: 8, flexWrap: 'wrap',
+      }}>
+        <div>
+          <div className="kicker">
+            <span className="dot" style={{ background: CIPRB_BLUE }} />
+            {t('mpdsrViz.responseKicker')}
+          </div>
+          <h3 style={{ margin: '6px 0 2px', fontSize: 18, fontWeight: 700, color: 'var(--ink)' }}>
+            {t('mpdsrViz.responseTitle')}
+          </h3>
+          <p style={{ fontSize: 12.5, color: 'var(--muted)', margin: 0 }}>
+            {t('mpdsrViz.responseSub')}
+          </p>
         </div>
-        <h3 style={{ margin: '6px 0 2px', fontSize: 18, fontWeight: 700, color: 'var(--ink)' }}>
-          {t('mpdsrViz.responseTitle')}
-        </h3>
-        <p style={{ fontSize: 12.5, color: 'var(--muted)', margin: 0 }}>
-          {t('mpdsrViz.responseSub')}
-        </p>
+        <SourceChip>CIPRB 10 — Response Plan</SourceChip>
       </div>
 
       {/* Visible data-note — implemented counts are interim placeholders
@@ -1002,17 +1023,24 @@ function ReportingRatePerDistrict({
 
   return (
     <div>
-      <div style={{ marginBottom: 14 }}>
-        <div className="kicker">
-          <span className="dot" style={{ background: CIPRB_BLUE }} />
-          {t('mpdsrViz.perDistrictKicker')}
+      <div style={{
+        marginBottom: 14,
+        display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
+        gap: 8, flexWrap: 'wrap',
+      }}>
+        <div>
+          <div className="kicker">
+            <span className="dot" style={{ background: CIPRB_BLUE }} />
+            {t('mpdsrViz.perDistrictKicker')}
+          </div>
+          <h3 style={{ margin: '6px 0 2px', fontSize: 18, fontWeight: 700, color: 'var(--ink)' }}>
+            {t('mpdsrViz.perDistrictTitle')}
+          </h3>
+          <p style={{ fontSize: 12.5, color: 'var(--muted)', margin: 0 }}>
+            {t('mpdsrViz.perDistrictSub')}
+          </p>
         </div>
-        <h3 style={{ margin: '6px 0 2px', fontSize: 18, fontWeight: 700, color: 'var(--ink)' }}>
-          {t('mpdsrViz.perDistrictTitle')}
-        </h3>
-        <p style={{ fontSize: 12.5, color: 'var(--muted)', margin: 0 }}>
-          {t('mpdsrViz.perDistrictSub')}
-        </p>
+        <SourceChip>CIPRB 2 + CIPRB 3</SourceChip>
       </div>
       <div className="card" style={{ padding: 20 }}>
         {rows.length === 0 ? (
@@ -1074,7 +1102,6 @@ export function MPDSRVisualizations({
   period?: ReportingPeriod
   districts?: readonly string[] | null
 }) {
-  const { t } = useTranslation()
   // Threading reporting-period AND the donor district filter through to the
   // aggregate endpoint so the MPDSR visualisations follow the CIPRB
   // Dashboard's Contract / Annual toggle and the GAC / SIDA / All pill.
@@ -1098,31 +1125,23 @@ export function MPDSRVisualizations({
           reviewCounts={agg?.review_counts ?? null}
           notificationByLevel={agg?.notification_by_level ?? null}
         />
-        <DataSource>
-          MPDSR Form 1 (Community Maternal), Form 2 (Community Neonatal), Form 4 (Facility Maternal), Form 5 (Facility Neonatal), Social Autopsy · {t('mpdsrViz.providedBy')}
-        </DataSource>
       </div>
       <div>
         <ReportingRatePerDistrict cases={cases} denominators={agg?.denominators ?? []} />
-        <DataSource>MPDSR Forms 1 + 2 grouped by district · denominators {t('mpdsrViz.providedBy')}</DataSource>
       </div>
       <div>
         <CauseBreakdown cases={cases} />
-        <DataSource>MPDSR Form 1 (community deaths) and Form 4 (facility deaths) · cause_of_death field · {t('mpdsrViz.providedBy')}</DataSource>
       </div>
       {agg?.facility && agg.facility.total > 0 && (
         <div>
           <FacilityDeepDive facility={agg.facility} />
-          <DataSource>MPDSR Form 04 (Facility Maternal) · admission→death interval + facility review committee progress · {t('mpdsrViz.providedBy')}</DataSource>
         </div>
       )}
       <div>
         <MPDSRIndicators indicators={agg?.indicators ?? null} />
-        <DataSource>MPDSR Form 01 (Community Maternal) + Form 04 (Facility Maternal) · 11 major indicators · {t('mpdsrViz.providedBy')}</DataSource>
       </div>
       <div id="response-plan">
         <ResponsePlanTracker summaries={agg?.action_plan_summaries ?? []} />
-        <DataSource>MPDSR Response Plan 2026 · {t('mpdsrViz.providedBy')}</DataSource>
       </div>
     </div>
   )
@@ -1153,19 +1172,26 @@ function FacilityDeepDive({ facility }: {
 }) {
   return (
     <div>
-      <div style={{ marginBottom: 14 }}>
-        <div className="kicker">
-          <span className="dot" style={{ background: CIPRB_BLUE }} />
-          FACILITY DEATHS · MPDSR FORM 4
+      <div style={{
+        marginBottom: 14,
+        display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
+        gap: 8, flexWrap: 'wrap',
+      }}>
+        <div>
+          <div className="kicker">
+            <span className="dot" style={{ background: CIPRB_BLUE }} />
+            FACILITY DEATHS · MPDSR FORM 4
+          </div>
+          <h3 style={{ margin: '6px 0 2px', fontSize: 18, fontWeight: 700, color: 'var(--ink)' }}>
+            Facility review deep-dive
+          </h3>
+          <p style={{ fontSize: 12.5, color: 'var(--muted)', margin: 0 }}>
+            The extra detail Form 4 captures beyond cause of death — how quickly
+            deaths followed admission, and how far each has moved through the
+            facility review committee. Based on {facility.total.toLocaleString()} facility maternal {facility.total === 1 ? 'death' : 'deaths'}.
+          </p>
         </div>
-        <h3 style={{ margin: '6px 0 2px', fontSize: 18, fontWeight: 700, color: 'var(--ink)' }}>
-          Facility review deep-dive
-        </h3>
-        <p style={{ fontSize: 12.5, color: 'var(--muted)', margin: 0 }}>
-          The extra detail Form 4 captures beyond cause of death — how quickly
-          deaths followed admission, and how far each has moved through the
-          facility review committee. Based on {facility.total.toLocaleString()} facility maternal {facility.total === 1 ? 'death' : 'deaths'}.
-        </p>
+        <SourceChip>CIPRB 4</SourceChip>
       </div>
       <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
         <Histogram
@@ -1211,14 +1237,21 @@ function MPDSRIndicators({ indicators }: { indicators: Record<string, Record<str
   const z = {} as Record<string, number>
   return (
     <div>
-      <div style={{ marginBottom: 14 }}>
-        <div className="kicker"><span className="dot" style={{ background: CIPRB_BLUE }} />MPDSR · 11 MAJOR INDICATORS</div>
-        <h3 style={{ margin: '6px 0 2px', fontSize: 18, fontWeight: 700, color: 'var(--ink)' }}>
-          Maternal death indicator breakdown
-        </h3>
-        <p style={{ fontSize: 12.5, color: 'var(--muted)', margin: 0 }}>
-          The 11 dashboard indicators CIPRB specified, from MPDSR Form 01 (Community Maternal) + Form 04 (Facility Maternal).
-        </p>
+      <div style={{
+        marginBottom: 14,
+        display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
+        gap: 8, flexWrap: 'wrap',
+      }}>
+        <div>
+          <div className="kicker"><span className="dot" style={{ background: CIPRB_BLUE }} />MPDSR · 11 MAJOR INDICATORS</div>
+          <h3 style={{ margin: '6px 0 2px', fontSize: 18, fontWeight: 700, color: 'var(--ink)' }}>
+            Maternal death indicator breakdown
+          </h3>
+          <p style={{ fontSize: 12.5, color: 'var(--muted)', margin: 0 }}>
+            The 11 dashboard indicators CIPRB specified, from MPDSR Form 01 (Community Maternal) + Form 04 (Facility Maternal).
+          </p>
+        </div>
+        <SourceChip>CIPRB 2 + CIPRB 4</SourceChip>
       </div>
       <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
         <DonutBreakdown title="1. Place of death"          data={ind.place_of_death ?? z} labels={MPDSR_LABELS.place_of_death} />

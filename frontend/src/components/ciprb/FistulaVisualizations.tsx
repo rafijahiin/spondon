@@ -16,7 +16,7 @@ import { useTranslation } from 'react-i18next'
 import { Building2, MapPin, Home, Users, Search, Stethoscope, Send, ArrowRight, Scissors, Megaphone, HeartHandshake } from 'lucide-react'
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts'
 import { api } from '@/api/client'
-import { DataSource } from '@/components/ui/DataSource'
+import { SourceChip } from '@/components/ui/SourceChip'
 
 // UNFPA branding — orange across the board.
 const CIPRB_BLUE = '#F96000'
@@ -462,6 +462,9 @@ export function FistulaVisualizations({
           <p style={{ fontSize: 12.5, color: 'var(--muted)', margin: 0 }}>
             {t('fistulaViz.reachSub')}
           </p>
+          <div style={{ marginTop: 6 }}>
+            <SourceChip>Fistula Campaign</SourceChip>
+          </div>
         </div>
         <div style={{
           display: 'grid',
@@ -489,7 +492,6 @@ export function FistulaVisualizations({
           <MetricTile icon={<HeartHandshake size={13} />} label="Rehabilitated & Reintegrated"  value={agg.rehabilitated} sub="Rehabilitation support received"
             pct={pctOfSuspected(agg.rehabilitated)} pctLabel="of suspected" />
         </div>
-        <DataSource>Fistula Campaign · campaigns / households / population / districts / suspected / diagnosed / referred / repaired / rehabilitated · {t('fistulaViz.providedBy')}</DataSource>
       </div>
 
       {/* ─── 2. Patient Funnel ─── */}
@@ -505,6 +507,9 @@ export function FistulaVisualizations({
           <p style={{ fontSize: 12.5, color: 'var(--muted)', margin: 0 }}>
             {t('fistulaViz.funnelSub')}
           </p>
+          <div style={{ marginTop: 6 }}>
+            <SourceChip>Fistula Campaign + CIPRB 1</SourceChip>
+          </div>
         </div>
         <div className="card" style={{
           padding: '24px 28px',
@@ -536,7 +541,6 @@ export function FistulaVisualizations({
         }}>
           Each percentage uses the previous stage as the denominator — e.g. the share of suspected cases that go on to be diagnosed, referred, and repaired.
         </p>
-        <DataSource>Fistula Campaign (Suspected) · Fistula Question Bank (Diagnosed / Referred for Surgical Management / Surgically Repaired / Rehabilitated & Reintegrated) · {t('fistulaViz.providedBy')}</DataSource>
       </div>
 
       {/* ─── 2b. Surgical Outcome (Animesh's 3 categories) ─── */}
@@ -553,6 +557,9 @@ export function FistulaVisualizations({
             <p style={{ fontSize: 12.5, color: 'var(--muted)', margin: 0 }}>
               Of all surgically repaired patients, the clinical outcome breakdown. Project reporting focuses on the two successful categories.
             </p>
+            <div style={{ marginTop: 6 }}>
+              <SourceChip>CIPRB 1 — Fistula Question Bank</SourceChip>
+            </div>
           </div>
           {(() => {
             const total = agg.outcomeDry + agg.outcomeNotDry + agg.outcomeFailed
@@ -579,7 +586,6 @@ export function FistulaVisualizations({
               </div>
             )
           })()}
-          <DataSource>Fistula Question Bank · outcome-of-surgery field (two successful categories reported; Failed tracked but de-emphasised) · {t('fistulaViz.providedBy')}</DataSource>
         </div>
       )}
 
@@ -596,6 +602,9 @@ export function FistulaVisualizations({
           <p style={{ fontSize: 12.5, color: 'var(--muted)', margin: 0 }}>
             {t('fistulaViz.pieSub')}
           </p>
+          <div style={{ marginTop: 6 }}>
+            <SourceChip>CIPRB 1 — Fistula Question Bank</SourceChip>
+          </div>
         </div>
         <div className="card" style={{ padding: 24 }}>
           {pieTotal > 0 ? (
@@ -672,7 +681,6 @@ export function FistulaVisualizations({
         }}>
           {t('fistulaViz.pieCaption')}
         </p>
-        <DataSource>Fistula Question Bank · fistula type (Obstetric, Iatrogenic, Congenital, Traumatic) · {t('fistulaViz.providedBy')}</DataSource>
       </div>
 
     </div>

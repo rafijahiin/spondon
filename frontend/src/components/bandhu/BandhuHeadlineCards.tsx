@@ -18,7 +18,7 @@ import { useEffect, useState } from 'react'
 import { useReducedMotion } from 'motion/react'
 import { HeartPulse, Activity, ShieldPlus, Home, GraduationCap } from 'lucide-react'
 import { api } from '@/api/client'
-import { DataSource } from '@/components/ui/DataSource'
+import { SourceChip } from '@/components/ui/SourceChip'
 import type { IndicatorProgress } from '@/types'
 
 const VIOLET = 'var(--violet)'
@@ -220,7 +220,10 @@ export function BandhuHeadlineCards() {
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 14 }}>
-        <div className="kicker"><span className="dot" />UNFPA KEY INDICATORS</div>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <div className="kicker"><span className="dot" />UNFPA KEY INDICATORS</div>
+          <SourceChip>Bandhu 0 / 1 / 2</SourceChip>
+        </div>
         <div role="radiogroup" aria-label="Reporting mode" style={{
           display: 'inline-flex', gap: 4, padding: 4,
           background: 'var(--surface-2)', borderRadius: 999, border: '1px solid var(--hair)',
@@ -250,10 +253,6 @@ export function BandhuHeadlineCards() {
         })}
       </div>
 
-      <DataSource>
-        1.1·1.2·1.5b·1.8·2.1·2.2·2.5 from the Bandhu MIS indicator engine
-        (Patient Record, HTC, GBV, Event & seeded centres) · {mode === 'cumulative' ? 'programme-to-date' : 'current month'} · approved submissions only
-      </DataSource>
     </div>
   )
 }

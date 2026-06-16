@@ -9,8 +9,7 @@
  */
 import { useEffect, useState } from 'react'
 import { api } from '@/api/client'
-import { DataSource } from '@/components/ui/DataSource'
-import { useTranslation } from 'react-i18next'
+import { SourceChip } from '@/components/ui/SourceChip'
 import { BarBreakdown, DonutBreakdown, Histogram, StatTile } from './IndicatorCharts'
 
 const CIPRB_ORANGE = '#F96000'
@@ -42,7 +41,6 @@ const L = {
 } as const
 
 export function FistulaIndicators({ districts }: { districts?: readonly string[] | null }) {
-  const { t } = useTranslation()
   const [data, setData] = useState<FistulaAgg | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -60,12 +58,19 @@ export function FistulaIndicators({ districts }: { districts?: readonly string[]
 
   return (
     <div>
-      <div style={{ marginBottom: 14 }}>
-        <div className="kicker"><span className="dot" style={{ background: CIPRB_ORANGE }} />FISTULA · 17 MAJOR INDICATORS</div>
-        <h3 style={{ margin: '6px 0 2px', fontSize: 18, fontWeight: 700, color: 'var(--ink)' }}>Fistula indicator breakdown</h3>
-        <p style={{ fontSize: 12.5, color: 'var(--muted)', margin: 0 }}>
-          The 17 dashboard indicators CIPRB specified, each sourced from the Fistula Question Bank. {data.total} registered case{data.total === 1 ? '' : 's'}.
-        </p>
+      <div style={{
+        marginBottom: 14,
+        display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
+        gap: 8, flexWrap: 'wrap',
+      }}>
+        <div>
+          <div className="kicker"><span className="dot" style={{ background: CIPRB_ORANGE }} />FISTULA · 17 MAJOR INDICATORS</div>
+          <h3 style={{ margin: '6px 0 2px', fontSize: 18, fontWeight: 700, color: 'var(--ink)' }}>Fistula indicator breakdown</h3>
+          <p style={{ fontSize: 12.5, color: 'var(--muted)', margin: 0 }}>
+            The 17 dashboard indicators CIPRB specified, each sourced from the Fistula Question Bank. {data.total} registered case{data.total === 1 ? '' : 's'}.
+          </p>
+        </div>
+        <SourceChip>CIPRB 1 — Fistula Question Bank</SourceChip>
       </div>
 
       <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
@@ -91,7 +96,6 @@ export function FistulaIndicators({ districts }: { districts?: readonly string[]
         <DonutBreakdown title="16. Type of genital fistula" data={data.genital_fistula_type} labels={L.genital} />
         <StatTile       title="17. Outcome of surgery"      data={data.surgery_outcome_v2} highlight="success_dry" labels={L.surgery} />
       </div>
-      <DataSource>CIPRB Fistula Question Bank · 17 major indicators · {t('fistulaViz.providedBy', { defaultValue: 'Provided by CIPRB' })}</DataSource>
     </div>
   )
 }

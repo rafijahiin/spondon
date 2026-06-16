@@ -27,7 +27,7 @@ import { useEffect, useState } from 'react'
 import { useReducedMotion } from 'motion/react'
 import { HeartPulse, Home, Megaphone, GraduationCap, ShieldPlus } from 'lucide-react'
 import { api } from '@/api/client'
-import { DataSource } from '@/components/ui/DataSource'
+import { SourceChip } from '@/components/ui/SourceChip'
 import type { IndicatorProgress } from '@/types'
 
 const ORANGE = 'var(--unfpa)'
@@ -272,7 +272,10 @@ export function PhdHeadlineCards() {
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         flexWrap: 'wrap', gap: 12, marginBottom: 14,
       }}>
-        <div className="kicker"><span className="dot" />SIDA KEY INDICATORS</div>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <div className="kicker"><span className="dot" />SIDA KEY INDICATORS</div>
+          <SourceChip>PHD 1 + PHD 2</SourceChip>
+        </div>
         <div role="radiogroup" aria-label="Reporting mode" style={{
           display: 'inline-flex', gap: 4, padding: 4,
           background: 'var(--surface-2)', borderRadius: 999, border: '1px solid var(--hair)',
@@ -313,10 +316,6 @@ export function PhdHeadlineCards() {
         })}
       </div>
 
-      <DataSource>
-        SL1·SL4·SL8·SL10–13·SL16 from the PHD SRHR indicator engine
-        (Patient Record, HTC, Outreach, Training & GBV-corner forms) · {mode === 'cumulative' ? 'programme-to-date' : 'current month'} · approved submissions only
-      </DataSource>
     </div>
   )
 }

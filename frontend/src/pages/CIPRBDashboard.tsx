@@ -26,7 +26,7 @@ import { PageLoader } from '@/components/ui/LoadingSpinner'
 import { formatDate, formatDateTime } from '@/utils/format'
 import { FistulaCornerPanel, FistulaCampaignPanel } from '@/components/fistula/FistulaPanels'
 import { PartnerOverlapMap } from '@/components/maps/PartnerOverlapMap'
-import { DataSource } from '@/components/ui/DataSource'
+import { SourceChip } from '@/components/ui/SourceChip'
 import { FistulaVisualizations } from '@/components/ciprb/FistulaVisualizations'
 import { MPDSRVisualizations } from '@/components/ciprb/MPDSRVisualizations'
 import { NearMissPanel } from '@/components/ciprb/NearMissPanel'
@@ -534,8 +534,10 @@ function MPDSRSection({
 
       {/* ─── Geographic coverage map (SIDA / GAC / CP highlight) ─── */}
       <div>
+        <div style={{ marginBottom: 8 }}>
+          <SourceChip>CIPRB M&E Framework</SourceChip>
+        </div>
         <MPDSRDistrictMap />
-        <DataSource>CIPRB M&E Framework · GAC (5) + SIDA (6) confirmed by Rafi 2026-06-02 · CP-10 from 10th UNFPA Bangladesh CPE Report (para 491)</DataSource>
       </div>
 
       {/* ─── Visualizations: Notify vs Review · Cause breakdown · Response Plan ─── */}
@@ -918,9 +920,12 @@ export default function CIPRBDashboard() {
 
       {/* ───────────────── Fistula KPI band ───────────────── */}
       <section className="section" id="fistula-section" style={{ marginTop: 0, scrollMarginTop: 80 }}>
-        <div className="kicker" style={{ marginBottom: 10 }}>
-          <span className="dot" style={{ background: CIPRB_BLUE }} />
-          {t('ciprbExtras.fistulaGlance')}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
+          <div className="kicker" style={{ marginBottom: 0 }}>
+            <span className="dot" style={{ background: CIPRB_BLUE }} />
+            {t('ciprbExtras.fistulaGlance')}
+          </div>
+          <SourceChip>CIPRB 1 — Fistula Question Bank</SourceChip>
         </div>
         <div style={{
           display: 'grid',
@@ -953,7 +958,6 @@ export default function CIPRBDashboard() {
             />
           )}
         </div>
-        <DataSource>Fistula Question Bank · Fistula Campaign · {t('fistulaViz.providedBy')}</DataSource>
       </section>
 
       {/* ───────────────── Fistula visualizations (campaign / funnel / pie) ───────────────── */}

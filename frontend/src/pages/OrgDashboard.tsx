@@ -26,7 +26,7 @@ import { usePolling } from '@/hooks/usePolling'
 import { PageLoader } from '@/components/ui/LoadingSpinner'
 import { BangladeshMap } from '@/components/maps/BangladeshMap'
 import { PartnerOverlapMap } from '@/components/maps/PartnerOverlapMap'
-import { DataSource } from '@/components/ui/DataSource'
+import { SourceChip } from '@/components/ui/SourceChip'
 import { IndicatorGrid } from '@/components/indicators/IndicatorGrid'
 import { CumulativeAverageTile } from '@/components/indicators/CumulativeAverageTile'
 import { PhdHeadlineCards } from '@/components/phd/PhdHeadlineCards'
@@ -392,13 +392,15 @@ export function OrgDashboard({ partner }: Props) {
           </div>
 
           <div className="hero-right anim-rise d4">
-            <div className="kicker" style={{ marginBottom: 8 }}>
-              <span className="dot" />COVERAGE
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
+              <div className="kicker" style={{ marginBottom: 0 }}>
+                <span className="dot" />COVERAGE
+              </div>
+              <SourceChip>Validation workshop (config)</SourceChip>
             </div>
             <div className="card shimmer" style={{ padding: 10 }}>
               <PartnerOverlapMap height={340} partner={partner} />
             </div>
-            <DataSource>Configured at validation workshop (3-4 June 2026) · placeholder until final list confirmed</DataSource>
           </div>
         </div>
       </section>
@@ -427,15 +429,13 @@ export function OrgDashboard({ partner }: Props) {
             kicker={t('org.sectionFormsKicker')}
             title={t('org.sectionFormsTitle')}
             sub={t('org.sectionFormsSub')}
+            right={<SourceChip>{isPHD ? 'PHD 1 + PHD 2' : 'Bandhu F-01…F-14'}</SourceChip>}
           />
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 14 }}>
             {topForms.map((f) => (
               <FormBox key={f.key} form={f} />
             ))}
           </div>
-          <DataSource>{isPHD
-            ? 'Per-form counts from PHD-1 FSW Registration · PHD-2 Patient Services · PHD-3 Activity & Operations'
-            : 'Per-form submission counts from Bandhu tools F-01 to F-13, Referral & Counseling Kobo XLSForms'}</DataSource>
         </section>
       )}
 
@@ -487,6 +487,7 @@ export function OrgDashboard({ partner }: Props) {
           kicker={t('org.sectionCentresKicker')}
           title={t('org.sectionCentresTitle', { count: displayCentres.districts?.length ?? 0 })}
           sub={t('org.sectionCentresSub', { partner })}
+          right={<SourceChip>{partner} KoboSubmissions</SourceChip>}
         />
         <div className="card flush">
           <table className="tbl">
@@ -548,9 +549,6 @@ export function OrgDashboard({ partner }: Props) {
             </tbody>
           </table>
         </div>
-        <DataSource>
-          Aggregated from all {partner} KoboSubmission rows this month, grouped by district. 14-day trend = daily counts from /api/dashboard/centres/ endpoint.
-        </DataSource>
       </section>
       )}
 
