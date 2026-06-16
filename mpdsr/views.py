@@ -126,6 +126,7 @@ def mpdsr_aggregates(request):
     """
     from fistula.models import FistulaCornerCase, FistulaCampaignVisit
     from django.db.models import Sum, Q
+    from .ciprb_models import MPDSRDeathNotification
 
     # Donor filter — comma-separated district list from the pill.
     districts_param = request.query_params.get('districts')
@@ -299,6 +300,83 @@ def mpdsr_aggregates(request):
         },
     }
 
+    # ── Phase 2 gap charts — forms that feed the DB but had no dashboard
+    #    surface yet: neonatal deaths (CIPRB 3 community + CIPRB 5 facility),
+    #    death notification slips (CIPRB 7 + 8), and Social Autopsy (CIPRB 6).
+    #    All additive — existing keys above are untouched.
+
+    # (1) Neonatal deaths — community (f2) + facility (f5) review forms.
+    #     death_type='perinatal' is the canonical neonatal/perinatal cohort.
+    #     cause_of_death stores the raw `cod_neonatal` slug (preterm_lbw /
+    #     asphyxia / sepsis / pneumonia / congenital / diarrhoea / other /
+    #     unknown). Anything unrecognised folds into 'unknown' so the donut
+    #     never grows a stray slice.
+    _NEO_CAUSES = [
+        'preterm_lbw', 'asphyxia', 'sepsis', 'pneumonia',
+        'congenital', 'diarrhoea', 'other', 'unknown',
+    ]
+    neo_qs = apply_donor(mpdsr_qs).filter(death_type=DeathType.PERINATAL)
+
+    def _neo_bucket(raw):
+        s = (raw or '').strip().lower()
+        if not s:
+            return 'unknown'
+        if s in _NEO_CAUSES:
+            return s
+        # Forgive verbose strings (e.g. "Neonatal sepsis", "Birth asphyxia").
+        for key in _NEO_CAUSES:
+            if key != 'other' and key.split('_')[0] in s:
+                return key
+        return 'other'
+
+    neo_cause = {c: 0 for c in _NEO_CAUSES}
+    for raw in neo_qs.values_list('cause_of_death', flat=True):
+        neo_cause[_neo_bucket(raw)] += 1
+    # Community (f2) vs facility (f5) split — the two source forms.
+    neo_level = {
+        'community': neo_qs.filter(sub_form_type='f2').count(),
+        'facility': neo_qs.filter(sub_form_type='f5').count(),
+    }
+    neonatal = {
+        'total': neo_qs.count(),
+        'cause_of_death': neo_cause,
+        'by_level': neo_level,
+    }
+
+    # (2) Death notifications — slips 01 + 02 (MPDSRDeathNotification).
+    #     By death type (maternal/neonatal/stillbirth), by level (place of
+    #     death = community/home vs facility, with in_transit folded into
+    #     community per the field workflow), and by district.
+    notif_qs = apply_donor(MPDSRDeathNotification.objects.all())
+    notif_by_kind = dict(_Counter(
+        notif_qs.exclude(death_kind='').values_list('death_kind', flat=True)))
+    # Level: a facility-place notification is facility-level; everything else
+    # (home / in_transit / blank) is community-level surveillance.
+    notif_community = notif_qs.exclude(
+        place_of_death=MPDSRDeathNotification.PLACE_FACILITY).count()
+    notif_facility = notif_qs.filter(
+        place_of_death=MPDSRDeathNotification.PLACE_FACILITY).count()
+    notif_by_district = dict(_Counter(
+        notif_qs.exclude(district='').values_list('district', flat=True)))
+    notifications = {
+        'total': notif_qs.count(),
+        'by_kind': notif_by_kind,
+        'by_level': {'community': notif_community, 'facility': notif_facility},
+        'by_district': notif_by_district,
+    }
+
+    # (3) Social Autopsy (sa_md) — maternal-death re-review. Cause is mostly
+    #     free text so it doesn't bucket cleanly; place of death does. Surface
+    #     a count + place-of-death breakdown. Thin data → the frontend renders
+    #     a stat-tile + small donut that degrade to an empty state gracefully.
+    sa_qs = apply_donor(mpdsr_qs).filter(sub_form_type='sa_md')
+    sa_place = dict(_Counter(
+        sa_qs.exclude(place_of_death='').values_list('place_of_death', flat=True)))
+    social_autopsy = {
+        'total': sa_qs.count(),
+        'place_of_death': sa_place,
+    }
+
     return Response({
         'denominators': denominators,
         'facility_counts': facility_counts,
@@ -309,6 +387,9 @@ def mpdsr_aggregates(request):
         'review_counts': review_counts,
         'indicators': indicators,
         'facility': facility,
+        'neonatal': neonatal,
+        'notifications': notifications,
+        'social_autopsy': social_autopsy,
     })
 
 

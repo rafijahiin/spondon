@@ -95,6 +95,25 @@ interface AggregatesPayload {
     review_status: Record<string, number>
     action_plan_coverage: { with_plan: number; without_plan: number }
   }
+  // Phase 2 gap charts — forms that feed the DB but had no chart yet.
+  // Neonatal deaths (CIPRB 3 community + CIPRB 5 facility).
+  neonatal?: {
+    total: number
+    cause_of_death: Record<string, number>
+    by_level: { community: number; facility: number }
+  }
+  // Death notification slips (CIPRB 7 + CIPRB 8).
+  notifications?: {
+    total: number
+    by_kind: Record<string, number>
+    by_level: { community: number; facility: number }
+    by_district: Record<string, number>
+  }
+  // Social Autopsy (CIPRB 6) — maternal-death re-review.
+  social_autopsy?: {
+    total: number
+    place_of_death: Record<string, number>
+  }
 }
 
 function useAggregates(
@@ -1137,6 +1156,18 @@ export function MPDSRVisualizations({
           <FacilityDeepDive facility={agg.facility} />
         </div>
       )}
+      {/* Phase 2 gap charts — neonatal deaths, death notifications, social
+          autopsy. Always render (they carry their own empty/zero state) so
+          the dashboard exposes the full set of MPDSR forms feeding the DB. */}
+      <div>
+        <NeonatalDeaths neonatal={agg?.neonatal ?? null} />
+      </div>
+      <div>
+        <DeathNotifications notifications={agg?.notifications ?? null} />
+      </div>
+      <div>
+        <SocialAutopsy socialAutopsy={agg?.social_autopsy ?? null} />
+      </div>
       <div>
         <MPDSRIndicators indicators={agg?.indicators ?? null} />
       </div>
@@ -1214,6 +1245,208 @@ function FacilityDeepDive({ facility }: {
           }}
           highlight="with_plan"
           labels={{ with_plan: 'With action plan', without_plan: 'No action plan yet' }}
+        />
+      </div>
+    </div>
+  )
+}
+
+// ─── Phase 2 gap charts: Neonatal · Notifications · Social Autopsy ───────────
+//
+// Three CIPRB Kobo forms feed the DB but had no dedicated chart. Each chart
+// is fed by an aggregate key already computed server-side and degrades to an
+// empty state when no data has landed.
+
+// Neonatal cause-of-death labels — the `cod_neonatal` choice list (CIPRB 3 +
+// CIPRB 5). Bangla reused verbatim from build_ciprb_forms.py choices.
+const NEO_CAUSE_LABELS: Record<string, string> = {
+  preterm_lbw: 'Preterm / low birth weight',
+  asphyxia: 'Birth asphyxia',
+  sepsis: 'Neonatal sepsis',
+  pneumonia: 'Pneumonia / respiratory infection',
+  congenital: 'Congenital anomaly',
+  diarrhoea: 'Diarrhoea',
+  other: 'Other',
+  unknown: 'Unknown',
+}
+
+const NEO_LEVEL_LABELS: Record<string, string> = {
+  community: 'Community (CIPRB 3)',
+  facility: 'Facility (CIPRB 5)',
+}
+
+const NOTIF_KIND_LABELS: Record<string, string> = {
+  maternal: 'Maternal death',
+  neonatal: 'Neonatal death',
+  stillbirth: 'Stillbirth',
+}
+
+const NOTIF_LEVEL_LABELS: Record<string, string> = {
+  community: 'Community / home',
+  facility: 'Health facility',
+}
+
+const SA_PLACE_LABELS: Record<string, string> = {
+  facility: 'Health facility',
+  home: 'Home',
+  in_transit: 'In transit',
+}
+
+/** Neonatal death surveillance — CIPRB 3 (community) + CIPRB 5 (facility).
+ *  Cause-of-death breakdown + community-vs-facility split. */
+function NeonatalDeaths({ neonatal }: {
+  neonatal: { total: number; cause_of_death: Record<string, number>; by_level: { community: number; facility: number } } | null
+}) {
+  const { t } = useTranslation()
+  const data = neonatal ?? { total: 0, cause_of_death: {}, by_level: { community: 0, facility: 0 } }
+  const z = {} as Record<string, number>
+  return (
+    <div>
+      <div style={{
+        marginBottom: 14,
+        display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
+        gap: 8, flexWrap: 'wrap',
+      }}>
+        <div>
+          <div className="kicker">
+            <span className="dot" style={{ background: CIPRB_BLUE }} />
+            {t('mpdsrViz.neoKicker')}
+          </div>
+          <h3 style={{ margin: '6px 0 2px', fontSize: 18, fontWeight: 700, color: 'var(--ink)' }}>
+            {t('mpdsrViz.neoTitle')}
+          </h3>
+          <p style={{ fontSize: 12.5, color: 'var(--muted)', margin: 0 }}>
+            {t('mpdsrViz.neoSub', { count: data.total })}
+          </p>
+        </div>
+        <SourceChip>CIPRB 3 + CIPRB 5</SourceChip>
+      </div>
+      <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+        <DonutBreakdown
+          title={t('mpdsrViz.neoCauseTitle')}
+          kicker={t('mpdsrViz.neoCauseKicker')}
+          data={data.cause_of_death ?? z}
+          labels={NEO_CAUSE_LABELS}
+        />
+        <DonutBreakdown
+          title={t('mpdsrViz.neoLevelTitle')}
+          kicker={t('mpdsrViz.neoLevelKicker')}
+          data={data.by_level ?? z}
+          labels={NEO_LEVEL_LABELS}
+        />
+      </div>
+    </div>
+  )
+}
+
+/** Death notification slips — CIPRB 7 (Slip 01) + CIPRB 8 (Slip 02).
+ *  By death type, by level, by district. */
+function DeathNotifications({ notifications }: {
+  notifications: {
+    total: number
+    by_kind: Record<string, number>
+    by_level: { community: number; facility: number }
+    by_district: Record<string, number>
+  } | null
+}) {
+  const { t } = useTranslation()
+  const data = notifications ?? { total: 0, by_kind: {}, by_level: { community: 0, facility: 0 }, by_district: {} }
+  const z = {} as Record<string, number>
+  return (
+    <div>
+      <div style={{
+        marginBottom: 14,
+        display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
+        gap: 8, flexWrap: 'wrap',
+      }}>
+        <div>
+          <div className="kicker">
+            <span className="dot" style={{ background: CIPRB_BLUE }} />
+            {t('mpdsrViz.notifSlipKicker')}
+          </div>
+          <h3 style={{ margin: '6px 0 2px', fontSize: 18, fontWeight: 700, color: 'var(--ink)' }}>
+            {t('mpdsrViz.notifSlipTitle')}
+          </h3>
+          <p style={{ fontSize: 12.5, color: 'var(--muted)', margin: 0 }}>
+            {t('mpdsrViz.notifSlipSub', { count: data.total })}
+          </p>
+        </div>
+        <SourceChip>CIPRB 7 + CIPRB 8</SourceChip>
+      </div>
+      <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+        <DonutBreakdown
+          title={t('mpdsrViz.notifKindTitle')}
+          kicker={t('mpdsrViz.notifKindKicker')}
+          data={data.by_kind ?? z}
+          labels={NOTIF_KIND_LABELS}
+        />
+        <DonutBreakdown
+          title={t('mpdsrViz.notifLevelTitle')}
+          kicker={t('mpdsrViz.notifLevelKicker')}
+          data={data.by_level ?? z}
+          labels={NOTIF_LEVEL_LABELS}
+        />
+        <BarBreakdown
+          title={t('mpdsrViz.notifDistrictTitle')}
+          kicker={t('mpdsrViz.notifDistrictKicker')}
+          data={data.by_district ?? z}
+        />
+      </div>
+    </div>
+  )
+}
+
+/** Social Autopsy — CIPRB 6 (sa_md). Maternal-death re-review. Count +
+ *  place-of-death breakdown. Data is thin and cause is free-text, so this is
+ *  a stat-tile-style count alongside a small place-of-death donut. */
+function SocialAutopsy({ socialAutopsy }: {
+  socialAutopsy: { total: number; place_of_death: Record<string, number> } | null
+}) {
+  const { t } = useTranslation()
+  const data = socialAutopsy ?? { total: 0, place_of_death: {} }
+  const z = {} as Record<string, number>
+  return (
+    <div>
+      <div style={{
+        marginBottom: 14,
+        display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
+        gap: 8, flexWrap: 'wrap',
+      }}>
+        <div>
+          <div className="kicker">
+            <span className="dot" style={{ background: CIPRB_BLUE }} />
+            {t('mpdsrViz.saKicker')}
+          </div>
+          <h3 style={{ margin: '6px 0 2px', fontSize: 18, fontWeight: 700, color: 'var(--ink)' }}>
+            {t('mpdsrViz.saTitle')}
+          </h3>
+          <p style={{ fontSize: 12.5, color: 'var(--muted)', margin: 0 }}>
+            {t('mpdsrViz.saSub')}
+          </p>
+        </div>
+        <SourceChip>CIPRB 6 — Social Autopsy</SourceChip>
+      </div>
+      <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+        {/* Count stat — sa_md cases reviewed. */}
+        <div className="card" style={{ padding: 22, flex: '1 1 240px', minWidth: 220 }}>
+          <div className="mono" style={{ fontSize: 10, color: 'var(--muted)', letterSpacing: '0.08em', marginBottom: 6 }}>
+            {t('mpdsrViz.saCountKicker')}
+          </div>
+          <div style={{
+            fontSize: 44, fontWeight: 800, color: CIPRB_BLUE, lineHeight: 1,
+            fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em',
+          }}>
+            {data.total.toLocaleString()}
+          </div>
+          <div style={{ fontSize: 12, color: 'var(--ink-3)', marginTop: 8 }}>
+            {data.total === 0 ? t('mpdsrViz.saEmpty') : t('mpdsrViz.saCountSub')}
+          </div>
+        </div>
+        <DonutBreakdown
+          title={t('mpdsrViz.saPlaceTitle')}
+          kicker={t('mpdsrViz.saPlaceKicker')}
+          data={data.place_of_death ?? z}
+          labels={SA_PLACE_LABELS}
         />
       </div>
     </div>
