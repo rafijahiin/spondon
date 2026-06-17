@@ -969,7 +969,13 @@ export default function ManagerApprovals() {
                             </div>
                             <div style={{ fontSize: 14, color: 'var(--ink-3)', marginTop: 10, lineHeight: 1.5 }}>
                               Ask the field team to register this client through{' '}
-                              <b style={{ color: 'var(--ink-2)' }}>PHD 1 — FSW Registration</b>{' '}
+                              <b style={{ color: 'var(--ink-2)' }}>{
+                                selected.organisation === 'PHD'
+                                  ? 'PHD 1 — FSW Registration'
+                                  : (selected.organisation === 'Bandhu' || selected.organisation === 'Bondhu')
+                                    ? 'Bandhu 0 — Mother List'
+                                    : 'the registration form'
+                              }</b>{' '}
                               before approving this service record.
                             </div>
                           </div>

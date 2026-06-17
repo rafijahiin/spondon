@@ -409,7 +409,25 @@ export function OrgDashboard({ partner }: Props) {
            its legacy programme tiles until its own headline set is confirmed.
            ═══════════════════════════════════════════════════════════════ */}
       <section className="section" style={{ marginTop: 24 }}>
+        {/* Approval visibility: field data is PENDING until approved and the
+            figures below count APPROVED only — without this, a manager who
+            never opens /approvals sees permanent zeros and thinks it's broken.
+            (Bandhu needs a 2nd UNFPA sign-off before anything counts.) */}
+        {(kpis?.pending ?? 0) > 0 && (
+          <a href="/approvals" style={{
+            display: 'block', textDecoration: 'none', marginBottom: 16,
+            padding: '12px 16px', borderRadius: 12,
+            background: 'rgba(233,151,10,0.08)', border: '1px solid rgba(233,151,10,0.32)',
+            color: 'var(--ink)', fontSize: 13.5, lineHeight: 1.5,
+          }}>
+            ⏳ <b>{kpis?.pending}</b> submission{(kpis?.pending ?? 0) === 1 ? '' : 's'} awaiting approval
+            {isPHD ? '' : ' (manager → UNFPA)'} — <b>not counted</b> in the figures below until approved. Open Approvals →
+          </a>
+        )}
         {isPHD ? <PhdHeadlineCards /> : <BandhuHeadlineCards />}
+        <p style={{ fontSize: 12, color: 'var(--muted)', marginTop: 12, fontStyle: 'italic' }}>
+          These figures count <b>approved records only</b>{isPHD ? '' : ' (after manager + UNFPA sign-off)'}.
+        </p>
       </section>
 
       {/* "Programme delivery" stacked area removed per Animesh — categories
