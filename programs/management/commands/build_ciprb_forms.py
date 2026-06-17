@@ -212,10 +212,12 @@ def _fistula_survey():
     # ── Stage selector — drives every relevant() below.
     rows += [
         _sr('select_one stage', 'stage',
-            'Which stage are you recording today?',
-            'আজ আপনি কোন ধাপের তথ্য নিবন্ধন করছেন?',
+            'Are you registering a NEW patient, or updating an EXISTING one?',
+            'নতুন রোগী নিবন্ধন করছেন, না কি আগের রোগীর তথ্য হালনাগাদ করছেন?',
             required='yes',
-            hint='A case progresses through five stages. Pick the one you are recording now.'),
+            hint='Pick "Suspected" to REGISTER a new woman. Pick any later stage '
+                 '(Diagnosed / Referred / Repaired / Rehabilitated) to UPDATE a woman '
+                 'already registered — you will choose her from a list.'),
     ]
 
     # ── Derive the numeric district code from the selected district slug.
@@ -233,6 +235,17 @@ def _fistula_survey():
     #    Later stages identify the woman via the grp_lookup dropdown below.
     rows += [
         _sr('begin_group', 'grp_patient', 'Patient identity', 'রোগীর পরিচয়',
+            relevant="${stage}='suspected'"),
+
+        # Show the district code the worker must use. Without this the ID-format
+        # rule is invisible and she literally cannot type a valid ID (the top
+        # UAT blocker). _dist_code is computed above from the chosen district;
+        # this note only READS it (no constraint — it can never block submit).
+        _sr('note', '_dist_code_show',
+            'Your district code is ${_dist_code}. Type the Patient ID as '
+            '${_dist_code}-0001, ${_dist_code}-0002, … (4 digits after the dash).',
+            'আপনার জেলা কোড ${_dist_code}। রোগীর আইডি এভাবে লিখুন: '
+            '${_dist_code}-0001, ${_dist_code}-0002, … (ড্যাশের পরে ৪ অঙ্ক)।',
             relevant="${stage}='suspected'"),
 
         # The unique registry ID — typed at registration. Two hard rules:
@@ -346,7 +359,8 @@ def _fistula_survey():
             'Registered patient (ID — name)',
             'নিবন্ধিত রোগী (আইডি — নাম)',
             required='yes',
-            relevant=LATER),
+            relevant=LATER,
+            app='autocomplete'),
         _sr('calculate', '_pull_name',    calc=PULL.format(col='patient_name')),
         _sr('calculate', '_pull_age',     calc=PULL.format(col='age')),
         _sr('calculate', '_pull_husband', calc=PULL.format(col='husband')),
@@ -399,7 +413,7 @@ def _fistula_survey():
             'ধাপ ২ · নির্ণীত (ফিস্টুলা কর্নার)',
             relevant="${stage}='diagnosed'"),
         _sr('date', 'diagnosed_date',
-            'Date of diagnosis', 'নির্ণয়ের তারিখ'),
+            'Date of diagnosis', 'নির্ণয়ের তারিখ', required='yes'),
         _sr('text', 'diagnosed_place',
             'Place of diagnosis', 'নির্ণয়ের স্থান'),
         _sr('text', 'diagnosed_by',
@@ -411,7 +425,7 @@ def _fistula_survey():
         # diagnosed long before they are operated on).
         _sr('select_one genital_fistula_type', 'genital_fistula_type',
             'Type of genital fistula (VVF / RVF / …)',
-            'যৌনাঙ্গের ফিস্টুলার ধরন (VVF / RVF / …)'),
+            'যৌনাঙ্গের ফিস্টুলার ধরন (VVF / RVF / …)', required='yes'),
         _sr('end_group', 'grp_diagnosed'),
     ]
 
@@ -422,7 +436,7 @@ def _fistula_survey():
             'ধাপ ৩ · অস্ত্রোপচারের জন্য প্রেরিত',
             relevant="${stage}='referred'"),
         _sr('date', 'refer_date',
-            'Referral date', 'প্রেরণের তারিখ'),
+            'Referral date', 'প্রেরণের তারিখ', required='yes'),
         _sr('text', 'refer_place',
             'Refer place (facility)', 'প্রেরণের স্থান'),
         _sr('text', 'referred_by_person',
@@ -440,7 +454,7 @@ def _fistula_survey():
             'ধাপ ৪ · অস্ত্রোপচার সম্পন্ন',
             relevant="${stage}='repaired'"),
         _sr('date', 'operation_date',
-            'Date of operation', 'অস্ত্রোপচারের তারিখ'),
+            'Date of operation', 'অস্ত্রোপচারের তারিখ', required='yes'),
         _sr('text', 'operation_place',
             'Place of operation', 'অস্ত্রোপচারের স্থান'),
         _sr('integer', 'hospital_stay_days',
@@ -465,7 +479,7 @@ def _fistula_survey():
             'অস্ত্রোপচারের পথ'),
         _sr('select_one surgery_outcome_v2', 'surgery_outcome_v2',
             'Outcome of surgery',
-            'অস্ত্রোপচারের ফলাফল'),
+            'অস্ত্রোপচারের ফলাফল', required='yes'),
         _sr('end_group', 'grp_repaired'),
     ]
 
