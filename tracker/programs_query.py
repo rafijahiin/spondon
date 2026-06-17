@@ -20,6 +20,7 @@ PROGRAMS_REGISTRY: dict[str, tuple[str, str, str, str]] = {
     'clinic_visit':       ('ClinicVisit',            'Clinic Visits',         'ক্লিনিক পরিদর্শন',      'Clinical'),
     'hiv_sti_test':       ('HIVSTITestResult',       'HIV / STI Tests',       'এইচআইভি পরীক্ষা',       'Clinical'),
     'referral':           ('Referral',               'Referrals',             'রেফারেল',                'Community'),
+    'phd_counselling':    ('PHDCounsellingReport',   'Counselling Reports',   'কাউন্সেলিং রিপোর্ট',     'Community'),
     'group_education':    ('GroupEducationSession',  'Group Education',       'দলগত স্বাস্থ্য শিক্ষা', 'Community'),
     'training_event':     ('TrainingEvent',          'Events & Trainings',    'ইভেন্ট ও প্রশিক্ষণ',    'Operations'),
     'iec_material':       ('IECMaterial',            'IEC Materials',         'আইইসি উপকরণ',           'Operations'),
@@ -60,7 +61,7 @@ ORG_FORM_TYPES: dict[str, list[str]] = {
         # Clinical — from Patient Services form
         'client_registration', 'clinic_visit', 'hiv_sti_test',
         # Community — from Patient Services + Activity & Ops
-        'referral', 'group_education',
+        'referral', 'phd_counselling', 'group_education',
         # Operations — from Activity & Ops form
         'training_event', 'iec_material', 'stock_entry', 'gbv_corner',
     ],

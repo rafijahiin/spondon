@@ -18,7 +18,7 @@ from .webhook import (
 from .models import (
     Client, ClinicVisit, HIVSTITestResult, Referral,
     GroupEducationSession, TrainingEvent, IECMaterial, StockEntry,
-    GBVCornerRecord,
+    GBVCornerRecord, PHDCounsellingReport,
 )
 
 logger = logging.getLogger(__name__)
@@ -285,6 +285,38 @@ def _phd_referral(payload: dict, lat, lng) -> HttpResponse:
     return HttpResponse('Created', status=201)
 
 
+def _phd_counselling(payload: dict, lat, lng) -> HttpResponse:
+    """counselling section → PHDCounsellingReport (monthly aggregate).
+
+    A whole monthly counselling report was previously logged and discarded.
+    Persist it as a real row. It is a self-reported MONTHLY SUMMARY (not a
+    per-patient record), so it is AUTO-APPROVED and counts immediately —
+    it does not pass through the per-record manager review queue (consistent
+    with how registration is auto-approved). Idempotent via kobo_submission_id."""
+    if _already_exists(PHDCounsellingReport, payload):
+        return HttpResponse('OK', status=200)
+    center = _get_center(payload, ORG)
+
+    PHDCounsellingReport.objects.create(
+        organisation=ORG,
+        approval_status='APPROVED',
+        center=center,
+        report_date=_date(payload.get('counsel_date')) or timezone.now().date(),
+        prepared_by=_str(payload.get('counsel_prepared_by')),
+        hiv_test_count=_int(payload.get('counsel_hiv_test')),
+        sti_count=_int(payload.get('counsel_sti')),
+        srhr_count=_int(payload.get('counsel_srhr')),
+        gbv_count=_int(payload.get('counsel_gbv')),
+        art_count=_int(payload.get('counsel_art')),
+        mh_count=_int(payload.get('counsel_mh')),
+        total_count=_int(payload.get('counsel_total')),
+        group_mh_count=_int(payload.get('counsel_group_mh')),
+        note=_str(payload.get('counsel_note')),
+        **_base_kwargs(payload, lat, lng),
+    )
+    return HttpResponse('Created', status=201)
+
+
 def handle_phd_patient_services(payload: dict, lat, lng) -> HttpResponse:
     stype = _str(payload.get('service_type'))
     if stype == 'clinic':
@@ -292,10 +324,9 @@ def handle_phd_patient_services(payload: dict, lat, lng) -> HttpResponse:
     if stype == 'htc':
         return _phd_htc(payload, lat, lng)
     if stype == 'counselling':
-        # Monthly aggregate report — stored in raw_payload only.
-        # Counselling counts feed indicator SL3 via ClinicVisit.mh_screening_done.
-        logger.info('PHD counselling monthly report stored (raw_payload only)')
-        return HttpResponse('Created', status=201)
+        # Monthly aggregate report — persisted as PHDCounsellingReport so a
+        # whole monthly counselling report is no longer silently discarded.
+        return _phd_counselling(payload, lat, lng)
     if stype == 'referral':
         return _phd_referral(payload, lat, lng)
     logger.warning('phd_patient_services_v1: unknown service_type=%r', stype)
@@ -506,11 +537,10 @@ def handle_phd_service_log(payload: dict, lat, lng) -> HttpResponse:
         'stock':        _phd_stock,
     }
     if rtype == 'counselling':
-        # Monthly aggregate report — stored in raw_payload only (no
-        # per-patient model). Counselling counts feed SL3 via the
-        # ClinicVisit.mh_screening_done flag from the clinic section.
-        logger.info('PHD counselling monthly report stored (raw_payload only)')
-        return HttpResponse('Created', status=201)
+        # Monthly aggregate report — persisted as PHDCounsellingReport
+        # (was previously logged and discarded). Auto-approved (a monthly
+        # summary, not a per-patient record), so it counts immediately.
+        return _phd_counselling(payload, lat, lng)
     fn = dispatch.get(rtype)
     if fn:
         return fn(payload, lat, lng)

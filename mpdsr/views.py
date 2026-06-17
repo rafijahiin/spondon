@@ -423,15 +423,26 @@ def mnm_aggregates(request):
             qs = qs.filter(q)
     total = qs.count()
     by_district = Counter(qs.values_list('district', flat=True))
-    # 6 severe maternal complications (boolean fields).
-    severe = {f: qs.filter(**{f: True}).count() for f in (
+
+    # The 17 screening flags are now 3-state (True = Yes, False = No,
+    # None = Unknown). Report all three counts per flag so the No/Unknown
+    # distinction the form captures is no longer lost. Shape per flag is
+    # {'yes': n, 'no': n, 'unknown': n}; 'yes' preserves the old per-flag
+    # count for any existing consumer.
+    def _three_state(field):
+        yes = qs.filter(**{field: True}).count()
+        no = qs.filter(**{field: False}).count()
+        unknown = qs.filter(**{field + '__isnull': True}).count()
+        return {'yes': yes, 'no': no, 'unknown': unknown}
+
+    severe = {f: _three_state(f) for f in (
         'sev_pph', 'sev_preec', 'eclampsia', 'sepsis',
         'rupt_uterus', 'sev_abortion',
     )}
-    critical = {f: qs.filter(**{f: True}).count() for f in (
+    critical = {f: _three_state(f) for f in (
         'crit_blood', 'crit_radiol', 'crit_laparot', 'crit_icu',
     )}
-    life_threat = {f: qs.filter(**{f: True}).count() for f in (
+    life_threat = {f: _three_state(f) for f in (
         'life_cardio', 'life_resp', 'life_renal', 'life_coag',
         'life_hepatic', 'life_neuro', 'life_uterine',
     )}

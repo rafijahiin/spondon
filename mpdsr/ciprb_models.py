@@ -132,28 +132,33 @@ class MaternalNearMissCase(models.Model):
     facility_name = models.CharField(max_length=200, blank=True)
     event_date = models.DateField(db_index=True)
 
-    # Section 1 — severe maternal complications (6 booleans).
-    sev_pph       = models.BooleanField(default=False)
-    sev_preec     = models.BooleanField(default=False)
-    eclampsia     = models.BooleanField(default=False)
-    sepsis        = models.BooleanField(default=False)
-    rupt_uterus   = models.BooleanField(default=False)
-    sev_abortion  = models.BooleanField(default=False)
+    # The 17 WHO screening flags are true 3-state: True = Yes, False = No,
+    # None = Unknown. null=True (and NO default) keeps the No/Unknown
+    # distinction the form captures instead of collapsing 'Unknown' into the
+    # boolean default. Existing False rows are unaffected — this only widens.
 
-    # Section 2 — critical interventions (4 booleans).
-    crit_blood    = models.BooleanField(default=False)
-    crit_radiol   = models.BooleanField(default=False)
-    crit_laparot  = models.BooleanField(default=False)
-    crit_icu      = models.BooleanField(default=False)
+    # Section 1 — severe maternal complications (6 flags).
+    sev_pph       = models.BooleanField(null=True)
+    sev_preec     = models.BooleanField(null=True)
+    eclampsia     = models.BooleanField(null=True)
+    sepsis        = models.BooleanField(null=True)
+    rupt_uterus   = models.BooleanField(null=True)
+    sev_abortion  = models.BooleanField(null=True)
 
-    # Section 3 — life-threatening conditions (7 booleans).
-    life_cardio   = models.BooleanField(default=False)
-    life_resp     = models.BooleanField(default=False)
-    life_renal    = models.BooleanField(default=False)
-    life_coag     = models.BooleanField(default=False)
-    life_hepatic  = models.BooleanField(default=False)
-    life_neuro    = models.BooleanField(default=False)
-    life_uterine  = models.BooleanField(default=False)
+    # Section 2 — critical interventions (4 flags).
+    crit_blood    = models.BooleanField(null=True)
+    crit_radiol   = models.BooleanField(null=True)
+    crit_laparot  = models.BooleanField(null=True)
+    crit_icu      = models.BooleanField(null=True)
+
+    # Section 3 — life-threatening conditions (7 flags).
+    life_cardio   = models.BooleanField(null=True)
+    life_resp     = models.BooleanField(null=True)
+    life_renal    = models.BooleanField(null=True)
+    life_coag     = models.BooleanField(null=True)
+    life_hepatic  = models.BooleanField(null=True)
+    life_neuro    = models.BooleanField(null=True)
+    life_uterine  = models.BooleanField(null=True)
 
     # Delivery + outcome.
     mode_of_delivery   = models.CharField(max_length=30, blank=True)
@@ -186,16 +191,20 @@ class MaternalNearMissCase(models.Model):
 
     @property
     def severe_complication_count(self) -> int:
-        return sum([self.sev_pph, self.sev_preec, self.eclampsia,
-                    self.sepsis, self.rupt_uterus, self.sev_abortion])
+        # Count only Yes (True); None (Unknown) and False (No) do not count.
+        return sum(1 for v in (self.sev_pph, self.sev_preec, self.eclampsia,
+                               self.sepsis, self.rupt_uterus, self.sev_abortion)
+                   if v is True)
 
     @property
     def critical_intervention_count(self) -> int:
-        return sum([self.crit_blood, self.crit_radiol,
-                    self.crit_laparot, self.crit_icu])
+        return sum(1 for v in (self.crit_blood, self.crit_radiol,
+                               self.crit_laparot, self.crit_icu)
+                   if v is True)
 
     @property
     def life_threat_count(self) -> int:
-        return sum([self.life_cardio, self.life_resp, self.life_renal,
-                    self.life_coag, self.life_hepatic, self.life_neuro,
-                    self.life_uterine])
+        return sum(1 for v in (self.life_cardio, self.life_resp, self.life_renal,
+                               self.life_coag, self.life_hepatic, self.life_neuro,
+                               self.life_uterine)
+                   if v is True)

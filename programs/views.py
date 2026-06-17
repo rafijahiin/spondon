@@ -38,7 +38,7 @@ from .models import (
     IECMaterial,
     StockEntry, TemperatureLog, SafetyHygieneKit, StoreRequisition,
     TrainingEvent, CoordMeeting, MobileHealthCamp, VisitorRegister,
-    NilReport,
+    NilReport, PHDCounsellingReport,
 )
 from .serializers import (
     ServiceCenterSerializer, ClientSerializer,
@@ -614,6 +614,9 @@ def _build_summary(obj, model_type: str) -> str:
             if (obj.referral_type or '').strip() and obj.referral_type != 'other':
                 parts.append(obj.referral_type)
             return ' · '.join(parts)
+        if model_type == 'phd_counselling':
+            return (f"Counselling report {obj.report_date} · "
+                    f"{obj.total_count} individual · {obj.group_mh_count} group MH")
         if model_type == 'safety_hygiene_kit':
             return f"Kit distribution {obj.distribution_date} · {obj.condom_count} condoms"
         if model_type == 'training_event':

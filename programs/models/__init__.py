@@ -9,6 +9,7 @@ from .referral import Referral
 from .supply import StockEntry, TemperatureLog, SafetyHygieneKit, StoreRequisition
 from .operations import TrainingEvent, CoordMeeting, MobileHealthCamp, VisitorRegister
 from .gbv_corner import GBVCornerRecord
+from .counselling_report import PHDCounsellingReport
 from .nil_report import NilReport
 
 __all__ = [
@@ -17,6 +18,7 @@ __all__ = [
     'HTCCounselling', 'IndividualCounselling', 'MHScreening',
     'GBVCase', 'GBVAccessLog',
     'GBVCornerRecord',
+    'PHDCounsellingReport',
     'IECMaterial',
     'OutreachSession', 'GroupEducationSession',
     'Referral',

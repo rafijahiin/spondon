@@ -18,12 +18,19 @@ import { DonutBreakdown } from './IndicatorCharts'
 const CIPRB_BLUE = '#F96000'
 const CIPRB_BLUE_LIGHT = '#FB904D'
 
+// The 17 screening flags are 3-state: Yes / No / Unknown counts per flag.
+interface FlagCounts {
+  yes: number
+  no: number
+  unknown: number
+}
+
 interface MNMAggregates {
   total: number
   by_district: Record<string, number>
-  severe_complications: Record<string, number>
-  critical_interventions: Record<string, number>
-  life_threatening: Record<string, number>
+  severe_complications: Record<string, FlagCounts>
+  critical_interventions: Record<string, FlagCounts>
+  life_threatening: Record<string, FlagCounts>
   mode_of_delivery: Record<string, number>
   causes: Record<string, number>
   contributory_conditions?: string[]
@@ -62,20 +69,27 @@ const LIFE_LABELS: Record<string, string> = {
   life_uterine: 'Uterine / hysterectomy',
 }
 
+// Normalise a flag value to {yes, no, unknown}. Tolerates the legacy plain
+// number shape (treated as the Yes count) so an old API response still renders.
+function toFlagCounts(v: FlagCounts | number | undefined): FlagCounts {
+  if (typeof v === 'number') return { yes: v, no: 0, unknown: 0 }
+  return { yes: v?.yes ?? 0, no: v?.no ?? 0, unknown: v?.unknown ?? 0 }
+}
+
 function CountSection({
   title, kicker, icon, data, labels, total,
 }: {
   title: string
   kicker: string
   icon: React.ReactNode
-  data: Record<string, number>
+  data: Record<string, FlagCounts>
   labels: Record<string, string>
   total: number
 }) {
   const entries = Object.entries(labels)
-    .map(([k, label]) => ({ k, label, value: data[k] ?? 0 }))
-    .sort((a, b) => b.value - a.value)
-  const max = Math.max(1, ...entries.map(e => e.value))
+    .map(([k, label]) => ({ k, label, ...toFlagCounts(data[k]) }))
+    .sort((a, b) => b.yes - a.yes)
+  const max = Math.max(1, ...entries.map(e => e.yes))
   return (
     <div className="card" style={{ padding: 20, flex: '1 1 280px', minWidth: 260 }}>
       <div style={{ marginBottom: 12 }}>
@@ -94,16 +108,25 @@ function CountSection({
         display: 'flex', flexDirection: 'column', gap: 8, fontSize: 12.5,
       }}>
         {entries.map(e => {
-          const pct = total > 0 ? Math.round((e.value / total) * 100) : 0
+          const pct = total > 0 ? Math.round((e.yes / total) * 100) : 0
           return (
             <div key={e.k} style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
                 <span style={{ color: 'var(--ink-2)' }}>{e.label}</span>
-                <span>
-                  <b style={{ fontVariantNumeric: 'tabular-nums' }}>{e.value}</b>
+                <span style={{ whiteSpace: 'nowrap' }}>
+                  <b style={{ fontVariantNumeric: 'tabular-nums' }}>{e.yes}</b>
                   <span className="mute" style={{ marginLeft: 6, fontSize: 11 }}>
                     {total > 0 ? `${pct}%` : '—'}
                   </span>
+                  {e.unknown > 0 && (
+                    <span
+                      className="mute"
+                      title={`${e.unknown} unknown · ${e.no} no`}
+                      style={{ marginLeft: 8, fontSize: 10.5, fontStyle: 'italic' }}
+                    >
+                      ?{e.unknown}
+                    </span>
+                  )}
                 </span>
               </div>
               <div style={{
@@ -111,7 +134,7 @@ function CountSection({
                 background: 'var(--surface-3)', overflow: 'hidden',
               }}>
                 <div style={{
-                  width: `${(e.value / max) * 100}%`,
+                  width: `${(e.yes / max) * 100}%`,
                   height: '100%', background: CIPRB_BLUE,
                   borderRadius: 3,
                   transition: 'width 400ms ease',

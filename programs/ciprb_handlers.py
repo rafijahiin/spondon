@@ -482,9 +482,11 @@ def handle_ciprb_near_miss(payload, lat, lng):
         if gw: case.gestational_weeks = gw
         case.facility_name = _s(payload.get('facility_name'))
 
+        # 3-state flags: always write _bool(...) — True/False/None — so an
+        # explicit 'Unknown' is stored as None (distinct from False = No)
+        # instead of silently collapsing into the model default.
         for fld in _MNM_BOOL_FIELDS:
-            b = _bool(payload.get(fld))
-            if b is not None: setattr(case, fld, b)
+            setattr(case, fld, _bool(payload.get(fld)))
 
         case.mode_of_delivery   = _s(payload.get('mode_of_delivery'))
         case.delivery_outcome   = _s(payload.get('delivery_outcome'))
