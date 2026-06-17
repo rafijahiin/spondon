@@ -248,22 +248,26 @@ Endpoint access is gated to CIPRB org + UNFPA + admins (`CanAccessMPDSR` / `CanA
 ## 7. Caveats that affect how you read the numbers
 *(Surfaced during the verification pass — none are crashes; they're labelling/data-source nuances UNFPA should know.)*
 
-1. **CIPRB Fistula — two of five visuals are legacy-backed.** The **Surgical Outcome tiles** and the
+> **Update — 2026-06-17:** Items **1, 2, 4 (Bandhu), and 5** below have since been **fixed and deployed**: the two fistula visuals now read the live `CIPRBFistulaCase`; the MPDSR section chips now read "CIPRB MPDSR forms + Excel denominators"; the Bandhu form-grid chip now reads "Bandhu 1 + Bandhu 2"; and the PHD indicator "Source Form" now points to the live merged "PHD 2 — Service Log" (migration `indicators.0016`). Items **3, 6, 7** remain as described below. Each fixed item is tagged ✅ inline.
+
+1. ✅ **[FIXED 2026-06-17] CIPRB Fistula — two of five visuals were legacy-backed.** The **Surgical Outcome tiles** and the
    **Diagnosis (cause) Pie** carry a "CIPRB 1" chip but actually read the **legacy `FistulaCornerCase`**
    table (`/fistula/corner-cases/`), *not* the live CIPRB 1 submissions. The reach/funnel, the new
    **VVF/RVF bars**, and the **17 indicators** correctly read the live `CIPRBFistulaCase`. Treat the live
    surgery/cause figures as the indicators grid (#14, #17), not those two visuals, until they're re-pointed.
-2. **CIPRB MPDSR chip understates sources.** "CIPRB 2 + CIPRB 3" on the Notify-vs-Review and
+2. ✅ **[FIXED 2026-06-17] CIPRB MPDSR chip understated sources.** "CIPRB 2 + CIPRB 3" on the Notify-vs-Review and
    reporting-rate sections also includes CIPRB 4/5/6 and **Excel-ingested denominators** (project death
    estimates, facility counts).
 3. **PHD/Bandhu "Centres" table & `partner-kpis` read the legacy `KoboSubmission` table**, which is empty
    for both partners (their live data is in `programs.*`). So that district table never renders and those
    legacy KPIs read ~0 — **the trustworthy numbers are the headline cards + indicator grid** (from
    `/indicators/progress/`).
-4. **Form-grid chips ("Bandhu F-01…F-14", "PHD KoboSubmissions") are loose labels** — the counts come from
-   the program **models**, not the raw Kobo registers.
-5. **PHD Target Config "Source Form" column** still names the decommissioned `PHD-2 — Patient Services` /
-   `PHD-3 — Activity & Operations` (a stale `KoboFormMapping` FK); the live service form is the merged PHD 2.
+4. ✅ **[Bandhu FIXED 2026-06-17] Form-grid chips were loose labels** — the counts come from the program
+   **models**, not the raw Kobo registers. Bandhu's chip now reads "Bandhu 1 + Bandhu 2"; the PHD
+   "KoboSubmissions" chip sits on the Centres table, which never renders for PHD (legacy table is empty).
+5. ✅ **[FIXED 2026-06-17] PHD Target Config "Source Form" column** previously named the decommissioned
+   `PHD-2 — Patient Services` / `PHD-3 — Activity & Operations`; migration `indicators.0016` re-points
+   every PHD SL indicator to the live merged `PHD 2 — Service Log` and retires the dead mappings.
 6. **Approvals badge counts only `PENDING`** — it does **not** add Bandhu `MANAGER_APPROVED` items, so it
    under-counts the **UNFPA stage-2 queue**. The full UNFPA review lane is correct inside `/approvals` itself.
 7. Bandhu **F-01 / F-11 / F-13** and PHD **counselling** are collected but **not stored in a model** (they
