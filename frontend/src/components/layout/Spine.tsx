@@ -260,13 +260,22 @@ export function Spine() {
     navigate('/login')
   }
 
-  // Fetch real pending approval count
+  // Badge = the per-role pending count the user can actually act on
+  // (PendingApprovalsView.total). UNFPA sees its stage-2 queue (Bandhu
+  // MANAGER_APPROVED), managers see their own-org PENDING, super sees all.
+  // The old /dashboard/kpis/ submissions_pending counted only PENDING for
+  // everyone, so UNFPA's stage-2 queue showed 0. Fall back to it if the
+  // per-role endpoint is unavailable — the badge can never get worse.
   useEffect(() => {
     let cancelled = false
     const fetchPending = () => {
-      api.get('/dashboard/kpis/')
-        .then(r => { if (!cancelled) setPendingCount(r.data?.submissions_pending ?? 0) })
-        .catch(() => {})
+      api.get('/programs/pending-approvals/')
+        .then(r => { if (!cancelled) setPendingCount(r.data?.total ?? 0) })
+        .catch(() => {
+          api.get('/dashboard/kpis/')
+            .then(r => { if (!cancelled) setPendingCount(r.data?.submissions_pending ?? 0) })
+            .catch(() => {})
+        })
     }
     fetchPending()
     const interval = setInterval(fetchPending, 30_000)
