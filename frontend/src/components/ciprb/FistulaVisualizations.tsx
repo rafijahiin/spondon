@@ -22,17 +22,6 @@ import { SourceChip } from '@/components/ui/SourceChip'
 const CIPRB_BLUE = '#F96000'
 const CIPRB_BLUE_SOFT = 'rgba(249,96,0,0.10)'
 
-interface CornerCase {
-  identification_date?: string | null
-  diagnosis_date?: string | null
-  referral_date?: string | null
-  referral_outcome?: string
-  surgery_performed?: 'yes' | 'no' | 'pending' | ''
-  surgery_outcome?: 'success_dry' | 'success_not_dry' | 'failed' | ''
-  fistula_type?: string  // 'VVF' | 'RVF' | 'BOTH' | 'OTHER' | ''
-  fistula_cause?: string // 'Surgical Injury' | 'Prolonged/Obstructed Labour' | etc.
-}
-
 interface AggregateData {
   // Total registered CIPRB fistula cases — drives the empty state.
   total: number
@@ -61,7 +50,7 @@ interface AggregateData {
   pieIatrogenic: number
   pieCongenital: number
   pieTraumatic: number
-  piePending: number     // no diagnosis_date — kept out of pie, shown beside it
+  piePending: number     // diagnosed but fistula type not yet recorded — shown beside the pie
   // Anatomical fistula-type breakdown (genital_fistula_type): vvf / rvf /
   // ureterovaginal / … — classified at the Fistula Corner (diagnosis stage).
   genitalType: Record<string, number>
@@ -91,7 +80,6 @@ function useFistulaAggregates(
   const periodFrom = period?.from
   const periodTo = period?.to
   const districtsKey = districts ? districts.join(',') : ''
-  const districtSet = districts ? new Set(districts.map(d => d.toLowerCase())) : null
 
   useEffect(() => {
     let cancelled = false
@@ -100,87 +88,46 @@ function useFistulaAggregates(
     if (periodTo) params.to = periodTo
     if (districtsKey) params.districts = districtsKey
     Promise.allSettled([
-      // Fistula Corner cases — still the source for the surgical-outcome tiles
-      // and the diagnosis pie (no pipeline/campaign_reach equivalent exists).
-      api.get<{ results?: CornerCase[] } | CornerCase[]>('/fistula/corner-cases/', { params }),
-      // The monotonic pipeline from CIPRBFistulaCase.current_stage — the
-      // single source of truth for the 5 funnel stages AND the campaign-reach
-      // tiles (replaces the demo-seeded FistulaCampaign / FistulaCornerCase
-      // fallback that showed fake numbers).
+      // Single source of truth: the LIVE CIPRBFistulaCase aggregate.
+      //   .pipeline / .campaign_reach → funnel stages + reach tiles
+      //   .genital_fistula_type      → anatomical VVF/RVF bars
+      //   .surgery_outcome_v2        → surgical-outcome tiles
+      //   .fistula_type_v2           → diagnosis (cause) pie
+      // The surgical-outcome tiles + diagnosis pie previously read the LEGACY
+      // /fistula/corner-cases/ (FistulaCornerCase) while still showing a
+      // "CIPRB 1 — Fistula Question Bank" chip — a provenance mismatch. They
+      // now read the real CIPRB 1 model so the chip is truthful. ?districts=
+      // is honoured server-side, so the client-side donor filter is gone.
       api.get<{
         total?: number
         pipeline?: Record<string, number>
         campaign_reach?: { districts: number; upazilas: number; patients: number }
         genital_fistula_type?: Record<string, number>
+        surgery_outcome_v2?: Record<string, number>
+        fistula_type_v2?: Record<string, number>
       }>('/fistula/aggregates/', { params }),
-    ]).then(([cornerRes, aggRes]) => {
+    ]).then(([aggRes]) => {
       if (cancelled) return
       const agg = aggRes.status === 'fulfilled' ? aggRes.value.data : null
       const pipeline = (agg && agg.pipeline) || null
       const reach = (agg && agg.campaign_reach) || null
 
-      const corner: CornerCase[] =
-        cornerRes.status === 'fulfilled'
-          ? (Array.isArray(cornerRes.value.data)
-              ? cornerRes.value.data
-              : cornerRes.value.data.results ?? [])
-          : []
+      // Surgical outcome (dry / not-dry / failed) — CIPRBFistulaCase.surgery_outcome_v2.
+      const so = (agg && agg.surgery_outcome_v2) || {}
+      const outcomeDry    = so.success_dry     || 0
+      const outcomeNotDry = so.success_not_dry || 0
+      const outcomeFailed = so.failed          || 0
 
-      // Client-side donor filter — until ?districts= is honoured by all
-      // endpoints, restrict aggregates to the selected donor's districts.
-      const inFilter = (d?: string) =>
-        !districtSet || (d != null && districtSet.has(d.toLowerCase()))
-      // Only the surgical-outcome tiles and the diagnosis pie still read the
-      // Fistula Corner cases (those metrics have no pipeline/campaign_reach
-      // equivalent). The funnel and campaign-reach now come straight from the
-      // real CIPRBFistulaCase aggregates — no demo-seeded roll-up fallback.
-      const cornerFil = corner.filter(c => inFilter(c.district))
-
-      // Surgical outcome categories (dry / not-dry / failed)
-      const outcomeDry    = cornerFil.filter(c => c.surgery_outcome === 'success_dry').length
-      const outcomeNotDry = cornerFil.filter(c => c.surgery_outcome === 'success_not_dry').length
-      const outcomeFailed = cornerFil.filter(c => c.surgery_outcome === 'failed').length
-
-      // Diagnosis pie — 4 fistula-type slices per CIPRB Fistula Question
-      // Bank: Obstetric, Iatrogenic, Congenital, Traumatic (the legacy
-      // "Other" bucket has been retired). Classification keys off
-      // `fistula_type_v2` (new field on the upcoming CIPRB form) and
-      // falls back to the existing `fistula_cause` / `fistula_type`
-      // fields for historical rows.
-      let pieObstetric = 0
-      let pieIatrogenic = 0
-      let pieCongenital = 0
-      let pieTraumatic = 0
-      let piePending = 0
-      for (const c of cornerFil) {
-        if (!c.diagnosis_date) { piePending++; continue }
-        const newType = ((c as any).fistula_type_v2 ?? '').toLowerCase().trim()
-        if (newType) {
-          if      (newType.startsWith('obs')) pieObstetric++
-          else if (newType.startsWith('iat')) pieIatrogenic++
-          else if (newType.startsWith('con')) pieCongenital++
-          else if (newType.startsWith('tra')) pieTraumatic++
-          else piePending++
-          continue
-        }
-        // Legacy fallback — historical rows lack fistula_type_v2.
-        const cause = (c.fistula_cause ?? '').toLowerCase().trim()
-        if (cause) {
-          if (cause.includes('surgical')) pieIatrogenic++
-          else if (cause.includes('trauma') || cause.includes('accident')) pieTraumatic++
-          else if (cause.includes('congenital') || cause.includes('birth defect')) pieCongenital++
-          else if (
-            cause.includes('labour') || cause.includes('labor') ||
-            cause.includes('marriage') || cause.includes('abortion') ||
-            cause.includes('violence') || cause.includes('gbv')
-          ) pieObstetric++
-          else piePending++
-        } else {
-          const t = (c.fistula_type ?? '').toUpperCase().trim()
-          if (t === 'VVF') pieObstetric++
-          else piePending++
-        }
-      }
+      // Diagnosis pie — 4 fistula types from CIPRBFistulaCase.fistula_type_v2
+      // (Obstetric / Iatrogenic / Congenital / Traumatic).
+      const ft = (agg && agg.fistula_type_v2) || {}
+      const pieObstetric  = ft.obstetric  || 0
+      const pieIatrogenic = ft.iatrogenic || 0
+      const pieCongenital = ft.congenital || 0
+      const pieTraumatic  = ft.traumatic  || 0
+      // "Awaiting" = cases that reached diagnosis but have no fistula type yet.
+      const pieClassified = pieObstetric + pieIatrogenic + pieCongenital + pieTraumatic
+      const piePending = Math.max(0, (pipeline ? pipeline.diagnosed : 0) - pieClassified)
 
       setData({
         total: agg && typeof agg.total === 'number' ? agg.total : 0,
