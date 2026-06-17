@@ -426,7 +426,7 @@ export function OrgDashboard({ partner }: Props) {
             kicker={t('org.sectionFormsKicker')}
             title={t('org.sectionFormsTitle')}
             sub={t('org.sectionFormsSub')}
-            right={<SourceChip>{isPHD ? 'PHD 1 + PHD 2' : 'Bandhu F-01…F-14'}</SourceChip>}
+            right={<SourceChip>{isPHD ? 'PHD 1 + PHD 2' : 'Bandhu 1 + Bandhu 2'}</SourceChip>}
           />
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 14 }}>
             {topForms.map((f) => (
