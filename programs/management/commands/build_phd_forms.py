@@ -90,9 +90,9 @@ def _meta(center_required=True):
         _sr('begin_group','grp_meta','Submission info','তথ্য প্রেরণ'),
         _sr('calculate','organisation','','',calc="'PHD'"),
         _sr('geopoint','location',
-            'GPS location (required — step outside if no signal)',
-            'জিপিএস অবস্থান (প্রয়োজনীয়)', required='yes'),
-        _sr('date','collection_date','Date','তারিখ', required='yes'),
+            'GPS location (auto — captured when available)',
+            'জিপিএস অবস্থান (পাওয়া গেলে স্বয়ংক্রিয়)', required=''),
+        _sr('date','collection_date','Submission date (today)','প্রেরণের তারিখ (আজ)', required='yes'),
         # Dropdown of PHD's 9 wellness centres (PHD request, 2026-06-08).
         # The choice VALUE is the official Wellness Centre ID (R001..D009);
         # the webhook _get_center resolves it via code__iexact. Only PHD's
@@ -184,6 +184,11 @@ def _form1_survey():
         _sr('calculate','_exp_prefix',
             calc="concat(substr(${centre_id},3),'-')"),
 
+        _sr('note','_prefix_hint',
+            'For this centre, the ID must start with: ${_exp_prefix} (e.g. ${_exp_prefix}0001)',
+            'এই কেন্দ্রের জন্য আইডি শুরু হতে হবে: ${_exp_prefix} দিয়ে (যেমন ${_exp_prefix}0001)',
+            relevant="${centre_id}!=''"),
+
         _sr('text','id_no',
             'ID No. (unique per FSW)',
             'আইডি নম্বর (অনন্য)',
@@ -200,10 +205,9 @@ def _form1_survey():
                         "translate(normalize-space(.),"
                         "'abcdefghijklmnopqrstuvwxyz',"
                         "'ABCDEFGHIJKLMNOPQRSTUVWXYZ'))=''"),
-            cmsg='⚠ Invalid ID No. It must match the selected centre — start with '
-                 'its number (e.g. 1- Daulatdia, 2- Maroawary) — and must not '
-                 'already be registered. / ভুল আইডি — নির্বাচিত কেন্দ্রের নম্বর দিয়ে শুরু '
-                 'হতে হবে (যেমন ১- দৌলতদিয়া) এবং আগে থেকে নিবন্ধিত থাকা যাবে না।',
+            cmsg='⚠ This ID cannot be saved — see the red message above: it either '
+                 'does not start with this centre number, or it is already registered. / '
+                 'এই আইডি সংরক্ষণ করা যাবে না — উপরের লাল বার্তা দেখুন।',
             hint='Format: centre number + serial, e.g. 1-0001 (Daulatdia), '
                  '2-0001 (Jashore). Use the same ID in every Service Log.'),
 
@@ -240,8 +244,9 @@ def _form1_survey():
 
         _sr('integer','birth_year',
             'Birth year','জন্ম সাল',
+            hint='4-digit year, e.g. 1990 / ৪-সংখ্যার সাল, যেমন ১৯৯০',
             constraint='. >= 1940 and . <= 2010',
-            cmsg='1940–2010 এর মধ্যে হতে হবে'),
+            cmsg='Must be a year between 1940 and 2010. / ১৯৪০–২০১০ এর মধ্যে একটি সাল হতে হবে।'),
 
         _sr('text','permanent_address',
             'Permanent address','স্থায়ী ঠিকানা', app='multiline'),
@@ -363,7 +368,7 @@ def _form2_survey():
             'ক্লিনিক ভিজিট / রোগীর তথ্য',
             relevant=REL_C),
 
-        _sr('date','clinic_date','Date','তারিখ', required='yes'),
+        _sr('date','clinic_date','Clinic visit date','ক্লিনিক ভিজিটের তারিখ', required='yes'),
         # client_id + age + sex live in the shared patient_id_group at the
         # top of the form — pulled from the Master List CSV via pulldata().
         # Don't repeat them here.
@@ -502,6 +507,10 @@ def _form2_survey():
             'Counselling Report (monthly)',
             'কাউন্সেলিং রিপোর্ট (মাসিক)',
             relevant=REL_CO),
+
+        _sr('note','_counsel_aggregate_note',
+            'ℹ This is a monthly summary — counts are stored as a report, not per-patient records.',
+            'ℹ এটি মাসিক সারসংক্ষেপ — গণনা রিপোর্ট হিসেবে সংরক্ষিত হয়, রোগীভিত্তিক নয়।'),
 
         _sr('text','counsel_prepared_by',
             'Prepared by','প্রস্তুতকারী', required='yes'),
@@ -890,7 +899,8 @@ def _form_service_log_survey():
     rows += [
         _sr('select_one record_type','record_type',
             'What are you recording today?',
-            'আজ কী নথিভুক্ত করছেন?', required='yes'),
+            'আজ কী নথিভুক্ত করছেন?', required='yes',
+            hint='Pick one. Only the matching section appears below. / একটি নির্বাচন করুন — শুধু সংশ্লিষ্ট অংশ দেখাবে।'),
     ]
     rows += _patient_id_group()
     # Reuse all 9 section bodies. _form2_survey() and _form3_survey() each

@@ -729,15 +729,16 @@ def _community_maternal_survey():
             "Deceased woman's information",
             'মৃত মহিলার তথ্য'),
         _sr('text', 'deceased_name', 'Name of deceased',
-            'মৃত মহিলার নাম', required='yes'),
+            'মৃত মহিলার নাম', required='yes',
+            relevant="${consent_given}='yes'"),
         _sr('integer', 'deceased_age', 'Age (years)',
             'বয়স (বছর)', constraint='. > 9 and . < 60'),
         _sr('text', 'deceased_husband',  "Husband's name",
-            'স্বামীর নাম'),
+            'স্বামীর নাম', relevant="${consent_given}='yes'"),
         _sr('text', 'deceased_father',   "Father's name",
-            'পিতার নাম'),
+            'পিতার নাম', relevant="${consent_given}='yes'"),
         _sr('text', 'deceased_address',  'Permanent address',
-            'স্থায়ী ঠিকানা'),
+            'স্থায়ী ঠিকানা', relevant="${consent_given}='yes'"),
         _sr('date', 'date_of_death',     'Date of death',
             'মৃত্যুর তারিখ', required='yes'),
         _sr('select_one time_of_death', 'time_of_death',
@@ -747,7 +748,7 @@ def _community_maternal_survey():
         _sr('text', 'facility_name',
             'If facility — name of facility',
             'প্রতিষ্ঠান হলে — নাম',
-            relevant="${place_of_death}='facility'"),
+            relevant="${place_of_death}='facility' and ${consent_given}='yes'"),
         _sr('end_group', 'grp_deceased'),
     ]
 
@@ -799,6 +800,7 @@ def _community_maternal_survey():
         _sr('text', 'cause_of_death_other',
             'Other cause (specify)',
             'অন্যান্য কারণ (উল্লেখ করুন)',
+            required='yes',
             relevant="${cause_of_death}='other'"),
         _sr('text', 'contributory_factors',
             'Contributory factors / delays',
@@ -926,7 +928,7 @@ def _community_maternal_choices():
     ch += [
         _ch('review_status', 'pending',   'Pending review',
             'পর্যালোচনার অপেক্ষায়'),
-        _ch('review_status', 'reviewed',  'Reviewed', 'পর্যালোচিত'),
+        _ch('review_status', 'reviewed',  'Reviewed (closes case)', 'পর্যালোচিত'),
         _ch('review_status', 'in_progress','In progress',
             'প্রক্রিয়াধীন'),
     ]
@@ -946,7 +948,8 @@ def _community_neonatal_survey():
         _sr('begin_group', 'grp_neonate', 'Neonate information',
             'নবজাতকের তথ্য'),
         _sr('text', 'mother_name', "Mother's name",
-            'মাতার নাম', required='yes'),
+            'মাতার নাম', required='yes',
+            relevant="${consent_given}='yes'"),
         _sr('select_one sex_choices', 'sex_neonate',
             "Sex of neonate", 'নবজাতকের লিঙ্গ'),
         _sr('date', 'date_of_birth', 'Date of birth',
@@ -978,6 +981,7 @@ def _community_neonatal_survey():
         _sr('text', 'cause_other',
             'Other (specify)',
             'অন্যান্য (উল্লেখ করুন)',
+            required='yes',
             relevant="${cause_of_death}='other'"),
         _sr('end_group', 'grp_cause_neo'),
     ]
@@ -1047,7 +1051,7 @@ def _community_neonatal_choices():
     ch += [
         _ch('review_status', 'pending',  'Pending review',
             'পর্যালোচনার অপেক্ষায়'),
-        _ch('review_status', 'reviewed', 'Reviewed', 'পর্যালোচিত'),
+        _ch('review_status', 'reviewed', 'Reviewed (closes case)', 'পর্যালোচিত'),
     ]
     return ch
 
@@ -1262,7 +1266,8 @@ def _social_autopsy_survey():
             "Deceased woman's identity",
             'মৃত মহিলার পরিচয়'),
         _sr('text', 'deceased_name', 'Name of deceased',
-            'মৃত মহিলার নাম', required='yes'),
+            'মৃত মহিলার নাম', required='yes',
+            relevant="${consent_given}='yes'"),
         _sr('integer', 'deceased_age',
             'Age (years)', 'বয়স (বছর)'),
         _sr('date', 'date_of_death',
@@ -1474,7 +1479,8 @@ def _near_miss_survey():
             'প্রথম পর্যায় · গুরুতর মাতৃস্বাস্থ্য জটিলতা'),
     ]
     for code, en, bn in sevs:
-        rows.append(_sr('select_one yes_no', code, en, bn))
+        rows.append(_sr('select_one yes_no', code, en, bn,
+            hint='Tick Yes only if clinically confirmed; choose Unknown if not documented'))
     rows.append(_sr('end_group', 'grp_sec1'))
 
     # ── Section 2: Critical interventions.
@@ -1494,7 +1500,8 @@ def _near_miss_survey():
             'দ্বিতীয় পর্যায় · ক্রিটিক্যাল হস্তক্ষেপ'),
     ]
     for code, en, bn in crits:
-        rows.append(_sr('select_one yes_no', code, en, bn))
+        rows.append(_sr('select_one yes_no', code, en, bn,
+            hint='Tick Yes only if clinically confirmed; choose Unknown if not documented'))
     rows.append(_sr('end_group', 'grp_sec2'))
 
     # ── Section 3: Life-threatening conditions.
@@ -1520,7 +1527,8 @@ def _near_miss_survey():
             'তৃতীয় পর্যায় · জীবন-হুমকির অবস্থা'),
     ]
     for code, en, bn in life:
-        rows.append(_sr('select_one yes_no', code, en, bn))
+        rows.append(_sr('select_one yes_no', code, en, bn,
+            hint='Tick Yes only if clinically confirmed; choose Unknown if not documented'))
     rows.append(_sr('end_group', 'grp_sec3'))
 
     rows += [

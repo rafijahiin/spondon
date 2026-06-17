@@ -151,7 +151,7 @@ def _bnd_gbv(payload, lat, lng):
     GBVCase.objects.create(
         organisation=ORG, center=center,
         interview_date=d, incident_date=d,
-        survivor_age=_int_or_none(payload.get('gbv_age')),
+        survivor_age=_int_or_none(payload.get('gbv_age')) or _int_or_none(payload.get('gbv_age_manual')),
         needs_legal=_bool(payload.get('gbv_ref_legal')),
         needs_psychosocial=_bool(payload.get('gbv_ref_mental_health')),
         local_action_taken=_str(payload.get('gbv_primary_service')),

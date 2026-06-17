@@ -276,12 +276,12 @@ def _shared_choices():
     # by this value (bandhu_handlers._bnd_event). Kept deliberately for that
     # reason — flagged to Rafi as a fidelity exception, not an accidental field.
     for v, en in [
-        ('orientation_managers', 'Orientation — health managers/supervisors (2.1)'),
-        ('training_midwives',    'Training — midwives/providers (2.2)'),
-        ('training_peers',       'Training — community leaders/peer educators (2.5)'),
-        ('coord_gob',            'Coordination meeting — GOB/NGO (2.3)'),
-        ('coord_cbo',            'Coordination meeting — CBO/network (2.4)'),
-        ('observance',           'Observance event — World AIDS Day etc. (2.6)'),
+        ('orientation_managers', 'Orientation — health managers/supervisors'),
+        ('training_midwives',    'Training — midwives/providers'),
+        ('training_peers',       'Training — community leaders/peer educators'),
+        ('coord_gob',            'Coordination meeting — GOB/NGO'),
+        ('coord_cbo',            'Coordination meeting — CBO/network'),
+        ('observance',           'Observance event — World AIDS Day etc.'),
         ('other',                'Other'),   # Ashis review pt 6 — routed to INTERNAL (no indicator)
     ]:
         rows.append(_ch('event_kind', v, en))
@@ -313,7 +313,7 @@ def _mother_list_survey():
         _sr('begin_group', 'grp_ml', 'Mother List — Beneficiary Registration',
             'মাদার লিস্ট — সুবিধাভোগী নিবন্ধন'),
         _sr('text', 'ml_id_no', 'ID No.', 'আইডি নম্বর', required='yes',
-            hint='Unique ID for this beneficiary. Use the same ID in every service form.'),
+            hint='Use the SAME ID for this person every time — centre code + 4-digit serial, e.g. 3-0001. / প্রতিবার একই আইডি ব্যবহার করুন — কেন্দ্র কোড + ৪-অঙ্ক, যেমন 3-0001।'),
         # Duplicate-ID warning from the bandhu_clients.csv attachment.
         _sr('calculate', '_dup_name',
             calc=("pulldata('bandhu_clients','name','id_no',"
@@ -370,13 +370,15 @@ def _service_log_survey():
     R = lambda b: f"${{record_type}}='{b}'"
     rows = _meta()
     rows += [_sr('select_one sl_record_type', 'record_type',
-                 'Which register are you recording?', 'কোন রেজিস্টার পূরণ করছেন?', required='yes')]
+                 'Which register are you recording?', 'কোন রেজিস্টার পূরণ করছেন?', required='yes',
+                 hint='Pick the register/form you are filling now. / এখন যে রেজিস্টার/ফর্ম পূরণ করছেন তা নির্বাচন করুন।')]
 
     # F-01 Wellness Centre Service Logbook
     rows += [
         _sr('begin_group', 'grp_logbook', 'F-01 · Wellness Centre Service Logbook',
             'F-01 · ওয়েলনেস সেন্টার সার্ভিস লগবুক', relevant=R('wellness_logbook')),
-        _sr('date', 'log_date', 'Date', 'তারিখ'),
+        _sr('note','_log_kobo_only','Note: F-01 logbook entries are kept in KoboToolbox only and are NOT counted in SIMPLE — also record each service under F-05/F-06.','দ্রষ্টব্য: F-01 লগবুক শুধু KoboToolbox-এ থাকে, SIMPLE-এ গণনা হয় না — প্রতিটি সেবা F-05/F-06-এও লিখুন।'),
+        _sr('date', 'log_date', 'Date', 'তারিখ', required='yes'),
         _sr('text', 'log_client_id', 'ID #', 'আইডি', required='yes'),
         *_id_lookup('log_client_id'),
         _sr('select_one tg_code', 'log_tg', 'TG (Code)', 'টিজি কোড'),
@@ -403,7 +405,7 @@ def _service_log_survey():
     rows += [
         _sr('begin_group', 'grp_patient', 'F-05 · Patient Record Register',
             'F-05 · রোগীর রেকর্ড রেজিস্টার', relevant=R('patient_record')),
-        _sr('date', 'pr_date', 'Date', 'তারিখ'),
+        _sr('date', 'pr_date', 'Date', 'তারিখ', required='yes'),
         _sr('text', 'pr_client_id', 'ID No.', 'আইডি নম্বর', required='yes'),
         *_id_lookup('pr_client_id'),
         _sr('select_one tg_code', 'pr_tg', 'TG Code', 'টিজি কোড'),
@@ -452,6 +454,7 @@ def _service_log_survey():
         _sr('text', 'gbv_client_id', "Client's ID", 'ক্লায়েন্ট আইডি', required='yes'),
         *_id_lookup('gbv_client_id'),
         *_age_from_ml('gbv_client_id', 'gbv_age'),
+        _sr('integer', 'gbv_age_manual', 'Survivor age (enter if not in the Mother List)', 'ভুক্তভোগীর বয়স (মাদার লিস্টে না থাকলে লিখুন)', required='yes', relevant="${gbv_client_id}!='' and ${gbv_age}=''", constraint='. >= 0 and . <= 120', cmsg='0–120'),
         _sr('select_one tg_code', 'gbv_tg', 'TG Code', 'টিজি কোড'),
         _sr('text', 'gbv_complaint', 'Complaint on GBV', 'জিবিভি অভিযোগ', app='multiline'),
         _sr('text', 'gbv_primary_service', 'Primary service provided on GBV', 'প্রাথমিক সেবা'),
@@ -465,7 +468,7 @@ def _service_log_survey():
     rows += [
         _sr('begin_group', 'grp_mh', 'F-03 · Mental Health Counseling Register',
             'F-03 · মানসিক স্বাস্থ্য কাউন্সেলিং', relevant=R('mh_counseling')),
-        _sr('date', 'mh_date', 'Date', 'তারিখ'),
+        _sr('date', 'mh_date', 'Date', 'তারিখ', required='yes'),
         _sr('text', 'mh_client_id', 'Client ID #', 'ক্লায়েন্ট আইডি', required='yes'),
         *_id_lookup('mh_client_id'),
         _sr('select_one tg_code', 'mh_tg', 'TG Code', 'টিজি কোড'),
@@ -493,7 +496,7 @@ def _service_log_survey():
     rows += [
         _sr('begin_group', 'grp_counsel', 'Daily Counseling Form', 'দৈনিক কাউন্সেলিং ফর্ম',
             relevant=R('counseling_daily')),
-        _sr('date', 'cn_date', 'Date', 'তারিখ'),
+        _sr('date', 'cn_date', 'Date', 'তারিখ', required='yes'),
         _sr('text', 'cn_client_id', 'ID # of client', 'ক্লায়েন্ট আইডি', required='yes'),
         *_id_lookup('cn_client_id'),
         _sr('select_one tg_code', 'cn_tg', 'Target Group (TG) Code', 'টিজি কোড'),
@@ -507,7 +510,7 @@ def _service_log_survey():
     rows += [
         _sr('begin_group', 'grp_referral', 'Referral Register', 'রেফারেল রেজিস্টার',
             relevant=R('referral')),
-        _sr('date', 'rf_date', 'Date', 'তারিখ'),
+        _sr('date', 'rf_date', 'Date', 'তারিখ', required='yes'),
         _sr('text', 'rf_client_id', 'ID No.', 'আইডি নম্বর', required='yes'),
         *_id_lookup('rf_client_id'),
         _sr('text', 'rf_reason', 'Reasons for referral (problem)', 'রেফারেলের কারণ', app='multiline'),
@@ -555,11 +558,11 @@ def _service_log_survey():
 def _service_log_choices():
     rows = list(_centre_choices()) + _shared_choices()
     for v, en, bn in [
-        ('wellness_logbook', 'F-01 Wellness Centre Service Logbook', 'F-01 লগবুক'),
-        ('patient_record',   'F-05 Patient Record Register', 'F-05 রোগীর রেকর্ড'),
-        ('htc',              'F-06 HTC Service Register', 'F-06 এইচটিসি'),
-        ('gbv',              'F-02 GBV Register', 'F-02 জিবিভি'),
-        ('mh_counseling',    'F-03 Mental Health Counseling', 'F-03 মানসিক স্বাস্থ্য'),
+        ('wellness_logbook', 'Wellness Centre Service Logbook (F-01)', 'F-01 লগবুক'),
+        ('patient_record',   'Patient Record Register (F-05)', 'F-05 রোগীর রেকর্ড'),
+        ('htc',              'HTC Service Register (F-06)', 'F-06 এইচটিসি'),
+        ('gbv',              'GBV Register (F-02)', 'F-02 জিবিভি'),
+        ('mh_counseling',    'Mental Health Counseling (F-03)', 'F-03 মানসিক স্বাস্থ্য'),
         ('counseling_daily', 'Daily Counseling Form', 'দৈনিক কাউন্সেলিং'),
         ('referral',         'Referral Register', 'রেফারেল রেজিস্টার'),
         ('hiv_identified',   'F-08 HIV Identified (detailed)', 'F-08 এইচআইভি শনাক্ত'),
@@ -580,7 +583,7 @@ def _activity_ops_survey():
     rows += [
         _sr('begin_group', 'grp_outreach', 'F-04 · Daily Outreach Monitoring',
             'F-04 · দৈনিক আউটরীচ মনিটরিং', relevant=R('outreach')),
-        _sr('date', 'or_date', 'Date', 'তারিখ'),
+        _sr('date', 'or_date', 'Date', 'তারিখ', required='yes'),
         _sr('text', 'or_id', 'ID No. (write name if new)', 'আইডি নম্বর (নতুন হলে নাম লিখুন)'),
         _sr('text', 'or_peer_educator', 'Peer Educator name', 'পিয়ার এডুকেটরের নাম'),
         _sr('text', 'or_spot', 'Spot name', 'স্পটের নাম'),
@@ -603,7 +606,7 @@ def _activity_ops_survey():
     rows += [
         _sr('begin_group', 'grp_camp', 'F-10 · Mobile Health Camp — Patient Record',
             'F-10 · মোবাইল হেলথ ক্যাম্প', relevant=R('mobile_camp')),
-        _sr('date', 'mc_date', 'Date', 'তারিখ'),
+        _sr('date', 'mc_date', 'Date', 'তারিখ', required='yes'),
         _sr('text', 'mc_client_id', 'ID No.', 'আইডি নম্বর', required='yes'),
         *_id_lookup('mc_client_id'),
         _sr('select_one tg_code', 'mc_tg', 'TG Code', 'টিজি কোড'),
@@ -632,6 +635,7 @@ def _activity_ops_survey():
     rows += [
         _sr('begin_group', 'grp_attendance', 'F-11 · Attendance Sheet', 'F-11 · উপস্থিতি শিট',
             relevant=R('attendance')),
+        _sr('note','_at_kobo_only','Note: F-11 attendance entries are kept in KoboToolbox only and are NOT counted in SIMPLE.','দ্রষ্টব্য: F-11 উপস্থিতি শুধু KoboToolbox-এ থাকে, SIMPLE-এ গণনা হয় না।'),
         _sr('date', 'at_date', 'Date', 'তারিখ'),
         _sr('text', 'at_name', 'Name', 'নাম'),
         _sr('text', 'at_designation', 'Designation and organization', 'পদবি ও সংস্থা'),
@@ -683,6 +687,7 @@ def _activity_ops_survey():
     rows += [
         _sr('begin_group', 'grp_stock', 'F-13 · Stock Register', 'F-13 · স্টক রেজিস্টার',
             relevant=R('stock')),
+        _sr('note','_st_kobo_only','Note: F-13 stock entries are kept in KoboToolbox only and are NOT counted in SIMPLE.','দ্রষ্টব্য: F-13 স্টক শুধু KoboToolbox-এ থাকে, SIMPLE-এ গণনা হয় না।'),
         _sr('text', 'st_item', 'Item description', 'পণ্যের বিবরণ'),
         _sr('date', 'st_date', 'Date', 'তারিখ'),
         _sr('text', 'st_from_to', 'Received from / Issued to', 'গ্রহণ/বিতরণ'),
