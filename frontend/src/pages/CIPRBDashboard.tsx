@@ -447,6 +447,13 @@ function MPDSRSection({
         }}>
           <span style={{ color: 'var(--muted)', fontWeight: 500 }}>{t('ciprbExtras.periodLabel')}</span>
           <span style={{ color: CIPRB_BLUE, fontWeight: 600 }}>{period.rangeLabel}</span>
+          <span style={{ color: 'var(--muted)', fontWeight: 400, marginLeft: 8 }}>
+            · figures are cumulative (all data to date)
+          </span>
+        </p>
+        <p style={{ marginTop: 4, marginBottom: 0, fontSize: 12, color: 'var(--muted)', fontStyle: 'italic' }}>
+          These figures update live from field submissions — CIPRB has no approval step. The case
+          status below is the clinical review stage, not a data check.
         </p>
 
         {overdueCount > 0 && (
