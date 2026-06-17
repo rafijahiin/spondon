@@ -20,6 +20,9 @@ media/
 # Django FileField report uploads (year-based subdirectories)
 reports/20*/
 
+# Generated XLSForms (build artifacts from build_ciprb_forms / build_bandhu_forms)
+forms_out/
+
 # Node
 node_modules/
 frontend/dist/

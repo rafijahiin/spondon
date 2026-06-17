@@ -590,7 +590,7 @@
   },
   "fistulaViz": {
     "reachKicker": "COMMUNITY-BASED FISTULA CASE IDENTIFICATION CAMPAIGN",
-    "reachTitle": "Campaign reach across districts",
+    "reachTitle": "Fistula Campaign",
     "reachSub": "Cumulative metrics from the community-based fistula case identification campaign — districts and upazilas covered, suspected and diagnosed cases found.",
     "emptyReach": "No fistula cases recorded yet — reach metrics will fill as patients are registered at the Suspected stage in CIPRB 1 — Fistula Question Bank.",
     "emptyFunnel": "No fistula cases recorded yet — the patient pathway will fill as cases progress through CIPRB 1 — Fistula Question Bank.",
@@ -627,6 +627,10 @@
     "examined": "EXAMINED",
     "awaiting": "Awaiting diagnosis",
     "pieEmpty": "No Fistula Corner cases recorded yet — pie chart will fill as patients are examined and diagnoses recorded.",
+    "typeKicker": "FISTULA CORNER · ANATOMICAL CLASSIFICATION",
+    "typeTitle": "Fistula type — VVF / RVF",
+    "typeSub": "Of all diagnosed patients, how the anatomical fistula type breaks down. Recorded at the Fistula Corner when the diagnosis is made.",
+    "typeEmpty": "No fistula types recorded yet — this fills as patients are diagnosed and their type (VVF / RVF / …) is classified.",
     "providedBy": "Provided by CIPRB"
   },
   "mpdsrViz": {

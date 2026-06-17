@@ -62,6 +62,9 @@ interface AggregateData {
   pieCongenital: number
   pieTraumatic: number
   piePending: number     // no diagnosis_date — kept out of pie, shown beside it
+  // Anatomical fistula-type breakdown (genital_fistula_type): vvf / rvf /
+  // ureterovaginal / … — classified at the Fistula Corner (diagnosis stage).
+  genitalType: Record<string, number>
 }
 
 const EMPTY: AggregateData = {
@@ -72,6 +75,7 @@ const EMPTY: AggregateData = {
   outcomeDry: 0, outcomeNotDry: 0, outcomeFailed: 0,
   pieObstetric: 0, pieIatrogenic: 0, pieCongenital: 0, pieTraumatic: 0,
   piePending: 0,
+  genitalType: {},
 }
 
 export interface ReportingPeriod {
@@ -107,6 +111,7 @@ function useFistulaAggregates(
         total?: number
         pipeline?: Record<string, number>
         campaign_reach?: { districts: number; upazilas: number; patients: number }
+        genital_fistula_type?: Record<string, number>
       }>('/fistula/aggregates/', { params }),
     ]).then(([cornerRes, aggRes]) => {
       if (cancelled) return
@@ -204,6 +209,9 @@ function useFistulaAggregates(
         rehabilitated: pipeline ? pipeline.rehabilitated : 0,
         outcomeDry, outcomeNotDry, outcomeFailed,
         pieObstetric, pieIatrogenic, pieCongenital, pieTraumatic, piePending,
+        // Anatomical type breakdown straight from the aggregate (#16). Stays
+        // {} until cases are diagnosed and their VVF/RVF type recorded.
+        genitalType: (agg && agg.genital_fistula_type) || {},
       })
     })
     return () => { cancelled = true }
@@ -338,6 +346,19 @@ const PIE_COLORS = {
   pending:    'var(--surface-3)',
 }
 
+// Anatomical fistula type (genital_fistula_type) per the Fistula Question
+// Bank. VVF is the primary obstetric type and is emphasised; the rarer
+// types still render (even at 0) so the full structure CIPRB asked for is
+// visible. Order mirrors the form's choice list.
+const GENITAL_TYPES: { key: string; label: string }[] = [
+  { key: 'vvf',            label: 'Vesico-vaginal (VVF)' },
+  { key: 'rvf',            label: 'Recto-vaginal (RVF)' },
+  { key: 'ureterovaginal', label: 'Uretero-vaginal' },
+  { key: 'urethrovaginal', label: 'Urethro-vaginal' },
+  { key: 'vesicouterine',  label: 'Vesico-uterine' },
+  { key: 'vesicocervical', label: 'Vesico-cervical' },
+]
+
 function DiagnosisLegend({ data }: { data: { name: string; value: number; color: string }[] }) {
   const total = data.reduce((s, d) => s + d.value, 0)
   return (
@@ -402,6 +423,9 @@ export function FistulaVisualizations({
   // suspected base yet (avoids divide-by-zero / nonsense percentages).
   const pctOfSuspected = (v: number): number | null =>
     agg.suspected > 0 ? (v / agg.suspected) * 100 : null
+
+  // Anatomical fistula-type total — drives the VVF/RVF breakdown's empty state.
+  const genitalTotal = GENITAL_TYPES.reduce((s, t) => s + (agg.genitalType[t.key] || 0), 0)
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 36 }}>
@@ -646,6 +670,52 @@ export function FistulaVisualizations({
         }}>
           {t('fistulaViz.pieCaption')}
         </p>
+      </div>
+
+      {/* ─── 3b. Anatomical fistula type (VVF / RVF) ─── */}
+      <div>
+        <div style={{ marginBottom: 14 }}>
+          <div className="kicker">
+            <span className="dot" style={{ background: CIPRB_BLUE }} />
+            {t('fistulaViz.typeKicker')}
+          </div>
+          <h3 style={{ margin: '6px 0 2px', fontSize: 18, fontWeight: 700, color: 'var(--ink)' }}>
+            {t('fistulaViz.typeTitle')}
+          </h3>
+          <p style={{ fontSize: 12.5, color: 'var(--muted)', margin: 0 }}>
+            {t('fistulaViz.typeSub')}
+          </p>
+          <div style={{ marginTop: 6 }}>
+            <SourceChip>CIPRB 1 — Fistula Question Bank</SourceChip>
+          </div>
+        </div>
+        {genitalTotal > 0 ? (
+          <div className="card" style={{ padding: '22px 24px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+            {GENITAL_TYPES.map(({ key, label }) => {
+              const v = agg.genitalType[key] || 0
+              const pct = genitalTotal ? (v / genitalTotal) * 100 : 0
+              const isPrimary = key === 'vvf'
+              return (
+                <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <span style={{ width: 150, flexShrink: 0, fontSize: 13, color: 'var(--ink-2)' }}>{label}</span>
+                  <div style={{ flex: 1, height: 10, borderRadius: 6, background: 'var(--surface-2)', overflow: 'hidden' }}>
+                    <div style={{
+                      width: `${pct}%`, height: '100%', borderRadius: 6,
+                      background: isPrimary ? CIPRB_BLUE : '#FB904D',
+                      transition: 'width 600ms cubic-bezier(0.22,1,0.36,1)',
+                    }} />
+                  </div>
+                  <span style={{ width: 34, textAlign: 'right', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{v}</span>
+                  <span className="mute" style={{ width: 44, textAlign: 'right', fontSize: 11.5, fontVariantNumeric: 'tabular-nums' }}>
+                    {Math.round(pct)}%
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        ) : (
+          <EmptyState message={t('fistulaViz.typeEmpty')} />
+        )}
       </div>
 
     </div>

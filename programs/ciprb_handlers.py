@@ -181,6 +181,9 @@ def handle_ciprb_fistula(payload, lat, lng):
             case.diagnosed_date  = _date(payload.get('diagnosed_date'))  or case.diagnosed_date
             case.diagnosed_place = _s(payload.get('diagnosed_place'))    or case.diagnosed_place
             case.diagnosed_by    = _s(payload.get('diagnosed_by'))       or case.diagnosed_by
+            # Anatomical type (VVF/RVF/…) is now classified at diagnosis.
+            case.genital_fistula_type = (_s(payload.get('genital_fistula_type'))
+                                         or case.genital_fistula_type)
         elif stage == CIPRBFistulaCase.STAGE_REFERRED:
             case.refer_date          = _date(payload.get('refer_date')) or case.refer_date
             case.refer_place         = _s(payload.get('refer_place'))   or case.refer_place
@@ -193,9 +196,10 @@ def handle_ciprb_fistula(payload, lat, lng):
             if hsd is not None: case.hospital_stay_days = hsd
             tops = _int(payload.get('times_of_operations'))
             if tops is not None: case.times_of_operations = tops
+            # genital_fistula_type moved to the Diagnosed stage; the surgery
+            # stage keeps only the cause classification + operative detail.
             for fld in ('fistula_type_v2', 'iatrogenic_cause',
-                        'genital_fistula_type', 'operation_route',
-                        'surgery_outcome_v2'):
+                        'operation_route', 'surgery_outcome_v2'):
                 v = _s(payload.get(fld))
                 if v: setattr(case, fld, v)
         elif stage == CIPRBFistulaCase.STAGE_REHABILITATED:

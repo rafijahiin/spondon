@@ -71,7 +71,7 @@ def _wb(form_id, form_title, survey, choices):
         ('survey',   SURVEY_HDR,  survey),
         ('choices',  CHOICES_HDR, choices),
         ('settings', SETTINGS_HDR,
-         [[form_title, form_id, '20260607', 'English', 'theme-grid']]),
+         [[form_title, form_id, '20260617', 'English', 'theme-grid']]),
     ]:
         ws = wb.create_sheet(sheet_name)
         ws.append(headers)
@@ -404,6 +404,14 @@ def _fistula_survey():
             'Place of diagnosis', 'নির্ণয়ের স্থান'),
         _sr('text', 'diagnosed_by',
             'Diagnosed by', 'নির্ণয়কারী'),
+        # Anatomical fistula type (VVF / RVF / …) — recorded at the Fistula
+        # Corner when the diagnosis is made, mirroring the paper register's
+        # "ফিস্টুলার ধরন" column. Moved here from the surgery stage so a case
+        # carries its type as soon as it is diagnosed (most cases are
+        # diagnosed long before they are operated on).
+        _sr('select_one genital_fistula_type', 'genital_fistula_type',
+            'Type of genital fistula (VVF / RVF / …)',
+            'যৌনাঙ্গের ফিস্টুলার ধরন (VVF / RVF / …)'),
         _sr('end_group', 'grp_diagnosed'),
     ]
 
@@ -448,9 +456,10 @@ def _fistula_survey():
             'Cause of iatrogenic fistula',
             'চিকিৎসাজনিত ফিস্টুলার কারণ',
             relevant="${fistula_type_v2}='iatrogenic'"),
-        _sr('select_one genital_fistula_type', 'genital_fistula_type',
-            'Type of genital fistula',
-            'যৌনাঙ্গের ফিস্টুলার ধরন'),
+        # NOTE: the anatomical type (genital_fistula_type — VVF/RVF/…) now
+        # lives on the Diagnosed stage (it is classified at the Fistula
+        # Corner, not in theatre). The surgery stage keeps the cause
+        # classification + operative detail only.
         _sr('select_one operation_route', 'operation_route',
             'Route of operation',
             'অস্ত্রোপচারের পথ'),
