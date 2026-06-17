@@ -170,7 +170,9 @@ function NumberCard({ card, metric, mode }: { card: CardDef; metric: Metric; mod
       )}
       <div style={{ marginTop: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
         <span style={{ fontSize: 12, color: 'var(--ink-3)' }}>{card.sub}</span>
-        <span className="mono" style={{ fontSize: 10, color: 'var(--muted)', letterSpacing: '0.04em' }}>{card.sl}</span>
+        <span className="mono" style={{ fontSize: 10, color: 'var(--muted)', letterSpacing: '0.04em' }}>
+          {(mode === 'monthly' ? 'This month' : 'To date')} · {card.sl}
+        </span>
       </div>
     </div>
   )
