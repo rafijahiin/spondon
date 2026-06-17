@@ -621,12 +621,17 @@ function CauseDonut({
  *  Per CIPRB correction: "two pie charts are needed — Causes of
  *  Maternal Deaths and Distribution of Causes of Maternal Deaths,
  *  Source: Form 1 & Form 4". */
-function CauseBreakdown({ cases }: { cases: MPDSRCase[] }) {
+function CauseBreakdown({ cases, donorActive = false }: { cases: MPDSRCase[]; donorActive?: boolean }) {
   const { t } = useTranslation()
   const [group, setGroup] = useState<DistrictGroup>('cumulative')
+  // When a donor pill (GAC/SIDA) is active the parent already scoped `cases`
+  // to that donor's districts, so the internal SIDA/GAC/CP tabs would
+  // DOUBLE-filter to an empty chart (donor=SIDA + tab=GAC → nothing). Force
+  // 'cumulative' (= the donor-scoped set) and disable the tabs while it's on.
+  const effectiveGroup: DistrictGroup = donorActive ? 'cumulative' : group
 
   const filtered = useMemo(() => {
-    const allow = DISTRICT_MAPPING[group]
+    const allow = DISTRICT_MAPPING[effectiveGroup]
     let pool = cases
     if (allow !== null) {
       if (allow.length === 0) pool = []
@@ -637,7 +642,7 @@ function CauseBreakdown({ cases }: { cases: MPDSRCase[] }) {
     }
     // MD-only — cause analysis is maternal-death-specific.
     return pool.filter(c => c.death_type === 'maternal')
-  }, [cases, group])
+  }, [cases, effectiveGroup])
 
   // Split by SOURCE FORM, not death location: Form 01 (f1) = community
   // review, Form 04 (f4) = facility review (CIPRB spec "Source: Form 1 &
@@ -646,7 +651,7 @@ function CauseBreakdown({ cases }: { cases: MPDSRCase[] }) {
   const community = filtered.filter(c => c.sub_form_type === 'f1')
   const facility  = filtered.filter(c => c.sub_form_type === 'f4')
 
-  const noCasesInGroup = group !== 'cumulative' && filtered.length === 0
+  const noCasesInGroup = effectiveGroup !== 'cumulative' && filtered.length === 0
 
   return (
     <div>
@@ -681,11 +686,13 @@ function CauseBreakdown({ cases }: { cases: MPDSRCase[] }) {
         marginBottom: 16,
       }} role="tablist">
         {GROUP_TAB_KEYS.map(key => {
-          const isActive = group === key
+          const isActive = effectiveGroup === key
           return (
             <button
               key={key}
-              onClick={() => setGroup(key)}
+              onClick={() => { if (!donorActive) setGroup(key) }}
+              disabled={donorActive}
+              title={donorActive ? 'District tabs are off while the donor filter above is active' : undefined}
               role="tab"
               aria-selected={isActive}
               style={{
@@ -695,7 +702,9 @@ function CauseBreakdown({ cases }: { cases: MPDSRCase[] }) {
                 fontWeight: isActive ? 600 : 500,
                 color: isActive ? '#fff' : 'var(--ink-2)',
                 background: isActive ? CIPRB_BLUE : 'transparent',
-                border: 'none', borderRadius: 8, cursor: 'pointer',
+                border: 'none', borderRadius: 8,
+                cursor: donorActive ? 'default' : 'pointer',
+                opacity: donorActive && !isActive ? 0.4 : 1,
                 transitionProperty: 'background-color, color',
                 transitionDuration: '180ms',
               }}
@@ -1151,7 +1160,7 @@ export function MPDSRVisualizations({
         <ReportingRatePerDistrict cases={cases} denominators={agg?.denominators ?? []} />
       </div>
       <div>
-        <CauseBreakdown cases={cases} />
+        <CauseBreakdown cases={cases} donorActive={!!(districts && districts.length)} />
       </div>
       {agg?.facility && agg.facility.total > 0 && (
         <div>
