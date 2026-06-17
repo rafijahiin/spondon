@@ -36,6 +36,14 @@ def _s(v):
     return str(v).strip()
 
 
+def _norm_id(raw):
+    """Normalise a patient ID the same way the form (translate(normalize-space()))
+    and the export CSV (_norm_id) do: strip + upper-case. Keeps the stored
+    patient_code, the CSV key, and the form's pulldata lookups all in sync, so
+    ' 1-0001 ' and '1-0001' resolve to one row."""
+    return _s(raw).upper()
+
+
 def _int(v):
     try:
         return int(str(v).strip())
@@ -85,8 +93,10 @@ def _district(payload):
 # ╔══════════════════════════════════════════════════════════════════════════╗
 # ║   Form 1 — CIPRB Fistula Question Bank                                  ║
 # ║   The form is staged: each submission carries data for ONE stage.        ║
-# ║   Upsert on (district, case_serial, name) and merge stage-specific       ║
-# ║   fields onto the row so the case accumulates over time.                ║
+# ║   Identity is captured ONCE, at the Suspected stage, under a unique      ║
+# ║   patient_code (<district-code>-<4 digits>). Every later stage           ║
+# ║   references that exact code via the form's dropdown, so the upsert keys ║
+# ║   on patient_code and merges stage-specific fields onto the one row.     ║
 # ╚══════════════════════════════════════════════════════════════════════════╝
 
 def handle_ciprb_fistula(payload, lat, lng):
@@ -94,49 +104,74 @@ def handle_ciprb_fistula(payload, lat, lng):
     if stage not in dict(CIPRBFistulaCase.STAGE_CHOICES):
         return HttpResponse(f'Bad Request — unknown stage {stage!r}', status=400)
 
+    # The form unifies the free-text (suspected) and dropdown (later) ID into
+    # patient_code_final; fall back to the raw fields for resilience.
+    code = _norm_id(payload.get('patient_code_final')
+                    or payload.get('patient_code')
+                    or payload.get('patient_code_sel'))
     district = _district(payload)
-    serial   = _s(payload.get('case_serial'))
     name     = _s(payload.get('name'))
-    if not (district and name):
-        return HttpResponse('Bad Request — district and name required',
-                            status=400)
+    is_suspected = stage == CIPRBFistulaCase.STAGE_SUSPECTED
+
+    if is_suspected:
+        # Registration: code + name + district all required.
+        if not (code and name and district):
+            return HttpResponse(
+                'Bad Request — patient_code, name and district required at '
+                'the suspected stage', status=400)
+    else:
+        # Later stages: identity comes from the registered row; only the code
+        # (picked from the dropdown) is required.
+        if not code:
+            return HttpResponse('Bad Request — patient_code required', status=400)
 
     with transaction.atomic():
-        # Find an existing case row for this woman in this district, keyed by
-        # serial first (if the field worker carried one) otherwise by name.
-        qs = CIPRBFistulaCase.objects.select_for_update().filter(district=district)
-        if serial:
-            qs = qs.filter(case_serial=serial)
-        else:
-            qs = qs.filter(name=name)
-        case = qs.first()
+        # The patient_code is the single, unique upsert key.
+        case = (CIPRBFistulaCase.objects.select_for_update()
+                .filter(patient_code=code).first())
         if case is None:
-            case = CIPRBFistulaCase(
-                district=district, case_serial=serial, name=name,
-                organisation=ORG,
-            )
+            if not is_suspected:
+                # A later-stage submission for an unknown ID — create a stub so
+                # the data isn't lost. It carries the code + stage but no
+                # identity (the registration that should have set it is missing).
+                case = CIPRBFistulaCase(
+                    patient_code=code, organisation=ORG,
+                    district=district, name=(name or 'Unknown'),
+                )
+            else:
+                case = CIPRBFistulaCase(
+                    patient_code=code, organisation=ORG,
+                    district=district, name=name,
+                )
 
-        # ── Stage-agnostic identity (always overwrite — newer is truthier).
-        case.upazila = _s(payload.get('upazila'))    or case.upazila
-        case.union   = _s(payload.get('union'))      or case.union
-        case.village = _s(payload.get('village'))    or case.village
+        # ── Identity + obstetric history are captured ONLY at registration
+        #    (the form omits these fields at later stages). Gating the writes
+        #    here keeps a later-stage submission from blanking a registered
+        #    woman's details even if the payload carried stray empties.
+        if is_suspected:
+            case.district = district or case.district
+            case.name     = name or case.name
+            case.case_serial = _s(payload.get('case_serial')) or case.case_serial
+            case.upazila = _s(payload.get('upazila'))    or case.upazila
+            case.union   = _s(payload.get('union'))      or case.union
+            case.village = _s(payload.get('village'))    or case.village
 
-        for fld in ('age', 'age_at_marriage', 'age_at_first_delivery',
-                    'number_of_children'):
-            v = _int(payload.get(fld))
-            if v is not None: setattr(case, fld, v)
+            for fld in ('age', 'age_at_marriage', 'age_at_first_delivery',
+                        'number_of_children'):
+                v = _int(payload.get(fld))
+                if v is not None: setattr(case, fld, v)
 
-        for fld in ('education', 'husband', 'husband_profession',
-                    'profession_patient', 'current_condition',
-                    'contact_number', 'marital_status',
-                    'delivery_complication', 'last_delivery_labour_duration',
-                    'mode_of_last_delivery', 'place_of_last_delivery',
-                    'conducted_last_delivery', 'delivery_outcome',
-                    'reasons_no_institutional_delivery',
-                    'time_duration_fistula_occurrence',
-                    'duration_suffering'):
-            v = _s(payload.get(fld))
-            if v: setattr(case, fld, v)
+            for fld in ('education', 'husband', 'husband_profession',
+                        'profession_patient', 'current_condition',
+                        'contact_number', 'marital_status',
+                        'delivery_complication', 'last_delivery_labour_duration',
+                        'mode_of_last_delivery', 'place_of_last_delivery',
+                        'conducted_last_delivery', 'delivery_outcome',
+                        'reasons_no_institutional_delivery',
+                        'time_duration_fistula_occurrence',
+                        'duration_suffering'):
+                v = _s(payload.get(fld))
+                if v: setattr(case, fld, v)
 
         # ── Stage-specific fields.
         if stage == CIPRBFistulaCase.STAGE_SUSPECTED:

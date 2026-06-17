@@ -29,6 +29,8 @@ from django.utils import timezone
 from programs.models import Client
 from programs.management.commands import export_phd_clients as phd
 from programs.management.commands import export_bandhu_clients as bandhu
+from programs.management.commands import export_fistula_clients as fistula
+from fistula.ciprb_models import CIPRBFistulaCase
 
 KOBO_API = 'https://kf.kobotoolbox.org/api/v2'
 RECENT_MINUTES = 20
@@ -69,17 +71,29 @@ class Command(BaseCommand):
         headers = {'Authorization': f'Token {token}'}
         cutoff = timezone.now() - datetime.timedelta(minutes=RECENT_MINUTES)
 
-        for mod, org, uids, fname in [
-            (phd,    'PHD',    phd.PHD_FORM_UIDS,       phd.CSV_FILENAME),
-            (bandhu, 'Bandhu', bandhu.BANDHU_FORM_UIDS, bandhu.CSV_FILENAME),
+        # `recent` checks whether the org's source data changed in the last
+        # RECENT_MINUTES — this catches a dropped *redeploy* (CSV current, but
+        # the Enketo transform stale). PHD/Bandhu source from Client; the CIPRB
+        # fistula registry sources from CIPRBFistulaCase, so each org carries
+        # its own recent-change resolver.
+        def _client_recent(o):
+            return Client.objects.filter(
+                organisation=o, updated_at__gte=cutoff).exists()
+
+        def _fistula_recent(_o):
+            return CIPRBFistulaCase.objects.filter(updated_at__gte=cutoff).exists()
+
+        for mod, org, uids, fname, recent_fn in [
+            (phd,    'PHD',    phd.PHD_FORM_UIDS,       phd.CSV_FILENAME,    _client_recent),
+            (bandhu, 'Bandhu', bandhu.BANDHU_FORM_UIDS, bandhu.CSV_FILENAME, _client_recent),
+            (fistula, 'Fistula', fistula.FISTULA_FORM_UIDS, fistula.CSV_FILENAME, _fistula_recent),
         ]:
             try:
                 csv_bytes, n = mod.build_csv()
                 want = _norm(csv_bytes)
                 drift = any(_norm(_attached_csv(uid, fname, headers)) != want
                             for uid, _label in uids)
-                recent = Client.objects.filter(
-                    organisation=org, updated_at__gte=cutoff).exists()
+                recent = recent_fn(org)
                 if drift or recent:
                     self.stdout.write(
                         f'{org}: re-syncing ({n} clients; drift={drift}, '

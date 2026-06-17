@@ -13,7 +13,7 @@
  */
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Building2, MapPin, Home, Users, Search, Stethoscope, Send, ArrowRight, Scissors, Megaphone, HeartHandshake } from 'lucide-react'
+import { Building2, MapPin, Users, Search, Stethoscope, Send, ArrowRight, Scissors, HeartHandshake } from 'lucide-react'
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts'
 import { api } from '@/api/client'
 import { SourceChip } from '@/components/ui/SourceChip'
@@ -33,30 +33,9 @@ interface CornerCase {
   fistula_cause?: string // 'Surgical Injury' | 'Prolonged/Obstructed Labour' | etc.
 }
 
-interface CampaignVisit {
-  id: string
-  district?: string
-  upazila?: string
-  union?: string
-  village?: string
-}
-
-// FistulaCampaign — daily roll-up (CHW day-reports). This is where the
-// 'No of population covered' + 'No of Households Visited' totals live,
-// per the xlsx 'Sunamganj-Daily Data Sheet' shape. The suspected/
-// confirmed/referred fields here are the authoritative campaign-side
-// numbers — Patient Funnel reads them from this source.
-interface CampaignRollup {
-  district?: string
-  upazila?: string
-  households_visited?: number
-  population_covered?: number
-  suspected_fistula_cases?: number
-  confirmed_fistula_cases?: number
-  cases_referred?: number
-}
-
 interface AggregateData {
+  // Total registered CIPRB fistula cases — drives the empty state.
+  total: number
   // Campaign reach
   campaigns: number
   districts: number
@@ -86,6 +65,7 @@ interface AggregateData {
 }
 
 const EMPTY: AggregateData = {
+  total: 0,
   campaigns: 0, districts: 0, upazilas: 0, households: 0, population: 0,
   campaignSuspected: 0, campaignDiagnosed: 0,
   suspected: 0, identified: 0, referred: 0, repaired: 0, rehabilitated: 0,
@@ -116,23 +96,23 @@ function useFistulaAggregates(
     if (periodTo) params.to = periodTo
     if (districtsKey) params.districts = districtsKey
     Promise.allSettled([
-      api.get<{ results?: CampaignVisit[] } | CampaignVisit[]>('/fistula/campaign-visits/', { params }),
-      api.get<{ results?: CornerCase[]    } | CornerCase[]>('/fistula/corner-cases/', { params }),
-      api.get<{ results?: CampaignRollup[] } | CampaignRollup[]>('/fistula/cases/', { params }),
+      // Fistula Corner cases — still the source for the surgical-outcome tiles
+      // and the diagnosis pie (no pipeline/campaign_reach equivalent exists).
+      api.get<{ results?: CornerCase[] } | CornerCase[]>('/fistula/corner-cases/', { params }),
       // The monotonic pipeline from CIPRBFistulaCase.current_stage — the
-      // single source of truth for the 5 funnel stages (replaces the
-      // legacy dual-source split that broke monotonicity).
-      api.get<{ pipeline?: Record<string, number> }>('/fistula/aggregates/', { params }),
-    ]).then(([campaignRes, cornerRes, rollupRes, aggRes]) => {
+      // single source of truth for the 5 funnel stages AND the campaign-reach
+      // tiles (replaces the demo-seeded FistulaCampaign / FistulaCornerCase
+      // fallback that showed fake numbers).
+      api.get<{
+        total?: number
+        pipeline?: Record<string, number>
+        campaign_reach?: { districts: number; upazilas: number; patients: number }
+      }>('/fistula/aggregates/', { params }),
+    ]).then(([cornerRes, aggRes]) => {
       if (cancelled) return
-      const pipeline = (aggRes.status === 'fulfilled' && aggRes.value.data.pipeline) || null
-
-      const campaign: CampaignVisit[] =
-        campaignRes.status === 'fulfilled'
-          ? (Array.isArray(campaignRes.value.data)
-              ? campaignRes.value.data
-              : campaignRes.value.data.results ?? [])
-          : []
+      const agg = aggRes.status === 'fulfilled' ? aggRes.value.data : null
+      const pipeline = (agg && agg.pipeline) || null
+      const reach = (agg && agg.campaign_reach) || null
 
       const corner: CornerCase[] =
         cornerRes.status === 'fulfilled'
@@ -141,60 +121,16 @@ function useFistulaAggregates(
               : cornerRes.value.data.results ?? [])
           : []
 
-      const rollupsAll: CampaignRollup[] =
-        rollupRes.status === 'fulfilled'
-          ? (Array.isArray(rollupRes.value.data)
-              ? rollupRes.value.data
-              : rollupRes.value.data.results ?? [])
-          : []
-
       // Client-side donor filter — until ?districts= is honoured by all
       // endpoints, restrict aggregates to the selected donor's districts.
       const inFilter = (d?: string) =>
         !districtSet || (d != null && districtSet.has(d.toLowerCase()))
-      const campaignFil = campaign.filter(c => inFilter(c.district))
+      // Only the surgical-outcome tiles and the diagnosis pie still read the
+      // Fistula Corner cases (those metrics have no pipeline/campaign_reach
+      // equivalent). The funnel and campaign-reach now come straight from the
+      // real CIPRBFistulaCase aggregates — no demo-seeded roll-up fallback.
       const cornerFil = corner.filter(c => inFilter(c.district))
-      const rollups = rollupsAll.filter(r => inFilter(r.district))
 
-      // Districts/upazilas drawn from BOTH sources — daily roll-ups give
-      // wider coverage; individual visits add specifics. Households +
-      // population come from the daily roll-up totals (authoritative per
-      // Animesh's spec and the xlsx column headings).
-      const allDistricts = new Set<string>()
-      const allUpazilas = new Set<string>()
-      for (const r of [...campaignFil, ...rollups]) {
-        const d = (r.district ?? '').trim()
-        if (d) allDistricts.add(d)
-        const u = (r.upazila ?? '').trim()
-        if (d && u) allUpazilas.add(`${d}|${u}`)
-      }
-      const households = rollups.reduce((s, r) => s + (r.households_visited ?? 0), 0)
-      const population = rollups.reduce((s, r) => s + (r.population_covered ?? 0), 0)
-      // Campaign aggregate counts (Animesh's spec: # campaigns, suspected,
-      // diagnosed found during campaigns).
-      const campaigns = rollups.length
-      const campaignSuspected = rollups.reduce((s, r) => s + (r.suspected_fistula_cases ?? 0), 0)
-      const campaignDiagnosed = rollups.reduce((s, r) => s + (r.confirmed_fistula_cases ?? 0), 0)
-
-      // Patient Funnel sources — fixed after audit:
-      //   Suspected — from daily campaign roll-ups (CHWs noting suspected
-      //     patients during outreach), NOT individual visit register.
-      //     Sayeed's Mass Campaign Excel writes this sum directly.
-      //   Identified — Fistula Corner cases that have a diagnosis date.
-      //   Referred — Fistula Corner cases sent on for surgery. Most Excel-
-      //     imported rows don't carry a referral_date yet; once a Kobo
-      //     referral form lands this will populate.
-      const suspected = rollups.reduce((s, r) => s + (r.suspected_fistula_cases ?? 0), 0)
-      const identified = cornerFil.filter(c => c.identification_date || c.diagnosis_date).length
-      const referred   = cornerFil.filter(c => c.referral_date || (c.referral_outcome ?? '').trim() !== '').length
-      const repaired   = cornerFil.filter(c => c.surgery_performed === 'yes').length
-      // Rehabilitated & Reintegrated — the new 5th stage per CIPRB.
-      // Source field (`rehabilitation_received`) will be populated by the
-      // new CIPRB Fistula Question Bank form. Until that form ships,
-      // count stays 0 — empty-state shows on the card.
-      const rehabilitated = cornerFil.filter((c: any) =>
-        c.rehabilitation_received === 'yes' || c.rehabilitation_date,
-      ).length
       // Surgical outcome categories (dry / not-dry / failed)
       const outcomeDry    = cornerFil.filter(c => c.surgery_outcome === 'success_dry').length
       const outcomeNotDry = cornerFil.filter(c => c.surgery_outcome === 'success_not_dry').length
@@ -242,22 +178,30 @@ function useFistulaAggregates(
       }
 
       setData({
-        campaigns,
-        districts: allDistricts.size,
-        upazilas: allUpazilas.size,
-        households,
-        population,
-        campaignSuspected,
-        campaignDiagnosed,
-        // Funnel stages — prefer the monotonic CIPRBFistulaCase pipeline
-        // when present (guarantees suspected ≥ diagnosed ≥ referred ≥
-        // repaired ≥ rehabilitated). Fall back to legacy derivation only
-        // when the new model has no cases yet.
-        suspected:     pipeline ? pipeline.suspected     : suspected,
-        identified:    pipeline ? pipeline.diagnosed     : identified,
-        referred:      pipeline ? pipeline.referred      : referred,
-        repaired:      pipeline ? pipeline.repaired      : repaired,
-        rehabilitated: pipeline ? pipeline.rehabilitated : rehabilitated,
+        total: agg && typeof agg.total === 'number' ? agg.total : 0,
+        // Campaign reach — sourced from the real CIPRBFistulaCase registry
+        // (campaign_reach block) instead of the demo-seeded FistulaCampaign
+        // roll-ups. `campaigns` is retired as a reach metric (it counted
+        // seed roll-up rows); patients registered is the honest substitute.
+        campaigns: reach ? reach.patients : 0,
+        districts: reach ? reach.districts : 0,
+        upazilas: reach ? reach.upazilas : 0,
+        // Households + population have no real source in CIPRBFistulaCase, so
+        // they stay 0 — the dashboard renders an empty state for those tiles
+        // rather than showing seed numbers.
+        households: 0,
+        population: 0,
+        campaignSuspected: pipeline ? pipeline.suspected : 0,
+        campaignDiagnosed: pipeline ? pipeline.diagnosed : 0,
+        // Funnel stages — always the monotonic CIPRBFistulaCase pipeline
+        // (guarantees suspected ≥ diagnosed ≥ referred ≥ repaired ≥
+        // rehabilitated). No legacy/demo fallback: when the registry is empty
+        // every stage is 0 and the cards show an empty state.
+        suspected:     pipeline ? pipeline.suspected     : 0,
+        identified:    pipeline ? pipeline.diagnosed     : 0,
+        referred:      pipeline ? pipeline.referred      : 0,
+        repaired:      pipeline ? pipeline.repaired      : 0,
+        rehabilitated: pipeline ? pipeline.rehabilitated : 0,
         outcomeDry, outcomeNotDry, outcomeFailed,
         pieObstetric, pieIatrogenic, pieCongenital, pieTraumatic, piePending,
       })
@@ -266,6 +210,19 @@ function useFistulaAggregates(
   }, [periodFrom, periodTo, districtsKey])
 
   return data
+}
+
+// ─── Empty state ─────────────────────────────────────────────────────────────
+
+function EmptyState({ message }: { message: string }) {
+  return (
+    <div className="card" style={{
+      padding: '32px 28px', textAlign: 'center',
+      color: 'var(--muted)', fontSize: 13.5, lineHeight: 1.5,
+    }}>
+      {message}
+    </div>
+  )
 }
 
 // ─── Campaign Metrics tiles ──────────────────────────────────────────────────
@@ -463,35 +420,37 @@ export function FistulaVisualizations({
             {t('fistulaViz.reachSub')}
           </p>
           <div style={{ marginTop: 6 }}>
-            <SourceChip>Fistula Campaign</SourceChip>
+            <SourceChip>CIPRB 1 — Fistula Question Bank</SourceChip>
           </div>
         </div>
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-          gap: 12,
-        }}>
-          <MetricTile icon={<Megaphone  size={13} />} label="Campaigns"  value={agg.campaigns}  sub="Screening drives conducted" />
-          <MetricTile icon={<MapPin     size={13} />} label={t('fistulaViz.districts')}  value={agg.districts}  sub={t('fistulaViz.districtsSub')} />
-          <MetricTile icon={<Building2  size={13} />} label={t('fistulaViz.upazilas')}   value={agg.upazilas}   sub={t('fistulaViz.upazilasSub')} />
-          <MetricTile icon={<Home       size={13} />} label={t('fistulaViz.households')} value={agg.households} sub={t('fistulaViz.householdsSub')} />
-          <MetricTile icon={<Users      size={13} />} label={t('fistulaViz.population')} value={agg.population} sub={t('fistulaViz.populationSub')} />
-          {/* The five pipeline stages all read from the SAME monotonic
-              source (CIPRBFistulaCase pipeline → agg.suspected…rehabilitated)
-              so they can never contradict each other (the old "suspected 0
-              but referred 19" bug came from mixing campaign-form counts with
-              case-pipeline counts). Each downstream stage shows its share of
-              suspected, so the funnel is read as % not just raw numbers. */}
-          <MetricTile icon={<Search      size={13} />} label="Suspected (campaign)" value={agg.suspected} sub="Suspected cases found" />
-          <MetricTile icon={<Stethoscope size={13} />} label="Diagnosed (campaign)" value={agg.identified} sub="Confirmed during campaigns"
-            pct={pctOfSuspected(agg.identified)} pctLabel="of suspected" />
-          <MetricTile icon={<Send         size={13} />} label="Referred for Surgical Management" value={agg.referred}      sub="Sent to tertiary facility"
-            pct={pctOfSuspected(agg.referred)} pctLabel="of suspected" />
-          <MetricTile icon={<Scissors     size={13} />} label="Surgically Repaired"             value={agg.repaired}      sub="Surgery outcome recorded"
-            pct={pctOfSuspected(agg.repaired)} pctLabel="of suspected" />
-          <MetricTile icon={<HeartHandshake size={13} />} label="Rehabilitated & Reintegrated"  value={agg.rehabilitated} sub="Rehabilitation support received"
-            pct={pctOfSuspected(agg.rehabilitated)} pctLabel="of suspected" />
-        </div>
+        {agg.total === 0 ? (
+          <EmptyState message={t('fistulaViz.emptyReach')} />
+        ) : (
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+            gap: 12,
+          }}>
+            {/* Reach + funnel all read from the SAME real CIPRBFistulaCase
+                registry (campaign_reach + monotonic pipeline) so they can
+                never contradict each other (the old "suspected 0 but referred
+                19" bug came from mixing demo campaign counts with the case
+                pipeline). Households/population tiles were dropped — the
+                registry has no honest source for them. */}
+            <MetricTile icon={<Users      size={13} />} label="Patients registered" value={agg.campaigns} sub="Suspected-stage registrations" />
+            <MetricTile icon={<MapPin     size={13} />} label={t('fistulaViz.districts')}  value={agg.districts}  sub={t('fistulaViz.districtsSub')} />
+            <MetricTile icon={<Building2  size={13} />} label={t('fistulaViz.upazilas')}   value={agg.upazilas}   sub={t('fistulaViz.upazilasSub')} />
+            <MetricTile icon={<Search      size={13} />} label="Suspected" value={agg.suspected} sub="Suspected cases found" />
+            <MetricTile icon={<Stethoscope size={13} />} label="Diagnosed" value={agg.identified} sub="Confirmed at Fistula Corner"
+              pct={pctOfSuspected(agg.identified)} pctLabel="of suspected" />
+            <MetricTile icon={<Send         size={13} />} label="Referred for Surgical Management" value={agg.referred}      sub="Sent to tertiary facility"
+              pct={pctOfSuspected(agg.referred)} pctLabel="of suspected" />
+            <MetricTile icon={<Scissors     size={13} />} label="Surgically Repaired"             value={agg.repaired}      sub="Surgery outcome recorded"
+              pct={pctOfSuspected(agg.repaired)} pctLabel="of suspected" />
+            <MetricTile icon={<HeartHandshake size={13} />} label="Rehabilitated & Reintegrated"  value={agg.rehabilitated} sub="Rehabilitation support received"
+              pct={pctOfSuspected(agg.rehabilitated)} pctLabel="of suspected" />
+          </div>
+        )}
       </div>
 
       {/* ─── 2. Patient Funnel ─── */}
@@ -508,9 +467,12 @@ export function FistulaVisualizations({
             {t('fistulaViz.funnelSub')}
           </p>
           <div style={{ marginTop: 6 }}>
-            <SourceChip>Fistula Campaign + CIPRB 1</SourceChip>
+            <SourceChip>CIPRB 1 — Fistula Question Bank</SourceChip>
           </div>
         </div>
+        {agg.total === 0 ? (
+          <EmptyState message={t('fistulaViz.emptyFunnel')} />
+        ) : (
         <div className="card" style={{
           padding: '24px 28px',
           display: 'flex', alignItems: 'center', gap: 0, flexWrap: 'wrap',
@@ -535,12 +497,15 @@ export function FistulaVisualizations({
           } />
           <FunnelStage icon={<HeartHandshake size={14} />} label={t('fistulaViz.rehabilitated')} value={agg.rehabilitated} sub={t('fistulaViz.rehabilitatedSub')} />
         </div>
-        <p style={{
-          fontSize: 11.5, color: 'var(--muted)', margin: '8px 4px 0',
-          fontStyle: 'italic',
-        }}>
-          Each percentage uses the previous stage as the denominator — e.g. the share of suspected cases that go on to be diagnosed, referred, and repaired.
-        </p>
+        )}
+        {agg.total > 0 && (
+          <p style={{
+            fontSize: 11.5, color: 'var(--muted)', margin: '8px 4px 0',
+            fontStyle: 'italic',
+          }}>
+            Each percentage uses the previous stage as the denominator — e.g. the share of suspected cases that go on to be diagnosed, referred, and repaired.
+          </p>
+        )}
       </div>
 
       {/* ─── 2b. Surgical Outcome (Animesh's 3 categories) ─── */}

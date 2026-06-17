@@ -264,9 +264,21 @@ def fistula_aggregates(request):
             if tok:
                 reasons[tok] += 1
 
+    # ── Campaign-reach tiles, sourced from the real CIPRBFistulaCase registry
+    #    (NOT the demo-seeded FistulaCampaign / FistulaCornerCase). Districts /
+    #    upazilas / patients reflect actual registered cases; when the registry
+    #    is empty every count is 0 and the dashboard renders an empty state.
+    campaign_reach = {
+        'districts': qs.exclude(district='').values('district').distinct().count(),
+        'upazilas': (qs.exclude(upazila='')
+                       .values('district', 'upazila').distinct().count()),
+        'patients': qs.count(),
+    }
+
     return Response({
         'total': qs.count(),
         'pipeline': pipeline,
+        'campaign_reach': campaign_reach,
         'age': _fis_band(ages, [(0,18),(18,25),(25,35),(35,45),(45,200)],
                          ['<18','18-24','25-34','35-44','45+']),                       # 1
         'education': _fis_count(qs, 'education'),                                       # 2

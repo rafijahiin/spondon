@@ -35,6 +35,10 @@ logger = logging.getLogger(__name__)
 _ORG_EXPORT = {
     'PHD':    'programs.management.commands.export_phd_clients',
     'Bandhu': 'programs.management.commands.export_bandhu_clients',
+    # CIPRB fistula registry — sourced from CIPRBFistulaCase, not Client.
+    # Pushed by the _fistula_case_changed receiver below (Client never carries
+    # the 'Fistula' org), so it shares the same debounce / daemon machinery.
+    'Fistula': 'programs.management.commands.export_fistula_clients',
 }
 
 _DEBOUNCE_SECONDS = 2.0
@@ -105,3 +109,16 @@ def _client_changed(sender, instance: Client, created: bool, **kwargs):
     if org not in _ORG_EXPORT:
         return
     transaction.on_commit(lambda: _schedule_push(org))
+
+
+# The CIPRB fistula registry lives in a different model (CIPRBFistulaCase), so
+# it needs its own receiver. Any insert/update — a Suspected-stage registration
+# adding a new patient_code, or a later stage touching the row — refreshes the
+# fistula_clients.csv so the form's dropdown / pulldata stay current. build_csv
+# drops rows without a patient_code + name, so partial rows are ignored.
+from fistula.ciprb_models import CIPRBFistulaCase  # noqa: E402
+
+
+@receiver(post_save, sender=CIPRBFistulaCase)
+def _fistula_case_changed(sender, instance: CIPRBFistulaCase, created: bool, **kwargs):
+    transaction.on_commit(lambda: _schedule_push('Fistula'))

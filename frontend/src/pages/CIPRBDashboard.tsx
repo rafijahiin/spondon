@@ -89,20 +89,6 @@ interface KPIs {
   rehabPct: number | null
 }
 
-interface CornerCaseRow {
-  identification_date?: string | null
-  diagnosis_date?: string | null
-  referral_date?: string | null
-  referral_outcome?: string
-  surgery_performed?: 'yes' | 'no' | 'pending' | ''
-  received_rehab_support?: boolean
-  district?: string
-}
-
-interface CampaignVisitRow {
-  id: string
-}
-
 function useFistulaKPIs(
   period: ReportingPeriodDef,
   districtFilter: readonly string[] | null,
@@ -117,77 +103,28 @@ function useFistulaKPIs(
     let cancelled = false
     const params: Record<string, string> = { from: periodFrom, to: periodTo }
     if (districtsKey) params.districts = districtsKey
-    Promise.allSettled([
-      api.get<{ results?: CampaignVisitRow[] } | CampaignVisitRow[]>('/fistula/campaign-visits/', { params }),
-      api.get<{ results?: CornerCaseRow[]    } | CornerCaseRow[]>('/fistula/corner-cases/', { params }),
-      api.get<{ results?: any[] } | any[]>('/fistula/cases/', { params }),
-      // Monotonic pipeline from CIPRBFistulaCase (the canonical CIPRB
-      // source). When present it drives the whole At-a-glance band so it
-      // agrees with the funnel and the 17-indicator panel.
-      api.get<{ pipeline?: Record<string, number> }>('/fistula/aggregates/', { params }),
-    ]).then(([campaignRes, cornerRes, rollupRes, aggRes]) => {
-      if (cancelled) return
-      const pipeline = (aggRes.status === 'fulfilled' && aggRes.value.data.pipeline) || null
+    // The At-a-glance KPI band reads ONLY the monotonic CIPRBFistulaCase
+    // pipeline (the canonical CIPRB source). The legacy/demo fallback
+    // (campaign-visits / corner-cases / cases roll-ups, seeded by
+    // seed_demo_fistula) has been dropped: when the registry is empty every
+    // stage is 0 and the band shows zeros instead of fake seed numbers.
+    api.get<{ pipeline?: Record<string, number> }>('/fistula/aggregates/', { params })
+      .then((aggRes) => {
+        if (cancelled) return
+        const pipeline = aggRes.data.pipeline || null
 
-      const campaignRows: CampaignVisitRow[] =
-        campaignRes.status === 'fulfilled'
-          ? (Array.isArray(campaignRes.value.data)
-              ? campaignRes.value.data
-              : campaignRes.value.data.results ?? [])
-          : []
+        const suspected     = pipeline ? pipeline.suspected     : 0
+        const identified    = pipeline ? pipeline.diagnosed     : 0
+        const referred      = pipeline ? pipeline.referred      : 0
+        const surgeryDone   = pipeline ? pipeline.repaired      : 0
+        const rehabilitated = pipeline ? pipeline.rehabilitated : 0
+        // Rehab % uses the previous stage (repaired) as denominator.
+        const rehabPct = surgeryDone > 0 ? (rehabilitated / surgeryDone) * 100 : null
 
-      const cornerRows: CornerCaseRow[] =
-        cornerRes.status === 'fulfilled'
-          ? (Array.isArray(cornerRes.value.data)
-              ? cornerRes.value.data
-              : cornerRes.value.data.results ?? [])
-          : []
-
-      // Client-side district filter as a safety net — backend should also
-      // honour ?districts= but until that ships, this keeps the KPIs honest.
-      const districtSet = districtFilter ? new Set(districtFilter.map(d => d.toLowerCase())) : null
-      const inFilter = (d?: string) => !districtSet || (d && districtSet.has(d.toLowerCase()))
-
-      const rollupRows: any[] =
-        rollupRes.status === 'fulfilled'
-          ? (Array.isArray(rollupRes.value.data)
-              ? rollupRes.value.data
-              : rollupRes.value.data.results ?? [])
-          : []
-
-      const cornerFiltered = cornerRows.filter(c => inFilter(c.district))
-      const rollupFiltered = rollupRows.filter((r: any) => inFilter(r.district))
-
-      // Suspected = total suspected cases found during community screening
-      // (sum of the campaign roll-up counts), NOT the number of campaign
-      // rows. This is the top of the funnel and is always larger than the
-      // diagnosed (Fistula Corner) count.
-      const suspectedTotal = rollupFiltered.reduce(
-        (s: number, r: any) => s + (r.suspected_fistula_cases ?? 0), 0,
-      )
-
-      // Legacy fallbacks (only used when the CIPRBFistulaCase pipeline is
-      // empty — i.e. no new-form data yet).
-      const legacySurgery = cornerFiltered.filter(c => c.surgery_performed === 'yes').length
-      const legacyRehab = cornerFiltered.filter((c: any) =>
-        c.rehabilitation_received === 'yes' || c.rehabilitation_date,
-      ).length
-      const legacyIdentified = cornerFiltered.filter(c => c.identification_date || c.diagnosis_date).length
-      const legacyReferred = cornerFiltered.filter(c => c.referral_date || (c.referral_outcome ?? '').trim() !== '').length
-
-      // Prefer the monotonic pipeline. Every stage is then guaranteed
-      // suspected ≥ identified ≥ referred ≥ surgeryDone ≥ rehabilitated.
-      const suspected   = pipeline ? pipeline.suspected     : suspectedTotal
-      const identified  = pipeline ? pipeline.diagnosed     : legacyIdentified
-      const referred    = pipeline ? pipeline.referred      : legacyReferred
-      const surgeryDone = pipeline ? pipeline.repaired      : legacySurgery
-      const rehabilitated = pipeline ? pipeline.rehabilitated : legacyRehab
-      // Rehab % uses the previous stage (repaired) as denominator.
-      const rehabPct = surgeryDone > 0 ? (rehabilitated / surgeryDone) * 100 : null
-
-      setKpis({ suspected, identified, referred, surgeryDone, rehabilitated, rehabPct })
-      setLoading(false)
-    })
+        setKpis({ suspected, identified, referred, surgeryDone, rehabilitated, rehabPct })
+        setLoading(false)
+      })
+      .catch(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
   }, [periodFrom, periodTo, districtsKey])
 

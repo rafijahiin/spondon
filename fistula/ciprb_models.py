@@ -59,6 +59,15 @@ class CIPRBFistulaCase(models.Model):
         max_length=50, blank=True, db_index=True,
         help_text='CIPRB annual fistula serial (from the paper form).',
     )
+    # ── Stable, unique patient key — the registry ID typed at the Suspected
+    #    stage (<district-code>-<4-digit serial>, e.g. 1-0001, 10-0001). Every
+    #    later stage references this exact ID via the form's dropdown, so the
+    #    case row accumulates against one key. null=True (not '') so legacy
+    #    rows without a code don't collide on the unique constraint.
+    patient_code = models.CharField(
+        max_length=20, blank=True, null=True, unique=True, db_index=True,
+        help_text='Unique fistula patient ID: <district-code>-<4-digit serial>.',
+    )
 
     # ── Provenance.
     submission = models.OneToOneField(

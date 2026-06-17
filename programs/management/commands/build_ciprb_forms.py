@@ -95,7 +95,7 @@ CIPRB_DISTRICTS = [
     'Sunamganj', 'Sherpur', 'Bhola', 'Kurigram', 'Gaibandha',
     'Khagrachari', 'Noakhali', 'Patuakhali', 'Sirajganj', 'Barguna',
     'Jamalpur', 'Bagerhat', 'Habiganj', 'Moulavibazar', 'Sylhet',
-    'Bandarban', 'Chandpur', 'Rangpur',
+    'Bandarban', 'Chandpur', 'Rangpur', 'Dhaka',
 ]
 DISTRICT_BANGLA = {
     'Sunamganj': 'সুনামগঞ্জ', 'Sherpur': 'শেরপুর', 'Bhola': 'ভোলা',
@@ -105,7 +105,7 @@ DISTRICT_BANGLA = {
     'Barguna': 'বরগুনা', 'Jamalpur': 'জামালপুর', 'Bagerhat': 'বাগেরহাট',
     'Habiganj': 'হবিগঞ্জ', 'Moulavibazar': 'মৌলভীবাজার',
     'Sylhet': 'সিলেট', 'Bandarban': 'বান্দরবান', 'Chandpur': 'চাঁদপুর',
-    'Rangpur': 'রংপুর',
+    'Rangpur': 'রংপুর', 'Dhaka': 'ঢাকা',
 }
 
 DISTRICT_CHOICES = [
@@ -165,6 +165,33 @@ def _meta(form_id_visible, form_id_visible_bn=''):
 # ║                      Rehabilitated & Reintegrated                        ║
 # ╚══════════════════════════════════════════════════════════════════════════╝
 
+# District slug → numeric code for the fistula patient-ID prefix. The spec
+# names 10 base districts (codes 1–10); the remaining CIPRB districts get
+# 11–18 in slug order so every option yields a deterministic prefix. The
+# slug keys MUST match the `district` choice values (lower-cased, spaces→'_').
+FISTULA_DISTRICT_CODE = {
+    'sunamganj': 1, 'bhola': 2, 'noakhali': 3, 'gaibandha': 4,
+    'kurigram': 5, 'sirajganj': 6, 'sherpur': 7, 'patuakhali': 8,
+    'khagrachari': 9, 'dhaka': 10,
+    # extras (no spec code) — kept deterministic so their IDs still validate:
+    'barguna': 11, 'jamalpur': 12, 'bagerhat': 13, 'habiganj': 14,
+    'moulavibazar': 15, 'sylhet': 16, 'bandarban': 17, 'rangpur': 18,
+    'chandpur': 19,
+}
+
+
+def _fistula_dist_code_calc():
+    """Build the nested if() that maps the selected district slug → its
+    numeric code string. Enketo is XPath 1.0, so we use an explicit if()
+    chain rather than a lookup — and we never use substr() on the code,
+    which avoids the '10-' vs '1-' starts-with collision (the regex
+    constraint anchors the full prefix instead)."""
+    expr = "''"
+    for slug, code in reversed(list(FISTULA_DISTRICT_CODE.items())):
+        expr = f"if(${{district}}='{slug}','{code}',{expr})"
+    return expr
+
+
 _FISTULA_STAGES = [
     ('suspected',     'Suspected (community identification)',
      'সন্দেহজনক (সম্প্রদায়ে শনাক্ত)'),
@@ -191,9 +218,51 @@ def _fistula_survey():
             hint='A case progresses through five stages. Pick the one you are recording now.'),
     ]
 
-    # ── Patient identity (shown for every stage).
+    # ── Derive the numeric district code from the selected district slug.
+    #    Used to build the required ID prefix (e.g. district 1 → '1-0001').
     rows += [
-        _sr('begin_group', 'grp_patient', 'Patient identity', 'রোগীর পরিচয়'),
+        _sr('calculate', '_dist_code', calc=_fistula_dist_code_calc()),
+    ]
+
+    # XPath 1.0 trim+upper — Kobo/Enketo cannot evaluate upper-case() (XPath 2.0).
+    NORM_PC = ("translate(normalize-space(${patient_code}),"
+               "'abcdefghijklmnopqrstuvwxyz',"
+               "'ABCDEFGHIJKLMNOPQRSTUVWXYZ')")
+
+    # ── Patient identity (captured ONCE, at the Suspected stage only).
+    #    Later stages identify the woman via the grp_lookup dropdown below.
+    rows += [
+        _sr('begin_group', 'grp_patient', 'Patient identity', 'রোগীর পরিচয়',
+            relevant="${stage}='suspected'"),
+
+        # The unique registry ID — typed at registration. Two hard rules:
+        #   (1) regex anchors the FULL prefix (^<code>-<4 digits>$), so a
+        #       Sunamganj (1-) ID can never be accepted as a Dhaka (10-) ID;
+        #   (2) pulldata(...)='' blocks re-registering an existing ID.
+        _sr('text', 'patient_code',
+            'Patient ID (district code + serial, e.g. 1-0001)',
+            'রোগীর আইডি (জেলা কোড + ক্রমিক, যেমন ১-০০০১)',
+            required='yes',
+            relevant="${stage}='suspected'",
+            constraint=("regex(normalize-space(.), "
+                        "concat('^', ${_dist_code}, '-[0-9]{4}$')) and "
+                        "pulldata('fistula_clients','patient_name','id_no'," + NORM_PC
+                        + ")=''"),
+            cmsg='⚠ Invalid or duplicate ID. It must be <district-code>-<4 digits> '
+                 '(e.g. 1-0001, Dhaka = 10-0001) and not already registered. / '
+                 'ভুল বা ডুপ্লিকেট আইডি — জেলা কোড + ৪ অঙ্ক হতে হবে এবং আগে নিবন্ধিত থাকা যাবে না।',
+            hint='Format: district number + 4-digit serial. Dhaka = 10-0001.'),
+
+        # Duplicate-ID soft warning — shows who already holds this ID.
+        _sr('calculate', '_dup_name',
+            calc=("pulldata('fistula_clients','patient_name','id_no'," + NORM_PC + ")")),
+        _sr('note', '_dup_warn',
+            '⚠ This ID is already registered for ${_dup_name}. '
+            'Do not re-register — record her later stages via the dropdown instead.',
+            '⚠ এই আইডি ইতিমধ্যে ${_dup_name} নামে নিবন্ধিত। '
+            'পুনঃনিবন্ধন করবেন না — পরবর্তী ধাপ ড্রপডাউন থেকে নির্বাচন করুন।',
+            relevant="${patient_code}!='' and ${_dup_name}!=''"),
+
         _sr('text', 'name', 'Name of woman', 'মহিলার নাম', required='yes'),
         _sr('integer', 'age', 'Age (years)', 'বয়স (বছর)',
             constraint='. >= 8 and . <= 80'),
@@ -220,10 +289,11 @@ def _fistula_survey():
         _sr('end_group', 'grp_patient'),
     ]
 
-    # ── Obstetric history.
+    # ── Obstetric history (captured ONCE, at the Suspected stage only).
     rows += [
         _sr('begin_group', 'grp_obs_history',
-            'Obstetric history', 'প্রসূতি ইতিহাস'),
+            'Obstetric history', 'প্রসূতি ইতিহাস',
+            relevant="${stage}='suspected'"),
         _sr('text', 'delivery_complication',
             'Delivery complication', 'প্রসব জটিলতা'),
         _sr('text', 'last_delivery_labour_duration',
@@ -249,6 +319,63 @@ def _fistula_survey():
             'Duration of suffering from fistula (years / months)',
             'ফিস্টুলায় ভোগার সময়কাল (বছর / মাস)'),
         _sr('end_group', 'grp_obs_history'),
+    ]
+
+    # ── Patient lookup (stages 2–5). The woman was already registered at the
+    #    Suspected stage; here the field worker picks her from the CSV-backed
+    #    dropdown (fistula_clients.csv) instead of re-typing identity. The
+    #    selected value is her id_no; pulldata() shows her details read-only so
+    #    the worker confirms the right woman before recording the new stage.
+    LATER = ("${stage}='diagnosed' or ${stage}='referred' or "
+             "${stage}='repaired' or ${stage}='rehabilitated'")
+    # Normalise the dropdown value the same way the CSV / handler key is stored.
+    # Braces around the field name are doubled so str.format() (below) leaves
+    # the ${...} XPath reference intact and only substitutes {col}.
+    NORM_SEL = ("translate(normalize-space(${{patient_code_sel}}),"
+                "'abcdefghijklmnopqrstuvwxyz',"
+                "'ABCDEFGHIJKLMNOPQRSTUVWXYZ')")
+    PULL = "pulldata('fistula_clients','{col}','id_no'," + NORM_SEL + ")"
+    FOUND = "${_pull_name}!=''"
+    rows += [
+        _sr('begin_group', 'grp_lookup',
+            'Select the registered patient', 'নিবন্ধিত রোগী নির্বাচন করুন',
+            relevant=LATER),
+        # Dropdown sourced from the attached CSV — the stored value is id_no,
+        # the label shows "1-0001 — Rahima (Sunamganj)".
+        _sr('select_one_from_file fistula_clients.csv', 'patient_code_sel',
+            'Registered patient (ID — name)',
+            'নিবন্ধিত রোগী (আইডি — নাম)',
+            required='yes',
+            relevant=LATER),
+        _sr('calculate', '_pull_name',    calc=PULL.format(col='patient_name')),
+        _sr('calculate', '_pull_age',     calc=PULL.format(col='age')),
+        _sr('calculate', '_pull_husband', calc=PULL.format(col='husband')),
+        _sr('calculate', '_pull_village', calc=PULL.format(col='village')),
+        _sr('calculate', '_pull_susp',    calc=PULL.format(col='suspected_date')),
+        _sr('note', '_show_name',
+            'Name: ${_pull_name}', 'নাম: ${_pull_name}', relevant=FOUND),
+        _sr('note', '_show_age',
+            'Age: ${_pull_age} · Husband: ${_pull_husband}',
+            'বয়স: ${_pull_age} · স্বামী: ${_pull_husband}',
+            relevant=FOUND + " and (${_pull_age}!='' or ${_pull_husband}!='')"),
+        _sr('note', '_show_addr',
+            'Village: ${_pull_village} · Suspected: ${_pull_susp}',
+            'গ্রাম: ${_pull_village} · সন্দেহ: ${_pull_susp}',
+            relevant=FOUND + " and (${_pull_village}!='' or ${_pull_susp}!='')"),
+        _sr('note', '_lookup_missing',
+            '⚠ No registered patient found for this ID. Register her at the '
+            'Suspected stage first, then record this stage.',
+            '⚠ এই আইডির জন্য কোনো নিবন্ধিত রোগী পাওয়া যায়নি। প্রথমে সন্দেহজনক '
+            'ধাপে নিবন্ধন করুন।',
+            relevant="${patient_code_sel}!='' and ${_pull_name}=''"),
+        _sr('end_group', 'grp_lookup'),
+    ]
+
+    # ── Unify the two ID sources so the handler always reads one key:
+    #    free-text patient_code at registration, dropdown patient_code_sel after.
+    rows += [
+        _sr('calculate', 'patient_code_final', calc=(
+            "if(${stage}='suspected', ${patient_code}, ${patient_code_sel})")),
     ]
 
     # ── STAGE 1 · Suspected.
