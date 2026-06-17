@@ -97,6 +97,14 @@ def handle_phd_registration(payload: dict, lat, lng) -> HttpResponse:
         'gender':              '02',    # all PHD registrations = Female (FSW)
         'target_group_code':   '05',    # FSW
         'current_address':     _str(payload.get('permanent_address')),
+        # Socioeconomic / FSW profile — previously DROPPED (the Client columns
+        # exist but the handler never read them). The form sends 1-char codes
+        # for education/marital_status (build_phd_forms._form1_choices).
+        'marital_status':      _str(payload.get('marital_status')),
+        'education_level':     _str(payload.get('education')),
+        'years_in_profession': _int_or_none(payload.get('years_in_profession')),
+        'avg_clients_per_day': _int_or_none(payload.get('avg_clients_per_day')),
+        'children_under_18':   _int_or_none(payload.get('children_under_18')),
         'has_nid':             _nullable_bool(payload, 'has_nid'),
         'uses_fp_method':      _nullable_bool(payload, 'uses_fp'),
         'notes':               _str(payload.get('remarks')),
@@ -132,6 +140,9 @@ def handle_phd_registration(payload: dict, lat, lng) -> HttpResponse:
             if (locked.name or '').strip() in ('', 'Unknown'):
                 for f in ('center', 'name', 'mother_name', 'birth_year',
                           'gender', 'target_group_code', 'current_address',
+                          'marital_status', 'education_level',
+                          'years_in_profession', 'avg_clients_per_day',
+                          'children_under_18',
                           'has_nid', 'uses_fp_method', 'notes',
                           'submitted_by_kobo_user', 'latitude', 'longitude',
                           'raw_payload'):

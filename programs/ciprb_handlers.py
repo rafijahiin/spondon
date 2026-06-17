@@ -252,14 +252,27 @@ def _save_mpdsr_case(payload, lat, lng, *, sub_form_type, death_type,
         return HttpResponse('Bad Request — district and date_of_death required',
                             status=400)
 
+    # Consent (community maternal/neonatal + social autopsy): an explicit 'No'
+    # is HONOURED — we keep only a de-identified death count (district / date /
+    # cause), withholding facility, narrative and action plan. Absent or
+    # 'unknown' is NOT a refusal.
+    consent_refused = (_bool(payload.get('consent_given')) is False)
+
+    # De-dup key. With a serial, match on it. Without one, fall back to the Kobo
+    # submission id so a genuine RETRY updates the same row, but two DIFFERENT
+    # deaths never collide. (The old fallback keyed on (date, facility_name), so
+    # two home deaths on the same date in the same district — facility_name=''
+    # for both — silently overwrote each other.)
+    sub_id = str(payload.get('_id') or '')
     qs = MPDSRCase.objects.select_for_update().filter(
         partner=ORG, sub_form_type=sub_form_type, district=district,
     )
     if serial:
         qs = qs.filter(case_hash=serial)
+    elif sub_id:
+        qs = qs.filter(case_hash='kobo:' + sub_id)
     else:
-        qs = qs.filter(date_of_death=dod,
-                       facility_name=_s(payload.get('facility_name')))
+        qs = qs.none()   # nothing to match on — never overwrite a different death
 
     with transaction.atomic():
         case = qs.first()
@@ -280,24 +293,51 @@ def _save_mpdsr_case(payload, lat, lng, *, sub_form_type, death_type,
         adm = _date(payload.get('admission_date'))
         if adm: case.admission_date = adm
         case.death_type    = death_type
-        case.cause_of_death = _s(payload.get(death_field_name))
+        # Cause of death — keep the typed cause when 'Other' is chosen
+        # (previously only the slug 'other' was stored and the free text lost).
+        cod = _s(payload.get(death_field_name))
+        if cod == 'other' and not consent_refused:
+            other_txt = _s(payload.get('cause_of_death_other')) or _s(payload.get('cause_other'))
+            if other_txt:
+                cod = 'other: ' + other_txt
+        case.cause_of_death = cod
         place = _PLACE_MAP.get(_s(payload.get('place_of_death')), '')
         if place: case.place_of_death = place
-        case.facility_name = _s(payload.get('facility_name'))
+        case.facility_name = '' if consent_refused else _s(payload.get('facility_name'))
         age = _int(payload.get('deceased_age')) or _int(payload.get('woman_age'))
         if age: case.age_years = age
 
         rs = _REVIEW_STATUS_MAP.get(_s(payload.get('review_status')))
         if rs: case.status = rs
         case.committee_date = _date(payload.get('review_date'))
-        case.action_plan    = _s(payload.get('action_plan_summary'))
-        case.notes          = (
-            _s(payload.get('three_delays'))
-            + ('\n' if payload.get('three_delays') and payload.get('contributory_factors') else '')
-            + _s(payload.get('contributory_factors'))
-        )
+        if consent_refused:
+            case.action_plan = ''
+            case.notes = ('[Consent refused — recorded as a de-identified death '
+                          "count; identifying details, narrative and action plan "
+                          "withheld at the family's request]")
+        else:
+            case.action_plan = _s(payload.get('action_plan_summary'))
+            if sub_form_type == 'sa_md':
+                # Social Autopsy keeps its Three-Delays narrative in
+                # delay1/2/3_factors + recommendations/barrier notes (NOT the
+                # three_delays/contributory_factors the generic save assumed —
+                # those fields don't exist on this form, so the narrative was
+                # being dropped entirely).
+                parts = [_s(payload.get(k)) for k in (
+                    'delay1_factors', 'delay2_factors', 'delay3_factors',
+                    'community_recommendations',
+                    'gender_barrier_notes', 'financial_barrier_notes')]
+                case.notes = '\n'.join(p for p in parts if p)
+            else:
+                case.notes = (
+                    _s(payload.get('three_delays'))
+                    + ('\n' if payload.get('three_delays') and payload.get('contributory_factors') else '')
+                    + _s(payload.get('contributory_factors'))
+                )
         if serial:
             case.case_hash = serial[:30]
+        elif sub_id:
+            case.case_hash = ('kobo:' + sub_id)[:30]
 
         # ── CIPRB dashboard "major indicators" — persist the 9 fields that
         #    were previously dropped. Only the review forms (f1/f2/f4/f5)
