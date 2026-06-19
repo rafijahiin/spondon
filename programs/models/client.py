@@ -104,10 +104,15 @@ class Client(TimestampedModel):
     current_address = models.TextField(blank=True)
     spot_name = models.CharField(max_length=200, blank=True)
 
-    # Socioeconomic
-    marital_status = models.CharField(max_length=1, blank=True)
-    education_level = models.CharField(max_length=1, blank=True)
-    occupation_code = models.CharField(max_length=1, blank=True)
+    # Socioeconomic. Kobo select_one values are short codes ('1'..'5'), but
+    # the Mother List `ml_occupation` field comes through as free text
+    # ('Sex Worker', 'Family income', etc.), so occupation_code holds the
+    # label, not a 1-char code. Widened generously so a longer answer can
+    # never overflow the column and 500 the webhook (the previous max_length=1
+    # silently dropped every Bandhu registration with a typed occupation).
+    marital_status = models.CharField(max_length=32, blank=True)
+    education_level = models.CharField(max_length=32, blank=True)
+    occupation_code = models.CharField(max_length=100, blank=True)
 
     # FSW-specific
     years_in_profession = models.PositiveSmallIntegerField(null=True, blank=True)

@@ -7,7 +7,7 @@
  */
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import {
-  X, Check, AlertTriangle, FileText, Plus,
+  X, Check, AlertTriangle, FileText, Plus, RefreshCw,
 } from 'lucide-react'
 import { useReducedMotion } from 'motion/react'
 import { useTranslation } from 'react-i18next'
@@ -548,7 +548,9 @@ export default function ManagerApprovals() {
   const { data: programsData, loading: programsLoading, refetch: refetchPrograms } =
     usePolling<ProgramPendingResponse>({
       fetcher: () => api.get('/programs/pending-approvals/').then((r) => r.data),
-      interval: 20_000,
+      // 10s so a Kobo submission surfaces quickly once its webhook lands
+      // (Kobo's own hook delivery adds a few seconds we can't control).
+      interval: 10_000,
     })
 
   const { data: submissions, loading: legacyLoading, refetch: refetchLegacy } =
@@ -556,7 +558,7 @@ export default function ManagerApprovals() {
       fetcher: () =>
         api.get('/submissions/', { params: { status: 'pending' } })
            .then((r) => (Array.isArray(r.data) ? r.data : r.data.results ?? [])),
-      interval: 30_000,
+      interval: 15_000,
     })
 
   // Reviewed (approved/rejected) submissions — for the "Reviewed" tab so the
@@ -695,6 +697,16 @@ export default function ManagerApprovals() {
     }
   }, [filtered, refetchPrograms, refetchLegacy, reviewerNote])
 
+  // Manual "Refresh now" — pulls the queue immediately instead of waiting for
+  // the next poll tick. Kobo's webhook delivery is async, so a just-submitted
+  // form can take a few seconds to arrive; this lets a manager pull on demand.
+  const [refreshing, setRefreshing] = useState(false)
+  const refreshNow = useCallback(async () => {
+    setRefreshing(true)
+    try { await Promise.all([refetchPrograms(), refetchLegacy()]) }
+    finally { setRefreshing(false) }
+  }, [refetchPrograms, refetchLegacy])
+
   // ── Keyboard navigation ─────────────────────────────────────────────────────
 
   // Keyboard shortcuts removed — click-only interactions only. See the
@@ -789,7 +801,24 @@ export default function ManagerApprovals() {
             <div className="card-head" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 10, paddingBottom: 10 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div className="card-title" style={{ fontSize: 14, fontWeight: 600 }}>{t('approvals.queueHeading')}</div>
-                <span className="mono mute" style={{ fontSize: 11 }}>{t('approvals.queueCount', { visible: filtered.length, total: allItems.length })}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span className="mono mute" style={{ fontSize: 11 }}>{t('approvals.queueCount', { visible: filtered.length, total: allItems.length })}</span>
+                  <button
+                    onClick={refreshNow}
+                    disabled={refreshing}
+                    title="Refresh now — pull just-submitted forms without waiting for the auto-refresh"
+                    aria-label="Refresh queue now"
+                    style={{
+                      display: 'inline-flex', alignItems: 'center', gap: 5,
+                      background: 'none', border: '1px solid var(--hair)', borderRadius: 8,
+                      padding: '3px 8px', fontSize: 11, color: 'var(--ink-2)',
+                      cursor: refreshing ? 'default' : 'pointer', opacity: refreshing ? 0.6 : 1,
+                    }}
+                  >
+                    <RefreshCw size={12} className={refreshing ? 'animate-spin' : undefined} />
+                    {refreshing ? 'Refreshing…' : 'Refresh'}
+                  </button>
+                </div>
               </div>
               <div className="pills">
                 {([
