@@ -552,11 +552,12 @@ function CauseDonut({
           display: 'flex', alignItems: 'center', justifyContent: 'flex-start',
           gap: 24, flexWrap: 'wrap', flex: 1,
         }}>
-          <div style={{ position: 'relative', width: 180, height: 180, flexShrink: 0 }}>
+          <div style={{ width: 180, height: 180, flexShrink: 0 }}>
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%"
-                  innerRadius={58} outerRadius={86} paddingAngle={2} stroke="none"
+                  innerRadius={0} outerRadius={86} paddingAngle={1}
+                  stroke="#fff" strokeWidth={1}
                   startAngle={90} endAngle={-270} animationDuration={800}>
                   {pieData.map((d) => <Cell key={d.name} fill={d.color} />)}
                 </Pie>
@@ -577,23 +578,14 @@ function CauseDonut({
                 />
               </PieChart>
             </ResponsiveContainer>
-            <div style={{
-              position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column',
-              alignItems: 'center', justifyContent: 'center', pointerEvents: 'none',
-            }}>
-              <span style={{
-                fontSize: 28, fontWeight: 800, lineHeight: 1, color: 'var(--ink)',
-                fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em',
-              }}>{total.toLocaleString()}</span>
-              <span className="mono" style={{
-                fontSize: 9, color: 'var(--muted)', letterSpacing: '0.08em', marginTop: 4,
-              }}>{t('mpdsrViz.mdCases')}</span>
-            </div>
           </div>
           <div style={{
             display: 'flex', flexDirection: 'column', gap: 8,
             fontSize: 12.5, minWidth: 200, flex: 1,
           }}>
+            <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 2 }}>
+              <b style={{ fontSize: 18, color: 'var(--ink)', fontVariantNumeric: 'tabular-nums' }}>{total.toLocaleString()}</b> {t('mpdsrViz.mdCases')}
+            </div>
             {pieData.map(d => (
               <div key={d.name} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span style={{ width: 10, height: 10, borderRadius: 3, background: d.color, flexShrink: 0 }} />

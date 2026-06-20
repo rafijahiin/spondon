@@ -136,7 +136,6 @@ export function DonutBreakdown({
   //  (b) legend-row hover (real React onMouseEnter on a div) — dims the
   //      other slices and swaps the centre readout to that slice.
   const [active, setActive] = useState<number | null>(null)
-  const sel = active !== null ? pie[active] : null
   const pct = (v: number) => total > 0 ? Math.round((v / total) * 100) : 0
   return (
     <Frame kicker={kicker} title={title}>
@@ -146,7 +145,8 @@ export function DonutBreakdown({
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie data={pie} dataKey="value" nameKey="name" cx="50%" cy="50%"
-                  innerRadius={48} outerRadius={72} paddingAngle={2} stroke="none"
+                  innerRadius={0} outerRadius={72} paddingAngle={1}
+                  stroke="#fff" strokeWidth={1}
                   startAngle={90} endAngle={-270}
                   isAnimationActive={false}
                   // Hover handlers belong on the Pie (Recharts gives the slice
@@ -180,27 +180,11 @@ export function DonutBreakdown({
                 />
               </PieChart>
             </ResponsiveContainer>
-            {/* Centre readout: total by default, hovered slice on hover. */}
-            <div style={{
-              position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column',
-              alignItems: 'center', justifyContent: 'center', pointerEvents: 'none',
-              padding: '0 18px', textAlign: 'center',
-            }}>
-              {sel ? (
-                <>
-                  <span style={{ fontSize: 22, fontWeight: 800, lineHeight: 1, color: sel.color, fontVariantNumeric: 'tabular-nums' }}>{sel.value}</span>
-                  <span style={{ fontSize: 9.5, color: 'var(--ink-3)', marginTop: 2 }}>{pct(sel.value)}%</span>
-                  <span style={{ fontSize: 9, color: 'var(--muted)', marginTop: 2, lineHeight: 1.15 }}>{sel.name}</span>
-                </>
-              ) : (
-                <>
-                  <span style={{ fontSize: 24, fontWeight: 800, lineHeight: 1, color: 'var(--ink)', fontVariantNumeric: 'tabular-nums' }}>{total}</span>
-                  <span className="mono" style={{ fontSize: 8.5, color: 'var(--muted)', letterSpacing: '0.08em', marginTop: 3 }}>TOTAL</span>
-                </>
-              )}
-            </div>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 12.5, flex: 1, minWidth: 140 }}>
+            <div style={{ fontSize: 11.5, color: 'var(--muted)', marginBottom: 2 }}>
+              <b style={{ fontSize: 16, color: 'var(--ink)', fontVariantNumeric: 'tabular-nums' }}>{total}</b> total
+            </div>
             {pie.map((d, idx) => (
               <div key={d.name}
                 onMouseEnter={() => setActive(idx)} onMouseLeave={() => setActive(null)}

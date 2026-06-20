@@ -166,20 +166,6 @@ const KOBO_GROUPS: KoboGroup[] = [
     ],
   },
   {
-    // Pre-Phase-2 CIPRB forms still wired up — kept available for any
-    // in-flight data, but the 9 forms above are the canonical set.
-    heading: 'CIPRB Legacy',
-    visible: isCiprbVisible,
-    forms: [
-      { url: 'https://ee.kobotoolbox.org/x/mc06MRIn', label: 'KF-Fistula Staged',     labelBn: 'ফিস্টুলা স্টেজড ট্র্যাকার' },
-      // KF-MPDSR Response Plan (7kAJGedj) removed — superseded by the real
-      // CIPRB 10 — MPDSR Response Plan in the canonical CIPRB group above.
-      { url: 'https://ee.kobotoolbox.org/x/ZOBX0pKd', label: 'MPDSR Form',             labelBn: 'মাতৃমৃত্যু ফর্ম' },
-      { url: 'https://ee.kobotoolbox.org/x/MHkEKfzl', label: 'Fistula Campaign',       labelBn: 'ফিস্টুলা ফর্ম' },
-      { url: 'https://ee.kobotoolbox.org/x/MTvoZ3Hz', label: 'Baseline / Endline',     labelBn: 'বেসলাইন ফর্ম' },
-    ],
-  },
-  {
     heading: 'PHD — FSW SRHR',
     visible: isPhdVisible,
     forms: [
