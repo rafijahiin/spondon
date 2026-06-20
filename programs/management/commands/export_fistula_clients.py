@@ -54,6 +54,7 @@ logger = logging.getLogger(__name__)
 # dropdown + pulldata read it, and its Suspected-stage duplicate check too.
 FISTULA_FORM_UIDS = [
     ('aH86Euq2AeJ8S9VYdry4PC', 'CIPRB 1 — Fistula Question Bank'),
+    ('aso6xsUo8PMYRCzGQBc8Cm', 'CIPRB — Fistula Campaign (Identification)'),
 ]
 
 CSV_FILENAME = 'fistula_clients.csv'

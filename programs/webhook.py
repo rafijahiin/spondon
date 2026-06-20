@@ -1042,6 +1042,11 @@ FORM_HANDLERS: dict = {
     #    Autopsy, 2 notification slips, Maternal Near Miss). ──
     'ciprb_fistula_questions_v1':
         _lazy_ciprb('handle_ciprb_fistula'),
+    # Campaign identification form — same handler: registers a SUSPECTED
+    # CIPRBFistulaCase with the same district-code IDs, so campaign-identified
+    # women flow into the fistula pipeline (later stages via the Question Bank).
+    'ciprb_fistula_campaign_v1':
+        _lazy_ciprb('handle_ciprb_fistula'),
     'ciprb_mpdsr_community_maternal_v1':
         _lazy_ciprb('handle_ciprb_mpdsr_community_maternal'),
     'ciprb_mpdsr_community_neonatal_v1':

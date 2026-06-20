@@ -1666,11 +1666,82 @@ def _response_plan_choices():
     return ch
 
 
+# ╔══════════════════════════════════════════════════════════════════════════╗
+# ║  FORM — CIPRB Fistula Campaign (door-to-door suspected identification)    ║
+# ║  Source: Campaign_Obs. Fistula Identification 2026 (Individual sheet).    ║
+# ║  Registers a SUSPECTED CIPRBFistulaCase using the SAME district-code IDs  ║
+# ║  + field names as the Question Bank, so a campaign-identified woman flows ║
+# ║  straight into the fistula pipeline (later stages recorded on the         ║
+# ║  Question Bank form via the same ID). Routed to handle_ciprb_fistula.     ║
+# ╚══════════════════════════════════════════════════════════════════════════╝
+def _fistula_campaign_survey():
+    rows = _meta('Campaign serial number (SN)', 'ক্যাম্পেইন ক্রমিক নং')
+    rows += [
+        _sr('calculate', 'stage', calc="'suspected'"),
+        _sr('calculate', 'suspected_date', calc='${collection_date}'),
+        _sr('calculate', '_dist_code', calc=_fistula_dist_code_calc()),
+    ]
+    NORM_PC = ("translate(normalize-space(${patient_code}),"
+               "'abcdefghijklmnopqrstuvwxyz','ABCDEFGHIJKLMNOPQRSTUVWXYZ')")
+    rows += [
+        _sr('begin_group', 'grp_camp',
+            'Suspected fistula patient (campaign)',
+            'সন্দেহজনক ফিস্টুলা রোগী (ক্যাম্পেইন)'),
+        _sr('note', '_dist_code_show',
+            'Your district code is ${_dist_code}. Type the Patient ID as '
+            '${_dist_code}-0001, ${_dist_code}-0002, … (4 digits after the dash).',
+            'আপনার জেলা কোড ${_dist_code}। রোগীর আইডি: ${_dist_code}-0001, … '
+            '(ড্যাশের পরে ৪ অঙ্ক)।'),
+        _sr('text', 'patient_code',
+            'Patient ID (district code + serial, e.g. 1-0001)',
+            'রোগীর আইডি (জেলা কোড + ক্রমিক, যেমন ১-০০০১)', required='yes',
+            constraint=("regex(normalize-space(.), "
+                        "concat('^', ${_dist_code}, '-[0-9]{4}$')) and "
+                        "pulldata('fistula_clients','patient_name','id_no'," + NORM_PC + ")=''"),
+            cmsg='⚠ Invalid or duplicate ID — must be <district-code>-<4 digits> '
+                 '(Dhaka = 10-0001) and not already registered.',
+            hint='Format: district number + 4-digit serial. Dhaka = 10-0001.'),
+        _sr('text', 'name', 'Name of suspected patient', 'সন্দেহজনক রোগীর নাম', required='yes'),
+        _sr('text', 'contact_number', 'Contact number', 'যোগাযোগ নম্বর',
+            constraint='regex(., "^[0-9+ -]{6,20}$") or .=""',
+            cmsg='Enter a valid phone number.'),
+        _sr('integer', 'age', 'Age (years)', 'বয়স (বছর)',
+            constraint='. >= 8 and . <= 90', cmsg='8–90'),
+        _sr('select_one education', 'education', 'Education', 'শিক্ষা'),
+        _sr('text', 'profession_patient', 'Profession', 'পেশা'),
+        _sr('text', 'husband', "Husband's name", 'স্বামীর নাম'),
+        _sr('text', 'husband_profession', "Husband's profession", 'স্বামীর পেশা'),
+        _sr('select_one place_of_delivery', 'place_of_last_delivery',
+            'Place / mode of last delivery', 'শেষ প্রসবের স্থান / পদ্ধতি'),
+        _sr('select_one delivery_outcome', 'delivery_outcome',
+            'Delivery outcome (Live / Still birth)', 'প্রসবের ফলাফল'),
+        _sr('text', 'duration_suffering', 'Duration of suffering', 'ভোগার সময়কাল',
+            hint='e.g. 5 years / 8 months. / যেমন ৫ বছর / ৮ মাস।'),
+        _sr('text', 'source_information', "Source of patient's information",
+            'রোগীর তথ্যের উৎস'),
+        _sr('select_one yes_no', 'from_haor',
+            'Patient from a Haor (wetland) area?', 'রোগী কি হাওর এলাকার?'),
+        _sr('text', 'remarks', 'Remarks', 'মন্তব্য', app='multiline'),
+        _sr('end_group', 'grp_camp'),
+    ]
+    return rows
+
+
+def _fistula_campaign_choices():
+    # Reuse the Question Bank choice lists (district, yes/no, education,
+    # place/mode of delivery, delivery outcome).
+    return list(_fistula_choices())
+
+
 FORMS = [
     dict(file='CIPRB-1_Fistula_Question_Bank.xlsx',
          id='ciprb_fistula_questions_v1',
          title='CIPRB 1 — Fistula Question Bank',
          survey=_fistula_survey, choices=_fistula_choices),
+    dict(file='CIPRB-1b_Fistula_Campaign.xlsx',
+         id='ciprb_fistula_campaign_v1',
+         title='CIPRB — Fistula Campaign (Identification)',
+         survey=_fistula_campaign_survey, choices=_fistula_campaign_choices),
     dict(file='CIPRB-2_MPDSR_Form_01_Community_Maternal.xlsx',
          id='ciprb_mpdsr_community_maternal_v1',
          title='CIPRB 2 — MPDSR Form 01 (Community Maternal Death)',
