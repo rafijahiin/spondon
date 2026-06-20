@@ -105,7 +105,7 @@ def _wb(form_id, form_title, survey, choices):
     for sheet_name, headers, rows in [
         ('survey',   SURVEY_HDR,   survey),
         ('choices',  CHOICES_HDR,  choices),
-        ('settings', SETTINGS_HDR, [[form_title, form_id, '20260615', 'English', 'theme-grid']]),
+        ('settings', SETTINGS_HDR, [[form_title, form_id, '20260620', 'English', 'theme-grid']]),
     ]:
         ws = wb.create_sheet(sheet_name)
         ws.append(headers)
@@ -150,6 +150,35 @@ def _centre_choices():
         _ch('bandhu_centre', c['code'], c['name'], c.get('name_bangla', c['name']))
         for c in BONDHU_DICS
     ]
+
+
+# ─── Beneficiary-ID district codes (Bandhu handwritten note, 2026-06-20) ───────
+# Each Wellness Centre sits in one district. The beneficiary ID is composed as
+# {2-digit district code}-{4-digit serial} so every ID has one fixed shape and
+# the service forms' pulldata lookup always resolves. Codes are Bandhu's own,
+# keyed by the centre's district.
+BANDHU_DISTRICT_CODE = {
+    'Bandarban': '01', 'Chittagong': '02', 'Chattogram': '02',
+    'Chandpur': '03', 'Noakhali': '04', 'Sunamganj': '05',
+    'Habiganj': '06', 'Manikganj': '07', 'Narayanganj': '08',
+    'Dhaka': '09',   # Dhaka KP clinic — confirmed as the 9th Bandhu code (2026-06-20).
+}
+
+
+def _centre_to_district_code():
+    """centre_id (BND-DIC-xx / BND-KPC-xx) → 2-digit Bandhu district code."""
+    from .seed_centers import BONDHU_DICS
+    return {c['code']: BANDHU_DISTRICT_CODE.get(c.get('district', ''), '00')
+            for c in BONDHU_DICS}
+
+
+def _bandhu_dist_code_calc():
+    """Nested if() mapping the selected centre to its 2-digit district code.
+    Enketo is XPath 1.0 (no lookup tables), so an explicit if() chain."""
+    expr = "'00'"
+    for code, dcode in reversed(list(_centre_to_district_code().items())):
+        expr = "if(${centre_id}='%s','%s',%s)" % (code, dcode, expr)
+    return expr
 
 
 # ─── Reusable choice lists (corrected, unified) ───────────────────────────────
@@ -312,8 +341,24 @@ def _mother_list_survey():
     rows += [
         _sr('begin_group', 'grp_ml', 'Mother List — Beneficiary Registration',
             'মাদার লিস্ট — সুবিধাভোগী নিবন্ধন'),
-        _sr('text', 'ml_id_no', 'ID No.', 'আইডি নম্বর', required='yes',
-            hint='Use the SAME ID for this person every time — centre code + 4-digit serial, e.g. 3-0001. / প্রতিবার একই আইডি ব্যবহার করুন — কেন্দ্র কোড + ৪-অঙ্ক, যেমন 3-0001।'),
+        # Beneficiary ID — auto-composed as {district code}-{4-digit serial}.
+        # District code comes from the chosen centre (worker can't mistype it);
+        # the worker enters only the serial. One fixed format (DD-NNNN) so the
+        # service forms' pulldata lookup always finds the registered mother —
+        # fixes the old free-text IDs (02001 / 020007 / 020010) that never
+        # matched on lookup and broke "registration".
+        _sr('calculate', 'centre_district_code', calc=_bandhu_dist_code_calc()),
+        _sr('text', 'ml_serial', 'Beneficiary serial (4 digits)',
+            'সুবিধাভোগী ক্রমিক (৪ অঙ্ক)', required='yes',
+            constraint="regex(., '^[0-9]{4}$')",
+            cmsg='Enter exactly 4 digits, e.g. 0001. / ঠিক ৪ অঙ্ক দিন, যেমন 0001।',
+            hint='Next free number at your centre (0001, 0002, …). The district '
+                 'code is added automatically. / আপনার কেন্দ্রের পরবর্তী নম্বর; '
+                 'জেলা কোড স্বয়ংক্রিয়ভাবে যুক্ত হবে।'),
+        _sr('calculate', 'ml_id_no',
+            calc="concat(${centre_district_code}, '-', ${ml_serial})"),
+        _sr('note', '_ml_id_show', '🆔 Beneficiary ID: ${ml_id_no}',
+            '🆔 সুবিধাভোগী আইডি: ${ml_id_no}', relevant="${ml_serial}!=''"),
         # Duplicate-ID warning from the bandhu_clients.csv attachment.
         _sr('calculate', '_dup_name',
             calc=("pulldata('bandhu_clients','name','id_no',"

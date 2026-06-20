@@ -479,6 +479,61 @@ export function FistulaVisualizations({
         )}
       </div>
 
+      {/* ─── 2a-bis. Diagnosed vs Surgically Repaired (pie) ─── */}
+      {(agg.identified + agg.repaired) > 0 && (() => {
+        const drData = [
+          { name: 'Diagnosed',           value: agg.identified, color: '#F96000' },
+          { name: 'Surgically Repaired', value: agg.repaired,   color: '#7A2E00' },
+        ]
+        const drTotal = drData.reduce((s, d) => s + d.value, 0)
+        return (
+          <div>
+            <div style={{ marginBottom: 14 }}>
+              <div className="kicker">
+                <span className="dot" style={{ background: CIPRB_BLUE }} />
+                CAMPAIGN OUTCOME
+              </div>
+              <h3 style={{ margin: '6px 0 2px', fontSize: 18, fontWeight: 700, color: 'var(--ink)' }}>
+                Diagnosed &amp; surgically repaired
+              </h3>
+              <p style={{ fontSize: 12.5, color: 'var(--muted)', margin: 0 }}>
+                Confirmed fistula diagnoses and how many have been surgically repaired.
+              </p>
+              <div style={{ marginTop: 6 }}>
+                <SourceChip>CIPRB 1 — Fistula Question Bank</SourceChip>
+              </div>
+            </div>
+            <div className="card" style={{ padding: 24 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 36, flexWrap: 'wrap' }}>
+                <div style={{ width: 220, height: 220, flexShrink: 0 }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie data={drData} dataKey="value" nameKey="name" cx="50%" cy="50%"
+                        innerRadius={0} outerRadius={104} paddingAngle={1}
+                        stroke="#fff" strokeWidth={1}
+                        startAngle={90} endAngle={-270} animationDuration={800}>
+                        {drData.map((d) => <Cell key={d.name} fill={d.color} />)}
+                      </Pie>
+                      <Tooltip
+                        wrapperStyle={{ zIndex: 50, outline: 'none' }}
+                        contentStyle={{ background: 'var(--surface)', border: '1px solid var(--hair)', borderRadius: 8, fontSize: 12, color: 'var(--ink)', boxShadow: '0 6px 20px rgba(0,0,0,0.18)' }}
+                        itemStyle={{ color: 'var(--ink)' }}
+                        labelStyle={{ color: 'var(--ink)' }}
+                        formatter={(value: number, name: string) =>
+                          [`${value} (${drTotal ? Math.round((value / drTotal) * 100) : 0}%)`, name]}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                <div style={{ flex: 1, minWidth: 220 }}>
+                  <DiagnosisLegend data={drData} />
+                </div>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
+
       {/* ─── 2b. Surgical Outcome (Animesh's 3 categories) ─── */}
       {(agg.outcomeDry + agg.outcomeNotDry + agg.outcomeFailed) > 0 && (
         <div>
@@ -548,17 +603,15 @@ export function FistulaVisualizations({
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               gap: 36, flexWrap: 'wrap',
             }}>
-              <div style={{ position: 'relative', width: 220, height: 220, flexShrink: 0 }}>
+              <div style={{ width: 220, height: 220, flexShrink: 0 }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%"
-                      innerRadius={70} outerRadius={104} paddingAngle={2} stroke="none"
+                      innerRadius={0} outerRadius={104} paddingAngle={1}
+                      stroke="#fff" strokeWidth={1}
                       startAngle={90} endAngle={-270} animationDuration={800}>
                       {pieData.map((d) => <Cell key={d.name} fill={d.color} />)}
                     </Pie>
-                    {/* Tooltip lifted above the centre EXAMINED total with a
-                        zIndex wrapper + opaque card — the earlier collision
-                        was z-order only. Legend (right) still lists all types. */}
                     <Tooltip
                       wrapperStyle={{ zIndex: 50, outline: 'none' }}
                       contentStyle={{
@@ -573,21 +626,11 @@ export function FistulaVisualizations({
                     />
                   </PieChart>
                 </ResponsiveContainer>
-                <div style={{
-                  position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column',
-                  alignItems: 'center', justifyContent: 'center', pointerEvents: 'none',
-                }}>
-                  <span style={{
-                    fontSize: 38, fontWeight: 800, lineHeight: 1, color: 'var(--ink)',
-                    fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em',
-                  }}>{pieTotal.toLocaleString()}</span>
-                  <span className="mono" style={{
-                    fontSize: 9.5, color: 'var(--muted)',
-                    letterSpacing: '0.08em', marginTop: 4,
-                  }}>{t('fistulaViz.examined')}</span>
-                </div>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12, flex: 1, minWidth: 220 }}>
+                <div style={{ fontSize: 12.5, color: 'var(--muted)' }}>
+                  <b style={{ fontSize: 22, color: 'var(--ink)', fontVariantNumeric: 'tabular-nums' }}>{pieTotal.toLocaleString()}</b> {t('fistulaViz.examined')}
+                </div>
                 <DiagnosisLegend data={pieData} />
                 {agg.piePending > 0 && (
                   <div style={{
