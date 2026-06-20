@@ -166,7 +166,7 @@ const KOBO_GROUPS: KoboGroup[] = [
       // Older CIPRB forms still in use — listed under CIPRB (no separate legacy section).
       { url: 'https://ee.kobotoolbox.org/x/mc06MRIn', label: 'KF-Fistula Staged',     labelBn: 'ফিস্টুলা স্টেজড ট্র্যাকার' },
       { url: 'https://ee.kobotoolbox.org/x/ZOBX0pKd', label: 'MPDSR Form',             labelBn: 'মাতৃমৃত্যু ফর্ম' },
-      { url: 'https://ee.kobotoolbox.org/x/MHkEKfzl', label: 'Fistula Campaign',       labelBn: 'ফিস্টুলা ফর্ম' },
+      { url: 'https://ee.kobotoolbox.org/x/1kkC2bTE', label: 'Fistula Campaign',       labelBn: 'ফিস্টুলা ফর্ম' },
       { url: 'https://ee.kobotoolbox.org/x/MTvoZ3Hz', label: 'Baseline / Endline',     labelBn: 'বেসলাইন ফর্ম' },
     ],
   },
