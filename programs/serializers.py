@@ -15,6 +15,21 @@ from .models import (
     StockEntry, TemperatureLog, SafetyHygieneKit, StoreRequisition,
     TrainingEvent, CoordMeeting, MobileHealthCamp, VisitorRegister,
 )
+from fistula.ciprb_models import CIPRBFistulaCase
+
+
+class CIPRBFistulaCaseSerializer(serializers.ModelSerializer):
+    """Detail serializer for the CIPRB Fistula approval queue. Exposes
+    raw_payload (drives the manager 'What was submitted' readout) and the full
+    row; the approval columns are read-only (set via approve/reject)."""
+    class Meta:
+        model = CIPRBFistulaCase
+        fields = '__all__'
+        read_only_fields = [
+            'id', 'approval_status', 'approved_by', 'approved_at',
+            'rejected_reason', 'kobo_submission_id', 'submitted_by_kobo_user',
+            'created_at', 'updated_at',
+        ]
 
 
 class ServiceCenterSerializer(serializers.ModelSerializer):

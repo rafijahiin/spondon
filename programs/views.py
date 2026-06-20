@@ -40,6 +40,8 @@ from .models import (
     TrainingEvent, CoordMeeting, MobileHealthCamp, VisitorRegister,
     NilReport, PHDCounsellingReport,
 )
+from fistula.ciprb_models import CIPRBFistulaCase
+from .serializers import CIPRBFistulaCaseSerializer
 from .serializers import (
     ServiceCenterSerializer, ClientSerializer,
     ClinicVisitSerializer, HIVSTITestResultSerializer, ADRRecordSerializer,
@@ -771,6 +773,14 @@ def _pending_for_model(queryset, model_type: str, org_filter_org=None,
 
 
 # endpoint → (queryset, model_type)
+class CIPRBFistulaCaseViewSet(OrgFilteredViewSet):
+    """CIPRB Fistula cases — detail + approve/reject for the manager queue.
+    Single-stage (Tanjina / Setu approve CIPRB). Reads are open to authenticated
+    users so managers can review; writes restricted by OrgFilteredViewSet."""
+    queryset = CIPRBFistulaCase.objects.select_related('approved_by').all()
+    serializer_class = CIPRBFistulaCaseSerializer
+
+
 _APPROVAL_MODELS = [
     ('client_reg',           lambda: Client.objects),
     ('clinic_visit',         lambda: ClinicVisit.objects),
@@ -790,6 +800,7 @@ _APPROVAL_MODELS = [
     ('coord_meeting',        lambda: CoordMeeting.objects),
     ('mobile_camp',          lambda: MobileHealthCamp.objects),
     ('nil_report',           lambda: NilReport.objects),
+    ('fistula_case',         lambda: CIPRBFistulaCase.objects),
 ]
 
 # Reverse map model class → slug, for code paths that hold a model INSTANCE but
@@ -816,6 +827,7 @@ _ENDPOINT_OVERRIDES = {
     'coord_meeting': 'coord-meetings',
     'mobile_camp': 'mobile-camps',
     'nil_report': 'nil-reports',
+    'fistula_case': 'fistula-cases',
 }
 
 

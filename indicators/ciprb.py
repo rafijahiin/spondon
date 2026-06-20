@@ -40,6 +40,7 @@ def compute_F_C(org, period_start, period_end):
     the dashboard) so the tracker and dashboard never disagree."""
     from fistula.ciprb_models import CIPRBFistulaCase
     return CIPRBFistulaCase.objects.filter(
+        approval_status='APPROVED',
         current_stage__in=_STAGES[1:],  # diagnosed and later
     ).count()
 
@@ -52,6 +53,7 @@ def compute_F_Camp(org, period_start, period_end):
     funnel's 'suspected' total."""
     from fistula.ciprb_models import CIPRBFistulaCase
     return CIPRBFistulaCase.objects.filter(
+        approval_status='APPROVED',
         current_stage__in=_STAGES,  # all identified cases
     ).count()
 

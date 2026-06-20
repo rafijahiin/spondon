@@ -137,12 +137,17 @@ def handle_ciprb_fistula(payload, lat, lng):
                 case = CIPRBFistulaCase(
                     patient_code=code, organisation=ORG,
                     district=district, name=(name or 'Unknown'),
+                    approval_status='PENDING',
                 )
             else:
                 case = CIPRBFistulaCase(
                     patient_code=code, organisation=ORG,
                     district=district, name=name,
+                    approval_status='PENDING',
                 )
+        # Record the Kobo submitter for the approval queue display (latest wins).
+        case.submitted_by_kobo_user = _s(payload.get('_submitted_by')) or case.submitted_by_kobo_user
+        case.kobo_submission_id = str(payload.get('_id', '')) or case.kobo_submission_id
 
         # ── Identity + obstetric history are captured ONLY at registration
         #    (the form omits these fields at later stages). Gating the writes

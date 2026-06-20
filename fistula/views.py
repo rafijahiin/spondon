@@ -231,7 +231,7 @@ def fistula_aggregates(request):
     """All 17 CIPRB Fistula Question Bank indicators, aggregated for the
     dashboard. Optional ?districts=A,B,C donor filter for parity with
     /api/mpdsr/aggregates/."""
-    qs = CIPRBFistulaCase.objects.all()
+    qs = CIPRBFistulaCase.objects.filter(approval_status='APPROVED')
     districts = request.GET.get('districts', '').strip()
     if districts:
         wanted = {d.strip().lower() for d in districts.split(',') if d.strip()}

@@ -15,6 +15,7 @@ from .views import (
     TrainingEventViewSet, CoordMeetingViewSet,
     MobileHealthCampViewSet, VisitorRegisterViewSet,
     PendingApprovalsView, NilReportView,
+    CIPRBFistulaCaseViewSet,
 )
 
 router = DefaultRouter()
@@ -41,6 +42,7 @@ router.register('training-events',     TrainingEventViewSet,          basename='
 router.register('coord-meetings',      CoordMeetingViewSet,           basename='coord-meeting')
 router.register('mobile-camps',        MobileHealthCampViewSet,       basename='mobile-camp')
 router.register('visitor-register',    VisitorRegisterViewSet,        basename='visitor-register')
+router.register('fistula-cases',       CIPRBFistulaCaseViewSet,       basename='fistula-case')
 
 urlpatterns = [
     path('', include(router.urls)),

@@ -157,6 +157,28 @@ class CIPRBFistulaCase(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    # ── Manager approval (Tanjina / Setu, single-stage). Default APPROVED so
+    #    existing/historical cases stay visible the moment the column lands; the
+    #    webhook handler sets a NEW registration to PENDING. Once approved, later-
+    #    stage updates keep the status (a case is not re-pended as it progresses).
+    APPROVAL_CHOICES = [('PENDING', 'Pending'), ('APPROVED', 'Approved'), ('REJECTED', 'Rejected')]
+    approval_status = models.CharField(
+        max_length=20, choices=APPROVAL_CHOICES, default='APPROVED', db_index=True)
+    approved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='+')
+    approved_at = models.DateTimeField(null=True, blank=True)
+    kobo_submission_id = models.CharField(max_length=100, blank=True, default='')
+    submitted_by_kobo_user = models.CharField(max_length=100, blank=True, default='')
+    rejected_reason = models.TextField(blank=True, default='')
+    # Queue-infrastructure parity only: the shared approval queue unconditionally
+    # select_related's 'center'. Fistula is district-based (no ServiceCenter), so
+    # this stays NULL and the queue renders '–' — but the column must EXIST or the
+    # join raises FieldError and 500s the whole queue.
+    center = models.ForeignKey(
+        'programs.ServiceCenter', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='+')
+
     class Meta:
         ordering = ['-updated_at']
         verbose_name = 'CIPRB Fistula Case'
