@@ -998,12 +998,6 @@ def _handle_activity_ops(payload, lat, lng):
 
 # Keys are the XLS form id_string values (set in KoboToolbox form settings).
 # Phase 5 XLS forms MUST use these exact id_strings for routing to work.
-# Fistula handlers live in fistula/webhook_handlers.py — imported lazily
-# below to keep this module self-contained.
-from fistula.webhook_handlers import (
-    handle_fistula_corner as _handle_fistula_corner,
-    handle_fistula_campaign_visit as _handle_fistula_campaign_visit,
-)
 
 def _lazy_phd(name):
     """Lazy import to avoid circular dependency (phd_handlers imports from webhook)."""
@@ -1099,9 +1093,10 @@ FORM_HANDLERS: dict = {
     'spondon_training_event_v1': _handle_training_event,
     'spondon_coord_meeting_v1':  _handle_coord_meeting,
     'spondon_mobile_camp_v1':    _handle_mobile_camp,
-    # CIPRB fistula forms (audit FIX 12.2 follow-up)
-    'spondon_fistula_corner_v1':   _handle_fistula_corner,
-    'spondon_fistula_campaign_v1': _handle_fistula_campaign_visit,
+    # Legacy spondon_fistula_corner_v1 / spondon_fistula_campaign_v1 routes
+    # REMOVED 2026-06-20 — CIPRB fistula now lives entirely in CIPRBFistulaCase
+    # (Question Bank ciprb_fistula_questions_v1 + Campaign ciprb_fistula_campaign_v1,
+    # registered above). No legacy fistula forms.
 }
 
 # Fallback: map KoboToolbox asset UIDs → form slugs.
