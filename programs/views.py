@@ -266,7 +266,7 @@ class OrgFilteredViewSet(viewsets.ModelViewSet):
         # same form so the worker can submit a corrected entry in one click.
         try:
             from submissions.email_notify import _recipients_for, _send
-            label = obj._meta.verbose_name.title()
+            label = _humanise_label(obj._meta.verbose_name)
             recipients = _recipients_for(obj.organisation)
             # Worker notification: pull the email out of the User FK first,
             # then fall back to whatever the form captured in raw_payload.
@@ -572,6 +572,23 @@ def _program_resubmit_url(model_type: str, organisation: str) -> str:
     return _PHD_LOG_URL  # every PHD service/activity flows through Service Log
 
 
+# Acronyms kept upper-cased when a snake_case slug or a model verbose_name is
+# humanised for display — a plain .title() renders 'MPDSR' as 'Mpdsr', 'CIPRB'
+# as 'Ciprb', 'HIV STI' as 'Hiv Sti', etc.
+_LABEL_ACRONYMS = {
+    'Hiv': 'HIV', 'Sti': 'STI', 'Hiv/Sti': 'HIV/STI', 'Mpdsr': 'MPDSR',
+    'Adr': 'ADR', 'Htc': 'HTC', 'Mh': 'MH', 'Gbv': 'GBV', 'Anc': 'ANC',
+    'Iec': 'IEC', 'Fsw': 'FSW', 'Mnm': 'MNM', 'Ciprb': 'CIPRB', 'Phd': 'PHD',
+}
+
+
+def _humanise_label(text: str) -> str:
+    """Title-case a snake_case slug (or tidy a verbose_name) for display, keeping
+    known acronyms upper-cased (MPDSR / HIV / STI / GBV / CIPRB / …)."""
+    titled = text.replace('_', ' ').title()
+    return ' '.join(_LABEL_ACRONYMS.get(w, w) for w in titled.split())
+
+
 def _build_summary(obj, model_type: str) -> str:
     """Build a human-readable one-line summary for each model type."""
     try:
@@ -643,7 +660,7 @@ def _build_summary(obj, model_type: str) -> str:
             return ' · '.join(parts)
     except Exception as exc:
         logger.warning('_build_summary(%s, pk=%s): %s', model_type, getattr(obj, 'id', '?'), exc)
-    return f"{model_type.replace('_', ' ').title()} record"
+    return f"{_humanise_label(model_type)} record"
 
 
 _TG_LABELS = {'01': 'MSM', '02': 'MSW', '03': 'FSW', '04': 'EVA',
@@ -753,7 +770,7 @@ def _pending_for_model(queryset, model_type: str, org_filter_org=None,
         results.append({
             'id': str(obj.id),
             'model_type': model_type,
-            'model_label': model_type.replace('_', ' ').title(),
+            'model_label': _humanise_label(model_type),
             'endpoint': model_type.replace('_', '-') + 's',
             'organisation': obj.organisation,
             'approval_status': obj.approval_status,
@@ -989,7 +1006,7 @@ class PendingApprovalsView(views.APIView):
                 'mobile_camp': 'spondon_mobile_camp_v1',
             }
             form_key = _model_to_form.get(model_type, '')
-            form_label = _FORM_LABELS.get(form_key, model_type.replace('_', ' ').title())
+            form_label = _FORM_LABELS.get(form_key, _humanise_label(model_type))
             reviewer_name = getattr(user, 'full_name', None) or user.email
             # Only announce a TERMINAL decision to the org chat. A Bandhu
             # stage-1 manager-approval (MANAGER_APPROVED) is still awaiting
