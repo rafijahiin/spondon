@@ -658,6 +658,31 @@ def _build_summary(obj, model_type: str) -> str:
             if obj.enrolled_date:
                 parts.append(f"Enrolled: {obj.enrolled_date}")
             return ' · '.join(parts)
+        # ── CIPRB single-stage forms ────────────────────────────────────────
+        if model_type == 'fistula_case':
+            parts = [f"Fistula — {obj.get_current_stage_display()}", obj.district]
+            if (obj.name or '').strip():
+                parts.append(obj.name + (f" ({obj.age})" if obj.age else ''))
+            return ' · '.join(p for p in parts if p)
+        if model_type == 'mpdsr_case':
+            parts = [obj.sub_form_label or 'MPDSR review',
+                     obj.get_death_type_display(), obj.district,
+                     str(obj.date_of_death)]
+            return ' · '.join(p for p in parts if p)
+        if model_type == 'mpdsr_notification':
+            parts = [obj.get_death_kind_display(), obj.district,
+                     f"died {obj.date_of_death}"]
+            if (obj.deceased_name or '').strip():
+                parts.append(obj.deceased_name)
+            return ' · '.join(p for p in parts if p)
+        if model_type == 'near_miss_case':
+            parts = ['Maternal near-miss', obj.district]
+            if obj.woman_age:
+                parts.append(f"age {obj.woman_age}")
+            parts.append(str(obj.event_date))
+            if (obj.cause_of_near_miss or '').strip():
+                parts.append(obj.cause_of_near_miss)
+            return ' · '.join(p for p in parts if p)
     except Exception as exc:
         logger.warning('_build_summary(%s, pk=%s): %s', model_type, getattr(obj, 'id', '?'), exc)
     return f"{_humanise_label(model_type)} record"
