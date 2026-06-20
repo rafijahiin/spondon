@@ -513,11 +513,11 @@ export default function ManagerApprovals() {
   // Filter state persisted to localStorage so navigating away and
   // back restores the user's last selected filter (§9 state-preservation).
   const FILTER_KEY = 'approvals.filter'
-  type FilterKey = 'all' | 'urgent' | 'phd' | 'bondhu' | 'reviewed'
+  type FilterKey = 'all' | 'urgent' | 'phd' | 'bondhu' | 'ciprb' | 'reviewed'
   const [filter, setFilter] = useState<FilterKey>(() => {
     if (typeof window === 'undefined') return 'all'
     const stored = window.localStorage.getItem(FILTER_KEY)
-    if (stored === 'all' || stored === 'urgent' || stored === 'phd' || stored === 'bondhu' || stored === 'reviewed') {
+    if (stored === 'all' || stored === 'urgent' || stored === 'phd' || stored === 'bondhu' || stored === 'ciprb' || stored === 'reviewed') {
       return stored
     }
     return 'all'
@@ -600,6 +600,7 @@ export default function ManagerApprovals() {
     if (filter === 'urgent') return it.urgent
     if (filter === 'phd') return it.organisation === 'PHD'
     if (filter === 'bondhu') return it.organisation === 'Bandhu' || it.organisation === 'Bondhu'
+    if (filter === 'ciprb') return it.organisation === 'CIPRB'
     return true
   })
 
@@ -826,6 +827,7 @@ export default function ManagerApprovals() {
                   { key: 'urgent' as const, label: t('approvals.filterUrgent'), count: allItems.filter(x => x.urgent).length },
                   { key: 'phd'    as const, label: t('approvals.filterPHD'),    count: allItems.filter(x => x.organisation === 'PHD').length },
                   { key: 'bondhu' as const, label: t('approvals.filterBondhu'), count: allItems.filter(x => x.organisation === 'Bandhu' || x.organisation === 'Bondhu').length },
+                  { key: 'ciprb'  as const, label: 'CIPRB', count: allItems.filter(x => x.organisation === 'CIPRB').length },
                   { key: 'reviewed' as const, label: 'Reviewed', count: reviewedItems.length },
                 ]).map(f => (
                   <button
