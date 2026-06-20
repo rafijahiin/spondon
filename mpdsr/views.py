@@ -14,7 +14,7 @@ from .serializers import MPDSRCaseSerializer, MPDSRCaseUpdateSerializer
 
 
 class MPDSRCaseViewSet(OrgFilterMixin, ModelViewSet):
-    queryset = MPDSRCase.objects.select_related('submission', 'created_by').all()
+    queryset = MPDSRCase.objects.select_related('submission', 'created_by').filter(approval_status='APPROVED')
     # MPDSR is CIPRB-owned per the IDMS handoff. PHD + Bandhu managers
     # lose access here; only Dev, Supervisor, and CIPRB Org Lead see records.
     permission_classes = [CanAccessMPDSR]
@@ -193,7 +193,7 @@ def mpdsr_aggregates(request):
 
     # Exclude F3 / F6 stillbirth reviews from dashboard surface counts
     # (Animesh decision, 2026-06-01 meeting). Records remain in DB.
-    mpdsr_qs = MPDSRCase.objects.exclude(sub_form_type__in=['f3', 'f6'])
+    mpdsr_qs = MPDSRCase.objects.filter(approval_status='APPROVED').exclude(sub_form_type__in=['f3', 'f6'])
     totals = {
         'mpdsr_cases': apply_donor(mpdsr_qs).count(),
         'fistula_corner_cases': apply_donor(FistulaCornerCase.objects.all()).count(),
@@ -351,7 +351,7 @@ def mpdsr_aggregates(request):
     #     By death type (maternal/neonatal/stillbirth), by level (place of
     #     death = community/home vs facility, with in_transit folded into
     #     community per the field workflow), and by district.
-    notif_qs = apply_donor(MPDSRDeathNotification.objects.all())
+    notif_qs = apply_donor(MPDSRDeathNotification.objects.filter(approval_status='APPROVED'))
     notif_by_kind = dict(_Counter(
         notif_qs.exclude(death_kind='').values_list('death_kind', flat=True)))
     # Level: a facility-place notification is facility-level; everything else
@@ -409,7 +409,7 @@ def mnm_aggregates(request):
     from collections import Counter
     from django.db.models import Q
     from .ciprb_models import MaternalNearMissCase
-    qs = MaternalNearMissCase.objects.all()
+    qs = MaternalNearMissCase.objects.filter(approval_status='APPROVED')
     # Honour the donor (GAC / SIDA) district filter so the Near Miss panel
     # scopes with the rest of the CIPRB dashboard instead of always showing
     # all 18 districts.

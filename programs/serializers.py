@@ -16,6 +16,8 @@ from .models import (
     TrainingEvent, CoordMeeting, MobileHealthCamp, VisitorRegister,
 )
 from fistula.ciprb_models import CIPRBFistulaCase
+from mpdsr.models import MPDSRCase
+from mpdsr.ciprb_models import MPDSRDeathNotification, MaternalNearMissCase
 
 
 class CIPRBFistulaCaseSerializer(serializers.ModelSerializer):
@@ -24,6 +26,50 @@ class CIPRBFistulaCaseSerializer(serializers.ModelSerializer):
     row; the approval columns are read-only (set via approve/reject)."""
     class Meta:
         model = CIPRBFistulaCase
+        fields = '__all__'
+        read_only_fields = [
+            'id', 'approval_status', 'approved_by', 'approved_at',
+            'rejected_reason', 'kobo_submission_id', 'submitted_by_kobo_user',
+            'created_at', 'updated_at',
+        ]
+
+
+class MPDSRCaseApprovalSerializer(serializers.ModelSerializer):
+    """Detail serializer for the MPDSR-case approval queue. MPDSRCase keeps its
+    raw Kobo answers on the linked submission (no local raw_payload), so surface
+    them as raw_payload for the manager 'What was submitted' readout."""
+    raw_payload = serializers.SerializerMethodField()
+
+    class Meta:
+        model = MPDSRCase
+        fields = '__all__'
+        read_only_fields = [
+            'id', 'approval_status', 'approved_by', 'approved_at',
+            'rejected_reason', 'kobo_submission_id', 'submitted_by_kobo_user',
+            'organisation', 'created_at', 'updated_at',
+        ]
+
+    def get_raw_payload(self, obj):
+        sub = getattr(obj, 'submission', None)
+        return getattr(sub, 'raw_data', None) or {}
+
+
+class MPDSRDeathNotificationApprovalSerializer(serializers.ModelSerializer):
+    """Detail serializer for the MPDSR death-notification approval queue."""
+    class Meta:
+        model = MPDSRDeathNotification
+        fields = '__all__'
+        read_only_fields = [
+            'id', 'approval_status', 'approved_by', 'approved_at',
+            'rejected_reason', 'kobo_submission_id', 'submitted_by_kobo_user',
+            'created_at', 'updated_at',
+        ]
+
+
+class MaternalNearMissApprovalSerializer(serializers.ModelSerializer):
+    """Detail serializer for the maternal-near-miss approval queue."""
+    class Meta:
+        model = MaternalNearMissCase
         fields = '__all__'
         read_only_fields = [
             'id', 'approval_status', 'approved_by', 'approved_at',

@@ -270,6 +270,28 @@ class MPDSRCase(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    # ── Manager approval (Tanjina / Setu, single-stage CIPRB). Default APPROVED
+    #    so existing rows stay visible; the live webhook handler (_save_mpdsr_case)
+    #    sets a NEW review submission to PENDING. NOTE: this is distinct from
+    #    `status` (the committee REVIEW lifecycle) — do not conflate them.
+    #    `organisation` mirrors `partner` for the shared approval queue's org
+    #    filter (the queue reads obj.organisation); `center` is queue-infrastructure
+    #    parity (NULL — MPDSR is district-based, has no ServiceCenter).
+    APPROVAL_CHOICES = [('PENDING', 'Pending'), ('APPROVED', 'Approved'), ('REJECTED', 'Rejected')]
+    approval_status = models.CharField(
+        max_length=20, choices=APPROVAL_CHOICES, default='APPROVED', db_index=True)
+    approved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='+')
+    approved_at = models.DateTimeField(null=True, blank=True)
+    rejected_reason = models.TextField(blank=True, default='')
+    kobo_submission_id = models.CharField(max_length=100, blank=True, default='')
+    submitted_by_kobo_user = models.CharField(max_length=100, blank=True, default='')
+    organisation = models.CharField(max_length=20, default='CIPRB', db_index=True)
+    center = models.ForeignKey(
+        'programs.ServiceCenter', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='+')
+
     objects = MPDSRCaseManager()
 
     class Meta:

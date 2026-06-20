@@ -10,6 +10,14 @@ needed there. These two new models cover the workflows MPDSRCase doesn't.
 """
 import uuid
 from django.db import models
+from django.conf import settings
+
+
+# Shared note: both models below gain a single-stage CIPRB approval gate
+# (Tanjina / Setu). approval_status defaults to APPROVED so existing rows stay
+# visible; the webhook handlers set a NEW submission to PENDING. `center` exists
+# only for shared-queue parity (the queue unconditionally select_related's it).
+_APPROVAL_CHOICES = [('PENDING', 'Pending'), ('APPROVED', 'Approved'), ('REJECTED', 'Rejected')]
 
 
 # ╔══════════════════════════════════════════════════════════════════════════╗
@@ -85,6 +93,20 @@ class MPDSRDeathNotification(models.Model):
     raw_payload = models.JSONField(default=dict, blank=True)
     created_at  = models.DateTimeField(auto_now_add=True)
     updated_at  = models.DateTimeField(auto_now=True)
+
+    # ── Manager approval (single-stage CIPRB) — see module note above.
+    approval_status = models.CharField(
+        max_length=20, choices=_APPROVAL_CHOICES, default='APPROVED', db_index=True)
+    approved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='+')
+    approved_at = models.DateTimeField(null=True, blank=True)
+    rejected_reason = models.TextField(blank=True, default='')
+    kobo_submission_id = models.CharField(max_length=100, blank=True, default='')
+    submitted_by_kobo_user = models.CharField(max_length=100, blank=True, default='')
+    center = models.ForeignKey(
+        'programs.ServiceCenter', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='+')
 
     class Meta:
         ordering = ['-date_of_death', '-created_at']
@@ -176,6 +198,20 @@ class MaternalNearMissCase(models.Model):
     enumerator_mobile = models.CharField(max_length=30, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    # ── Manager approval (single-stage CIPRB) — see module note above.
+    approval_status = models.CharField(
+        max_length=20, choices=_APPROVAL_CHOICES, default='APPROVED', db_index=True)
+    approved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='+')
+    approved_at = models.DateTimeField(null=True, blank=True)
+    rejected_reason = models.TextField(blank=True, default='')
+    kobo_submission_id = models.CharField(max_length=100, blank=True, default='')
+    submitted_by_kobo_user = models.CharField(max_length=100, blank=True, default='')
+    center = models.ForeignKey(
+        'programs.ServiceCenter', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='+')
 
     class Meta:
         ordering = ['-event_date', '-created_at']

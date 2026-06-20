@@ -41,7 +41,14 @@ from .models import (
     NilReport, PHDCounsellingReport,
 )
 from fistula.ciprb_models import CIPRBFistulaCase
+from mpdsr.models import MPDSRCase
+from mpdsr.ciprb_models import MPDSRDeathNotification, MaternalNearMissCase
 from .serializers import CIPRBFistulaCaseSerializer
+from .serializers import (
+    MPDSRCaseApprovalSerializer,
+    MPDSRDeathNotificationApprovalSerializer,
+    MaternalNearMissApprovalSerializer,
+)
 from .serializers import (
     ServiceCenterSerializer, ClientSerializer,
     ClinicVisitSerializer, HIVSTITestResultSerializer, ADRRecordSerializer,
@@ -781,6 +788,26 @@ class CIPRBFistulaCaseViewSet(OrgFilteredViewSet):
     serializer_class = CIPRBFistulaCaseSerializer
 
 
+class MPDSRCaseApprovalViewSet(OrgFilteredViewSet):
+    """MPDSR review cases — detail + approve/reject for the manager queue
+    (single-stage CIPRB). Distinct from mpdsr.MPDSRCaseViewSet (the post-approval
+    Tracker); this serves the /programs approval detail endpoint."""
+    queryset = MPDSRCase.objects.select_related('approved_by', 'submission').all()
+    serializer_class = MPDSRCaseApprovalSerializer
+
+
+class MPDSRDeathNotificationViewSet(OrgFilteredViewSet):
+    """MPDSR death-notification slips — detail + approve/reject (single-stage)."""
+    queryset = MPDSRDeathNotification.objects.select_related('approved_by').all()
+    serializer_class = MPDSRDeathNotificationApprovalSerializer
+
+
+class MaternalNearMissViewSet(OrgFilteredViewSet):
+    """Maternal near-miss audits — detail + approve/reject (single-stage)."""
+    queryset = MaternalNearMissCase.objects.select_related('approved_by').all()
+    serializer_class = MaternalNearMissApprovalSerializer
+
+
 _APPROVAL_MODELS = [
     ('client_reg',           lambda: Client.objects),
     ('clinic_visit',         lambda: ClinicVisit.objects),
@@ -801,6 +828,9 @@ _APPROVAL_MODELS = [
     ('mobile_camp',          lambda: MobileHealthCamp.objects),
     ('nil_report',           lambda: NilReport.objects),
     ('fistula_case',         lambda: CIPRBFistulaCase.objects),
+    ('mpdsr_case',           lambda: MPDSRCase.objects),
+    ('mpdsr_notification',   lambda: MPDSRDeathNotification.objects),
+    ('near_miss_case',       lambda: MaternalNearMissCase.objects),
 ]
 
 # Reverse map model class → slug, for code paths that hold a model INSTANCE but
@@ -828,6 +858,9 @@ _ENDPOINT_OVERRIDES = {
     'mobile_camp': 'mobile-camps',
     'nil_report': 'nil-reports',
     'fistula_case': 'fistula-cases',
+    'mpdsr_case': 'mpdsr-cases',
+    'mpdsr_notification': 'mpdsr-notifications',
+    'near_miss_case': 'near-miss-cases',
 }
 
 

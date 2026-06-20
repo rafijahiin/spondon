@@ -102,6 +102,7 @@ def generate_overdue_case_alerts(dry_run: bool = False) -> list[dict]:
     try:
         from mpdsr.models import MPDSRCase, ReviewStatus
         overdue_mpdsr = MPDSRCase.objects.filter(
+            approval_status='APPROVED',
             committee_date__lt=today,
             committee_date__isnull=False,
         ).exclude(status=ReviewStatus.CLOSED)

@@ -237,7 +237,7 @@ class KPIView(APIView):
             pass
         try:
             from mpdsr.ciprb_models import MaternalNearMissCase
-            near_miss_total = MaternalNearMissCase.objects.count()
+            near_miss_total = MaternalNearMissCase.objects.filter(approval_status='APPROVED').count()
         except Exception:
             pass
 

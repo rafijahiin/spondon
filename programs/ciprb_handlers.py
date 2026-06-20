@@ -286,8 +286,12 @@ def _save_mpdsr_case(payload, lat, lng, *, sub_form_type, death_type,
                 partner=ORG, sub_form_type=sub_form_type,
                 district=district, date_of_death=dod,
                 death_type=death_type,
+                approval_status='PENDING',
             )
         case.partner = ORG
+        case.organisation = ORG
+        case.submitted_by_kobo_user = _s(payload.get('_submitted_by')) or case.submitted_by_kobo_user
+        case.kobo_submission_id = sub_id or case.kobo_submission_id
         case.sub_form_type = sub_form_type
         case.district = district
         case.upazila = _s(payload.get('upazila'))
@@ -414,7 +418,7 @@ def _save_notification(payload, lat, lng, slip_variant: str):
             'Bad Request — district, date_of_death, deceased_name required',
             status=400)
     place = _s(payload.get('place_of_death'))
-    obj, _ = MPDSRDeathNotification.objects.update_or_create(
+    obj, created = MPDSRDeathNotification.objects.update_or_create(
         slip_variant=slip_variant,
         district=district, date_of_death=dod, deceased_name=name,
         defaults=dict(
@@ -434,8 +438,15 @@ def _save_notification(payload, lat, lng, slip_variant: str):
             notification_date=_date(payload.get('notification_date')) or dod,
             latitude=lat, longitude=lng,
             raw_payload=payload,
+            submitted_by_kobo_user=_s(payload.get('_submitted_by')),
+            kobo_submission_id=str(payload.get('_id') or ''),
         ),
     )
+    # New notifications are held for CIPRB-manager approval; a re-submission
+    # (update) keeps whatever status it already has — no re-pending.
+    if created:
+        obj.approval_status = 'PENDING'
+        obj.save(update_fields=['approval_status'])
     return HttpResponse('OK', status=200)
 
 
@@ -475,8 +486,10 @@ def handle_ciprb_near_miss(payload, lat, lng):
     with transaction.atomic():
         case = qs.first() or MaternalNearMissCase(
             district=district, woman_name=name, event_date=event_date,
-            organisation=ORG,
+            organisation=ORG, approval_status='PENDING',
         )
+        case.submitted_by_kobo_user = _s(payload.get('_submitted_by')) or case.submitted_by_kobo_user
+        case.kobo_submission_id = str(payload.get('_id') or '') or case.kobo_submission_id
         case.upazila = _s(payload.get('upazila'))
         case.union   = _s(payload.get('union'))
         case.village = _s(payload.get('village'))
