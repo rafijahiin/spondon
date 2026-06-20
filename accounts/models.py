@@ -113,10 +113,11 @@ class User(AbstractBaseUser, PermissionsMixin):
     @property
     def can_approve_submissions(self):
         """Approve/reject pending Kobo submissions for own org.
-        Managers approve their own center's submissions; Supervisor/Dev/OrgLead
-        approve broader. Field staff, focal, baseline — never."""
+        Managers approve their own org's submissions; Supervisor/Dev approve
+        broader. ORG_LEAD is VIEW-ONLY (Sayeed, CIPRB — sees all, never approves,
+        Rafi's 2026-06-20 directive). Field staff, focal, baseline — never."""
         return self.role in (
-            Role.DEVELOPER, Role.SUPERVISOR, Role.ORG_LEAD, Role.MANAGER,
+            Role.DEVELOPER, Role.SUPERVISOR, Role.MANAGER,
         )
 
     def can_configure_targets(self, partner: str) -> bool:
