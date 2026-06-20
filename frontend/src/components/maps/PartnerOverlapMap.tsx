@@ -267,7 +267,7 @@ export function PartnerOverlapMap({
             ? `CIPRB: ${PARTNER_DISTRICTS.CIPRB.length} working districts`
             : partner === 'Bandhu'
             ? `Bandhu: ${PARTNER_DISTRICTS.Bandhu.length} working districts`
-            : t('home.coveragePlaceholderNote')}
+            : `CIPRB ${PARTNER_DISTRICTS.CIPRB.length} · Bandhu ${PARTNER_DISTRICTS.Bandhu.length} · PHD ${PARTNER_DISTRICTS.PHD.length} working districts`}
         </span>
       </div>
     </div>

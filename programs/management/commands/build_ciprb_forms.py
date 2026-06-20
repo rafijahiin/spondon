@@ -71,7 +71,7 @@ def _wb(form_id, form_title, survey, choices):
         ('survey',   SURVEY_HDR,  survey),
         ('choices',  CHOICES_HDR, choices),
         ('settings', SETTINGS_HDR,
-         [[form_title, form_id, '20260617', 'English', 'theme-grid']]),
+         [[form_title, form_id, '20260620', 'English', 'theme-grid']]),
     ]:
         ws = wb.create_sheet(sheet_name)
         ws.append(headers)
@@ -513,7 +513,17 @@ def _fistula_survey():
 
 
 def _fistula_choices():
-    ch = list(DISTRICT_CHOICES) + list(YES_NO)
+    # District labels carry the fistula code (e.g. "Sunamganj (1)", "Dhaka (10)")
+    # so the field worker sees the code that prefixes the patient ID right in the
+    # dropdown. The choice VALUE stays the bare slug, so _dist_code / the ID
+    # constraint are unaffected.
+    fistula_districts = [
+        _ch('district', d.lower().replace(' ', '_'),
+            '%s (%s)' % (d, FISTULA_DISTRICT_CODE[d.lower().replace(' ', '_')]),
+            '%s (%s)' % (DISTRICT_BANGLA[d], FISTULA_DISTRICT_CODE[d.lower().replace(' ', '_')]))
+        for d in CIPRB_DISTRICTS
+    ]
+    ch = list(fistula_districts) + list(YES_NO)
     ch += [_ch('stage', s, en, bn) for s, en, bn in _FISTULA_STAGES]
 
     ch += [
