@@ -409,7 +409,7 @@ class MHScreeningViewSet(OrgFilteredViewSet):
 # ─── GBV ───────────────────────────────────────────────────────────────────────
 
 class GBVCaseViewSet(OrgFilteredViewSet):
-    queryset = GBVCase.objects.select_related('client', 'center', 'approved_by').all()
+    queryset = GBVCase.objects.select_related('center', 'approved_by').all()
     permission_classes = [CanWriteFieldRecord]  # GBV is field-staff data
 
     def get_serializer_class(self):
