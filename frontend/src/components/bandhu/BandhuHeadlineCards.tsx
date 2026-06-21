@@ -16,7 +16,7 @@
  */
 import { useEffect, useState } from 'react'
 import { useReducedMotion } from 'motion/react'
-import { HeartPulse, Activity, ShieldPlus, Home, GraduationCap } from 'lucide-react'
+import { HeartPulse, Activity, Home, GraduationCap } from 'lucide-react'
 import { api } from '@/api/client'
 import { SourceChip } from '@/components/ui/SourceChip'
 import type { IndicatorProgress } from '@/types'
@@ -36,11 +36,10 @@ interface CardDef {
 }
 
 const CARDS: CardDef[] = [
-  { key: 'served',    kind: 'number', codes: ['1.1'],               label: 'KP individuals served',     sub: 'HIV/STI screening, counselling & FP', sl: '1.1',          icon: <HeartPulse size={15} /> },
-  { key: 'hiv',       kind: 'number', codes: ['1.5b'],              label: 'HIV testing services',      sub: 'Key population tested for HIV',       sl: '1.5b',         icon: <Activity size={15} /> },
-  { key: 'gbv',       kind: 'number', codes: ['1.2'],               label: 'GBV survivors supported',   sub: 'Screened, first-line support & referral', sl: '1.2',      icon: <ShieldPlus size={15} /> },
-  { key: 'dic',       kind: 'ring',   codes: ['1.8'],               label: 'Drop-in centres',           sub: 'Established & strengthened',          sl: '1.8',          icon: <Home size={15} /> },
-  { key: 'providers', kind: 'number', codes: ['2.1', '2.2', '2.5'], label: 'Providers & leaders trained', sub: 'Managers, midwives & peer educators', sl: '2.1·2.2·2.5', icon: <GraduationCap size={15} /> },
+  { key: 'served',    kind: 'number', codes: ['1.1'],               label: 'Key Population Reached',    sub: 'HIV/STI screening, counselling & FP',  sl: '1.1',          icon: <HeartPulse size={15} /> },
+  { key: 'dic',       kind: 'ring',   codes: ['1.8'],               label: 'Wellness Centres',          sub: 'Established & strengthened',            sl: '1.8',          icon: <Home size={15} /> },
+  { key: 'outreach',  kind: 'number', codes: ['1.4a'],              label: 'Outreach Sessions',         sub: 'Outreach & health-education sessions',  sl: '1.4a',         icon: <Activity size={15} /> },
+  { key: 'providers', kind: 'number', codes: ['2.1', '2.2', '2.5'], label: 'Service Providers Trained', sub: 'Managers, midwives & peer educators',   sl: '2.1·2.2·2.5', icon: <GraduationCap size={15} /> },
 ]
 
 interface Metric {
