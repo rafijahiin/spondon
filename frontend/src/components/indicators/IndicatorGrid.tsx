@@ -71,7 +71,9 @@ export function IndicatorGrid({ org, periodStart = '2026-05-21', periodEnd = '20
       const res = await api.get<IndicatorProgress[]>(
         `/indicators/progress/?org=${org}&period_start=${periodStart}&period_end=${periodEnd}`
       )
-      setIndicators(res.data)
+      // Hide the "Condoms distributed" (SL5a) card on the PHD dashboard — not a
+      // tracked PHD target (per Rafi, 2026-06-20).
+      setIndicators(res.data.filter(i => !(org === 'PHD' && i.activity_code === 'SL5a')))
       setLastRefresh(new Date())
     } catch {
       setError(t('indicator.loadError'))
