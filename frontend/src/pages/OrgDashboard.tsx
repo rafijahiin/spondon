@@ -544,7 +544,7 @@ export function OrgDashboard({ partner }: Props) {
                               d.count,
                             ]
                       }
-                      color={isPHD ? 'var(--unfpa)' : 'var(--violet)'}
+                      color="var(--unfpa)"
                       w={180} h={28}
                     />
                   </td>

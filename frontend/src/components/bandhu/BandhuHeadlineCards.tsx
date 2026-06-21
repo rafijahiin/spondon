@@ -21,7 +21,8 @@ import { api } from '@/api/client'
 import { SourceChip } from '@/components/ui/SourceChip'
 import type { IndicatorProgress } from '@/types'
 
-const VIOLET = 'var(--violet)'
+// Accent colour — unified with the PHD dashboard (var(--unfpa)); was var(--violet).
+const VIOLET = 'var(--unfpa)'
 
 type Mode = 'cumulative' | 'monthly'
 
@@ -186,7 +187,7 @@ function RingCard({ card, metric }: { card: CardDef; metric: Metric }) {
         <div style={{ minWidth: 0 }}>
           <div style={{ fontSize: 12.5, color: 'var(--ink-3)', fontWeight: 500 }}>{card.sub}</div>
           {pending && (
-            <div style={{ fontSize: 10.5, color: 'var(--violet)', marginTop: 4, fontStyle: 'italic' }}>
+            <div style={{ fontSize: 10.5, color: VIOLET, marginTop: 4, fontStyle: 'italic' }}>
               awaiting submissions
             </div>
           )}
