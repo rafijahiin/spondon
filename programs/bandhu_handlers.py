@@ -312,6 +312,7 @@ def _bnd_outreach(payload, lat, lng):
             + _int(payload.get('or_ref_gh'))
             + _int(payload.get('or_ref_counseling'))
             + _int(payload.get('or_ref_recreation'))
+            + _int(payload.get('or_ref_single_education'))
         ),
         **_base_kwargs(payload, lat, lng),
     )
@@ -383,6 +384,7 @@ def _bnd_event(payload, lat, lng):
             topic=_str(payload.get('ev_activity')),
             location_text=_str(payload.get('ev_place')),
             total_participants=total,
+            notes=_str(payload.get('ev_ir')),
             **_base_kwargs(payload, lat, lng),
         )
         return HttpResponse('Created', status=201)
@@ -536,6 +538,7 @@ def handle_bandhu_mother_list(payload, lat, lng):
         'marital_status': _str(payload.get('ml_marital')),
         'children_under_18': _int_or_none(payload.get('ml_children_u18')),
         'occupation_code': _str(payload.get('ml_occupation')),
+        'notes': _str(payload.get('ml_remarks')),
         'avg_clients_per_day': _int_or_none(payload.get('ml_avg_day')),
         # ml_fp_method (yn_code, skipped for never-married) → uses_fp_method.
         # Nullable: absent/empty stays None rather than defaulting to False.
@@ -565,9 +568,9 @@ def handle_bandhu_mother_list(payload, lat, lng):
                 for f in ('center', 'name', 'father_name', 'birth_year',
                           'target_group_code', 'current_address', 'spot_name',
                           'education_level', 'marital_status', 'children_under_18',
-                          'occupation_code', 'avg_clients_per_day', 'uses_fp_method',
-                          'submitted_by_kobo_user', 'latitude', 'longitude',
-                          'raw_payload'):
+                          'occupation_code', 'notes', 'avg_clients_per_day',
+                          'uses_fp_method', 'submitted_by_kobo_user',
+                          'latitude', 'longitude', 'raw_payload'):
                     setattr(locked, f, defaults[f])
                 locked.current_status = Client.ACTIVE
                 locked.approval_status = Client.APPROVED

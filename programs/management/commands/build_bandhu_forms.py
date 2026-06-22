@@ -279,8 +279,8 @@ def _shared_choices():
 
     for v, en in [('sti', 'STI'), ('general_health', 'General Health'),
                   ('fp', 'FP (Family Planning)'), ('mental_health', 'Mental Health'),
-                  ('harmful_drug', 'Harmful drug use'),
-                  ('psychosocial', 'Psychosocial Counseling'),
+                  ('harmful_drug', 'Harmful use drugs as infestation'),
+                  ('psychosocial', 'Phycosocial Counseling'),
                   ('gbv', 'GBV'), ('other', 'Others')]:
         rows.append(_ch('counsel_issue', v, en))
     for v, en in [('demonstration', 'Demonstration'), ('distribution', 'Distribution')]:
@@ -320,8 +320,14 @@ def _shared_choices():
                   ('4', 'Higher Secondary'), ('5', 'Graduate / Masters')]:
         rows.append(_ch('education', v, f'{en} ({v})'))
     for v, en in [('1', 'Single (never married)'), ('2', 'Married'),
-                  ('3', 'Widowed'), ('4', 'Separated'), ('5', 'Divorced / Others')]:
+                  ('3', 'Widowed'), ('4', 'Separated'), ('5', 'Divorced')]:
         rows.append(_ch('marital', v, f'{en} ({v})'))
+    # Mother List col 12 — income source / occupation (tool F-1.1 coded list).
+    for v, en, bn in [('1', 'Service / job holder', 'চাকুরিজীবী'),
+                      ('2', 'Businessman', 'ব্যবসায়ী'), ('3', 'Student', 'ছাত্র'),
+                      ('4', 'Sex work', 'যৌনপেশা'), ('5', 'Unemployed', 'বেকার'),
+                      ('6', 'Others', 'অন্যান্য')]:
+        rows.append(_ch('occupation', v, f'{en} ({v})', f'{bn} ({v})'))
 
     # Mother List col 17 — current status (tool F-1.1 r5).
     for v, en in [('1', 'Not found'), ('2', 'In jail'), ('3', 'Left the place'),
@@ -380,7 +386,7 @@ def _mother_list_survey():
         # Skip children count for never-married (marital '1') — Ashis review pt 2.
         _sr('integer', 'ml_children_u18', 'Number of children under 18', '১৮ বছরের নিচে সন্তান সংখ্যা',
             relevant="${ml_marital}!='1'"),
-        _sr('text', 'ml_occupation', 'Income source (occupation)', 'আয়ের উৎস (পেশা)'),
+        _sr('select_one occupation', 'ml_occupation', 'Income source (occupation)', 'আয়ের উৎস (পেশা)'),
         _sr('note', '_ml_avg', 'Average sex-work contacts (fill the applicable period):', ''),
         _sr('integer', 'ml_avg_day', 'Per day', 'দৈনিক'),
         _sr('integer', 'ml_avg_week', 'Per week', 'সপ্তাহে'),
@@ -400,6 +406,7 @@ def _mother_list_survey():
             relevant="${ml_marital}!='1'"),
         _sr('select_one ml_status', 'ml_current_status',
             'Current status', 'বর্তমান অবস্থা'),
+        _sr('text', 'ml_remarks', 'Remarks', 'মন্তব্য'),
         _sr('end_group', 'grp_ml'),
     ]
     return rows
@@ -481,6 +488,10 @@ def _service_log_survey():
         _sr('text', 'htc_client_id', "Client's ID", 'ক্লায়েন্ট আইডি', required='yes'),
         *_id_lookup('htc_client_id'),
         *_age_from_ml('htc_client_id', 'htc_age'),
+        _sr('integer', 'htc_age_manual', 'Age in year (enter if not in the Mother List)',
+            'বয়স (বছর) — মাদার লিস্টে না থাকলে লিখুন',
+            relevant="${htc_client_id}!='' and ${htc_age}=''",
+            constraint='. >= 0 and . <= 120', cmsg='0–120'),
         _sr('select_one tg_code', 'htc_tg', 'TG Code', 'টিজি কোড'),
         _sr('select_one yes_no', 'htc_partner_testing', 'Partner testing', 'পার্টনার টেস্টিং'),
         _sr('select_one yes_no', 'htc_pretest', 'Pretest counseling', 'প্রি-টেস্ট কাউন্সেলিং'),
@@ -634,9 +645,10 @@ def _activity_ops_survey():
         _sr('text', 'or_spot', 'Spot name', 'স্পটের নাম'),
         _sr('integer', 'or_condom', 'Condom distributed', 'কনডম বিতরণ'),
         _sr('integer', 'or_lubricant', 'Lubricant distributed', 'লুব্রিকেন্ট বিতরণ'),
-        _sr('integer', 'or_awareness', 'Awareness (single) education sessions', 'সচেতনতা শিক্ষা'),
+        _sr('integer', 'or_awareness', 'Awareness education sessions', 'সচেতনতা মূলক শিক্ষা'),
         _sr('integer', 'or_iec', 'IEC/BCC distribution (number)', 'আইইসি/বিসিসি বিতরণ'),
         _sr('note', '_or_ref', 'Referrals (from outreach to service centre):', 'রেফারেল:'),
+        _sr('integer', 'or_ref_single_education', 'Referral — Single (unit) education', 'রেফারেল — একক শিক্ষা'),
         _sr('integer', 'or_ref_sti', 'Referral — STI', 'রেফারেল — যৌনরোগ'),
         _sr('integer', 'or_ref_gh', 'Referral — General Health', 'রেফারেল — সাধারণ স্বাস্থ্য'),
         _sr('integer', 'or_ref_mental_health', 'Referral — Mental Health', 'রেফারেল — মানসিক স্বাস্থ্য'),
@@ -661,6 +673,7 @@ def _activity_ops_survey():
         _sr('select_one yes_no', 'mc_tb_screening', 'TB Screening', 'টিবি স্ক্রিনিং'),
         _sr('select_one yes_no', 'mc_gh_screening', 'GH Screening', 'জিএইচ স্ক্রিনিং'),
         _sr('select_one yes_no', 'mc_sti_service', 'Service provided — STI', 'এসটিআই সেবা'),
+        _sr('select_one yes_no', 'mc_gh_service', 'Service provided — GH', 'সেবা — সাধারণ স্বাস্থ্য'),
         _sr('select_one yes_no', 'mc_psd_service', 'Service provided — PSD', 'সেবা — পিএসডি'),
         _sr('select_one yes_no', 'mc_mental_health_service', 'Service provided — Mental health', 'সেবা — মানসিক স্বাস্থ্য'),
         _sr('select_one hiv_result', 'mc_hiv_result', 'HIV testing result', 'এইচআইভি ফলাফল'),
@@ -697,6 +710,7 @@ def _activity_ops_survey():
             relevant=R('event_report')),
         _sr('text', 'ev_activity', 'Activity name', 'কার্যক্রমের নাম'),
         _sr('text', 'ev_objective', 'Objectives', 'উদ্দেশ্য', app='multiline'),
+        _sr('text', 'ev_ir', 'Short-term result (IR)', 'স্বল্পমেয়াদী ফলাফল (IR)', app='multiline'),
         _sr('select_one event_kind', 'ev_kind', 'Event type', 'ইভেন্টের ধরন', required='yes',
             hint='Required so the report routes to the correct indicator.'),
         # If "Other", capture what kind of event it was — Ashis review pt 6.
@@ -704,12 +718,49 @@ def _activity_ops_survey():
             relevant="${ev_kind}='other'", required='yes'),
         _sr('text', 'ev_place', 'Place', 'স্থান'),
         _sr('date', 'ev_date', 'Date', 'তারিখ'),
-        _sr('note', '_ev_part', 'Participants by gender (enter count):', 'জেন্ডার অনুযায়ী অংশগ্রহণকারী:'),
-        _sr('integer', 'ev_man', 'Man', 'পুরুষ'),
-        _sr('integer', 'ev_woman', 'Woman', 'নারী'),
-        _sr('integer', 'ev_tg_hijra', 'TG/Hijra', 'টিজি/হিজড়া'),
-        _sr('integer', 'ev_other', 'Others', 'অন্যান্য'),
-        _sr('integer', 'ev_total', 'Total participants', 'মোট অংশগ্রহণকারী'),
+        # Participants — age-band × gender cross-tab (tool F-12). The gender
+        # totals below are auto-calculated from the grid so the dashboard still
+        # receives ev_man/ev_woman/ev_tg_hijra/ev_other.
+        _sr('note', '_ev_part',
+            'Participants by age band and gender (enter the count in each cell):',
+            'বয়স ও জেন্ডার অনুযায়ী অংশগ্রহণকারী (প্রতিটি ঘরে সংখ্যা লিখুন):'),
+        _sr('note', '_ev_a1', '18-24 years', '১৮-২৪ বছর'),
+        _sr('integer', 'ev_a1824_woman', 'Woman (18-24)', 'নারী (১৮-২৪)'),
+        _sr('integer', 'ev_a1824_man', 'Man (18-24)', 'পুরুষ (১৮-২৪)'),
+        _sr('integer', 'ev_a1824_tg', 'TG/Hijra (18-24)', 'টিজি/হিজড়া (১৮-২৪)'),
+        _sr('integer', 'ev_a1824_other', 'Others (18-24)', 'অন্যান্য (১৮-২৪)'),
+        _sr('note', '_ev_a2', '25-30 years', '২৫-৩০ বছর'),
+        _sr('integer', 'ev_a2530_woman', 'Woman (25-30)', 'নারী (২৫-৩০)'),
+        _sr('integer', 'ev_a2530_man', 'Man (25-30)', 'পুরুষ (২৫-৩০)'),
+        _sr('integer', 'ev_a2530_tg', 'TG/Hijra (25-30)', 'টিজি/হিজড়া (২৫-৩০)'),
+        _sr('integer', 'ev_a2530_other', 'Others (25-30)', 'অন্যান্য (২৫-৩০)'),
+        _sr('note', '_ev_a3', '31-35 years', '৩১-৩৫ বছর'),
+        _sr('integer', 'ev_a3135_woman', 'Woman (31-35)', 'নারী (৩১-৩৫)'),
+        _sr('integer', 'ev_a3135_man', 'Man (31-35)', 'পুরুষ (৩১-৩৫)'),
+        _sr('integer', 'ev_a3135_tg', 'TG/Hijra (31-35)', 'টিজি/হিজড়া (৩১-৩৫)'),
+        _sr('integer', 'ev_a3135_other', 'Others (31-35)', 'অন্যান্য (৩১-৩৫)'),
+        _sr('note', '_ev_a4', 'Above 35 years', '৩৫ বছরের উপরে'),
+        _sr('integer', 'ev_agt35_woman', 'Woman (>35)', 'নারী (৩৫+)'),
+        _sr('integer', 'ev_agt35_man', 'Man (>35)', 'পুরুষ (৩৫+)'),
+        _sr('integer', 'ev_agt35_tg', 'TG/Hijra (>35)', 'টিজি/হিজড়া (৩৫+)'),
+        _sr('integer', 'ev_agt35_other', 'Others (>35)', 'অন্যান্য (৩৫+)'),
+        _sr('note', '_ev_a5', 'Age unknown / refused', 'বয়স জানাতে অনিচ্ছুক'),
+        _sr('integer', 'ev_aunk_woman', 'Woman (age unknown)', 'নারী (বয়স অজানা)'),
+        _sr('integer', 'ev_aunk_man', 'Man (age unknown)', 'পুরুষ (বয়স অজানা)'),
+        _sr('integer', 'ev_aunk_tg', 'TG/Hijra (age unknown)', 'টিজি/হিজড়া (বয়স অজানা)'),
+        _sr('integer', 'ev_aunk_other', 'Others (age unknown)', 'অন্যান্য (বয়স অজানা)'),
+        _sr('calculate', 'ev_woman',
+            calc="coalesce(${ev_a1824_woman},0)+coalesce(${ev_a2530_woman},0)+coalesce(${ev_a3135_woman},0)+coalesce(${ev_agt35_woman},0)+coalesce(${ev_aunk_woman},0)"),
+        _sr('calculate', 'ev_man',
+            calc="coalesce(${ev_a1824_man},0)+coalesce(${ev_a2530_man},0)+coalesce(${ev_a3135_man},0)+coalesce(${ev_agt35_man},0)+coalesce(${ev_aunk_man},0)"),
+        _sr('calculate', 'ev_tg_hijra',
+            calc="coalesce(${ev_a1824_tg},0)+coalesce(${ev_a2530_tg},0)+coalesce(${ev_a3135_tg},0)+coalesce(${ev_agt35_tg},0)+coalesce(${ev_aunk_tg},0)"),
+        _sr('calculate', 'ev_other',
+            calc="coalesce(${ev_a1824_other},0)+coalesce(${ev_a2530_other},0)+coalesce(${ev_a3135_other},0)+coalesce(${ev_agt35_other},0)+coalesce(${ev_aunk_other},0)"),
+        _sr('calculate', 'ev_total',
+            calc="${ev_woman}+${ev_man}+${ev_tg_hijra}+${ev_other}"),
+        _sr('note', '_ev_total_show', 'Total participants: ${ev_total}',
+            'মোট অংশগ্রহণকারী: ${ev_total}'),
         _sr('select_one event_modality', 'ev_modality', 'Event modality', 'ইভেন্টের ধরন'),
         _sr('integer', 'ev_attend_ge80', 'Attendance ≥ 80% (count)', '৮০%+ উপস্থিতি'),
         _sr('integer', 'ev_attend_lt80', 'Attendance < 80% (count)', '৮০%-এর কম উপস্থিতি'),
@@ -750,7 +801,7 @@ def _activity_ops_survey():
             relevant=R('kp_clinic_info')),
         _sr('text', 'kc_name', 'Name of KP Clinic', 'কেপি ক্লিনিকের নাম'),
         _sr('text', 'kc_address', 'Address', 'ঠিকানা', app='multiline'),
-        _sr('text', 'kc_incharge', 'Name of Incharge & Contact #', 'ইনচার্জের নাম ও যোগাযোগ'),
+        _sr('text', 'kc_incharge', 'Name of Wellness Center Incharge & Contact #', 'ওয়েলনেস সেন্টার ইনচার্জের নাম ও যোগাযোগ'),
         _sr('integer', 'kc_num_staff', 'Number of staff', 'কর্মী সংখ্যা'),
         _sr('select_one yes_no', 'kc_equipped', 'Well equipped with all logistics', 'সব লজিস্টিকসসহ সুসজ্জিত'),
         _sr('select_one yes_no', 'kc_functional', 'Functional', 'কার্যকর'),
@@ -764,7 +815,7 @@ def _activity_ops_survey():
             relevant=R('wellness_center_info')),
         _sr('text', 'wc_name', 'Name of Wellness Center', 'ওয়েলনেস সেন্টারের নাম'),
         _sr('text', 'wc_address', 'Address', 'ঠিকানা', app='multiline'),
-        _sr('text', 'wc_incharge', 'Name of Incharge & Contact #', 'ইনচার্জের নাম ও যোগাযোগ'),
+        _sr('text', 'wc_incharge', 'Name of Wellness Center Incharge & Contact #', 'ওয়েলনেস সেন্টার ইনচার্জের নাম ও যোগাযোগ'),
         _sr('integer', 'wc_num_staff', 'Number of staff', 'কর্মী সংখ্যা'),
         _sr('text', 'wc_cruising_spot', 'Name of cruising spot(s)', 'ক্রুজিং স্পটের নাম'),
         _sr('select_one yes_no', 'wc_functional', 'Functional', 'কার্যকর'),
@@ -780,7 +831,7 @@ def _activity_ops_survey():
             'F-14 has no data fields — attach the screenshot of the displayed e-billboard message.',
             'F-14 তে কোনো তথ্য ক্ষেত্র নেই — প্রদর্শিত ই-বিলবোর্ডের স্ক্রিনশট সংযুক্ত করুন।'),
         _sr('date', 'eb_date', 'Date displayed', 'প্রদর্শনের তারিখ'),
-        _sr('text', 'eb_location', 'Location (district / hospital)', 'অবস্থান'),
+        _sr('text', 'eb_location', 'Location (Wellness Centre / area)', 'অবস্থান (ওয়েলনেস সেন্টার / এলাকা)'),
         _sr('image', 'eb_screenshot', 'Screenshot of message', 'বার্তার স্ক্রিনশট', required='yes'),
         _sr('end_group', 'grp_ebillboard'),
     ]

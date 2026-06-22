@@ -127,6 +127,17 @@ class Client(TimestampedModel):
     telegram_chat_id = models.CharField(max_length=50, blank=True)
     notes = models.TextField(blank=True)
 
+    # Mother List (F-1.1) occupation is now a coded select_one (1-6); legacy
+    # rows hold free text. Labels live here so a code never displays as a digit.
+    OCCUPATION_LABELS = {
+        '1': 'Service / job holder', '2': 'Businessman', '3': 'Student',
+        '4': 'Sex work', '5': 'Unemployed', '6': 'Others',
+    }
+
+    @property
+    def occupation_label(self):
+        return self.OCCUPATION_LABELS.get(self.occupation_code, self.occupation_code)
+
     class Meta:
         ordering = ['-enrolled_date']
 
