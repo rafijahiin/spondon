@@ -57,7 +57,9 @@ def _sr(qtype, name, en='', bn='', hint='', required='',
 
 
 def _ch(lst, name, en, bn=''):
-    return [lst, name, en, bn]
+    # Fall back to the English+code label when no Bangla is given, so a coded
+    # option never renders BLANK in Bangla mode (KoboCollect language toggle).
+    return [lst, name, en, bn or en]
 
 
 def _id_lookup(idfield):
