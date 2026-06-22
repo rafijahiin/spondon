@@ -160,7 +160,7 @@ def _bnd_gbv(payload, lat, lng):
     return HttpResponse('Created', status=201)
 
 
-def _bnd_counsel_common(payload, lat, lng, date_key, issues, *, extra=None):
+def _bnd_counsel_common(payload, lat, lng, date_key, client_id_key, issues, *, extra=None):
     """Shared writer for F-03 + Counseling → IndividualCounselling. Drives 1.3
     (issue_psychosocial). `extra` carries any tool-specific column values
     (e.g. F-03's drug-history fields) the caller wants persisted."""
@@ -171,6 +171,7 @@ def _bnd_counsel_common(payload, lat, lng, date_key, issues, *, extra=None):
         return HttpResponse('OK', status=200)
     IndividualCounselling.objects.create(
         organisation=ORG, center=center,
+        client=_client(payload, center, payload.get(client_id_key)),
         session_date=_date(payload.get(date_key)) or _sub_date(payload),
         issue_sti=('sti' in issues),
         issue_general_health=('general_health' in issues),
@@ -194,12 +195,12 @@ def _bnd_mh(payload, lat, lng):
         'drug_habit_noted': drug_noted,
         'drug_names': _str(payload.get('mh_drug_names')),
     }
-    return _bnd_counsel_common(payload, lat, lng, 'mh_date', issues, extra=extra)
+    return _bnd_counsel_common(payload, lat, lng, 'mh_date', 'mh_client_id', issues, extra=extra)
 
 
 def _bnd_counsel(payload, lat, lng):
     """Daily Counseling form → IndividualCounselling."""
-    return _bnd_counsel_common(payload, lat, lng, 'cn_date',
+    return _bnd_counsel_common(payload, lat, lng, 'cn_date', 'cn_client_id',
                                _multi(payload, 'cn_issues'))
 
 
