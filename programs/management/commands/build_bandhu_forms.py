@@ -145,13 +145,17 @@ def _meta(filler_label_en='Your name (person filling this form)',
 
 
 def _centre_choices():
-    """Bandhu's 8 Wellness Centres + Dhaka KP clinic. Label = name only (no
-    internal code, so 'DIC' never shows); value = code for webhook resolution."""
+    """Bandhu's 8 Wellness Centres + Dhaka KP clinic. Label shows the centre
+    name + its 2-digit district code — the code that prefixes every beneficiary
+    ID at that centre — so the worker can see/verify it. value = centre code."""
     from .seed_centers import BONDHU_DICS
-    return [
-        _ch('bandhu_centre', c['code'], c['name'], c.get('name_bangla', c['name']))
-        for c in BONDHU_DICS
-    ]
+    out = []
+    for c in BONDHU_DICS:
+        dcode = BANDHU_DISTRICT_CODE.get(c.get('district', ''), '00')
+        en = '%s (%s)' % (c['name'], dcode)
+        bn = '%s (%s)' % (c.get('name_bangla', c['name']), dcode)
+        out.append(_ch('bandhu_centre', c['code'], en, bn))
+    return out
 
 
 # ─── Beneficiary-ID district codes (Bandhu handwritten note, 2026-06-20) ───────
