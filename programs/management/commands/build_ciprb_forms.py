@@ -147,6 +147,8 @@ def _meta(form_id_visible, form_id_visible_bn=''):
             'আপনার নাম (কে পূরণ করছেন)', required='yes'),
         _sr('text', 'enumerator_designation',
             'Designation', 'পদবী'),
+        _sr('text', 'enumerator_institution',
+            'Institution', 'প্রতিষ্ঠান'),
         _sr('text', 'enumerator_mobile',
             'Mobile number', 'মোবাইল নম্বর',
             constraint='regex(., "^[0-9+ -]{6,20}$")',
@@ -706,24 +708,37 @@ def _shared_consent_block():
 
 
 def _respondent_block():
+    """Respondent table from the paper: main + 2 associate respondents,
+    each with name / relationship / present-at-death, plus respondent mobile."""
     return [
         _sr('begin_group', 'grp_respondent',
             "Respondent's information", 'উত্তরদাতার তথ্য'),
+        _sr('text', 'respondent_mobile',
+            'Respondent mobile number', 'উত্তরদাতার মোবাইল নম্বর',
+            constraint='regex(., "^[0-9+ -]{6,20}$") or .=""',
+            cmsg='Enter a valid phone number.'),
         _sr('text', 'respondent_main_name',
-            'Main respondent — name',
-            'মুখ্য উত্তরদাতা — নাম'),
+            'Main respondent — name', 'মুখ্য উত্তরদাতা — নাম'),
         _sr('select_one relationship', 'respondent_main_rel',
-            'Relationship with deceased',
-            'মৃত ব্যক্তির সাথে সম্পর্ক'),
+            'Main respondent — relationship with deceased',
+            'মুখ্য উত্তরদাতা — মৃতের সাথে সম্পর্ক'),
         _sr('select_one yes_no', 'respondent_main_present',
-            'Present at time of death?',
-            'মৃত্যুর সময় উপস্থিত ছিলেন?'),
+            'Main respondent — present at time of death?',
+            'মুখ্য উত্তরদাতা — মৃত্যুর সময় উপস্থিত ছিলেন?'),
         _sr('text', 'respondent_alt1_name',
-            'Associate respondent 1 — name',
-            'সহযোগী উত্তরদাতা ১ — নাম'),
+            'Associate respondent 1 — name', 'সহযোগী উত্তরদাতা ১ — নাম'),
+        _sr('select_one relationship', 'respondent_alt1_rel',
+            'Associate 1 — relationship', 'সহযোগী ১ — সম্পর্ক'),
+        _sr('select_one yes_no', 'respondent_alt1_present',
+            'Associate 1 — present at time of death?',
+            'সহযোগী ১ — উপস্থিত ছিলেন?'),
         _sr('text', 'respondent_alt2_name',
-            'Associate respondent 2 — name',
-            'সহযোগী উত্তরদাতা ২ — নাম'),
+            'Associate respondent 2 — name', 'সহযোগী উত্তরদাতা ২ — নাম'),
+        _sr('select_one relationship', 'respondent_alt2_rel',
+            'Associate 2 — relationship', 'সহযোগী ২ — সম্পর্ক'),
+        _sr('select_one yes_no', 'respondent_alt2_present',
+            'Associate 2 — present at time of death?',
+            'সহযোগী ২ — উপস্থিত ছিলেন?'),
         _sr('end_group', 'grp_respondent'),
     ]
 
@@ -734,214 +749,542 @@ def _community_maternal_survey():
     rows += _shared_consent_block()
     rows += _respondent_block()
 
+    # ── General information & mother identity (paper page 3) ──────────────
     rows += [
-        _sr('begin_group', 'grp_deceased',
-            "Deceased woman's information",
-            'মৃত মহিলার তথ্য'),
-        _sr('text', 'deceased_name', 'Name of deceased',
-            'মৃত মহিলার নাম', required='yes',
+        _sr('begin_group', 'grp_identity',
+            'General information & mother identity',
+            'সাধারণ তথ্য ও মায়ের পরিচিতি',
             relevant="${consent_given}='yes'"),
-        _sr('integer', 'deceased_age', 'Age (years)',
-            'বয়স (বছর)', required='yes', constraint='. > 9 and . < 60'),
-        _sr('text', 'deceased_husband',  "Husband's name",
-            'স্বামীর নাম', relevant="${consent_given}='yes'"),
-        _sr('text', 'deceased_father',   "Father's name",
-            'পিতার নাম', relevant="${consent_given}='yes'"),
-        _sr('text', 'deceased_address',  'Permanent address',
-            'স্থায়ী ঠিকানা', relevant="${consent_given}='yes'"),
-        _sr('date', 'date_of_death',     'Date of death',
-            'মৃত্যুর তারিখ', required='yes'),
-        _sr('select_one time_of_death', 'time_of_death',
-            'Time of death', 'মৃত্যুর সময়'),
-        _sr('select_one place_of_death', 'place_of_death',
-            'Place of death', 'মৃত্যুর স্থান', required='yes'),
-        _sr('text', 'facility_name',
-            'If facility — name of facility',
-            'প্রতিষ্ঠান হলে — নাম',
-            relevant="${place_of_death}='facility' and ${consent_given}='yes'"),
-        _sr('end_group', 'grp_deceased'),
-    ]
-
-    rows += [
-        _sr('begin_group', 'grp_pregnancy',
-            'Pregnancy & ANC', 'গর্ভাবস্থা ও এএনসি'),
-        _sr('integer', 'gestational_weeks',
-            'Gestational week at death',
-            'মৃত্যুর সময় গর্ভাবস্থার সপ্তাহ',
-            constraint='. >= 0 and . <= 45'),
-        _sr('integer', 'gravida', 'Gravida (G)', 'গ্রাভিডা'),
-        _sr('integer', 'para',    'Parity (P)',  'প্যারিটি'),
-        _sr('select_one anc_count', 'anc_visits_count',
-            'Number of ANC visits',
-            'এএনসি পরিদর্শনের সংখ্যা'),
-        _sr('select_one yes_no', 'anc_skilled',
-            'ANC by skilled provider?',
-            'এএনসি দক্ষ প্রদানকারী দ্বারা?'),
-        _sr('end_group', 'grp_pregnancy'),
-    ]
-
-    rows += [
-        _sr('begin_group', 'grp_delivery',
-            'Delivery', 'প্রসব'),
-        _sr('select_one mode_of_delivery', 'mode_of_delivery',
-            'Mode of delivery', 'প্রসবের পদ্ধতি'),
-        _sr('select_one delivery_outcome', 'delivery_outcome',
-            'Delivery outcome',
-            'প্রসবের ফলাফল'),
-        _sr('select_one place_of_delivery', 'place_of_delivery',
-            'Place of delivery', 'প্রসবের স্থান'),
-        _sr('select_one delivery_conductor', 'person_assisted_delivery',
-            'Person assisted delivery',
-            'প্রসবে সহায়তাকারী'),
-        _sr('select_one yes_no', 'pnc_received',
-            'PNC received?', 'পিএনসি গ্রহণ করেছেন?'),
-        _sr('integer', 'time_death_after_birth_hours',
-            'Time of death after birth (hours)',
-            'প্রসবের পর মৃত্যুর সময় (ঘন্টা)'),
-        _sr('end_group', 'grp_delivery'),
-    ]
-
-    rows += [
-        _sr('begin_group', 'grp_cause',
-            'Cause of death', 'মৃত্যুর কারণ'),
-        _sr('select_one cod_maternal', 'cause_of_death',
-            'Probable cause of death',
-            'সম্ভাব্য মৃত্যুর কারণ', required='yes'),
-        _sr('text', 'cause_of_death_other',
-            'Other cause (specify)',
-            'অন্যান্য কারণ (উল্লেখ করুন)',
+        _sr('text', 'clinic_name',
+            'Community Clinic name', 'কমিউনিটি ক্লিনিকের নাম'),
+        _sr('text', 'clinic_code',
+            'Community Clinic code (must be filled)',
+            'কমিউনিটি ক্লিনিকের কোড (অবশ্যই পূরণ করতে হবে)',
             required='yes',
-            relevant="${cause_of_death}='other'"),
-        _sr('text', 'contributory_factors',
-            'Contributory factors / delays',
-            'অবদানকারী কারণ / বিলম্ব'),
-        _sr('text', 'three_delays',
-            'Notes on the three delays',
-            'তিন বিলম্ব সম্পর্কিত মন্তব্য'),
-        _sr('end_group', 'grp_cause'),
+            hint='Numeric code printed on the paper form.'),
+        _sr('text', 'deceased_name', "Mother's name", 'মায়ের নাম',
+            required='yes'),
+        _sr('text', 'mother_dhis2_code',
+            "Mother's online registration (DHIS-2) code (must be filled)",
+            'মায়ের অনলাইন রেজিস্ট্রেশন (ডিএইচআইএস-২) কোড '
+            '(অবশ্যই পূরণ করতে হবে)',
+            required='yes',
+            hint='DHIS-2 registration number from the paper form.'),
+        _sr('integer', 'deceased_age', "Mother's age (years)",
+            'মায়ের বয়স (বছর)', required='yes',
+            constraint='. > 9 and . < 60', cmsg='10–59'),
+        _sr('select_one education_level', 'mother_education',
+            "Mother's education", 'মায়ের শিক্ষাগত যোগ্যতা'),
+        _sr('select_one ses', 'household_ses',
+            'Household socio-economic status', 'খানার আর্থ-সামাজিক অবস্থা'),
+        _sr('text', 'deceased_husband', "Husband's name", 'স্বামীর নাম'),
+        _sr('integer', 'husband_age', "Husband's age (years)",
+            'স্বামীর বয়স (বছর)', constraint='. > 0 and . < 110'),
+        _sr('end_group', 'grp_identity'),
     ]
 
+    # ── Section 1: Primary information (Q1–Q6) ────────────────────────────
     rows += [
-        _sr('begin_group', 'grp_review',
-            'Review committee', 'পর্যালোচনা কমিটি'),
-        _sr('date', 'review_date',
-            'Date of review meeting',
-            'পর্যালোচনা সভার তারিখ'),
-        _sr('text', 'review_meeting_place',
-            'Place of meeting', 'সভার স্থান'),
-        _sr('select_one review_status', 'review_status',
-            'Review status', 'পর্যালোচনার অবস্থা'),
-        _sr('text', 'action_plan_summary',
-            'Action plan summary',
-            'কর্মপরিকল্পনার সারসংক্ষেপ'),
-        _sr('end_group', 'grp_review'),
+        _sr('begin_group', 'grp_section1',
+            'Section 1: Primary information', 'সেকশন ১: প্রাথমিক তথ্য',
+            relevant="${consent_given}='yes'"),
+        _sr('date', 'death_date', '1. Date of death', '১. মৃত্যুর তারিখ',
+            required='yes'),
+        _sr('time', 'death_time', '1a. Time of death (24-hour)',
+            '১. মৃত্যুর সময় (২৪ ঘন্টা)'),
+        _sr('select_one death_period', 'death_period',
+            '2. When did the death occur?', '২. কোন সময় মৃত্যু ঘটেছিল?',
+            required='yes'),
+        _sr('select_one death_place', 'death_place',
+            '3. Where did the death occur?', '৩. কোথায় মৃত্যু ঘটেছিল?',
+            required='yes'),
+        _sr('text', 'death_place_other', 'Other place (specify)',
+            'অন্যান্য স্থান (উল্লেখ করুন)', relevant="${death_place}='other'"),
+        _sr('integer', 'gestation_month',
+            '4. Month of pregnancy at death', '৪. গর্ভাবস্থার কোন মাসে মৃত্যু',
+            constraint='. >= 0 and . <= 10'),
+        _sr('integer', 'gestation_week',
+            '4a. Week of pregnancy at death', '৪. গর্ভাবস্থার কোন সপ্তাহে মৃত্যু',
+            constraint='. >= 0 and . <= 45'),
+        _sr('integer', 'children_born',
+            '5. How many children has the mother delivered?',
+            '৫. মা কতটি সন্তানের জন্ম দিয়েছেন?',
+            constraint='. >= 0 and . <= 25'),
+        _sr('integer', 'abortion_count',
+            '6. How many abortions / miscarriages has the mother had?',
+            '৬. মায়ের কতবার গর্ভপাত হয়েছে?', constraint='. >= 0 and . <= 25'),
+        _sr('select_one yes_no', 'abortion_unknown',
+            '6a. Is the number of abortions not known?',
+            '৬. গর্ভপাতের সংখ্যা জানা নেই?'),
+        _sr('end_group', 'grp_section1'),
+    ]
+
+    # ── Section 2: Maternal complications (Q7–Q9) ─────────────────────────
+    comps = [
+        ('comp_high_bp',          '1. High blood pressure',              '১. উচ্চ রক্তচাপ'),
+        ('comp_diabetes',         '2. Diabetes',                         '২. ডায়াবেটিস'),
+        ('comp_abortion',         '3. Abortion',                         '৩. গর্ভপাত'),
+        ('comp_haemorrhage',      '4. Haemorrhage',                      '৪. রক্তক্ষরণ'),
+        ('comp_high_fever',       '5. High fever',                       '৫. প্রচন্ড জ্বর'),
+        ('comp_oedema',           '6. Water in face, legs and hands',    '৬. মুখ, পা ও হাতে পানি আসা'),
+        ('comp_convulsion',       '7. Convulsion / eclampsia / fainting','৭. খিচুনি/একলামসিয়া/বেহুঁশ হওয়া'),
+        ('comp_jaundice',         '8. Jaundice',                         '৮. জন্ডিস'),
+        ('comp_anaemia',          '9. Anaemia',                          '৯. রক্তস্বল্পতা'),
+        ('comp_blurred_vision',   '10. Blurred vision in the eyes',      '১০. চোখে ঝাপসা দেখা'),
+        ('comp_prolonged_labour', '11. Labour pain for more than 12 hours','১১. ১২ ঘন্টার বেশী প্রসববেদনা'),
+        ('comp_reduced_movement', '12. Reduced foetal movement or no movement for a long time','১২. ভ্রূণের নড়াচড়া কম হওয়া অথবা দীর্ঘ সময় নড়াচড়া না হওয়া'),
+        ('comp_uterine_rupture',  '13. Tearing of the uterus',           '১৩. জরায়ু ছিঁড়ে যাওয়া'),
+        ('comp_malpresentation',  '14. A part other than the head coming out','১৪. মাথা ছাড়া অন্যকোন অঙ্গ বের হওয়া'),
+        ('comp_retained_placenta','15. Retained placenta',               '১৫. গর্ভফুল থেকে যাওয়া'),
+        ('comp_foul_discharge',   '16. Foul-smelling discharge',         '১৬. দুর্গন্ধ যুক্ত স্রাব'),
+        ('comp_abdominal_pain',   '17. Abnormal (severe) pain in lower abdomen','১৭. তলপেটে অস্বাভাবিক ব্যাথা (তীব্র)'),
+        ('comp_other',            '18. Other, specify',                  '১৮. অন্যান্য, উল্লেখ করুন'),
+    ]
+    rows += [
+        _sr('begin_group', 'grp_section2',
+            'Section 2: Maternal complications', 'সেকশন ২: মাতৃত্বকালীন জটিলতা',
+            relevant="${consent_given}='yes'"),
+        _sr('select_one yes_no', 'prepreg_disease',
+            '7. Did the mother suffer any disease before pregnancy?',
+            '৭. গর্ভধারণের পূর্বে মা কোন রোগে আক্রান্ত ছিলেন কি?'),
+        _sr('select_multiple prepreg_disease_type', 'prepreg_disease_types',
+            '7a. If yes, which disease(s)?', '৭. হ্যাঁ হলে কোন রোগ(সমূহ)?',
+            relevant="${prepreg_disease}='yes'"),
+        _sr('text', 'prepreg_disease_other', 'Other disease (specify)',
+            'অন্যান্য রোগ (উল্লেখ করুন)',
+            relevant="selected(${prepreg_disease_types}, 'other')"),
+        _sr('select_one last_pregnancy_outcome', 'last_pregnancy_outcome',
+            '8. Outcome of the last pregnancy / delivery',
+            '৮. শেষ গর্ভ / প্রসবের ফলাফল?'),
+        _sr('note', 'q9_note',
+            '9. Which complications occurred during the current pregnancy? '
+            'For each, tick the phase(s) — antepartum, intrapartum, postpartum, '
+            "or don't know.",
+            '৯. বর্তমান গর্ভকালীন সময়ে কি কি জটিলতা ছিল? প্রতিটির জন্য '
+            'পর্যায় চিহ্নিত করুন।'),
+        _sr('begin_group', 'grp_q9',
+            '9. Complications (current pregnancy)',
+            '৯. জটিলতা (বর্তমান গর্ভকাল)', app='field-list'),
+        _sr('select_multiple complication_phase', 'q9_header',
+            'Complication ▸ phase', 'জটিলতা ▸ পর্যায়', app='label'),
+    ]
+    rows += [
+        _sr('select_multiple complication_phase', name, en, bn,
+            app='list-nolabel')
+        for name, en, bn in comps
+    ]
+    rows += [
+        _sr('text', 'comp_other_specify', 'Other complication (specify)',
+            'অন্যান্য জটিলতা (উল্লেখ করুন)',
+            relevant="selected(${comp_other}, 'antepartum') or "
+                     "selected(${comp_other}, 'intrapartum') or "
+                     "selected(${comp_other}, 'postpartum') or "
+                     "selected(${comp_other}, 'dont_know')"),
+        _sr('end_group', 'grp_q9'),
+        _sr('end_group', 'grp_section2'),
+    ]
+
+    # ── Section 3: Antenatal care (Q10–Q13) ───────────────────────────────
+    anc_seen = "${anc_count}!='none' and ${anc_count}!='unknown'"
+    rows += [
+        _sr('begin_group', 'grp_section3',
+            'Section 3: Antenatal care (ANC)', 'সেকশন ৩: প্রসব পূর্বসেবা',
+            relevant="${consent_given}='yes'"),
+        _sr('select_one anc_count', 'anc_count',
+            '10. How many times did the mother receive ANC?',
+            '১০. কতবার প্রসবপূর্ব সেবা গ্রহণ করেছেন?'),
+        _sr('select_multiple facility_place', 'anc_place',
+            '11. Where was ANC received?', '১১. প্রসবপূর্ব সেবা কোথা থেকে নেওয়া হয়েছে?',
+            relevant=anc_seen),
+        _sr('text', 'anc_place_other', 'Other place (specify)',
+            'অন্যান্য স্থান (উল্লেখ)', relevant="selected(${anc_place}, 'other')"),
+        _sr('select_multiple provider_cadre', 'anc_provider',
+            '12. Who provided ANC?', '১২. প্রসবপূর্ব সেবা কে প্রদান করেছেন?',
+            relevant=anc_seen),
+        _sr('text', 'anc_provider_other', 'Other provider (specify)',
+            'অন্যান্য (উল্লেখ)', relevant="selected(${anc_provider}, 'other')"),
+        _sr('select_multiple birth_plan', 'birth_plan',
+            '13. What birth-plan preparations had been made?',
+            '১৩. প্রসব পরিকল্পনায় কী কী ছিল?'),
+        _sr('end_group', 'grp_section3'),
+    ]
+
+    # ── Section 4: Delivery / intrapartum (Q14–Q17) ───────────────────────
+    delivered = ("${death_period}='delivery' or "
+                 "${death_period}='postpartum_42d'")
+    rows += [
+        _sr('begin_group', 'grp_section4',
+            'Section 4: Delivery information', 'সেকশন ৪: প্রসবকালীন তথ্য',
+            relevant="${consent_given}='yes'"),
+        _sr('note', 's4_note',
+            'If the mother died before delivery, skip Q14–16 and go to Q17.',
+            'মা প্রসবের পূর্বে মারা গেলে ১৪–১৬ বাদ দিয়ে ১৭ নং প্রশ্নে যান।'),
+        _sr('select_one facility_place', 'delivery_place',
+            '14. Where was the delivery conducted?',
+            '১৪. কোথায় প্রসব করা হয়েছিল?', relevant=delivered),
+        _sr('text', 'delivery_place_other', 'Other place (specify)',
+            'অন্যান্য স্থান (উল্লেখ)', relevant="${delivery_place}='other'"),
+        _sr('select_one provider_cadre', 'delivery_conductor',
+            '15. Who conducted the delivery?',
+            '১৫. কার দ্বারা প্রসব সংঘটিত হয়েছিল?', relevant=delivered),
+        _sr('text', 'delivery_conductor_other', 'Other (specify)',
+            'অন্যান্য (উল্লেখ)', relevant="${delivery_conductor}='other'"),
+        _sr('select_one delivery_mode', 'delivery_mode',
+            '16. Mode of delivery', '১৬. কোন পদ্ধতিতে প্রসব হয়েছিল?',
+            relevant=delivered),
+        _sr('select_one delivery_outcome', 'delivery_outcome',
+            '17. Outcome of the current pregnancy', '১৭. বর্তমান গর্ভের ফলাফল'),
+        _sr('end_group', 'grp_section4'),
+    ]
+
+    # ── Section 5: Care received before death (Q18–Q21) ───────────────────
+    rows += [
+        _sr('begin_group', 'grp_section5',
+            'Section 5: Care received before death',
+            'সেকশন ৫: মৃত্যুর পূর্বে গ্রহণকৃত চিকিৎসা',
+            relevant="${consent_given}='yes'"),
+        _sr('select_one yes_no', 'treatment_received',
+            '18. Did the mother receive any treatment before death?',
+            '১৮. মৃত্যুর পূর্বে মা কোন চিকিৎসা গ্রহণ করেছিলেন কি?'),
+        _sr('select_multiple facility_place', 'treatment_place',
+            '19. If yes, where was treatment received?',
+            '১৯. হ্যাঁ হলে চিকিৎসা গ্রহণের স্থান',
+            relevant="${treatment_received}='yes'"),
+        _sr('text', 'treatment_place_other', 'Other place (specify)',
+            'অন্যান্য স্থান (উল্লেখ)',
+            relevant="selected(${treatment_place}, 'other')"),
+        _sr('select_multiple provider_cadre', 'treatment_provider',
+            '20. Who provided the treatment?', '২০. কে চিকিৎসাসেবা দিয়েছিলেন?',
+            relevant="${treatment_received}='yes'"),
+        _sr('text', 'treatment_provider_other', 'Other (specify)',
+            'অন্যান্য (উল্লেখ)',
+            relevant="selected(${treatment_provider}, 'other')"),
+        _sr('select_multiple no_treatment_reason', 'no_treatment_reasons',
+            '21. If no treatment was received, why not?',
+            '২১. চিকিৎসাসেবা গ্রহণ না করে থাকলে তার কারণ কি ছিল?',
+            relevant="${treatment_received}='no'"),
+        _sr('text', 'no_treatment_other', 'Other reason (specify)',
+            'অন্যান্য কারণ (উল্লেখ)',
+            relevant="selected(${no_treatment_reasons}, 'other')"),
+        _sr('end_group', 'grp_section5'),
+    ]
+
+    # ── Section 6: Postpartum period (Q22–Q26) — only if died postpartum ──
+    pnc_seen = "${pnc_count} > 0 and ${pnc_count} != 99"
+    rows += [
+        _sr('begin_group', 'grp_section6',
+            'Section 6: Postpartum period', 'সেকশন ৬: প্রসবোত্তরকাল',
+            # Paper: Section 6 is N/A only for pregnancy or delivery deaths,
+            # so it must also show for post-abortion deaths.
+            relevant="${consent_given}='yes' and "
+                     "${death_period}!='pregnancy' and "
+                     "${death_period}!='delivery'"),
+        _sr('note', 's6_note',
+            'Section 6 applies only when the mother died in the postpartum '
+            'period.',
+            'মা প্রসবোত্তর সময়ে মারা গেলে এই সেকশন প্রযোজ্য।'),
+        _sr('integer', 'death_after_delivery_days',
+            '22. Days after delivery until death',
+            '২২. প্রসবের কত দিন পর মৃত্যু', constraint='. >= 0 and . <= 42'),
+        _sr('integer', 'death_after_delivery_hours', '22a. Hours', 'ঘন্টা',
+            constraint='. >= 0 and . <= 23'),
+        _sr('integer', 'death_after_delivery_minutes', '22b. Minutes', 'মিনিট',
+            constraint='. >= 0 and . <= 59'),
+        _sr('integer', 'pnc_count',
+            '23. How many PNC visits did the mother receive?',
+            '২৩. কতটি প্রসবোত্তর (পিএনসি) সেবা গ্রহণ করেছিলেন?',
+            constraint='. >= 0 and . <= 99', hint='Enter 99 if not known.'),
+        _sr('integer', 'pnc_first_days',
+            '24. Days after delivery to first PNC',
+            '২৪. প্রথম পিএনসি প্রসবের কত দিন পর', relevant=pnc_seen),
+        _sr('integer', 'pnc_first_hours', '24a. Hours', 'ঘন্টা',
+            relevant=pnc_seen),
+        _sr('select_multiple facility_place', 'pnc_place',
+            '25. Where was PNC received?', '২৫. প্রসবোত্তর সেবা গ্রহণের স্থান',
+            relevant=pnc_seen),
+        _sr('text', 'pnc_place_other', 'Other place (specify)',
+            'অন্যান্য স্থান (উল্লেখ)', relevant="selected(${pnc_place}, 'other')"),
+        _sr('select_multiple provider_cadre', 'pnc_provider',
+            '26. Who provided PNC?', '২৬. প্রসবোত্তর সেবাদানকারী?',
+            relevant=pnc_seen),
+        _sr('text', 'pnc_provider_other', 'Other (specify)',
+            'অন্যান্য (উল্লেখ)', relevant="selected(${pnc_provider}, 'other')"),
+        _sr('end_group', 'grp_section6'),
+    ]
+
+    # ── Narrative & opinion of cause (Q27–Q29) ────────────────────────────
+    rows += [
+        _sr('begin_group', 'grp_narrative', 'Narrative & cause',
+            'বিবরণ ও কারণ', relevant="${consent_given}='yes'"),
+        _sr('text', 'narrative_before_death',
+            '27. Describe what happened just before the death (events, '
+            'complications, how treatment started, social factors).',
+            '২৭. মৃত্যুর ঠিক পূর্বে যা ঘটেছিল তা লিখুন।', app='multiline'),
+        _sr('text', 'cause_opinion',
+            '28. In your opinion, what caused this maternal death?',
+            '২৮. মাতৃমৃত্যুর কি কারণ হতে পারে বলে আপনি মনে করেন?',
+            app='multiline'),
+        _sr('text', 'certificate_cause',
+            '29. If a death certificate was issued, the cause per the '
+            'certificate',
+            '২৯. মৃত্যু সার্টিফিকেট প্রদান করা হলে সার্টিফিকেট অনুযায়ী কারণ',
+            app='multiline'),
+        _sr('end_group', 'grp_narrative'),
+    ]
+
+    # ── Consultant / doctor ICD-10 cause coding (mandatory by consultant) ─
+    rows += [
+        _sr('begin_group', 'grp_icd',
+            'To be filled by the Consultant / Doctor',
+            'কনসালটেন্ট/ডাক্তার কর্তৃক পূরণের জন্য '
+            '(অবশ্যই কনসালটেন্ট/ডাক্তার দ্বারা পূরণ করতে হবে)'),
+        _sr('note', 'icd_ref_note',
+            'Identify / mark the cause as per the ICD 10 table.',
+            'ICD 10 ছক অনুযায়ী কারণ নিরূপণ/চিহ্নিত করুন।'),
+        _sr('select_one icd_cause', 'icd_cause',
+            'Cause', 'কারণ'),
+        _sr('text', 'icd_code', 'ICD code', 'ICD code',
+            hint='e.g. O72'),
+        _sr('text', 'icd_disease_name', 'Name of disease', 'রোগের নাম'),
+        _sr('text', 'icd_diagnoser_name', 'Name of person coding',
+            'নিরূপণকারীর নাম'),
+        _sr('text', 'icd_diagnoser_designation', 'Designation', 'পদবী'),
+        _sr('text', 'icd_diagnoser_institution', 'Institution', 'প্রতিষ্ঠান'),
+        _sr('date', 'icd_date', 'Date', 'তারিখ'),
+        _sr('end_group', 'grp_icd'),
     ]
     return rows
 
 
 def _community_maternal_choices():
     ch = list(DISTRICT_CHOICES) + list(YES_NO)
-    # Relationships (per MPDSR Form 01 paper list).
+
+    # Relationship list (per MPDSR Form 01 paper).
     rel = [
-        ('husband',     'Husband',                 'স্বামী'),
-        ('father_inlaw','Father-in-law',           'শ্বশুর'),
-        ('mother',      'Mother',                  'মা'),
-        ('aunt',        'Aunt / mother-in-law',    'খালা / শাশুড়ী'),
-        ('neighbour',   'Neighbour',               'প্রতিবেশী'),
-        ('mother_inlaw','Mother-in-law',           'শাশুড়ী'),
-        ('sister_inlaw','Sister-in-law',           'শ্যালিকা'),
-        ('father',      'Father',                  'বাবা'),
-        ('sibling',     'Brother / sister',        'ভাই / বোন'),
-        ('other',       'Other (specify)',         'অন্যান্য'),
+        ('husband',      'Husband',                'স্বামী'),
+        ('father_inlaw', 'Father-in-law',          'শ্বশুর'),
+        ('mother',       'Mother',                 'মা'),
+        ('aunt_uncle',   'Aunt / uncle',           'খালা / খালু / চাচী / চাচা / মামী / মামা / ফুপু / ফুপা'),
+        ('neighbour',    'Neighbour',              'প্রতিবেশী'),
+        ('mother_inlaw', 'Mother-in-law',          'শাশুড়ী'),
+        ('sister_inlaw', 'Sister-in-law',          'শ্যালিকা'),
+        ('father',       'Father',                 'বাবা'),
+        ('sibling',      'Elder brother / sister', 'বড় বোন / ভাই'),
+        ('other',        'Other (specify)',        'অন্যান্য'),
     ]
     ch += [_ch('relationship', k, en, bn) for k, en, bn in rel]
 
+    # Q2 — period of death (4).
     ch += [
-        _ch('time_of_death', 'antepartum', 'Antepartum (before labour)',
-            'প্রসবপূর্ব'),
-        _ch('time_of_death', 'intrapartum','Intrapartum (during labour/delivery)',
-            'প্রসবকালীন'),
-        _ch('time_of_death', 'postpartum_42d',
-            'Postpartum (within 42 days of delivery)',
-            'প্রসবোত্তর (৪২ দিনের মধ্যে)'),
-        _ch('time_of_death', 'unknown', 'Unknown', 'অজানা'),
+        _ch('death_period', 'pregnancy', 'During pregnancy', 'গর্ভকালীন সময়'),
+        _ch('death_period', 'post_abortion_28w',
+            'After abortion (within 28 weeks)',
+            'গর্ভপাতের পরে (২৮ সপ্তাহের মধ্যে)'),
+        _ch('death_period', 'delivery', 'During delivery', 'প্রসবকালীন সময়'),
+        _ch('death_period', 'postpartum_42d',
+            'Postpartum (within 42 days)', 'প্রসবোত্তর সময় (৪২ দিনের মধ্যে)'),
     ]
+
+    # Q3 — place of death (10).
     ch += [
-        _ch('place_of_death', 'home',      'Home', 'বাড়ি'),
-        _ch('place_of_death', 'facility',  'Health facility',
-            'স্বাস্থ্য প্রতিষ্ঠান'),
-        _ch('place_of_death', 'in_transit','In transit',
-            'পরিবহন অবস্থায়'),
-        _ch('place_of_death', 'other',     'Other', 'অন্যান্য'),
+        _ch('death_place', 'home', 'Home', 'বাড়িতে'),
+        _ch('death_place', 'union_hfwc',
+            'Union Health & Family Welfare Centre',
+            'ইউনিয়ন স্বাস্থ্য ও পরিবার কল্যাণ কেন্দ্র'),
+        _ch('death_place', 'district_hospital',
+            'District / Sadar hospital', 'জেলা অথবা সদর হাসপাতাল'),
+        _ch('death_place', 'medical_college',
+            'Medical College hospital', 'মেডিকেল কলেজ হাসপাতাল'),
+        _ch('death_place', 'private_clinic',
+            'Private clinic / hospital', 'প্রাইভেট ক্লিনিক / হাসপাতাল'),
+        _ch('death_place', 'in_transit', 'On the way (in transit)', 'পথে'),
+        _ch('death_place', 'upazila_hc',
+            'Upazila Health Complex', 'উপজেলা স্বাস্থ্য কমপ্লেক্স'),
+        _ch('death_place', 'maternal_centre',
+            'Maternal & Child Welfare Centre', 'মাতৃ মঙ্গল কেন্দ্র'),
+        _ch('death_place', 'ngo_clinic', 'NGO clinic', 'এনজিও ক্লিনিক'),
+        _ch('death_place', 'other', 'Other (specify)', 'অন্যান্য'),
     ]
+
+    # Mother's education (5).
     ch += [
-        _ch('anc_count', 'none',  'None',  'নাই'),
-        _ch('anc_count', '1',     '1',     '১'),
-        _ch('anc_count', '2',     '2',     '২'),
-        _ch('anc_count', '3',     '3',     '৩'),
-        _ch('anc_count', '4_plus','4 or more','৪ বা তার বেশি'),
-        _ch('anc_count', 'unknown','Unknown','অজানা'),
+        _ch('education_level', 'none', 'None', 'নাই'),
+        _ch('education_level', 'class5', 'Up to class 5', '৫ম শ্রেণী পর্যন্ত'),
+        _ch('education_level', 'class10', 'Up to class 10', '১০ম শ্রেণী পর্যন্ত'),
+        _ch('education_level', 'class12', 'Up to class 12', 'দ্বাদশ শ্রেণী পর্যন্ত'),
+        _ch('education_level', 'graduate', 'Graduate / degree', 'স্নাতক / ডিগ্রি'),
     ]
-    # Shared with the fistula form (delivery_outcome, mode_of_delivery,
-    # place_of_delivery, delivery_conductor).
+    # Household socio-economic status (4).
     ch += [
-        _ch('mode_of_delivery', 'nvd', 'NVD', 'স্বাভাবিক'),
-        _ch('mode_of_delivery', 'csection', 'C-section', 'সিজারিয়ান'),
-        _ch('mode_of_delivery', 'assisted_vaginal',
-            'Assisted vaginal', 'সহায়ক স্বাভাবিক'),
-        _ch('mode_of_delivery', 'undelivered',
-            'Undelivered (died before)', 'প্রসব হয়নি'),
+        _ch('ses', 'extreme_poor', 'Extreme poor', 'অতিগরীব'),
+        _ch('ses', 'poor', 'Poor', 'গরীব'),
+        _ch('ses', 'middle', 'Middle class', 'মধ্যবিত্ত'),
+        _ch('ses', 'rich', 'Rich', 'ধনী'),
     ]
+
+    # Q7 — pre-pregnancy disease (9).
     ch += [
-        _ch('delivery_outcome', 'livebirth',  'Live birth', 'জীবিত জন্ম'),
-        _ch('delivery_outcome', 'stillbirth', 'Stillbirth', 'মৃত জন্ম'),
-        _ch('delivery_outcome', 'na',         'N/A (undelivered)',
-            'প্রযোজ্য নয়'),
+        _ch('prepreg_disease_type', 'high_bp', 'High blood pressure', 'উচ্চ রক্তচাপ'),
+        _ch('prepreg_disease_type', 'diabetes', 'Diabetes', 'ডায়াবেটিস'),
+        _ch('prepreg_disease_type', 'heart_disease', 'Heart disease', 'হৃদরোগ'),
+        _ch('prepreg_disease_type', 'convulsion', 'Convulsion', 'খিচুনি'),
+        _ch('prepreg_disease_type', 'anaemia', 'Anaemia', 'রক্তস্বল্পতা'),
+        _ch('prepreg_disease_type', 'tb', 'Tuberculosis (TB)', 'যক্ষা'),
+        _ch('prepreg_disease_type', 'asthma', 'Asthma', 'হাঁপানি'),
+        _ch('prepreg_disease_type', 'jaundice', 'Jaundice', 'জন্ডিস'),
+        _ch('prepreg_disease_type', 'other', 'Other (specify)', 'অন্যান্য'),
     ]
+    # Q8 — outcome of last pregnancy (6).
     ch += [
-        _ch('place_of_delivery', 'home', 'Home', 'বাড়ি'),
-        _ch('place_of_delivery', 'gov_facility', 'Government facility',
-            'সরকারি প্রতিষ্ঠান'),
-        _ch('place_of_delivery', 'private_facility', 'Private facility',
-            'বেসরকারি প্রতিষ্ঠান'),
-        _ch('place_of_delivery', 'in_transit', 'In transit',
-            'পরিবহন অবস্থায়'),
-        _ch('place_of_delivery', 'na', 'N/A (undelivered)', 'প্রযোজ্য নয়'),
+        _ch('last_pregnancy_outcome', 'abortion', 'Abortion', 'গর্ভপাত'),
+        _ch('last_pregnancy_outcome', 'stillbirth', 'Stillbirth', 'মৃতজন্ম'),
+        _ch('last_pregnancy_outcome', 'livebirth', 'Live birth', 'জীবিতজন্ম'),
+        _ch('last_pregnancy_outcome', 'preterm', 'Preterm delivery',
+            'নির্দিষ্ট সময়ের পূর্বে প্রসব'),
+        _ch('last_pregnancy_outcome', 'csection', 'Caesarean section', 'সিজারিয়ান'),
+        _ch('last_pregnancy_outcome', 'other_operative',
+            'Other operative delivery', 'অন্যান্য অপারেশন পদ্ধতিতে প্রসব'),
     ]
+    # Q9 — complication phases / matrix columns (4).
     ch += [
-        _ch('delivery_conductor', 'doctor', 'Doctor', 'ডাক্তার'),
-        _ch('delivery_conductor', 'nurse',  'Nurse',  'নার্স'),
-        _ch('delivery_conductor', 'midwife','Midwife','মিডওয়াইফ'),
-        _ch('delivery_conductor', 'tba',    'TBA',    'টিবিএ'),
-        _ch('delivery_conductor', 'relatives','Relatives','আত্মীয়'),
-        _ch('delivery_conductor', 'self',   'Self',   'নিজে'),
-        _ch('delivery_conductor', 'none',   'No-one', 'কেউ না'),
+        _ch('complication_phase', 'antepartum', 'Antepartum', 'প্রসবপূর্ব'),
+        _ch('complication_phase', 'intrapartum', 'Intrapartum', 'প্রসবকালীন'),
+        _ch('complication_phase', 'postpartum', 'Postpartum', 'প্রসবোত্তর'),
+        _ch('complication_phase', 'dont_know', "Don't know", 'জানা নেই'),
     ]
-    # CIPRB cause-of-death buckets (GoB ICD-10 condensed).
-    cod = [
-        ('haemorrhage',       'Haemorrhage (PPH / APH)',
-         'রক্তক্ষরণ (পিপিএইচ / এপিএইচ)'),
-        ('eclampsia',         'Eclampsia / pre-eclampsia',
-         'একলাম্পসিয়া / প্রি-একলাম্পসিয়া'),
-        ('sepsis',            'Sepsis', 'সেপসিস'),
-        ('obstructed_labour', 'Obstructed labour',
-         'বাধাগ্রস্ত শ্রম'),
-        ('abortion_related',  'Abortion-related',
-         'গর্ভপাতজনিত'),
-        ('embolism',          'Embolism', 'এমবোলিজম'),
-        ('indirect',          'Indirect cause (cardiac / anemia / TB / etc.)',
-         'পরোক্ষ কারণ'),
-        ('other',             'Other (specify)', 'অন্যান্য'),
-        ('unknown',           'Unknown', 'অজানা'),
-    ]
-    ch += [_ch('cod_maternal', k, en, bn) for k, en, bn in cod]
+
+    # Q10 — ANC count (also used as the count select).
     ch += [
-        _ch('review_status', 'pending',   'Pending review',
-            'পর্যালোচনার অপেক্ষায়'),
-        _ch('review_status', 'reviewed',  'Reviewed (closes case)', 'পর্যালোচিত'),
-        _ch('review_status', 'in_progress','In progress',
-            'প্রক্রিয়াধীন'),
+        _ch('anc_count', 'none', 'None (00)', 'নাই'),
+        _ch('anc_count', '1', '1', '১'),
+        _ch('anc_count', '2', '2', '২'),
+        _ch('anc_count', '3', '3', '৩'),
+        _ch('anc_count', '4_plus', '4 or more', '৪ বা তার বেশি'),
+        _ch('anc_count', 'unknown', 'Unknown (99)', 'জানা নেই'),
     ]
+
+    # Shared facility list — Q11 / Q14 / Q19 / Q25 (11).
+    fac = [
+        ('home', 'Home', 'বাড়ি'),
+        ('community_clinic', 'Community Clinic', 'কমিউনিটি ক্লিনিক'),
+        ('union_hfwc', 'Union Health & Family Welfare Centre',
+         'ইউনিয়ন স্বাস্থ্য ও পরিবার কল্যাণ কেন্দ্র'),
+        ('upazila_hc', 'Upazila Health Complex', 'উপজেলা স্বাস্থ্য কমপ্লেক্স'),
+        ('maternal_centre', 'Maternal & Child Welfare Centre', 'মাতৃ মঙ্গল কেন্দ্র'),
+        ('district_hospital', 'District / Sadar hospital', 'জেলা অথবা সদর হাসপাতাল'),
+        ('medical_college', 'Medical College hospital', 'মেডিকেল কলেজ হাসপাতাল'),
+        ('private_clinic', 'Private clinic / hospital', 'প্রাইভেট ক্লিনিক / হাসপাতাল'),
+        ('ngo_clinic', 'NGO clinic', 'এনজিও ক্লিনিক'),
+        ('provider_home', "Provider's chamber / home",
+         'চেম্বার / স্বাস্থ্য সেবা দানকারীর বাড়ী'),
+        ('other', 'Other (specify)', 'অন্যান্য'),
+    ]
+    ch += [_ch('facility_place', k, en, bn) for k, en, bn in fac]
+
+    # Shared provider-cadre list — Q12 / Q15 / Q20 / Q26 (12).
+    prov = [
+        ('doctor_mbbs', 'Doctor (MBBS)', 'ডাক্তার (MBBS)'),
+        ('nurse', 'Nurse', 'নার্স'),
+        ('fwv', 'Family Welfare Visitor (FWV)', 'পরিবার পরিকল্পনা ভিজিটর (FWV)'),
+        ('csba', 'CSBA', 'সিএসবিএ (CSBA)'),
+        ('ma', 'Medical Assistant (MA)', 'মেডিকেল অ্যাসিস্ট্যান্ট (MA)'),
+        ('ha', 'Health Assistant (HA)', 'স্বাস্থ্য সহকারী (HA)'),
+        ('fwa', 'Family Welfare Assistant (FWA)', 'পরিবার পরিকল্পনা সহকারী (FWA)'),
+        ('dai', 'Dai (TBA)', 'দাই'),
+        ('palli_chikitsok', 'Palli chikitsok (village doctor)', 'পল্লী চিকিৎসক'),
+        ('ngo_worker', 'NGO worker', 'এনজিও কর্মী'),
+        ('midwife', 'Midwife', 'মিড ওয়াইফ (Midwife)'),
+        ('other', 'Other (specify)', 'অন্যান্য'),
+    ]
+    ch += [_ch('provider_cadre', k, en, bn) for k, en, bn in prov]
+
+    # Q13 — birth-plan elements (8).
+    bp = [
+        ('place_planned', 'Place of delivery planned',
+         'কোথায় প্রসব করবেন তা পরিকল্পনায় ছিল'),
+        ('attendant_planned', 'Who will conduct delivery planned',
+         'কার দ্বারা প্রসব তা পরিকল্পনায় ছিল'),
+        ('transport_planned', 'How to reach facility planned',
+         'কিভাবে কেন্দ্রে যাবেন তা পরিকল্পনায় ছিল'),
+        ('referral_planned', 'Where to go on complication decided',
+         'জটিলতায় কোথায় যাবেন তা ঠিক ছিল'),
+        ('money_saved', 'Money saved for care / transport',
+         'চিকিৎসা / যাতায়াতের টাকা জমানো ছিল'),
+        ('caregiver_arranged', 'Caregiver for mother / home arranged',
+         'মায়ের পরিচর্যাকারী ঠিক করা ছিল'),
+        ('blood_donor', 'Blood donor identified / group tested',
+         'রক্তদাতা নির্ধারণ / গ্রুপ পরীক্ষা ছিল'),
+        ('newborn_items', 'Newborn-care items ready',
+         'নবজাতক পরিচর্যার সরঞ্জাম প্রস্তুত ছিল'),
+    ]
+    ch += [_ch('birth_plan', k, en, bn) for k, en, bn in bp]
+
+    # Q16 — mode of delivery (4) — verbatim from the paper.
+    ch += [
+        _ch('delivery_mode', 'vaginal_spontaneous', 'Vaginal-spontaneous',
+            'স্পন্টিনিওয়াস'),
+        _ch('delivery_mode', 'instrumental_vaginal', 'Instrumental vaginal',
+            'ভ্যাকুয়াম/ফরসেপ'),
+        _ch('delivery_mode', 'csection', 'Caesarean Section', 'সিজারিয়ান'),
+        _ch('delivery_mode', 'destructive', 'Destructive operations',
+            'ডেস্ট্রাক্টিভ অপারেশন'),
+    ]
+    # Q17 — delivery outcome (4).
+    ch += [
+        _ch('delivery_outcome', 'livebirth', 'Live birth', 'জীবিতজন্ম'),
+        _ch('delivery_outcome', 'stillbirth', 'Stillbirth', 'মৃতজন্ম'),
+        _ch('delivery_outcome', 'abortion', 'Abortion', 'গর্ভপাত'),
+        _ch('delivery_outcome', 'not_delivered', 'Not delivered', 'প্রসব হয়নি'),
+    ]
+
+    # Q21 — reasons for not receiving treatment (16) — Bangla verbatim.
+    reasons = [
+        ('unnecessary', 'Thought unnecessary', 'অপ্রয়োজনীয় মনে করেছিল'),
+        ('costly', 'Was costly', 'ব্যয়বহুল ছিল'),
+        ('too_far', 'Distance was far', 'দূরত্ব বেশি ছিল'),
+        ('no_escort', 'No companion to take', 'নিয়ে যাওয়ার সঙ্গী না ছিল না'),
+        ('family_refusal', 'Family disagreement', 'পারিবারিক অসম্মতি ছিল'),
+        ('no_way_known', 'Did not know the way to go', 'যাওয়ার উপায় জানা ছিল না'),
+        ('dont_know_where', 'Did not know where to go', 'কোথায় যেতে হবে না জানা'),
+        ('disaster_night', 'Natural disaster / bad weather / night',
+         'প্রাকৃতিক দুর্যোগ/খারাপ আবহাওয়া/রাত্রি'),
+        ('didnt_understand', 'Did not realise treatment was needed',
+         'চিকিৎসার প্রয়োজন বুঝতে পারেনি'),
+        ('no_money', 'Lack of money', 'অর্থের অভাব ছিল'),
+        ('no_transport', 'Lack of transport', 'যানবাহনের অভাব ছিল'),
+        ('poor_service', 'Service quality', 'সেবার মান অনুমত'),
+        ('good_care_home', 'Got good care at home', 'বাড়ীতে ভাল সেবা পাওয়ায়'),
+        ('no_time', 'Lack of time', 'সময়ের অভাব ছিল'),
+        ('fear_care', 'Fear of receiving care', 'সেবাগ্রহণ ভয় পাওয়া'),
+        ('other', 'Other (specify)', 'অন্যান্য (উল্লেখ করুন)'),
+    ]
+    ch += [_ch('no_treatment_reason', k, en, bn) for k, en, bn in reasons]
+
+    # Consultant ICD-10 cause table — transcribed VERBATIM from the paper's
+    # English-only table; spelling kept exactly as printed (typos included).
+    icd = [
+        ('pph', 'PPH (O72)'),
+        ('aph', 'APH (O46)'),
+        ('puerperal_sepsis', 'Puerperal Sepsis (O85)'),
+        ('ectopic', 'Ectopic Pregnancy (O00)'),
+        ('eclampsia', 'Eclampsia (O15)'),
+        ('haemorrhage_early', 'Haemorrhage in Early Pregnancy (O20)'),
+        ('sequel', 'Death from sequel of direct obstetric cause (O97)'),
+        ('failed_abortion', 'Failed Attempt abortion (O07)'),
+        ('obstructed_labour',
+         'Obstructed Labour due to Malposition and Malpresentation of foetus (O64)'),
+        ('anaesthesia_ld',
+         'Complication of Anaesthesia durind Labour & Delivery (O74)'),
+        ('placenta_previa', 'Placenta Previa (O44)'),
+        ('abruptio', 'Abruptio placentae (O45)'),
+        ('medical_abortion', 'Medical abortion (O04)'),
+        ('repture_uterus', 'Repture Uterus (O71)'),
+        ('anaesthesia_preg', 'Complications of anaesthesia during pregnancy (O29)'),
+        ('obstetric_emblism', 'Obstetric Emblism (O88)'),
+        ('malnutrition', 'Malnutrition in pregnancy (O25)'),
+    ]
+    ch += [_ch('icd_cause', k, en, en) for k, en in icd]
+
     return ch
 
 
@@ -954,115 +1297,579 @@ def _community_neonatal_survey():
                  'নবজাতক মৃত্যুর বাৎসরিক ক্রমিক নং')
     rows += _shared_consent_block()
     rows += _respondent_block()
+
+    consented = "${consent_given}='yes'"
+
+    # ── General information (paper page 3: সাধারণ তথ্য) ────────────────────
     rows += [
-        _sr('begin_group', 'grp_neonate', 'Neonate information',
-            'নবজাতকের তথ্য'),
-        _sr('text', 'mother_name', "Mother's name",
-            'মাতার নাম', required='yes',
-            relevant="${consent_given}='yes'"),
-        _sr('select_one sex_choices', 'sex_neonate',
-            "Sex of neonate", 'নবজাতকের লিঙ্গ'),
-        _sr('date', 'date_of_birth', 'Date of birth',
-            'জন্মের তারিখ'),
-        _sr('date', 'date_of_death', 'Date of death',
-            'মৃত্যুর তারিখ', required='yes'),
-        _sr('integer', 'age_at_death_hours',
-            'Age at death (hours)',
-            'মৃত্যুর সময় বয়স (ঘন্টা)'),
-        _sr('integer', 'birth_weight_grams',
-            'Birth weight (grams)',
-            'জন্মের ওজন (গ্রাম)'),
-        _sr('integer', 'gestational_weeks',
-            'Gestational age (weeks)',
-            'গর্ভাবস্থার সপ্তাহ'),
-        _sr('select_one mode_of_delivery', 'mode_of_delivery',
-            'Mode of delivery', 'প্রসবের পদ্ধতি'),
-        _sr('select_one place_of_delivery', 'place_of_delivery',
-            'Place of delivery', 'প্রসবের স্থান'),
-        _sr('select_one place_of_death', 'place_of_death',
-            'Place of death', 'মৃত্যুর স্থান'),
-        _sr('end_group', 'grp_neonate'),
-    ]
-    rows += [
-        _sr('begin_group', 'grp_cause_neo',
-            'Cause of neonatal death', 'নবজাতক মৃত্যুর কারণ'),
-        _sr('select_one cod_neonatal', 'cause_of_death',
-            'Probable cause', 'সম্ভাব্য কারণ', required='yes'),
-        _sr('text', 'cause_other',
-            'Other (specify)',
-            'অন্যান্য (উল্লেখ করুন)',
+        _sr('begin_group', 'grp_identity',
+            'General information', 'সাধারণ তথ্য',
+            relevant=consented),
+        _sr('text', 'clinic_name',
+            'Community Clinic name', 'কমিউনিটি ক্লিনিকের নামঃ'),
+        _sr('text', 'clinic_code',
+            'Community Clinic code (must be filled)',
+            'কমিউনিটি ক্লিনিকের কোডঃ (অবশ্যই পূরণ করতে হবে)',
             required='yes',
-            relevant="${cause_of_death}='other'"),
-        _sr('end_group', 'grp_cause_neo'),
+            hint='Numeric code printed on the paper form.'),
+        _sr('text', 'mother_name', "Mother's name", 'মায়ের নামঃ',
+            required='yes'),
+        _sr('text', 'mother_dhis2_code',
+            "Mother's online registration (DHIS-2) coding (must be filled)",
+            'মায়ের অনলাইন রেজিস্ট্রেশন (ডিএইচআইএস-২) কোডিংঃ '
+            '(অবশ্যই পূরণ করতে হবে)',
+            required='yes',
+            hint='DHIS-2 registration number from the paper form.'),
+        _sr('integer', 'mother_age', "Mother's age (years)",
+            'মায়ের বয়সঃ (বৎসর)', constraint='. > 9 and . < 60', cmsg='10–59'),
+        _sr('select_one education_level', 'mother_education',
+            "Mother's education", 'মায়ের শিক্ষাগত যোগ্যতা ঃ'),
+        _sr('select_one ses', 'household_ses',
+            'Household socio-economic status', 'খানার আর্থ-সামাজিক অবস্থাঃ'),
+        _sr('text', 'father_name', "Father's name", 'পিতার নামঃ'),
+        _sr('integer', 'father_age', "Father's age (years)",
+            'পিতার বয়সঃ (বৎসর)', constraint='. > 0 and . < 110'),
+        _sr('text', 'child_name', "Child's name", 'শিশুর নামঃ'),
+        # Paper page 3: child DHIS-2 box carries NO "must be filled" mark
+        # (unlike clinic code + mother DHIS-2), so it is NOT required.
+        _sr('text', 'child_dhis2_code',
+            "Child's online registration number (DHIS-2)",
+            'শিশুর অনলাইন রেজিস্ট্রেশন নম্বর (ডিএইচআইএস-২) :',
+            hint='DHIS-2 registration number from the paper form, if any.'),
+        _sr('end_group', 'grp_identity'),
     ]
+
+    # ── Section 1: Neonate information (Q1–Q5) ────────────────────────────
     rows += [
-        _sr('begin_group', 'grp_review',
-            'Review committee', 'পর্যালোচনা কমিটি'),
-        _sr('date', 'review_date',
-            'Date of review meeting',
-            'পর্যালোচনা সভার তারিখ'),
-        _sr('select_one review_status', 'review_status',
-            'Review status', 'পর্যালোচনার অবস্থা'),
-        _sr('text', 'action_plan_summary',
-            'Action plan summary',
-            'কর্মপরিকল্পনার সারসংক্ষেপ'),
-        _sr('end_group', 'grp_review'),
+        _sr('begin_group', 'grp_section1',
+            "Section 1: Neonate's information", 'সেকশন ১: নবজাতকের তথ্য',
+            relevant=consented),
+        _sr('date', 'birth_date', '1. Date of birth', '১। জন্ম তারিখঃ'),
+        _sr('time', 'birth_time', '1. Time of birth (24-hour)',
+            '১। সময় (২৪ঘন্টা)ঃ'),
+        _sr('date', 'death_date', '2. Date of death', '২। মৃত্যুর তারিখঃ',
+            required='yes'),
+        _sr('time', 'death_time', '2. Time of death (24-hour)',
+            '২। সময় (২৪ঘন্টা)ঃ'),
+        # Paper Q2: "নবজাতকের বয়স ___ দিন · ২৪ ঘন্টার কম হলে <১ লিখুন".
+        # Field is integer, so "<1" cannot be typed — capture 0 for any
+        # death within the first 24 hours; the hint explains this.
+        _sr('integer', 'age_at_death_days',
+            "2. Neonate's age (days) — write <1 if under 24 hours",
+            '২। নবজাতকের বয়স (দিন)  ২৪ ঘন্টার কম হলে <১ লিখুন',
+            constraint='. >= 0 and . <= 28',
+            hint='Whole days. Enter 0 if the neonate died within 24 hours '
+                 '(paper "<1").'),
+        _sr('select_one death_place', 'death_place',
+            '3. Where did the death occur? (tick the correct box)',
+            '৩। কোথায় মৃত্যু ঘটেছিল? (সঠিক বক্সে ঠিক দিন)',
+            required='yes',
+            hint='Tick the correct box.'),
+        _sr('text', 'death_place_other', 'Other (specify)',
+            'অন্যান্য (উল্লেখ করুন)', relevant="${death_place}='other'"),
+        _sr('integer', 'sick_duration_days',
+            '4. How long was the neonate sick before death?',
+            '৪। নবজাতক মৃত্যুর পূর্বে কত সময় অসুস্থ ছিল ?',
+            constraint='. >= 0 and . <= 28'),
+        # Paper Q5: হ্যাঁ / না / জানি না — yes_no (Yes/No/Unknown) maps the
+        # "জানি না" tick onto Unknown.
+        _sr('select_one yes_no', 'death_by_injury',
+            '5. Did the neonate die from any physical injury?',
+            '৫। নবজাতক কি কোন শারীরিক আঘাতে মৃত্যুবরন করেছে?'),
+        _sr('text', 'death_injury_type',
+            '5. If yes, what type of injury (specify)',
+            '৫। হ্যাঁ হলে কি ধরনের আঘাত, উল্লেখ করুন',
+            relevant="${death_by_injury}='yes'"),
+        _sr('end_group', 'grp_section1'),
+    ]
+
+    # ── Section 2: Mother's information (Q6–Q16) ──────────────────────────
+    anc_seen = "${anc_count}!='none' and ${anc_count}!='unknown'"
+    rows += [
+        _sr('begin_group', 'grp_section2',
+            "Section 2: Mother's information", 'সেকশন ২: মায়ের তথ্য',
+            relevant=consented),
+        # Paper Q6 is ONE question with a মাস / সপ্তাহ box; kept as two
+        # integer fields (month + week) but both carry the paper's Q6 text.
+        _sr('integer', 'gestation_month',
+            '6. At how many months or weeks of gestation was the delivery? '
+            '(months)',
+            '৬। গর্ভের কত মাস বা সপ্তাহে প্রসব হয়েছে? (মাস)',
+            constraint='. >= 0 and . <= 10'),
+        _sr('integer', 'gestation_week',
+            '6. At how many months or weeks of gestation was the delivery? '
+            '(weeks)',
+            '৬। গর্ভের কত মাস বা সপ্তাহে প্রসব হয়েছে? (সপ্তাহ)',
+            constraint='. >= 0 and . <= 45'),
+        _sr('select_multiple pregnancy_complication', 'pregnancy_complications',
+            '7. Were there any complications related to delivery during the '
+            'pregnancy period? (more than one answer possible)',
+            '৭। গর্ভকালীন সময়কালে প্রসব সংক্রান্ত কোন জটিলতা হয়েছিল কিনা? '
+            '(একাধিক উত্তর হতে পারে )'),
+        _sr('text', 'pregnancy_complication_other',
+            'Other (specify)', 'অন্যান্য (উল্লেখ করুন)',
+            relevant="selected(${pregnancy_complications}, 'other')"),
+        _sr('select_one anc_count', 'anc_count',
+            '8. How many times did you receive antenatal (ANC) care?',
+            '৮। কতবার প্রসবপূর্ব সেবা (এএনসি) গ্রহণ করেছেন?',
+            hint='If no ANC or not known, go to Q11.'),
+        _sr('select_multiple facility_place', 'anc_place',
+            '9. From which place was antenatal care received? '
+            '(more than one answer may be ticked)',
+            '৯। প্রসবপূর্ব সেবা কোন স্থান হতে গ্রহণ করা হয়েছে? '
+            '(একাধিক উত্তর ✓ টিক চিহ্ন দেয়া যাবে)',
+            relevant=anc_seen),
+        _sr('text', 'anc_place_other', 'Other (specify)',
+            'অন্যান্য (উল্লেখ করুন)',
+            relevant="selected(${anc_place}, 'other')"),
+        _sr('select_multiple provider_cadre', 'anc_provider',
+            '10. Who provided the antenatal care? '
+            '(more than one answer ✓ tick)',
+            '১০। প্রসবপূর্ব সেবা কে প্রদান করেছেন? (একাধিক উত্তর ✓ টিক চিহ্ন দিন)',
+            relevant=anc_seen),
+        _sr('text', 'anc_provider_other', 'Other (specify)',
+            'অন্যান্য উল্লেখ করুন',
+            relevant="selected(${anc_provider}, 'other')"),
+        _sr('integer', 'parity',
+            '11. How many times has the mother given birth? Write the number.',
+            '১১। মা কত বার সন্তান প্রসব করেছেন? সংখ্যা লিখুন',
+            constraint='. >= 0 and . <= 25'),
+        _sr('integer', 'abortion_count',
+            '12. How many times has the mother had an abortion? '
+            'Write the number.',
+            '১২। মায়ের কতবার গর্ভপাত হয়েছে? সংখ্যা লিখুন',
+            constraint='. >= 0 and . <= 25'),
+        _sr('select_one yes_no', 'abortion_unknown',
+            '12. Tick if not known.',
+            '১২। জানা না থাকলে টিক দিন'),
+        _sr('select_one facility_place', 'birth_place',
+            '13. Place of birth of the neonate?', '১৩। নবজাতক প্রসবের স্থান?',
+            required='yes'),
+        _sr('text', 'birth_place_other', 'Other (specify)',
+            'অন্যান্য (উল্লেখ করুন)',
+            relevant="${birth_place}='other'"),
+        _sr('select_one provider_cadre', 'delivery_conductor',
+            '14. By whom was the delivery conducted?',
+            '১৪। কার দ্বারা প্রসব সংগঠিত হয়েছিল?'),
+        _sr('text', 'delivery_conductor_other', 'Other (specify)',
+            'অন্যান্য (উল্লেখ করুন)',
+            relevant="${delivery_conductor}='other'"),
+        _sr('select_one delivery_mode', 'delivery_mode',
+            '15. By which method was the delivery done?',
+            '১৫। কোন পদ্ধতিতে প্রসব হয়েছিল?'),
+        _sr('select_multiple delivery_complication', 'delivery_complications',
+            '16. Did the mother show any complications during delivery? '
+            'What type of complications occurred? (more than one answer ✓ tick)',
+            '১৬। ডেলিভারির সময় মায়ের কোন জটিলতা দেখা দিয়েছিল? কোন ধরনের '
+            'জটিলতা হয়েছিল? (একাধিক উত্তর ✓ টিক চিহ্ন দিন)'),
+        _sr('end_group', 'grp_section2'),
+    ]
+
+    # ── Section 3: Post-delivery information (Q17–Q27) ────────────────────
+    rows += [
+        _sr('begin_group', 'grp_section3',
+            'Section 3: Post-delivery information', 'সেকশন ৩ : প্রসবোত্তর তথ্য',
+            relevant=consented),
+        _sr('select_one yes_no', 'twin_birth',
+            '17. Did the mother deliver twins?',
+            '১৭। মা যমজ শিশু প্রসব  করেছেন কি না ?'),
+        _sr('select_one birth_weight_band', 'birth_weight_band',
+            "18. What was the neonate's weight at birth?",
+            '১৮। জন্ম কালীন সময় শিশুর ওজন কতো ছিল?'),
+        _sr('select_multiple congenital_defect', 'congenital_defects',
+            '19. Were there any congenital defects?',
+            '১৯ । কোন জন্মগত ক্রটি ছিল কিনা?'),
+        _sr('text', 'congenital_defect_other', 'Other (specify)',
+            'অন্যান্য ((উল্লেখ করুন)',
+            relevant="selected(${congenital_defects}, 'other')"),
+        _sr('select_one cried_breathed', 'cried_breathed',
+            '20. After birth, did the neonate cry / breathe?',
+            '২০ । শিশু জন্মের পরে কান্না করেছিলো/শ্বাস নিয়েছিল কিনা?',
+            hint='If the answer is "Yes / breathed normally" or "Don\'t know", '
+                 'go to Q27.'),
+        _sr('select_multiple resuscitation_action', 'resuscitation_actions',
+            '21. If the answer was weak cry or breathed after a long time, '
+            'what measures were taken?',
+            '২১ । যদি উত্তরে দুর্বল কান্না  বা অনেক সময় পরে শ্বাস নিয়েছিল  হয় তবে '
+            'কি ব্যবস্থা নেয়া হয়েছিলো',
+            relevant="${cried_breathed}='weak_cry' or "
+                     "${cried_breathed}='delayed_breath'"),
+        _sr('text', 'resuscitation_other', 'Other (specify)',
+            'অন্যান্য (উল্লেখ করুন)',
+            relevant="selected(${resuscitation_actions}, 'other')"),
+        # Q22 — neonatal danger signs (multi-tick, 13 options).
+        _sr('select_multiple danger_sign', 'danger_signs',
+            '22. What danger signs did the neonate show? '
+            '(more than one tick possible)',
+            '২২. নবজাতককে কোন বিপদজনক চিহ্ন দেখা দিয়েছিল? '
+            '(একের অধিক টিক চিহ্ন দিতে পারেন)'),
+        _sr('text', 'danger_sign_other', 'Other (specify)',
+            'অন্যান্য (',
+            relevant="selected(${danger_signs}, 'other')"),
+        _sr('select_one yes_no', 'treatment_received',
+            '23. Did the child receive any treatment before death?',
+            '২৩ । শিশু মৃত্যুর পূর্বে কোন চিকিৎসা গ্রহন করেছেন কিনা?',
+            hint='If yes, go to Q24. If no, go to Q25.'),
+        _sr('select_multiple facility_place', 'treatment_place',
+            '24. Place where the post-delivery care was received? '
+            '(more than one answer tick)',
+            '২৪ । প্রসবোত্তর সেবা গ্রহণের স্থান? (একাধিক উত্তরটিক চিহ্ন দিন)',
+            relevant="${treatment_received}='yes'"),
+        _sr('text', 'treatment_place_other', 'Other (specify)',
+            'অন্যান্য (উল্লেখ করুন)',
+            relevant="selected(${treatment_place}, 'other')"),
+        _sr('select_multiple no_treatment_reason', 'no_treatment_reasons',
+            '25. If treatment care was not received, what was the reason? '
+            '(more than one answer)',
+            '২৫ । চিকিৎসাসেবা গ্রহণ না করলে তার কারণ? (একাধিক উত্তর)',
+            relevant="${treatment_received}='no'"),
+        _sr('text', 'no_treatment_other', 'Other (specify)',
+            'অন্যান্য (উল্লেখ করুন)',
+            relevant="selected(${no_treatment_reasons}, 'other')"),
+        _sr('text', 'cause_opinion',
+            '26. In your opinion, write the probable cause of this death?',
+            '২৬ । আপনার মতে এই মৃত্যুর সম্ভাব্য কারণ লিখুন?',
+            app='multiline'),
+        _sr('text', 'certificate_cause',
+            '27. If a death certificate of this neonate exists, what was the '
+            'cause of death according to the certificate?',
+            '২৭ । যদি এই নবজাতকের মৃত্যুর সার্টিফিকেট থাকে তাহলে সার্টিফিকেট '
+            'অনুযায়ী মৃত্যুর কারণ কি ছিল?',
+            app='multiline'),
+        _sr('end_group', 'grp_section3'),
+    ]
+
+    # ── Consultant / doctor ICD-10 cause coding (must be filled by doctor) ─
+    # Paper page 8: "কনসালটেন্ট/ডাক্তার কর্তৃক পূরণের জন্য
+    # (অবশ্যই কনসালটেন্ট/ডাক্তার দ্বারা পূরণ করতে হবে)".
+    rows += [
+        _sr('begin_group', 'grp_icd',
+            'For consultant / doctor (must be filled by consultant / doctor)',
+            'কনসালটেন্ট/ডাক্তার কর্তৃক পূরণের জন্য (অবশ্যই কনসালটেন্ট/'
+            'ডাক্তার দ্বারা পূরণ করতে হবে)'),
+        _sr('note', 'icd_ref_note',
+            'Identify / mark the cause per the ICD 10 table — '
+            'Birth Asphyxia P 21 · Low Birth Weight P 07 · Meningitis G 00 · '
+            'Congenital Anomalies Q 00 · Pneumonia J 10-20 · Septicaemia P 36 · '
+            'Birth Trauma P 10-15.',
+            'ICD 10 ছক অনুযায়ী কারণ নিরুপণ/চিহ্নিত করুন'),
+        _sr('select_one icd_cause', 'icd_cause',
+            'CAUSE', 'রোগের নাম'),
+        _sr('text', 'icd_code', 'ICD code', 'ICD code',
+            hint='e.g. P 21'),
+        _sr('text', 'icd_disease_name', 'Name of disease', 'রোগের নাম'),
+        _sr('text', 'icd_diagnoser_name', 'Name of identifier',
+            'নিরুপণকারীর নাম'),
+        _sr('text', 'icd_diagnoser_designation', 'Designation', 'পদবী'),
+        _sr('text', 'icd_diagnoser_institution', 'Institution', 'প্রতিষ্ঠান'),
+        _sr('date', 'icd_date', 'Date', 'তারিখ'),
+        _sr('end_group', 'grp_icd'),
     ]
     return rows
 
 
 def _community_neonatal_choices():
     ch = list(DISTRICT_CHOICES) + list(YES_NO)
-    rel = [('mother','Mother','মা'),
-           ('father','Father','বাবা'),
-           ('grandmother','Grandmother','দাদী/নানী'),
-           ('other','Other','অন্যান্য')]
+
+    # Relationship list (per MPDSR Form 02 respondent table, page 2:
+    # "সম্পর্ক: (উদাহরণ স্বরূপ)"). Values/order unchanged; labels verbatim.
+    rel = [
+        ('mother', 'Mother', 'মা'),
+        ('grandparent', 'Grandfather / grandmother (paternal / maternal)',
+         'দাদা / দাদী / নানা / নানী'),
+        ('sibling', 'Sister / brother', 'বোন/ভাই'),
+        ('other', 'Other (specify)', 'অন্যান্য (উল্লেখ করুন'),
+        ('father', 'Father', 'বাবা'),
+        ('aunt_uncle',
+         'Aunt / uncle (khala / khalu, chachi / chacha, mami / mama, fupu / fupa)',
+         'খালা/খালু, চাচী/চাচা, মামী/মামা, ফুপু/ফুপা'),
+        ('neighbour', 'Neighbour', 'প্রতিবেশী'),
+    ]
     ch += [_ch('relationship', k, en, bn) for k, en, bn in rel]
+
+    # Mother's education (5) — page 3.
     ch += [
-        _ch('sex_choices', 'male',   'Male',   'পুরুষ'),
-        _ch('sex_choices', 'female', 'Female', 'মহিলা'),
-        _ch('sex_choices', 'ambiguous', 'Ambiguous', 'অস্পষ্ট'),
+        _ch('education_level', 'none', 'None', 'নাই'),
+        _ch('education_level', 'class5', 'Up to class 5', '৫ম শ্রেণী পর্যন্ত'),
+        _ch('education_level', 'class10', 'Up to class 10', '১০ম শ্রেণী পর্যন্ত'),
+        _ch('education_level', 'class12', 'Up to class 12', 'দ্বাদশ শ্রেণী পর্যন্ত'),
+        _ch('education_level', 'graduate', 'Graduate / degree', 'স্নাতক/ডিগ্রি'),
     ]
+    # Household socio-economic status (4) — page 3.
     ch += [
-        _ch('mode_of_delivery', 'nvd', 'NVD', 'স্বাভাবিক'),
-        _ch('mode_of_delivery', 'csection', 'C-section', 'সিজারিয়ান'),
-        _ch('mode_of_delivery', 'assisted_vaginal', 'Assisted vaginal',
-            'সহায়ক স্বাভাবিক'),
+        _ch('ses', 'extreme_poor', 'Extreme poor', 'অতিগরীব'),
+        _ch('ses', 'poor', 'Poor', 'গরীব'),
+        _ch('ses', 'middle', 'Middle class', 'মধ্যবিত্ত'),
+        _ch('ses', 'rich', 'Rich', 'ধনী'),
     ]
+
+    # Q3 — place of death (10) — page 3. (No "Community Clinic" on paper.)
     ch += [
-        _ch('place_of_delivery', 'home', 'Home', 'বাড়ি'),
-        _ch('place_of_delivery', 'gov_facility', 'Government facility',
-            'সরকারি প্রতিষ্ঠান'),
-        _ch('place_of_delivery', 'private_facility', 'Private facility',
-            'বেসরকারি প্রতিষ্ঠান'),
-        _ch('place_of_delivery', 'in_transit', 'In transit',
-            'পরিবহন অবস্থায়'),
+        _ch('death_place', 'home', 'Home', 'বাড়ীতে'),
+        _ch('death_place', 'union_hfwc',
+            'Union Health & Family Welfare Centre',
+            'ইউনিয়ন স্বাস্থ্য ও পরিবার কল্যাণ কেন্দ্র'),
+        _ch('death_place', 'district_hospital',
+            'District / Sadar hospital', 'জেলা অথবা সদর হাসপাতালে'),
+        _ch('death_place', 'medical_college',
+            'Medical College hospital', 'মেডিকেল কলেজ হাসপাতাল'),
+        _ch('death_place', 'private_clinic',
+            'Private clinic / hospital', 'প্রাইভেট ক্লিনিক/হাসপাতাল'),
+        _ch('death_place', 'in_transit', 'On the way', 'পথে'),
+        _ch('death_place', 'upazila_hc',
+            'Upazila Health Complex', 'উপজেলা স্বাস্থ্য কমপ্লেক্সে'),
+        _ch('death_place', 'maternal_centre',
+            'Maternal & Child Welfare Centre', 'মাতৃ মঙ্গল কেন্দ্রে'),
+        _ch('death_place', 'ngo_clinic', 'NGO clinic', 'এনজিও ক্লিনিক'),
+        _ch('death_place', 'other', 'Other (specify)', 'অন্যান্য (উল্লেখ করুন'),
     ]
+
+    # Q7 — pregnancy / antenatal complications (multi, 12) — page 4.
+    preg = [
+        ('excess_bleeding', 'Excessive bleeding', 'অতিরিক্ত রক্তক্ষরণ'),
+        ('high_bp', 'High blood pressure', 'উচ্চ রক্তচাপ'),
+        ('convulsion', 'Convulsion', 'খিঁচুনি'),
+        ('high_fever', 'High fever', 'প্রচন্ড জ্বর'),
+        ('prolonged_labour', 'Prolonged labour', 'বিলম্বিত প্রসব'),
+        ('abnormal_behaviour', 'Abnormal behaviour', 'অসংলগ্ন আচরণ'),
+        ('obstructed_labour', 'Obstructed labour', 'বাধাপ্রাপ্ত প্রসব'),
+        ('twin_pregnancy', 'Twin pregnancy', 'যমজ গর্ভধারন'),
+        ('injury', 'Injury', 'আঘাত'),
+        ('no_illness', 'No, the mother had no disease',
+         'না মায়ের কোন রোগ ছিল না'),
+        ('dont_know', "I don't know", 'আমি জানি না'),
+        ('other', 'Other (specify)', 'অন্যান্য (উল্লেখ করুন'),
+    ]
+    ch += [_ch('pregnancy_complication', k, en, bn) for k, en, bn in preg]
+
+    # Q8 — ANC count (6) — page 4.
     ch += [
-        _ch('place_of_death', 'home',      'Home', 'বাড়ি'),
-        _ch('place_of_death', 'facility',  'Health facility',
-            'স্বাস্থ্য প্রতিষ্ঠান'),
-        _ch('place_of_death', 'in_transit','In transit',
-            'পরিবহন অবস্থায়'),
+        _ch('anc_count', '1', '1 time', '১ বার'),
+        _ch('anc_count', '2', '2 times', '২ বার'),
+        _ch('anc_count', '3', '3 times', '৩ বার'),
+        _ch('anc_count', '4_plus', '4 times and more', '৪ বার এবং তার বেশী'),
+        _ch('anc_count', 'none', 'Received no ANC care', 'কোন এএনসি সেবা পায়নি'),
+        _ch('anc_count', 'unknown', "I don't know", 'আমি জানি না'),
     ]
-    cod = [
-        ('preterm_lbw', 'Preterm / low birth weight',
-         'প্রিটার্ম / কম জন্ম ওজন'),
-        ('asphyxia',    'Birth asphyxia', 'জন্ম শ্বাসকষ্ট'),
-        ('sepsis',      'Neonatal sepsis', 'নবজাতক সেপসিস'),
-        ('pneumonia',   'Pneumonia / respiratory infection',
-         'নিউমোনিয়া / শ্বাসতন্ত্রের সংক্রমণ'),
-        ('congenital',  'Congenital anomaly', 'জন্মগত ত্রুটি'),
-        ('diarrhoea',   'Diarrhoea', 'ডায়রিয়া'),
-        ('other',       'Other', 'অন্যান্য'),
-        ('unknown',     'Unknown', 'অজানা'),
+
+    # Shared facility list — Q9 / Q13 / Q24 (11) — pages 4-7.
+    fac = [
+        ('home', 'Home', 'বাড়ী'),
+        ('community_clinic', 'Community Clinic', 'কমিউনিটি ক্লিনিক'),
+        ('union_hfwc', 'Union Health & Family Welfare Centre',
+         'ইউনিয়ন স্বাস্থ্য ও পরিবার কল্যাণ কেন্দ্র'),
+        ('upazila_hc', 'Upazila Health Complex', 'উপজেলা স্বাস্থ্য কমপ্লেক্স'),
+        ('maternal_centre', 'Maternal & Child Welfare Centre', 'মাতৃ মঙ্গল কেন্দ্র'),
+        ('district_hospital', 'District / Sadar hospital', 'জেলা অথবা সদর হাসপাতাল'),
+        ('medical_college', 'Medical College hospital', 'মেডিকেল কলেজ হাসপাতাল'),
+        ('private_clinic', 'Private clinic / hospital', 'প্রাইভেট ক্লিনিক/হাসপাতাল'),
+        ('ngo_clinic', 'NGO clinic', 'এনজিও ক্লিনিক'),
+        ('provider_home', "Provider's chamber / home",
+         'চেম্বার/স্বাস্থ্য সেবাদানকারীর বাড়ী'),
+        ('other', 'Other (specify)', 'অন্যান্য (উল্লেখ করুন'),
     ]
-    ch += [_ch('cod_neonatal', k, en, bn) for k, en, bn in cod]
+    ch += [_ch('facility_place', k, en, bn) for k, en, bn in fac]
+
+    # Shared provider-cadre list — Q10 / Q14 (12) — pages 4-5.
+    prov = [
+        ('doctor_mbbs', 'Doctor (MBBS)', 'ডাক্তার (MBBS)'),
+        ('nurse', 'Nurse', 'নার্স'),
+        ('fwv', 'Family Welfare Visitor (FWV)', 'পরিবার পরিকল্পনা ভিজিটর (FWV)'),
+        ('csba', 'CSBA', 'সিএসবিএ (CSBA)'),
+        ('ma', 'Medical Assistant (MA)', 'মেডিকেল অ্যাসিস্ট্যান্ট (MA)'),
+        ('ha', 'Health Assistant (HA)', 'স্বাস্থ্য সহকারী (HA)'),
+        ('fwa', 'Family Welfare Assistant (FWA)', 'পরিবার পরিকল্পনা সহকারী(FWA)'),
+        ('dai', 'Dai', 'দাই'),
+        ('palli_chikitsok', 'Palli chikitsok', 'পল্লী চিকিৎসক'),
+        ('ngo_worker', 'NGO worker', 'এনজিও কর্মী'),
+        ('midwife', 'Mid wife', 'মিড ওয়াইফ (Mid wife)'),
+        ('other', 'Other (specify)', 'অন্যান্য উল্লেখ করুন'),
+    ]
+    ch += [_ch('provider_cadre', k, en, bn) for k, en, bn in prov]
+
+    # Q15 — mode of delivery (3) — page 5. Paper prints Bangla + English
+    # together per option; English copied verbatim from the paper.
     ch += [
-        _ch('review_status', 'pending',  'Pending review',
-            'পর্যালোচনার অপেক্ষায়'),
-        _ch('review_status', 'reviewed', 'Reviewed (closes case)', 'পর্যালোচিত'),
+        _ch('delivery_mode', 'vaginal_spontaneous', 'Vaginal-spontaneous',
+            'স্পন্টিনিওয়াস'),
+        _ch('delivery_mode', 'csection', 'Caesarean Section', 'সিজারিয়ান'),
+        _ch('delivery_mode', 'instrumental_vaginal',
+            'Instrumental vaginal (vacuum/forceps)',
+            'সহায়ক প্রসব  (ভ্যাকুয়াম/ফোরসেপ)'),
     ]
+
+    # Q16 — delivery / intrapartum complications (multi, 16) — page 5.
+    # Each option on the paper carries Bangla + bracketed English; the
+    # English here is copied VERBATIM from the paper (typos kept).
+    delcomp = [
+        ('no_complication', 'No complication', 'মায়ের কোন জটিলতা ছিল না'),
+        ('dont_know', "Don't know", 'এ বিষয়ে আমি কিছু জানি না'),
+        ('high_bp', 'High Blood Pressure/Hypertension', 'উচ্চ রক্তচাপ'),
+        ('convulsion', 'Convulsion/eclampsia', 'খিচুনি/একলামসিয়া'),
+        ('aph', 'Bleeding during pregnancy/ Ante Partum Hemorrhage',
+         'প্রসবেরপূর্বে /প্রসব কালীন সময় রক্তক্ষরণ'),
+        ('obstructed_labour', 'Obstructed labour', 'বাধাগ্রস্থ প্রসব'),
+        ('prolonged_labour', 'Labour pain more than 12 hrs/Prolonged labour ',
+         '১২ ঘন্টার বেশী প্রসববেদনা/বিলম্বিত প্রসব'),
+        ('premature_labour', 'Premature labour/labour pain before 37 weeks ',
+         '৩৭ সপ্তাহের পূর্বে প্রসব বেদনা'),
+        ('prom', 'Leakage of fluid before labour/ Ruptured membrane/PROM',
+         'প্রসবের পূর্বে পানি ভাঙ্গা'),
+        ('fetal_distress',
+         'Less fetal movement/ fetal distress/ meconium stained liquor',
+         'ভ্রূণের নড়াচড়া কম হওয়া অথবা দীর্ঘ সময় নড়াচড়া না হওয়া'),
+        ('malpresentation',
+         'Abnormal position of the fetus/ mal-presentation ',
+         'ভ্রূণের অস্বাভাবিক অবস্থান'),
+        ('ruptured_uterus', 'Ruptured uterus', 'জরায়ু ছিড়ে যাওয়া'),
+        ('retained_placenta',
+         'Placenta not delivered 30 minutes after delivery of the '
+         'baby/Retained placenta',
+         'প্রসবের ৩০ মিনিটের মধ্যে গর্ভ ফুল না পড়া'),
+        ('pph', 'Bleeding after/ Post-Partum Hemorrhage',
+         'প্রসব পরবর্তী রক্তক্ষরণ'),
+        ('high_fever', 'High fever', 'প্রচন্ড জ্বর'),
+        ('foul_discharge', 'Fowl smelling vaginal discharge', 'দুর্গন্ধযুক্ত স্রাব'),
+    ]
+    ch += [_ch('delivery_complication', k, en, bn) for k, en, bn in delcomp]
+
+    # Q18 — birth-weight band (3) — page 6.
+    ch += [
+        _ch('birth_weight_band', 'low',
+            'Lower than normal (< 2.5 kg)', 'স্বাভাবিকের কম (<২.৫ কেজি)'),
+        _ch('birth_weight_band', 'normal',
+            'Normal (2.5 kg-4.5 kg)', 'স্বাভাবিক (২.৫ কেজি-৪.৫ কেজি)'),
+        _ch('birth_weight_band', 'high',
+            'Higher than normal (> 4.5 kg)', 'স্বাভাবিকের বেশী (> ৪.৫ কেজি)'),
+    ]
+
+    # Q19 — congenital defect site (multi, 11) — page 6.
+    defects = [
+        ('head', 'Head', 'মাথা'),
+        ('cleft_palate', 'Cleft palate', 'তালু কাটা'),
+        ('lip', 'Lip', 'ঠোঁট'),
+        ('elbow', 'Elbow', 'কনুই'),
+        ('shoulder', 'Shoulder', 'কাঁধ'),
+        ('anus', 'Anus', 'পায়ু পথ'),
+        ('leg', 'Leg', 'পা'),
+        ('genitalia', 'Genitalia', 'যোনি পথ'),
+        ('dont_know', "I don't know about this", 'আমি এ বিষয়টি জানি না'),
+        ('none_normal', 'No, the neonate was normal', 'না, নবজাতক স্বাভাবিক ছিল'),
+        ('other', 'Other (specify)', 'অন্যান্য'),
+    ]
+    ch += [_ch('congenital_defect', k, en, bn) for k, en, bn in defects]
+
+    # Q20 — cried / breathed after birth (4) — page 6.
+    ch += [
+        _ch('cried_breathed', 'normal_breath',
+            'Yes / breathed normally', 'হ্যাঁ / স্বাভাবিক ভাবে শ্বাস  নিয়েছিল'),
+        _ch('cried_breathed', 'weak_cry', 'Weak cry', 'দুর্বল কান্না'),
+        _ch('cried_breathed', 'delayed_breath',
+            'Breathed after a long time', 'অনেক সময় পরে শ্বাস নিয়েছিল'),
+        _ch('cried_breathed', 'dont_know', "Don't know", 'জানি না'),
+    ]
+
+    # Q21 — resuscitation actions taken (multi, 9) — page 6. Each option
+    # on the paper carries Bangla + bracketed English; English copied
+    # VERBATIM from the paper (typos like "atthevertebral", "ambo" kept).
+    resus = [
+        ('dried_wrapped',
+         'Dried the neonate and wrapped with dry clean cloth',
+         'নবজাতকে শুকনো এবং শুকনো পরিক্ষার কাপড় দিয়ে আবৃত করা হয়েছে'),
+        ('spinal_stimulation',
+         'Stimulation was given atthevertebral column or back',
+         'নবজাতকের পিঠে বা শিরদাড় চাপড় করা হয়েছে'),
+        ('mouth_to_mouth', 'Mouth to mouth breathing was given',
+         'মুখের মাধ্যমে শ্বাস দেয়া'),
+        ('ambu_bag', 'Neonatal resuscitation by ambo bag',
+         'আম্বো ব্যাগের মাধ্যমে শ্বাস দেয়া হয়েছিলো কিনা'),
+        ('slap_back',
+         'Slap forcefully on the back/chest/ hip holding both leg up '
+         'and head below',
+         'পিঠে অথবা বুকে হাতের সাহায্যে চাপড়দেয়া হয়েছে'),
+        ('warm_water', 'Flash warm water in mouth',
+         'মুখে গরম পানি ছিটানো হয়েছে'),
+        ('transferred', 'Transfer in health care centre',
+         'স্বাস্থ্য কেন্দ্রে পাঠানো হয়েছিলো'),
+        ('nothing_done', 'Nothing was done significantly',
+         'কিছুই করা হয় নাই'),
+        ('other', 'Other (specify)', 'অন্যান্য (উল্লেখ করুন'),
+    ]
+    ch += [_ch('resuscitation_action', k, en, bn) for k, en, bn in resus]
+
+    # Q22 — neonatal danger signs (multi, 13: 11 clinical + other + don't
+    # know) — pages 6-7. Each option carries Bangla + bracketed English;
+    # English copied VERBATIM (typos like "colouation" kept).
+    danger = [
+        ('convulsions', 'Convulsions', 'খিঁচুনি'),
+        ('no_feed', 'No feed or reluctant to feed',
+         'নবজাতক বুকের দুধ খেতে অক্ষম বা দুর্বল'),
+        ('fast_breathing', 'Fast breathing', 'দ্রুত শ্বাসপ্রশ্বাস'),
+        ('chest_indrawing', 'Chest indrawing with Fast breathing',
+         'দ্রুত শ্বাসপ্রশ্বাসের সাথে বুক দেবে যাওয়া'),
+        ('hypothermia', 'Hypothermia of hand and feet',
+         'হাত ও পা ঠান্ডা হয়ে যাওয়া'),
+        ('no_movement', 'Lack of movement or less movement',
+         'নড়াচড়া নেই'),
+        ('fever', 'Fever', 'জ্বর'),
+        ('jaundice', 'Yellow colouation of eyes/ Skin',
+         'চোখ ও গায়ের চামড়া হলুদ বর্ণের হওয়া'),
+        ('umbilicus_infection',
+         'Reddish umbilicus/ Pus secretion from umbilicus',
+         'নাভি লাল বর্ণ ধারন বা নাভি থেকে পুজ বের হওয়া'),
+        ('diarrhoea', 'Diarrhoea', 'পাতলা পায়খানা (ডায়রিয়া)'),
+        ('skin_pustules', 'Pus contained vesicle in the skin',
+         'চামরায় পুজ সহ ফোড়া'),
+        ('other', 'Other (specify)', 'অন্যান্য ('),
+        ('dont_know', "I don't know", 'আমার জানা নেই'),
+    ]
+    ch += [_ch('danger_sign', k, en, bn) for k, en, bn in danger]
+
+    # Q25 — reasons for not receiving treatment (multi, 16) — page 7.
+    reasons = [
+        ('unnecessary', 'Thought unnecessary', 'অপ্রয়োজনীয় মনে করা'),
+        ('didnt_understand', 'Could not understand the need for treatment',
+         'চিকিৎসার প্রয়োজন বুঝতে না পারা'),
+        ('costly', 'Costly', 'ব্যয়বহুল'),
+        ('no_money', 'Lack of money', 'অর্থের অভাব'),
+        ('too_far', 'Distance', 'দূরত্ব'),
+        ('no_transport', 'Lack of transport', 'যানবাহনের অভাব'),
+        ('no_escort', 'Did not get a companion to take', 'নিয়ে যাওয়ার সঙ্গী না পাওয়া'),
+        ('poor_service', 'Service quality poor', 'সেবার মান অনুন্নত'),
+        ('family_refusal', 'Family disagreement', 'পারিবারিক অসম্মতি'),
+        ('good_care_home', 'Got good care at home',
+         'বাড়ীতে ভাল সেবা পাওয়ায়'),
+        ('no_way_known', 'Did not know the way to go', 'যাওয়ার উপায় না জানা'),
+        ('no_time', 'Lack of time', 'সময়ের অভাব'),
+        ('dont_know_where', 'Did not know where to go',
+         'কোথায় যেতে হবে না জানা'),
+        ('fear_care', 'Fear of receiving care', 'সেবাগ্রহণে ভয় পাওয়া'),
+        ('disaster_night', 'Natural disaster/bad weather/night',
+         'প্রাকৃতিক দুর্যোগ/খারাপ আবহাওয়া/রাত্রি'),
+        ('other', 'Other (specify)', 'অন্যান্য (উল্লেখ করুন'),
+    ]
+    ch += [_ch('no_treatment_reason', k, en, bn) for k, en, bn in reasons]
+
+    # Consultant ICD 10 causes (7 from the page-8 table + Other) — page 8.
+    # The paper's ICD 10 table is ENGLISH-ONLY (CAUSE | ICD CODE), so the
+    # English is transcribed VERBATIM including the space inside each code
+    # ("P 21", "P 07", "J 10-20"...). Bangla mirrors the English (gold-
+    # standard Form 01 discipline), since the table prints no Bangla.
+    icd = [
+        ('birth_asphyxia_p21', 'Birth Asphyxia (P 21)', 'Birth Asphyxia (P 21)'),
+        ('low_birth_weight_p07', 'Low Birth Weight (P 07)',
+         'Low Birth Weight (P 07)'),
+        ('meningitis_g00', 'Meningitis (G 00)', 'Meningitis (G 00)'),
+        ('congenital_anomalies_q00', 'Congenital Anomalies (Q 00)',
+         'Congenital Anomalies (Q 00)'),
+        ('pneumonia_j10_20', 'Pneumonia (J 10-20)', 'Pneumonia (J 10-20)'),
+        ('septicaemia_p36', 'Septicaemia (P 36)', 'Septicaemia (P 36)'),
+        ('birth_trauma_p10_15', 'Birth Trauma (P 10-15)',
+         'Birth Trauma (P 10-15)'),
+        ('other', 'Other (specify code)', 'অন্যান্য'),
+    ]
+    ch += [_ch('icd_cause', k, en, bn) for k, en, bn in icd]
+
     return ch
 
 
@@ -1072,110 +1879,408 @@ def _community_neonatal_choices():
 
 def _facility_maternal_survey():
     rows = _meta('Annual facility maternal death serial number',
-                 'প্রতিষ্ঠানিক মাতৃমৃত্যুর বাৎসরিক ক্রমিক নং')
+                 'মাতৃমৃত্যুর বাৎসরিক ক্রমিক নং')
+
+    # General information & facility / mother identity (paper page 2)
     rows += [
-        _sr('begin_group', 'grp_facility',
-            'Facility information', 'প্রতিষ্ঠানের তথ্য'),
-        _sr('text', 'facility_name',
-            'Name of facility', 'প্রতিষ্ঠানের নাম', required='yes'),
-        _sr('select_one facility_level', 'facility_level',
-            'Level of facility', 'প্রতিষ্ঠানের স্তর'),
-        _sr('text', 'department', 'Department / Ward',
-            'বিভাগ / ওয়ার্ড'),
-        _sr('text', 'reporting_officer',
-            'Reporting officer', 'রিপোর্টিং কর্মকর্তা'),
-        _sr('end_group', 'grp_facility'),
+        _sr('begin_group', 'grp_identity', 'General information', 'সাধারণ তথ্য'),
+        _sr('text', 'facility_name', 'Name of facility',
+            'স্বাস্থ্য কেন্দ্রের নামঃ', required='yes'),
+        _sr('text', 'facility_code',
+            'Facility code (must be filled — 8 digits)',
+            'স্বাস্থ্য কেন্দ্রের কোড নংঃ',
+            required='yes',
+            hint='8-digit code printed in the boxes on the paper form.',
+            constraint='regex(normalize-space(.), "^[0-9]{8}$")',
+            cmsg='Enter exactly 8 digits. / ঠিক ৮ অঙ্ক লিখুন।'),
+        _sr('text', 'deceased_name', "Mother's name", 'মায়ের নামঃ',
+            required='yes'),
+        _sr('integer', 'deceased_age', "Mother's age (years)",
+            'মায়ের বয়সঃ (বৎসর)', required='yes',
+            constraint='. > 9 and . < 60', cmsg='10–59'),
+        _sr('text', 'mother_hosp_reg_no',
+            "Mother's Hospital Registration No. (must be filled)",
+            'মায়ের হাসপাতাল রেজিস্ট্রেশন নং',
+            required='yes',
+            hint='Hospital registration number from the boxes on the paper form.'),
+        _sr('note', 'mother_addr_note',
+            "Mother's address", 'মায়ের ঠিকানাঃ'),
+        _sr('select_one district', 'mother_district',
+            'District', 'জেলাঃ', required='yes'),
+        _sr('text', 'mother_upazila', 'Upazila', 'উপজেলাঃ'),
+        _sr('text', 'mother_union', 'Union / Pourashava',
+            'ইউনিয়ন/পৌরসভাঃ'),
+        _sr('text', 'mother_ward', 'Ward', 'ওয়ার্ডঃ'),
+        _sr('text', 'mother_village', 'Village', 'গ্রামঃ'),
+        _sr('text', 'deceased_husband', "Husband's name", 'স্বামীর নামঃ'),
+        _sr('text', 'family_phone', 'Phone number', 'ফোন নংঃ',
+            constraint='regex(., "^[0-9+ -]{6,20}$") or .=""',
+            cmsg='Enter a valid phone number.'),
+        _sr('end_group', 'grp_identity'),
     ]
+
+    # Clinical timeline — ER/OPD arrival, admission, death (page 2)
     rows += [
-        _sr('begin_group', 'grp_deceased',
-            "Deceased woman's information",
-            'মৃত মহিলার তথ্য'),
-        _sr('text', 'deceased_name',  'Name of deceased',
-            'মৃত মহিলার নাম', required='yes'),
-        _sr('integer', 'deceased_age',
-            'Age (years)', 'বয়স (বছর)', required='yes'),
-        _sr('text', 'deceased_husband', "Husband's name", 'স্বামীর নাম'),
-        _sr('text', 'deceased_address', 'Permanent address',
-            'স্থায়ী ঠিকানা'),
-        _sr('date', 'admission_date',
-            'Date of admission', 'ভর্তির তারিখ'),
-        _sr('date', 'date_of_death',
-            'Date of death', 'মৃত্যুর তারিখ', required='yes'),
-        _sr('select_one time_of_death', 'time_of_death',
-            'Time of death (relative to delivery)',
-            'মৃত্যুর সময় (প্রসবের সাপেক্ষে)'),
-        _sr('integer', 'time_death_after_birth_hours',
-            'Time of death after birth (hours)',
-            'প্রসবের পর মৃত্যুর সময় (ঘন্টা)'),
-        _sr('end_group', 'grp_deceased'),
+        _sr('begin_group', 'grp_timeline', 'Clinical timeline', 'সময়রেখা'),
+        _sr('date', 'er_arrival_date',
+            'Date of arrival in Emergency department / OPD',
+            'জরুরি বিভাগ/ বহিঃবিভাগে রোগী আসার তারিখ'),
+        _sr('time', 'er_arrival_time',
+            'Time of arrival in Emergency department / OPD',
+            'জরুরি বিভাগ/ বহিঃবিভাগে রোগী আসার সময় (২৪ঘন্টা)'),
+        _sr('date', 'admission_date', 'Date of admission in inpatient',
+            'অন্তঃবিভাগে ভর্তির তারিখ'),
+        _sr('time', 'admission_time', 'Time of admission in inpatient',
+            'অন্তঃবিভাগে ভর্তির সময় (২৪ঘন্টা)'),
+        _sr('date', 'date_of_death', 'Date of death', 'মৃত্যুর তারিখ',
+            required='yes'),
+        _sr('time', 'time_of_death', 'Time of death',
+            'মৃত্যুর সময় (২৪ঘন্টা)'),
+        _sr('end_group', 'grp_timeline'),
     ]
+
+    # Q2 condition at admission, Q3 pregnancy status in ER (page 2)
     rows += [
-        _sr('begin_group', 'grp_clinical',
-            'Clinical details', 'ক্লিনিকাল বিবরণ'),
-        _sr('integer', 'gestational_weeks',
-            'Gestational age at admission (weeks)',
-            'ভর্তির সময় গর্ভাবস্থার সপ্তাহ'),
-        _sr('integer', 'gravida', 'Gravida', 'গ্রাভিডা'),
-        _sr('integer', 'para',    'Parity',  'প্যারিটি'),
-        _sr('select_one anc_count', 'anc_visits_count',
-            'ANC visits', 'এএনসি পরিদর্শন'),
-        _sr('select_one mode_of_delivery', 'mode_of_delivery',
-            'Mode of delivery', 'প্রসবের পদ্ধতি'),
+        _sr('begin_group', 'grp_admission', 'Admission status', 'ভর্তির অবস্থা'),
+        _sr('select_one admission_condition', 'admission_condition',
+            "2. Mother's condition at admission",
+            '২। ভর্তির সময় মায়ের অবস্থা কেমন ছিলঃ'),
+        _sr('select_one er_pregnancy_status', 'er_pregnancy_status',
+            "3. Mother's pregnancy status in OPD / ER",
+            '৩। বহিঃবিভাগ বা জরুরি বিভাগে মায়ের গর্ভাবস্থা কেমন ছিলঃ'),
+        _sr('end_group', 'grp_admission'),
+    ]
+
+    # Q4 diagnosis at admission (multi-tick long menu, page 3)
+    rows += [
+        _sr('begin_group', 'grp_q4', '4. Diagnosis at admission',
+            '৪। ভর্তির সময় নির্ণয়কৃত রোগ'),
+        _sr('select_multiple admission_diagnosis', 'admission_diagnosis',
+            '4. Diagnosis at admission',
+            '৪। ভর্তির সময় নির্ণয়কৃত রোগ'),
+        _sr('select_one retained_placenta_haem', 'admission_retained_placenta_haem',
+            "4a. Retained placenta: with or without haemorrhage",
+            'Retained placenta: a.with haemorrhage / b. without haemorrhage',
+            relevant="selected(${admission_diagnosis}, 'retained_placenta')"),
+        _sr('text', 'admission_diagnosis_other', 'Others (Specify):',
+            'Others (Specify):',
+            relevant="selected(${admission_diagnosis}, 'other')"),
+        _sr('end_group', 'grp_q4'),
+    ]
+
+    # Q5 referred in? + source (page 3)
+    rows += [
+        _sr('begin_group', 'grp_q5', '5. Referred in', '৫। রেফার হয়ে এসেছিল'),
+        _sr('select_one yes_no', 'referred_in',
+            '5. Was the admitted mother referred in?',
+            '৫। ভর্তিকৃত মা কি রেফার হয়ে এসেছিল?'),
+        _sr('select_one referral_source', 'referral_source',
+            '5a. If yes, from where was she referred?',
+            'যদি হ্যাঁ হয় তাহলে কোথা হতে এসেছিল-',
+            relevant="${referred_in}='yes'"),
+        _sr('text', 'referral_source_other', 'অন্যান্য',
+            'অন্যান্য',
+            relevant="${referred_in}='yes' and ${referral_source}='other'"),
+        _sr('end_group', 'grp_q5'),
+    ]
+
+    # Q6 first doctor/consultant observation date+time (page 3)
+    rows += [
+        _sr('begin_group', 'grp_q6',
+            '6. First observation by doctor / consultant',
+            '৬। ডাক্তার / কনসালট্যান্ট প্রথম পর্যবেক্ষণ'),
+        _sr('select_one yes_no', 'first_obs_recorded',
+            '6. Is the date/time of first observation recorded?',
+            '৬। কখন ডাক্তার বা কনসালট্যান্ট প্রথম মাকে পর্যবেক্ষণ করেছেনঃ',
+            hint="Choose 'No' if the form notes তথ্য সংগ্রহ করা নেই।"),
+        _sr('date', 'first_obs_date', '6a. Date of first observation',
+            'তারিখঃ',
+            relevant="${first_obs_recorded}='yes'"),
+        _sr('time', 'first_obs_time', '6b. Time of first observation',
+            'সময় (২৪ঘন্টা)ঃ',
+            relevant="${first_obs_recorded}='yes'"),
+        _sr('end_group', 'grp_q6'),
+    ]
+
+    # Q7 inpatient diagnosis (multi-tick long menu, page 3)
+    rows += [
+        _sr('begin_group', 'grp_q7', '7. Inpatient diagnosis',
+            '৭। অন্তঃবিভাগে রোগ/সমস্যা নির্ণয়;'),
+        _sr('select_multiple inpatient_diagnosis', 'inpatient_diagnosis',
+            '7. Disease / problem diagnosed in the inpatient ward',
+            '৭। অন্তঃবিভাগে রোগ/সমস্যা নির্ণয়;'),
+        _sr('select_one retained_placenta_haem', 'inpatient_retained_placenta_haem',
+            "7a. Retained placenta: with or without haemorrhage",
+            'Retained placenta: With haemorrhage / Without haemorrhage',
+            relevant="selected(${inpatient_diagnosis}, 'retained_placenta')"),
+        _sr('text', 'inpatient_diagnosis_other', 'Others (Specify):',
+            'Others (Specify):',
+            relevant="selected(${inpatient_diagnosis}, 'other')"),
+        _sr('end_group', 'grp_q7'),
+    ]
+
+    # Q8 time management started after admission (page 3)
+    rows += [
+        _sr('begin_group', 'grp_q8', '8. Management started',
+            '৮। ব্যবস্থাপনা শুরু'),
+        _sr('select_one yes_no', 'management_recorded',
+            '8. Is the date/time management started recorded?',
+            '৮। অন্তঃবিভাগে ভর্তির পর কখন ব্যবস্থাপনা শুরু হয়েছেঃ',
+            hint="Choose 'No' if the form notes তথ্য সংগ্রহ করা নেই।"),
+        _sr('date', 'management_start_date', '8a. Date management started',
+            'তারিখঃ',
+            relevant="${management_recorded}='yes'"),
+        _sr('time', 'management_start_time',
+            '8b. Time management started',
+            'সময় (২৪ঘন্টা)ঃ',
+            relevant="${management_recorded}='yes'"),
+        _sr('end_group', 'grp_q8'),
+    ]
+
+    # Q9 mode of delivery, Q10 outcome, Q11 birth weight, Q12 anomaly (page 4)
+    rows += [
+        _sr('begin_group', 'grp_delivery', 'Delivery & newborn',
+            'প্রসব ও নবজাতক'),
+        _sr('select_one delivery_mode', 'delivery_mode',
+            '9. Mode of delivery', '৯। প্রসবের পদ্ধতিঃ'),
         _sr('select_one delivery_outcome', 'delivery_outcome',
-            'Delivery outcome', 'প্রসবের ফলাফল'),
-        _sr('select_one place_of_delivery', 'place_of_delivery',
-            'Place of delivery (this facility / referred in)',
-            'প্রসবের স্থান (এই প্রতিষ্ঠান / রেফার্ড ইন)'),
-        _sr('select_one delivery_conductor', 'person_assisted_delivery',
-            'Person assisted delivery',
-            'প্রসবে সহায়তাকারী'),
-        _sr('select_one yes_no', 'pnc_received',
-            'PNC documented?', 'পিএনসি নথিভুক্ত?'),
-        _sr('select_one cod_maternal', 'cause_of_death',
-            'Primary cause of death',
-            'প্রধান মৃত্যুর কারণ', required='yes'),
-        _sr('text', 'cause_of_death_other',
-            'Other cause (specify)', 'অন্যান্য (উল্লেখ করুন)',
-            relevant="${cause_of_death}='other'"),
-        _sr('text', 'contributory_factors',
-            'Contributory factors / co-morbidities',
-            'অবদানকারী কারণ / সহ-অসুস্থতা'),
-        _sr('end_group', 'grp_clinical'),
+            '10. Outcome of the current pregnancy',
+            '১০। বর্তমান গর্ভবতীর ফলাফলঃ'),
+        _sr('text', 'delivery_outcome_other', 'অন্যান্য উল্লেখ করুন',
+            'অন্যান্য উল্লেখ করুন', relevant="${delivery_outcome}='other'"),
+        _sr('integer', 'birth_weight_grams', "11. Baby's birth weight (grams)",
+            '১১। জন্মের পর শিশুর ওজন (গ্রাম)',
+            constraint='. >= 0 and . <= 8000',
+            relevant="${delivery_outcome}!='abortion'"),
+        _sr('select_one yes_no', 'baby_abnormality',
+            '12. Was there any abnormality in the baby after birth?',
+            '১২। জন্মের পর শিশুর কোন অস্বাভাবিকতা ছিল কিনাঃ',
+            relevant="${delivery_outcome}!='abortion'"),
+        _sr('end_group', 'grp_delivery'),
     ]
+
+    # Q13 place of death within the facility (page 4)
     rows += [
-        _sr('begin_group', 'grp_review',
-            'Facility review committee',
-            'প্রতিষ্ঠানিক পর্যালোচনা কমিটি'),
-        _sr('date', 'review_date',
-            'Date of review meeting',
-            'পর্যালোচনা সভার তারিখ'),
-        _sr('select_one review_status', 'review_status',
-            'Review status', 'পর্যালোচনার অবস্থা'),
-        _sr('text', 'action_plan_summary',
-            'Action plan summary',
-            'কর্মপরিকল্পনার সারসংক্ষেপ'),
-        _sr('end_group', 'grp_review'),
+        _sr('begin_group', 'grp_q13', '13. Place of death in facility',
+            '১৩। মায়ের মৃত্যুর স্থান'),
+        _sr('select_one death_place_facility', 'death_place_facility',
+            "13. Place of the mother's death",
+            '১৩। মায়ের মৃত্যুর স্থানঃ'),
+        _sr('text', 'death_place_facility_other', 'অন্যান্য',
+            'অন্যান্য',
+            relevant="${death_place_facility}='other'"),
+        _sr('end_group', 'grp_q13'),
+    ]
+
+    # Q14 most probable cause of death — multi-tick x ICD-10 (page 4)
+    rows += [
+        _sr('begin_group', 'grp_q14',
+            '14. Most probable cause(s) of death (ICD-10)',
+            '১৪। সবচেয়ে সম্ভাব্য মৃত্যুর কারণ'),
+        _sr('note', 'q14_note',
+            '14. Most probable cause of death — you may tick more than one '
+            '(WHO Cause of death form, with separate ICD10 list).',
+            '১৪। সবচেয়ে সম্ভাব্য মৃত্যুর কারণঃ (একাধিক উত্তর ✓ টিক চিহ্ন দিতে পারবেন) '
+            '(WHO Cause of death form, with separate ICD10 list)'),
+        _sr('select_multiple icd_cause', 'cause_of_death',
+            'CAUSE', 'CAUSE',
+            required='yes'),
+        _sr('text', 'cause_of_death_other', 'Other cause (specify + ICD code)',
+            'Other cause (specify + ICD code)',
+            relevant="selected(${cause_of_death}, 'other')"),
+        _sr('end_group', 'grp_q14'),
+    ]
+
+    # Q15 brief death narrative (page 4)
+    rows += [
+        _sr('begin_group', 'grp_q15', '15. Brief narrative of the death',
+            '১৫। মৃত্যুর সংক্ষিপ্ত বিবরণ'),
+        _sr('text', 'death_narrative',
+            '15. Comments (describe the death in brief)',
+            '১৫। মন্তব্যঃ (সংক্ষেপে মৃত্যুর বিবরণ উল্লেখ করুন)', app='multiline'),
+        _sr('end_group', 'grp_q15'),
+    ]
+
+    # Q16 form-filler identity (page 4; signature N/A digitally)
+    rows += [
+        _sr('begin_group', 'grp_q16', '16. Form filled by', '১৬। ফর্ম পূরণকারী'),
+        _sr('text', 'filler_name', '16. Name of person filling the form',
+            '১৬। ফর্ম পূরণকারীর নামঃ', required='yes'),
+        _sr('text', 'filler_designation', 'Designation', 'পদবীঃ'),
+        _sr('date', 'filler_date', 'Date of data collection',
+            'তথ্য সংগ্রহের তারিখঃ'),
+        _sr('end_group', 'grp_q16'),
     ]
     return rows
 
 
 def _facility_maternal_choices():
-    # Re-uses every code list from community maternal — facilities and
-    # community reviewers fill the same vocabularies.
-    ch = list(_community_maternal_choices())
+    ch = list(DISTRICT_CHOICES) + list(YES_NO)
+
+    # Q2 — condition of the mother at admission. Paper Bangla verbatim;
+    # 'Stable'/'Unstable' are printed in English alongside the Bangla.
     ch += [
-        _ch('facility_level', 'medical_college', 'Medical college hospital',
-            'মেডিকেল কলেজ হাসপাতাল'),
-        _ch('facility_level', 'district', 'District hospital',
-            'জেলা হাসপাতাল'),
-        _ch('facility_level', 'upazila',  'Upazila health complex',
-            'উপজেলা স্বাস্থ্য কমপ্লেক্স'),
-        _ch('facility_level', 'union',    'Union health centre',
-            'ইউনিয়ন স্বাস্থ্য কেন্দ্র'),
-        _ch('facility_level', 'private',  'Private facility',
-            'বেসরকারি প্রতিষ্ঠান'),
-        _ch('facility_level', 'ngo',      'NGO clinic', 'এনজিও ক্লিনিক'),
+        _ch('admission_condition', 'conscious', 'Conscious', 'সচেতন'),
+        _ch('admission_condition', 'stable', 'Stable', 'স্থিতিশীল (Stable)'),
+        _ch('admission_condition', 'unstable', 'Unstable',
+            'অস্থিতিশীল (Unstable)'),
+        _ch('admission_condition', 'unconscious', 'Unconscious', 'অচেতন'),
+        _ch('admission_condition', 'not_recorded', 'Not recorded',
+            'তথ্য সংগ্রহ করা হয়নি'),
     ]
+
+    # Q3 — pregnancy status in OPD / ER (5). Paper Bangla verbatim.
+    ch += [
+        _ch('er_pregnancy_status', 'pregnant', 'Pregnant (antenatal)',
+            'গর্ভকালীন'),
+        _ch('er_pregnancy_status', 'in_labour', 'In labour',
+            'প্রসব বেদনা ছিল'),
+        _ch('er_pregnancy_status', 'after_delivery', 'Came after delivery',
+            'প্রসবের পর এসেছিল'),
+        _ch('er_pregnancy_status', 'other_problem', 'Had other problem',
+            'অন্যান্য সমস্যা ছিল'),
+        _ch('er_pregnancy_status', 'not_recorded', 'Not recorded',
+            'তথ্য সংগ্রহ করা হয়নি'),
+    ]
+
+    # Q4 — diagnosis at admission. Paper prints these options in ENGLISH only,
+    # so both label columns carry the EXACT printed English (gold-standard
+    # 'en, en' discipline — no invented Bangla). Order = paper top-to-bottom.
+    diag_adm = [
+        ('ectopic', 'Ectopic pregnancy'),
+        ('spontaneous_abortion', 'Spontaneous abortion'),
+        ('induced_abortion', 'Induced abortion'),
+        ('placenta_previa', 'Placenta previa'),
+        ('molar_pregnancy', 'Molar pregnancy'),
+        ('pph', 'Postpartum haemorrhage'),
+        ('prolonged_labour', 'Prolonged labour'),
+        ('rupture_uterus', 'Rupture uterus'),
+        ('missed_abortion', 'Missed abortion'),
+        ('medical_abortion', 'Medical abortion'),
+        ('threatened_abortion', 'Threatened abortion'),
+        ('abruptio_placenta', 'Abruptio placenta'),
+        ('intrapartum_haemorrhage', 'Intra partum haemorrhage'),
+        ('retained_placenta', 'Retained placenta:'),
+        ('obstructed_labour', 'Obstructed labour'),
+        ('not_recorded', 'Not recorded'),
+        ('other', 'Others (Specify):'),
+    ]
+    ch += [_ch('admission_diagnosis', k, en, en) for k, en in diag_adm]
+
+    # Q7 — inpatient diagnosis. SAME keys as Q4, but the paper prints SOME
+    # words differently (Inducedabortion / Threatenedabortion run together;
+    # 'Post partum haemorrhage' with a space; 'Rupture uterus:' with a colon).
+    # Transcribed exactly as the paper prints them — typos kept.
+    diag_inp = [
+        ('ectopic', 'Ectopic pregnancy'),
+        ('spontaneous_abortion', 'Spontaneous abortion'),
+        ('induced_abortion', 'Inducedabortion'),
+        ('placenta_previa', 'Placenta previa'),
+        ('molar_pregnancy', 'Molar pregnancy'),
+        ('pph', 'Post partum haemorrhage'),
+        ('prolonged_labour', 'Prolonged labour'),
+        ('rupture_uterus', 'Rupture uterus:'),
+        ('missed_abortion', 'Missed abortion'),
+        ('medical_abortion', 'Medical abortion'),
+        ('threatened_abortion', 'Threatenedabortion'),
+        ('abruptio_placenta', 'Abruptio placenta'),
+        ('intrapartum_haemorrhage', 'Intra partum haemorrhage'),
+        ('retained_placenta', 'Retained placenta:'),
+        ('obstructed_labour', 'Obstructed labour'),
+        ('not_recorded', 'Not recorded'),
+        ('other', 'Others (Specify):'),
+    ]
+    ch += [_ch('inpatient_diagnosis', k, en, en) for k, en in diag_inp]
+
+    # Q4a — retained-placenta sub-options. Q4 prints them with a./b. prefixes;
+    # Q7 prints the same two without prefixes. Both English-only on the paper.
+    # This single shared list feeds both 4a and 7a — Q4's printed wording kept.
+    ch += [
+        _ch('retained_placenta_haem', 'with_haem', 'a.with haemorrhage',
+            'a.with haemorrhage'),
+        _ch('retained_placenta_haem', 'without_haem', 'b. without haemorrhage',
+            'b. without haemorrhage'),
+    ]
+
+    # Q5 — referral source. Paper Bangla verbatim (no English on the paper,
+    # so the Bangla text fills both columns).
+    ch += [
+        _ch('referral_source', 'govt_facility', 'সরকারী স্বাস্থ্য কেন্দ্র',
+            'সরকারী স্বাস্থ্য কেন্দ্র'),
+        _ch('referral_source', 'private_facility',
+            'ব্যক্তিগত স্বাস্থ্য কেন্দ্র', 'ব্যক্তিগত স্বাস্থ্য কেন্দ্র'),
+        _ch('referral_source', 'home', 'বাড়ী থেকে', 'বাড়ী থেকে'),
+        _ch('referral_source', 'other', 'অন্যান্য', 'অন্যান্য'),
+        _ch('referral_source', 'not_recorded', 'তথ্য সংগ্রহ করা নেই',
+            'তথ্য সংগ্রহ করা নেই'),
+    ]
+
+    # Q9 — mode of delivery (4). Paper Bangla verbatim.
+    ch += [
+        _ch('delivery_mode', 'normal', 'স্বাভাবিক প্রসব', 'স্বাভাবিক প্রসব'),
+        _ch('delivery_mode', 'csection', 'সিজারিয়ান সেকশন',
+            'সিজারিয়ান সেকশন'),
+        _ch('delivery_mode', 'instrumental',
+            'যন্ত্রপাতির মাধ্যমে', 'যন্ত্রপাতির মাধ্যমে'),
+        _ch('delivery_mode', 'not_delivered', 'প্রসব হয়নি', 'প্রসব হয়নি'),
+    ]
+
+    # Q10 — outcome of current pregnancy (5). Paper Bangla verbatim.
+    ch += [
+        _ch('delivery_outcome', 'livebirth', 'জীবিত জন্ম', 'জীবিত জন্ম'),
+        _ch('delivery_outcome', 'stillbirth', 'মৃত জন্ম', 'মৃত জন্ম'),
+        _ch('delivery_outcome', 'low_birth_weight', 'কম জন্ম ওজন',
+            'কম জন্ম ওজন'),
+        _ch('delivery_outcome', 'abortion', 'গর্ভপাত', 'গর্ভপাত'),
+        _ch('delivery_outcome', 'other', 'অন্যান্য উল্লেখ করুন',
+            'অন্যান্য উল্লেখ করুন'),
+    ]
+
+    # Q13 — place of death within the facility (8). Paper Bangla verbatim,
+    # in the paper's printed order.
+    ch += [
+        _ch('death_place_facility', 'er', 'জরুরি বিভাগ', 'জরুরি বিভাগ'),
+        _ch('death_place_facility', 'trolley', 'ট্রলিতে', 'ট্রলিতে'),
+        _ch('death_place_facility', 'ward', 'ওয়ার্ড', 'ওয়ার্ড'),
+        _ch('death_place_facility', 'labour_room', 'লেবার রুম', 'লেবার রুম'),
+        _ch('death_place_facility', 'operation_theatre', 'অপারেশন রুম',
+            'অপারেশন রুম'),
+        _ch('death_place_facility', 'icu', 'আইসিইউ', 'আইসিইউ'),
+        _ch('death_place_facility', 'other', 'অন্যান্য', 'অন্যান্য'),
+        _ch('death_place_facility', 'after_operation', 'অপারেশনের পর',
+            'অপারেশনের পর'),
+    ]
+
+    # Q14 — ICD-10 cause-of-death table. English-only on the paper; codes
+    # printed as "O 72" (letter O, space, digits). Transcribed VERBATIM in
+    # the paper's table order (down each column, left then right). Both label
+    # columns carry the exact printed English (gold-standard 'en, en').
+    icd = [
+        ('pph_o72', 'PPH (O 72)'),
+        ('aph_o46', 'APH (O 46)'),
+        ('puerperal_sepsis_o85', 'Puerperal Sepsis (O 85)'),
+        ('ectopic_o00', 'Ectopic Pregnancy (O 00)'),
+        ('eclampsia_o15', 'Eclampsia (O 15)'),
+        ('early_haemorrhage_o20', 'Haemorrhage in Early Pregnancy (O 20)'),
+        ('sequel_o97', 'Death from sequel of direct obstetric cause (O 97)'),
+        ('anaesthesia_ld_o74',
+         'Complication of Anaesthesia during Labour & Delivery (O 74)'),
+        ('obstructed_labour_o64',
+         'Obstructed Labour due to Malposition and Malpresentation of '
+         'foetus (O 64)'),
+        ('failed_abortion_o07', 'Failed Attempt abortion (O 07)'),
+        ('placenta_previa_o44', 'Placenta Previa (O 44)'),
+        ('abruptio_o45', 'Abruptio placentae (O 45)'),
+        ('medical_abortion_o04', 'Medical abortion (O 04)'),
+        ('rupture_uterus_o71', 'Rupture Uterus (O 71)'),
+        ('anaesthesia_preg_o29',
+         'Complications of anaesthesia during pregnancy (O 29)'),
+        ('embolism_o88', 'Obstetric Embolism (O 88)'),
+        ('malnutrition_o25', 'Malnutrition in pregnancy (O 25)'),
+        ('other', 'Other (specify code)'),
+    ]
+    ch += [_ch('icd_cause', k, en, en) for k, en in icd]
+
     return ch
 
 
@@ -1184,80 +2289,559 @@ def _facility_maternal_choices():
 # ╚══════════════════════════════════════════════════════════════════════════╝
 
 def _facility_neonatal_survey():
-    rows = _meta('Annual facility neonatal death serial number',
-                 'প্রতিষ্ঠানিক নবজাতক মৃত্যুর বাৎসরিক ক্রমিক নং')
+    rows = _meta('Annual neonatal death serial number',
+                 'নবজাতক মৃত্যুর বাৎসরিক ক্রমিক নং')
+
+    # ── Facility identity (paper page 2) — facility name + 9-box mandatory code ─
     rows += [
-        _sr('begin_group', 'grp_facility', 'Facility information',
-            'প্রতিষ্ঠানের তথ্য'),
-        _sr('text', 'facility_name', 'Name of facility',
-            'প্রতিষ্ঠানের নাম', required='yes'),
-        _sr('select_one facility_level', 'facility_level',
-            'Level of facility', 'প্রতিষ্ঠানের স্তর'),
-        _sr('text', 'department', 'Department / Ward',
-            'বিভাগ / ওয়ার্ড'),
+        _sr('begin_group', 'grp_facility',
+            'Facility information', 'প্রতিষ্ঠানের তথ্য'),
+        _sr('text', 'facility_name',
+            'Name of facility', 'ফ্যাসিলিটির নাম:', required='yes'),
+        # Paper prints a 9-box code grid → anchor to exactly 9 digits.
+        _sr('text', 'facility_code',
+            'Facility code',
+            'ফ্যাসিলিটি কোড',
+            required='yes',
+            hint='The 9-digit facility code printed on the paper form.',
+            constraint='regex(normalize-space(.), "^[0-9]{9}$")',
+            cmsg='Enter the 9-digit facility code (digits only). / '
+                 '৯ অঙ্কের ফ্যাসিলিটি কোড লিখুন।'),
         _sr('end_group', 'grp_facility'),
     ]
+
+    # ── Mother & neonate identity (paper page 2) ──────────────────────────────
     rows += [
-        _sr('begin_group', 'grp_neonate', 'Neonate information',
-            'নবজাতকের তথ্য'),
-        _sr('text', 'mother_name', "Mother's name",
-            'মাতার নাম', required='yes'),
-        _sr('select_one sex_choices', 'sex_neonate',
-            'Sex', 'লিঙ্গ'),
-        _sr('date', 'date_of_birth', 'Date of birth',
-            'জন্মের তারিখ'),
-        _sr('date', 'date_of_death', 'Date of death',
-            'মৃত্যুর তারিখ', required='yes'),
-        _sr('integer', 'age_at_death_hours',
-            'Age at death (hours)',
-            'মৃত্যুর সময় বয়স (ঘন্টা)'),
+        _sr('begin_group', 'grp_identity',
+            'Mother & neonate identity', 'মা ও নবজাতকের পরিচিতি'),
+        _sr('text', 'mother_name', "Mother's name", 'মায়ের নাম:',
+            required='yes'),
+        _sr('integer', 'mother_age', "Mother's age (years)",
+            'মায়ের বয়স: (বৎসর)', constraint='. > 9 and . < 60', cmsg='10–59'),
+        _sr('text', 'neonate_name', "Neonate's name", 'নবজাতকের নাম:'),
+        _sr('note', 'age_death_note',
+            "Age of neonate at time of death (day/hour/minute)",
+            'মৃত্যুর সময় নবজাতকের বয়স(দিন/ঘন্টা/মিনিট)'),
+        _sr('integer', 'age_death_days', 'Day',
+            'দিন', constraint='. >= 0 and . <= 28'),
+        _sr('integer', 'age_death_hours', 'Hour',
+            'ঘন্টা', constraint='. >= 0 and . <= 23'),
+        _sr('integer', 'age_death_minutes', 'Minute',
+            'মিনিট', constraint='. >= 0 and . <= 59'),
+        # Paper prints a ~16-box hospital registration grid → permissive
+        # numeric constraint (8–18 digits) so hand-entry box counts still pass.
+        _sr('text', 'hospital_reg_no',
+            'Mother / neonate hospital registration number',
+            'মা/ নবজাতকের হাসপাতালের রেজিস্ট্রেশনের নম্বর',
+            required='yes',
+            hint='The ~16-digit hospital registration number from the paper form.',
+            constraint='regex(normalize-space(.), "^[0-9]{8,18}$")',
+            cmsg='Enter the numeric hospital registration number. / '
+                 'হাসপাতালের রেজিস্ট্রেশন নম্বর (অঙ্কে) লিখুন।'),
+        _sr('text', 'hospital_ward_no',
+            'Hospital ward number', 'হাসপাতালের ওয়াড নম্বর'),
+        _sr('text', 'hospital_bed_no',
+            'Hospital bed number', 'হাসপাতালের বেড নম্বর'),
+        _sr('end_group', 'grp_identity'),
+    ]
+
+    # ── Mother's address (paper page 2 — separate from enumerator geo) ────────
+    rows += [
+        _sr('begin_group', 'grp_mother_addr',
+            "Mother's address", 'মায়ের ঠিকানা:'),
+        _sr('select_one district', 'mother_district',
+            'District', 'জেলাঃ'),
+        _sr('text', 'mother_upazila', 'Upazila', 'উপজেলাঃ'),
+        _sr('text', 'mother_union', 'Union / Pourashava', 'ইউনিয়ন/পৌরসভাঃ'),
+        _sr('text', 'mother_ward', 'Ward', 'ওয়াডঃ'),
+        _sr('text', 'mother_village', 'Village', 'গ্রামঃ'),
+        _sr('text', 'father_name', "Father's name", 'পিতার নাম:'),
+        _sr('text', 'family_phone', 'Phone number', 'ফোন নংঃ',
+            constraint='regex(., "^[0-9+ -]{6,20}$") or .=""',
+            cmsg='Enter a valid phone number.'),
+        _sr('end_group', 'grp_mother_addr'),
+    ]
+
+    # ── Q1 · Place of birth (11 options) ─────────────────────────────────────
+    rows += [
+        _sr('begin_group', 'grp_q1',
+            'Q1. Place of birth', '১. নবজাতকের জন্মের স্থান'),
+        _sr('select_one birth_place', 'birth_place',
+            '1. Place of birth of the neonate?',
+            '১। নবজাতকের জন্মের স্থান?', required='yes'),
+        _sr('text', 'birth_place_other', 'Other (specify)',
+            'অন্যান্য (উল্লেখ করুন)', relevant="${birth_place}='other'"),
+        _sr('end_group', 'grp_q1'),
+    ]
+
+    # ── Q2 · Type of neonatal death (inborn → skip to Q5) ────────────────────
+    rows += [
+        _sr('begin_group', 'grp_q2',
+            'Q2. Type of neonatal death', '২. নবজাতকের মৃত্যুর ধরন'),
+        _sr('select_one death_type', 'death_type',
+            '2. What type of neonatal death was it? '
+            '(If applicable, tick.)',
+            '২। নবজাতকের কোন ধরনের মৃত্যু হয়েছিল? '
+            '(প্রযোজ্য হলে টিক চিহ্ন দিন):', required='yes'),
+        _sr('end_group', 'grp_q2'),
+    ]
+
+    # Outborn neonates (admitted from outside) — Q3, Q4 apply only to them.
+    outborn = "${death_type}='outborn'"
+
+    # ── Q3 · ER / emergency arrival date & time ──────────────────────────────
+    rows += [
+        _sr('begin_group', 'grp_q3',
+            'Q3. ER / Emergency arrival', '৩। বহি: বিভাগ/ জরুরী বিভাগে আসা',
+            relevant=outborn),
+        _sr('select_one recorded_status', 'er_arrival_recorded',
+            '3. Was the ER / emergency arrival recorded?',
+            '৩। বহি: বিভাগ/ জরুরী বিভাগে আসার তথ্য রেকর্ড করা হয়েছিল?'),
+        _sr('date', 'er_arrival_date',
+            '3. Date brought to ER / emergency department',
+            '৩। বহি: বিভাগ/ জরুরী বিভাগে নিয়ে আসার তারিখ:',
+            relevant="${er_arrival_recorded}='recorded'"),
+        _sr('time', 'er_arrival_time', 'Time',
+            'সময়:', relevant="${er_arrival_recorded}='recorded'"),
+        _sr('end_group', 'grp_q3'),
+    ]
+
+    # ── Q4 · Inpatient admission date & time ─────────────────────────────────
+    rows += [
+        _sr('begin_group', 'grp_q4',
+            'Q4. Inpatient admission', '৪। অন্তর্বিভাগে ভর্তি',
+            relevant=outborn),
+        _sr('select_one recorded_status', 'admission_recorded',
+            '4. Was the inpatient admission recorded?',
+            '৪। অন্তর্বিভাগে ভর্তির তথ্য রেকর্ড করা হয়েছিল?'),
+        _sr('date', 'admission_date',
+            '4. Date of inpatient admission',
+            '৪। অন্তর্বিভাগে ভর্তির তারিখ:',
+            relevant="${admission_recorded}='recorded'"),
+        _sr('time', 'admission_time', 'Time',
+            'সময়:', relevant="${admission_recorded}='recorded'"),
+        _sr('end_group', 'grp_q4'),
+    ]
+
+    # ── Q5 · Date & time of death (applies to all) ───────────────────────────
+    rows += [
+        _sr('begin_group', 'grp_q5',
+            'Q5. Date of death', '৫। মৃত্যুর তারিখ'),
+        _sr('select_one recorded_status', 'death_datetime_recorded',
+            '5. Was the date / time of death recorded?',
+            '৫। মৃত্যুর তারিখ / সময় রেকর্ড করা হয়েছিল?'),
+        _sr('date', 'death_date',
+            '5. Date of death', '৫। মৃত্যুর তারিখ',
+            relevant="${death_datetime_recorded}='recorded'"),
+        _sr('time', 'death_time', 'Time',
+            'সময়:', relevant="${death_datetime_recorded}='recorded'"),
+        _sr('end_group', 'grp_q5'),
+    ]
+
+    # ── Q6 · Condition at admission ──────────────────────────────────────────
+    rows += [
+        _sr('begin_group', 'grp_q6',
+            'Q6. Condition at admission', '৬। ভর্তির সময় নবজাতকের অবস্থা'),
+        _sr('select_one admission_condition', 'admission_condition',
+            '6. Condition of the neonate at admission',
+            '৬। ভর্তির সময় নবজাতকের অবস্থা'),
+        _sr('end_group', 'grp_q6'),
+    ]
+
+    # ── Q7 · Diagnosis at admission / after birth (multi-tick) ───────────────
+    rows += [
+        _sr('begin_group', 'grp_q7',
+            'Q7. Diagnosis at admission / after birth',
+            '৭. ভর্তির বা জন্মের পর রোগ নির্ণয়'),
+        _sr('select_multiple admission_diagnosis', 'admission_diagnosis',
+            '7. What disease was diagnosed at the admission of the neonate or '
+            'after birth in the hospital (✓ tick)',
+            '৭। নবজাতকের ভর্তির বা হাসপাতালে জন্মের পর কি রোগ নির্ণয় করা '
+            'হয়েছিল (✓ টিক চিহ্ন দিন)'),
+        _sr('text', 'admission_diagnosis_other', 'Others (specify)',
+            'অন্যান্য Others (উল্লেখ করুন)',
+            relevant="selected(${admission_diagnosis}, 'other')"),
+        _sr('end_group', 'grp_q7'),
+    ]
+
+    # ── Q8 / Q9 · Referred patient? + referral source ────────────────────────
+    rows += [
+        _sr('begin_group', 'grp_q8',
+            'Q8–Q9. Referral', '৮–৯. রেফারেল'),
+        _sr('select_one yes_no', 'referred_in',
+            '8. Was the neonate a referred patient? (✓ tick)',
+            '৮। নবজাতক কি রেফারকৃত রোগী ছিল? (✓ টিক চিহ্ন দিন)'),
+        _sr('select_one referral_source', 'referral_source',
+            '9. If yes, from where was it referred? (✓ tick)',
+            '৯। যদি হ্যাঁ হয় তাহলে কোথায় থেকে রেফার হয়েছিল? (✓ টিক চিহ্ন দিন)',
+            relevant="${referred_in}='yes'"),
+        _sr('text', 'referral_source_other', 'Other (specify)',
+            'অন্যান্য (উল্লেখ করুন)',
+            relevant="${referred_in}='yes' and ${referral_source}='other'"),
+        _sr('end_group', 'grp_q8'),
+    ]
+
+    # ── Q10 · First doctor / consultant observation date & time ──────────────
+    rows += [
+        _sr('begin_group', 'grp_q10',
+            'Q10. First observation by doctor / consultant',
+            '১০. ডাক্তার / কনসালটেন্ট কর্তৃক প্রথম পর্যবেক্ষণ'),
+        _sr('select_one doctor_observed', 'doctor_observed',
+            '10. When did a doctor / consultant first observe the neonate?',
+            '১০। কখন ডাক্তার/কনসালটেন্ট প্রথম নবজাতককে পর্যবেক্ষণ করেছেন?'),
+        _sr('date', 'doctor_observe_date',
+            '10. Date', 'তারিখ:',
+            relevant="${doctor_observed}='observed'"),
+        _sr('time', 'doctor_observe_time', 'Time (24h)',
+            'সময় (২৪ঘন্টা):',
+            relevant="${doctor_observed}='observed'"),
+        _sr('end_group', 'grp_q10'),
+    ]
+
+    # ── Q11 · Neonatal danger signs (13-option multi) ────────────────────────
+    rows += [
+        _sr('begin_group', 'grp_q11',
+            'Q11. Danger signs', '১১. বিপদ চিহ্ন'),
+        _sr('select_multiple danger_signs', 'danger_signs',
+            '11. Did the neonate have any danger sign? '
+            '(tick the correct box)',
+            '১১। নবজাতকের কি কোন বিপদ চিহ্ন ছিল? (সঠিক বক্সে ঠিক দিন)'),
+        _sr('text', 'danger_signs_other', 'Other (specify)',
+            'অন্যান্য (উল্লেখ করুন)',
+            relevant="selected(${danger_signs}, 'other')"),
+        _sr('end_group', 'grp_q11'),
+    ]
+
+    # ── Q12 · Specialist inpatient diagnosis (with ICD codes, multi) ─────────
+    rows += [
+        _sr('begin_group', 'grp_q12',
+            'Q12. Specialist inpatient diagnosis',
+            '১২. বিশেষজ্ঞ কর্তৃক রোগ নির্ণয়'),
+        _sr('select_multiple specialist_diagnosis', 'specialist_diagnosis',
+            '12. What disease was diagnosed for the neonate by the specialist '
+            'in the inpatient department of the hospital?',
+            '১২। হাসপাতালে অন্তর্বিভাগে বিশেষজ্ঞ কর্তৃক নবজাতকের কি রোগ '
+            'নির্ণয় করা হয়েছিল?'),
+        _sr('text', 'specialist_diagnosis_other', 'Others (specify)',
+            'অন্যান্য Others (উল্লেখ করুন)',
+            relevant="selected(${specialist_diagnosis}, 'other')"),
+        _sr('end_group', 'grp_q12'),
+    ]
+
+    # ── Q13 · Time to treatment after admission ──────────────────────────────
+    rows += [
+        _sr('begin_group', 'grp_q13',
+            'Q13. Time to treatment after admission',
+            '১৩। ভর্তির কতক্ষন পর চিকিৎসা শুরু'),
+        _sr('date', 'treatment_start_date',
+            '13. How long after admission did hospital inpatient-department '
+            'treatment start — Date',
+            '১৩। ভর্তির কতক্ষন পর হাসপাতাল অন্তর্বিভাগে চিকিৎসা শুরু হয় তারিখ:'),
+        _sr('time', 'treatment_start_time', 'Time (24h)',
+            'সময় (২৪ঘন্টা):'),
+        _sr('end_group', 'grp_q13'),
+    ]
+
+    # ── Q14 · Birth weight ───────────────────────────────────────────────────
+    rows += [
+        _sr('begin_group', 'grp_q14',
+            'Q14. Birth weight', '১৪। জন্মের পর শিশুর ওজন'),
         _sr('integer', 'birth_weight_grams',
-            'Birth weight (grams)',
-            'জন্মের ওজন (গ্রাম)'),
-        _sr('integer', 'gestational_weeks',
-            'Gestational age (weeks)',
-            'গর্ভাবস্থার সপ্তাহ'),
-        _sr('select_one mode_of_delivery', 'mode_of_delivery',
-            'Mode of delivery', 'প্রসবের পদ্ধতি'),
-        _sr('select_one place_of_delivery', 'place_of_delivery',
-            'Place of delivery', 'প্রসবের স্থান'),
-        _sr('select_one cod_neonatal', 'cause_of_death',
-            'Probable cause of death',
-            'সম্ভাব্য মৃত্যুর কারণ', required='yes'),
-        _sr('end_group', 'grp_neonate'),
+            '14. Weight of the child after birth (grams)',
+            '১৪। জন্মের পর শিশুর ওজন (গ্রাম)',
+            constraint='. >= 200 and . <= 7000', cmsg='200–7000 grams'),
+        _sr('end_group', 'grp_q14'),
     ]
+
+    # ── Q15 / Q16 · Congenital anomaly? + anomaly site (9-option multi) ──────
     rows += [
-        _sr('begin_group', 'grp_review',
-            'Facility review committee',
-            'প্রতিষ্ঠানিক পর্যালোচনা কমিটি'),
-        _sr('date', 'review_date',
-            'Date of review meeting',
-            'পর্যালোচনা সভার তারিখ'),
-        _sr('select_one review_status', 'review_status',
-            'Review status', 'পর্যালোচনার অবস্থা'),
-        _sr('text', 'action_plan_summary',
-            'Action plan summary',
-            'কর্মপরিকল্পনার সারসংক্ষেপ'),
-        _sr('end_group', 'grp_review'),
+        _sr('begin_group', 'grp_q15',
+            'Q15–Q16. Congenital anomaly', '১৫–১৬। জন্মগত ত্রুটি'),
+        _sr('select_one yes_no', 'congenital_anomaly',
+            '15. Did the neonate have any congenital anomaly?',
+            '১৫। নবজাতকের কি কোন জন্মগত ত্রুটি ছিল?'),
+        _sr('select_multiple anomaly_site', 'anomaly_site',
+            '16. If yes, where was the congenital anomaly?',
+            '১৬। যদি হ্যাঁ হয় তাহলে কোথায় জন্মগত ত্রুটি ছিল',
+            relevant="${congenital_anomaly}='yes'"),
+        _sr('text', 'anomaly_site_other', 'Other (specify)',
+            'অন্যান্য (উল্লেখ করুন)',
+            relevant="${congenital_anomaly}='yes' and "
+                     "selected(${anomaly_site}, 'other')"),
+        _sr('end_group', 'grp_q15'),
     ]
+
+    # ── Q17 · Place of death within the facility ─────────────────────────────
+    rows += [
+        _sr('begin_group', 'grp_q17',
+            'Q17. Place of death in facility',
+            '১৭। হাসপাতালের কোন বিভাগে মৃত্যু'),
+        _sr('select_one place_of_death_facility', 'place_of_death_facility',
+            '17. In which department or place of the hospital did the neonate '
+            'die?',
+            '১৭। হাসপাতালের কোন বিভাগে বা স্থানে নবজাতকের মৃত্যু হয়েছে?'),
+        _sr('text', 'place_of_death_other', 'Other place (specify)',
+            'অন্য কোন স্থানে উল্লেখ করুন',
+            relevant="${place_of_death_facility}='other'"),
+        _sr('end_group', 'grp_q17'),
+    ]
+
+    # ── Q18 · Most probable cause(s) of death — WHO cause-of-death checklist ──
+    # The paper Q18 is a flat WHO "tick all that apply" list of 6 ICD-10-coded
+    # causes (একাধিক উত্তর দিতে পারবেন). It is NOT a multi-column matrix, so it
+    # is faithfully a single select_multiple — no field-list / label / shared
+    # one-column "select" pseudo-matrix (that idiom is only for true N×M grids
+    # like Form 01 Q9).
+    rows += [
+        _sr('begin_group', 'grp_q18',
+            'Q18. Most probable cause of death (WHO Cause of death form, '
+            'with separate ICD list)',
+            '১৮। সবচেয়ে সম্ভাব্য মৃত্যুর কারণ '
+            '(WHO Cause of death form, with separate ICD list)'),
+        _sr('select_multiple cod_cause', 'cod_cause',
+            '18. Most probable cause of death: '
+            '(you may tick more than one answer ✓) '
+            '(WHO Cause of death form, with separate ICD list)',
+            '১৮। সবচেয়ে সম্ভাব্য মৃত্যুর কারণ: '
+            '(একাধিক উত্তর ✓ টিক চিহ্ন দিতে পারবেন) '
+            '(WHO Cause of death form, with separate ICD list)'),
+        _sr('end_group', 'grp_q18'),
+    ]
+
+    # ── Q19 · Probable cause name + ICD-10 code (free text) ──────────────────
+    rows += [
+        _sr('begin_group', 'grp_q19',
+            'Q19. Write the probable cause of death',
+            '১৯। মৃত্যুর সম্ভাব্য কারণ লিখুন'),
+        _sr('text', 'cause_name', 'Name of disease',
+            'রোগের নামঃ'),
+        _sr('text', 'icd10_code', 'ICD 10 code no.',
+            'আইসিডি ১০ কোড নং', hint='e.g. P-21'),
+        _sr('end_group', 'grp_q19'),
+    ]
+
+    # ── Q20 · Death narrative ────────────────────────────────────────────────
+    rows += [
+        _sr('begin_group', 'grp_q20',
+            'Q20. Brief narrative of the death',
+            '২০। রোগীর মৃত্যুর ঘটনার বিবরণ'),
+        _sr('text', 'death_narrative',
+            "20. Write briefly the description of the patient's death event.",
+            '২০। রোগীর মৃত্যুর ঘটনার বিবরণ লিখুন সংক্ষেপে', app='multiline'),
+        _sr('end_group', 'grp_q20'),
+    ]
+
+    # ── Reviewer block (paper footer: name / designation / date / signature) ─
+    rows += [
+        _sr('begin_group', 'grp_reviewer',
+            'Death reviewer', 'মৃত্যু পর্যালোচনাকারী'),
+        _sr('text', 'reviewer_name', 'Name of death reviewer',
+            'মৃত্যু পর্যালোচনাকারীর নামঃ'),
+        _sr('text', 'reviewer_designation', 'Designation', 'পদবিঃ'),
+        _sr('date', 'data_collection_date', 'Date of data collection',
+            'তথ্য সংগ্রহের তারিখ'),
+        _sr('end_group', 'grp_reviewer'),
+    ]
+
     return rows
 
 
 def _facility_neonatal_choices():
-    ch = list(_community_neonatal_choices())
+    ch = list(DISTRICT_CHOICES) + list(YES_NO)
+
+    # Recorded / Not recorded — mirrors the single "রেকর্ড করা হয়নি" tick box
+    # on Q3 / Q4 / Q5 (binary: it was recorded, or it was not). A three-way
+    # yes/no/not-recorded list is avoided because "No" and "Not recorded" are
+    # the same answer here.
     ch += [
-        _ch('facility_level', 'medical_college', 'Medical college hospital',
-            'মেডিকেল কলেজ হাসপাতাল'),
-        _ch('facility_level', 'district', 'District hospital',
-            'জেলা হাসপাতাল'),
-        _ch('facility_level', 'upazila',  'Upazila health complex',
-            'উপজেলা স্বাস্থ্য কমপ্লেক্স'),
-        _ch('facility_level', 'union',    'Union health centre',
-            'ইউনিয়ন স্বাস্থ্য কেন্দ্র'),
-        _ch('facility_level', 'private',  'Private facility',
-            'বেসরকারি প্রতিষ্ঠান'),
-        _ch('facility_level', 'ngo',      'NGO clinic', 'এনজিও ক্লিনিক'),
+        _ch('recorded_status', 'recorded', 'Recorded', 'রেকর্ড করা হয়েছে'),
+        _ch('recorded_status', 'not_recorded', 'Not recorded',
+            'রেকর্ড করা হয়নি'),
     ]
+
+    # Q1 — place of birth (11 options, matches the maternal facility list).
+    birth = [
+        ('home', 'Home', 'বাড়ী'),
+        ('community_clinic', 'Community Clinic', 'কমিউনিটি ক্লিনিক'),
+        ('union_hfwc', 'Union Health & Family Welfare Centre',
+         'ইউনিয়ন স্বাস্থ্য ও পরিবার কল্যাণ কেন্দ্র'),
+        ('upazila_hc', 'Upazila Health Complex', 'উপজেলা স্বাস্থ্য কমপ্লেক্স'),
+        ('maternal_centre', 'Maternal Centre',
+         'মাতৃমঙ্গল কেন্দ্র'),
+        ('district_hospital', 'District or Sadar hospital',
+         'জেলা অথবা সদর হাসপাতাল'),
+        ('medical_college', 'Medical College hospital',
+         'মেডিকেল কলেজ হাসপাতাল'),
+        ('private_clinic', 'Private clinic/hospital',
+         'প্রাইভেট ক্লিনিক/হাসপাতাল'),
+        ('ngo_clinic', 'NGO clinic', 'এনজিওক্লিনিক'),
+        ('provider_home', "Chamber/health provider's home",
+         'চেম্বার/স্বাস্থ্য সেবাদানকারীর বাড়ী'),
+        ('other', 'Other (specify)', 'অন্যান্য (উল্লেখ করুন)'),
+    ]
+    ch += [_ch('birth_place', k, en, bn) for k, en, bn in birth]
+
+    # Q2 — type of neonatal death (inborn vs outborn).
+    ch += [
+        _ch('death_type', 'inborn',
+            'The neonate was born in this hospital and died '
+            '(if ticked here, go to question No. 5)',
+            'নবজাতক এই হাসপাতালে জন্মগ্রহণ করে এবং মারা যায় '
+            '(এখানে টিক দিলে ৫ নং প্রশ্নে চলে যান)'),
+        _ch('death_type', 'outborn',
+            'The neonate was born outside the hospital and died after '
+            'admission to the hospital',
+            'নবজাতক হাসপাতালের বাইরে জন্মগ্রহণ এবং হাসপাতালে ভতির পর '
+            'মৃত্যুবরণ করে'),
+    ]
+
+    # Q6 — condition at admission (4: Stable / Unstable / Unconscious /
+    # Not recorded — paper order is Stable, Unconscious, Unstable, Not recorded).
+    ch += [
+        _ch('admission_condition', 'stable', 'Stable', 'স্থিতিশীল (Stable)'),
+        _ch('admission_condition', 'unconscious', 'Unconscious',
+            'অচেতন (Unconscious)'),
+        _ch('admission_condition', 'unstable', 'Unstable',
+            'অস্থিতিশীল (Unstable)'),
+        _ch('admission_condition', 'not_recorded', 'Not recorded',
+            'রেকর্ড করা হয়নি'),
+    ]
+
+    # Q7 — diagnosis at admission / after birth (multi, 9 options incl.
+    # Not recorded + Other; no ICD codes on the paper for Q7).
+    adx = [
+        ('birth_asphyxia', 'Birth Asphyxia', 'শ্বাস কষ্ট (Birth Asphyxia)'),
+        ('septicemia', 'Septicemia', 'সেপ্টিসেমিয়া (Septicemia)'),
+        ('low_birth_weight', 'Low birth weight',
+         'কম ওজন জন্ম (Low birth weight)'),
+        ('severe_pneumonia', 'Severe Pneumonia',
+         'মারাত্নক নিউমোনিয়া (Severe Pneumonia)'),
+        ('meningitis', 'Meningitis', 'মেনিনজাইটিস (Meningitis)'),
+        ('birth_trauma', 'Birth trauma', 'জন্মকালীন আঘাত (Birth trauma)'),
+        ('congenital', 'Congenital anomalies',
+         'জন্মগত ত্রুটি (Congenital anomalies)'),
+        ('not_recorded', 'Not recorded', 'রেকর্ড করা হয়নি'),
+        ('other', 'Others (specify)', 'অন্যান্য Others (উল্লেখ করুন)'),
+    ]
+    ch += [_ch('admission_diagnosis', k, en, bn) for k, en, bn in adx]
+
+    # Q9 — referral source (5: matches the paper exactly).
+    ch += [
+        _ch('referral_source', 'govt', 'Government institution',
+            'সরকারি প্রতিষ্ঠান'),
+        _ch('referral_source', 'private', 'Private institution',
+            'বেসরকারি প্রতিষ্ঠান'),
+        _ch('referral_source', 'home', 'Home', 'বাড়ি'),
+        _ch('referral_source', 'unknown', 'Not known', 'জানা নেই'),
+        _ch('referral_source', 'other', 'Other (specify)',
+            'অন্যান্য (উল্লেখ করুন)'),
+    ]
+
+    # Q10 — whether/when doctor first observed (3: observed / did-not-come /
+    # not-recorded — the paper carries two tick boxes beside the date/time).
+    ch += [
+        _ch('doctor_observed', 'observed', 'Observed (record date & time)',
+            'পর্যবেক্ষণ করা হয়েছে (তারিখ ও সময় উল্লেখ করুন)'),
+        _ch('doctor_observed', 'not_come', 'Did not come',
+            'অথবা আসে নাই'),
+        _ch('doctor_observed', 'not_recorded', 'Not recorded',
+            'রেকর্ড করা হয়নি'),
+    ]
+
+    # Q11 — neonatal danger signs (13 options).
+    danger = [
+        ('body_arching', 'Body arching / stiffening', 'শরীর বেঁকে যাওয়া'),
+        ('not_feeding', 'Not feeding / refuses to feed',
+         'খেতে না পারা বা খেতে চায় না'),
+        ('fast_breathing', 'Fast breathing', 'দ্রুত শ্বাস'),
+        ('fast_breathing_chest_indraw',
+         'Fast breathing with chest indrawing',
+         'দ্রুত শ্বাস ও বুক দেবে যাওয়া'),
+        ('cold_extremities', 'Cold hands and feet',
+         'হাত পা ঠান্ডা হয়ে যাওয়া'),
+        ('fever', 'Fever', 'জ্বর'),
+        ('no_movement', 'No or reduced movement',
+         'নড়াচড়া না করা বা কম নড়াচড়া করা'),
+        ('jaundice', 'Jaundice', 'জন্ডিস'),
+        ('umbilical_infection', 'Red / discharging umbilicus',
+         'নাভিতে লালচে দাগ বা পুজ পরা'),
+        ('skin_pustules', 'Skin pustules / boils',
+         'চামড়ার মধ্যে ফোড়া ও পুজ'),
+        ('diarrhoea', 'Diarrhoea', 'ডায়রিয়া'),
+        ('dont_know', "Don't know", 'জানি না'),
+        ('other', 'Other (specify)', 'অন্যান্য (উল্লেখ করুন)'),
+    ]
+    ch += [_ch('danger_signs', k, en, bn) for k, en, bn in danger]
+
+    # Q12 — specialist inpatient diagnosis (8 options). ICD codes transcribed
+    # VERBATIM from the paper exactly as printed, including its typos:
+    # "মিনিনজাইটিস" (sic) and the "Meningitis) GO" / "Q 00" codes; Severe
+    # Pneumonia carries no code on the paper.
+    sdx = [
+        ('birth_asphyxia', 'Birth Asphyxia P-21',
+         'শ্বাস কষ্ট (Birth Asphyxia) P-21'),
+        ('septicemia', 'Septicemia P-36',
+         'সেপ্টিসেমিয়া (Septicemia) P-36'),
+        ('low_birth_weight', 'Low birth weight P-07',
+         'কম ওজন জন্ম (Low birth weight) P-07'),
+        ('severe_pneumonia', 'Severe Pneumonia',
+         'মারাত্নক নিউমোনিয়া (Severe Pneumonia)'),
+        ('meningitis', 'Meningitis GO',
+         'মিনিনজাইটিস (Meningitis) GO'),
+        ('birth_trauma', 'Birth trauma P-10-15',
+         'জন্মকালীন আঘাত (Birth trauma) P-10-15'),
+        ('congenital', 'Congenital anomalies Q 00',
+         'জন্মগত ত্রুটি (Congenital anomalies) Q 00'),
+        ('other', 'Others (specify)', 'অন্যান্য Others (উল্লেখ করুন)'),
+    ]
+    ch += [_ch('specialist_diagnosis', k, en, bn) for k, en, bn in sdx]
+
+    # Q16 — congenital-anomaly site (9 options).
+    site = [
+        ('head', 'Head', 'মাথা'),
+        ('mouth_palate', 'Mouth / palate', 'মুখের তালু'),
+        ('lip', 'Lip', 'ঠোঁট'),
+        ('hands', 'Hands', 'হাতে'),
+        ('chest', 'Chest', 'বুকে'),
+        ('anus', 'Anus / back passage', 'পায়ু পথে'),
+        ('foot_sole', 'Sole of foot', 'পায়ের পাতাতে'),
+        ('vaginal', 'Vaginal passage', 'যোনী পথে'),
+        ('other', 'Other (specify)', 'অন্যান্য (উল্লেখ করুন)'),
+    ]
+    ch += [_ch('anomaly_site', k, en, bn) for k, en, bn in site]
+
+    # Q17 — place of death within the facility (7 options).
+    pod = [
+        ('emergency_room', 'Emergency room', 'ইমারজেন্সি রুমে'),
+        ('in_transit', 'During transfer', 'স্থানান্তরের সময়'),
+        ('ward', 'Ward', 'ওয়ার্ডে'),
+        ('labour_room', 'Labour room', 'লেবার রুমে'),
+        ('operation_theatre', 'Operation room', 'অপারেশান রুমে'),
+        ('scanu', 'Neonatal ward ( SCANU)', 'নবজাতক ওয়ার্ডে ( SCANU)'),
+        ('other', 'In some other place (specify)',
+         'অন্য কোন স্থানে উল্লেখ করুন'),
+    ]
+    ch += [_ch('place_of_death_facility', k, en, bn) for k, en, bn in pod]
+
+    # Q18 — WHO Cause-of-death table (6 ICD-coded causes, multi-select).
+    # Transcribed VERBATIM from the paper's English-only CAUSE / ICD CODE
+    # table; codes kept EXACTLY as printed (Q OO and GOO are the paper's
+    # letter-O renderings, not zeros; spacing P 07 / P 36 / P 10-15 as printed).
+    # English fills both label slots, mirroring the gold-standard Form 01
+    # `icd_cause` list — the paper's CAUSE column carries no Bangla.
+    # Paper table order: Birth Asphyxia P-21 · Birth trauma P 10-15 ·
+    #   Low birth weight P 07 · Congenital anomalies Q OO ·
+    #   Meningitis GOO · Septicemia P 36.
+    cod = [
+        ('birth_asphyxia', 'Birth Asphyxia (P-21)'),
+        ('birth_trauma', 'Birth trauma (P 10-15)'),
+        ('low_birth_weight', 'Low birth weight (P 07)'),
+        ('congenital', 'Congenital anomalies (Q OO)'),
+        ('meningitis', 'Meningitis (GOO)'),
+        ('septicemia', 'Septicemia (P 36)'),
+    ]
+    ch += [_ch('cod_cause', k, en, en) for k, en in cod]
+
     return ch
 
 
