@@ -256,7 +256,9 @@ def _save_mpdsr_case(payload, lat, lng, *, sub_form_type, death_type,
     """Common upsert for any MPDSR review form."""
     serial   = _s(payload.get('case_serial'))
     district = _district(payload)
-    dod = _date(payload.get('date_of_death'))
+    # Verbatim forms name the death date 'death_date' (F01/F02/F05); F04 keeps
+    # 'date_of_death'. Read either so community submissions aren't rejected.
+    dod = _date(payload.get('date_of_death') or payload.get('death_date'))
     if not (district and dod):
         return HttpResponse('Bad Request — district and date_of_death required',
                             status=400)
@@ -308,16 +310,31 @@ def _save_mpdsr_case(payload, lat, lng, *, sub_form_type, death_type,
         case.death_type    = death_type
         # Cause of death — keep the typed cause when 'Other' is chosen
         # (previously only the slug 'other' was stored and the free text lost).
-        cod = _s(payload.get(death_field_name))
+        # Cause field name differs per verbatim form: F04 'cause_of_death',
+        # F01/F02 'icd_cause', F05 'cod_cause', Social Autopsy 'cause_brief'.
+        cod = (_s(payload.get(death_field_name)) or _s(payload.get('cause_of_death'))
+               or _s(payload.get('icd_cause')) or _s(payload.get('cod_cause')))
         if cod == 'other' and not consent_refused:
-            other_txt = _s(payload.get('cause_of_death_other')) or _s(payload.get('cause_other'))
+            other_txt = (_s(payload.get('cause_of_death_other')) or _s(payload.get('cause_other'))
+                         or _s(payload.get('cause_name')) or _s(payload.get('icd_disease_name')))
             if other_txt:
                 cod = 'other: ' + other_txt
         case.cause_of_death = cod
-        place = _PLACE_MAP.get(_s(payload.get('place_of_death')), '')
-        if place: case.place_of_death = place
+        # Place field differs per verbatim form (death_place / death_place_facility
+        # / place_of_death_facility); the legacy _PLACE_MAP only knew
+        # home/facility/in_transit, so map by substring (facility deaths → FACILITY).
+        place_raw = _s(payload.get('place_of_death') or payload.get('death_place')
+                       or payload.get('death_place_facility')
+                       or payload.get('place_of_death_facility')).lower()
+        if 'home' in place_raw:
+            case.place_of_death = PlaceOfDeath.HOME
+        elif 'transit' in place_raw or 'on_way' in place_raw or 'on the way' in place_raw:
+            case.place_of_death = PlaceOfDeath.IN_TRANSIT
+        elif place_raw:
+            case.place_of_death = PlaceOfDeath.FACILITY
         case.facility_name = '' if consent_refused else _s(payload.get('facility_name'))
-        age = _int(payload.get('deceased_age')) or _int(payload.get('woman_age'))
+        age = (_int(payload.get('deceased_age')) or _int(payload.get('mother_age'))
+               or _int(payload.get('woman_age')))
         if age: case.age_years = age
 
         rs = _REVIEW_STATUS_MAP.get(_s(payload.get('review_status')))
@@ -342,11 +359,15 @@ def _save_mpdsr_case(payload, lat, lng, *, sub_form_type, death_type,
                     'gender_barrier_notes', 'financial_barrier_notes')]
                 case.notes = '\n'.join(p for p in parts if p)
             else:
-                case.notes = (
-                    _s(payload.get('three_delays'))
-                    + ('\n' if payload.get('three_delays') and payload.get('contributory_factors') else '')
-                    + _s(payload.get('contributory_factors'))
-                )
+                # Verbatim forms carry the narrative under several keys
+                # (community vs facility); gather whatever is present.
+                case.notes = '\n'.join(p for p in (
+                    _s(payload.get('three_delays')),
+                    _s(payload.get('contributory_factors')),
+                    _s(payload.get('narrative_before_death')),
+                    _s(payload.get('cause_opinion')),
+                    _s(payload.get('death_narrative')),
+                ) if p)
         if serial:
             case.case_hash = serial[:30]
         elif sub_id:
@@ -358,16 +379,19 @@ def _save_mpdsr_case(payload, lat, lng, *, sub_form_type, death_type,
         #    an already-counted death and emits none of these, so skip it to
         #    avoid writing empty indicator rows.
         if sub_form_type != 'sa_md':
-            case.time_of_death            = _s(payload.get('time_of_death'))
-            gw = _int(payload.get('gestational_weeks'))
+            case.time_of_death            = _s(payload.get('time_of_death') or payload.get('death_time'))
+            gw = _int(payload.get('gestational_weeks') or payload.get('gestation_week'))
             if gw is not None: case.gestational_weeks = gw
-            case.anc_visits_count         = _s(payload.get('anc_visits_count'))
-            case.pnc_received             = _s(payload.get('pnc_received'))
-            case.mode_of_delivery         = _s(payload.get('mode_of_delivery'))
+            case.anc_visits_count         = _s(payload.get('anc_visits_count') or payload.get('anc_count'))
+            case.pnc_received             = _s(payload.get('pnc_received') or payload.get('pnc_count'))
+            case.mode_of_delivery         = _s(payload.get('mode_of_delivery') or payload.get('delivery_mode'))
             case.delivery_outcome         = _s(payload.get('delivery_outcome'))
-            case.place_of_delivery        = _s(payload.get('place_of_delivery'))
-            case.person_assisted_delivery = _s(payload.get('person_assisted_delivery'))
-            tdab = _int(payload.get('time_death_after_birth_hours'))
+            case.place_of_delivery        = _s(payload.get('place_of_delivery')
+                                              or payload.get('delivery_place') or payload.get('birth_place'))
+            case.person_assisted_delivery = _s(payload.get('person_assisted_delivery')
+                                              or payload.get('delivery_conductor'))
+            tdab = _int(payload.get('time_death_after_birth_hours')
+                        or payload.get('death_after_delivery_h') or payload.get('age_death_hours'))
             if tdab is not None: case.time_death_after_birth_hours = tdab
 
         case.latitude, case.longitude = lat, lng
