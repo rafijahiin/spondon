@@ -21,6 +21,7 @@ import { usePolling } from '@/hooks/usePolling'
 import { AlertCard } from '@/components/ui/AlertCard'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import type { Alert } from '@/types'
+import MonthlyHub from '@/components/reports/MonthlyHub'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type PeriodType = 'biweekly' | 'monthly' | 'quarterly'
@@ -279,6 +280,13 @@ export default function ReportingHub() {
             </a>
           ))}
         </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════════════════════
+           MONTHLY HUB — the auto-generated 10-piece monthly sets
+           ═══════════════════════════════════════════════════════════════ */}
+      <section className="section" style={{ marginTop: 28 }}>
+        <MonthlyHub />
       </section>
 
       {/* ═══════════════════════════════════════════════════════════════
