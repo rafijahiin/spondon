@@ -1057,6 +1057,9 @@ FORM_HANDLERS: dict = {
         _lazy_ciprb('handle_ciprb_notification_slip_02'),
     'ciprb_near_miss_v1':
         _lazy_ciprb('handle_ciprb_near_miss'),
+    # MPDSR Action Plan (CIPRB 10) — staged per-action tracker (new_plan / update).
+    'ciprb_mpdsr_response_plan_v1':
+        _lazy_ciprb('handle_ciprb_mpdsr_action_plan'),
     # ── PHD consolidated forms (new, from final source files) ──────────────────
     # ── Bandhu consolidated forms (faithful from UNFPA Tools.xlsx) ─────────────
     'bandhu_mother_list_v1':    _lazy_bandhu('handle_bandhu_mother_list'),

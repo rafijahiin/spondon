@@ -462,6 +462,136 @@ class MPDSRActionPlanSummary(models.Model):
         return round(100.0 * self.activities_implemented / self.activities_planned, 1)
 
 
+# District → short Action-ID prefix. Dhaka = 'D'; districts that share a first
+# letter get a 2-letter code so every code stays globally unique (2026-06).
+DISTRICT_ACTION_CODE = {
+    'Dhaka': 'D', 'Bagerhat': 'B', 'Bandarban': 'BA', 'Barguna': 'BR',
+    'Bhola': 'BH', 'Chandpur': 'C', 'Gaibandha': 'G', 'Habiganj': 'H',
+    'Jamalpur': 'J', 'Khagrachari': 'K', 'Kurigram': 'KU', 'Moulavibazar': 'M',
+    'Noakhali': 'N', 'Patuakhali': 'PA', 'Rangpur': 'R', 'Sherpur': 'S',
+    'Sirajganj': 'SI', 'Sunamganj': 'SU', 'Sylhet': 'SY',
+}
+
+
+class ActionSection(models.TextChoices):
+    SYSTEM_STRENGTHENING = 'system_strengthening', 'MPDSR System Strengthening'
+    COMMUNITY_VA = 'community_va', 'Common modifiable factors (Community VA)'
+    FACILITY_DR = 'facility_dr', 'Common modifiable factors (Facility DR)'
+
+
+class ActionStatus(models.TextChoices):
+    PENDING = 'pending', 'Pending / not started'
+    IN_PROGRESS = 'in_progress', 'In progress'
+    IMPLEMENTED = 'implemented', 'Implemented'
+    DELAYED = 'delayed', 'Delayed'
+    DROPPED = 'dropped', 'Dropped'
+
+
+class MPDSRAction(models.Model):
+    """One agreed MPDSR action, tracked from plan → implementation.
+
+    Unlike MPDSRActionPlanSummary (an Excel-sourced per-district roll-up whose
+    actions live in a JSON blob), this is ONE ROW PER ACTION with a stable human
+    code, `action_id` = '<district-code>-<NN>' (D-01 = Dhaka's first action). The
+    code is assigned once at plan creation; later 'update' submissions reference
+    it to move status / completion % forward without re-typing the action — the
+    same staged auto-populate pattern the fistula register already uses.
+    """
+    COMPLETION_CHOICES = [(0, '0%'), (25, '25%'), (50, '50%'),
+                          (75, '75%'), (100, '100%')]
+    APPROVAL_CHOICES = [('PENDING', 'Pending'), ('APPROVED', 'Approved'),
+                        ('REJECTED', 'Rejected')]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    action_id = models.CharField(max_length=12, db_index=True,
+                                 help_text="'<district-code>-<NN>', e.g. D-01.")
+
+    district = models.CharField(max_length=100, db_index=True)
+    organisation = models.CharField(max_length=20, default='CIPRB', db_index=True)
+    meeting_date = models.DateField(null=True, blank=True,
+                                    help_text='Review meeting where the action was agreed.')
+
+    section = models.CharField(max_length=30, choices=ActionSection.choices, db_index=True)
+    sub_category = models.CharField(max_length=120, blank=True,
+                                    help_text='System-Strengthening sub-category (Community Death Review, …).')
+
+    activity = models.TextField(help_text='The action / activity to be taken.')
+    responsible = models.CharField(max_length=200, blank=True)
+    timeline = models.DateField(null=True, blank=True, help_text='Target date.')
+    indicator = models.TextField(blank=True)
+    milestone = models.TextField(blank=True)
+    considerations = models.TextField(blank=True)
+
+    status = models.CharField(max_length=20, choices=ActionStatus.choices,
+                              default=ActionStatus.PENDING, db_index=True)
+    completion_pct = models.PositiveSmallIntegerField(choices=COMPLETION_CHOICES, default=0)
+    completion_date = models.DateField(null=True, blank=True)
+    remarks = models.TextField(blank=True, help_text='Latest progress note.')
+
+    # Standard CIPRB approval gate + provenance (mirrors MPDSRCase).
+    approval_status = models.CharField(
+        max_length=20, choices=APPROVAL_CHOICES, default='APPROVED', db_index=True)
+    approved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='+')
+    approved_at = models.DateTimeField(null=True, blank=True)
+    rejected_reason = models.TextField(blank=True, default='')
+    kobo_submission_id = models.CharField(max_length=100, blank=True, default='')
+    submitted_by_kobo_user = models.CharField(max_length=100, blank=True, default='')
+    source = models.CharField(max_length=40, default='kobo', db_index=True)
+    raw_payload = models.JSONField(default=dict, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    audit_trail = models.JSONField(default=list, blank=True)
+
+    class Meta:
+        verbose_name = 'MPDSR Action'
+        verbose_name_plural = 'MPDSR Actions'
+        ordering = ['district', 'action_id']
+        unique_together = [('district', 'action_id')]
+        indexes = [
+            models.Index(fields=['district', 'status']),
+            models.Index(fields=['section', 'status']),
+            models.Index(fields=['timeline', 'status']),
+        ]
+
+    def __str__(self):
+        return f'{self.action_id} — {self.activity[:50]}'
+
+    @property
+    def is_overdue(self) -> bool:
+        """Past its timeline and not yet implemented/dropped."""
+        if (not self.timeline or self.completion_pct >= 100
+                or self.status in (ActionStatus.IMPLEMENTED, ActionStatus.DROPPED)):
+            return False
+        return self.timeline < timezone.now().date()
+
+    @classmethod
+    def next_action_id(cls, district: str) -> str:
+        """Race-safe next '<code>-<NN>' for a district. MUST be called inside a
+        transaction — select_for_update() locks the district's existing rows so
+        two concurrent plan submissions can't claim the same number."""
+        code = DISTRICT_ACTION_CODE.get(district, (district[:2] or 'XX').upper())
+        rows = (cls.objects.select_for_update()
+                .filter(district=district, action_id__startswith=code + '-'))
+        max_n = 0
+        for a in rows:
+            try:
+                max_n = max(max_n, int(a.action_id.rsplit('-', 1)[-1]))
+            except (ValueError, IndexError):
+                pass
+        return f'{code}-{max_n + 1:02d}'
+
+    def add_audit_entry(self, user_email: str, action: str, notes: str = '') -> None:
+        if self.audit_trail is None:
+            self.audit_trail = []
+        self.audit_trail.append({
+            'timestamp': timezone.now().isoformat(),
+            'user': user_email, 'action': action, 'notes': notes,
+        })
+
+
 # ── CIPRB Phase 2 models (notification slips + Maternal Near Miss).
 from .ciprb_models import (  # noqa: F401,E402
     MPDSRDeathNotification,

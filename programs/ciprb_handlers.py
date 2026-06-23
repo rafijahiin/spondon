@@ -546,3 +546,113 @@ def handle_ciprb_near_miss(payload, lat, lng):
         case.raw_payload = payload
         case.save()
     return HttpResponse('OK', status=200)
+
+
+# ╔══════════════════════════════════════════════════════════════════════════╗
+# ║   MPDSR Action Plan (CIPRB 10) — staged per-action tracker              ║
+# ║   'new_plan' creates one MPDSRAction per agreed action (each gets a      ║
+# ║   <district-code>-<NN> id); 'update_action' moves one forward by id.     ║
+# ╚══════════════════════════════════════════════════════════════════════════╝
+
+def _flat_item(item):
+    """Flatten one Kobo repeat instance to leaf field names — the dispatcher
+    only flattens the TOP-level payload, not inside repeats."""
+    if not isinstance(item, dict):
+        return {}
+    flat = dict(item)
+    for k, v in item.items():
+        if '/' in k:
+            flat.setdefault(k.rsplit('/', 1)[-1], v)
+    return flat
+
+
+def _repeat(payload, *keys):
+    """The list of instances for a repeat group, trying a few key spellings."""
+    for k in keys:
+        v = payload.get(k)
+        if isinstance(v, list):
+            return v
+    return []
+
+
+def handle_ciprb_mpdsr_action_plan(payload, lat, lng):
+    """CIPRB-10 MPDSR Action Plan — staged per-action tracker.
+
+    Mode 'new_plan': create one MPDSRAction per agreed action across the three
+    section repeats, each stamped with a fresh <district-code>-<NN> id.
+    Mode 'update_action': move an existing action (picked by id) forward —
+    status / completion % / completion date / remarks.
+    """
+    from mpdsr.models import MPDSRAction, ActionSection, ActionStatus
+    mode = _s(payload.get('ap_mode'))
+    district = _district(payload)
+    sub_id = str(payload.get('_id') or '')
+    user = _s(payload.get('_submitted_by')) or 'kobo'
+
+    # ── Update an existing action by id ────────────────────────────────────
+    if mode == 'update_action':
+        code = _norm_id(payload.get('ap_action_sel') or payload.get('ap_action_id'))
+        if not code:
+            return HttpResponse('Bad Request — no action selected', status=400)
+        with transaction.atomic():
+            act = (MPDSRAction.objects.select_for_update()
+                   .filter(action_id=code).first())
+            if act is None:
+                # Unknown id (e.g. the lookup CSV lagged): stub it so the update
+                # isn't lost — a later plan record / manual edit can reconcile.
+                act = MPDSRAction(action_id=code, district=district or 'Unknown',
+                                  section=ActionSection.SYSTEM_STRENGTHENING,
+                                  activity='[awaiting plan record]', source='kobo')
+            st = _s(payload.get('ap_new_status'))
+            if st: act.status = st
+            cp = _int(payload.get('ap_new_completion'))
+            if cp is not None: act.completion_pct = cp
+            cd = _date(payload.get('ap_completion_date'))
+            if cd: act.completion_date = cd
+            rm = _s(payload.get('ap_remarks'))
+            if rm: act.remarks = rm
+            if act.status == ActionStatus.IMPLEMENTED and not act.completion_date:
+                act.completion_date = cd or act.timeline
+            act.kobo_submission_id = sub_id or act.kobo_submission_id
+            act.add_audit_entry(user, 'status update',
+                                '%s / %s%%' % (act.status, act.completion_pct))
+            act.save()
+        return HttpResponse('OK', status=200)
+
+    # ── New plan — create actions from the three section repeats ───────────
+    if not district:
+        return HttpResponse('Bad Request — district required', status=400)
+    meeting_date = _date(payload.get('meeting_date') or payload.get('collection_date'))
+    sections = [
+        ('grp_sys_act', ActionSection.SYSTEM_STRENGTHENING, 'sys'),
+        ('grp_community_va_act', ActionSection.COMMUNITY_VA, 'community_va'),
+        ('grp_facility_dr_act', ActionSection.FACILITY_DR, 'facility_dr'),
+    ]
+    created = 0
+    with transaction.atomic():
+        for rkey, section, pfx in sections:
+            for raw in _repeat(payload, rkey):
+                item = _flat_item(raw)
+                activity = _s(item.get('%s_activity' % pfx))
+                if not activity:
+                    continue
+                act = MPDSRAction(
+                    action_id=MPDSRAction.next_action_id(district),
+                    district=district, organisation=ORG, meeting_date=meeting_date,
+                    section=section,
+                    sub_category=_s(item.get('%s_subcat' % pfx)),
+                    activity=activity,
+                    responsible=_s(item.get('%s_responsible' % pfx)),
+                    timeline=_date(item.get('%s_timeline' % pfx)),
+                    indicator=_s(item.get('%s_indicator' % pfx)),
+                    milestone=_s(item.get('%s_milestone' % pfx)),
+                    considerations=_s(item.get('%s_considerations' % pfx)),
+                    status=_s(item.get('%s_status' % pfx)) or ActionStatus.PENDING,
+                    completion_pct=_int(item.get('%s_completion' % pfx)) or 0,
+                    kobo_submission_id=sub_id, submitted_by_kobo_user=user,
+                    source='kobo',
+                )
+                act.add_audit_entry(user, 'created', 'plan %s' % (meeting_date or ''))
+                act.save()
+                created += 1
+    return HttpResponse('OK — %d actions' % created, status=200)
