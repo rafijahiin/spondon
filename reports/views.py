@@ -206,6 +206,8 @@ class ReportViewSet(ModelViewSet):
         'pdf':  'application/pdf',
         'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
         'pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+        'png':  'image/png',
+        'html': 'text/html; charset=utf-8',
     }
 
     @action(detail=True, methods=['get'])
@@ -227,6 +229,56 @@ class ReportViewSet(ModelViewSet):
                 pass
         return Response({'detail': 'This report file is no longer available — regenerate it.'},
                         status=status.HTTP_404_NOT_FOUND)
+
+    @action(detail=False, methods=['get'])
+    def hub(self, request):
+        """All monthly hub pieces (newest first) — the per-month × per-scope grid."""
+        qs = (self.get_queryset()
+              .filter(period_type=PeriodType.MONTHLY)
+              .order_by('-period_start', 'partner', 'report_type', 'format'))
+        return Response(ReportSerializer(qs, many=True, context={'request': request}).data)
+
+    @action(detail=False, methods=['post'], url_path='generate-monthly')
+    def generate_monthly(self, request):
+        """Generate the 10-piece monthly set in a background thread (super-admin only).
+
+        Rendering Chromium synchronously would block the gunicorn worker for ~a
+        minute, so we detach it; the hub polls for the new pieces. The unattended
+        monthly cron (generate_monthly_hub) is the primary path.
+        """
+        if not request.user.can_see_all_orgs:
+            return Response({'detail': 'Only super-admins can generate the monthly hub set.'},
+                            status=status.HTTP_403_FORBIDDEN)
+        today = timezone.now().date()
+        try:
+            year  = int(request.data.get('year')  or today.year)
+            month = int(request.data.get('month') or today.month)
+        except (ValueError, TypeError):
+            return Response({'detail': 'Invalid year/month.'}, status=status.HTTP_400_BAD_REQUEST)
+        regenerate = bool(request.data.get('regenerate'))
+        user_id = request.user.id
+
+        import threading
+
+        def _run():
+            from django.contrib.auth import get_user_model
+            from django.db import connection
+            from .generators.monthly import generate_monthly_set
+            try:
+                u = get_user_model().objects.filter(id=user_id).first()
+                generate_monthly_set(year, month, system_user=u, regenerate=regenerate)
+            except Exception:                                       # noqa: BLE001
+                import logging
+                logging.getLogger(__name__).exception('async monthly hub generation failed')
+            finally:
+                connection.close()
+
+        threading.Thread(target=_run, daemon=True).start()
+        return Response(
+            {'detail': f'Generating the {year}-{month:02d} report set in the background — '
+                       'refresh in a minute to see the pieces.'},
+            status=status.HTTP_202_ACCEPTED,
+        )
 
     @action(detail=False, methods=['get'], url_path='demo')
     def demo(self, request):
@@ -290,3 +342,19 @@ class ReportViewSet(ModelViewSet):
         results = submission_anomalies_for_partner(partner, form_type, year)
         return Response({'year': year, 'partner': partner,
                          'form_type': form_type, 'anomalies': results})
+
+
+def web_report_by_token(request, token):
+    """Public shareable web report — serve the stored HTML by its share token.
+
+    Unauthenticated by design: the long random token IS the access control
+    (emailed to UNFPA, opens without login, not guessable or listed).
+    """
+    from django.http import Http404, HttpResponse
+    from .models import Report, ReportType
+    rep = (Report.objects
+           .filter(report_type=ReportType.WEB_REPORT, share_token=token)
+           .first())
+    if not rep or not rep.file_bytes:
+        raise Http404('Report not found')
+    return HttpResponse(bytes(rep.file_bytes), content_type='text/html; charset=utf-8')

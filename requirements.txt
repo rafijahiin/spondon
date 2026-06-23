@@ -16,3 +16,4 @@ numpy==1.26.4
 scipy==1.13.1
 django-filter==24.3
 redis==5.2.1
+playwright==1.60.0

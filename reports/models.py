@@ -9,12 +9,15 @@ class ReportFormat(models.TextChoices):
     PDF = 'pdf', 'PDF'
     DOCX = 'docx', 'Word Document'
     PPTX = 'pptx', 'PowerPoint'
+    PNG = 'png', 'Image (PNG)'
+    HTML = 'html', 'Web Page'
 
 
 class ReportType(models.TextChoices):
     MONTHLY_SUMMARY = 'monthly_summary', 'Monthly Summary'
     ONE_PAGER = 'one_pager', 'Infographic'
     NEWSLETTER = 'newsletter', 'Newsletter'
+    WEB_REPORT = 'web_report', 'Web Report'
 
 
 class PeriodType(models.TextChoices):
@@ -60,6 +63,9 @@ class Report(models.Model):
     # behind `file` do not survive — these do. `download` serves from here.
     file_bytes = models.BinaryField(null=True, blank=True, editable=False)
     original_filename = models.CharField(max_length=200, blank=True)
+    # Unguessable token for the shareable web-report link (/r/<token>/). Only
+    # set on WEB_REPORT rows; emailed to UNFPA, opens without login.
+    share_token = models.CharField(max_length=48, blank=True, db_index=True)
 
     # Provenance — see NarrativeSource for values
     narrative_source = models.CharField(

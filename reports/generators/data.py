@@ -183,6 +183,7 @@ def collect_programme_data(
     # Top districts by submission volume — sourced from KoboSubmission, which
     # carries the district field (MPDSR / fistula / baseline geography).
     top_districts: list[tuple] = []
+    districts_active = 0
     try:
         from submissions.models import KoboSubmission, SubmissionStatus
         from django.db.models import Count as _Count
@@ -193,6 +194,9 @@ def collect_programme_data(
         ).exclude(district='')
         if organisation:
             dq = dq.filter(partner=organisation)
+        # True distinct-district coverage — NOT len(top_districts), which is
+        # capped at 6 and would under-report "X/19 districts covered".
+        districts_active = dq.values('district').distinct().count()
         rows = (
             dq.values('district')
               .annotate(n=_Count('id'))
@@ -288,5 +292,6 @@ def collect_programme_data(
         'mom_pct':           mom_pct,
         'monthly_trend':     monthly_trend,
         'top_districts':     top_districts,
+        'districts_active':  districts_active,
         'by_partner':        by_partner,
     }

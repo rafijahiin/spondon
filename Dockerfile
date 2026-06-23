@@ -16,6 +16,11 @@ WORKDIR /app
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Playwright Chromium — renders the HTML-first report kit (infographic / report /
+# pptx / web) to PNG/PDF server-side. --with-deps installs the system libraries
+# Chromium needs on Debian slim.
+RUN python -m playwright install --with-deps chromium
+
 # Copy Django project
 COPY . .
 

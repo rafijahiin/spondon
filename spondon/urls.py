@@ -5,6 +5,7 @@ from django.conf import settings
 from django.http import HttpResponse, Http404
 from rest_framework.routers import DefaultRouter
 from accounts.views import UserViewSet
+from reports.views import web_report_by_token
 
 
 def react_app(request, *args, **kwargs):
@@ -40,6 +41,8 @@ urlpatterns = [
     path('api/pharmacy/',   include('pharmacy.urls')),
     path('webhook/kobo/', include('submissions.webhook_urls')),
     path('webhook/programs/', include('programs.webhook_urls')),
+    # Public shareable web report — token is the access control. Must precede the SPA catch-all.
+    path('r/<str:token>/', web_report_by_token, name='web-report'),
     re_path(r'^.*$', react_app),
 ]
 

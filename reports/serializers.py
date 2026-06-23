@@ -7,6 +7,15 @@ class ReportSerializer(serializers.ModelSerializer):
     format_display           = serializers.CharField(source='get_format_display', read_only=True)
     period_type_display      = serializers.CharField(source='get_period_type_display', read_only=True)
     narrative_source_display = serializers.CharField(source='get_narrative_source_display', read_only=True)
+    web_url                  = serializers.SerializerMethodField()
+
+    def get_web_url(self, obj):
+        """Absolute shareable link for web reports; empty for other formats."""
+        if obj.report_type == 'web_report' and obj.share_token:
+            request = self.context.get('request')
+            path = f'/r/{obj.share_token}/'
+            return request.build_absolute_uri(path) if request else path
+        return ''
 
     class Meta:
         model = Report
@@ -19,7 +28,7 @@ class ReportSerializer(serializers.ModelSerializer):
             'period_start', 'period_end',
             'title', 'narrative',
             'narrative_source', 'narrative_source_display', 'model_used',
-            'file', 'generated_by', 'created_at',
+            'file', 'share_token', 'web_url', 'generated_by', 'created_at',
         ]
         read_only_fields = [
             'id', 'narrative', 'narrative_source', 'narrative_source_display',

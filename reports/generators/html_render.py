@@ -127,7 +127,8 @@ def infographic_context(data: dict, *, ai_summary: str = '', is_sample: bool = F
     return {
         'is_sample': is_sample, 'org': org, 'org_line': ORG_LINE, 'kicker': 'Monthly Programme Pulse',
         'period_title': period_title, 'focus_line': focus, 'ai_summary': ai_summary,
-        'total_fmt': f'{total:,}', 'districts_covered': len(td), 'districts_total': districts_total,
+        'total_fmt': f'{total:,}',
+        'districts_covered': data.get('districts_active') or len(td), 'districts_total': districts_total,
         'mom_abs': abs(mom), 'mom_dir': '▲' if mom >= 0 else '▼',
         'mom_class': 'pos' if mom >= 0 else 'neg', 'prev_month': prev_month,
         'spark_points': sp, 'spark_last_x': lx, 'spark_last_y': ly,
