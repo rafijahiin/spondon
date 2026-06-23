@@ -3208,10 +3208,13 @@ def _near_miss_choices():
 # ╚══════════════════════════════════════════════════════════════════════════╝
 
 def _response_plan_survey():
-    # Flat schema to match the existing submissions dispatcher
-    # (_create_mpdsr_response_plan): meeting meta + 3 sections × up to 5
-    # actions, each {sec}_a{i}_{field}. Slots reveal progressively (a2 once
-    # a1's action is filled) so the form stays short in practice.
+    # Meeting meta + 3 sections; each section holds a REPEAT of actions so a
+    # review can log any number of agreed actions, each with its OWN status and
+    # an approximate completion date (a Kobo submission can't be edited later, so
+    # status + date are captured per action up front). Repeat fields are
+    # {sec}_action / _responsible / _status / _completion_date
+    # (+ indicator/milestone/considerations); _create_mpdsr_response_plan
+    # iterates each section's repeat group.
     rows = _meta('MPDSR Response Plan serial number', 'রেসপন্স প্ল্যান ক্রমিক নং')
     rows += [
         _sr('select_one rp_level', 'meeting_level', 'MPDSR review level',
@@ -3235,28 +3238,29 @@ def _response_plan_survey():
     for sec, en, bn, has_ind in sections:
         rows.append(_sr('begin_group', 'grp_%s' % sec, en, bn))
         rows.append(_sr('note', '_%s_note' % sec,
-            'Enter up to 5 agreed actions. Fill Action 1 first; the next appears as you go.',
-            'সর্বোচ্চ ৫টি সম্মত পদক্ষেপ লিখুন। আগে পদক্ষেপ ১ পূরণ করুন; পরেরটি আপনাআপনি আসবে।'))
-        for i in range(1, 6):
-            rel = '' if i == 1 else "${%s_a%d_action_taken}!=''" % (sec, i - 1)
-            rows.append(_sr('begin_group', 'grp_%s_a%d' % (sec, i),
-                            'Action %d' % i, 'পদক্ষেপ %d' % i, relevant=rel))
-            rows.append(_sr('text', '%s_a%d_action_taken' % (sec, i),
-                            'Action to be taken', 'গৃহীত পদক্ষেপ', app='multiline'))
-            rows.append(_sr('text', '%s_a%d_responsible' % (sec, i),
-                            'Responsible (person / office)', 'দায়িত্বপ্রাপ্ত (ব্যক্তি / দপ্তর)'))
-            rows.append(_sr('date', '%s_a%d_timeline' % (sec, i),
-                            'Timeline (target date)', 'সময়সীমা (লক্ষ্য তারিখ)'))
-            if has_ind:
-                rows.append(_sr('text', '%s_a%d_indicator' % (sec, i),
-                                'Indicator', 'নির্দেশক'))
-            rows.append(_sr('text', '%s_a%d_milestone' % (sec, i),
-                            'Milestone', 'মাইলফলক'))
-            rows.append(_sr('text', '%s_a%d_considerations' % (sec, i),
-                            'Considerations', 'বিবেচ্য বিষয়', app='multiline'))
-            rows.append(_sr('select_one rp_status', '%s_a%d_status' % (sec, i),
-                            'Implementation status', 'বাস্তবায়ন অবস্থা'))
-            rows.append(_sr('end_group', 'grp_%s_a%d' % (sec, i)))
+            'Add each agreed action as its own entry — tap "+ Add" for the next '
+            'one. Give every action its own status and an approximate completion '
+            'date, because a submission cannot be edited after it is sent.',
+            'প্রতিটি সম্মত পদক্ষেপ আলাদা এন্ট্রি হিসেবে যোগ করুন — পরেরটির জন্য "+ যোগ করুন" '
+            'চাপুন। প্রতিটি পদক্ষেপের নিজস্ব অবস্থা ও আনুমানিক সম্পন্নের তারিখ দিন, কারণ একবার '
+            'পাঠানোর পর আর সম্পাদনা করা যায় না।'))
+        rows.append(_sr('begin_repeat', 'grp_%s_act' % sec, 'Action', 'পদক্ষেপ'))
+        rows.append(_sr('text', '%s_action' % sec,
+                        'Action to be taken', 'করণীয় পদক্ষেপ', app='multiline'))
+        rows.append(_sr('text', '%s_responsible' % sec,
+                        'Responsible (person / office)', 'দায়িত্বপ্রাপ্ত (ব্যক্তি / দপ্তর)'))
+        rows.append(_sr('select_one rp_status', '%s_status' % sec,
+                        'Status of this action', 'এই পদক্ষেপের অবস্থা'))
+        rows.append(_sr('date', '%s_completion_date' % sec,
+                        'Approximate date of completion', 'আনুমানিক সম্পন্নের তারিখ'))
+        if has_ind:
+            rows.append(_sr('text', '%s_indicator' % sec,
+                            'Indicator', 'নির্দেশক'))
+        rows.append(_sr('text', '%s_milestone' % sec,
+                        'Milestone', 'মাইলফলক'))
+        rows.append(_sr('text', '%s_considerations' % sec,
+                        'Considerations', 'বিবেচ্য বিষয়', app='multiline'))
+        rows.append(_sr('end_repeat', 'grp_%s_act' % sec))
         rows.append(_sr('end_group', 'grp_%s' % sec))
     return rows
 
