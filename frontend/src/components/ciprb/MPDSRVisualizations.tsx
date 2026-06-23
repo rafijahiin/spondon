@@ -807,17 +807,23 @@ function ActionTracker({ actions }: { actions: LiveAction[] }) {
 
   return (
     <div style={{ marginTop: 26 }}>
-      <div style={{ marginBottom: 14 }}>
-        <div className="kicker">
-          <span className="dot" style={{ background: CIPRB_BLUE }} />
-          ACTION PLAN TRACKER · LIVE
+      <div style={{
+        marginBottom: 14, display: 'flex', alignItems: 'flex-start',
+        justifyContent: 'space-between', gap: 8, flexWrap: 'wrap',
+      }}>
+        <div>
+          <div className="kicker">
+            <span className="dot" style={{ background: CIPRB_BLUE }} />
+            MPDSR RESPONSE PLAN · IMPLEMENTATION TRACKER
+          </div>
+          <h3 style={{ margin: '6px 0 2px', fontSize: 18, fontWeight: 700, color: 'var(--ink)' }}>
+            Response plan implementation — live from Form 10
+          </h3>
+          <p style={{ fontSize: 12.5, color: 'var(--muted)', margin: 0 }}>
+            Each agreed action is tracked by its own ID; completion % advances as committees update it via CIPRB-10.
+          </p>
         </div>
-        <h3 style={{ margin: '6px 0 2px', fontSize: 18, fontWeight: 700, color: 'var(--ink)' }}>
-          Action implementation — per action &amp; cumulative
-        </h3>
-        <p style={{ fontSize: 12.5, color: 'var(--muted)', margin: 0 }}>
-          Each agreed action (CIPRB-10) tracked by its ID; completion % advances as the committee updates it.
-        </p>
+        <SourceChip>CIPRB 10 — Action Plan (live)</SourceChip>
       </div>
 
       <div className="card" style={{
@@ -1327,8 +1333,11 @@ export function MPDSRVisualizations({
         <MPDSRIndicators indicators={agg?.indicators ?? null} />
       </div>
       <div id="response-plan">
-        <ResponsePlanTracker summaries={agg?.action_plan_summaries ?? []} />
-        <ActionTracker actions={agg?.mpdsr_actions ?? []} />
+        {/* Live Form 10 tracker takes over the moment a plan is submitted;
+            until then the Excel placeholder (with its interim caveat) shows. */}
+        {(agg?.mpdsr_actions?.length ?? 0) > 0
+          ? <ActionTracker actions={agg?.mpdsr_actions ?? []} />
+          : <ResponsePlanTracker summaries={agg?.action_plan_summaries ?? []} />}
       </div>
     </div>
   )
