@@ -771,7 +771,37 @@ function pascal(k: string): string {
 // Solid bars only (no donuts). Returns null until the first action exists.
 function ActionTracker({ actions }: { actions: LiveAction[] }) {
   const colorFor = (pct: number) => (pct >= 75 ? '#58968A' : pct >= 40 ? '#AE4300' : '#F10F45')
-  if (!actions || actions.length === 0) return null
+  const header = (
+    <div style={{
+      marginBottom: 14, display: 'flex', alignItems: 'flex-start',
+      justifyContent: 'space-between', gap: 8, flexWrap: 'wrap',
+    }}>
+      <div>
+        <div className="kicker">
+          <span className="dot" style={{ background: CIPRB_BLUE }} />
+          MPDSR RESPONSE PLAN · IMPLEMENTATION TRACKER
+        </div>
+        <h3 style={{ margin: '6px 0 2px', fontSize: 18, fontWeight: 700, color: 'var(--ink)' }}>
+          Response plan implementation — live from Form 10
+        </h3>
+        <p style={{ fontSize: 12.5, color: 'var(--muted)', margin: 0 }}>
+          Each agreed action is tracked by its own ID; completion % advances as committees update it via CIPRB-10.
+        </p>
+      </div>
+      <SourceChip>CIPRB 10 — Action Plan (live)</SourceChip>
+    </div>
+  )
+  if (!actions || actions.length === 0) {
+    return (
+      <div style={{ marginTop: 26 }}>
+        {header}
+        <div className="card" style={{ padding: '30px 22px', textAlign: 'center', fontSize: 13.5, color: 'var(--muted)' }}>
+          No response-plan actions logged yet — they appear here as committees submit plans via Form 10 (CIPRB-10),
+          with each action's completion % and a live cumulative total.
+        </div>
+      </div>
+    )
+  }
   const avg = (xs: number[]) => (xs.length ? Math.round(xs.reduce((a, b) => a + b, 0) / xs.length) : 0)
   const overall = avg(actions.map(a => a.completion_pct))
   const overdue = actions.filter(a => a.is_overdue).length
@@ -807,24 +837,7 @@ function ActionTracker({ actions }: { actions: LiveAction[] }) {
 
   return (
     <div style={{ marginTop: 26 }}>
-      <div style={{
-        marginBottom: 14, display: 'flex', alignItems: 'flex-start',
-        justifyContent: 'space-between', gap: 8, flexWrap: 'wrap',
-      }}>
-        <div>
-          <div className="kicker">
-            <span className="dot" style={{ background: CIPRB_BLUE }} />
-            MPDSR RESPONSE PLAN · IMPLEMENTATION TRACKER
-          </div>
-          <h3 style={{ margin: '6px 0 2px', fontSize: 18, fontWeight: 700, color: 'var(--ink)' }}>
-            Response plan implementation — live from Form 10
-          </h3>
-          <p style={{ fontSize: 12.5, color: 'var(--muted)', margin: 0 }}>
-            Each agreed action is tracked by its own ID; completion % advances as committees update it via CIPRB-10.
-          </p>
-        </div>
-        <SourceChip>CIPRB 10 — Action Plan (live)</SourceChip>
-      </div>
+      {header}
 
       <div className="card" style={{
         padding: '16px 22px', marginBottom: 14, display: 'flex',
@@ -1333,11 +1346,10 @@ export function MPDSRVisualizations({
         <MPDSRIndicators indicators={agg?.indicators ?? null} />
       </div>
       <div id="response-plan">
-        {/* Live Form 10 tracker takes over the moment a plan is submitted;
-            until then the Excel placeholder (with its interim caveat) shows. */}
-        {(agg?.mpdsr_actions?.length ?? 0) > 0
-          ? <ActionTracker actions={agg?.mpdsr_actions ?? []} />
-          : <ResponsePlanTracker summaries={agg?.action_plan_summaries ?? []} />}
+        {/* Live Form 10 (CIPRB-10) action tracker — the primary response-plan
+            visual; shows an empty state until the first plan is submitted. The
+            old Excel-placeholder tracker is retired. */}
+        <ActionTracker actions={agg?.mpdsr_actions ?? []} />
       </div>
     </div>
   )
