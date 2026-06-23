@@ -34,10 +34,19 @@ export function usePolling<T>({
   const fetcherRef = useRef(fetcher)
   fetcherRef.current = fetcher
 
+  // Only push new data when it actually differs from the last poll. An
+  // unconditional setData re-renders the whole page every interval even when
+  // nothing changed, which re-animates charts / count-ups / the activity feed
+  // and nudges the scroll position ("the screen auto-scrolls a bit").
+  const prevJsonRef = useRef<string>('')
   const fetch = useCallback(async () => {
     try {
       const result = await fetcherRef.current()
-      setData(result)
+      const json = JSON.stringify(result)
+      if (json !== prevJsonRef.current) {
+        prevJsonRef.current = json
+        setData(result)
+      }
       setError(null)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load data')
