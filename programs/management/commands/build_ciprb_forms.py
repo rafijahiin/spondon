@@ -3200,88 +3200,105 @@ def _near_miss_choices():
 
 # ─── Form catalogue ──────────────────────────────────────────────────────────
 
-# ╔══════════════════════════════════════════════════════════════════════════╗
-# ║   FORM 10 — MPDSR Response Plan (review-meeting action tracker)         ║
-# ║   Source: MPDSR Response Plan_2026 (1).docx — district/meeting header + ║
-# ║   3 sections (System Strengthening, Community-VA & Facility modifiable  ║
-# ║   factors); each section is a repeat of agreed actions.                 ║
-# ╚══════════════════════════════════════════════════════════════════════════╝
+# ─── FORM 10 — MPDSR Action Plan (review-meeting action tracker) ─────────────
+# Source: January to June Action Plan_2026_Kurigram.docx — digitised verbatim.
+#   Table 1  MPDSR System Strengthening — sub-category column + Activities /
+#            Responsible / Timeline / Indicator / Milestone / Considerations.
+#   Table 2  Common modifiable factors, (Community verbal autopsy) and
+#            (Facility death review) — Actions are taken / Responsible /
+#            Timeline / Milestone / Considerations (no Indicator).
+#   Each action is one repeat entry. The master carries no status column and no
+#   meeting-metadata header, so neither is added.
 
 def _response_plan_survey():
-    # Meeting meta + 3 sections; each section holds a REPEAT of actions so a
-    # review can log any number of agreed actions, each with its OWN status and
-    # an approximate completion date (a Kobo submission can't be edited later, so
-    # status + date are captured per action up front). Repeat fields are
-    # {sec}_action / _responsible / _status / _completion_date
-    # (+ indicator/milestone/considerations); _create_mpdsr_response_plan
-    # iterates each section's repeat group.
-    rows = _meta('MPDSR Response Plan serial number', 'রেসপন্স প্ল্যান ক্রমিক নং')
-    rows += [
-        _sr('select_one rp_level', 'meeting_level', 'MPDSR review level',
-            'এমপিডিএসআর পর্যালোচনার স্তর', required='yes'),
-        _sr('date', 'meeting_date', 'Date of review meeting',
-            'পর্যালোচনা সভার তারিখ', required='yes'),
-        _sr('text', 'place_of_meeting', 'Place of meeting', 'সভার স্থান'),
-        _sr('integer', 'participants_count', 'Number of participants',
-            'অংশগ্রহণকারীর সংখ্যা', constraint='. >= 0 and . <= 500'),
-    ]
-    # (field-prefix, EN section, BN section, has_indicator) — only System
-    # Strengthening carries the Indicator column (per the source doc).
-    sections = [
-        ('sys_strengthen', 'MPDSR System Strengthening',
-         'এমপিডিএসআর সিস্টেম শক্তিশালীকরণ', True),
+    # Verbatim digitisation of the official master "MPDSR Action Plan 2026"
+    # (January to June Action Plan_2026, Kurigram). The two master tables become
+    # three repeat sections so a review can log any number of actions, each as
+    # its own entry:
+    #   1. MPDSR System Strengthening — sub-category column (Community/Facility
+    #      death review, assignment of causes, response-plan development &
+    #      implementation, M&E) + Activities / Responsible / Timeline /
+    #      Indicator / Milestone / Considerations.
+    #   2-3. Common modifiable factors (Community verbal autopsy) and
+    #      (Facility death review) — Actions are taken / Responsible / Timeline /
+    #      Milestone / Considerations (no Indicator column).
+    # The master has no status column and no meeting-metadata header, so neither
+    # is added; column wording is kept exactly as the master.
+    rows = _meta()
+    rows.append(_sr('note', '_rp_title', 'MPDSR Action Plan 2026',
+                    'এমপিডিএসআর অ্যাকশন প্ল্যান ২০২৬'))
+
+    # --- Table 1: MPDSR System Strengthening ---------------------------------
+    rows.append(_sr('begin_group', 'grp_sys_strengthen',
+                    'MPDSR System Strengthening',
+                    'এমপিডিএসআর সিস্টেম শক্তিশালীকরণ'))
+    rows.append(_sr('note', '_sys_note',
+        'Note: first table needs to fill out based on the findings of the '
+        'workshop (gaps and challenges are identified to improve the system)',
+        'নোট: প্রথম টেবিলটি কর্মশালার ফলাফলের ভিত্তিতে পূরণ করতে হবে '
+        '(সিস্টেম উন্নত করতে ফাঁক ও চ্যালেঞ্জগুলো চিহ্নিত করা হয়)'))
+    rows.append(_sr('begin_repeat', 'grp_sys_act', 'Activity', 'কার্যক্রম'))
+    rows.append(_sr('select_one rp_subcat', 'sys_subcategory',
+                    'Category', 'বিভাগ'))
+    rows.append(_sr('text', 'sys_activities', 'Activities', 'কার্যক্রম',
+                    app='multiline'))
+    rows.append(_sr('text', 'sys_responsible', 'Responsible',
+                    'দায়িত্বপ্রাপ্ত (ব্যক্তি / দপ্তর)'))
+    rows.append(_sr('date', 'sys_timeline', 'Timeline', 'সময়সীমা'))
+    rows.append(_sr('text', 'sys_indicator', 'Indicator', 'নির্দেশক'))
+    rows.append(_sr('text', 'sys_milestone', 'Milestone', 'মাইলফলক'))
+    rows.append(_sr('text', 'sys_considerations', 'Considerations',
+                    'বিবেচ্য বিষয়', app='multiline'))
+    rows.append(_sr('end_repeat', 'grp_sys_act'))
+    rows.append(_sr('end_group', 'grp_sys_strengthen'))
+
+    # --- Table 2: Common modifiable factors (no Indicator) -------------------
+    for sec, en, bn in [
         ('community_va', 'Common modifiable factors (Community verbal autopsy)',
-         'সাধারণ পরিবর্তনযোগ্য কারণ (কমিউনিটি ভার্বাল অটোপসি)', False),
+         'সাধারণ পরিবর্তনযোগ্য কারণ (কমিউনিটি ভার্বাল অটোপসি)'),
         ('facility_dr', 'Common modifiable factors (Facility death review)',
-         'সাধারণ পরিবর্তনযোগ্য কারণ (ফ্যাসিলিটি ডেথ রিভিউ)', False),
-    ]
-    for sec, en, bn, has_ind in sections:
+         'সাধারণ পরিবর্তনযোগ্য কারণ (ফ্যাসিলিটি ডেথ রিভিউ)'),
+    ]:
         rows.append(_sr('begin_group', 'grp_%s' % sec, en, bn))
-        rows.append(_sr('note', '_%s_note' % sec,
-            'Add each agreed action as its own entry — tap "+ Add" for the next '
-            'one. Give every action its own status and an approximate completion '
-            'date, because a submission cannot be edited after it is sent.',
-            'প্রতিটি সম্মত পদক্ষেপ আলাদা এন্ট্রি হিসেবে যোগ করুন — পরেরটির জন্য "+ যোগ করুন" '
-            'চাপুন। প্রতিটি পদক্ষেপের নিজস্ব অবস্থা ও আনুমানিক সম্পন্নের তারিখ দিন, কারণ একবার '
-            'পাঠানোর পর আর সম্পাদনা করা যায় না।'))
         rows.append(_sr('begin_repeat', 'grp_%s_act' % sec, 'Action', 'পদক্ষেপ'))
-        rows.append(_sr('text', '%s_action' % sec,
-                        'Action to be taken', 'করণীয় পদক্ষেপ', app='multiline'))
-        rows.append(_sr('text', '%s_responsible' % sec,
-                        'Responsible (person / office)', 'দায়িত্বপ্রাপ্ত (ব্যক্তি / দপ্তর)'))
-        rows.append(_sr('select_one rp_status', '%s_status' % sec,
-                        'Status of this action', 'এই পদক্ষেপের অবস্থা'))
-        rows.append(_sr('date', '%s_completion_date' % sec,
-                        'Approximate date of completion', 'আনুমানিক সম্পন্নের তারিখ'))
-        if has_ind:
-            rows.append(_sr('text', '%s_indicator' % sec,
-                            'Indicator', 'নির্দেশক'))
-        rows.append(_sr('text', '%s_milestone' % sec,
-                        'Milestone', 'মাইলফলক'))
-        rows.append(_sr('text', '%s_considerations' % sec,
-                        'Considerations', 'বিবেচ্য বিষয়', app='multiline'))
+        rows.append(_sr('text', '%s_actions' % sec, 'Actions are taken',
+                        'গৃহীত পদক্ষেপ', app='multiline'))
+        rows.append(_sr('text', '%s_responsible' % sec, 'Responsible',
+                        'দায়িত্বপ্রাপ্ত (ব্যক্তি / দপ্তর)'))
+        rows.append(_sr('date', '%s_timeline' % sec, 'Timeline', 'সময়সীমা'))
+        rows.append(_sr('text', '%s_milestone' % sec, 'Milestone', 'মাইলফলক'))
+        rows.append(_sr('text', '%s_considerations' % sec, 'Considerations',
+                        'বিবেচ্য বিষয়', app='multiline'))
         rows.append(_sr('end_repeat', 'grp_%s_act' % sec))
         rows.append(_sr('end_group', 'grp_%s' % sec))
+
+    rows.append(_sr('note', '_cmf_note',
+        'Note: 2nd table needs to fill out based on the community verbal autopsy '
+        'data and facility death review findings (causes and contributing '
+        'factors behind the deaths including the delays), the action plan can be '
+        'developed based on the findings of deaths from July to September 2025 '
+        'deaths, a six months analysis and actions which can also be compared '
+        'with the next six months causes and action plans',
+        'নোট: দ্বিতীয় টেবিলটি কমিউনিটি ভার্বাল অটোপসি ডেটা ও ফ্যাসিলিটি ডেথ রিভিউয়ের '
+        'ফলাফলের ভিত্তিতে পূরণ করতে হবে (বিলম্বসহ মৃত্যুর কারণ ও অবদানকারী কারণসমূহ); '
+        'জুলাই থেকে সেপ্টেম্বর ২০২৫ মৃত্যুর ফলাফলের ভিত্তিতে অ্যাকশন প্ল্যান তৈরি করা যেতে পারে — '
+        'ছয় মাসের বিশ্লেষণ ও পদক্ষেপ, যা পরবর্তী ছয় মাসের কারণ ও অ্যাকশন প্ল্যানের সাথে তুলনাও করা যায়'))
     return rows
 
 
 def _response_plan_choices():
-    ch = list(DISTRICT_CHOICES) + list(YES_NO)
+    # rp_subcat = the System-Strengthening sub-category column from the master
+    # (Table 1, first column). The master carries no review-level or status list.
+    ch = list(DISTRICT_CHOICES)
     for k, en, bn in [
-        ('DM', 'District MPDSR (DM)', 'জেলা এমপিডিএসআর'),
-        ('UM', 'Upazila MPDSR (UM)', 'উপজেলা এমপিডিএসআর'),
+        ('community_death_review', 'Community Death Review', 'কমিউনিটি ডেথ রিভিউ'),
+        ('facility_death_review', 'Facility Death Review', 'ফ্যাসিলিটি ডেথ রিভিউ'),
+        ('assignment_causes', 'Assignment causes of deaths', 'মৃত্যুর কারণ নির্ধারণ'),
+        ('response_plan_dev', 'Response plan development', 'রেসপন্স প্ল্যান উন্নয়ন'),
+        ('implementation_response', 'Implementation of response', 'রেসপন্স বাস্তবায়ন'),
+        ('monitoring_evaluation', 'Monitoring and evaluation', 'পর্যবেক্ষণ ও মূল্যায়ন'),
     ]:
-        ch.append(_ch('rp_level', k, en, bn))
-    # Status values match the tracker: 'implemented' = green; 'in_progress' =
-    # amber; anything else + past-timeline = red (Overdue) on the dashboard.
-    for k, en, bn in [
-        ('implemented', 'Implemented', 'বাস্তবায়িত'),
-        ('in_progress', 'In progress', 'চলমান'),
-        ('pending',     'Pending / not started', 'অপেক্ষমাণ / শুরু হয়নি'),
-        ('delayed',     'Delayed', 'বিলম্বিত'),
-        ('dropped',     'Dropped', 'বাতিল'),
-    ]:
-        ch.append(_ch('rp_status', k, en, bn))
+        ch.append(_ch('rp_subcat', k, en, bn))
     return ch
 
 
