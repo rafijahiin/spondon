@@ -125,7 +125,7 @@ def infographic_context(data: dict, *, ai_summary: str = '', is_sample: bool = F
              if is_overall else f'<b>{org}</b> &nbsp;|&nbsp; Reproductive &amp; Child Health')
 
     return {
-        'is_sample': is_sample, 'org_line': ORG_LINE, 'kicker': 'Monthly Programme Pulse',
+        'is_sample': is_sample, 'org': org, 'org_line': ORG_LINE, 'kicker': 'Monthly Programme Pulse',
         'period_title': period_title, 'focus_line': focus, 'ai_summary': ai_summary,
         'total_fmt': f'{total:,}', 'districts_covered': len(td), 'districts_total': districts_total,
         'mom_abs': abs(mom), 'mom_dir': '▲' if mom >= 0 else '▼',
@@ -146,6 +146,53 @@ def render_infographic_png(data: dict, **kw) -> bytes:
     from django.template.loader import render_to_string
     html = render_to_string('reports/infographic.html', infographic_context(data, **kw))
     return html_to_png(html, '.sheet')
+
+
+# ── Full programme report: data dict → multi-page PDF ───────────────────────
+def _trend_bars(vals, period_end):
+    """12-month vertical bars with month labels."""
+    vals = list(vals or [])
+    if not vals:
+        return []
+    mx = max(vals) or 1
+    labels = []
+    if period_end:
+        idx0 = period_end.year * 12 + (period_end.month - 1)
+        for i in range(len(vals) - 1, -1, -1):
+            ti = idx0 - i
+            labels.append(date(ti // 12, ti % 12 + 1, 1).strftime('%b'))
+    else:
+        labels = [''] * len(vals)
+    return [{'height': max(4, round(v / mx * 100)), 'label': lab}
+            for v, lab in zip(vals, labels)]
+
+
+def report_context(data: dict, *, narrative=None, **kw) -> dict:
+    ctx = infographic_context(data, **kw)          # reuse the shared brand fields
+    counts = data.get('counts', {}) or {}
+    total = data.get('total_submissions', 0)
+    ctx['narrative'] = narrative or []
+    ctx['kpis'] = [
+        {'value_fmt': f'{total:,}', 'label': 'Total activities'},
+        {'value_fmt': f"{counts.get('registrations', 0):,}", 'label': 'Clients registered'},
+        {'value_fmt': f"{counts.get('individual_counselling', 0):,}", 'label': 'Counselling sessions'},
+        {'value_fmt': f"{counts.get('referrals', 0):,}", 'label': 'Referrals'},
+        {'value_fmt': f"{data.get('active_workers', 0):,}", 'label': 'Active field workers'},
+        {'value_fmt': f"{data.get('pending', 0):,}", 'label': 'Pending review'},
+    ]
+    rows = sorted(((LABEL_MAP.get(k, k), v) for k, v in counts.items() if v > 0),
+                  key=lambda x: x[1], reverse=True)
+    mx = rows[0][1] if rows else 1
+    ctx['service_rows'] = [{'label': l, 'value_fmt': f'{v:,}', 'pct': round(v / mx * 100)}
+                           for l, v in rows]
+    ctx['trend'] = _trend_bars(data.get('monthly_trend', []), data.get('period_end'))
+    return ctx
+
+
+def render_report_pdf(data: dict, *, narrative=None, **kw) -> bytes:
+    from django.template.loader import render_to_string
+    html = render_to_string('reports/report.html', report_context(data, narrative=narrative, **kw))
+    return html_to_pdf(html)
 
 
 # ── Demo dataset (collect_programme_data shape) for local proofs ─────────────
