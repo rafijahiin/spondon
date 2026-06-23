@@ -445,6 +445,10 @@ def _fistula_survey():
         _sr('select_one genital_fistula_type', 'genital_fistula_type',
             'Type of genital fistula (VVF / RVF / …)',
             'যৌনাঙ্গের ফিস্টুলার ধরন (VVF / RVF / …)', required='yes'),
+        _sr('text', 'genital_fistula_type_other',
+            'Other — please specify the type',
+            'অন্যান্য হলে ধরন উল্লেখ করুন',
+            relevant="${genital_fistula_type}='other'", required='yes'),
         _sr('end_group', 'grp_diagnosed'),
     ]
 
@@ -646,6 +650,7 @@ def _fistula_choices():
             'Vesico-uterine', 'ভেসিকো-ইউটেরাইন'),
         _ch('genital_fistula_type', 'vesicocervical',
             'Vesico-cervical', 'ভেসিকো-সারভিকাল'),
+        _ch('genital_fistula_type', 'other', 'Other', 'অন্যান্য'),
     ]
     ch += [
         _ch('operation_route', 'vaginal',           'Vaginal', 'যৌনাঙ্গপথ'),
@@ -3222,8 +3227,9 @@ def _response_plan_survey():
     #   2-3. Common modifiable factors (Community verbal autopsy) and
     #      (Facility death review) — Actions are taken / Responsible / Timeline /
     #      Milestone / Considerations (no Indicator column).
-    # The master has no status column and no meeting-metadata header, so neither
-    # is added; column wording is kept exactly as the master.
+    # The master has no status column or meeting-metadata header; a per-action
+    # status is added by request, but every column wording is kept exactly as
+    # the master.
     rows = _meta()
     rows.append(_sr('note', '_rp_title', 'MPDSR Action Plan 2026',
                     'এমপিডিএসআর অ্যাকশন প্ল্যান ২০২৬'))
@@ -3249,6 +3255,8 @@ def _response_plan_survey():
     rows.append(_sr('text', 'sys_milestone', 'Milestone', 'মাইলফলক'))
     rows.append(_sr('text', 'sys_considerations', 'Considerations',
                     'বিবেচ্য বিষয়', app='multiline'))
+    rows.append(_sr('select_one rp_status', 'sys_status',
+                    'Status of this action', 'এই পদক্ষেপের অবস্থা'))
     rows.append(_sr('end_repeat', 'grp_sys_act'))
     rows.append(_sr('end_group', 'grp_sys_strengthen'))
 
@@ -3269,6 +3277,8 @@ def _response_plan_survey():
         rows.append(_sr('text', '%s_milestone' % sec, 'Milestone', 'মাইলফলক'))
         rows.append(_sr('text', '%s_considerations' % sec, 'Considerations',
                         'বিবেচ্য বিষয়', app='multiline'))
+        rows.append(_sr('select_one rp_status', '%s_status' % sec,
+                        'Status of this action', 'এই পদক্ষেপের অবস্থা'))
         rows.append(_sr('end_repeat', 'grp_%s_act' % sec))
         rows.append(_sr('end_group', 'grp_%s' % sec))
 
@@ -3299,6 +3309,15 @@ def _response_plan_choices():
         ('monitoring_evaluation', 'Monitoring and evaluation', 'পর্যবেক্ষণ ও মূল্যায়ন'),
     ]:
         ch.append(_ch('rp_subcat', k, en, bn))
+    # Per-action implementation status (kept by request — not in the master).
+    for k, en, bn in [
+        ('implemented', 'Implemented', 'বাস্তবায়িত'),
+        ('in_progress', 'In progress', 'চলমান'),
+        ('pending',     'Pending / not started', 'অপেক্ষমাণ / শুরু হয়নি'),
+        ('delayed',     'Delayed', 'বিলম্বিত'),
+        ('dropped',     'Dropped', 'বাতিল'),
+    ]:
+        ch.append(_ch('rp_status', k, en, bn))
     return ch
 
 

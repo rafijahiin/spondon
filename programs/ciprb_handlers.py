@@ -187,8 +187,12 @@ def handle_ciprb_fistula(payload, lat, lng):
             case.diagnosed_place = _s(payload.get('diagnosed_place'))    or case.diagnosed_place
             case.diagnosed_by    = _s(payload.get('diagnosed_by'))       or case.diagnosed_by
             # Anatomical type (VVF/RVF/…) is now classified at diagnosis.
-            case.genital_fistula_type = (_s(payload.get('genital_fistula_type'))
-                                         or case.genital_fistula_type)
+            # When 'other' is chosen the worker types the specific type; keep
+            # that free text so the specified problem isn't lost as a bare code.
+            gft = _s(payload.get('genital_fistula_type'))
+            if gft == 'other':
+                gft = _s(payload.get('genital_fistula_type_other')) or gft
+            case.genital_fistula_type = gft or case.genital_fistula_type
         elif stage == CIPRBFistulaCase.STAGE_REFERRED:
             case.refer_date          = _date(payload.get('refer_date')) or case.refer_date
             case.refer_place         = _s(payload.get('refer_place'))   or case.refer_place

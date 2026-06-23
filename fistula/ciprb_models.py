@@ -130,7 +130,7 @@ class CIPRBFistulaCase(models.Model):
         help_text='4-category fistula type per CIPRB Question Bank.',
     )
     iatrogenic_cause     = models.CharField(max_length=30, blank=True)
-    genital_fistula_type = models.CharField(max_length=30, blank=True)
+    genital_fistula_type = models.CharField(max_length=120, blank=True)
     operation_route      = models.CharField(max_length=30, blank=True)
     surgery_outcome_v2   = models.CharField(
         max_length=30, choices=SURGERY_OUTCOME_CHOICES, blank=True,
