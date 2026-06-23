@@ -121,7 +121,7 @@ YES_NO = [
 
 
 # ─── Shared submission header (CIPRB org + GPS + district + enumerator) ─────
-def _meta(form_id_visible, form_id_visible_bn=''):
+def _meta(form_id_visible='', form_id_visible_bn=''):
     """Common opening section every CIPRB form starts with.
 
     `form_id_visible` is the human-visible serial number CIPRB uses on
@@ -153,10 +153,27 @@ def _meta(form_id_visible, form_id_visible_bn=''):
             'Mobile number', 'মোবাইল নম্বর',
             constraint='regex(., "^[0-9+ -]{6,20}$")',
             cmsg='Enter a valid phone number.'),
-        _sr('text', 'case_serial',
-            form_id_visible, bn_label,
-            hint='The handwritten serial number from the paper form, if any.'),
+        *([_sr('text', 'case_serial', form_id_visible, bn_label,
+               hint='The handwritten serial number from the paper form, if any.')]
+          if form_id_visible else []),
         _sr('end_group', 'grp_meta'),
+    ]
+
+
+def _office_use_block(serial_en, serial_bn):
+    """The 'For office use' (অফিসের ব্যবহারের জন্য) box printed at the top of the
+    MPDSR paper forms: form submission date, annual serial number, and the
+    receiver's name/signature. Office-filled, not by the field worker."""
+    return [
+        _sr('begin_group', 'grp_office', 'For office use',
+            'অফিসের ব্যবহারের জন্য'),
+        _sr('date', 'office_submission_date', 'Date of form submission',
+            'ফর্ম জমাদানের তারিখ'),
+        _sr('text', 'case_serial', serial_en, serial_bn,
+            hint='Annual serial number from the paper form.'),
+        _sr('text', 'office_receiver', 'Name & signature of form receiver',
+            'ফর্ম গ্রহণকারীর নাম ও স্বাক্ষর'),
+        _sr('end_group', 'grp_office'),
     ]
 
 
@@ -744,8 +761,9 @@ def _respondent_block():
 
 
 def _community_maternal_survey():
-    rows = _meta('Annual maternal death serial number',
-                 'মাতৃমৃত্যুর বাৎসরিক ক্রমিক নং')
+    rows = _meta()
+    rows += _office_use_block('Annual maternal death serial number',
+                              'মাতৃমৃত্যুর বাৎসরিক ক্রমিক নং')
     rows += _shared_consent_block()
     rows += _respondent_block()
 
@@ -1293,8 +1311,9 @@ def _community_maternal_choices():
 # ╚══════════════════════════════════════════════════════════════════════════╝
 
 def _community_neonatal_survey():
-    rows = _meta('Annual neonatal death serial number',
-                 'নবজাতক মৃত্যুর বাৎসরিক ক্রমিক নং')
+    rows = _meta()
+    rows += _office_use_block('Annual neonatal death serial number',
+                              'নবজাতক মৃত্যুর বাৎসরিক ক্রমিক নং')
     rows += _shared_consent_block()
     rows += _respondent_block()
 
@@ -1878,8 +1897,9 @@ def _community_neonatal_choices():
 # ╚══════════════════════════════════════════════════════════════════════════╝
 
 def _facility_maternal_survey():
-    rows = _meta('Annual facility maternal death serial number',
-                 'মাতৃমৃত্যুর বাৎসরিক ক্রমিক নং')
+    rows = _meta()
+    rows += _office_use_block('Annual facility maternal death serial number',
+                              'মাতৃমৃত্যুর বাৎসরিক ক্রমিক নং')
 
     # General information & facility / mother identity (paper page 2)
     rows += [
@@ -2289,8 +2309,9 @@ def _facility_maternal_choices():
 # ╚══════════════════════════════════════════════════════════════════════════╝
 
 def _facility_neonatal_survey():
-    rows = _meta('Annual neonatal death serial number',
-                 'নবজাতক মৃত্যুর বাৎসরিক ক্রমিক নং')
+    rows = _meta()
+    rows += _office_use_block('Annual neonatal death serial number',
+                              'নবজাতক মৃত্যুর বাৎসরিক ক্রমিক নং')
 
     # ── Facility identity (paper page 2) — facility name + 9-box mandatory code ─
     rows += [
