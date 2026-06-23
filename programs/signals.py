@@ -39,6 +39,10 @@ _ORG_EXPORT = {
     # Pushed by the _fistula_case_changed receiver below (Client never carries
     # the 'Fistula' org), so it shares the same debounce / daemon machinery.
     'Fistula': 'programs.management.commands.export_fistula_clients',
+    # CIPRB MPDSR Action Plan — sourced from MPDSRAction. Pushed by the
+    # _mpdsr_action_changed receiver below so the 'update an action' dropdown
+    # always lists the current open actions.
+    'MPDSRAction': 'programs.management.commands.export_mpdsr_actions',
 }
 
 _DEBOUNCE_SECONDS = 2.0
@@ -122,3 +126,15 @@ from fistula.ciprb_models import CIPRBFistulaCase  # noqa: E402
 @receiver(post_save, sender=CIPRBFistulaCase)
 def _fistula_case_changed(sender, instance: CIPRBFistulaCase, created: bool, **kwargs):
     transaction.on_commit(lambda: _schedule_push('Fistula'))
+
+
+# CIPRB MPDSR actions live in MPDSRAction; refresh mpdsr_actions.csv on any
+# insert/update (a new plan adding actions, or an 'update' moving one forward)
+# so the 'update an action' dropdown + pulldata stay current. build_csv drops
+# dropped actions, so a cancelled action falls off the list.
+from mpdsr.models import MPDSRAction  # noqa: E402
+
+
+@receiver(post_save, sender=MPDSRAction)
+def _mpdsr_action_changed(sender, instance, created: bool, **kwargs):
+    transaction.on_commit(lambda: _schedule_push('MPDSRAction'))

@@ -3233,7 +3233,12 @@ def _response_plan_survey():
     rows = _meta()
     rows.append(_sr('note', '_rp_title', 'MPDSR Action Plan 2026',
                     'এমপিডিএসআর অ্যাকশন প্ল্যান ২০২৬'))
+    rows.append(_sr('select_one ap_mode', 'ap_mode',
+                    'What do you want to do?', 'আপনি কী করতে চান?', required='yes'))
 
+    # ═══ MODE A — log a new action plan (verbatim master structure) ═══
+    rows.append(_sr('begin_group', 'grp_new_plan', 'New action plan',
+                    'নতুন অ্যাকশন প্ল্যান', relevant="${ap_mode}='new_plan'"))
     # --- Table 1: MPDSR System Strengthening ---------------------------------
     rows.append(_sr('begin_group', 'grp_sys_strengthen',
                     'MPDSR System Strengthening',
@@ -3244,9 +3249,9 @@ def _response_plan_survey():
         'নোট: প্রথম টেবিলটি কর্মশালার ফলাফলের ভিত্তিতে পূরণ করতে হবে '
         '(সিস্টেম উন্নত করতে ফাঁক ও চ্যালেঞ্জগুলো চিহ্নিত করা হয়)'))
     rows.append(_sr('begin_repeat', 'grp_sys_act', 'Activity', 'কার্যক্রম'))
-    rows.append(_sr('select_one rp_subcat', 'sys_subcategory',
+    rows.append(_sr('select_one rp_subcat', 'sys_subcat',
                     'Category', 'বিভাগ'))
-    rows.append(_sr('text', 'sys_activities', 'Activities', 'কার্যক্রম',
+    rows.append(_sr('text', 'sys_activity', 'Activities', 'কার্যক্রম',
                     app='multiline'))
     rows.append(_sr('text', 'sys_responsible', 'Responsible',
                     'দায়িত্বপ্রাপ্ত (ব্যক্তি / দপ্তর)'))
@@ -3269,7 +3274,7 @@ def _response_plan_survey():
     ]:
         rows.append(_sr('begin_group', 'grp_%s' % sec, en, bn))
         rows.append(_sr('begin_repeat', 'grp_%s_act' % sec, 'Action', 'পদক্ষেপ'))
-        rows.append(_sr('text', '%s_actions' % sec, 'Actions are taken',
+        rows.append(_sr('text', '%s_activity' % sec, 'Actions are taken',
                         'গৃহীত পদক্ষেপ', app='multiline'))
         rows.append(_sr('text', '%s_responsible' % sec, 'Responsible',
                         'দায়িত্বপ্রাপ্ত (ব্যক্তি / দপ্তর)'))
@@ -3293,6 +3298,44 @@ def _response_plan_survey():
         'ফলাফলের ভিত্তিতে পূরণ করতে হবে (বিলম্বসহ মৃত্যুর কারণ ও অবদানকারী কারণসমূহ); '
         'জুলাই থেকে সেপ্টেম্বর ২০২৫ মৃত্যুর ফলাফলের ভিত্তিতে অ্যাকশন প্ল্যান তৈরি করা যেতে পারে — '
         'ছয় মাসের বিশ্লেষণ ও পদক্ষেপ, যা পরবর্তী ছয় মাসের কারণ ও অ্যাকশন প্ল্যানের সাথে তুলনাও করা যায়'))
+    rows.append(_sr('end_group', 'grp_new_plan'))
+
+    # ═══ MODE B — update an existing action (pick by id, auto-fill, advance) ═══
+    # mpdsr_actions.csv (form media, kept current by export_mpdsr_actions) lists
+    # every open action: name=action_id, label='D-01 — <activity> (<district>)'.
+    NORM_SEL = ("translate(normalize-space(${ap_action_sel}),"
+                "'abcdefghijklmnopqrstuvwxyz','ABCDEFGHIJKLMNOPQRSTUVWXYZ')")
+    rows.append(_sr('begin_group', 'grp_update', 'Update an action',
+                    'একটি পদক্ষেপ হালনাগাদ', relevant="${ap_mode}='update_action'"))
+    rows.append(_sr('select_one_from_file mpdsr_actions.csv', 'ap_action_sel',
+                    'Select the action by its ID (e.g. D-01)',
+                    'আইডি দিয়ে পদক্ষেপটি বেছে নিন (যেমন D-01)',
+                    app='autocomplete', required='yes'))
+    for col, nm in [('activity', '_ap_act'), ('responsible', '_ap_resp'),
+                    ('timeline', '_ap_time'), ('district', '_ap_dist'),
+                    ('status', '_ap_curstat')]:
+        rows.append(_sr('calculate', nm, '', '',
+                        calc="pulldata('mpdsr_actions','%s','action_id',%s)" % (col, NORM_SEL)))
+    rows.append(_sr('note', '_ap_show',
+        'Action ${ap_action_sel}: ${_ap_act}\n'
+        'Responsible: ${_ap_resp} · Timeline: ${_ap_time} (${_ap_dist})\n'
+        'Current status: ${_ap_curstat}',
+        'পদক্ষেপ ${ap_action_sel}: ${_ap_act}\n'
+        'দায়িত্বপ্রাপ্ত: ${_ap_resp} · সময়সীমা: ${_ap_time} (${_ap_dist})',
+        relevant="${_ap_act}!=''"))
+    rows.append(_sr('note', '_ap_nomatch',
+        'No action found for that ID — check the list, or it may not have synced yet.',
+        'এই আইডিতে কোনো পদক্ষেপ পাওয়া যায়নি — তালিকা দেখুন।',
+        relevant="${ap_action_sel}!='' and ${_ap_act}=''"))
+    rows.append(_sr('select_one rp_status', 'ap_new_status', 'Updated status',
+                    'হালনাগাদ অবস্থা', required='yes'))
+    rows.append(_sr('select_one ap_completion', 'ap_new_completion',
+                    'Completion %', 'সম্পন্নের হার (%)', required='yes'))
+    rows.append(_sr('date', 'ap_completion_date',
+                    'Date completed (if 100%)', 'সম্পন্নের তারিখ (যদি ১০০%)'))
+    rows.append(_sr('text', 'ap_remarks', 'Remarks / progress note',
+                    'মন্তব্য / অগ্রগতির নোট', app='multiline'))
+    rows.append(_sr('end_group', 'grp_update'))
     return rows
 
 
@@ -3318,6 +3361,13 @@ def _response_plan_choices():
         ('dropped',     'Dropped', 'বাতিল'),
     ]:
         ch.append(_ch('rp_status', k, en, bn))
+    for k, en, bn in [
+        ('new_plan', 'Start a new action plan', 'নতুন অ্যাকশন প্ল্যান শুরু করুন'),
+        ('update_action', 'Update an existing action', 'বিদ্যমান একটি পদক্ষেপ হালনাগাদ করুন'),
+    ]:
+        ch.append(_ch('ap_mode', k, en, bn))
+    for pct in (0, 25, 50, 75, 100):
+        ch.append(_ch('ap_completion', str(pct), '%d%%' % pct, '%d%%' % pct))
     return ch
 
 
