@@ -191,6 +191,29 @@ def mpdsr_aggregates(request):
             'source': a.source,
         })
 
+    # ── Live per-action tracker (CIPRB-10 Action Plan → MPDSRAction) ──────────
+    # One row per agreed action with its OWN completion %, so the dashboard can
+    # show per-action progress + a true cumulative %. Distinct from the
+    # Excel-sourced action_plan_summaries roll-up above.
+    from mpdsr.models import MPDSRAction
+    mpdsr_actions = []
+    for a in apply_donor(MPDSRAction.objects.filter(approval_status='APPROVED')):
+        mpdsr_actions.append({
+            'action_id': a.action_id,
+            'district': a.district,
+            'section': a.section,
+            'section_label': a.get_section_display(),
+            'sub_category': a.sub_category,
+            'activity': a.activity,
+            'responsible': a.responsible,
+            'timeline': a.timeline.isoformat() if a.timeline else None,
+            'status': a.status,
+            'status_label': a.get_status_display(),
+            'completion_pct': a.completion_pct,
+            'completion_date': a.completion_date.isoformat() if a.completion_date else None,
+            'is_overdue': a.is_overdue,
+        })
+
     # Exclude F3 / F6 stillbirth reviews from dashboard surface counts
     # (Animesh decision, 2026-06-01 meeting). Records remain in DB.
     mpdsr_qs = MPDSRCase.objects.filter(approval_status='APPROVED').exclude(sub_form_type__in=['f3', 'f6'])
@@ -387,6 +410,7 @@ def mpdsr_aggregates(request):
         'facility_totals': {k: int(v or 0) for k, v in facility_totals.items()},
         'notification_by_level': notification_by_level,
         'action_plan_summaries': action_plan_summaries,
+        'mpdsr_actions': mpdsr_actions,
         'totals': totals,
         'review_counts': review_counts,
         'indicators': indicators,

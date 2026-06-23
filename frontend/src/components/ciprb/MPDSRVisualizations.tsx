@@ -78,12 +78,29 @@ interface ReviewCounts {
   f2?: number
 }
 
+interface LiveAction {
+  action_id: string
+  district: string
+  section: string
+  section_label: string
+  sub_category: string
+  activity: string
+  responsible: string
+  timeline: string | null
+  status: string
+  status_label: string
+  completion_pct: number
+  completion_date: string | null
+  is_overdue: boolean
+}
+
 interface AggregatesPayload {
   denominators: DistrictDenominator[]
   facility_counts: any[]
   facility_totals: FacilityTotals
   notification_by_level?: NotificationByLevel
   action_plan_summaries: ActionPlanSummary[]
+  mpdsr_actions?: LiveAction[]
   totals: { mpdsr_cases: number; fistula_corner_cases: number; fistula_campaign_visits: number }
   review_counts?: ReviewCounts
   // CIPRB Phase 3 — the 11 MPDSR major indicators (per-case breakdowns).
@@ -748,6 +765,141 @@ function pascal(k: string): string {
 
 // ─── 3. Response Plan Implementation Tracker ─────────────────────────────────
 
+// Live per-action tracker (CIPRB-10 Action Plan → MPDSRAction). Each agreed
+// action carries its OWN completion %; we show the cumulative %, per-district
+// and per-section roll-ups, and a per-action table with overdue flagging.
+// Solid bars only (no donuts). Returns null until the first action exists.
+function ActionTracker({ actions }: { actions: LiveAction[] }) {
+  const colorFor = (pct: number) => (pct >= 75 ? '#58968A' : pct >= 40 ? '#AE4300' : '#F10F45')
+  if (!actions || actions.length === 0) return null
+  const avg = (xs: number[]) => (xs.length ? Math.round(xs.reduce((a, b) => a + b, 0) / xs.length) : 0)
+  const overall = avg(actions.map(a => a.completion_pct))
+  const overdue = actions.filter(a => a.is_overdue).length
+  const groupAvg = (key: (a: LiveAction) => string) => {
+    const m = new Map<string, number[]>()
+    actions.forEach(a => {
+      const k = key(a) || '—'
+      const arr = m.get(k) ?? []
+      arr.push(a.completion_pct)
+      m.set(k, arr)
+    })
+    return [...m.entries()]
+      .map(([k, v]) => ({ key: k, pct: avg(v), n: v.length }))
+      .sort((a, b) => b.pct - a.pct)
+  }
+  const bars = (rows: { key: string; pct: number; n: number }[]) => (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      {rows.map(r => (
+        <div key={r.key} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ width: 150, fontSize: 12.5, color: 'var(--ink-2)', textAlign: 'right', flexShrink: 0 }}>
+            {r.key} <span style={{ color: 'var(--muted)' }}>({r.n})</span>
+          </div>
+          <div style={{ flex: 1, height: 16, background: 'rgba(0,0,0,0.06)', borderRadius: 4, overflow: 'hidden' }}>
+            <div style={{ width: `${r.pct}%`, height: '100%', background: colorFor(r.pct), transition: 'width .4s' }} />
+          </div>
+          <div style={{ width: 42, fontSize: 12.5, fontWeight: 700, color: colorFor(r.pct), textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+            {r.pct}%
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+
+  return (
+    <div style={{ marginTop: 26 }}>
+      <div style={{ marginBottom: 14 }}>
+        <div className="kicker">
+          <span className="dot" style={{ background: CIPRB_BLUE }} />
+          ACTION PLAN TRACKER · LIVE
+        </div>
+        <h3 style={{ margin: '6px 0 2px', fontSize: 18, fontWeight: 700, color: 'var(--ink)' }}>
+          Action implementation — per action &amp; cumulative
+        </h3>
+        <p style={{ fontSize: 12.5, color: 'var(--muted)', margin: 0 }}>
+          Each agreed action (CIPRB-10) tracked by its ID; completion % advances as the committee updates it.
+        </p>
+      </div>
+
+      <div className="card" style={{
+        padding: '16px 22px', marginBottom: 14, display: 'flex',
+        alignItems: 'center', gap: 18, borderLeft: `4px solid ${colorFor(overall)}`,
+      }}>
+        <div style={{ flex: 1 }}>
+          <div className="mono" style={{ fontSize: 10, color: 'var(--muted)', letterSpacing: '0.08em', fontWeight: 700, marginBottom: 4 }}>
+            CUMULATIVE COMPLETION
+          </div>
+          <div style={{ fontSize: 13.5, color: 'var(--ink-2)' }}>
+            <b style={{ color: 'var(--ink)', fontVariantNumeric: 'tabular-nums' }}>{actions.length}</b> actions tracked
+            {overdue > 0 && <> · <b style={{ color: '#F10F45' }}>{overdue}</b> overdue</>}
+          </div>
+        </div>
+        <div style={{ fontSize: 34, fontWeight: 800, color: colorFor(overall), fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em', lineHeight: 1 }}>
+          {overall}%
+        </div>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 14, marginBottom: 14 }}>
+        <div className="card" style={{ padding: '14px 18px' }}>
+          <div className="mono" style={{ fontSize: 10, color: 'var(--muted)', letterSpacing: '0.08em', fontWeight: 700, marginBottom: 12 }}>
+            BY DISTRICT
+          </div>
+          {bars(groupAvg(a => a.district))}
+        </div>
+        <div className="card" style={{ padding: '14px 18px' }}>
+          <div className="mono" style={{ fontSize: 10, color: 'var(--muted)', letterSpacing: '0.08em', fontWeight: 700, marginBottom: 12 }}>
+            BY SECTION
+          </div>
+          {bars(groupAvg(a => a.section_label))}
+        </div>
+      </div>
+
+      <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+        <table className="tbl">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>District</th>
+              <th>Action</th>
+              <th style={{ width: 160 }}>Completion</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {actions.map(a => (
+              <tr key={a.action_id} style={a.is_overdue ? { background: 'rgba(241,15,69,0.05)' } : undefined}>
+                <td style={{ fontFamily: 'monospace', fontWeight: 700, whiteSpace: 'nowrap' }}>{a.action_id}</td>
+                <td style={{ whiteSpace: 'nowrap' }}>{a.district}</td>
+                <td style={{ maxWidth: 300 }}>
+                  {a.activity}
+                  <div style={{ fontSize: 11, color: 'var(--muted)' }}>
+                    {a.section_label}{a.timeline ? ` · due ${a.timeline}` : ''}
+                  </div>
+                </td>
+                <td>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{ flex: 1, height: 10, background: 'rgba(0,0,0,0.06)', borderRadius: 3, overflow: 'hidden' }}>
+                      <div style={{ width: `${a.completion_pct}%`, height: '100%', background: colorFor(a.completion_pct) }} />
+                    </div>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: colorFor(a.completion_pct), fontVariantNumeric: 'tabular-nums', width: 34, textAlign: 'right' }}>
+                      {a.completion_pct}%
+                    </span>
+                  </div>
+                </td>
+                <td style={{ whiteSpace: 'nowrap' }}>
+                  {a.is_overdue
+                    ? <span style={{ color: '#F10F45', fontWeight: 700 }}>Overdue</span>
+                    : <span>{a.status_label}</span>}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
+
 function ResponsePlanTracker({ summaries }: { summaries: ActionPlanSummary[] }) {
   const { t } = useTranslation()
   const [expanded, setExpanded] = useState<number | null>(null)
@@ -1176,6 +1328,7 @@ export function MPDSRVisualizations({
       </div>
       <div id="response-plan">
         <ResponsePlanTracker summaries={agg?.action_plan_summaries ?? []} />
+        <ActionTracker actions={agg?.mpdsr_actions ?? []} />
       </div>
     </div>
   )
