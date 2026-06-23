@@ -167,7 +167,7 @@ def _trend_bars(vals, period_end):
             for v, lab in zip(vals, labels)]
 
 
-def report_context(data: dict, *, narrative=None, **kw) -> dict:
+def report_context(data: dict, *, narrative=None, closing_line=None, **kw) -> dict:
     ctx = infographic_context(data, **kw)          # reuse the shared brand fields
     counts = data.get('counts', {}) or {}
     total = data.get('total_submissions', 0)
@@ -186,6 +186,8 @@ def report_context(data: dict, *, narrative=None, **kw) -> dict:
     ctx['service_rows'] = [{'label': l, 'value_fmt': f'{v:,}', 'pct': round(v / mx * 100)}
                            for l, v in rows]
     ctx['trend'] = _trend_bars(data.get('monthly_trend', []), data.get('period_end'))
+    ctx['closing_line'] = closing_line or ('Strong momentum into next month — sustaining '
+                                           'reach and closing the open action items.')
     return ctx
 
 
@@ -193,6 +195,56 @@ def render_report_pdf(data: dict, *, narrative=None, **kw) -> bytes:
     from django.template.loader import render_to_string
     html = render_to_string('reports/report.html', report_context(data, narrative=narrative, **kw))
     return html_to_pdf(html)
+
+
+# ── PowerPoint: render each slide to PNG, embed full-bleed into a .pptx ──────
+def render_slides_pngs(html: str, selector: str = '.slide', scale: int = 2,
+                       wait_ms: int = 1400) -> list[bytes]:
+    from playwright.sync_api import sync_playwright
+    pngs: list[bytes] = []
+    with sync_playwright() as p:
+        b = _launch(p)
+        try:
+            pg = b.new_page(device_scale_factor=scale)
+            pg.set_content(html, wait_until='load')
+            try:
+                pg.wait_for_load_state('networkidle', timeout=8000)
+            except Exception:
+                pass
+            pg.wait_for_timeout(wait_ms)
+            for el in pg.locator(selector).all():
+                pngs.append(el.screenshot())
+        finally:
+            b.close()
+    return pngs
+
+
+def render_pptx(data: dict, *, narrative=None, **kw) -> bytes:
+    import io
+    from django.template.loader import render_to_string
+    from pptx import Presentation
+    from pptx.util import Inches
+    html = render_to_string('reports/slides.html', report_context(data, narrative=narrative, **kw))
+    pngs = render_slides_pngs(html, '.slide')
+    prs = Presentation()
+    prs.slide_width = Inches(13.333)
+    prs.slide_height = Inches(7.5)
+    blank = prs.slide_layouts[6]
+    for png in pngs:
+        slide = prs.slides.add_slide(blank)
+        slide.shapes.add_picture(io.BytesIO(png), 0, 0,
+                                 width=prs.slide_width, height=prs.slide_height)
+    buf = io.BytesIO()
+    prs.save(buf)
+    return buf.getvalue()
+
+
+# ── Interactive web report (served live, shareable link) ────────────────────
+def web_report_html(data: dict, *, narrative=None, **kw) -> str:
+    """The animated monthly web report as an HTML string (served by a view)."""
+    from django.template.loader import render_to_string
+    return render_to_string('reports/web_report.html',
+                            report_context(data, narrative=narrative, **kw))
 
 
 # ── Demo dataset (collect_programme_data shape) for local proofs ─────────────
