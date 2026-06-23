@@ -11,6 +11,7 @@ same dict feeds every format, so "pull fresh data each month" is a direct bind.
 """
 from __future__ import annotations
 
+from contextlib import contextmanager
 from datetime import date, timedelta
 
 from .data import LABEL_MAP
@@ -25,44 +26,112 @@ def _launch(p):
     return p.chromium.launch(args=['--no-sandbox', '--disable-dev-shm-usage'])
 
 
+@contextmanager
+def browser_session():
+    """One Chromium for a batch of renders — pass the yielded browser into the
+    render functions' `browser=` arg. Launching Chromium costs ~1-2s; a page is
+    cheap, so the monthly set shares one browser (9 launches → 1) and keeps peak
+    memory low on the Railway worker.
+    """
+    from playwright.sync_api import sync_playwright
+    with sync_playwright() as p:
+        b = _launch(p)
+        try:
+            yield b
+        finally:
+            b.close()
+
+
+class LazyBrowser:
+    """Launch Chromium on first .get(), reuse it, .close() when done. Lets a
+    batch skip the launch entirely when nothing actually needs rendering (e.g.
+    an idempotent re-run where every piece already exists)."""
+    def __init__(self):
+        self._p = None
+        self._b = None
+
+    def get(self):
+        if self._b is None:
+            from playwright.sync_api import sync_playwright
+            self._p = sync_playwright().start()
+            self._b = _launch(self._p)
+        return self._b
+
+    def close(self):
+        try:
+            if self._b is not None:
+                self._b.close()
+        finally:
+            if self._p is not None:
+                self._p.stop()
+
+
+def _load(pg, html: str, wait_ms: int):
+    """Set content, wait for the web font, then snap animations to their final
+    frame so we can shoot immediately instead of waiting out every rise/grow."""
+    pg.set_content(html, wait_until='load')
+    try:
+        pg.wait_for_load_state('networkidle', timeout=8000)
+    except Exception:
+        pass
+    try:
+        pg.evaluate('() => document.fonts.ready.then(() => true)')
+    except Exception:
+        pass
+    try:
+        pg.add_style_tag(content='*,*::before,*::after{animation-duration:0s!important;'
+                                 'animation-delay:0s!important;transition:none!important}')
+    except Exception:
+        pass
+    pg.wait_for_timeout(wait_ms)
+
+
+def _png_on(browser, html, selector, scale, wait_ms) -> bytes:
+    pg = browser.new_page(device_scale_factor=scale)
+    try:
+        _load(pg, html, wait_ms)
+        return pg.locator(selector).screenshot()
+    finally:
+        pg.close()
+
+
+def _pdf_on(browser, html, wait_ms, **pdf_kw) -> bytes:
+    pg = browser.new_page()
+    try:
+        _load(pg, html, wait_ms)
+        opts = dict(format='A4', print_background=True,
+                    margin={'top': '0', 'bottom': '0', 'left': '0', 'right': '0'})
+        opts.update(pdf_kw)
+        return pg.pdf(**opts)
+    finally:
+        pg.close()
+
+
+def _slides_on(browser, html, selector, scale, wait_ms) -> list[bytes]:
+    pg = browser.new_page(device_scale_factor=scale)
+    try:
+        _load(pg, html, wait_ms)
+        return [el.screenshot() for el in pg.locator(selector).all()]
+    finally:
+        pg.close()
+
+
 def html_to_png(html: str, selector: str = '.sheet', scale: int = 2,
-                wait_ms: int = 1400) -> bytes:
-    """Render an HTML string and screenshot one element to PNG bytes."""
-    from playwright.sync_api import sync_playwright
-    with sync_playwright() as p:
-        b = _launch(p)
-        try:
-            pg = b.new_page(device_scale_factor=scale)
-            pg.set_content(html, wait_until='load')
-            try:
-                pg.wait_for_load_state('networkidle', timeout=8000)
-            except Exception:
-                pass
-            pg.wait_for_timeout(wait_ms)           # web font + load animation
-            return pg.locator(selector).screenshot()
-        finally:
-            b.close()
+                wait_ms: int = 300, browser=None) -> bytes:
+    """Render an HTML string and screenshot one element to PNG bytes. Pass
+    `browser` (from browser_session()) to reuse one Chromium across renders."""
+    if browser is not None:
+        return _png_on(browser, html, selector, scale, wait_ms)
+    with browser_session() as b:
+        return _png_on(b, html, selector, scale, wait_ms)
 
 
-def html_to_pdf(html: str, wait_ms: int = 1400, **pdf_kw) -> bytes:
+def html_to_pdf(html: str, wait_ms: int = 300, browser=None, **pdf_kw) -> bytes:
     """Render an HTML string to a print-quality PDF (bytes)."""
-    from playwright.sync_api import sync_playwright
-    with sync_playwright() as p:
-        b = _launch(p)
-        try:
-            pg = b.new_page()
-            pg.set_content(html, wait_until='load')
-            try:
-                pg.wait_for_load_state('networkidle', timeout=8000)
-            except Exception:
-                pass
-            pg.wait_for_timeout(wait_ms)
-            opts = dict(format='A4', print_background=True,
-                        margin={'top': '0', 'bottom': '0', 'left': '0', 'right': '0'})
-            opts.update(pdf_kw)
-            return pg.pdf(**opts)
-        finally:
-            b.close()
+    if browser is not None:
+        return _pdf_on(browser, html, wait_ms, **pdf_kw)
+    with browser_session() as b:
+        return _pdf_on(b, html, wait_ms, **pdf_kw)
 
 
 def _sparkline(trend, w: int = 170, h: int = 48, pad: int = 4):
@@ -143,10 +212,10 @@ def infographic_context(data: dict, *, ai_summary: str = '', is_sample: bool = F
     }
 
 
-def render_infographic_png(data: dict, **kw) -> bytes:
+def render_infographic_png(data: dict, *, renderer=None, **kw) -> bytes:
     from django.template.loader import render_to_string
     html = render_to_string('reports/infographic.html', infographic_context(data, **kw))
-    return html_to_png(html, '.sheet')
+    return html_to_png(html, '.sheet', browser=renderer)
 
 
 # ── Full programme report: data dict → multi-page PDF ───────────────────────
@@ -192,41 +261,28 @@ def report_context(data: dict, *, narrative=None, closing_line=None, **kw) -> di
     return ctx
 
 
-def render_report_pdf(data: dict, *, narrative=None, **kw) -> bytes:
+def render_report_pdf(data: dict, *, narrative=None, renderer=None, **kw) -> bytes:
     from django.template.loader import render_to_string
     html = render_to_string('reports/report.html', report_context(data, narrative=narrative, **kw))
-    return html_to_pdf(html)
+    return html_to_pdf(html, browser=renderer)
 
 
 # ── PowerPoint: render each slide to PNG, embed full-bleed into a .pptx ──────
 def render_slides_pngs(html: str, selector: str = '.slide', scale: int = 2,
-                       wait_ms: int = 1400) -> list[bytes]:
-    from playwright.sync_api import sync_playwright
-    pngs: list[bytes] = []
-    with sync_playwright() as p:
-        b = _launch(p)
-        try:
-            pg = b.new_page(device_scale_factor=scale)
-            pg.set_content(html, wait_until='load')
-            try:
-                pg.wait_for_load_state('networkidle', timeout=8000)
-            except Exception:
-                pass
-            pg.wait_for_timeout(wait_ms)
-            for el in pg.locator(selector).all():
-                pngs.append(el.screenshot())
-        finally:
-            b.close()
-    return pngs
+                       wait_ms: int = 300, browser=None) -> list[bytes]:
+    if browser is not None:
+        return _slides_on(browser, html, selector, scale, wait_ms)
+    with browser_session() as b:
+        return _slides_on(b, html, selector, scale, wait_ms)
 
 
-def render_pptx(data: dict, *, narrative=None, **kw) -> bytes:
+def render_pptx(data: dict, *, narrative=None, renderer=None, **kw) -> bytes:
     import io
     from django.template.loader import render_to_string
     from pptx import Presentation
     from pptx.util import Inches
     html = render_to_string('reports/slides.html', report_context(data, narrative=narrative, **kw))
-    pngs = render_slides_pngs(html, '.slide')
+    pngs = render_slides_pngs(html, '.slide', browser=renderer)
     prs = Presentation()
     prs.slide_width = Inches(13.333)
     prs.slide_height = Inches(7.5)
