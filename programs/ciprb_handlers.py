@@ -567,12 +567,32 @@ def _flat_item(item):
 
 
 def _repeat(payload, *keys):
-    """The list of instances for a repeat group, trying a few key spellings."""
+    """The list of instances for a repeat group. Kobo may serialise a repeat
+    nested in groups either as a top-level slash-key (the dispatcher aliases it
+    to the leaf name) OR as a nested dict — search both so the handler reads the
+    actions regardless of how deep the form nests the repeat."""
     for k in keys:
         v = payload.get(k)
         if isinstance(v, list):
             return v
-    return []
+    want = set(keys)
+
+    def _search(obj):
+        if isinstance(obj, dict):
+            for k, v in obj.items():
+                if isinstance(k, str) and k.rsplit('/', 1)[-1] in want and isinstance(v, list):
+                    return v
+                found = _search(v)
+                if found is not None:
+                    return found
+        elif isinstance(obj, list):
+            for it in obj:
+                found = _search(it)
+                if found is not None:
+                    return found
+        return None
+
+    return _search(payload) or []
 
 
 def handle_ciprb_mpdsr_action_plan(payload, lat, lng):
