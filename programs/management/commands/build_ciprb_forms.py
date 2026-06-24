@@ -3215,19 +3215,6 @@ def _near_miss_choices():
 #   Each action is one repeat entry. The master carries no status column and no
 #   meeting-metadata header, so neither is added.
 
-def _action_dist_code_calc():
-    """Nested if() mapping the selected district slug → its MPDSRAction letter
-    code (Dhaka→D, Kurigram→KU), reusing mpdsr.DISTRICT_ACTION_CODE so the prefix
-    the worker SEES equals the code the server stores. Mirrors
-    _fistula_dist_code_calc (Enketo is XPath 1.0 — explicit if() chain)."""
-    from mpdsr.models import DISTRICT_ACTION_CODE
-    expr = "''"
-    for name, code in reversed(list(DISTRICT_ACTION_CODE.items())):
-        slug = name.lower().replace(' ', '_')
-        expr = f"if(${{district}}='{slug}','{code}',{expr})"
-    return expr
-
-
 def _response_plan_survey():
     # Verbatim digitisation of the official master "MPDSR Action Plan 2026"
     # (January to June Action Plan_2026, Kurigram). The two master tables become
@@ -3257,13 +3244,14 @@ def _response_plan_survey():
                 "'ABCDEFGHIJKLMNOPQRSTUVWXYZ')")
     rows.append(_sr('begin_group', 'grp_new_plan', 'Register a new action',
                     'নতুন পদক্ষেপ নিবন্ধন', relevant="${ap_mode}='new_plan'"))
-    # District-code prefix derived from the chosen district (Dhaka→D, Kurigram→KU).
-    rows.append(_sr('calculate', '_act_dist_code', calc=_action_dist_code_calc()))
+    # District-code prefix — the SAME numeric codes as the fistula suspected
+    # cases (Sunamganj=1 … Dhaka=10), so field workers learn ONE code set.
+    rows.append(_sr('calculate', '_act_dist_code', calc=_fistula_dist_code_calc()))
     rows.append(_sr('note', '_act_code_show',
         'Your district code is ${_act_dist_code}. Type the Action ID as '
-        '${_act_dist_code}-01, ${_act_dist_code}-02, … (number each action in order).',
+        '${_act_dist_code}-001, ${_act_dist_code}-002, … (3 digits after the dash).',
         'আপনার জেলা কোড ${_act_dist_code}। পদক্ষেপের আইডি এভাবে লিখুন: '
-        '${_act_dist_code}-01, ${_act_dist_code}-02, … (প্রতিটি পদক্ষেপ ক্রমানুসারে নম্বর দিন)।'))
+        '${_act_dist_code}-001, ${_act_dist_code}-002, … (ড্যাশের পরে ৩ অঙ্ক)।'))
     rows.append(_sr('select_one rp_section', 'rp_section',
                     'Which table / section is this action from?',
                     'এই পদক্ষেপটি কোন টেবিল / বিভাগের?', required='yes'))
@@ -3271,16 +3259,16 @@ def _response_plan_survey():
     #   (1) regex anchors the FULL prefix (^<code>-<digits>$);
     #   (2) pulldata(...)='' blocks re-using an action ID that already exists.
     rows.append(_sr('text', 'action_id',
-        'Action ID (district code + number, e.g. D-01)',
-        'পদক্ষেপ আইডি (জেলা কোড + নম্বর, যেমন D-01)',
+        'Action ID (district code + 3-digit number, e.g. 2-001)',
+        'পদক্ষেপ আইডি (জেলা কোড + ৩ অঙ্ক, যেমন ২-০০১)',
         required='yes',
         constraint=("regex(normalize-space(.), "
-                    "concat('^', ${_act_dist_code}, '-[0-9]{2,}$')) and "
+                    "concat('^', ${_act_dist_code}, '-[0-9]{3}$')) and "
                     "pulldata('mpdsr_actions','activity','action_id'," + NORM_AID + ")=''"),
-        cmsg='⚠ Invalid or duplicate ID. It must be <district-code>-<number> '
-             '(e.g. D-01, Kurigram = KU-01) and not already used. / '
-             'ভুল বা ডুপ্লিকেট আইডি — জেলা কোড + নম্বর হতে হবে এবং আগে ব্যবহৃত হওয়া যাবে না।',
-        hint='Format: your district code + a number. Dhaka = D-01, Kurigram = KU-01.'))
+        cmsg='⚠ Invalid or duplicate ID. It must be <district-code>-<3 digits> '
+             '(e.g. 2-001, Dhaka = 10-001) and not already used. / '
+             'ভুল বা ডুপ্লিকেট আইডি — জেলা কোড + ৩ অঙ্ক হতে হবে এবং আগে ব্যবহৃত হওয়া যাবে না।',
+        hint='Format: your district code + a 3-digit serial. Bhola = 2-001, Dhaka = 10-001.'))
     # Duplicate-ID soft warning — shows the activity already using this ID.
     rows.append(_sr('calculate', '_act_dup',
         calc=("pulldata('mpdsr_actions','activity','action_id'," + NORM_AID + ")")))
