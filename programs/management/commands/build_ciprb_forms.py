@@ -3215,6 +3215,19 @@ def _near_miss_choices():
 #   Each action is one repeat entry. The master carries no status column and no
 #   meeting-metadata header, so neither is added.
 
+def _action_dist_code_calc():
+    """Nested if() mapping the selected district slug → its MPDSRAction letter
+    code (Dhaka→D, Kurigram→KU), reusing mpdsr.DISTRICT_ACTION_CODE so the prefix
+    the worker SEES equals the code the server stores. Mirrors
+    _fistula_dist_code_calc (Enketo is XPath 1.0 — explicit if() chain)."""
+    from mpdsr.models import DISTRICT_ACTION_CODE
+    expr = "''"
+    for name, code in reversed(list(DISTRICT_ACTION_CODE.items())):
+        slug = name.lower().replace(' ', '_')
+        expr = f"if(${{district}}='{slug}','{code}',{expr})"
+    return expr
+
+
 def _response_plan_survey():
     # Verbatim digitisation of the official master "MPDSR Action Plan 2026"
     # (January to June Action Plan_2026, Kurigram). The two master tables become
@@ -3236,68 +3249,64 @@ def _response_plan_survey():
     rows.append(_sr('select_one ap_mode', 'ap_mode',
                     'What do you want to do?', 'আপনি কী করতে চান?', required='yes'))
 
-    # ═══ MODE A — log a new action plan (verbatim master structure) ═══
-    rows.append(_sr('begin_group', 'grp_new_plan', 'New action plan',
-                    'নতুন অ্যাকশন প্ল্যান', relevant="${ap_mode}='new_plan'"))
-    # --- Table 1: MPDSR System Strengthening ---------------------------------
-    rows.append(_sr('begin_group', 'grp_sys_strengthen',
-                    'MPDSR System Strengthening',
-                    'এমপিডিএসআর সিস্টেম শক্তিশালীকরণ'))
-    rows.append(_sr('note', '_sys_note',
-        'Note: first table needs to fill out based on the findings of the '
-        'workshop (gaps and challenges are identified to improve the system)',
-        'নোট: প্রথম টেবিলটি কর্মশালার ফলাফলের ভিত্তিতে পূরণ করতে হবে '
-        '(সিস্টেম উন্নত করতে ফাঁক ও চ্যালেঞ্জগুলো চিহ্নিত করা হয়)'))
-    rows.append(_sr('begin_repeat', 'grp_sys_act', 'Activity', 'কার্যক্রম'))
-    rows.append(_sr('select_one rp_subcat', 'sys_subcat',
-                    'Category', 'বিভাগ'))
-    rows.append(_sr('text', 'sys_activity', 'Activities', 'কার্যক্রম',
-                    app='multiline'))
-    rows.append(_sr('text', 'sys_responsible', 'Responsible',
+    # ═══ MODE A — register ONE action (mirrors the fistula suspected stage:
+    #     the worker TYPES the action_id, the form shows the district-code
+    #     prefix + blocks duplicates; one action per submission, no repeat). ═══
+    NORM_AID = ("translate(normalize-space(${action_id}),"
+                "'abcdefghijklmnopqrstuvwxyz',"
+                "'ABCDEFGHIJKLMNOPQRSTUVWXYZ')")
+    rows.append(_sr('begin_group', 'grp_new_plan', 'Register a new action',
+                    'নতুন পদক্ষেপ নিবন্ধন', relevant="${ap_mode}='new_plan'"))
+    # District-code prefix derived from the chosen district (Dhaka→D, Kurigram→KU).
+    rows.append(_sr('calculate', '_act_dist_code', calc=_action_dist_code_calc()))
+    rows.append(_sr('note', '_act_code_show',
+        'Your district code is ${_act_dist_code}. Type the Action ID as '
+        '${_act_dist_code}-01, ${_act_dist_code}-02, … (number each action in order).',
+        'আপনার জেলা কোড ${_act_dist_code}। পদক্ষেপের আইডি এভাবে লিখুন: '
+        '${_act_dist_code}-01, ${_act_dist_code}-02, … (প্রতিটি পদক্ষেপ ক্রমানুসারে নম্বর দিন)।'))
+    rows.append(_sr('select_one rp_section', 'rp_section',
+                    'Which table / section is this action from?',
+                    'এই পদক্ষেপটি কোন টেবিল / বিভাগের?', required='yes'))
+    # The unique action ID — typed at registration (the fistula patient_code shape):
+    #   (1) regex anchors the FULL prefix (^<code>-<digits>$);
+    #   (2) pulldata(...)='' blocks re-using an action ID that already exists.
+    rows.append(_sr('text', 'action_id',
+        'Action ID (district code + number, e.g. D-01)',
+        'পদক্ষেপ আইডি (জেলা কোড + নম্বর, যেমন D-01)',
+        required='yes',
+        constraint=("regex(normalize-space(.), "
+                    "concat('^', ${_act_dist_code}, '-[0-9]{2,}$')) and "
+                    "pulldata('mpdsr_actions','activity','action_id'," + NORM_AID + ")=''"),
+        cmsg='⚠ Invalid or duplicate ID. It must be <district-code>-<number> '
+             '(e.g. D-01, Kurigram = KU-01) and not already used. / '
+             'ভুল বা ডুপ্লিকেট আইডি — জেলা কোড + নম্বর হতে হবে এবং আগে ব্যবহৃত হওয়া যাবে না।',
+        hint='Format: your district code + a number. Dhaka = D-01, Kurigram = KU-01.'))
+    # Duplicate-ID soft warning — shows the activity already using this ID.
+    rows.append(_sr('calculate', '_act_dup',
+        calc=("pulldata('mpdsr_actions','activity','action_id'," + NORM_AID + ")")))
+    rows.append(_sr('note', '_act_dup_warn',
+        '⚠ This ID is already used for: ${_act_dup}. '
+        'Use a new number, or switch to "Update an existing action".',
+        '⚠ এই আইডি ইতিমধ্যে ব্যবহৃত: ${_act_dup}। '
+        'নতুন নম্বর দিন, অথবা "বিদ্যমান একটি পদক্ষেপ হালনাগাদ" বেছে নিন।',
+        relevant="${action_id}!='' and ${_act_dup}!=''"))
+    # The action's details (flat — one action per submission).
+    rows.append(_sr('select_one rp_subcat', 'act_subcat',
+        'Sub-category (System Strengthening only)',
+        'উপ-বিভাগ (শুধু সিস্টেম শক্তিশালীকরণ)',
+        relevant="${rp_section}='system_strengthening'"))
+    rows.append(_sr('text', 'act_activity', 'Activity / action to be taken',
+                    'কার্যক্রম / গৃহীত পদক্ষেপ', required='yes', app='multiline'))
+    rows.append(_sr('text', 'act_responsible', 'Responsible',
                     'দায়িত্বপ্রাপ্ত (ব্যক্তি / দপ্তর)'))
-    rows.append(_sr('date', 'sys_timeline', 'Timeline', 'সময়সীমা'))
-    rows.append(_sr('text', 'sys_indicator', 'Indicator', 'নির্দেশক'))
-    rows.append(_sr('text', 'sys_milestone', 'Milestone', 'মাইলফলক'))
-    rows.append(_sr('text', 'sys_considerations', 'Considerations',
+    rows.append(_sr('date', 'act_timeline', 'Timeline', 'সময়সীমা'))
+    rows.append(_sr('text', 'act_indicator', 'Indicator', 'নির্দেশক',
+                    relevant="${rp_section}='system_strengthening'"))
+    rows.append(_sr('text', 'act_milestone', 'Milestone', 'মাইলফলক'))
+    rows.append(_sr('text', 'act_considerations', 'Considerations',
                     'বিবেচ্য বিষয়', app='multiline'))
-    rows.append(_sr('select_one rp_status', 'sys_status',
+    rows.append(_sr('select_one rp_status', 'act_status',
                     'Status of this action', 'এই পদক্ষেপের অবস্থা'))
-    rows.append(_sr('end_repeat', 'grp_sys_act'))
-    rows.append(_sr('end_group', 'grp_sys_strengthen'))
-
-    # --- Table 2: Common modifiable factors (no Indicator) -------------------
-    for sec, en, bn in [
-        ('community_va', 'Common modifiable factors (Community verbal autopsy)',
-         'সাধারণ পরিবর্তনযোগ্য কারণ (কমিউনিটি ভার্বাল অটোপসি)'),
-        ('facility_dr', 'Common modifiable factors (Facility death review)',
-         'সাধারণ পরিবর্তনযোগ্য কারণ (ফ্যাসিলিটি ডেথ রিভিউ)'),
-    ]:
-        rows.append(_sr('begin_group', 'grp_%s' % sec, en, bn))
-        rows.append(_sr('begin_repeat', 'grp_%s_act' % sec, 'Action', 'পদক্ষেপ'))
-        rows.append(_sr('text', '%s_activity' % sec, 'Actions are taken',
-                        'গৃহীত পদক্ষেপ', app='multiline'))
-        rows.append(_sr('text', '%s_responsible' % sec, 'Responsible',
-                        'দায়িত্বপ্রাপ্ত (ব্যক্তি / দপ্তর)'))
-        rows.append(_sr('date', '%s_timeline' % sec, 'Timeline', 'সময়সীমা'))
-        rows.append(_sr('text', '%s_milestone' % sec, 'Milestone', 'মাইলফলক'))
-        rows.append(_sr('text', '%s_considerations' % sec, 'Considerations',
-                        'বিবেচ্য বিষয়', app='multiline'))
-        rows.append(_sr('select_one rp_status', '%s_status' % sec,
-                        'Status of this action', 'এই পদক্ষেপের অবস্থা'))
-        rows.append(_sr('end_repeat', 'grp_%s_act' % sec))
-        rows.append(_sr('end_group', 'grp_%s' % sec))
-
-    rows.append(_sr('note', '_cmf_note',
-        'Note: 2nd table needs to fill out based on the community verbal autopsy '
-        'data and facility death review findings (causes and contributing '
-        'factors behind the deaths including the delays), the action plan can be '
-        'developed based on the findings of deaths from July to September 2025 '
-        'deaths, a six months analysis and actions which can also be compared '
-        'with the next six months causes and action plans',
-        'নোট: দ্বিতীয় টেবিলটি কমিউনিটি ভার্বাল অটোপসি ডেটা ও ফ্যাসিলিটি ডেথ রিভিউয়ের '
-        'ফলাফলের ভিত্তিতে পূরণ করতে হবে (বিলম্বসহ মৃত্যুর কারণ ও অবদানকারী কারণসমূহ); '
-        'জুলাই থেকে সেপ্টেম্বর ২০২৫ মৃত্যুর ফলাফলের ভিত্তিতে অ্যাকশন প্ল্যান তৈরি করা যেতে পারে — '
-        'ছয় মাসের বিশ্লেষণ ও পদক্ষেপ, যা পরবর্তী ছয় মাসের কারণ ও অ্যাকশন প্ল্যানের সাথে তুলনাও করা যায়'))
     rows.append(_sr('end_group', 'grp_new_plan'))
 
     # ═══ MODE B — update an existing action (pick by id, auto-fill, advance) ═══
@@ -3361,6 +3370,17 @@ def _response_plan_choices():
         ('dropped',     'Dropped', 'বাতিল'),
     ]:
         ch.append(_ch('rp_status', k, en, bn))
+    # Which master table a single registered action belongs to (replaces the
+    # three repeat groups; values match mpdsr.models.ActionSection).
+    for k, en, bn in [
+        ('system_strengthening', 'MPDSR System Strengthening',
+         'এমপিডিএসআর সিস্টেম শক্তিশালীকরণ'),
+        ('community_va', 'Common modifiable factors (Community verbal autopsy)',
+         'সাধারণ পরিবর্তনযোগ্য কারণ (কমিউনিটি ভার্বাল অটোপসি)'),
+        ('facility_dr', 'Common modifiable factors (Facility death review)',
+         'সাধারণ পরিবর্তনযোগ্য কারণ (ফ্যাসিলিটি ডেথ রিভিউ)'),
+    ]:
+        ch.append(_ch('rp_section', k, en, bn))
     for k, en, bn in [
         ('new_plan', 'Start a new action plan', 'নতুন অ্যাকশন প্ল্যান শুরু করুন'),
         ('update_action', 'Update an existing action', 'বিদ্যমান একটি পদক্ষেপ হালনাগাদ করুন'),

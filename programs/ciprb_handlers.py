@@ -600,10 +600,11 @@ def _repeat(payload, *keys):
 
 
 def handle_ciprb_mpdsr_action_plan(payload, lat, lng):
-    """CIPRB-10 MPDSR Action Plan — staged per-action tracker.
+    """CIPRB-10 MPDSR Action Plan — staged per-action tracker (fistula pattern).
 
-    Mode 'new_plan': create one MPDSRAction per agreed action across the three
-    section repeats, each stamped with a fresh <district-code>-<NN> id.
+    Mode 'new_plan': register ONE action whose <district-code>-<NN> id the field
+    worker TYPED (one action per submission, exactly like the fistula suspected
+    stage); upsert on that id.
     Mode 'update_action': move an existing action (picked by id) forward —
     status / completion % / completion date / remarks.
     """
@@ -644,64 +645,47 @@ def handle_ciprb_mpdsr_action_plan(payload, lat, lng):
             act.save()
         return HttpResponse('OK', status=200)
 
-    # ── New plan — create actions from the three section repeats ───────────
+    # ── New plan — register ONE action, keyed on the worker-typed action_id.
+    #    The fistula suspected-stage upsert: the form's regex + pulldata dup-check
+    #    guarantee a valid, unique <district-code>-<NN> id, so the server just
+    #    saves what she typed and upserts on it (no allocator, no repeat). ──────
     if not district:
         return HttpResponse('Bad Request — district required', status=400)
+    code = _norm_id(payload.get('action_id'))
+    if not code:
+        return HttpResponse('Bad Request — action_id required', status=400)
+    activity = _s(payload.get('act_activity'))
+    if not activity:
+        return HttpResponse('Bad Request — activity required', status=400)
     meeting_date = _date(payload.get('meeting_date') or payload.get('collection_date'))
-    sections = [
-        ('grp_sys_act', ActionSection.SYSTEM_STRENGTHENING, 'sys'),
-        ('grp_community_va_act', ActionSection.COMMUNITY_VA, 'community_va'),
-        ('grp_facility_dr_act', ActionSection.FACILITY_DR, 'facility_dr'),
-    ]
-    created = 0
-    for rkey, section, pfx in sections:
-        for raw in _repeat(payload, rkey):
-            item = _flat_item(raw)
-            activity = _s(item.get('%s_activity' % pfx))
-            if not activity:
-                continue
-            # Each action commits in its OWN transaction so one collision can't
-            # roll back the whole plan, and we retry the unique_together race —
-            # two committees filing plans for the same district at once both
-            # compute the same '<code>-NN'; the loser recomputes against the
-            # now-committed sibling instead of 500-ing and losing every action.
-            for attempt in range(6):
-                try:
-                    with transaction.atomic():
-                        act = MPDSRAction(
-                            action_id=MPDSRAction.next_action_id(district),
-                            district=district, organisation=ORG, meeting_date=meeting_date,
-                            section=section,
-                            sub_category=_s(item.get('%s_subcat' % pfx)),
-                            activity=activity,
-                            responsible=_s(item.get('%s_responsible' % pfx)),
-                            timeline=_date(item.get('%s_timeline' % pfx)),
-                            indicator=_s(item.get('%s_indicator' % pfx)),
-                            milestone=_s(item.get('%s_milestone' % pfx)),
-                            considerations=_s(item.get('%s_considerations' % pfx)),
-                            status=_s(item.get('%s_status' % pfx)) or ActionStatus.PENDING,
-                            completion_pct=_int(item.get('%s_completion' % pfx)) or 0,
-                            kobo_submission_id=sub_id, submitted_by_kobo_user=user,
-                            source='kobo', raw_payload=payload,
-                        )
-                        act.add_audit_entry(user, 'created', 'plan %s' % (meeting_date or ''))
-                        act.save()
-                    created += 1
-                    break
-                except IntegrityError:
-                    if attempt == 5:
-                        raise
-                    continue   # action_id collided — recompute next id and retry
-    if created == 0:
-        # A new plan that creates nothing is almost always a dropped/empty
-        # repeat (a Kobo nesting quirk or a field-name drift). Make it loud and
-        # diagnosable instead of a silent 'OK — 0 actions'.
-        logger.warning(
-            'CIPRB-10 new_plan produced 0 actions — district=%r sub_id=%r '
-            'repeats sys=%d community=%d facility=%d keys=%r',
-            district, sub_id,
-            len(_repeat(payload, 'grp_sys_act')),
-            len(_repeat(payload, 'grp_community_va_act')),
-            len(_repeat(payload, 'grp_facility_dr_act')),
-            sorted(k for k in payload if isinstance(k, str))[:40])
-    return HttpResponse('OK — %d actions' % created, status=200)
+    section = _s(payload.get('rp_section')) or ActionSection.SYSTEM_STRENGTHENING
+    with transaction.atomic():
+        act = (MPDSRAction.objects.select_for_update()
+               .filter(action_id=code).first())
+        is_new = act is None
+        if is_new:
+            act = MPDSRAction(action_id=code, district=district,
+                              organisation=ORG, source='kobo')
+        act.district = district
+        act.organisation = ORG
+        act.meeting_date = meeting_date
+        act.section = section
+        act.sub_category = _s(payload.get('act_subcat'))
+        act.activity = activity
+        act.responsible = _s(payload.get('act_responsible'))
+        act.timeline = _date(payload.get('act_timeline'))
+        act.indicator = _s(payload.get('act_indicator'))
+        act.milestone = _s(payload.get('act_milestone'))
+        act.considerations = _s(payload.get('act_considerations'))
+        # Status/completion are set only at registration — a later re-submit of
+        # the same id (the form normally blocks it) must not reset an action the
+        # committee has already advanced via update_action.
+        if is_new:
+            act.status = _s(payload.get('act_status')) or ActionStatus.PENDING
+        act.kobo_submission_id = sub_id
+        act.submitted_by_kobo_user = user
+        act.raw_payload = payload
+        act.add_audit_entry(user, 'created' if is_new else 're-registered',
+                            'plan %s' % (meeting_date or ''))
+        act.save()
+    return HttpResponse('OK — 1 action (%s)' % code, status=200)
