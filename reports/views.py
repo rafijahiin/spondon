@@ -232,7 +232,13 @@ class ReportViewSet(ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def hub(self, request):
-        """All monthly hub pieces (newest first) — the per-month × per-scope grid."""
+        """All monthly hub pieces (newest first) — the per-month × per-scope grid.
+
+        Opening the hub as a super-admin also auto-generates the previous month's
+        set if it is missing — a built-in monthly cron needing no Railway service.
+        """
+        if getattr(request.user, 'can_see_all_orgs', False):
+            _kickoff_monthly_catchup()
         qs = (self.get_queryset()
               .filter(period_type=PeriodType.MONTHLY)
               .order_by('-period_start', 'partner', 'report_type', 'format'))
@@ -342,6 +348,43 @@ class ReportViewSet(ModelViewSet):
         results = submission_anomalies_for_partner(partner, form_type, year)
         return Response({'year': year, 'partner': partner,
                          'form_type': form_type, 'anomalies': results})
+
+
+def _kickoff_monthly_catchup():
+    """Built-in monthly cron: the first super-admin hub view past month-start
+    auto-generates the PREVIOUS month's set if it's missing — so the system
+    needs no separate Railway cron service. Gated (≤ once / 6h) and idempotent
+    (a present set short-circuits), so it is cheap to call on every hub poll,
+    and fully wrapped so it can never break the hub response."""
+    try:
+        from django.core.cache import cache
+        if cache.get('hub_monthly_autocheck'):
+            return
+        cache.set('hub_monthly_autocheck', 1, 6 * 3600)
+
+        today = timezone.now().date()
+        y, m = (today.year, today.month - 1) if today.month > 1 else (today.year - 1, 12)
+        if Report.objects.filter(report_type=ReportType.WEB_REPORT,
+                                 period_type=PeriodType.MONTHLY, year=y, month=m).exists():
+            return
+
+        import threading
+
+        def _run():
+            from django.db import connection
+            from .generators.monthly import generate_monthly_set
+            try:
+                generate_monthly_set(y, m)
+            except Exception:                                       # noqa: BLE001
+                import logging
+                logging.getLogger(__name__).exception('auto monthly hub catch-up failed')
+            finally:
+                connection.close()
+
+        threading.Thread(target=_run, daemon=True).start()
+    except Exception:                                               # noqa: BLE001
+        import logging
+        logging.getLogger(__name__).exception('monthly catch-up kickoff failed')
 
 
 def web_report_by_token(request, token):
