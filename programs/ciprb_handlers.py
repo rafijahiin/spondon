@@ -17,7 +17,7 @@ before calling these handlers, so all fields are at the top level.
 import logging
 from datetime import datetime
 
-from django.db import transaction
+from django.db import transaction, IntegrityError
 from django.http import HttpResponse
 from django.utils.dateparse import parse_date
 
@@ -570,12 +570,16 @@ def _repeat(payload, *keys):
     """The list of instances for a repeat group. Kobo may serialise a repeat
     nested in groups either as a top-level slash-key (the dispatcher aliases it
     to the leaf name) OR as a nested dict — search both so the handler reads the
-    actions regardless of how deep the form nests the repeat."""
-    for k in keys:
-        v = payload.get(k)
-        if isinstance(v, list):
-            return v
+    actions regardless of how deep the form nests the repeat.
+
+    Crucially, match only LIST values: Kobo can emit an empty-string scalar
+    placeholder for a 0-instance repeat, and the dispatcher's first-wins leaf
+    aliasing could let that scalar shadow the real array. Scanning for a
+    list-valued key (exact OR by leaf) makes a scalar placeholder un-shadowing."""
     want = set(keys)
+    for k, v in payload.items():
+        if isinstance(v, list) and isinstance(k, str) and (k in want or k.rsplit('/', 1)[-1] in want):
+            return v
 
     def _search(obj):
         if isinstance(obj, dict):
@@ -622,7 +626,8 @@ def handle_ciprb_mpdsr_action_plan(payload, lat, lng):
                 # isn't lost — a later plan record / manual edit can reconcile.
                 act = MPDSRAction(action_id=code, district=district or 'Unknown',
                                   section=ActionSection.SYSTEM_STRENGTHENING,
-                                  activity='[awaiting plan record]', source='kobo')
+                                  activity='[awaiting plan record]', source='kobo',
+                                  raw_payload=payload)
             st = _s(payload.get('ap_new_status'))
             if st: act.status = st
             cp = _int(payload.get('ap_new_completion'))
@@ -649,30 +654,54 @@ def handle_ciprb_mpdsr_action_plan(payload, lat, lng):
         ('grp_facility_dr_act', ActionSection.FACILITY_DR, 'facility_dr'),
     ]
     created = 0
-    with transaction.atomic():
-        for rkey, section, pfx in sections:
-            for raw in _repeat(payload, rkey):
-                item = _flat_item(raw)
-                activity = _s(item.get('%s_activity' % pfx))
-                if not activity:
-                    continue
-                act = MPDSRAction(
-                    action_id=MPDSRAction.next_action_id(district),
-                    district=district, organisation=ORG, meeting_date=meeting_date,
-                    section=section,
-                    sub_category=_s(item.get('%s_subcat' % pfx)),
-                    activity=activity,
-                    responsible=_s(item.get('%s_responsible' % pfx)),
-                    timeline=_date(item.get('%s_timeline' % pfx)),
-                    indicator=_s(item.get('%s_indicator' % pfx)),
-                    milestone=_s(item.get('%s_milestone' % pfx)),
-                    considerations=_s(item.get('%s_considerations' % pfx)),
-                    status=_s(item.get('%s_status' % pfx)) or ActionStatus.PENDING,
-                    completion_pct=_int(item.get('%s_completion' % pfx)) or 0,
-                    kobo_submission_id=sub_id, submitted_by_kobo_user=user,
-                    source='kobo',
-                )
-                act.add_audit_entry(user, 'created', 'plan %s' % (meeting_date or ''))
-                act.save()
-                created += 1
+    for rkey, section, pfx in sections:
+        for raw in _repeat(payload, rkey):
+            item = _flat_item(raw)
+            activity = _s(item.get('%s_activity' % pfx))
+            if not activity:
+                continue
+            # Each action commits in its OWN transaction so one collision can't
+            # roll back the whole plan, and we retry the unique_together race —
+            # two committees filing plans for the same district at once both
+            # compute the same '<code>-NN'; the loser recomputes against the
+            # now-committed sibling instead of 500-ing and losing every action.
+            for attempt in range(6):
+                try:
+                    with transaction.atomic():
+                        act = MPDSRAction(
+                            action_id=MPDSRAction.next_action_id(district),
+                            district=district, organisation=ORG, meeting_date=meeting_date,
+                            section=section,
+                            sub_category=_s(item.get('%s_subcat' % pfx)),
+                            activity=activity,
+                            responsible=_s(item.get('%s_responsible' % pfx)),
+                            timeline=_date(item.get('%s_timeline' % pfx)),
+                            indicator=_s(item.get('%s_indicator' % pfx)),
+                            milestone=_s(item.get('%s_milestone' % pfx)),
+                            considerations=_s(item.get('%s_considerations' % pfx)),
+                            status=_s(item.get('%s_status' % pfx)) or ActionStatus.PENDING,
+                            completion_pct=_int(item.get('%s_completion' % pfx)) or 0,
+                            kobo_submission_id=sub_id, submitted_by_kobo_user=user,
+                            source='kobo', raw_payload=payload,
+                        )
+                        act.add_audit_entry(user, 'created', 'plan %s' % (meeting_date or ''))
+                        act.save()
+                    created += 1
+                    break
+                except IntegrityError:
+                    if attempt == 5:
+                        raise
+                    continue   # action_id collided — recompute next id and retry
+    if created == 0:
+        # A new plan that creates nothing is almost always a dropped/empty
+        # repeat (a Kobo nesting quirk or a field-name drift). Make it loud and
+        # diagnosable instead of a silent 'OK — 0 actions'.
+        logger.warning(
+            'CIPRB-10 new_plan produced 0 actions — district=%r sub_id=%r '
+            'repeats sys=%d community=%d facility=%d keys=%r',
+            district, sub_id,
+            len(_repeat(payload, 'grp_sys_act')),
+            len(_repeat(payload, 'grp_community_va_act')),
+            len(_repeat(payload, 'grp_facility_dr_act')),
+            sorted(k for k in payload if isinstance(k, str))[:40])
     return HttpResponse('OK — %d actions' % created, status=200)

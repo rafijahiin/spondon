@@ -569,10 +569,19 @@ class MPDSRAction(models.Model):
 
     @classmethod
     def next_action_id(cls, district: str) -> str:
-        """Race-safe next '<code>-<NN>' for a district. MUST be called inside a
-        transaction — select_for_update() locks the district's existing rows so
-        two concurrent plan submissions can't claim the same number."""
-        code = DISTRICT_ACTION_CODE.get(district, (district[:2] or 'XX').upper())
+        """Next '<code>-<NN>' for a district. Call inside a transaction AND a
+        retry-on-IntegrityError loop (see handle_ciprb_mpdsr_action_plan):
+        select_for_update() locks only rows that already exist, so two concurrent
+        plans for the same (especially empty) district can still both compute the
+        same number — the unique_together('district','action_id') then rejects the
+        loser, whose caller retries against the now-committed sibling."""
+        code = DISTRICT_ACTION_CODE.get(district)
+        if code is None:
+            import logging
+            logging.getLogger(__name__).warning(
+                'MPDSRAction.next_action_id: district %r not in DISTRICT_ACTION_CODE '
+                '— using a fallback code; ids may not be globally unique', district)
+            code = (district[:2] or 'XX').upper()
         rows = (cls.objects.select_for_update()
                 .filter(district=district, action_id__startswith=code + '-'))
         max_n = 0

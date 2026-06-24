@@ -1249,8 +1249,12 @@ def _flatten_group_keys(payload: dict) -> dict:
         if not leaf:
             continue
         if leaf in flat:
-            # Don't clobber a real flat key or an earlier group's leaf.
-            if flat[leaf] != val:
+            # Don't clobber a real flat key or an earlier group's leaf — BUT a
+            # repeat LIST must never be shadowed by a scalar (Kobo can emit an
+            # empty-string placeholder for a 0-instance repeat); prefer the list.
+            if isinstance(val, list) and not isinstance(flat[leaf], list):
+                flat[leaf] = val
+            elif flat[leaf] != val:
                 logger.debug('flatten: leaf %r collision (%r kept)', leaf, leaf)
             continue
         flat[leaf] = val
