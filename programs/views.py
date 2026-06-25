@@ -917,8 +917,8 @@ class MaternalNearMissViewSet(OrgFilteredViewSet):
 class MPDSRActionViewSet(OrgFilteredViewSet):
     """CIPRB-10 MPDSR Action-Plan rows — detail + approve/reject for the queue
     (single-stage CIPRB: Tanjina / Setu). District-level programme actions, NOT
-    patient PII, so gated by CanApproveCIPRBAction (lets a CIPRB manager approve)
-    rather than CanAccessMPDSR (which requires org_lead+CIPRB)."""
+    patient PII, so gated by CanApproveCIPRBAction (approval capability + CIPRB
+    scope) rather than CanAccessMPDSR (the survivor/death-PII gate)."""
     permission_classes = [CanApproveCIPRBAction]
     queryset = MPDSRAction.objects.select_related('approved_by').all()
     serializer_class = MPDSRActionSerializer

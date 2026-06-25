@@ -79,18 +79,32 @@ class UserModelTest(TestCase):
         self.assertFalse(mgr.can_configure_targets('PHD'))
 
     def test_can_access_mpdsr(self):
-        # Dev + Supervisor + CIPRB Org Lead → True
+        # Dev + Supervisor + CIPRB Org Lead + CIPRB Manager → True
         self.assertTrue(make_user('d@x', Organisation.CIPRB, Role.DEVELOPER).can_access_mpdsr)
         self.assertTrue(make_user('s@x', Organisation.UNFPA, Role.SUPERVISOR).can_access_mpdsr)
         self.assertTrue(make_user('o@ciprb', Organisation.CIPRB, Role.ORG_LEAD).can_access_mpdsr)
-        # Org lead at non-CIPRB org would lose MPDSR — but org_lead at PHD/Bandhu
-        # is not a configuration we expect; testing the guard rail anyway.
-        # PHD/Bandhu managers and other roles → False
+        # CIPRB Manager (Tanjina = the CIPRB approver) → True (2026-06-26 grant).
+        self.assertTrue(make_user('mc@ciprb', Organisation.CIPRB, Role.MANAGER).can_access_mpdsr)
+        # CRITICAL guard rail — non-CIPRB managers must NEVER reach CIPRB PII
+        # (audit FIX C1). The org-bound clause keeps PHD/Bandhu managers out.
         self.assertFalse(make_user('mp@phd', Organisation.PHD, Role.MANAGER).can_access_mpdsr)
         self.assertFalse(make_user('mb@bandhu', Organisation.BANDHU, Role.MANAGER).can_access_mpdsr)
         self.assertFalse(make_user('fp@phd', Organisation.PHD, Role.FOCAL).can_access_mpdsr)
         self.assertFalse(make_user('fs@phd', Organisation.PHD, Role.FIELD_STAFF).can_access_mpdsr)
+        self.assertFalse(make_user('fc@ciprb', Organisation.CIPRB, Role.FIELD_STAFF).can_access_mpdsr)
         self.assertFalse(make_user('cb@ciprb', Organisation.CIPRB, Role.CIPRB_BASELINE).can_access_mpdsr)
+
+    def test_can_access_fistula_cases(self):
+        # Same CIPRB-approver rule as MPDSR — both gate decrypted survivor/death PII.
+        self.assertTrue(make_user('d2@x', Organisation.CIPRB, Role.DEVELOPER).can_access_fistula_cases)
+        self.assertTrue(make_user('s2@x', Organisation.UNFPA, Role.SUPERVISOR).can_access_fistula_cases)
+        self.assertTrue(make_user('o2@ciprb', Organisation.CIPRB, Role.ORG_LEAD).can_access_fistula_cases)
+        self.assertTrue(make_user('mc2@ciprb', Organisation.CIPRB, Role.MANAGER).can_access_fistula_cases)
+        # CRITICAL guard rail — non-CIPRB managers denied (audit FIX C1).
+        self.assertFalse(make_user('mp2@phd', Organisation.PHD, Role.MANAGER).can_access_fistula_cases)
+        self.assertFalse(make_user('mb2@bandhu', Organisation.BANDHU, Role.MANAGER).can_access_fistula_cases)
+        self.assertFalse(make_user('fs2@phd', Organisation.PHD, Role.FIELD_STAFF).can_access_fistula_cases)
+        self.assertFalse(make_user('cb2@ciprb', Organisation.CIPRB, Role.CIPRB_BASELINE).can_access_fistula_cases)
 
     def test_can_enter_field_records_excludes_manager(self):
         # The handoff says managers approve, they do NOT enter HTC/HIV/STI/GBV/MH.

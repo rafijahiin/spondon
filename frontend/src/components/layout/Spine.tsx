@@ -43,10 +43,10 @@ const PRIMARY_NAV: SpineItemDef[] = [
   { to: '/',         i18nKey: 'nav.programmeOverview', icon: <Home size={18} />,
     visible: (r) => notManager(r) },
   { to: '/ciprb',    i18nKey: 'nav.ciprbDashboard',    icon: <HeartPulse size={18} />,
-    visible: (r, o) => isAdminRole(r) || r === 'org_lead' || (notManager(r) && o === 'CIPRB') },
+    visible: (r, o) => isAdminRole(r) || r === 'org_lead' || o === 'CIPRB' },
   // National MPDSR GIS Atlas (2024 district/division death maps).
   { to: '/atlas',    i18nKey: 'nav.mpdsrAtlas',        icon: <Map size={18} />,
-    visible: (r, o) => isAdminRole(r) || r === 'org_lead' || (notManager(r) && o === 'CIPRB') },
+    visible: (r, o) => isAdminRole(r) || r === 'org_lead' || o === 'CIPRB' },
   // Org dashboard: visible to anyone in that org (manager, focal, org_lead)
   // plus cross-org admin roles. Managers see their own org's KPIs so they
   // can spot-check trends before approving submissions.
@@ -68,7 +68,7 @@ const SECONDARY_NAV: SpineItemDef[] = [
   { to: '/tracker',  i18nKey: 'nav.progressTracker',  icon: <Target size={18} />,
     visible: (r) => ['developer','supervisor','org_lead'].includes(r) },
   { to: '/baseline', i18nKey: 'nav.baselineEndline',  icon: <ClipboardList size={18} />,
-    visible: (r, o) => isAdminRole(r) || (r === 'org_lead' && o === 'CIPRB') || (notManager(r) && o === 'CIPRB') },
+    visible: (r, o) => isAdminRole(r) || (r === 'org_lead' && o === 'CIPRB') || o === 'CIPRB' },
 ]
 
 /** Filter a nav array by the current user's role + org. */

@@ -166,11 +166,14 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     @property
     def can_access_mpdsr(self):
-        """MPDSR is CIPRB-owned. Dev + Supervisor see all; Org Lead only
-        if their organisation is CIPRB. Managers (PHD/Bandhu) lose access."""
+        """MPDSR is CIPRB-owned. Dev + Supervisor see all; CIPRB Org Lead AND
+        CIPRB Manager (Tanjina/Setu = the CIPRB approvers — Rafi's 2026-06-26
+        directive: the CIPRB manager approves everything CIPRB) get access.
+        Non-CIPRB managers (PHD/Bandhu) stay denied — the org-bound clause keeps
+        the cross-org PII leak from audit FIX C1 closed."""
         if self.role in (Role.DEVELOPER, Role.SUPERVISOR):
             return True
-        if self.role == Role.ORG_LEAD:
+        if self.role in (Role.ORG_LEAD, Role.MANAGER):
             return self.organisation == Organisation.CIPRB
         return False
 
@@ -178,15 +181,16 @@ class User(AbstractBaseUser, PermissionsMixin):
     def can_access_fistula_cases(self):
         """Per-patient Fistula records (Corner diagnosis + house-screening
         visits) carry decrypted survivor PII and are CIPRB-owned clinical
-        data. Same ownership rule as MPDSR: Dev + Supervisor see all; Org
-        Lead only if CIPRB. Managers (PHD/Bandhu) and field staff are denied
-        — the cross-org PII leak this closes was audit FIX C1.
+        data. Same ownership rule as MPDSR: Dev + Supervisor see all; CIPRB
+        Org Lead AND CIPRB Manager (the CIPRB approvers) get access. Non-CIPRB
+        managers (PHD/Bandhu) and field staff are denied — the org-bound clause
+        keeps the cross-org PII leak from audit FIX C1 closed.
 
         Note: this gates the individual-record viewsets only. The aggregate
         FistulaCampaign roll-ups (no PII) remain partner-scoped and readable
         by PHD/Bandhu managers via OrgFilterMixin."""
         if self.role in (Role.DEVELOPER, Role.SUPERVISOR):
             return True
-        if self.role == Role.ORG_LEAD:
+        if self.role in (Role.ORG_LEAD, Role.MANAGER):
             return self.organisation == Organisation.CIPRB
         return False

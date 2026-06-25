@@ -67,19 +67,6 @@ function RequireRecordListAccess({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
-/** Guard for MPDSR — a CIPRB-owned surveillance surface. Only system roles
- *  (developer / supervisor) and the CIPRB org lead may open it. Mirrors the
- *  nav-item visibility and the server's CanAccessMPDSR permission, so a
- *  PHD/Bandhu user (or CIPRB field staff) typing the /mpdsr URL is bounced
- *  home instead of loading a page that the API will 403. */
-function RequireMPDSRAccess({ children }: { children: React.ReactNode }) {
-  const { user } = useAuth()
-  if (!user) return <Navigate to="/login" replace />
-  const ok = isAdminRole(user.role) || (user.role === 'org_lead' && user.organisation === 'CIPRB')
-  if (!ok) return <Navigate to="/" replace />
-  return <>{children}</>
-}
-
 /** Guard for CIPRB-owned surfaces (fistula registers, baseline survey).
  *  Cross-org admins (developer / supervisor) plus any CIPRB-org user may
  *  open them; PHD/Bandhu users typing the URL are bounced home. Finer

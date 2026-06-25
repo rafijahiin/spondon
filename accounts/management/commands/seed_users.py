@@ -54,6 +54,17 @@ USERS = [
         'role':         'org_lead',
         'password_env': 'CIPRB_SAYEED_PASSWORD',
     },
+    # ── CIPRB Manager — the CIPRB APPROVER (approves everything CIPRB incl.
+    #    MPDSR + Fistula PII + Baseline). manager role → can_approve_submissions;
+    #    org-bound can_access_mpdsr / can_access_fistula_cases grant the PII
+    #    viewsets. Rafi's 2026-06-26 directive. Confirm her full display name. ──
+    {
+        'email':        'tanjina.ciprb@gmail.com',
+        'full_name':    'Tanjina',
+        'organisation': 'CIPRB',
+        'role':         'manager',
+        'password_env': 'TANJINA_PASSWORD',
+    },
     # ── UNFPA Supervisors (full system, target config) ────────────────────
     {
         'email':        'animesh@unfpa.org',

@@ -224,17 +224,24 @@ class CanAccessFistulaCases(BasePermission):
 class CanVerifyBaseline(BasePermission):
     """
     The D5 baseline study is CIPRB-conducted. Verifying (approving/rejecting)
-    each interview and reading the response data is restricted to the same
-    CIPRB-scoped set as MPDSR: Dev + Supervisor (incl. UNFPA) + CIPRB Org Lead.
-    Monitoring orgs (CIPRB/UNFPA) get read-only; PHD/Bandhu managers, field
-    staff, focal and the survey-only role get 403 — they neither own nor verify
-    this data (it carries sensitive coded SRHR/violence responses).
+    each interview and reading the response data is restricted to the CIPRB
+    approver set: Dev + Supervisor (incl. UNFPA) + CIPRB Org Lead + CIPRB Manager
+    (Tanjina — Rafi's 2026-06-26 directive: the CIPRB manager approves everything
+    CIPRB, baseline included). Monitoring orgs (CIPRB/UNFPA) get read-only;
+    PHD/Bandhu managers, field staff, focal and the survey-only role get 403 —
+    they neither own nor verify this data (sensitive coded SRHR/violence answers).
+
+    Stated EXPLICITLY rather than via `can_access_mpdsr` so this baseline gate
+    cannot silently drift if the MPDSR PII proxy ever changes (the three CIPRB
+    PII gates are deliberately independent).
     """
     def has_permission(self, request, view):
         u = request.user
         if not u.is_authenticated:
             return False
-        if u.can_access_mpdsr:        # Dev + Supervisor + CIPRB Org Lead
+        if u.can_see_all_orgs:                       # Dev + Supervisor (UNFPA)
+            return True
+        if u.organisation == 'CIPRB' and u.role in ('org_lead', 'manager'):
             return True
         return (
             request.method in SAFE_METHODS
