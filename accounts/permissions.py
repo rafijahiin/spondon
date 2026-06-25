@@ -242,6 +242,21 @@ class CanVerifyBaseline(BasePermission):
         )
 
 
+class CanApproveCIPRBAction(BasePermission):
+    """MPDSR Action-Plan rows are district-level programme actions (NOT patient
+    PII — that lives in MPDSRCase / the notifications). Approvable by the CIPRB
+    approvers (Tanjina / Setu = role manager + organisation CIPRB) plus dev /
+    UNFPA supervisors — i.e. anyone who can approve submissions and is CIPRB-
+    scoped or sees all orgs. Deliberately NOT gated by CanAccessMPDSR, which
+    requires org_lead+CIPRB and would lock the CIPRB manager approver out."""
+    def has_permission(self, request, view):
+        u = request.user
+        return bool(
+            u and u.is_authenticated and u.can_approve_submissions
+            and (u.can_see_all_orgs or u.organisation == 'CIPRB')
+        )
+
+
 # ── Cross-org / multi-role membership classes ────────────────────────────────
 #
 # The legacy `IsSuperAdmin*` names have been removed entirely (audit FIX 1.2).

@@ -211,6 +211,29 @@ def _fistula_dist_code_calc():
     return expr
 
 
+# District slug → UPPERCASE LETTER code for the MPDSR Action-ID prefix
+# (Patuakhali=PA, Dhaka=DH). Distinct from FISTULA_DISTRICT_CODE (numeric — those
+# stay for fistula patient IDs). Action IDs now read PA-001, DH-001. Every code
+# is exactly 2 letters and unique (the S* and B* clusters are disambiguated).
+# Keys MUST match the `district` choice values (lower-cased, spaces→'_').
+MPDSR_DISTRICT_CODE = {
+    'sunamganj': 'SU', 'sherpur': 'SH', 'sirajganj': 'SI', 'sylhet': 'SY',
+    'bhola': 'BH', 'barguna': 'BG', 'bagerhat': 'BA', 'bandarban': 'BN',
+    'kurigram': 'KU', 'khagrachari': 'KH', 'gaibandha': 'GA', 'noakhali': 'NO',
+    'patuakhali': 'PA', 'jamalpur': 'JA', 'habiganj': 'HA', 'moulavibazar': 'MO',
+    'chandpur': 'CH', 'rangpur': 'RA', 'dhaka': 'DH',
+}
+
+
+def _mpdsr_dist_code_calc():
+    """Nested if() mapping ${district} slug → its UPPERCASE letter code (PA, DH).
+    XPath 1.0 (Enketo) — explicit if() chain, not a lookup."""
+    expr = "''"
+    for slug, code in reversed(list(MPDSR_DISTRICT_CODE.items())):
+        expr = f"if(${{district}}='{slug}','{code}',{expr})"
+    return expr
+
+
 _FISTULA_STAGES = [
     ('suspected',     'Suspected (community identification)',
      'সন্দেহজনক (সম্প্রদায়ে শনাক্ত)'),
@@ -3244,9 +3267,9 @@ def _response_plan_survey():
                 "'ABCDEFGHIJKLMNOPQRSTUVWXYZ')")
     rows.append(_sr('begin_group', 'grp_new_plan', 'Register a new action',
                     'নতুন পদক্ষেপ নিবন্ধন', relevant="${ap_mode}='new_plan'"))
-    # District-code prefix — the SAME numeric codes as the fistula suspected
-    # cases (Sunamganj=1 … Dhaka=10), so field workers learn ONE code set.
-    rows.append(_sr('calculate', '_act_dist_code', calc=_fistula_dist_code_calc()))
+    # District-code prefix — UPPERCASE LETTER codes (Patuakhali=PA, Dhaka=DH),
+    # distinct from the fistula numeric codes. Action IDs now read PA-001, DH-001.
+    rows.append(_sr('calculate', '_act_dist_code', calc=_mpdsr_dist_code_calc()))
     rows.append(_sr('note', '_act_code_show',
         'Your district code is ${_act_dist_code}. Type the Action ID as '
         '${_act_dist_code}-001, ${_act_dist_code}-002, … (3 digits after the dash).',
@@ -3259,16 +3282,19 @@ def _response_plan_survey():
     #   (1) regex anchors the FULL prefix (^<code>-<digits>$);
     #   (2) pulldata(...)='' blocks re-using an action ID that already exists.
     rows.append(_sr('text', 'action_id',
-        'Action ID (district code + 3-digit number, e.g. 2-001)',
-        'পদক্ষেপ আইডি (জেলা কোড + ৩ অঙ্ক, যেমন ২-০০১)',
+        'Action ID (district letter code + 3-digit number, e.g. PA-001)',
+        'পদক্ষেপ আইডি (জেলার অক্ষর কোড + ৩ অঙ্ক, যেমন PA-001)',
         required='yes',
-        constraint=("regex(normalize-space(.), "
+        # regex uppercases the typed value first, so 'pa-001' is accepted and
+        # stored canonical as PA-001 (the handler's _norm_id upper-cases too).
+        constraint=("regex(translate(normalize-space(.),"
+                    "'abcdefghijklmnopqrstuvwxyz','ABCDEFGHIJKLMNOPQRSTUVWXYZ'), "
                     "concat('^', ${_act_dist_code}, '-[0-9]{3}$')) and "
                     "pulldata('mpdsr_actions','activity','action_id'," + NORM_AID + ")=''"),
-        cmsg='⚠ Invalid or duplicate ID. It must be <district-code>-<3 digits> '
-             '(e.g. 2-001, Dhaka = 10-001) and not already used. / '
-             'ভুল বা ডুপ্লিকেট আইডি — জেলা কোড + ৩ অঙ্ক হতে হবে এবং আগে ব্যবহৃত হওয়া যাবে না।',
-        hint='Format: your district code + a 3-digit serial. Bhola = 2-001, Dhaka = 10-001.'))
+        cmsg='⚠ Invalid or duplicate ID. It must be <district-letter-code>-<3 digits> '
+             '(e.g. PA-001, Dhaka = DH-001) and not already used. / '
+             'ভুল বা ডুপ্লিকেট আইডি — জেলার অক্ষর কোড + ৩ অঙ্ক হতে হবে এবং আগে ব্যবহৃত হওয়া যাবে না।',
+        hint='Format: your district letter code + a 3-digit serial. Patuakhali = PA-001, Dhaka = DH-001.'))
     # Duplicate-ID soft warning — shows the activity already using this ID.
     rows.append(_sr('calculate', '_act_dup',
         calc=("pulldata('mpdsr_actions','activity','action_id'," + NORM_AID + ")")))

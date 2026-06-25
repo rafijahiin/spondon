@@ -26,7 +26,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from accounts.permissions import (
     CanWriteFieldRecord, CanWriteOutreach, CanWriteOrgRecord,
-    CanAccessFistulaCases, CanAccessMPDSR,
+    CanAccessFistulaCases, CanAccessMPDSR, CanApproveCIPRBAction,
 )
 
 from .models import (
@@ -42,13 +42,14 @@ from .models import (
     NilReport, PHDCounsellingReport,
 )
 from fistula.ciprb_models import CIPRBFistulaCase
-from mpdsr.models import MPDSRCase
+from mpdsr.models import MPDSRCase, MPDSRAction
 from mpdsr.ciprb_models import MPDSRDeathNotification, MaternalNearMissCase
 from .serializers import CIPRBFistulaCaseSerializer
 from .serializers import (
     MPDSRCaseApprovalSerializer,
     MPDSRDeathNotificationApprovalSerializer,
     MaternalNearMissApprovalSerializer,
+    MPDSRActionSerializer,
 )
 from .serializers import (
     ServiceCenterSerializer, ClientSerializer,
@@ -623,6 +624,13 @@ def _humanise_label(text: str) -> str:
 def _build_summary(obj, model_type: str) -> str:
     """Build a human-readable one-line summary for each model type."""
     try:
+        if model_type == 'mpdsr_action':
+            who = obj.creator_name or obj.submitted_by_kobo_user or '–'
+            edit = (f" · edited by {obj.last_edited_by_name}"
+                    if obj.last_edited_by_name and obj.last_edited_by_name != obj.creator_name
+                    else "")
+            return (f"{obj.action_id} · {(obj.activity or '')[:50]} · {obj.district}"
+                    f" · created by {who}{edit}")
         if model_type == 'clinic_visit':
             parts = [f"Visit {obj.visit_date}"]
             if obj.hiv_screening_done:
@@ -815,7 +823,16 @@ def _pending_for_model(queryset, model_type: str, org_filter_org=None,
     decided — approved_by set, or rejected — so auto-approved records (e.g. FSW
     registrations, which never go through a manual review) don't flood the
     audit trail with decisions nobody made."""
-    qs = queryset.filter(approval_status__in=list(statuses)).select_related('center', 'approved_by')
+    # MPDSRAction (and any future centre-less model) has no `center` FK — only
+    # select_related it when the model has it, else DRF raises FieldError.
+    qs = queryset.filter(approval_status__in=list(statuses))
+    _sel = ['approved_by']
+    try:
+        qs.model._meta.get_field('center')
+        _sel.insert(0, 'center')
+    except Exception:
+        pass
+    qs = qs.select_related(*_sel)
     if org_filter_org:
         qs = qs.filter(organisation=org_filter_org)
     if reviewed_only:
@@ -838,15 +855,21 @@ def _pending_for_model(queryset, model_type: str, org_filter_org=None,
             'manager_approved_at': (obj.manager_approved_at.isoformat()
                                     if getattr(obj, 'manager_approved_at', None) else None),
             'submitted_by': obj.submitted_by_kobo_user or '–',
-            'center_name': obj.center.name if obj.center_id else '–',
-            'center_code': obj.center.code if obj.center_id else '',
+            'center_name': (getattr(obj, 'center', None).name
+                            if getattr(obj, 'center', None)
+                            else getattr(obj, 'district', '') or '–'),
+            'center_code': (getattr(obj, 'center', None).code
+                            if getattr(obj, 'center', None) else ''),
+            # Per-creator surfacing for the MPDSR action gate (blank for other models).
+            'created_by_name': getattr(obj, 'creator_name', '') or '',
+            'edited_by_name': getattr(obj, 'last_edited_by_name', '') or '',
             'created_at': obj.created_at.isoformat(),
             'summary': _build_summary(obj, model_type),
             # One-paragraph plain-language narrative — the frontend shows it
             # ONLY to UNFPA (the stage-2 reviewer), alongside the field table.
             'narrative': _build_narrative(obj, model_type),
-            'latitude': float(obj.latitude) if obj.latitude else None,
-            'longitude': float(obj.longitude) if obj.longitude else None,
+            'latitude': float(getattr(obj, 'latitude', None)) if getattr(obj, 'latitude', None) else None,
+            'longitude': float(getattr(obj, 'longitude', None)) if getattr(obj, 'longitude', None) else None,
             'kobo_submission_id': obj.kobo_submission_id or '',
         })
     return results
@@ -891,6 +914,16 @@ class MaternalNearMissViewSet(OrgFilteredViewSet):
     serializer_class = MaternalNearMissApprovalSerializer
 
 
+class MPDSRActionViewSet(OrgFilteredViewSet):
+    """CIPRB-10 MPDSR Action-Plan rows — detail + approve/reject for the queue
+    (single-stage CIPRB: Tanjina / Setu). District-level programme actions, NOT
+    patient PII, so gated by CanApproveCIPRBAction (lets a CIPRB manager approve)
+    rather than CanAccessMPDSR (which requires org_lead+CIPRB)."""
+    permission_classes = [CanApproveCIPRBAction]
+    queryset = MPDSRAction.objects.select_related('approved_by').all()
+    serializer_class = MPDSRActionSerializer
+
+
 _APPROVAL_MODELS = [
     ('client_reg',           lambda: Client.objects),
     ('clinic_visit',         lambda: ClinicVisit.objects),
@@ -914,6 +947,7 @@ _APPROVAL_MODELS = [
     ('mpdsr_case',           lambda: MPDSRCase.objects),
     ('mpdsr_notification',   lambda: MPDSRDeathNotification.objects),
     ('near_miss_case',       lambda: MaternalNearMissCase.objects),
+    ('mpdsr_action',         lambda: MPDSRAction.objects),
 ]
 
 # Reverse map model class → slug, for code paths that hold a model INSTANCE but
@@ -944,6 +978,7 @@ _ENDPOINT_OVERRIDES = {
     'mpdsr_case': 'mpdsr-cases',
     'mpdsr_notification': 'mpdsr-notifications',
     'near_miss_case': 'near-miss-cases',
+    'mpdsr_action': 'mpdsr-actions',
 }
 
 

@@ -613,6 +613,7 @@ def handle_ciprb_mpdsr_action_plan(payload, lat, lng):
     district = _district(payload)
     sub_id = str(payload.get('_id') or '')
     user = _s(payload.get('_submitted_by')) or 'kobo'
+    enum_name = _s(payload.get('enumerator_name'))   # the typed "YOUR NAME" — creator/editor
 
     # ── Update an existing action by id ────────────────────────────────────
     if mode == 'update_action':
@@ -640,8 +641,18 @@ def handle_ciprb_mpdsr_action_plan(payload, lat, lng):
             if act.status == ActionStatus.IMPLEMENTED and not act.completion_date:
                 act.completion_date = cd or act.timeline
             act.kobo_submission_id = sub_id or act.kobo_submission_id
-            act.add_audit_entry(user, 'status update',
-                                '%s / %s%%' % (act.status, act.completion_pct))
+            # Per-creator gate: an edit drops the action back to PENDING for CIPRB
+            # re-approval; record the editor; seed creator if this is a fresh stub.
+            if act._state.adding and enum_name:
+                act.creator_name = act.creator_name or enum_name
+            if enum_name:
+                act.last_edited_by_name = enum_name
+            act.approval_status = 'PENDING'
+            act.approved_by = None
+            act.approved_at = None
+            act.add_audit_entry(user, 'status update — pending re-approval',
+                                '%s / %s%% · edited by %s'
+                                % (act.status, act.completion_pct, enum_name or user))
             act.save()
         return HttpResponse('OK', status=200)
 
@@ -682,10 +693,17 @@ def handle_ciprb_mpdsr_action_plan(payload, lat, lng):
         # committee has already advanced via update_action.
         if is_new:
             act.status = _s(payload.get('act_status')) or ActionStatus.PENDING
+            act.creator_name = enum_name            # immutable: set ONCE, on create
+        if enum_name:
+            act.last_edited_by_name = enum_name     # latest submitter (create or re-register)
         act.kobo_submission_id = sub_id
         act.submitted_by_kobo_user = user
         act.raw_payload = payload
+        # Every plan submission re-enters the CIPRB approval gate (Tanjina/Setu).
+        act.approval_status = 'PENDING'
+        act.approved_by = None
+        act.approved_at = None
         act.add_audit_entry(user, 'created' if is_new else 're-registered',
-                            'plan %s' % (meeting_date or ''))
+                            'plan %s · by %s' % (meeting_date or '', enum_name or user))
         act.save()
     return HttpResponse('OK — 1 action (%s)' % code, status=200)

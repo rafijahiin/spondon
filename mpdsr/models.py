@@ -538,6 +538,12 @@ class MPDSRAction(models.Model):
     rejected_reason = models.TextField(blank=True, default='')
     kobo_submission_id = models.CharField(max_length=100, blank=True, default='')
     submitted_by_kobo_user = models.CharField(max_length=100, blank=True, default='')
+    # Typed enumerator ("YOUR NAME") — the per-creator identity for the approval
+    # gate. creator_name is set ONCE at registration (immutable ownership);
+    # last_edited_by_name is the latest update submitter, so the CIPRB approver
+    # can see "created by X / edited by Y" and reject a non-creator's edit.
+    creator_name = models.CharField(max_length=200, blank=True, default='')
+    last_edited_by_name = models.CharField(max_length=200, blank=True, default='')
     source = models.CharField(max_length=40, default='kobo', db_index=True)
     raw_payload = models.JSONField(default=dict, blank=True)
 

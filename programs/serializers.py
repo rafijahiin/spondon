@@ -16,7 +16,7 @@ from .models import (
     TrainingEvent, CoordMeeting, MobileHealthCamp, VisitorRegister,
 )
 from fistula.ciprb_models import CIPRBFistulaCase
-from mpdsr.models import MPDSRCase
+from mpdsr.models import MPDSRCase, MPDSRAction
 from mpdsr.ciprb_models import MPDSRDeathNotification, MaternalNearMissCase
 
 
@@ -74,6 +74,21 @@ class MaternalNearMissApprovalSerializer(serializers.ModelSerializer):
         read_only_fields = [
             'id', 'approval_status', 'approved_by', 'approved_at',
             'rejected_reason', 'kobo_submission_id', 'submitted_by_kobo_user',
+            'created_at', 'updated_at',
+        ]
+
+
+class MPDSRActionSerializer(serializers.ModelSerializer):
+    """Detail serializer for the CIPRB-10 MPDSR Action-Plan approval queue.
+    Surfaces creator_name / last_edited_by_name so the approver can see who
+    created vs who edited the action and reject a non-creator's edit."""
+    class Meta:
+        model = MPDSRAction
+        fields = '__all__'
+        read_only_fields = [
+            'id', 'approval_status', 'approved_by', 'approved_at',
+            'rejected_reason', 'kobo_submission_id', 'submitted_by_kobo_user',
+            'creator_name', 'last_edited_by_name', 'organisation',
             'created_at', 'updated_at',
         ]
 

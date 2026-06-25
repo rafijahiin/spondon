@@ -19,6 +19,7 @@ from .views import (
     MPDSRCaseApprovalViewSet,
     MPDSRDeathNotificationViewSet,
     MaternalNearMissViewSet,
+    MPDSRActionViewSet,
 )
 
 router = DefaultRouter()
@@ -49,6 +50,7 @@ router.register('fistula-cases',       CIPRBFistulaCaseViewSet,       basename='
 router.register('mpdsr-cases',         MPDSRCaseApprovalViewSet,      basename='prog-mpdsr-case')
 router.register('mpdsr-notifications', MPDSRDeathNotificationViewSet, basename='prog-mpdsr-notification')
 router.register('near-miss-cases',     MaternalNearMissViewSet,       basename='prog-near-miss')
+router.register('mpdsr-actions',       MPDSRActionViewSet,            basename='prog-mpdsr-action')
 
 urlpatterns = [
     path('', include(router.urls)),
