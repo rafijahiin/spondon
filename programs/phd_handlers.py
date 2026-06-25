@@ -151,13 +151,13 @@ def handle_phd_registration(payload: dict, lat, lng) -> HttpResponse:
                 locked.approval_status = Client.APPROVED
                 locked.save()
                 logger.info(
-                    'PHD registration upgraded stub client %s (id_no=%s) → %r',
-                    locked.pk, client_id, locked.name)
+                    'PHD registration upgraded stub client %s (id_no=%s)',
+                    locked.pk, client_id)   # never log the cleartext name to stdout
                 return HttpResponse('Stub upgraded to full registration', status=200)
         logger.warning(
             'Duplicate PHD registration id_no=%s (kobo=%s) ignored — '
-            'existing client %s (%r, centre %s) kept.',
-            client_id, kobo_id or '-', client.pk, client.name,
+            'existing client %s (centre %s) kept.',
+            client_id, kobo_id or '-', client.pk,
             client.center.code if client.center_id else '-',
         )
         return HttpResponse('Duplicate id_no — existing registration kept', status=200)
