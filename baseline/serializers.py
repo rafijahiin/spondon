@@ -1,5 +1,19 @@
 from rest_framework import serializers
-from .models import BaselineSurvey
+from .models import BaselineSurvey, BaselineResponse
+
+
+class BaselineResponseSerializer(serializers.ModelSerializer):
+    population_display = serializers.CharField(source='get_population_display', read_only=True)
+
+    class Meta:
+        model = BaselineResponse
+        fields = [
+            'id', 'population', 'population_display', 'survey_round', 'partner',
+            'district', 'site_code', 'serial', 'age', 'interview_outcome',
+            'latitude', 'longitude', 'is_duplicate', 'duplicate_of',
+            'created_at', 'raw_data',
+        ]
+        read_only_fields = fields
 
 
 class BaselineSurveySerializer(serializers.ModelSerializer):

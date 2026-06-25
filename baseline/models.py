@@ -156,3 +156,112 @@ class BaselineSurvey(models.Model):
 
     def __str__(self):
         return f'{self.survey_type} / {self.partner} / {self.district} / {self.survey_date}'
+
+
+# ─── D5 key-population baseline (Hijra / FSW) — CIPRB-conducted ───────────────
+# The generic BaselineSurvey above was built for an assumed maternal-health
+# survey and does NOT fit the two validated key-population instruments. These
+# land in BaselineResponse: a THIN monitoring projection (the full 184/194-
+# question answer set stays whole in raw_data; analysis reads raw_data at report
+# time). Distinguished only by `population` (hijra/fsw); partner is always CIPRB.
+
+class BaselineResponseManager(models.Manager):
+    def get_or_create_from_submission(self, submission):
+        raw = submission.raw_data or {}
+        population = (raw.get('population') or '').lower()
+        if population not in ('hijra', 'fsw'):
+            xf = (raw.get('_xform_id_string') or '').lower()
+            population = 'fsw' if 'fsw' in xf else 'hijra'
+        round_raw = (raw.get('survey_round') or '').lower()
+        survey_round = SurveyType.ENDLINE if 'endline' in round_raw else SurveyType.BASELINE
+        serial = (raw.get('questionnaire_serial') or '').strip()
+        district = (raw.get('district') or submission.district or '').strip()
+        site_code = (raw.get('cluster_site_code') or raw.get('site_code') or '').strip()
+        age = _safe_int(raw.get('s2_age') or raw.get('s1_age')
+                        or raw.get('a205_age') or raw.get('a203_age'))
+        outcome = (raw.get('c3') or raw.get('interview_outcome') or '').strip()
+
+        # Duplicate flag — the serial is the unique key (kept PLAINTEXT; Fernet
+        # would break the match). Flag if the same serial is already on file for
+        # this population + round.
+        dup = None
+        if serial:
+            dup = (self.filter(population=population, survey_round=survey_round,
+                               serial__iexact=serial)
+                   .exclude(submission=submission)
+                   .order_by('created_at').first())
+
+        obj, created = self.get_or_create(
+            submission=submission,
+            defaults={
+                'population': population,
+                'survey_round': survey_round,
+                'partner': submission.partner or 'CIPRB',
+                'district': district,
+                'site_code': site_code,
+                'serial': serial,
+                'age': age,
+                'interview_outcome': outcome,
+                'latitude': submission.latitude,
+                'longitude': submission.longitude,
+                'is_duplicate': bool(dup),
+                'duplicate_of': dup,
+                'raw_data': raw,
+            },
+        )
+        return obj, created
+
+
+class BaselineResponse(models.Model):
+    """One VERIFIED D5 baseline/endline interview (Hijra or FSW), CIPRB-owned.
+    Materialised only when a CIPRB supervisor approves the submission."""
+    POPULATION_CHOICES = [
+        ('hijra', 'Hijra / Gender-diverse'),
+        ('fsw', 'Female Sex Worker'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    submission = models.OneToOneField(
+        'submissions.KoboSubmission',
+        null=True, blank=True,
+        on_delete=models.SET_NULL,
+        related_name='baseline_response',
+    )
+    population = models.CharField(max_length=10, choices=POPULATION_CHOICES, db_index=True)
+    survey_round = models.CharField(
+        max_length=20, choices=SurveyType.choices,
+        default=SurveyType.BASELINE, db_index=True,
+    )
+    partner = models.CharField(max_length=20, default='CIPRB', db_index=True)
+    district = models.CharField(max_length=100, blank=True, db_index=True)
+    site_code = models.CharField(max_length=80, blank=True)
+    # serial = questionnaire serial; the dedup key. PLAINTEXT, never encrypted.
+    serial = models.CharField(max_length=100, blank=True, db_index=True)
+    age = models.PositiveSmallIntegerField(null=True, blank=True)
+    interview_outcome = models.CharField(max_length=120, blank=True)
+    latitude = models.DecimalField(max_digits=10, decimal_places=7, null=True, blank=True)
+    longitude = models.DecimalField(max_digits=10, decimal_places=7, null=True, blank=True)
+
+    raw_data = models.JSONField(default=dict)
+    is_duplicate = models.BooleanField(default=False, db_index=True)
+    duplicate_of = models.ForeignKey(
+        'self', null=True, blank=True,
+        on_delete=models.SET_NULL,
+        related_name='duplicates',
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    objects = BaselineResponseManager()
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['population', 'survey_round']),
+            models.Index(fields=['population', 'district']),
+            models.Index(fields=['serial', 'population', 'survey_round']),
+        ]
+
+    def __str__(self):
+        return f'{self.population} / {self.survey_round} / {self.district} / {self.serial}'

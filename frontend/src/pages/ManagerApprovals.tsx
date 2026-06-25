@@ -753,10 +753,9 @@ export default function ManagerApprovals() {
               </button>
             )}
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, auto)', gap: 24, flexShrink: 0 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, auto)', gap: 24, flexShrink: 0 }}>
             <Stat label={t('approvals.statQueue')}    value={allItems.length}                 sub={t('approvals.statQueueSub',    { count: filtered.length })} />
             <Stat label={t('approvals.statPrograms')} value={programsData?.total ?? 0}        sub={t('approvals.statProgramsSub')} />
-            <Stat label={t('approvals.statLegacy')}   value={(submissions ?? []).filter(s => s.status === 'pending').length} sub={t('approvals.statLegacySub')} />
           </div>
         </div>
       </section>
@@ -939,7 +938,6 @@ export default function ManagerApprovals() {
                         {selected.organisation}
                       </span>
                       <span className="tag">{selected.model_label}</span>
-                      {selected.kind === 'legacy' && <span className="tag amber">{t('approvals.tagLegacy')}</span>}
                       {selected.urgent && <span className="tag coral">{t('approvals.tagUrgent')}</span>}
                     </div>
                     <h2 style={{

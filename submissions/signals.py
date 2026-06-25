@@ -14,6 +14,7 @@ def on_submission_status_change(sender, instance, **kwargs):
         _create_mpdsr_case(instance)
         _create_fistula_campaign(instance)
         _create_baseline_survey(instance)
+        _create_baseline_response(instance)
         _create_fistula_staged(instance)
         _create_mpdsr_response_plan(instance)
         _send_approval_telegram(instance)
@@ -228,14 +229,39 @@ def _create_fistula_campaign(submission):
         logger.error('FistulaCampaign creation failed for submission %s: %s', submission.id, exc)
 
 
+def _is_keypop_baseline(submission):
+    """True for the D5 key-population instruments (Hijra / FSW) — they
+    materialise into BaselineResponse, NOT the legacy generic BaselineSurvey."""
+    raw = submission.raw_data or {}
+    if (raw.get('population') or '').lower() in ('hijra', 'fsw'):
+        return True
+    xf = (raw.get('_xform_id_string') or '').lower()
+    return (xf in ('ciprb_baseline_hijra_v1', 'ciprb_baseline_fsw_v1')
+            or 'hijra' in xf or 'fsw' in xf)
+
+
 def _create_baseline_survey(submission):
     if submission.form_type != FormType.BASELINE:
+        return
+    # The new key-population instruments go to BaselineResponse instead; keep
+    # the legacy generic survey only for the old spondon_baseline_v1 form.
+    if _is_keypop_baseline(submission):
         return
     try:
         from baseline.models import BaselineSurvey
         BaselineSurvey.objects.get_or_create_from_submission(submission)
     except Exception as exc:
         logger.error('BaselineSurvey creation failed for submission %s: %s', submission.id, exc)
+
+
+def _create_baseline_response(submission):
+    if submission.form_type != FormType.BASELINE or not _is_keypop_baseline(submission):
+        return
+    try:
+        from baseline.models import BaselineResponse
+        BaselineResponse.objects.get_or_create_from_submission(submission)
+    except Exception as exc:
+        logger.error('BaselineResponse creation failed for submission %s: %s', submission.id, exc)
 
 
 def _send_approval_telegram(submission):

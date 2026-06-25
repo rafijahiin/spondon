@@ -221,6 +221,27 @@ class CanAccessFistulaCases(BasePermission):
         )
 
 
+class CanVerifyBaseline(BasePermission):
+    """
+    The D5 baseline study is CIPRB-conducted. Verifying (approving/rejecting)
+    each interview and reading the response data is restricted to the same
+    CIPRB-scoped set as MPDSR: Dev + Supervisor (incl. UNFPA) + CIPRB Org Lead.
+    Monitoring orgs (CIPRB/UNFPA) get read-only; PHD/Bandhu managers, field
+    staff, focal and the survey-only role get 403 — they neither own nor verify
+    this data (it carries sensitive coded SRHR/violence responses).
+    """
+    def has_permission(self, request, view):
+        u = request.user
+        if not u.is_authenticated:
+            return False
+        if u.can_access_mpdsr:        # Dev + Supervisor + CIPRB Org Lead
+            return True
+        return (
+            request.method in SAFE_METHODS
+            and u.organisation in MONITORING_ORGS
+        )
+
+
 # ── Cross-org / multi-role membership classes ────────────────────────────────
 #
 # The legacy `IsSuperAdmin*` names have been removed entirely (audit FIX 1.2).

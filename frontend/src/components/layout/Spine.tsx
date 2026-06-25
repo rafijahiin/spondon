@@ -11,7 +11,7 @@ import { useTranslation } from 'react-i18next'
 import {
   Home, Building2, HeartHandshake, ClipboardCheck, FileBarChart2,
   ShieldAlert, LogOut, ExternalLink,
-  HeartPulse, ClipboardList, GraduationCap, Smartphone,
+  HeartPulse, ClipboardList, Smartphone,
   Target, Settings, UserCog, X, Menu, Map,
 } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
@@ -69,8 +69,6 @@ const SECONDARY_NAV: SpineItemDef[] = [
     visible: (r) => ['developer','supervisor','org_lead'].includes(r) },
   { to: '/baseline', i18nKey: 'nav.baselineEndline',  icon: <ClipboardList size={18} />,
     visible: (r, o) => isAdminRole(r) || (r === 'org_lead' && o === 'CIPRB') || (notManager(r) && o === 'CIPRB') },
-  { to: '/training', i18nKey: 'nav.trainingLog',      icon: <GraduationCap size={18} />,
-    visible: (r) => ['developer','supervisor','org_lead'].includes(r) },
 ]
 
 /** Filter a nav array by the current user's role + org. */
@@ -167,7 +165,12 @@ const KOBO_GROUPS: KoboGroup[] = [
       { url: 'https://ee.kobotoolbox.org/x/fgFVgdrF', label: 'KF-Fistula Staged',     labelBn: 'ফিস্টুলা স্টেজড ট্র্যাকার' },
       { url: 'https://ee.kobotoolbox.org/x/DwFp6Nhx', label: 'MPDSR Form',             labelBn: 'মাতৃমৃত্যু ফর্ম' },
       { url: 'https://ee.kobotoolbox.org/x/1kkC2bTE', label: 'Fistula Campaign',       labelBn: 'ফিস্টুলা ফর্ম' },
-      { url: 'https://ee.kobotoolbox.org/x/MTvoZ3Hz', label: 'Baseline / Endline',     labelBn: 'বেসলাইন ফর্ম' },
+      { url: 'https://ee.kobotoolbox.org/x/tzGBA7nj',
+        label: 'CIPRB Baseline — Hijra / Gender-diverse',
+        labelBn: 'সিআইপিআরবি বেসলাইন — হিজড়া/প্রান্তিক জনগোষ্ঠী' },
+      { url: 'https://ee.kobotoolbox.org/x/83PhCEZ4',
+        label: 'CIPRB Baseline — Female Sex Workers',
+        labelBn: 'সিআইপিআরবি বেসলাইন — নারী যৌনকর্মী' },
     ],
   },
   {

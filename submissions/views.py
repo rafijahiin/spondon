@@ -31,6 +31,9 @@ def _form_type_from_payload(payload: dict) -> str | None:
     id_string_map = {
         'spondon_mpdsr_combined_v1': FormType.MPDSR,
         'spondon_baseline_v1': FormType.BASELINE,
+        # D5 baseline study (CIPRB-conducted) — two key-population instruments.
+        'ciprb_baseline_hijra_v1': FormType.BASELINE,
+        'ciprb_baseline_fsw_v1': FormType.BASELINE,
         'spondon_fistula_v1': FormType.FISTULA,
         'spondon_fistula_staged_v1': FormType.FISTULA_STAGED,
         'spondon_mpdsr_response_plan_v1': FormType.MPDSR_RESPONSE_PLAN,
@@ -56,6 +59,9 @@ def _form_type_from_payload(payload: dict) -> str | None:
         # Kobo may send the asset UID as _xform_id_string instead of the
         # settings form_id, so accept both.
         'aJrk9VUUy9o6YGipAJ8H5t': FormType.ACTIVITY,
+        # D5 baseline study assets (deployed 2026-06-26).
+        'aBT7aCL9p4FGcW4WwXZcr6': FormType.BASELINE,  # Hijra / gender-diverse
+        'aVsJ7VJ35k8GshpQpnXygC': FormType.BASELINE,  # Female Sex Workers
         # Env-var overrides for older forms
         getattr(settings, 'KOBO_ASSET_UID_MPDSR', ''): FormType.MPDSR,
         getattr(settings, 'KOBO_ASSET_UID_FISTULA', ''): FormType.FISTULA,
@@ -205,7 +211,10 @@ def kobo_webhook(request):
     lat, lng = _geolocation(payload)
 
     # GPS location is mandatory on every field submission — reject without it.
-    if lat is None or lng is None:
+    # EXCEPTION: BASELINE is a ~50-minute CAPI interview — never discard a
+    # completed interview over a missing GPS fix. Store it (lat/lng may be null)
+    # and let the CIPRB verifier flag it; the form still requires a cluster geopoint.
+    if (lat is None or lng is None) and form_type != FormType.BASELINE:
         logger.warning(
             'Webhook rejected — GPS missing. form=%s kobo_id=%s',
             form_type, kobo_id,
@@ -217,16 +226,14 @@ def kobo_webhook(request):
             status=400,
         )
 
-    # Auto-approval list. BASELINE has always auto-approved (CIPRB self-
-    # validates the survey). FISTULA_STAGED and MPDSR_RESPONSE_PLAN are
-    # added per Rafi 2026-06-02: these two new staged forms are CIPRB-
-    # owned, written by trained clinical staff, and need to flow straight
-    # to the dashboard without a manager approval queue (the queue was
-    # creating dashboard latency Animesh flagged as a blocker).
-    # MPDSR (F1–F6 combined) and FISTULA (legacy campaign) still queue
-    # for manager review since those have broader field-staff submitters.
+    # Auto-approval list. FISTULA_STAGED and MPDSR_RESPONSE_PLAN are CIPRB-
+    # owned, written by trained clinical staff, and flow straight to the
+    # dashboard without a manager queue. BASELINE auto-approved until the D5
+    # baseline gained a CIPRB verification gate (2026-06-25): it now lands
+    # PENDING and a CIPRB supervisor approves each interview in the baseline
+    # area before it counts. MPDSR (F1–F6 combined) and FISTULA (legacy
+    # campaign) still queue for manager review (broader field-staff submitters).
     _AUTO_APPROVE = {
-        FormType.BASELINE,
         FormType.FISTULA_STAGED,
         FormType.MPDSR_RESPONSE_PLAN,
     }
