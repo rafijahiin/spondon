@@ -127,10 +127,14 @@ def _district_from_payload(payload: dict, form_type: str) -> str:
 
 
 def _geolocation(payload: dict) -> tuple[float | None, float | None]:
-    geo = payload.get('_geolocation') or []
+    geo = payload.get('_geolocation')
+    if not isinstance(geo, (list, tuple)) or len(geo) < 2:
+        # Kobo sometimes sends _geolocation as an object/null; geo[0] on a dict
+        # raises KeyError (not in the old except tuple) → 500 → stranded sub.
+        return None, None
     try:
         return float(geo[0]), float(geo[1])
-    except (TypeError, ValueError, IndexError):
+    except (TypeError, ValueError):
         return None, None
 
 
@@ -180,6 +184,11 @@ def kobo_webhook(request):
         payload = json.loads(request.body)
     except json.JSONDecodeError:
         return HttpResponse('Bad Request — expected JSON body', status=400)
+    if not isinstance(payload, dict):
+        # A non-object body (array/string/number) would AttributeError on
+        # payload.get(...) below → 500 → Kobo retries forever and STRANDS the
+        # GBV/MPDSR/fistula submission. Reject cleanly instead.
+        return HttpResponse('Bad Request — expected a JSON object', status=400)
 
     kobo_id = str(payload.get('_id', '')).strip()
     if not kobo_id:

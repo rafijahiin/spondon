@@ -30,6 +30,9 @@ class PrescriptionRecordSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = [
             'id', 'created_at', 'updated_at',
+            # Server-set — never accept these from the request body (cross-org
+            # forgery + self-approval prevention; see PrescriptionRecordViewSet).
+            'partner', 'approval_status', 'prescribed_by',
             'partner_code', 'center_name', 'prescribed_by_email',
             'drug_display', 'condition_display',
         ]

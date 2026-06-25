@@ -335,26 +335,56 @@ class OrgFilteredViewSet(viewsets.ModelViewSet):
             serializer.save(organisation=user.organisation)
 
 
+def _save_org_pinned(serializer, user):
+    """Save, FORCING organisation to the writer's own org for org-bound roles so
+    they can never create OR move a record under another partner. Only cross-org
+    oversight roles (developer/supervisor, CIPRB org-leads) may set it explicitly.
+    Mirrors OrgFilteredViewSet.perform_create; used by the reference/identity
+    viewsets (Client, ServiceCenter) that don't inherit it."""
+    if user.can_see_all_orgs or user.can_read_other_orgs:
+        serializer.save()
+    else:
+        serializer.save(organisation=user.organisation)
+
+
 # ─── Service Centres ───────────────────────────────────────────────────────────
 
 class ServiceCenterViewSet(viewsets.ModelViewSet):
+    # CanWriteOrgRecord (not bare IsAuthenticated): blocks focal/baseline writes;
+    # perform_create/update pin organisation so a low-privilege or cross-org user
+    # can't forge / move a reference centre under another partner.
     queryset = ServiceCenter.objects.all()
     serializer_class = ServiceCenterSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [CanWriteOrgRecord]
 
     def get_queryset(self):
         return _org_filter(ServiceCenter.objects.filter(is_active=True), self.request)
+
+    def perform_create(self, serializer):
+        _save_org_pinned(serializer, self.request.user)
+
+    def perform_update(self, serializer):
+        _save_org_pinned(serializer, self.request.user)
 
 
 # ─── Clients ───────────────────────────────────────────────────────────────────
 
 class ClientViewSet(viewsets.ModelViewSet):
+    # Client rows feed the indicator/dashboard pipeline (default APPROVED), so the
+    # write path MUST be org-pinned + write-gated — otherwise any org-bound user
+    # could POST organisation=<other partner> and forge a live foreign-org client.
     queryset = Client.objects.select_related('center').all()
     serializer_class = ClientSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [CanWriteOrgRecord]
 
     def get_queryset(self):
         return _org_filter(Client.objects.select_related('center').all(), self.request)
+
+    def perform_create(self, serializer):
+        _save_org_pinned(serializer, self.request.user)
+
+    def perform_update(self, serializer):
+        _save_org_pinned(serializer, self.request.user)
 
 
 # ─── Clinic ────────────────────────────────────────────────────────────────────

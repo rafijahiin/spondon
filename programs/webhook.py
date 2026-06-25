@@ -119,10 +119,14 @@ def _date(v):
 
 
 def _geolocation(payload: dict) -> tuple:
-    geo = payload.get('_geolocation') or []
+    geo = payload.get('_geolocation')
+    if not isinstance(geo, (list, tuple)) or len(geo) < 2:
+        # An object/null _geolocation (geo[0] on a dict → KeyError, uncaught)
+        # would 500 and strand the submission; coerce to no-location instead.
+        return None, None
     try:
         return float(geo[0]), float(geo[1])
-    except (TypeError, ValueError, IndexError):
+    except (TypeError, ValueError):
         return None, None
 
 
@@ -1290,6 +1294,11 @@ def programs_webhook(request, org_override: str = '', form_slug: str = ''):
         payload = json.loads(request.body)
     except json.JSONDecodeError:
         return HttpResponse('Bad Request — expected JSON body', status=400)
+    if not isinstance(payload, dict):
+        # A non-object body (array/string/number) survives _flatten_group_keys
+        # unchanged and then AttributeErrors on payload.get(...) → 500 → Kobo
+        # retries forever and strands the submission. Reject cleanly.
+        return HttpResponse('Bad Request — expected a JSON object', status=400)
 
     # KoboToolbox nests every field under its XLSForm group, e.g.
     # 'grp_fsw/id_no' rather than 'id_no'. Every handler reads flat leaf
