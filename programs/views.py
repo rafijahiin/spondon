@@ -26,6 +26,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from accounts.permissions import (
     CanWriteFieldRecord, CanWriteOutreach, CanWriteOrgRecord,
+    CanAccessFistulaCases, CanAccessMPDSR,
 )
 
 from .models import (
@@ -854,8 +855,12 @@ def _pending_for_model(queryset, model_type: str, org_filter_org=None,
 # endpoint → (queryset, model_type)
 class CIPRBFistulaCaseViewSet(OrgFilteredViewSet):
     """CIPRB Fistula cases — detail + approve/reject for the manager queue.
-    Single-stage (Tanjina / Setu approve CIPRB). Reads are open to authenticated
-    users so managers can review; writes restricted by OrgFilteredViewSet."""
+    Single-stage (Tanjina / Setu approve CIPRB). These rows carry DECRYPTED
+    survivor PII (name/husband/phone) + raw_payload, so reads are gated by
+    CanAccessFistulaCases — CIPRB-scoped + monitoring-org read-only only; PHD/
+    Bandhu staff and CIPRB focal/baseline/field_staff are 403 (audit FIX C1,
+    carried to this viewset)."""
+    permission_classes = [CanAccessFistulaCases]
     queryset = CIPRBFistulaCase.objects.select_related('approved_by').all()
     serializer_class = CIPRBFistulaCaseSerializer
 
@@ -863,19 +868,25 @@ class CIPRBFistulaCaseViewSet(OrgFilteredViewSet):
 class MPDSRCaseApprovalViewSet(OrgFilteredViewSet):
     """MPDSR review cases — detail + approve/reject for the manager queue
     (single-stage CIPRB). Distinct from mpdsr.MPDSRCaseViewSet (the post-approval
-    Tracker); this serves the /programs approval detail endpoint."""
+    Tracker); this serves the /programs approval detail endpoint. Gated by
+    CanAccessMPDSR — carries case PII + raw_payload."""
+    permission_classes = [CanAccessMPDSR]
     queryset = MPDSRCase.objects.select_related('approved_by', 'submission').all()
     serializer_class = MPDSRCaseApprovalSerializer
 
 
 class MPDSRDeathNotificationViewSet(OrgFilteredViewSet):
-    """MPDSR death-notification slips — detail + approve/reject (single-stage)."""
+    """MPDSR death-notification slips — detail + approve/reject (single-stage).
+    Carries deceased_name/address + reporter PII; gated by CanAccessMPDSR."""
+    permission_classes = [CanAccessMPDSR]
     queryset = MPDSRDeathNotification.objects.select_related('approved_by').all()
     serializer_class = MPDSRDeathNotificationApprovalSerializer
 
 
 class MaternalNearMissViewSet(OrgFilteredViewSet):
-    """Maternal near-miss audits — detail + approve/reject (single-stage)."""
+    """Maternal near-miss audits — detail + approve/reject (single-stage).
+    Carries woman_name + raw_payload; gated by CanAccessMPDSR."""
+    permission_classes = [CanAccessMPDSR]
     queryset = MaternalNearMissCase.objects.select_related('approved_by').all()
     serializer_class = MaternalNearMissApprovalSerializer
 

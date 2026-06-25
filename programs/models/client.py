@@ -9,6 +9,7 @@ from django.db import models
 from django.conf import settings
 from .._base_choices import ORG_CHOICES
 from ._base import TimestampedModel
+from .gbv import EncryptedCharField  # Fernet at rest for client PII
 
 
 class Client(TimestampedModel):
@@ -91,9 +92,12 @@ class Client(TimestampedModel):
         related_name='clients',
     )
     client_id = models.CharField(max_length=50, unique=True, db_index=True)
+    # name stays plaintext: it's a lookup key (admin search_fields + the
+    # export .exclude(name='Unknown') filter). The parents' names + address
+    # are NOT keys, so they are Fernet-encrypted at rest.
     name = models.CharField(max_length=200)
-    mother_name = models.CharField(max_length=200, blank=True)
-    father_name = models.CharField(max_length=200, blank=True)
+    mother_name = EncryptedCharField(blank=True)
+    father_name = EncryptedCharField(blank=True)
 
     # Demographics
     birth_year = models.PositiveSmallIntegerField(null=True, blank=True)
@@ -101,7 +105,7 @@ class Client(TimestampedModel):
     target_group_code = models.CharField(max_length=2, choices=TG_CHOICES, blank=True)
 
     # Location
-    current_address = models.TextField(blank=True)
+    current_address = EncryptedCharField(blank=True)   # Fernet at rest
     spot_name = models.CharField(max_length=200, blank=True)
 
     # Socioeconomic. Kobo select_one values are short codes ('1'..'5'), but

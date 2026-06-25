@@ -303,7 +303,7 @@ class FistulaCornerCase(models.Model):
     diagnosis_date     = models.DateField(null=True, blank=True, db_index=True)
 
     # ─── Informant ───────────────────────────────────────────────────────
-    informant_name      = models.CharField(max_length=200, blank=True)
+    informant_name      = EncryptedCharField(blank=True)   # Fernet at rest
     informant_designation = models.CharField(max_length=200, blank=True)
 
     # ─── Clinical ────────────────────────────────────────────────────────

@@ -75,7 +75,12 @@ class MPDSRDeathNotification(models.Model):
     # Event.
     death_kind = models.CharField(max_length=20, choices=KIND_CHOICES,
                                   db_index=True)
-    deceased_name = EncryptedCharField()                 # Fernet at rest
+    # deceased_name is a dedup lookup key (update_or_create in _save_notification)
+    # — Fernet ciphertext is non-deterministic, so encrypting it would defeat
+    # dedup and duplicate every re-delivered notification. Kept plaintext; the
+    # address (not a key) IS encrypted. A deterministic name-hash dedup key would
+    # let this be encrypted too — see should-fix.
+    deceased_name = models.CharField(max_length=200)
     deceased_age  = models.PositiveSmallIntegerField(null=True, blank=True)
     deceased_address = EncryptedCharField(blank=True)    # Fernet at rest
     date_of_death = models.DateField(db_index=True)
@@ -150,7 +155,9 @@ class MaternalNearMissCase(models.Model):
     upazila  = models.CharField(max_length=100, blank=True)
     union    = models.CharField(max_length=100, blank=True)
     village  = models.CharField(max_length=100, blank=True)
-    woman_name = EncryptedCharField()                    # Fernet at rest
+    # woman_name is a dedup lookup key (filter in handle_ciprb_near_miss) — same
+    # constraint as deceased_name above; kept plaintext (encrypting breaks dedup).
+    woman_name = models.CharField(max_length=200)
     woman_age  = models.PositiveSmallIntegerField(null=True, blank=True)
     gestational_weeks = models.PositiveSmallIntegerField(null=True, blank=True)
     facility_name = models.CharField(max_length=200, blank=True)
