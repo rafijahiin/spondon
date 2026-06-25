@@ -77,7 +77,7 @@ def build_csv() -> tuple[bytes, int]:
     writer = csv.writer(buf, quoting=csv.QUOTE_MINIMAL)
     writer.writerow([
         'name', 'label', 'action_id', 'activity', 'responsible',
-        'timeline', 'district', 'status',
+        'timeline', 'district', 'district_slug', 'status',
     ])
 
     count = 0
@@ -94,6 +94,7 @@ def build_csv() -> tuple[bytes, int]:
             a.responsible or '',
             a.timeline.isoformat() if a.timeline else '',
             a.district or '',
+            (a.district or '').lower().replace(' ', '_'),
             a.get_status_display(),
         ])
         count += 1

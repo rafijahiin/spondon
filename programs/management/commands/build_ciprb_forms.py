@@ -48,16 +48,16 @@ _HFONT = Font(color="FFFFFF", bold=True, size=10)
 SURVEY_HDR = [
     'type', 'name', 'label::English', 'label::Bangla',
     'hint', 'required', 'relevant', 'constraint', 'constraint_message',
-    'default', 'appearance', 'calculation',
+    'default', 'appearance', 'calculation', 'choice_filter',
 ]
 CHOICES_HDR  = ['list_name', 'name', 'label::English', 'label::Bangla']
 SETTINGS_HDR = ['form_title', 'form_id', 'version', 'default_language', 'style']
 
 
 def _sr(qtype, name, en='', bn='', hint='', required='',
-        relevant='', constraint='', cmsg='', default='', app='', calc=''):
+        relevant='', constraint='', cmsg='', default='', app='', calc='', cf=''):
     return [qtype, name, en, bn, hint, required, relevant,
-            constraint, cmsg, default, app, calc]
+            constraint, cmsg, default, app, calc, cf]
 
 
 def _ch(lst, name, en, bn=''):
@@ -3333,7 +3333,8 @@ def _response_plan_survey():
     rows.append(_sr('select_one_from_file mpdsr_actions.csv', 'ap_action_sel',
                     'Select the action by its ID (e.g. D-01)',
                     'আইডি দিয়ে পদক্ষেপটি বেছে নিন (যেমন D-01)',
-                    app='autocomplete', required='yes'))
+                    app='autocomplete', required='yes',
+                    cf='district_slug=${district}'))
     for col, nm in [('activity', '_ap_act'), ('responsible', '_ap_resp'),
                     ('timeline', '_ap_time'), ('district', '_ap_dist'),
                     ('status', '_ap_curstat')]:
