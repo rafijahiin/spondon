@@ -12,6 +12,8 @@ import uuid
 from django.db import models
 from django.conf import settings
 
+from fistula.encryption import EncryptedCharField  # Fernet at rest for PII
+
 
 # Shared note: both models below gain a single-stage CIPRB approval gate
 # (Tanjina / Setu). approval_status defaults to APPROVED so existing rows stay
@@ -73,18 +75,18 @@ class MPDSRDeathNotification(models.Model):
     # Event.
     death_kind = models.CharField(max_length=20, choices=KIND_CHOICES,
                                   db_index=True)
-    deceased_name = models.CharField(max_length=200)
+    deceased_name = EncryptedCharField()                 # Fernet at rest
     deceased_age  = models.PositiveSmallIntegerField(null=True, blank=True)
-    deceased_address = models.CharField(max_length=300, blank=True)
+    deceased_address = EncryptedCharField(blank=True)    # Fernet at rest
     date_of_death = models.DateField(db_index=True)
     place_of_death = models.CharField(max_length=20, choices=PLACE_CHOICES,
                                       blank=True)
     cause_brief = models.CharField(max_length=300, blank=True)
 
-    # Reporter.
-    reporter_name   = models.CharField(max_length=200)
+    # Reporter (often a family/community member → encrypt name + mobile).
+    reporter_name   = EncryptedCharField()
     reporter_role   = models.CharField(max_length=20, blank=True)
-    reporter_mobile = models.CharField(max_length=30, blank=True)
+    reporter_mobile = EncryptedCharField(blank=True)
     notification_date = models.DateField(null=True, blank=True)
 
     # Provenance.
@@ -148,7 +150,7 @@ class MaternalNearMissCase(models.Model):
     upazila  = models.CharField(max_length=100, blank=True)
     union    = models.CharField(max_length=100, blank=True)
     village  = models.CharField(max_length=100, blank=True)
-    woman_name = models.CharField(max_length=200)
+    woman_name = EncryptedCharField()                    # Fernet at rest
     woman_age  = models.PositiveSmallIntegerField(null=True, blank=True)
     gestational_weeks = models.PositiveSmallIntegerField(null=True, blank=True)
     facility_name = models.CharField(max_length=200, blank=True)
@@ -194,8 +196,8 @@ class MaternalNearMissCase(models.Model):
     latitude  = models.DecimalField(max_digits=10, decimal_places=7, null=True, blank=True)
     longitude = models.DecimalField(max_digits=10, decimal_places=7, null=True, blank=True)
     raw_payload = models.JSONField(default=dict, blank=True)
-    enumerator_name = models.CharField(max_length=200, blank=True)
-    enumerator_mobile = models.CharField(max_length=30, blank=True)
+    enumerator_name = EncryptedCharField(blank=True)     # Fernet at rest
+    enumerator_mobile = EncryptedCharField(blank=True)   # Fernet at rest
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

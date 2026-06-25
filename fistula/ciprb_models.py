@@ -16,6 +16,8 @@ import uuid
 from django.db import models
 from django.conf import settings
 
+from .encryption import EncryptedCharField  # Fernet at rest for patient PII
+
 
 class CIPRBFistulaCase(models.Model):
     # ── Stage choices (drive the dashboard pipeline counts).
@@ -83,15 +85,16 @@ class CIPRBFistulaCase(models.Model):
     union    = models.CharField(max_length=100, blank=True)
     village  = models.CharField(max_length=100, blank=True)
 
-    # ── Patient identity.
-    name                = models.CharField(max_length=200)
+    # ── Patient identity. Direct identifiers are Fernet-encrypted at rest
+    #    (EncryptedCharField), matching GBV; demographics/occupation stay plain.
+    name                = EncryptedCharField()
     age                 = models.PositiveSmallIntegerField(null=True, blank=True)
     education           = models.CharField(max_length=30, blank=True)
-    husband             = models.CharField(max_length=200, blank=True)
+    husband             = EncryptedCharField(blank=True)
     husband_profession  = models.CharField(max_length=200, blank=True)
     profession_patient  = models.CharField(max_length=200, blank=True)
     current_condition   = models.CharField(max_length=200, blank=True)
-    contact_number      = models.CharField(max_length=30, blank=True)
+    contact_number      = EncryptedCharField(blank=True)
     marital_status      = models.CharField(max_length=20, blank=True)
     age_at_marriage     = models.PositiveSmallIntegerField(null=True, blank=True)
     age_at_first_delivery = models.PositiveSmallIntegerField(null=True, blank=True)
