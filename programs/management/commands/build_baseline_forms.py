@@ -349,6 +349,11 @@ def _hijra_module1():
         _sr('begin_group', 'grp_a2',
             "A2. Respondent's Basic Information and Profile",
             'A2. উত্তরদাতার মৌলিক তথ্য ও পরিচিতি', relevant=P),
+        # A201. District — restored (was missing in the online A2) and auto-filled
+        # from the eligibility screening district (Nuruzzaman 2026-06-26: link, don't
+        # re-ask). "(code)/(কোড)" dropped per the same review (options are the list).
+        _sr('select_one district', 'a201_district', 'A201. District',
+            'A201. জেলা', calc='${district}'),
         _sr('text', 'a202_upazila', 'A202. Upazila/Thana/City Corporation',
             'A202. উপজেলা/থানা/সিটি কর্পোরেশন'),
         _sr('text', 'a203_union', 'A203. Union/Ward', 'A203. ইউনিয়ন/ওয়ার্ড'),
