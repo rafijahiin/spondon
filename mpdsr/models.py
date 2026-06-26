@@ -462,14 +462,19 @@ class MPDSRActionPlanSummary(models.Model):
         return round(100.0 * self.activities_implemented / self.activities_planned, 1)
 
 
-# District → short Action-ID prefix. Dhaka = 'D'; districts that share a first
-# letter get a 2-letter code so every code stays globally unique (2026-06).
+# District → Action-ID prefix. THE SINGLE SOURCE OF TRUTH for the MPDSR action
+# code scheme: every code is exactly 2 letters and globally unique. The Kobo
+# form (build_ciprb_forms.MPDSR_DISTRICT_CODE) derives its slug-keyed copy from
+# THIS dict, so the prefix a field worker types (DH-001, RA-001) and any
+# server-side allocation (next_action_id) can never diverge. These values match
+# what is already stored in the live DB (Patuakhali=PA, Dhaka=DH, …); do not
+# renumber them without migrating existing action_ids.
 DISTRICT_ACTION_CODE = {
-    'Dhaka': 'D', 'Bagerhat': 'B', 'Bandarban': 'BA', 'Barguna': 'BR',
-    'Bhola': 'BH', 'Chandpur': 'C', 'Gaibandha': 'G', 'Habiganj': 'H',
-    'Jamalpur': 'J', 'Khagrachari': 'K', 'Kurigram': 'KU', 'Moulavibazar': 'M',
-    'Noakhali': 'N', 'Patuakhali': 'PA', 'Rangpur': 'R', 'Sherpur': 'S',
-    'Sirajganj': 'SI', 'Sunamganj': 'SU', 'Sylhet': 'SY',
+    'Sunamganj': 'SU', 'Sherpur': 'SH', 'Sirajganj': 'SI', 'Sylhet': 'SY',
+    'Bhola': 'BH', 'Barguna': 'BG', 'Bagerhat': 'BA', 'Bandarban': 'BN',
+    'Kurigram': 'KU', 'Khagrachari': 'KH', 'Gaibandha': 'GA', 'Noakhali': 'NO',
+    'Patuakhali': 'PA', 'Jamalpur': 'JA', 'Habiganj': 'HA', 'Moulavibazar': 'MO',
+    'Chandpur': 'CH', 'Rangpur': 'RA', 'Dhaka': 'DH',
 }
 
 
@@ -485,6 +490,14 @@ class ActionStatus(models.TextChoices):
     IMPLEMENTED = 'implemented', 'Implemented'
     DELAYED = 'delayed', 'Delayed'
     DROPPED = 'dropped', 'Dropped'
+
+
+# Marker activity for a stub row created when an `update_action` arrives for an
+# action that was never registered (out-of-order delivery / stale pick). Stubs
+# are parked for the real plan record to reconcile and are EXCLUDED from the
+# Kobo lookup CSV, the approval queue, and dashboard rollups so they never
+# masquerade as real agreed actions.
+STUB_ACTIVITY_SENTINEL = '[awaiting plan record]'
 
 
 class MPDSRAction(models.Model):
@@ -528,9 +541,13 @@ class MPDSRAction(models.Model):
     completion_date = models.DateField(null=True, blank=True)
     remarks = models.TextField(blank=True, help_text='Latest progress note.')
 
-    # Standard CIPRB approval gate + provenance (mirrors MPDSRCase).
+    # Standard CIPRB approval gate + provenance (mirrors MPDSRCase). Default is
+    # PENDING (fail-closed): an action must be explicitly approved by CIPRB before
+    # it counts. The webhook handler sets PENDING explicitly; this default protects
+    # every OTHER creation path (admin, import, migration) from silently bypassing
+    # the gate (audit FIX 2026-06: was 'APPROVED', a fail-open default).
     approval_status = models.CharField(
-        max_length=20, choices=APPROVAL_CHOICES, default='APPROVED', db_index=True)
+        max_length=20, choices=APPROVAL_CHOICES, default='PENDING', db_index=True)
     approved_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
         null=True, blank=True, related_name='+')
@@ -596,7 +613,9 @@ class MPDSRAction(models.Model):
                 max_n = max(max_n, int(a.action_id.rsplit('-', 1)[-1]))
             except (ValueError, IndexError):
                 pass
-        return f'{code}-{max_n + 1:02d}'
+        # 3-digit serial to match the Kobo form's regex (^<code>-[0-9]{3}$), so a
+        # server-allocated id is shaped identically to a worker-typed one.
+        return f'{code}-{max_n + 1:03d}'
 
     def add_audit_entry(self, user_email: str, action: str, notes: str = '') -> None:
         if self.audit_trail is None:

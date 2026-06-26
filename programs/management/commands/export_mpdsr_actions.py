@@ -39,7 +39,7 @@ import requests
 from django.conf import settings
 from django.core.management.base import BaseCommand
 
-from mpdsr.models import MPDSRAction, ActionStatus
+from mpdsr.models import MPDSRAction, ActionStatus, STUB_ACTIVITY_SENTINEL
 
 logger = logging.getLogger(__name__)
 
@@ -63,13 +63,23 @@ def _norm_id(raw: str) -> str:
 def build_csv() -> tuple[bytes, int]:
     """Generate the open-actions CSV in memory. Returns (csv_bytes, row_count).
 
-    Dropped actions are excluded (no point updating a cancelled action); every
-    other approved action with an id is listed so it can be advanced."""
+    Lists every PENDING or APPROVED action with a real id so the Kobo form can
+    (a) offer it in the 'update an action' dropdown and (b) block re-using its id
+    in 'new plan'. Including PENDING is deliberate (audit FIX 2026-06): the CSV
+    is the form's *working set*, decoupled from the dashboard/reporting gate which
+    filters APPROVED separately. Without it a freshly-registered action could not
+    be updated until approved, and an approved action vanished from the dropdown
+    the moment it was edited (every edit re-enters PENDING) — and two enumerators
+    could silently reuse the same id while both were pending. Excluded:
+      • REJECTED  — a rejected id stays re-registerable via 'new plan' (recovery);
+      • DROPPED   — a cancelled action is done;
+      • stub rows — '[awaiting plan record]' placeholders are not real actions."""
     qs = (
         MPDSRAction.objects
-        .filter(approval_status='APPROVED')
+        .filter(approval_status__in=('PENDING', 'APPROVED'))
         .exclude(action_id='')
         .exclude(status=ActionStatus.DROPPED)
+        .exclude(activity=STUB_ACTIVITY_SENTINEL)
         .order_by('district', 'action_id')
     )
 

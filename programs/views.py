@@ -42,7 +42,7 @@ from .models import (
     NilReport, PHDCounsellingReport,
 )
 from fistula.ciprb_models import CIPRBFistulaCase
-from mpdsr.models import MPDSRCase, MPDSRAction
+from mpdsr.models import MPDSRCase, MPDSRAction, STUB_ACTIVITY_SENTINEL
 from mpdsr.ciprb_models import MPDSRDeathNotification, MaternalNearMissCase
 from .serializers import CIPRBFistulaCaseSerializer
 from .serializers import (
@@ -191,6 +191,16 @@ def _apply_decision(obj, user, action_type, reason):
     else:
         return Response({'detail': "action must be 'approve' or 'reject'."},
                         status=status.HTTP_400_BAD_REQUEST)
+
+    # Record the decision in the object's own durable audit trail when it keeps
+    # one (MPDSRAction / MPDSRCase). The approve/reject decision otherwise lives
+    # only in approved_by/approved_at — which a later edit nulls — so WHO signed
+    # off on which version, and the rejection reason, would be lost (audit FIX
+    # 2026-06). The caller's obj.save() persists this.
+    if hasattr(obj, 'add_audit_entry') and hasattr(obj, 'audit_trail'):
+        _note = reason if action_type == 'reject' else obj.approval_status
+        obj.add_audit_entry(getattr(user, 'email', '') or str(user),
+                            f'{action_type}d', _note or '')
 
     # Decision is valid and about to be committed by the caller. Once it commits,
     # invalidate THIS partner's cached indicator achievements so the dashboard
@@ -629,8 +639,16 @@ def _build_summary(obj, model_type: str) -> str:
             edit = (f" · edited by {obj.last_edited_by_name}"
                     if obj.last_edited_by_name and obj.last_edited_by_name != obj.creator_name
                     else "")
-            return (f"{obj.action_id} · {(obj.activity or '')[:50]} · {obj.district}"
-                    f" · created by {who}{edit}")
+            activity = (obj.activity or '').strip()
+            activity = ('⚠ awaiting plan record'
+                        if activity == STUB_ACTIVITY_SENTINEL else activity[:50])
+            # Status + completion% are the two fields an approver is actually
+            # deciding on for an update submission — show them, and drop any
+            # blank segment rather than rendering an empty ' ·  · '.
+            parts = [obj.action_id, activity, obj.district,
+                     obj.get_status_display(), f"{obj.completion_pct}%"]
+            base = ' · '.join(p for p in parts if p)
+            return f"{base} · created by {who}{edit}"
         if model_type == 'clinic_visit':
             parts = [f"Visit {obj.visit_date}"]
             if obj.hiv_screening_done:
@@ -947,7 +965,9 @@ _APPROVAL_MODELS = [
     ('mpdsr_case',           lambda: MPDSRCase.objects),
     ('mpdsr_notification',   lambda: MPDSRDeathNotification.objects),
     ('near_miss_case',       lambda: MaternalNearMissCase.objects),
-    ('mpdsr_action',         lambda: MPDSRAction.objects),
+    # Exclude '[awaiting plan record]' stubs — placeholders left by an
+    # out-of-order update, not real actions an approver should ever see.
+    ('mpdsr_action',         lambda: MPDSRAction.objects.exclude(activity=STUB_ACTIVITY_SENTINEL)),
 ]
 
 # Reverse map model class → slug, for code paths that hold a model INSTANCE but

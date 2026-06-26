@@ -81,15 +81,42 @@ class MaternalNearMissApprovalSerializer(serializers.ModelSerializer):
 class MPDSRActionSerializer(serializers.ModelSerializer):
     """Detail serializer for the CIPRB-10 MPDSR Action-Plan approval queue.
     Surfaces creator_name / last_edited_by_name so the approver can see who
-    created vs who edited the action and reject a non-creator's edit."""
+    created vs who edited the action and reject a non-creator's edit.
+
+    `raw_payload` is EXCLUDED (audit FIX 2026-06): it carries enumerator contact
+    PII + GPS and is not needed to review an action. `reviewed_by`/`reviewed_at`/
+    `review_history` are mapped from approved_by/approved_at/audit_trail so the
+    approval UI's reviewer + history blocks render for an action the same way they
+    do for a KoboSubmission."""
+    reviewed_by = serializers.SerializerMethodField()
+    reviewed_at = serializers.DateTimeField(source='approved_at', read_only=True)
+    review_history = serializers.SerializerMethodField()
+
     class Meta:
         model = MPDSRAction
-        fields = '__all__'
+        exclude = ['raw_payload']
         read_only_fields = [
             'id', 'approval_status', 'approved_by', 'approved_at',
             'rejected_reason', 'kobo_submission_id', 'submitted_by_kobo_user',
             'creator_name', 'last_edited_by_name', 'organisation',
             'created_at', 'updated_at',
+        ]
+
+    def get_reviewed_by(self, obj):
+        u = obj.approved_by
+        if not u:
+            return None
+        return getattr(u, 'full_name', '') or getattr(u, 'email', '') or None
+
+    def get_review_history(self, obj):
+        return [
+            {
+                'reviewer': e.get('user', ''),
+                'action': e.get('action', ''),
+                'note': e.get('notes', ''),
+                'timestamp': e.get('timestamp', ''),
+            }
+            for e in (obj.audit_trail or [])
         ]
 
 

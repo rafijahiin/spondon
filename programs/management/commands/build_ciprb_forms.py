@@ -213,15 +213,17 @@ def _fistula_dist_code_calc():
 
 # District slug → UPPERCASE LETTER code for the MPDSR Action-ID prefix
 # (Patuakhali=PA, Dhaka=DH). Distinct from FISTULA_DISTRICT_CODE (numeric — those
-# stay for fistula patient IDs). Action IDs now read PA-001, DH-001. Every code
-# is exactly 2 letters and unique (the S* and B* clusters are disambiguated).
-# Keys MUST match the `district` choice values (lower-cased, spaces→'_').
+# stay for fistula patient IDs). Action IDs read PA-001, DH-001.
+#
+# DERIVED from the canonical mpdsr.models.DISTRICT_ACTION_CODE so the prefix the
+# form tells a worker to type can never diverge from what the server allocates /
+# validates (audit FIX 2026-06: the two maps had silently drifted, 13/19 codes
+# disagreed). The model dict is keyed by proper-case district name; the form
+# `district` choice values are lower-cased, spaces→'_', so we re-key here.
+from mpdsr.models import DISTRICT_ACTION_CODE as _DISTRICT_ACTION_CODE
 MPDSR_DISTRICT_CODE = {
-    'sunamganj': 'SU', 'sherpur': 'SH', 'sirajganj': 'SI', 'sylhet': 'SY',
-    'bhola': 'BH', 'barguna': 'BG', 'bagerhat': 'BA', 'bandarban': 'BN',
-    'kurigram': 'KU', 'khagrachari': 'KH', 'gaibandha': 'GA', 'noakhali': 'NO',
-    'patuakhali': 'PA', 'jamalpur': 'JA', 'habiganj': 'HA', 'moulavibazar': 'MO',
-    'chandpur': 'CH', 'rangpur': 'RA', 'dhaka': 'DH',
+    name.lower().replace(' ', '_'): code
+    for name, code in _DISTRICT_ACTION_CODE.items()
 }
 
 

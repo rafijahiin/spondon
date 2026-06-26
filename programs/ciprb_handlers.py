@@ -599,67 +599,122 @@ def _repeat(payload, *keys):
     return _search(payload) or []
 
 
+# Enumerator contact PII that does not belong in the persisted action record /
+# the approval-queue detail serializer. Stripped from raw_payload on save.
+_ACTION_PII_KEYS = ('enumerator_mobile',)
+
+
+def _safe_action_payload(payload):
+    """raw_payload copy with enumerator contact PII removed (audit FIX 2026-06).
+    The action register never needs the enumerator's mobile number, and
+    raw_payload is otherwise visible to the whole CIPRB approver pool."""
+    if not isinstance(payload, dict):
+        return payload
+    return {k: v for k, v in payload.items()
+            if k.rsplit('/', 1)[-1] not in _ACTION_PII_KEYS}
+
+
+def _couple_status_completion(act, completion_date):
+    """Keep status and completion% coherent (audit FIX 2026-06): Implemented ⇒
+    100%, and 100% ⇒ Implemented. Without this the form's two independent
+    questions allow 'Implemented at 0%' or '100% but Pending' to persist."""
+    from mpdsr.models import ActionStatus
+    if act.status == ActionStatus.IMPLEMENTED:
+        act.completion_pct = 100
+        if not act.completion_date:
+            act.completion_date = completion_date or act.timeline
+    elif act.completion_pct == 100 and act.status not in (
+            ActionStatus.IMPLEMENTED, ActionStatus.DROPPED):
+        act.status = ActionStatus.IMPLEMENTED
+        if not act.completion_date:
+            act.completion_date = completion_date or act.timeline
+
+
 def handle_ciprb_mpdsr_action_plan(payload, lat, lng):
     """CIPRB-10 MPDSR Action Plan — staged per-action tracker (fistula pattern).
 
-    Mode 'new_plan': register ONE action whose <district-code>-<NN> id the field
-    worker TYPED (one action per submission, exactly like the fistula suspected
-    stage); upsert on that id.
+    Mode 'new_plan': register ONE action whose <district-code>-<NNN> id the field
+    worker TYPED; upsert on (district, action_id).
     Mode 'update_action': move an existing action (picked by id) forward —
     status / completion % / completion date / remarks.
+
+    Hardened (audit 2026-06): idempotent on the Kobo _id (re-delivery safe);
+    lookups scoped to (district, action_id) to match the uniqueness constraint;
+    concurrent same-id inserts retried instead of 500-stranding; a different
+    enumerator who reuses an id already owning a real action is reallocated a
+    fresh id rather than silently overwriting it; unknown-id updates are ignored
+    (no phantom rows); status/completion kept coherent.
     """
-    from mpdsr.models import MPDSRAction, ActionSection, ActionStatus
+    from mpdsr.models import (MPDSRAction, ActionSection, ActionStatus,
+                              STUB_ACTIVITY_SENTINEL)
     mode = _s(payload.get('ap_mode'))
     district = _district(payload)
     sub_id = str(payload.get('_id') or '')
     user = _s(payload.get('_submitted_by')) or 'kobo'
     enum_name = _s(payload.get('enumerator_name'))   # the typed "YOUR NAME" — creator/editor
 
+    # ── Idempotency: Kobo re-delivers on timeout / 500-retry. If this exact
+    #    submission was already applied, ack and skip — a redelivery would
+    #    otherwise revert a CIPRB approval granted between deliveries and
+    #    double-log the audit trail.
+    if sub_id and MPDSRAction.objects.filter(kobo_submission_id=sub_id).exists():
+        return HttpResponse('OK (duplicate delivery)', status=200)
+
+    def _lookup(code):
+        # Scope by (district, action_id) to match unique_together; the update
+        # dropdown is district-filtered and new_plan always carries a district,
+        # so id-only is a fallback for malformed payloads only.
+        qs = MPDSRAction.objects.select_for_update().filter(action_id=code)
+        if district:
+            qs = qs.filter(district=district)
+        return qs.first()
+
     # ── Update an existing action by id ────────────────────────────────────
     if mode == 'update_action':
         code = _norm_id(payload.get('ap_action_sel') or payload.get('ap_action_id'))
         if not code:
             return HttpResponse('Bad Request — no action selected', status=400)
-        with transaction.atomic():
-            act = (MPDSRAction.objects.select_for_update()
-                   .filter(action_id=code).first())
-            if act is None:
-                # Unknown id (e.g. the lookup CSV lagged): stub it so the update
-                # isn't lost — a later plan record / manual edit can reconcile.
-                act = MPDSRAction(action_id=code, district=district or 'Unknown',
-                                  section=ActionSection.SYSTEM_STRENGTHENING,
-                                  activity='[awaiting plan record]', source='kobo',
-                                  raw_payload=payload)
-            st = _s(payload.get('ap_new_status'))
-            if st: act.status = st
-            cp = _int(payload.get('ap_new_completion'))
-            if cp is not None: act.completion_pct = cp
-            cd = _date(payload.get('ap_completion_date'))
-            if cd: act.completion_date = cd
-            rm = _s(payload.get('ap_remarks'))
-            if rm: act.remarks = rm
-            if act.status == ActionStatus.IMPLEMENTED and not act.completion_date:
-                act.completion_date = cd or act.timeline
-            act.kobo_submission_id = sub_id or act.kobo_submission_id
-            # Per-creator gate: an edit drops the action back to PENDING for CIPRB
-            # re-approval; record the editor; seed creator if this is a fresh stub.
-            if act._state.adding and enum_name:
-                act.creator_name = act.creator_name or enum_name
-            if enum_name:
-                act.last_edited_by_name = enum_name
-            act.approval_status = 'PENDING'
-            act.approved_by = None
-            act.approved_at = None
-            act.add_audit_entry(user, 'status update — pending re-approval',
-                                '%s / %s%% · edited by %s'
-                                % (act.status, act.completion_pct, enum_name or user))
-            act.save()
-        return HttpResponse('OK', status=200)
+        for attempt in range(3):
+            try:
+                with transaction.atomic():
+                    act = _lookup(code)
+                    if act is None:
+                        # No such action. With PENDING actions now in the dropdown
+                        # CSV a real action is always selectable, so an unknown id
+                        # has nothing to advance — ack + log rather than fabricate
+                        # a phantom '[awaiting plan record]' row.
+                        logger.warning('MPDSR update_action for unknown id %r '
+                                       '(district %r) — ignored', code, district)
+                        return HttpResponse('OK (no such action; ignored)', status=200)
+                    st = _s(payload.get('ap_new_status'))
+                    if st: act.status = st
+                    cp = _int(payload.get('ap_new_completion'))
+                    if cp is not None: act.completion_pct = cp
+                    cd = _date(payload.get('ap_completion_date'))
+                    if cd: act.completion_date = cd
+                    rm = _s(payload.get('ap_remarks'))
+                    if rm: act.remarks = rm
+                    _couple_status_completion(act, cd)
+                    act.kobo_submission_id = sub_id or act.kobo_submission_id
+                    # Per-creator gate: an edit drops the action back to PENDING
+                    # for CIPRB re-approval; record the editor.
+                    if enum_name:
+                        act.last_edited_by_name = enum_name
+                    act.approval_status = 'PENDING'
+                    act.approved_by = None
+                    act.approved_at = None
+                    act.add_audit_entry(user, 'status update — pending re-approval',
+                                        '%s / %s%% · edited by %s'
+                                        % (act.status, act.completion_pct, enum_name or user))
+                    act.save()
+                return HttpResponse('OK', status=200)
+            except IntegrityError:
+                if attempt == 2:
+                    logger.exception('MPDSR update_action conflict (acked): %s', code)
+                    return HttpResponse('OK (conflict, logged)', status=200)
+                continue
 
-    # ── New plan — register ONE action, keyed on the worker-typed action_id.
-    #    The fistula suspected-stage upsert: the form's regex + pulldata dup-check
-    #    guarantee a valid, unique <district-code>-<NN> id, so the server just
-    #    saves what she typed and upserts on it (no allocator, no repeat). ──────
+    # ── New plan — register ONE action, keyed on the worker-typed action_id. ──
     if not district:
         return HttpResponse('Bad Request — district required', status=400)
     code = _norm_id(payload.get('action_id'))
@@ -668,42 +723,71 @@ def handle_ciprb_mpdsr_action_plan(payload, lat, lng):
     activity = _s(payload.get('act_activity'))
     if not activity:
         return HttpResponse('Bad Request — activity required', status=400)
-    meeting_date = _date(payload.get('meeting_date') or payload.get('collection_date'))
-    section = _s(payload.get('rp_section')) or ActionSection.SYSTEM_STRENGTHENING
-    with transaction.atomic():
-        act = (MPDSRAction.objects.select_for_update()
-               .filter(action_id=code).first())
-        is_new = act is None
-        if is_new:
-            act = MPDSRAction(action_id=code, district=district,
-                              organisation=ORG, source='kobo')
-        act.district = district
-        act.organisation = ORG
-        act.meeting_date = meeting_date
-        act.section = section
-        act.sub_category = _s(payload.get('act_subcat'))
-        act.activity = activity
-        act.responsible = _s(payload.get('act_responsible'))
-        act.timeline = _date(payload.get('act_timeline'))
-        act.indicator = _s(payload.get('act_indicator'))
-        act.milestone = _s(payload.get('act_milestone'))
-        act.considerations = _s(payload.get('act_considerations'))
-        # Status/completion are set only at registration — a later re-submit of
-        # the same id (the form normally blocks it) must not reset an action the
-        # committee has already advanced via update_action.
-        if is_new:
-            act.status = _s(payload.get('act_status')) or ActionStatus.PENDING
-            act.creator_name = enum_name            # immutable: set ONCE, on create
-        if enum_name:
-            act.last_edited_by_name = enum_name     # latest submitter (create or re-register)
-        act.kobo_submission_id = sub_id
-        act.submitted_by_kobo_user = user
-        act.raw_payload = payload
-        # Every plan submission re-enters the CIPRB approval gate (Tanjina/Setu).
-        act.approval_status = 'PENDING'
-        act.approved_by = None
-        act.approved_at = None
-        act.add_audit_entry(user, 'created' if is_new else 're-registered',
-                            'plan %s · by %s' % (meeting_date or '', enum_name or user))
-        act.save()
-    return HttpResponse('OK — 1 action (%s)' % code, status=200)
+    # The form carries no separate review-meeting date; the entry date is the
+    # best available stamp.
+    meeting_date = _date(payload.get('collection_date'))
+    section = _s(payload.get('rp_section'))
+    if section not in ActionSection.values:
+        section = ActionSection.SYSTEM_STRENGTHENING
+    for attempt in range(3):
+        try:
+            with transaction.atomic():
+                act = _lookup(code)
+                is_new = act is None
+                if not is_new:
+                    # The id already exists in this district. Distinguish a
+                    # legitimate re-registration (same creator, or reconciling a
+                    # left-over stub) from a genuine COLLISION — a DIFFERENT
+                    # enumerator grabbing an id that already owns a real action.
+                    # Never overwrite someone else's logged maternal-death action:
+                    # reallocate the incoming submission to a fresh id (lossless).
+                    is_stub = (act.activity == STUB_ACTIVITY_SENTINEL)
+                    same_creator = bool(enum_name) and act.creator_name == enum_name
+                    if not (is_stub or same_creator):
+                        new_code = MPDSRAction.next_action_id(district)
+                        logger.warning(
+                            'MPDSR action id collision: %s already owns %r in %s; '
+                            'reallocating incoming submission to %s', code,
+                            (act.creator_name or act.submitted_by_kobo_user or '?'),
+                            district, new_code)
+                        code = new_code
+                        act = None
+                        is_new = True
+                if is_new:
+                    act = MPDSRAction(action_id=code, district=district,
+                                      organisation=ORG, source='kobo')
+                act.district = district
+                act.organisation = ORG
+                act.meeting_date = meeting_date
+                act.section = section
+                act.sub_category = _s(payload.get('act_subcat'))
+                act.activity = activity
+                act.responsible = _s(payload.get('act_responsible'))
+                act.timeline = _date(payload.get('act_timeline'))
+                act.indicator = _s(payload.get('act_indicator'))
+                act.milestone = _s(payload.get('act_milestone'))
+                act.considerations = _s(payload.get('act_considerations'))
+                # Status/creator are set only at registration — a later re-submit
+                # of the same id must not reset an advanced action or its owner.
+                if is_new:
+                    act.status = _s(payload.get('act_status')) or ActionStatus.PENDING
+                    act.creator_name = enum_name            # immutable: set ONCE
+                if enum_name:
+                    act.last_edited_by_name = enum_name
+                _couple_status_completion(act, None)
+                act.kobo_submission_id = sub_id
+                act.submitted_by_kobo_user = user
+                act.raw_payload = _safe_action_payload(payload)
+                # Every plan submission re-enters the CIPRB approval gate.
+                act.approval_status = 'PENDING'
+                act.approved_by = None
+                act.approved_at = None
+                act.add_audit_entry(user, 'created' if is_new else 're-registered',
+                                    'plan %s · by %s' % (meeting_date or '', enum_name or user))
+                act.save()
+            return HttpResponse('OK — 1 action (%s)' % code, status=200)
+        except IntegrityError:
+            if attempt == 2:
+                logger.exception('MPDSR new_plan conflict (acked): %s', code)
+                return HttpResponse('OK (conflict, logged)', status=200)
+            continue
