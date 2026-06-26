@@ -249,6 +249,45 @@ class CanVerifyBaseline(BasePermission):
         )
 
 
+class CanViewBaseline(BasePermission):
+    """READ visibility of the D5 baseline verification queue and verified
+    responses. Monitoring orgs (CIPRB + UNFPA) plus the developer — i.e. exactly
+    the people allowed to *see* the baseline tab. PHD/Bandhu managers, field
+    staff, focal and the survey-only role get 403: the sensitive coded
+    SRHR/violence answers never leave the CIPRB/UNFPA monitoring boundary.
+
+    Approving is a separate, narrower gate (`CanApproveBaseline`) — UNFPA and the
+    CIPRB org_lead (Sayeed) can see this queue but cannot act on it.
+    """
+    def has_permission(self, request, view):
+        u = request.user
+        return bool(
+            u and u.is_authenticated
+            and (u.organisation in MONITORING_ORGS or u.role == Role.DEVELOPER)
+        )
+
+
+class CanApproveBaseline(BasePermission):
+    """WRITE (approve/reject) a D5 baseline interview. Deliberately tighter than
+    `CanViewBaseline`: ONLY the developer and the CIPRB *manager* (Tanjina —
+    Rafi's 2026-06-26 directive that verification of CIPRB baseline rests with
+    Tanjina + developer). UNFPA supervisors and the CIPRB org_lead (Sayeed) are
+    view-only here; PHD/Bandhu never reach baseline at all.
+
+    Replaces the approve path of the old `CanVerifyBaseline`, which over-granted
+    to every supervisor and to the CIPRB org_lead.
+    """
+    def has_permission(self, request, view):
+        u = request.user
+        return bool(
+            u and u.is_authenticated
+            and (
+                u.role == Role.DEVELOPER
+                or (u.organisation == Organisation.CIPRB and u.role == Role.MANAGER)
+            )
+        )
+
+
 class CanApproveCIPRBAction(BasePermission):
     """MPDSR Action-Plan rows are district-level programme actions (NOT patient
     PII — that lives in MPDSRCase / the notifications). Approvable by the CIPRB

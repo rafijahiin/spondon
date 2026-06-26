@@ -506,7 +506,9 @@ export interface ProgramPendingItem {
 }
 
 export interface ProgramPendingResponse {
-  total: number
+  total: number                 // true backlog (pre display-cap)
+  returned?: number             // rows actually carried in `items`
+  truncated?: boolean           // true when total > returned (queue capped)
   counts_by_type: Record<string, number>
   items: ProgramPendingItem[]
 }

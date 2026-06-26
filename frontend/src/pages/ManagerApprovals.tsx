@@ -262,10 +262,20 @@ interface QueueItem {
   // Human-readable Kobo form name (e.g. "Fistula Campaign") so the manager
   // sees exactly which form they're approving, not a raw slug.
   form_type_display?: string
-  kind: 'program' | 'legacy'
+  kind: 'program' | 'legacy' | 'baseline'
   // For program items: the DRF endpoint slug (e.g. 'referrals',
   // 'clinic-visits') so the detail fetcher can build the right URL.
   endpoint?: string
+  // ── D5 baseline verification fields (kind === 'baseline') ──────────────────
+  // The baseline queue is CIPRB-conducted and CIPRB/UNFPA-only; these carry the
+  // verification-list payload so the focus panel renders without a detail fetch.
+  population?: string          // 'hijra' | 'fsw'
+  serial?: string              // questionnaire serial
+  site_code?: string
+  age_display?: string
+  gps_missing?: boolean
+  duplicate_preview?: boolean
+  raw_data?: Record<string, any>
   urgent?: boolean
   latitude?: string
   longitude?: string
@@ -365,6 +375,39 @@ function reviewedQueueItems(submissions: Submission[] | null): QueueItem[] {
       logic_flags: Array.isArray((s as any).logic_flags) ? (s as any).logic_flags : [],
     }
     })
+}
+
+// Map PENDING D5 baseline verification rows into queue items so the Baseline
+// tab reuses the same spine/selection machinery. The verification list already
+// carries everything the focus panel needs (raw_data + dup/gps flags), so these
+// items never trigger a detail fetch (skipped in the detail effect by kind).
+function baselineQueueItems(rows: any[] | null): QueueItem[] {
+  if (!rows) return []
+  return rows.map((r) => {
+    const popLabel = r.population === 'hijra' ? 'Hijra'
+      : r.population === 'fsw' ? 'FSW' : '—'
+    const serial = (r.serial || '').trim()
+    return {
+      id: String(r.submission_id),
+      model_type: 'baseline',
+      model_label: `Baseline · ${popLabel}`,
+      title: `Baseline ${serial || '(no serial)'} · ${popLabel}`,
+      summary: [r.district, r.site_code].filter(Boolean).join(' · '),
+      organisation: 'CIPRB',
+      center_name: r.district || r.site_code || '',
+      submitted_by: r.interviewer || '',
+      created_at: r.submitted_at,
+      kind: 'baseline' as const,
+      population: r.population || '',
+      serial,
+      site_code: r.site_code || '',
+      age_display: r.age != null ? String(r.age) : '',
+      gps_missing: !!r.gps_missing,
+      duplicate_preview: !!r.duplicate_preview,
+      is_baseline_duplicate: !!r.duplicate_preview,
+      raw_data: r.raw_data || {},
+    }
+  })
 }
 
 // ─── Toast ────────────────────────────────────────────────────────────────────
@@ -510,14 +553,24 @@ export default function ManagerApprovals() {
     (['Bandhu', 'PHD'].includes(user.organisation) && ['manager', 'org_lead'].includes(user.role))
     || ['developer', 'supervisor'].includes(user.role)
   )
+  // D5 baseline verification access (mirrors accounts/permissions.py exactly):
+  //   SEE the tab     → CIPRB + UNFPA orgs, or the developer (read-only for the rest).
+  //   APPROVE/REJECT  → developer OR the CIPRB manager (Tanjina) ONLY.
+  // PHD/Bandhu never see the tab; UNFPA + CIPRB org_lead (Sayeed) are view-only.
+  const canSeeBaseline = !!user && (
+    user.role === 'developer' || ['CIPRB', 'UNFPA'].includes(user.organisation)
+  )
+  const canApproveBaseline = !!user && (
+    user.role === 'developer' || (user.organisation === 'CIPRB' && user.role === 'manager')
+  )
   // Filter state persisted to localStorage so navigating away and
   // back restores the user's last selected filter (§9 state-preservation).
   const FILTER_KEY = 'approvals.filter'
-  type FilterKey = 'all' | 'urgent' | 'phd' | 'bondhu' | 'ciprb' | 'reviewed'
+  type FilterKey = 'all' | 'urgent' | 'phd' | 'bondhu' | 'ciprb' | 'reviewed' | 'baseline'
   const [filter, setFilter] = useState<FilterKey>(() => {
     if (typeof window === 'undefined') return 'all'
     const stored = window.localStorage.getItem(FILTER_KEY)
-    if (stored === 'all' || stored === 'urgent' || stored === 'phd' || stored === 'bondhu' || stored === 'ciprb' || stored === 'reviewed') {
+    if (stored === 'all' || stored === 'urgent' || stored === 'phd' || stored === 'bondhu' || stored === 'ciprb' || stored === 'reviewed' || stored === 'baseline') {
       return stored
     }
     return 'all'
@@ -588,6 +641,17 @@ export default function ManagerApprovals() {
     interval: 60_000,
   })
 
+  // D5 baseline pending verification queue — CIPRB/UNFPA/developer only. PHD and
+  // Bandhu users skip the fetch entirely (the backend would 403 them anyway), so
+  // the tab never appears and the endpoint is never called for them.
+  const { data: baselinePending, refetch: refetchBaseline } = usePolling<any[]>({
+    fetcher: () => canSeeBaseline
+      ? api.get('/baseline/verification/').then((r) =>
+          Array.isArray(r.data) ? r.data : (r.data?.results ?? []))
+      : Promise.resolve([]),
+    interval: 30_000,
+  })
+
   // ── Queue ───────────────────────────────────────────────────────────────────
 
   const allItems = toQueueItems(programsData ?? null, submissions ?? null)
@@ -595,8 +659,12 @@ export default function ManagerApprovals() {
     ...toQueueItems(reviewedProgramsData ?? null, null),
     ...reviewedQueueItems(reviewedSubs ?? null),
   ].sort((a, b) => (b.created_at ?? '').localeCompare(a.created_at ?? ''))
+  const baselineItems = canSeeBaseline ? baselineQueueItems(baselinePending ?? null) : []
 
-  const filtered = (filter === 'reviewed' ? reviewedItems : allItems).filter(it => {
+  const _baseList = filter === 'reviewed' ? reviewedItems
+    : filter === 'baseline' ? baselineItems
+    : allItems
+  const filtered = _baseList.filter(it => {
     if (filter === 'urgent') return it.urgent
     if (filter === 'phd') return it.organisation === 'PHD'
     if (filter === 'bondhu') return it.organisation === 'Bandhu' || it.organisation === 'Bondhu'
@@ -633,6 +701,10 @@ export default function ManagerApprovals() {
     setShowRaw(user?.organisation !== 'UNFPA')
     setDetailError(false)
     if (!selected) return
+    // Baseline items carry their full raw_data on the queue item itself (from the
+    // verification list endpoint) — no per-item detail fetch, and no /submissions
+    // or /programs URL to hit.
+    if (selected.kind === 'baseline') return
     let cancelled = false
     const url = selected.kind === 'legacy'
       ? `/submissions/${selected.id}/`
@@ -663,7 +735,15 @@ export default function ManagerApprovals() {
     setter(true)
     try {
       const note = reviewerNote.trim()
-      if (item.kind === 'program') {
+      if (item.kind === 'baseline') {
+        // CIPRB baseline verification. Approve materialises the verified
+        // BaselineResponse server-side (post_save signal); reject carries the
+        // reason. Backend re-checks CanApproveBaseline (developer / CIPRB
+        // manager) — UNFPA/Sayeed get 403 even if they reach this path.
+        await api.post(`/baseline/verification/${item.id}/${action}/`,
+          action === 'reject' ? { reason: note } : { note })
+        refetchBaseline()
+      } else if (item.kind === 'program') {
         // Pass the note as the `reason` so the backend stamps
         // obj.rejected_reason and the rejection email carries it.
         // Approves also send the note for the audit trail.
@@ -696,7 +776,7 @@ export default function ManagerApprovals() {
     } finally {
       setter(false)
     }
-  }, [filtered, refetchPrograms, refetchLegacy, reviewerNote])
+  }, [filtered, refetchPrograms, refetchLegacy, refetchBaseline, reviewerNote])
 
   // Manual "Refresh now" — pulls the queue immediately instead of waiting for
   // the next poll tick. Kobo's webhook delivery is async, so a just-submitted
@@ -717,7 +797,7 @@ export default function ManagerApprovals() {
 
   if (loading) return <PageLoader />
 
-  const dateStr = new Date().toLocaleString('en-US', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
+  const dateStr = new Date().toLocaleString('en-US', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Dhaka' })
 
   return (
     <>
@@ -803,6 +883,11 @@ export default function ManagerApprovals() {
                 <div className="card-title" style={{ fontSize: 14, fontWeight: 600 }}>{t('approvals.queueHeading')}</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <span className="mono mute" style={{ fontSize: 11 }}>{t('approvals.queueCount', { visible: filtered.length, total: allItems.length })}</span>
+                  {programsData?.truncated && filter !== 'baseline' && filter !== 'reviewed' && (
+                    <span title="More items are pending than are shown — the queue is capped per form type." style={{ fontSize: 11, color: 'var(--amber, #b56a00)', fontWeight: 600 }}>
+                      · showing {programsData.returned ?? allItems.length} of {programsData.total}
+                    </span>
+                  )}
                   <button
                     onClick={refreshNow}
                     disabled={refreshing}
@@ -827,6 +912,7 @@ export default function ManagerApprovals() {
                   { key: 'phd'    as const, label: t('approvals.filterPHD'),    count: allItems.filter(x => x.organisation === 'PHD').length },
                   { key: 'bondhu' as const, label: t('approvals.filterBondhu'), count: allItems.filter(x => x.organisation === 'Bandhu' || x.organisation === 'Bondhu').length },
                   { key: 'ciprb'  as const, label: 'CIPRB', count: allItems.filter(x => x.organisation === 'CIPRB').length },
+                  ...(canSeeBaseline ? [{ key: 'baseline' as const, label: 'Baseline', count: baselineItems.length }] : []),
                   { key: 'reviewed' as const, label: 'Reviewed', count: reviewedItems.length },
                 ]).map(f => (
                   <button
@@ -924,7 +1010,106 @@ export default function ManagerApprovals() {
           </div>
 
           {/* ── FOCUS PANEL ────────────────────────────────────────── */}
-          {selected ? (
+          {selected && selected.kind === 'baseline' ? (
+            <div key={selected.id} style={{ animation: 'rise 500ms var(--ease) backwards' }}>
+              <div className="card shimmer">
+                {/* Header */}
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, marginBottom: 18 }}>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12, flexWrap: 'wrap' }}>
+                      <span className="mono" style={{ fontSize: 11, color: 'var(--muted)', letterSpacing: '0.04em' }}>
+                        {selected.id.slice(0, 8)}
+                      </span>
+                      <span className="tag violet">CIPRB</span>
+                      <span className="tag">{selected.population === 'hijra' ? 'Hijra / Gender-diverse' : selected.population === 'fsw' ? 'Female Sex Worker' : 'Baseline'}</span>
+                      {selected.duplicate_preview && <span className="tag coral">Possible duplicate</span>}
+                      {selected.gps_missing && <span className="tag amber">No GPS</span>}
+                    </div>
+                    <h2 style={{
+                      fontFamily: 'var(--display)', fontStyle: 'italic', fontWeight: 400,
+                      fontSize: 38, lineHeight: 1.05, letterSpacing: '-0.02em',
+                      margin: 0, color: 'var(--ink)',
+                    }}>
+                      Baseline interview {selected.serial || '(no serial)'}
+                    </h2>
+                  </div>
+                </div>
+
+                {/* Key facts */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12, marginBottom: 18 }}>
+                  {[
+                    ['Population', selected.population === 'hijra' ? 'Hijra' : selected.population === 'fsw' ? 'FSW' : '—'],
+                    ['Serial', selected.serial || '—'],
+                    ['District', selected.center_name || '—'],
+                    ['Site code', selected.site_code || '—'],
+                    ['Age', selected.age_display || '—'],
+                    ['Interviewer', selected.submitted_by || '—'],
+                    ['Submitted', selected.created_at ? formatDateTime(selected.created_at) : '—'],
+                  ].map(([k, v]) => (
+                    <div key={k} style={{ padding: '10px 12px', borderRadius: 10, background: 'var(--surface-2, rgba(0,0,0,0.02))', border: '1px solid var(--hair)' }}>
+                      <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--muted)' }}>{k}</div>
+                      <div style={{ fontSize: 14, color: 'var(--ink)', marginTop: 3, wordBreak: 'break-word' }}>{v}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {selected.duplicate_preview && (
+                  <div style={{ marginBottom: 14, padding: '12px 16px', borderRadius: 12, background: 'rgba(224,90,27,0.07)', border: '1px solid rgba(224,90,27,0.3)', fontSize: 13, color: 'var(--ink)' }}>
+                    Another baseline submission with the same serial and population is already on file. Confirm this is not a re-submission before approving.
+                  </div>
+                )}
+
+                {/* Raw coded answers */}
+                <button
+                  onClick={() => setShowRaw(v => !v)}
+                  style={{ background: 'none', border: '1px solid var(--hair)', borderRadius: 8, padding: '4px 10px', fontSize: 11, color: 'var(--ink-2)', cursor: 'pointer', marginBottom: 10 }}
+                >
+                  {showRaw ? 'Hide' : 'Show'} all answers ({Object.keys(selected.raw_data ?? {}).length})
+                </button>
+                {showRaw && (
+                  <pre className="scroll-thin" style={{ maxHeight: 320, overflow: 'auto', fontSize: 11, lineHeight: 1.5, background: 'var(--surface-2, rgba(0,0,0,0.02))', border: '1px solid var(--hair)', borderRadius: 10, padding: 12, marginBottom: 16, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                    {JSON.stringify(selected.raw_data ?? {}, null, 2)}
+                  </pre>
+                )}
+
+                {/* Decision */}
+                {canApproveBaseline ? (
+                  <>
+                    <textarea
+                      ref={noteRef}
+                      value={reviewerNote}
+                      onChange={(e) => setReviewerNote(e.target.value)}
+                      placeholder="Reviewer note (required to reject — tells the field team what to correct)"
+                      rows={2}
+                      style={{ width: '100%', borderRadius: 10, border: '1px solid var(--hair)', padding: '10px 12px', fontSize: 13, resize: 'vertical', marginBottom: 12 }}
+                    />
+                    {error && <div style={{ color: 'var(--coral, #e05a1b)', fontSize: 12, marginBottom: 10 }}>{error}</div>}
+                    <div style={{ display: 'flex', gap: 10 }}>
+                      <button
+                        className="btn btn-primary"
+                        disabled={approving || rejecting}
+                        onClick={() => decide(selected, 'approve')}
+                      >
+                        {approving ? 'Approving…' : 'Approve interview'}
+                      </button>
+                      <button
+                        className="btn"
+                        disabled={approving || rejecting}
+                        onClick={() => decide(selected, 'reject')}
+                        style={{ borderColor: 'rgba(224,90,27,0.4)', color: 'var(--coral, #e05a1b)' }}
+                      >
+                        {rejecting ? 'Rejecting…' : 'Reject'}
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <div style={{ padding: '12px 16px', borderRadius: 12, background: 'var(--surface-2, rgba(0,0,0,0.03))', border: '1px solid var(--hair)', fontSize: 13, color: 'var(--muted)' }}>
+                    View only — baseline verification is done by the CIPRB manager. You can review every interview here but cannot approve or reject.
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : selected ? (
             <div key={selected.id} style={{ animation: 'rise 500ms var(--ease) backwards' }}>
               <div className={`card ${selected.model_type === 'gbv_case' ? 'shimmer-coral' : 'shimmer'}`}>
                 {/* Header */}
@@ -961,7 +1146,13 @@ export default function ManagerApprovals() {
                       const p = (detail as any)?.patient;
                       if (!p || (!p.name && !p.client_id)) return null;
                       const currentYear = new Date().getFullYear();
-                      const age = p.birth_year ? currentYear - Number(p.birth_year) : null;
+                      // Guard the year-subtraction: birth_year may arrive as a
+                      // full date string or junk, which would render "Age NaN"
+                      // or an absurd value on a PII card. Only show a plausible
+                      // human age. (Fault F7.)
+                      const _by = Number(String(p.birth_year ?? '').slice(0, 4));
+                      const _age = currentYear - _by;
+                      const age = Number.isFinite(_age) && _age >= 0 && _age <= 120 ? _age : null;
                       const isActive = p.current_status === '1';
                       // Webhook creates a STUB_* placeholder Client when the
                       // worker types an ID that isn't in the master list — FK
@@ -1217,11 +1408,19 @@ export default function ManagerApprovals() {
                   <div>
                     <div className="kicker" style={{ marginBottom: 8 }}><span className="dot" />CENTRE</div>
                     <div style={{ fontSize: 14, fontWeight: 500 }}>{selected.center_name}</div>
-                    {selected.latitude && selected.longitude && (
-                      <div className="mute" style={{ fontSize: 11.5 }}>
-                        GPS: <span className="mono">{parseFloat(selected.latitude).toFixed(4)}, {parseFloat(selected.longitude).toFixed(4)}</span>
-                      </div>
-                    )}
+                    {(() => {
+                      // Only render coordinates that actually parse to finite
+                      // numbers — a non-empty but non-numeric lat/lng string
+                      // would otherwise show "NaN, NaN". (Fault F8.)
+                      const lat = parseFloat(String(selected.latitude ?? ''));
+                      const lng = parseFloat(String(selected.longitude ?? ''));
+                      if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+                      return (
+                        <div className="mute" style={{ fontSize: 11.5 }}>
+                          GPS: <span className="mono">{lat.toFixed(4)}, {lng.toFixed(4)}</span>
+                        </div>
+                      );
+                    })()}
                   </div>
                   {hasGps && (
                   <div>
@@ -1247,7 +1446,7 @@ export default function ManagerApprovals() {
                   {([
                     ['Form recognised', true],
                     ['Unique', !!selected.kobo_submission_id],
-                    ['GPS captured', !!(selected.latitude && selected.longitude)],
+                    ['GPS captured', Number.isFinite(parseFloat(String(selected.latitude ?? ''))) && Number.isFinite(parseFloat(String(selected.longitude ?? '')))],
                     [`Partner: ${selected.organisation || '—'}`, !!selected.organisation],
                   ] as [string, boolean][]).map(([label, ok]) => (
                     <span key={label} style={{
@@ -1429,7 +1628,7 @@ export default function ManagerApprovals() {
                             {e.note && <div className="mute" style={{ marginTop: 2 }}>"{e.note}"</div>}
                           </div>
                           <span className="mono mute" style={{ fontSize: 11, whiteSpace: 'nowrap' }}>
-                            {e.timestamp ? new Date(e.timestamp).toLocaleString('en-US', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''}
+                            {e.timestamp ? new Date(e.timestamp).toLocaleString('en-US', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Dhaka' }) : ''}
                           </span>
                         </div>
                       ))}
@@ -1442,7 +1641,7 @@ export default function ManagerApprovals() {
                   <div style={{ paddingTop: 18, fontSize: 13, color: 'var(--muted)' }}>
                     {detail?.reviewed_by
                       ? <>Decided by <strong style={{ color: 'var(--ink)' }}>{detail.reviewed_by.full_name}</strong>
-                          {detail.reviewed_at && <> on {new Date(detail.reviewed_at).toLocaleString('en-US', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</>}.</>
+                          {detail.reviewed_at && <> on {new Date(detail.reviewed_at).toLocaleString('en-US', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Dhaka' })}</>}.</>
                       : 'This submission has already been reviewed.'}
                   </div>
                 ) : (

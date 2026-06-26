@@ -740,6 +740,15 @@ def _build_summary(obj, model_type: str) -> str:
             if (obj.cause_of_near_miss or '').strip():
                 parts.append(obj.cause_of_near_miss)
             return ' · '.join(p for p in parts if p)
+        if model_type == 'nil_report':
+            # Was falling through to a dateless "Nil report record" in the queue
+            # (the date + centre + reason only existed in the UNFPA narrative).
+            # Surface them in the summary every reviewer sees. (Fault F4.)
+            where = obj.center.name if obj.center_id else 'all centres'
+            parts = ['Nil report', where, str(obj.report_date)]
+            if (obj.reason or '').strip():
+                parts.append(obj.reason)
+            return ' · '.join(p for p in parts if p)
     except Exception as exc:
         logger.warning('_build_summary(%s, pk=%s): %s', model_type, getattr(obj, 'id', '?'), exc)
     return f"{_humanise_label(model_type)} record"
@@ -856,8 +865,14 @@ def _pending_for_model(queryset, model_type: str, org_filter_org=None,
     if reviewed_only:
         from django.db.models import Q
         qs = qs.filter(Q(approved_by__isnull=False) | Q(approval_status='REJECTED'))
+    # True backlog size BEFORE the display cap, so the queue can report an
+    # honest total (and flag truncation) even when more than `_CAP` rows of a
+    # single model are pending. (Fault F1: previously `total` was the already-
+    # truncated row count, silently undercounting the backlog.)
+    _CAP = 200
+    full_count = qs.count()
     results = []
-    for obj in qs.order_by('created_at')[:200]:
+    for obj in qs.order_by('created_at')[:_CAP]:
         results.append({
             'id': str(obj.id),
             'model_type': model_type,
@@ -890,7 +905,7 @@ def _pending_for_model(queryset, model_type: str, org_filter_org=None,
             'longitude': float(getattr(obj, 'longitude', None)) if getattr(obj, 'longitude', None) else None,
             'kobo_submission_id': obj.kobo_submission_id or '',
         })
-    return results
+    return results, full_count
 
 
 # endpoint → (queryset, model_type)
@@ -1046,8 +1061,10 @@ class PendingApprovalsView(views.APIView):
             return _pending_for_model(qs, model_type, org, statuses=('PENDING',))
 
         all_pending = []
+        grand_total = 0
         for model_type, qs_fn in _APPROVAL_MODELS:
-            items = lane(qs_fn(), model_type)
+            items, full_count = lane(qs_fn(), model_type)
+            grand_total += full_count
             for item in items:
                 item['endpoint'] = _ENDPOINT_OVERRIDES.get(model_type, model_type + 's')
             all_pending.extend(items)
@@ -1060,13 +1077,18 @@ class PendingApprovalsView(views.APIView):
             # Oldest first — work the queue FIFO.
             all_pending.sort(key=lambda x: x['created_at'])
 
-        # Summary counts by model_type
+        # Summary counts by model_type (over the rows actually returned).
         counts = {}
         for item in all_pending:
             counts[item['model_type']] = counts.get(item['model_type'], 0) + 1
 
+        # `total` is the TRUE backlog (pre-cap); `returned` is how many rows this
+        # response actually carries. `truncated` tells the UI to show "showing N
+        # of M" instead of silently implying the queue is fully drained. (F1.)
         return Response({
-            'total': len(all_pending),
+            'total': grand_total,
+            'returned': len(all_pending),
+            'truncated': grand_total > len(all_pending),
             'counts_by_type': counts,
             'items': all_pending,
         })

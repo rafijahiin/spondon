@@ -7,7 +7,9 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet, ViewSet
 
-from accounts.permissions import IsSupervisorOrManager, CanVerifyBaseline, OrgFilterMixin
+from accounts.permissions import (
+    IsSupervisorOrManager, CanViewBaseline, CanApproveBaseline, OrgFilterMixin,
+)
 from submissions.models import KoboSubmission, FormType, SubmissionStatus
 from .duplicate_detector import flag_duplicates_for_partner
 from .models import BaselineSurvey, BaselineResponse, SurveyType
@@ -77,7 +79,7 @@ class BaselineResponseViewSet(OrgFilterMixin, ModelViewSet):
     """Verified D5 baseline responses (read-only) — collection monitoring."""
     queryset = BaselineResponse.objects.select_related('submission').all()
     serializer_class = BaselineResponseSerializer
-    permission_classes = [CanVerifyBaseline]
+    permission_classes = [CanViewBaseline]
     http_method_names = ['get', 'head', 'options']
     org_field = 'partner'
 
@@ -124,7 +126,14 @@ class BaselineVerificationViewSet(ViewSet):
     approve/reject each one. Approving flips the KoboSubmission to APPROVED,
     which materialises the verified BaselineResponse (signal). Lives inside the
     baseline area; baseline never appears in the PHD/Bandhu Manager Approvals."""
-    permission_classes = [CanVerifyBaseline]
+
+    def get_permissions(self):
+        # Split read vs write: anyone in CIPRB/UNFPA (or developer) may VIEW the
+        # queue; only the developer and the CIPRB manager (Tanjina) may
+        # approve/reject. UNFPA + CIPRB org_lead are view-only here.
+        if getattr(self, 'action', None) in ('approve', 'reject'):
+            return [CanApproveBaseline()]
+        return [CanViewBaseline()]
 
     def list(self, request):
         pending = list(_pending_baseline().order_by('-submitted_at')[:500])
