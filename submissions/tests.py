@@ -58,9 +58,10 @@ class WebhookIngestTest(TestCase):
 
     @patch('submissions.views.send_submission_alert')
     def test_valid_payload_creates_submission(self, mock_tg):
-        # Audit FIX 2.7 — only BASELINE auto-approves (ciprb_baseline
-        # self-approves per spec). MPDSR now follows the same PENDING →
-        # manager approval path as every other field record.
+        # MPDSR is CIPRB-owned surveillance: the record is always attributed to
+        # CIPRB regardless of the collector org named in the payload, and lands
+        # PENDING for the manager-approval path (only the staged fistula / MPDSR
+        # response-plan forms auto-approve).
         payload = mpdsr_payload()
         resp = self.client.post(
             WEBHOOK_URL, data=json.dumps(payload), content_type='application/json', **TEST_AUTH
@@ -69,7 +70,7 @@ class WebhookIngestTest(TestCase):
         self.assertEqual(KoboSubmission.objects.count(), 1)
         sub = KoboSubmission.objects.first()
         self.assertEqual(sub.form_type, FormType.MPDSR)
-        self.assertEqual(sub.partner, 'PHD')
+        self.assertEqual(sub.partner, 'CIPRB')
         self.assertEqual(sub.worker_name, 'Rina Akter')
         self.assertEqual(sub.district, 'Dhaka')
         self.assertEqual(sub.status, SubmissionStatus.PENDING)
@@ -119,19 +120,24 @@ class WebhookIngestTest(TestCase):
         self.assertEqual(KoboSubmission.objects.first().status, SubmissionStatus.PENDING)
 
     @patch('submissions.views.send_submission_alert')
-    def test_baseline_auto_approves(self, _):
-        """Audit FIX 2.7 — baseline still auto-approves (ciprb_baseline self-approves)."""
+    def test_baseline_lands_pending(self, _):
+        """D5 verification gate (2026-06-25): baseline no longer auto-approves —
+        it lands PENDING for CIPRB verification and is attributed to CIPRB."""
         payload = mpdsr_payload(_xform_id_string='uid_baseline', _id='2003')
         resp = self.client.post(WEBHOOK_URL, data=json.dumps(payload), content_type='application/json', **TEST_AUTH)
         self.assertEqual(resp.status_code, 201)
-        self.assertEqual(KoboSubmission.objects.first().status, SubmissionStatus.APPROVED)
+        sub = KoboSubmission.objects.first()
+        self.assertEqual(sub.status, SubmissionStatus.PENDING)
+        self.assertEqual(sub.partner, 'CIPRB')
 
     @patch('submissions.views.send_submission_alert')
-    def test_bondhu_partner_detected(self, _):
+    def test_mpdsr_forced_to_ciprb_regardless_of_payload_partner(self, _):
+        """MPDSR ownership rests with CIPRB: even a payload naming Bandhu/PHD as
+        the collector is stored as partner='CIPRB' (CIPRB-owned surveillance)."""
         payload = mpdsr_payload(partner='Bandhu', _id='3001')
         resp = self.client.post(WEBHOOK_URL, data=json.dumps(payload), content_type='application/json', **TEST_AUTH)
         self.assertEqual(resp.status_code, 201)
-        self.assertEqual(KoboSubmission.objects.first().partner, 'Bandhu')
+        self.assertEqual(KoboSubmission.objects.first().partner, 'CIPRB')
 
     @patch('submissions.views.send_submission_alert')
     def test_geolocation_extracted(self, _):

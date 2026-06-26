@@ -492,7 +492,11 @@ function UnfpaSummaryBanner({ items }: { items: QueueItem[] }) {
       byCentre.set(centre, (byCentre.get(centre) ?? 0) + 1)
       const form = it.model_label || it.model_type || '—'
       byForm.set(form, (byForm.get(form) ?? 0) + 1)
-      const day = (it.created_at || '').slice(0, 10) || '—'
+      // Group by the Dhaka calendar day, not the raw UTC slice — otherwise
+      // submissions just after midnight Dhaka land in the previous day's bucket.
+      // (F2 residual.)
+      const _d = new Date(it.created_at || '')
+      const day = isNaN(_d.getTime()) ? '—' : _d.toLocaleDateString('en-CA', { timeZone: 'Asia/Dhaka' })
       byDate.set(day, (byDate.get(day) ?? 0) + 1)
       if (it.model_type === 'nil_report') nilAwaiting++
     }
@@ -1374,7 +1378,7 @@ export default function ManagerApprovals() {
                     when GPS was actually captured — an empty grey block helps
                     no one. Grid collapses to 2-col in that case. */}
                 {(() => {
-                  const hasGps = !!(selected.latitude && selected.longitude);
+                  const hasGps = Number.isFinite(parseFloat(String(selected.latitude ?? ''))) && Number.isFinite(parseFloat(String(selected.longitude ?? '')));
                   const _rd = (detail as any)?.raw_data ?? (detail as any)?.raw_payload ?? {};
                   const submitterName =
                     selected.submitted_by
