@@ -195,9 +195,10 @@ def mpdsr_aggregates(request):
     # One row per agreed action with its OWN completion %, so the dashboard can
     # show per-action progress + a true cumulative %. Distinct from the
     # Excel-sourced action_plan_summaries roll-up above.
-    from mpdsr.models import MPDSRAction
+    from mpdsr.models import MPDSRAction, STUB_ACTIVITY_SENTINEL
     mpdsr_actions = []
-    for a in apply_donor(MPDSRAction.objects.filter(approval_status='APPROVED')):
+    for a in apply_donor(MPDSRAction.objects.filter(approval_status='APPROVED')
+                         .exclude(activity=STUB_ACTIVITY_SENTINEL)):
         mpdsr_actions.append({
             'action_id': a.action_id,
             'district': a.district,
@@ -418,6 +419,74 @@ def mpdsr_aggregates(request):
         'neonatal': neonatal,
         'notifications': notifications,
         'social_autopsy': social_autopsy,
+    })
+
+
+@api_view(['GET'])
+@drf_permission_classes([IsAuthenticated, CanAccessMPDSR])
+def mpdsr_action_aggregates(request):
+    """Dedicated, lightweight aggregate for the CIPRB-10 Action-Plan tracker —
+    the dashboard's headline 'is the response plan actually being implemented?'
+    surface. One row per APPROVED MPDSRAction (stubs excluded) plus server-side
+    roll-ups: cumulative completion %, overdue count, status breakdown, and
+    mean-completion bars by district and by section. Honours the donor
+    `districts` filter the rest of the CIPRB dashboard uses."""
+    from mpdsr.models import MPDSRAction, ActionStatus, STUB_ACTIVITY_SENTINEL
+
+    qs = (MPDSRAction.objects
+          .filter(approval_status='APPROVED')
+          .exclude(activity=STUB_ACTIVITY_SENTINEL))
+    districts_param = request.query_params.get('districts')
+    if districts_param:
+        names = [n.strip() for n in districts_param.split(',') if n.strip()]
+        if names:
+            qs = qs.filter(district__in=names)
+
+    actions, comp = [], []
+    overdue = 0
+    status_counts = {}
+    by_district, by_section = {}, {}
+    for a in qs.order_by('district', 'action_id'):
+        actions.append({
+            'action_id': a.action_id,
+            'district': a.district,
+            'section': a.section,
+            'section_label': a.get_section_display(),
+            'sub_category': a.sub_category,
+            'activity': a.activity,
+            'responsible': a.responsible,
+            'timeline': a.timeline.isoformat() if a.timeline else None,
+            'status': a.status,
+            'status_label': a.get_status_display(),
+            'completion_pct': a.completion_pct,
+            'completion_date': a.completion_date.isoformat() if a.completion_date else None,
+            'is_overdue': a.is_overdue,
+        })
+        comp.append(a.completion_pct)
+        if a.is_overdue:
+            overdue += 1
+        status_counts[a.status] = status_counts.get(a.status, 0) + 1
+        by_district.setdefault(a.district or '—', []).append(a.completion_pct)
+        by_section.setdefault(a.get_section_display() or '—', []).append(a.completion_pct)
+
+    def _rollup(m):
+        rows = [{'key': k, 'pct': round(sum(v) / len(v)), 'n': len(v)}
+                for k, v in m.items()]
+        rows.sort(key=lambda r: -r['pct'])
+        return rows
+
+    overall = round(sum(comp) / len(comp)) if comp else 0
+    by_status = [{'status': val, 'label': label, 'count': status_counts.get(val, 0)}
+                 for val, label in ActionStatus.choices]
+
+    return Response({
+        'overall_pct': overall,
+        'total': len(actions),
+        'overdue': overdue,
+        'by_status': by_status,
+        'by_district': _rollup(by_district),
+        'by_section': _rollup(by_section),
+        'actions': actions,
     })
 
 

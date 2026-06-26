@@ -29,6 +29,7 @@ import { PartnerOverlapMap } from '@/components/maps/PartnerOverlapMap'
 import { SourceChip } from '@/components/ui/SourceChip'
 import { FistulaVisualizations } from '@/components/ciprb/FistulaVisualizations'
 import { MPDSRVisualizations } from '@/components/ciprb/MPDSRVisualizations'
+import { ActionPlanTracker } from '@/components/ciprb/ActionPlanTracker'
 import { NearMissPanel } from '@/components/ciprb/NearMissPanel'
 import { FistulaIndicators } from '@/components/ciprb/FistulaIndicators'
 import { MPDSRDistrictMap } from '@/components/ciprb/MPDSRDistrictMap'
@@ -839,6 +840,13 @@ export default function CIPRBDashboard() {
         boxShadow: '0 4px 14px rgba(0,0,0,0.06)',
         width: 'fit-content',
       }}>
+        <a href="#action-plan-section" style={{
+          display: 'inline-flex', alignItems: 'center', gap: 6,
+          padding: '6px 16px', borderRadius: 999,
+          background: CIPRB_BLUE, color: '#fff',
+          fontSize: 13, fontWeight: 700, textDecoration: 'none',
+          border: '1px solid rgba(249,96,0,0.22)',
+        }}>Action plan</a>
         <a href="#fistula-section" style={{
           display: 'inline-flex', alignItems: 'center', gap: 6,
           padding: '6px 16px', borderRadius: 999,
@@ -861,6 +869,14 @@ export default function CIPRBDashboard() {
           border: '1px solid rgba(249,96,0,0.22)',
         }}>{t('ciprbExtras.jumpNearMiss')}</a>
       </div>
+
+      {/* ───────────────── MPDSR Response-Plan tracker (headline surface) ─────────────────
+          The action plan is the dashboard's lead question — "are the agreed
+          maternal-death response actions actually getting done?" — so it sits
+          first, above the Fistula band. Live from CIPRB-10 (MPDSRAction). */}
+      <section className="section" id="action-plan-section" style={{ marginTop: 0, marginBottom: 8, scrollMarginTop: 80 }}>
+        <ActionPlanTracker districts={activeDonor.districts} />
+      </section>
 
       {/* ───────────────── Fistula KPI band ───────────────── */}
       <section className="section" id="fistula-section" style={{ marginTop: 0, scrollMarginTop: 80 }}>

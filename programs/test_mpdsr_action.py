@@ -2,9 +2,13 @@
 CIPRB-10 MPDSR Action-Plan handler — regression tests for the 2026-06 hardening:
 idempotency, district-scoped upsert, collision reallocation, no-phantom-stub,
 status/completion coupling, fail-closed default, and the PENDING-inclusive CSV.
+Plus the dashboard action-aggregates endpoint contract.
 """
 from django.test import TestCase
+from django.urls import reverse
+from rest_framework.test import APIClient
 
+from accounts.models import Organisation, Role, User
 from mpdsr.models import (MPDSRAction, ActionStatus, STUB_ACTIVITY_SENTINEL,
                           DISTRICT_ACTION_CODE)
 from programs.ciprb_handlers import handle_ciprb_mpdsr_action_plan
@@ -146,6 +150,57 @@ class CsvTest(TestCase):
             activity=STUB_ACTIVITY_SENTINEL, approval_status='PENDING')
         csv_bytes, n = build_csv()
         self.assertNotIn('DH-777', csv_bytes.decode('utf-8'))
+
+
+class ActionAggregatesEndpointTest(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.url = reverse('mpdsr-action-aggregates')
+        self.ciprb = User.objects.create_user(
+            email='lead@ciprb.org', password='p', full_name='Lead',
+            organisation=Organisation.CIPRB, role=Role.ORG_LEAD)
+
+    def _action(self, action_id, district, pct, status, approval='APPROVED',
+                activity='Train CHCPs'):
+        return MPDSRAction.objects.create(
+            action_id=action_id, district=district, section='system_strengthening',
+            activity=activity, completion_pct=pct, status=status,
+            approval_status=approval)
+
+    def test_requires_mpdsr_access(self):
+        phd = User.objects.create_user(
+            email='m@phd.org', password='p', full_name='M',
+            organisation=Organisation.PHD, role=Role.MANAGER)
+        self.client.force_authenticate(user=phd)
+        self.assertEqual(self.client.get(self.url).status_code, 403)
+
+    def test_aggregates_shape_and_rollups(self):
+        self._action('DH-001', 'Dhaka', 100, 'implemented')
+        self._action('DH-002', 'Dhaka', 0, 'pending')
+        self._action('RA-001', 'Rangpur', 50, 'in_progress')
+        self._action('RA-002', 'Rangpur', 0, 'pending', approval='PENDING')   # excluded
+        self._action('RA-003', 'Rangpur', 0, 'pending', activity=STUB_ACTIVITY_SENTINEL)  # stub excluded
+        self.client.force_authenticate(user=self.ciprb)
+        r = self.client.get(self.url)
+        self.assertEqual(r.status_code, 200)
+        d = r.data
+        self.assertEqual(d['total'], 3)                       # only APPROVED non-stub
+        self.assertEqual(d['overall_pct'], 50)                # (100+0+50)/3
+        self.assertEqual({a['action_id'] for a in d['actions']},
+                         {'DH-001', 'DH-002', 'RA-001'})
+        self.assertEqual(len(d['by_status']), len(ActionStatus.choices))
+        dist = {row['key']: row for row in d['by_district']}
+        self.assertEqual(dist['Dhaka']['n'], 2)
+        self.assertEqual(dist['Dhaka']['pct'], 50)            # (100+0)/2
+
+    def test_district_filter(self):
+        self._action('DH-001', 'Dhaka', 100, 'implemented')
+        self._action('RA-001', 'Rangpur', 50, 'in_progress')
+        self.client.force_authenticate(user=self.ciprb)
+        r = self.client.get(self.url, {'districts': 'Rangpur'})
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.data['total'], 1)
+        self.assertEqual(r.data['actions'][0]['action_id'], 'RA-001')
 
 
 class MapIntegrityTest(TestCase):
