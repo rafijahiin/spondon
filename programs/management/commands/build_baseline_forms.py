@@ -335,8 +335,10 @@ def _hijra_module1():
         _sr('begin_group', 'grp_a1',
             'A1. Respondent and Interview Identification Information',
             'A1. উত্তরদাতা ও সাক্ষাৎকার সনাক্তকরণ তথ্য', relevant=P),
-        _sr('text', 'a101_respondent_id', 'A101. Respondent ID Number',
-            'A101. উত্তরদাতার আইডি নম্বর'),
+        # A101 (Respondent ID Number) intentionally omitted from the online form.
+        # Nuruzzaman 2026-06-26: not appropriate to ask online — source states any
+        # respondent identity/contact "must be stored separately from the answers",
+        # so the Kobo response set stays de-identified. A102 and the rest are kept.
         _sr('select_one respondent_type', 'a102_respondent_type',
             'A102. Respondent Type Code ‡', 'A102. উত্তরদাতার ধরন কোড ‡',
             hint='Classification used only for sampling/quota monitoring. GPS is '
