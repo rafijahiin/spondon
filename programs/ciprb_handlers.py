@@ -425,12 +425,80 @@ def handle_ciprb_mpdsr_facility_neonatal(payload, lat, lng):
 
 
 def handle_ciprb_social_autopsy(payload, lat, lng):
-    # The Social Autopsy form's only cause-of-death field is the
-    # downstream MPDSR Form 1; here the notes capture the three delays.
-    return _save_mpdsr_case(payload, lat, lng,
-                             sub_form_type='sa_md',
-                             death_type=DeathType.MATERNAL,
-                             death_field_name='cause_brief')
+    """CIPRB-6 Social Autopsy — a committee MEETING report, not a death review.
+
+    The verbatim paper carries NO death date or structured cause/place (it is keyed
+    to a death-notification slip number), so it cannot go through _save_mpdsr_case
+    (which requires date_of_death). Stored as MPDSRCase sub_form_type='sa_md':
+    the meeting date stands in as the required date stamp + committee_date, the
+    narrative → notes, the prevention points + decisions → action_plan, and the
+    full submission (name, sex, age m/d, member counts, slip no.) is preserved in
+    raw_payload. Held PENDING for CIPRB approval on create.
+    """
+    district = _district(payload)
+    meeting_date = _date(payload.get('meeting_date'))
+    if not (district and meeting_date):
+        return HttpResponse('Bad Request — district and meeting_date required',
+                            status=400)
+    sub_id = str(payload.get('_id') or '')
+    slip = _s(payload.get('slip_number'))
+    # 1 = maternal, 2 = neonatal, 3 = stillbirth → MATERNAL vs PERINATAL.
+    death_type = DeathType.MATERNAL if _s(payload.get('sa_death_type')) == '1' else DeathType.PERINATAL
+
+    def _block(prefix, n):
+        out = []
+        for i in range(1, n + 1):
+            v = _s(payload.get('%s_%d' % (prefix, i)))
+            if v:
+                out.append('%d. %s' % (i, v))
+        return '\n'.join(out)
+
+    narrative = _s(payload.get('death_narrative'))
+    prevention = _block('prevention', 4)
+    decisions = _block('decision', 4)
+    action_plan = ''
+    if prevention:
+        action_plan += 'Preventable factors:\n' + prevention
+    if decisions:
+        action_plan += ('\n\n' if action_plan else '') + 'Decisions:\n' + decisions
+
+    # De-dup: slip number when present (one social-autopsy per notified death),
+    # else the Kobo submission id so a retry updates the same row.
+    qs = MPDSRCase.objects.select_for_update().filter(
+        partner=ORG, sub_form_type='sa_md', district=district)
+    if slip:
+        qs = qs.filter(case_hash='sa:' + slip)
+    elif sub_id:
+        qs = qs.filter(case_hash='kobo:' + sub_id)
+    else:
+        qs = qs.none()
+
+    with transaction.atomic():
+        case = qs.first()
+        is_new = case is None
+        if is_new:
+            case = MPDSRCase(partner=ORG, sub_form_type='sa_md', district=district,
+                             approval_status='PENDING')
+            case.case_hash = ('sa:' + slip) if slip else ('kobo:' + sub_id if sub_id else '')
+        case.organisation = ORG
+        case.district = district
+        case.upazila = _s(payload.get('upazila'))
+        case.union = _s(payload.get('union'))
+        case.date_of_death = meeting_date     # no death date on the paper; meeting date is the stamp
+        case.committee_date = meeting_date
+        case.death_type = death_type
+        age = _int(payload.get('age_years'))
+        if age:
+            case.age_years = age
+        case.notes = narrative
+        case.action_plan = action_plan
+        case.latitude = lat
+        case.longitude = lng
+        case.raw_payload = payload
+        case.submitted_by_kobo_user = _s(payload.get('_submitted_by'))
+        case.kobo_submission_id = sub_id or case.kobo_submission_id
+        case.save()
+    return HttpResponse('OK', status=200)
 
 
 # ╔══════════════════════════════════════════════════════════════════════════╗

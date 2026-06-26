@@ -291,6 +291,11 @@ class MPDSRCase(models.Model):
     center = models.ForeignKey(
         'programs.ServiceCenter', on_delete=models.SET_NULL,
         null=True, blank=True, related_name='+')
+    # Full Kobo submission, preserved verbatim. Needed for the qualitative Social
+    # Autopsy (sa_md), whose meeting metadata, member counts, sex/age-detail and
+    # prevention/decision structure don't all map to typed columns. Kept OUT of
+    # the API by the serializer's explicit field allowlist (it can carry PII).
+    raw_payload = models.JSONField(default=dict, blank=True)
 
     objects = MPDSRCaseManager()
 

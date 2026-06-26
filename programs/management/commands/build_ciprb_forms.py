@@ -2902,108 +2902,96 @@ def _facility_neonatal_choices():
 # ╚══════════════════════════════════════════════════════════════════════════╝
 
 def _social_autopsy_survey():
-    rows = _meta('Annual social autopsy serial number',
-                 'সামাজিক ময়নাতদন্তের বাৎসরিক ক্রমিক নং')
-    rows += _shared_consent_block()
-    rows += _respondent_block()
-    rows += [
-        _sr('begin_group', 'grp_deceased',
-            "Deceased woman's identity",
-            'মৃত মহিলার পরিচয়'),
-        _sr('text', 'deceased_name', 'Name of deceased',
-            'মৃত মহিলার নাম', required='yes',
-            relevant="${consent_given}='yes'"),
-        _sr('integer', 'deceased_age',
-            'Age (years)', 'বয়স (বছর)', required='yes'),
-        _sr('date', 'date_of_death',
-            'Date of death', 'মৃত্যুর তারিখ', required='yes'),
-        _sr('select_one place_of_death', 'place_of_death',
-            'Place of death', 'মৃত্যুর স্থান'),
-        _sr('end_group', 'grp_deceased'),
+    # Verbatim digitisation of the official paper "সামাজিক মৃত্যু পর্যালোচনা
+    # রিপোর্টিং ফর্ম" (Social Autopsy reporting form). It is a committee
+    # MEETING report — not a death-review with structured cause/place — keyed to
+    # the death-notification slip number. Every visible question + its Bangla
+    # wording matches the paper (incl. its spellings 'কল্যান', 'বর্ননা',
+    # 'উপনিত'); only the hidden organisation calc and the operational GPS point
+    # are added (location tagging is mandatory system-wide). No _meta() header:
+    # the paper carries its own meeting header and puts the data-collector block
+    # at the end.
+    rows = [
+        _sr('note', '_sa_gov', 'Government of the People’s Republic of Bangladesh',
+            'গণপ্রজাতন্ত্রী বাংলাদেশ সরকার'),
+        _sr('note', '_sa_ministry', 'Ministry of Health and Family Welfare',
+            'স্বাস্থ্য ও পরিবার কল্যান মন্ত্রণালয়'),
+        _sr('note', '_sa_title1',
+            'Maternal death, neonatal death and stillbirth review',
+            'মাতৃমৃত্যু, নবজাতকের মৃত্যু ও মৃতজন্ম পর্যালোচনা'),
+        _sr('note', '_sa_title2', 'Social Autopsy reporting form',
+            'সামাজিক মৃত্যু পর্যালোচনা রিপোর্টিং ফর্ম'),
+        _sr('calculate', 'organisation', '', '', calc="'CIPRB'"),
+        _sr('geopoint', 'location',
+            'GPS location (required — step outside if no signal)',
+            'জিপিএস অবস্থান (প্রয়োজনীয়)', required='yes'),
+        # মাতৃমৃত্যু = ১, নবজাতকের মৃত্যু = ২, মৃতজন্ম = ৩
+        _sr('select_one sa_death_type', 'sa_death_type',
+            'Maternal death = 1, Neonatal death = 2, Stillbirth = 3',
+            'মাতৃমৃত্যু = ১, নবজাতকের মৃত্যু = ২, মৃতজন্ম = ৩', required='yes'),
+        _sr('date', 'meeting_date', 'Date of meeting', 'সভার তারিখ', required='yes'),
+        _sr('time', 'meeting_time', 'Time of meeting (24 hours)',
+            'সভার সময় [ ২৪ ঘণ্টায়]'),
+        _sr('text', 'meeting_place', 'Place of meeting', 'সভার স্থান'),
+        _sr('select_one district', 'district', 'District', 'জেলা', required='yes'),
+        _sr('text', 'upazila', 'Upazila', 'উপজেলা'),
+        _sr('text', 'union', 'Union', 'ইউনিয়ন'),
+        _sr('text', 'ward', 'Ward', 'ওয়ার্ড'),
+        _sr('text', 'village', 'Village name', 'গ্রামের নাম'),
+        _sr('text', 'slip_number', 'Death notification slip number',
+            'মৃত্যু অবহিতকরণ স্লিপ নম্বর'),
+        _sr('text', 'deceased_name', 'Name of the deceased / mother',
+            'মৃতের/মায়ের নাম', required='yes'),
+        # মৃতের/মায়ের বয়স : বছর | মাস | দিন
+        _sr('integer', 'age_years', 'Age of the deceased / mother — years',
+            'মৃতের/মায়ের বয়স — বছর'),
+        _sr('integer', 'age_months', 'Months', 'মাস'),
+        _sr('integer', 'age_days', 'Days', 'দিন'),
+        _sr('select_one sa_sex', 'sa_sex',
+            'Sex (applicable for stillbirth / dead newborn): Boy = 1, Girl = 2',
+            'লিঙ্গ : (মৃতজন্ম/ মৃত নবজাতকের ক্ষেত্রে প্রযোজ্য) ছেলে = ১, মেয়ে = ২'),
+        _sr('text', 'death_narrative',
+            'How the death occurred, in the words of the participants present '
+            '(brief description)',
+            'সভায় উপস্থিত অংশগ্রহণকারীদের ভাষ্যমতে কিভাবে মৃত্যুটি সংঘটিত হয়েছিল '
+            '(সংক্ষিপ্ত বর্ননা)', app='multiline'),
     ]
+    # কি করলে মৃত্যুটি রোধ করা যেত… (ক্রমানুসারে লিখুন) — ১..৪
+    rows.append(_sr('note', '_sa_prevent_hdr',
+        'What the participants think could have prevented the death (write in order)',
+        'কি করলে মৃত্যুটি রোধ করা যেত বলে অংশগ্রহণকারীরা মনে করছেন (ক্রমানুসারে লিখুন)'))
+    for i, bn in enumerate(['১', '২', '৩', '৪'], start=1):
+        rows.append(_sr('text', 'prevention_%d' % i, '%d.' % i, '%s।' % bn))
+    # উক্ত আলোচনা সভায় অংশগ্রহণকারীরা কি সিদ্ধান্তে উপনিত হলো (ক্রমানুসারে লিখুন) — ১..৪
+    rows.append(_sr('note', '_sa_decision_hdr',
+        'What decisions the meeting participants reached (write in order)',
+        'উক্ত আলোচনা সভায় অংশগ্রহণকারীরা কি সিদ্ধান্তে উপনিত হলো (ক্রমানুসারে লিখুন)'))
+    for i, bn in enumerate(['১', '২', '৩', '৪'], start=1):
+        rows.append(_sr('text', 'decision_%d' % i, '%d.' % i, '%s।' % bn))
     rows += [
-        _sr('begin_group', 'grp_delays',
-            'Three Delays analysis', 'তিন বিলম্ব বিশ্লেষণ'),
-        _sr('note', 'three_delays_intro',
-            'The Three-Delays framework: (1) recognising the problem and '
-            'deciding to seek care; (2) reaching a health facility; '
-            '(3) receiving appropriate care at the facility.',
-            'তিন বিলম্ব কাঠামো: (১) সমস্যা চিহ্নিত করে যত্ন নেওয়ার সিদ্ধান্ত; '
-            '(২) স্বাস্থ্য প্রতিষ্ঠানে পৌঁছানো; '
-            '(৩) প্রতিষ্ঠানে যথাযথ যত্ন প্রাপ্তি।'),
-        _sr('select_one yes_no', 'delay1_present',
-            'Delay 1 — recognition / decision to seek care',
-            'বিলম্ব ১ — যত্ন গ্রহণের সিদ্ধান্ত'),
-        _sr('text', 'delay1_factors',
-            'Factors behind Delay 1',
-            'বিলম্ব ১-এর কারণ',
-            relevant="${delay1_present}='yes'"),
-        _sr('select_one yes_no', 'delay2_present',
-            'Delay 2 — reaching facility',
-            'বিলম্ব ২ — প্রতিষ্ঠানে পৌঁছানো'),
-        _sr('text', 'delay2_factors',
-            'Factors behind Delay 2',
-            'বিলম্ব ২-এর কারণ',
-            relevant="${delay2_present}='yes'"),
-        _sr('select_one yes_no', 'delay3_present',
-            'Delay 3 — receiving care at facility',
-            'বিলম্ব ৩ — প্রতিষ্ঠানে যত্ন প্রাপ্তি'),
-        _sr('text', 'delay3_factors',
-            'Factors behind Delay 3',
-            'বিলম্ব ৩-এর কারণ',
-            relevant="${delay3_present}='yes'"),
-        _sr('end_group', 'grp_delays'),
-    ]
-    rows += [
-        _sr('begin_group', 'grp_social',
-            'Social context', 'সামাজিক প্রেক্ষাপট'),
-        _sr('select_one yes_no', 'gender_barrier',
-            'Were there gender-related barriers to care?',
-            'যত্ন গ্রহণে লিঙ্গ-সম্পর্কিত বাধা ছিল?'),
-        _sr('text', 'gender_barrier_notes',
-            'Gender barrier — notes', 'লিঙ্গ-বাধা সম্পর্কিত মন্তব্য',
-            relevant="${gender_barrier}='yes'"),
-        _sr('select_one yes_no', 'financial_barrier',
-            'Were there financial barriers?',
-            'আর্থিক বাধা ছিল?'),
-        _sr('text', 'financial_barrier_notes',
-            'Financial barrier — notes',
-            'আর্থিক বাধা সম্পর্কিত মন্তব্য',
-            relevant="${financial_barrier}='yes'"),
-        _sr('text', 'community_recommendations',
-            'Community-level recommendations',
-            'সম্প্রদায় পর্যায়ের সুপারিশ'),
-        _sr('end_group', 'grp_social'),
-    ]
-    rows += [
-        _sr('begin_group', 'grp_action_plan',
-            'Recommended action plan',
-            'প্রস্তাবিত কর্মপরিকল্পনা'),
-        _sr('text', 'action_plan_summary',
-            'Action plan summary',
-            'কর্মপরিকল্পনার সারসংক্ষেপ'),
-        _sr('date', 'review_date',
-            'Date of social autopsy meeting',
-            'সামাজিক ময়নাতদন্তের সভার তারিখ'),
-        _sr('end_group', 'grp_action_plan'),
+        _sr('integer', 'members_male',
+            'Members present — male (persons)', 'উপস্থিত সদস্য/ সদস্যা : পুরুষ (জন)'),
+        _sr('integer', 'members_female', 'Female (persons)', 'মহিলা (জন)'),
+        _sr('integer', 'pregnant_women',
+            'Pregnant women, if present (persons)',
+            'গর্ভবতী মহিলা (যদি উপস্থিত থাকেন) (জন)'),
+        _sr('text', 'collector_name', 'Name of the data collector',
+            'তথ্য গ্রহণকারীর নাম', required='yes'),
+        _sr('text', 'collector_designation', 'Designation', 'পদবী'),
     ]
     return rows
 
 
 def _social_autopsy_choices():
-    ch = list(DISTRICT_CHOICES) + list(YES_NO)
-    rel = [('husband','Husband','স্বামী'),
-           ('mother_inlaw','Mother-in-law','শাশুড়ী'),
-           ('mother','Mother','মা'),
-           ('neighbour','Neighbour','প্রতিবেশী'),
-           ('other','Other','অন্যান্য')]
-    ch += [_ch('relationship', k, en, bn) for k, en, bn in rel]
+    ch = list(DISTRICT_CHOICES)
     ch += [
-        _ch('place_of_death', 'home',      'Home', 'বাড়ি'),
-        _ch('place_of_death', 'facility',  'Health facility',
-            'স্বাস্থ্য প্রতিষ্ঠান'),
-        _ch('place_of_death', 'in_transit','In transit',
-            'পরিবহন অবস্থায়'),
+        _ch('sa_death_type', '1', 'Maternal death', 'মাতৃমৃত্যু'),
+        _ch('sa_death_type', '2', 'Neonatal death', 'নবজাতকের মৃত্যু'),
+        _ch('sa_death_type', '3', 'Stillbirth', 'মৃতজন্ম'),
+    ]
+    ch += [
+        _ch('sa_sex', '1', 'Boy', 'ছেলে'),
+        _ch('sa_sex', '2', 'Girl', 'মেয়ে'),
     ]
     return ch
 
