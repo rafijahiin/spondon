@@ -505,15 +505,30 @@ def handle_ciprb_social_autopsy(payload, lat, lng):
 # ║   Notification slips 01 + 02                                            ║
 # ╚══════════════════════════════════════════════════════════════════════════╝
 
+def _ns_place(payload):
+    """Map the verbatim slip-01 'মৃত্যু স্থান' choice to the model's coarse
+    home/facility/in_transit enum (the rich choice survives in raw_payload)."""
+    raw = _s(payload.get('place_of_death')).lower()
+    if raw == 'home':
+        return MPDSRDeathNotification.PLACE_HOME
+    if raw == 'on_the_way':
+        return MPDSRDeathNotification.PLACE_TRANSIT
+    if raw in ('govt_facility', 'private_ngo'):
+        return MPDSRDeathNotification.PLACE_FACILITY
+    return ''
+
+
 def _save_notification(payload, lat, lng, slip_variant: str):
+    # Verbatim slips name the death date 'death_date'; the deceased identity is
+    # captured as the MOTHER (মায়ের নাম / মায়ের বয়স — the mother is the deceased
+    # for a maternal death, and the recorded subject for a neonatal/stillbirth).
     district = _district(payload)
-    dod = _date(payload.get('date_of_death'))
-    name = _s(payload.get('deceased_name'))
+    dod = _date(payload.get('death_date') or payload.get('date_of_death'))
+    name = _s(payload.get('mother_name')) or _s(payload.get('deceased_name'))
     if not (district and dod and name):
         return HttpResponse(
-            'Bad Request — district, date_of_death, deceased_name required',
+            'Bad Request — district, death_date, mother_name required',
             status=400)
-    place = _s(payload.get('place_of_death'))
     obj, created = MPDSRDeathNotification.objects.update_or_create(
         slip_variant=slip_variant,
         district=district, date_of_death=dod, deceased_name=name,
@@ -524,14 +539,12 @@ def _save_notification(payload, lat, lng, slip_variant: str):
             village=_s(payload.get('village')),
             case_serial=_s(payload.get('case_serial')),
             death_kind=_s(payload.get('death_kind')) or MPDSRDeathNotification.KIND_MATERNAL,
-            deceased_age=_int(payload.get('deceased_age')),
-            deceased_address=_s(payload.get('deceased_address')),
-            place_of_death=place if place in dict(MPDSRDeathNotification.PLACE_CHOICES) else '',
-            cause_brief=_s(payload.get('cause_brief')),
-            reporter_name=_s(payload.get('reporter_name')) or _s(payload.get('enumerator_name')),
-            reporter_role=_s(payload.get('reporter_role')),
-            reporter_mobile=_s(payload.get('reporter_mobile')) or _s(payload.get('enumerator_mobile')),
-            notification_date=_date(payload.get('notification_date')) or dod,
+            deceased_age=_int(payload.get('mother_age')) or _int(payload.get('deceased_age')),
+            place_of_death=_ns_place(payload),
+            cause_brief=_s(payload.get('cause_of_death')) or _s(payload.get('cause_brief')),
+            reporter_name=_s(payload.get('collector_name')) or _s(payload.get('reporter_name')),
+            reporter_mobile=_s(payload.get('collector_mobile')) or _s(payload.get('reporter_mobile')),
+            notification_date=_date(payload.get('slip_date')) or dod,
             latitude=lat, longitude=lng,
             raw_payload=payload,
             submitted_by_kobo_user=_s(payload.get('_submitted_by')),

@@ -3003,66 +3003,178 @@ def _social_autopsy_choices():
 # ╚══════════════════════════════════════════════════════════════════════════╝
 
 def _notification_slip_survey(slip_num: int):
-    rows = _meta(f'Notification slip {slip_num:02d} serial',
-                 f'অবহিতকরণ স্লিপ {slip_num:02d} ক্রমিক')
-    rows += [
-        _sr('begin_group', 'grp_event', 'Death event', 'মৃত্যুর তথ্য'),
-        _sr('select_one death_kind', 'death_kind',
-            'Type of death notified',
-            'অবহিত মৃত্যুর ধরন', required='yes'),
-        _sr('text', 'deceased_name', 'Name of deceased',
-            'মৃতের নাম', required='yes'),
-        _sr('integer', 'deceased_age', 'Age', 'বয়স', required='yes'),
-        _sr('text', 'deceased_address', 'Address', 'ঠিকানা'),
-        _sr('date', 'date_of_death', 'Date of death',
-            'মৃত্যুর তারিখ', required='yes'),
-        _sr('select_one place_of_death', 'place_of_death',
-            'Place of death', 'মৃত্যুর স্থান'),
-        _sr('text', 'cause_brief',
-            'Brief cause (free text)',
-            'সংক্ষিপ্ত কারণ'),
-        _sr('end_group', 'grp_event'),
+    # Verbatim digitisation of the official "মাতৃমৃত্যু, নবজাতকের মৃত্যু ও
+    # মৃতজন্ম অবহিতকরণ স্লিপ". Slip 01 = community version (কমিউনিটিতে প্রযোজ্য);
+    # Slip 02 = hospital version (হাসপাতাল প্রযোজ্য). They share an identity block
+    # and differ at the head (registration) and the clinical middle. No _meta():
+    # the paper slip carries its own header and a data-collector block at the end.
+    is_hosp = (slip_num == 2)
+    banner_en = 'Applicable in hospital' if is_hosp else 'Applicable in the community'
+    banner_bn = 'হাসপাতাল প্রযোজ্য' if is_hosp else 'কমিউনিটিতে প্রযোজ্য'
+    rows = [
+        _sr('note', '_ns_gov', 'Government of the People’s Republic of Bangladesh',
+            'গণপ্রজাতন্ত্রী বাংলাদেশ সরকার'),
+        _sr('note', '_ns_ministry', 'Ministry of Health and Family Welfare',
+            'স্বাস্থ্য ও পরিবার কল্যাণ মন্ত্রণালয়'),
+        _sr('note', '_ns_title',
+            'Maternal death, neonatal death and stillbirth notification slip',
+            'মাতৃমৃত্যু, নবজাতকের মৃত্যু ও মৃতজন্ম অবহিতকরণ স্লিপ'),
+        _sr('note', '_ns_banner', banner_en, banner_bn),
+        _sr('calculate', 'organisation', '', '', calc="'CIPRB'"),
+        _sr('geopoint', 'location',
+            'GPS location (required — step outside if no signal)',
+            'জিপিএস অবস্থান (প্রয়োজনীয়)', required='yes'),
+        _sr('text', 'case_serial', 'Serial no.', 'ক্রমিক নং'),
+        _sr('date', 'slip_date', 'Date', 'তারিখ', required='yes'),
     ]
+    if is_hosp:
+        rows += [
+            _sr('text', 'hospital_reg_no',
+                'Hospital registration no. of mother / newborn / stillbirth',
+                'মা/নবজাতক/মৃতজন্মের হাসপাতালের রেজিস্ট্রেশন নং'),
+            _sr('text', 'ward_no', 'Ward no.', 'ওয়ার্ড নং'),
+            _sr('text', 'bed_no', 'Bed no.', 'বিছানা নং'),
+        ]
+    else:
+        rows += [
+            _sr('text', 'mother_reg_no', "Mother's registration no.",
+                'মায়ের রেজিস্ট্রেশন নং'),
+            _sr('text', 'dhis2_newborn_reg',
+                'Online (DHIS-2) newborn registration no.',
+                'অনলাইনে (ডিএইচআইএস-২)-তে নবজাতকের রেজিস্ট্রেশন নং'),
+        ]
     rows += [
-        _sr('begin_group', 'grp_reporter', 'Reporter', 'রিপোর্টকারী'),
-        _sr('text', 'reporter_name', 'Reporter name',
-            'রিপোর্টকারীর নাম', required='yes'),
-        _sr('select_one reporter_role', 'reporter_role',
-            'Reporter role', 'রিপোর্টকারীর ভূমিকা'),
-        _sr('text', 'reporter_mobile', 'Reporter mobile',
-            'রিপোর্টকারীর মোবাইল'),
-        _sr('date', 'notification_date',
-            'Notification date', 'অবহিতকরণের তারিখ'),
-        _sr('end_group', 'grp_reporter'),
+        _sr('select_one death_kind', 'death_kind', 'Type of death',
+            'মৃত্যুর ধরন', required='yes'),
+        _sr('select_one ns_sex', 'sex', 'Sex', 'লিঙ্গ'),
+        _sr('text', 'mother_name', "Mother's name", 'মায়ের নাম', required='yes'),
+        _sr('integer', 'mother_age', "Mother's age (years)", 'মায়ের বয়স (বছর)'),
+        _sr('text', 'father_husband_name', "Father's / husband's name",
+            'পিতা/স্বামীর নাম'),
+        _sr('text', 'para', 'Para', 'পাড়া'),
+        _sr('text', 'village', 'Village', 'গ্রাম'),
+        _sr('text', 'union', 'Union', 'ইউনিয়ন'),
+        _sr('text', 'upazila', 'Upazila', 'উপজেলা'),
+        _sr('select_one district', 'district', 'District', 'জেলা', required='yes'),
+        _sr('text', 'family_mobile', "Deceased family's mobile no. (if any)",
+            'মৃতের পরিবারের মোবাইল নং (যদি থাকে)'),
     ]
+    if is_hosp:
+        rows += [
+            _sr('text', 'hospital_name', 'Name of hospital / health centre',
+                'হাসপাতাল/স্বাস্থ্য কেন্দ্রের নাম'),
+            _sr('date', 'admission_date',
+                'Date of admission to hospital / health centre',
+                'হাসপাতালে/স্বাস্থ্য কেন্দ্রে ভর্তির তারিখ'),
+            _sr('time', 'admission_time', 'Time of admission (24 hours)',
+                'ভর্তির সময় (২৪ ঘন্টায়)'),
+            _sr('text', 'diagnosis_admission', 'Diagnosis at admission',
+                'ভর্তির সময় রোগ নির্ণয়'),
+            _sr('date', 'death_date', 'Date of death / stillbirth',
+                'মৃত্যু/মৃত-জন্মের তারিখ', required='yes'),
+            _sr('time', 'death_time', 'Time of death (24 hours)',
+                'মৃত্যুর সময় (২৪ ঘন্টায়)'),
+            _sr('text', 'cause_of_death', 'Cause of death', 'মৃত্যুর কারণ'),
+        ]
+    else:
+        rows += [
+            _sr('date', 'death_date', 'Date of death / stillbirth',
+                'মৃত্যু/মৃত-জন্মের তারিখ', required='yes'),
+            _sr('time', 'death_time', 'Time of death (24 hours)',
+                'মৃত্যুর সময় (২৪ ঘন্টায়)'),
+            _sr('date', 'delivery_date', 'Date of delivery', 'প্রসবের তারিখ'),
+            _sr('time', 'delivery_time', 'Time of delivery (24 hours)',
+                'প্রসবের সময় (২৪ ঘন্টায়)'),
+            _sr('select_one ns_place_death', 'place_of_death', 'Place of death',
+                'মৃত্যু স্থান'),
+            _sr('text', 'place_of_death_other', 'Other place of death (specify)',
+                'অন্যান্য মৃত্যু স্থান (উল্লেখ করুন)',
+                relevant="${place_of_death}='other'"),
+            _sr('select_one ns_place_delivery', 'place_of_delivery',
+                'Place of delivery', 'প্রসবের স্থান'),
+            _sr('text', 'place_of_delivery_other',
+                'Other place of delivery (specify)',
+                'অন্যান্য প্রসবের স্থান (উল্লেখ করুন)',
+                relevant="${place_of_delivery}='other'"),
+            _sr('select_one ns_attendant', 'delivery_attendant',
+                'Who conducted the delivery?', 'কে প্রসব করিয়েছেন'),
+            _sr('text', 'delivery_attendant_other', 'Other (specify)',
+                'অন্যান্য (উল্লেখ করুন)',
+                relevant="${delivery_attendant}='other'"),
+        ]
+    rows += [
+        _sr('text', 'collector_name', 'Name of the data collector',
+            'তথ্য গ্রহণকারীর নাম', required='yes'),
+        _sr('text', 'collector_designation', 'Designation', 'পদবী'),
+        _sr('text', 'collector_mobile', 'Mobile no.', 'মোবাইল নং'),
+    ]
+    if not is_hosp:
+        rows += [
+            _sr('text', 'cc_name', 'Name of community clinic',
+                'কমিউনিটি ক্লিনিকের নাম'),
+            _sr('text', 'cc_code', 'Community clinic code',
+                'কমিউনিটি ক্লিনিকের কোড'),
+        ]
     return rows
 
 
 def _notification_slip_choices():
-    ch = list(DISTRICT_CHOICES) + list(YES_NO)
+    ch = list(DISTRICT_CHOICES)
+    # মৃত্যুর ধরন (order + spacing as printed: মাতৃ মৃত্যু / মৃত জন্ম / নবজাতকের মৃত্যু)
     ch += [
-        _ch('death_kind', 'maternal',  'Maternal death',  'মাতৃমৃত্যু'),
-        _ch('death_kind', 'neonatal',  'Neonatal death',  'নবজাতকের মৃত্যু'),
-        _ch('death_kind', 'stillbirth','Stillbirth',      'মৃত জন্ম'),
+        _ch('death_kind', 'maternal',   'Maternal death',  'মাতৃ মৃত্যু'),
+        _ch('death_kind', 'stillbirth', 'Stillbirth',      'মৃত জন্ম'),
+        _ch('death_kind', 'neonatal',   'Neonatal death',  'নবজাতকের মৃত্যু'),
     ]
     ch += [
-        _ch('place_of_death', 'home',      'Home', 'বাড়ি'),
-        _ch('place_of_death', 'facility',  'Health facility',
-            'স্বাস্থ্য প্রতিষ্ঠান'),
-        _ch('place_of_death', 'in_transit','In transit',
-            'পরিবহন অবস্থায়'),
+        _ch('ns_sex', 'boy',  'Boy',  'ছেলে'),
+        _ch('ns_sex', 'girl', 'Girl', 'মেয়ে'),
     ]
+    # মৃত্যু স্থান (slip 01)
     ch += [
-        _ch('reporter_role', 'chw',     'Community health worker',
-            'সম্প্রদায় স্বাস্থ্যকর্মী'),
-        _ch('reporter_role', 'fp_field','Family planning field worker',
-            'পরিবার পরিকল্পনা মাঠকর্মী'),
-        _ch('reporter_role', 'midwife', 'Midwife', 'মিডওয়াইফ'),
-        _ch('reporter_role', 'nurse',   'Nurse', 'নার্স'),
-        _ch('reporter_role', 'doctor',  'Doctor', 'ডাক্তার'),
-        _ch('reporter_role', 'family',  'Family member',
-            'পরিবারের সদস্য'),
-        _ch('reporter_role', 'other',   'Other', 'অন্যান্য'),
+        _ch('ns_place_death', 'home',          'At home', 'বাড়িতে'),
+        _ch('ns_place_death', 'on_the_way',    'On the way', 'পথে'),
+        _ch('ns_place_death', 'govt_facility', 'Govt health centre / hospital',
+            'সরকারী স্বাস্থ্য কেন্দ্রে/হাসপাতালে'),
+        _ch('ns_place_death', 'private_ngo',   'Private or NGO clinic / hospital',
+            'বেসরকারী বা এনজিও ক্লিনিকে/হাসপাতালে'),
+        _ch('ns_place_death', 'other',         'Other (specify)', 'অন্যান্য (উল্লেখ করুন)'),
+    ]
+    # প্রসবের স্থান (slip 01)
+    ch += [
+        _ch('ns_place_delivery', 'home',             'Home', 'বাড়ি'),
+        _ch('ns_place_delivery', 'community_clinic', 'Community clinic', 'কমিউনিটি ক্লিনিক'),
+        _ch('ns_place_delivery', 'uhfwc',
+            'Union Health & Family Welfare Centre',
+            'ইউনিয়ন স্বাস্থ্য ও পরিবার কল্যাণ কেন্দ্র'),
+        _ch('ns_place_delivery', 'uhc', 'Upazila Health Complex',
+            'উপজেলা স্বাস্থ্য কমপ্লেক্স'),
+        _ch('ns_place_delivery', 'mcwc', 'Mother & Child Welfare Centre',
+            'মা ও শিশু কল্যাণ কেন্দ্র'),
+        _ch('ns_place_delivery', 'district_hospital', 'District hospital',
+            'জেলা হাসপাতালে'),
+        _ch('ns_place_delivery', 'medical_college', 'Medical college hospital',
+            'মেডিকেল কলেজ হাসপাতালে'),
+        _ch('ns_place_delivery', 'private_ngo', 'Private NGO clinic / hospital',
+            'বেসরকারী এনজিও ক্লিনিক/হাসপাতাল'),
+        _ch('ns_place_delivery', 'other', 'Other (specify)', 'অন্যান্য (উল্লেখ করুন)'),
+    ]
+    # কে প্রসব করিয়েছেন (slip 01) — মিডওয়াইফ is printed twice on the paper; both kept.
+    ch += [
+        _ch('ns_attendant', 'doctor',        'Doctor (MBBS)', 'ডাক্তার (MBBS)'),
+        _ch('ns_attendant', 'nurse',         'Nurse', 'নার্স'),
+        _ch('ns_attendant', 'midwife',       'Midwife', 'মিডওয়াইফ'),
+        _ch('ns_attendant', 'fwv',           'Family Welfare Visitor (FWV)',
+            'পরিবার কল্যাণ পরিদর্শিকা (FWV)'),
+        _ch('ns_attendant', 'csba',          'CSBA', 'সিএসবিএ (CSBA)'),
+        _ch('ns_attendant', 'sacmo',         'Ma/SACMO', 'স্যাকমো (Ma/SACMO)'),
+        _ch('ns_attendant', 'ha_fwa',        'HA/FWA',
+            'স্বাস্থ্য সহকারী/পরিবার কল্যাণ সহকারী (HA/FWA)'),
+        _ch('ns_attendant', 'village_doctor','Village doctor', 'পল্লী চিকিৎসক'),
+        _ch('ns_attendant', 'dai',           'Dai (TBA)', 'দাই'),
+        _ch('ns_attendant', 'midwife_2',     'Midwife', 'মিডওয়াইফ'),
+        _ch('ns_attendant', 'ngo_worker',    'NGO worker', 'এনজিও কর্মী'),
+        _ch('ns_attendant', 'other',         'Other (specify)', 'অন্যান্য (উল্লেখ করুন)'),
     ]
     return ch
 
