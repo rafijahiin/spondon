@@ -111,7 +111,7 @@ DISTRICT_BANGLA = {
 DISTRICT_CHOICES = [
     _ch('district', d.lower().replace(' ', '_'), d, DISTRICT_BANGLA[d])
     for d in CIPRB_DISTRICTS
-]
+] + [_ch('district', 'other', 'Other', 'অন্যান্য')]
 
 YES_NO = [
     _ch('yes_no', 'yes',     'Yes',     'হ্যাঁ'),
@@ -1361,14 +1361,15 @@ def _community_neonatal_survey():
             'কমিউনিটি ক্লিনিকের কোডঃ (অবশ্যই পূরণ করতে হবে)',
             required='yes',
             hint='Numeric code printed on the paper form.'),
+        _sr('select_one district', 'address_district',
+            'District (address)', 'জেলা (ঠিকানা)'),
+        _sr('text', 'address_upazila', 'Upazila (address)', 'উপজেলা (ঠিকানা)'),
         _sr('text', 'mother_name', "Mother's name", 'মায়ের নামঃ',
             required='yes'),
         _sr('text', 'mother_dhis2_code',
-            "Mother's online registration (DHIS-2) coding (must be filled)",
-            'মায়ের অনলাইন রেজিস্ট্রেশন (ডিএইচআইএস-২) কোডিংঃ '
-            '(অবশ্যই পূরণ করতে হবে)',
-            required='yes',
-            hint='DHIS-2 registration number from the paper form.'),
+            "Mother's online registration (DHIS-2) coding",
+            'মায়ের অনলাইন রেজিস্ট্রেশন (ডিএইচআইএস-২) কোডিংঃ',
+            hint='DHIS-2 registration number from the paper form, if available.'),
         _sr('integer', 'mother_age', "Mother's age (years)",
             'মায়ের বয়সঃ (বৎসর)', constraint='. > 9 and . < 60', cmsg='10–59'),
         _sr('select_one education_level', 'mother_education',
@@ -2349,15 +2350,14 @@ def _facility_neonatal_survey():
             'Facility information', 'প্রতিষ্ঠানের তথ্য'),
         _sr('text', 'facility_name',
             'Name of facility', 'ফ্যাসিলিটির নাম:', required='yes'),
-        # Paper prints a 9-box code grid → anchor to exactly 9 digits.
+        # Paper prints an 8-box code grid → constraint allows 8 digits or blank.
         _sr('text', 'facility_code',
             'Facility code',
             'ফ্যাসিলিটি কোড',
-            required='yes',
-            hint='The 9-digit facility code printed on the paper form.',
-            constraint='regex(normalize-space(.), "^[0-9]{9}$")',
-            cmsg='Enter the 9-digit facility code (digits only). / '
-                 '৯ অঙ্কের ফ্যাসিলিটি কোড লিখুন।'),
+            hint='The 8-digit facility code printed on the paper form.',
+            constraint='regex(normalize-space(.), "^[0-9]{8}$") or .=""',
+            cmsg='Enter the 8-digit facility code (digits only). / '
+                 '৮ অঙ্কের ফ্যাসিলিটি কোড লিখুন।'),
         _sr('end_group', 'grp_facility'),
     ]
 
