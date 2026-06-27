@@ -32,17 +32,21 @@ interface ActionAggregates {
   actions: LiveAction[]
 }
 
-// Completion-health colour: green ≥75, amber 40-74, red <40 (matches the rest
-// of the CIPRB dashboard).
-const compColor = (pct: number) => (pct >= 75 ? '#16785F' : pct >= 40 ? '#AE4300' : '#E5103F')
+// Completion-health colour, on the UNFPA data-viz palette: green ≥75,
+// orange 40-74, coral <40 (cohesive with the rest of the CIPRB dashboard).
+const compColor = (pct: number) => (pct >= 75 ? '#58968A' : pct >= 40 ? '#FB904D' : '#ED5B7E')
 
-// Per-status palette for the breakdown bar (solid segments, no donut).
+// Per-status palette for the breakdown bar — the form (CIPRB-10) carries FIVE
+// statuses, so each gets a distinct UNFPA-palette hue. Active states (done /
+// active / slipping) read in colour; inactive states stay quiet and apart:
+// pending = light silver ("not started", recedes), dropped = muted violet
+// ("set aside") — a different HUE from pending so the two never blur together.
 const STATUS_COLOR: Record<string, string> = {
-  implemented: '#16785F',
-  in_progress: '#2563EB',
-  pending: '#94A3B8',
-  delayed: '#AE4300',
-  dropped: '#64748B',
+  implemented: '#58968A', // UNFPA viz green  — done
+  in_progress: '#649BF2', // UNFPA viz blue   — active
+  delayed:     '#FB904D', // UNFPA viz orange — slipping
+  pending:     '#C3C8D2', // light silver     — not started
+  dropped:     '#A37FB4', // muted violet     — set aside
 }
 
 function Bars({ rows }: { rows: Rollup[] }) {
@@ -54,7 +58,7 @@ function Bars({ rows }: { rows: Rollup[] }) {
           <div style={{ width: 140, fontSize: 12.5, color: 'var(--ink-2)', textAlign: 'right', flexShrink: 0 }}>
             {r.key} <span style={{ color: 'var(--muted)' }}>({r.n})</span>
           </div>
-          <div style={{ flex: 1, height: 16, background: 'rgba(0,0,0,0.06)', borderRadius: 4, overflow: 'hidden' }}>
+          <div style={{ flex: 1, height: 16, background: 'var(--hair-2)', borderRadius: 4, overflow: 'hidden' }}>
             <div style={{ width: `${r.pct}%`, height: '100%', background: compColor(r.pct), transition: 'width .4s ease' }} />
           </div>
           <div style={{ width: 42, fontSize: 12.5, fontWeight: 700, color: compColor(r.pct), textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
@@ -74,7 +78,7 @@ function StatusBreakdown({ rows, total }: { rows: StatusRow[]; total: number }) 
       <div className="mono" style={{ fontSize: 10, color: 'var(--muted)', letterSpacing: '0.08em', fontWeight: 700, marginBottom: 10 }}>
         STATUS MIX
       </div>
-      <div style={{ display: 'flex', height: 22, borderRadius: 6, overflow: 'hidden', background: 'rgba(0,0,0,0.05)' }}>
+      <div style={{ display: 'flex', gap: 2, height: 22, borderRadius: 6, overflow: 'hidden', background: 'var(--hair-2)' }}>
         {shown.map((r) => (
           <div
             key={r.status}
@@ -83,10 +87,10 @@ function StatusBreakdown({ rows, total }: { rows: StatusRow[]; total: number }) 
           />
         ))}
       </div>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 16px', marginTop: 10 }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '7px 16px', marginTop: 11 }}>
         {shown.map((r) => (
           <div key={r.status} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
-            <span style={{ width: 9, height: 9, borderRadius: 2, background: STATUS_COLOR[r.status] ?? '#94A3B8' }} />
+            <span style={{ width: 9, height: 9, borderRadius: '50%', background: STATUS_COLOR[r.status] ?? '#94A3B8', flexShrink: 0 }} />
             <span style={{ color: 'var(--ink-2)' }}>{r.label}</span>
             <b style={{ color: 'var(--ink)', fontVariantNumeric: 'tabular-nums' }}>{r.count}</b>
           </div>
@@ -120,8 +124,8 @@ export function ActionPlanTracker({ districts }: { districts?: readonly string[]
           <span className="dot" style={{ background: CIPRB_ORANGE }} />
           MPDSR RESPONSE PLAN · IMPLEMENTATION TRACKER
         </div>
-        <h2 className="section-title" style={{ margin: '6px 0 2px', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-          <ListChecks size={20} style={{ color: CIPRB_ORANGE }} />
+        <h2 className="section-title" style={{ margin: '8px 0 2px', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <ListChecks size={22} style={{ color: CIPRB_ORANGE, flexShrink: 0 }} />
           Are the agreed actions getting done?
         </h2>
         <p className="section-sub" style={{ margin: 0 }}>
@@ -177,13 +181,13 @@ export function ActionPlanTracker({ districts }: { districts?: readonly string[]
             <div style={{ fontSize: 12, color: 'var(--muted)' }}>actions tracked</div>
           </div>
           <div>
-            <div style={{ fontSize: 26, fontWeight: 800, color: overdue > 0 ? '#E5103F' : 'var(--ink)', fontVariantNumeric: 'tabular-nums', lineHeight: 1, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ fontSize: 26, fontWeight: 800, color: overdue > 0 ? '#ED5B7E' : 'var(--ink)', fontVariantNumeric: 'tabular-nums', lineHeight: 1, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
               {overdue > 0 && <AlertTriangle size={20} />}{overdue}
             </div>
             <div style={{ fontSize: 12, color: 'var(--muted)' }}>overdue</div>
           </div>
         </div>
-        <div style={{ minWidth: 220, maxWidth: 320 }}>
+        <div style={{ minWidth: 220, maxWidth: 340, paddingLeft: 22, borderLeft: '1px solid var(--hair)' }}>
           <StatusBreakdown rows={by_status} total={total} />
         </div>
       </div>
@@ -214,7 +218,7 @@ export function ActionPlanTracker({ districts }: { districts?: readonly string[]
           </thead>
           <tbody>
             {actions.map((a) => (
-              <tr key={a.action_id} style={a.is_overdue ? { background: 'rgba(229,16,63,0.05)' } : undefined}>
+              <tr key={a.action_id} style={a.is_overdue ? { background: 'rgba(237,91,126,0.07)' } : undefined}>
                 <td style={{ fontFamily: 'monospace', fontWeight: 700, whiteSpace: 'nowrap' }}>{a.action_id}</td>
                 <td style={{ whiteSpace: 'nowrap' }}>{a.district}</td>
                 <td style={{ maxWidth: 320 }}>
@@ -225,7 +229,7 @@ export function ActionPlanTracker({ districts }: { districts?: readonly string[]
                 </td>
                 <td>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <div style={{ flex: 1, height: 10, background: 'rgba(0,0,0,0.06)', borderRadius: 3, overflow: 'hidden' }}>
+                    <div style={{ flex: 1, height: 10, background: 'var(--hair-2)', borderRadius: 3, overflow: 'hidden' }}>
                       <div style={{ width: `${a.completion_pct}%`, height: '100%', background: compColor(a.completion_pct) }} />
                     </div>
                     <span style={{ fontSize: 12, fontWeight: 700, color: compColor(a.completion_pct), fontVariantNumeric: 'tabular-nums', width: 34, textAlign: 'right' }}>
@@ -235,8 +239,12 @@ export function ActionPlanTracker({ districts }: { districts?: readonly string[]
                 </td>
                 <td style={{ whiteSpace: 'nowrap' }}>
                   {a.is_overdue
-                    ? <span style={{ color: '#E5103F', fontWeight: 700 }}>Overdue</span>
-                    : <span>{a.status_label}</span>}
+                    ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#ED5B7E', fontWeight: 700 }}>
+                        <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#ED5B7E', flexShrink: 0 }} />Overdue
+                      </span>
+                    : <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                        <span style={{ width: 8, height: 8, borderRadius: '50%', background: STATUS_COLOR[a.status] ?? '#C3C8D2', flexShrink: 0 }} />{a.status_label}
+                      </span>}
                 </td>
               </tr>
             ))}
