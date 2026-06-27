@@ -59,6 +59,20 @@ def _bool(v):
     return None
 
 
+def _mnm_flag(v):
+    """WHO Maternal Near-Miss screening code → 3-state flag.
+
+    The verbatim form codes each Section-1 criterion 0-4 (0 = not present,
+    1 = present at arrival, 2 = developed within 12h, 3 = developed after 12h,
+    4 = unknown / NA). For the dashboard boolean we treat 1/2/3 (the condition
+    WAS present at some point) as True, 0 as False, and 4 / blank as None.
+    Also accepts the legacy yes/no/unknown values from the pre-rebuild form."""
+    s = _s(v).lower()
+    if s in ('1', '2', '3', 'yes', 'true', 'y', 't'):  return True
+    if s in ('0', 'no', 'false', 'n', 'f'):            return False
+    return None
+
+
 def _date(v):
     if not v: return None
     if isinstance(v, datetime): return v.date()
@@ -578,6 +592,52 @@ _MNM_BOOL_FIELDS = (
     'life_hepatic', 'life_neuro', 'life_uterine',
 )
 
+# Section 3 Q15 mode-of-delivery checkboxes → the single indexed
+# `mode_of_delivery` value. The Excel codes Q15 as 9 separate 0/1 items; we keep
+# all 9 in raw_payload and store the first 'present' one on the model.
+_MNM_MODE_FIELDS = (
+    ('mode_vaginal', 'vaginal'),
+    ('mode_csection', 'csection'),
+    ('mode_complete_abortion', 'complete_abortion'),
+    ('mode_curettage', 'curettage'),
+    ('mode_medical_evacuation', 'medical_evacuation'),
+    ('mode_lap_ectopic', 'lap_ectopic'),
+    ('mode_lap_rupture', 'lap_rupture'),
+    ('mode_discharged_pregnant', 'discharged_pregnant'),
+    ('mode_unknown_other', 'unknown_other'),
+)
+
+# Section 5 underlying-cause flags → the indexed `cause_of_near_miss` bucket
+# used by the dashboards. The verbatim form has no single 'primary cause'
+# question, so we derive it from the WHO underlying-cause checklist (un_*),
+# taking the first 'present' item in clinical-priority order. The full
+# checklist stays in raw_payload.
+_MNM_CAUSE_PRIORITY = (
+    ('un_haemorrhage',     'haemorrhage'),
+    ('un_hypertensive',    'eclampsia'),
+    ('un_infection',       'sepsis'),
+    ('un_abortive',        'abortion_related'),
+    ('un_ectopic_molar',   'abortion_related'),
+    ('un_rupture',         'other'),
+    ('un_medical',         'indirect'),
+    ('un_coincidental',    'indirect'),
+    ('un_other_obstetric', 'other'),
+    ('un_unexpected',      'other'),
+    ('un_unknown',         'other'),
+)
+
+# Section 6 contributory-condition flags → labels, summarised into the existing
+# free-text `contributory_conditions` field (structured cc_* live in raw_payload).
+_MNM_CONTRIB_LABELS = (
+    ('cc_anemia',      'Anemia'),
+    ('cc_hiv',         'HIV infection'),
+    ('cc_prev_cs',     'Previous cesarean section'),
+    ('cc_obstructed',  'Prolonged/obstructed labor'),
+    ('cc_heart',       'Heart disease'),
+    ('cc_diabetes',    'Diabetes mellitus'),
+    ('cc_respiratory', 'Respiratory dysfunction; Asthma, TB'),
+)
+
 
 def handle_ciprb_near_miss(payload, lat, lng):
     district = _district(payload)
@@ -609,16 +669,38 @@ def handle_ciprb_near_miss(payload, lat, lng):
         if gw: case.gestational_weeks = gw
         case.facility_name = _s(payload.get('facility_name'))
 
-        # 3-state flags: always write _bool(...) — True/False/None — so an
-        # explicit 'Unknown' is stored as None (distinct from False = No)
-        # instead of silently collapsing into the model default.
+        # 3-state screening flags: the verbatim form sends the WHO 0-4 code,
+        # so map 1/2/3 → present (True), 0 → False, 4/blank → None. _mnm_flag
+        # also accepts legacy yes/no/unknown from the pre-rebuild form.
         for fld in _MNM_BOOL_FIELDS:
-            setattr(case, fld, _bool(payload.get(fld)))
+            setattr(case, fld, _mnm_flag(payload.get(fld)))
 
-        case.mode_of_delivery   = _s(payload.get('mode_of_delivery'))
-        case.delivery_outcome   = _s(payload.get('delivery_outcome'))
-        case.cause_of_near_miss = _s(payload.get('cause_of_near_miss'))
-        case.contributory_conditions = _s(payload.get('contributory_conditions'))
+        # Q15 is 9 binary checkboxes in the Excel; store the first 'present'
+        # one on the model (all 9 remain in raw_payload). Legacy single-select
+        # submissions fall back to the old mode_of_delivery value.
+        case.mode_of_delivery = next(
+            (slug for key, slug in _MNM_MODE_FIELDS
+             if _s(payload.get(key)).lower() in ('1', 'yes', 'true')),
+            _s(payload.get('mode_of_delivery')))
+        # The verbatim form has no separate 'delivery_outcome' question; derive
+        # it from the infant's vital status at birth (Q17.1).
+        _ivb = _s(payload.get('infant_status_birth')).lower()
+        case.delivery_outcome = ('livebirth' if _ivb == 'alive'
+                                 else 'stillbirth' if _ivb == 'dead' else '')
+        # Derive the indexed primary cause from the Section-5 checklist
+        # (the verbatim form has no single 'primary cause' question). Falls
+        # back to any legacy cause_of_near_miss value a pre-rebuild form sent.
+        case.cause_of_near_miss = next(
+            (bucket for key, bucket in _MNM_CAUSE_PRIORITY
+             if _s(payload.get(key)).lower() in ('1', 'yes', 'true')),
+            _s(payload.get('cause_of_near_miss')))
+        # Summarise the Section-6 checklist into the existing free-text field.
+        _cc = [lbl for key, lbl in _MNM_CONTRIB_LABELS
+               if _s(payload.get(key)).lower() in ('1', 'yes', 'true')]
+        _cc_other = _s(payload.get('cc_other_specify'))
+        if _cc_other:
+            _cc.append(_cc_other)
+        case.contributory_conditions = ', '.join(_cc)
         case.audit_summary           = _s(payload.get('audit_summary'))
 
         case.enumerator_name   = _s(payload.get('enumerator_name'))

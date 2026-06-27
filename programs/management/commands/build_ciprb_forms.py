@@ -3185,146 +3185,363 @@ def _notification_slip_choices():
 # ╚══════════════════════════════════════════════════════════════════════════╝
 
 def _near_miss_survey():
+    """Full WHO Maternal Near-Miss audit form, digitised verbatim from
+    Tool_Near Miss.xlsx (column A — the 18 district sheets are identical).
+    Ten sections: S1 screening (0-4 temporal coding), S2 general info,
+    S3 maternal/perinatal, S4 process indicators, S5 underlying causes,
+    S6 contributory conditions, S7-10 audit narrative. English labels are
+    verbatim from the source; Bangla is a translation aid (source is EN only).
+
+    Field names that the ingest handler / MaternalNearMissCase model map are
+    preserved (woman_name, woman_age, gestational_weeks, facility_name,
+    event_date, the 17 screening flags, mode_of_delivery, cause_of_near_miss,
+    contributory_conditions, audit_summary). Everything else is carried in
+    raw_payload."""
     rows = _meta('Annual near-miss case serial number',
                  'নিকট-মৃত্যুর বাৎসরিক ক্রমিক নং')
-    rows += [
-        _sr('begin_group', 'grp_woman',
-            "Woman's information", 'মহিলার তথ্য'),
-        _sr('text', 'woman_name', 'Name', 'নাম', required='yes'),
-        _sr('integer', 'woman_age', 'Age (years)',
-            'বয়স (বছর)', required='yes', constraint='. >= 10 and . <= 60'),
-        _sr('integer', 'gestational_weeks',
-            'Gestational age (weeks)',
-            'গর্ভাবস্থার সপ্তাহ'),
-        _sr('text', 'facility_name',
-            'Facility where near-miss managed',
-            'যেখানে ব্যবস্থাপনা হয়েছে'),
-        _sr('date', 'event_date', 'Date of event',
-            'ঘটনার তারিখ', required='yes'),
-        _sr('end_group', 'grp_woman'),
-    ]
 
-    # ── Section 1: Screening — severe maternal complications.
-    sevs = [
-        ('sev_pph',       'Severe postpartum haemorrhage',
-         'গুরুতর পিপিএইচ'),
-        ('sev_preec',     'Severe pre-eclampsia',
-         'গুরুতর প্রি-একলাম্পসিয়া'),
-        ('eclampsia',     'Eclampsia', 'একলাম্পসিয়া'),
-        ('sepsis',        'Sepsis or severe systemic infection',
-         'সেপসিস / গুরুতর সংক্রমণ'),
-        ('rupt_uterus',   'Ruptured uterus',
-         'জরায়ু ফাটা'),
-        ('sev_abortion',  'Severe complication of abortion',
-         'গর্ভপাতের গুরুতর জটিলতা'),
-    ]
+    # ── Section 1: Screening questions (WHO MNM Q1-3). Each criterion is
+    # coded 0-4 per the WHO temporal scheme (verbatim from source A4-A5).
     rows += [
-        _sr('begin_group', 'grp_sec1',
-            'Section 1 · Severe maternal complications',
-            'প্রথম পর্যায় · গুরুতর মাতৃস্বাস্থ্য জটিলতা'),
+        _sr('begin_group', 'grp_sec1', 'Section 1 · Screening Questions',
+            'প্রথম পর্যায় · স্ক্রিনিং প্রশ্ন'),
+        _sr('note', 'sec1_coding',
+            'In the questions 1-3, please specify:  0 = The condition was not '
+            'present OR intervention not needed during the hospital stay;  '
+            '1 = The condition was present at arrival;  2 = The condition was '
+            'not present at arrival but developed within 12 hours of hospital '
+            'admission;  3 = The condition was not present on admission but '
+            'developed after 12 hours of hospital admission;  4 = Information '
+            'not available / unknown or not applicable',
+            'প্রশ্ন ১-৩ এ উত্তর দিন: ০=ছিল না/দরকার হয়নি; ১=ভর্তির সময় ছিল; '
+            '২=ভর্তির ১২ ঘণ্টার মধ্যে দেখা দিয়েছে; ৩=ভর্তির ১২ ঘণ্টা পরে দেখা '
+            'দিয়েছে; ৪=তথ্য নেই / অজানা / প্রযোজ্য নয়'),
+        _sr('note', 'q1_head', '1. Severe maternal complications',
+            '১. গুরুতর মাতৃস্বাস্থ্য জটিলতা'),
     ]
-    for code, en, bn in sevs:
-        rows.append(_sr('select_one yes_no', code, en, bn,
-            hint='Tick Yes only if clinically confirmed; choose Unknown if not documented'))
+    for code, en, bn in [
+        ('sev_pph',      'Severe Postpartum Hemorrhage', 'গুরুতর প্রসব-পরবর্তী রক্তক্ষরণ'),
+        ('sev_preec',    'Severe Pre-eclampsia', 'গুরুতর প্রি-একলাম্পসিয়া'),
+        ('eclampsia',    'Eclampsia', 'একলাম্পসিয়া'),
+        ('sepsis',       'Sepsis or severe systemic infection', 'সেপসিস বা গুরুতর সংক্রমণ'),
+        ('rupt_uterus',  'Ruptured uterus', 'জরায়ু ফেটে যাওয়া'),
+        ('sev_abortion', 'Severe complication of abortion', 'গর্ভপাতের গুরুতর জটিলতা'),
+    ]:
+        rows.append(_sr('select_one mnm_code', code, en, bn))
+
+    rows.append(_sr('note', 'q2_head', '2. Critical interventions',
+                    '২. ক্রিটিক্যাল হস্তক্ষেপ'))
+    for code, en, bn in [
+        ('crit_blood',   'Use of blood products (includes any blood transfusion)',
+         'রক্তজাত দ্রব্যের ব্যবহার (যেকোনো রক্ত পরিসঞ্চালন সহ)'),
+        ('crit_radiol',  'Interventional radiology', 'ইন্টারভেনশনাল রেডিওলজি'),
+        ('crit_laparot', 'Laparotomy (includes hysterectomy, excludes caesarean section)',
+         'ল্যাপারোটমি (হিস্টেরেক্টমি সহ, সিজার বাদে)'),
+        ('crit_icu',     'Admission to intensive care unit', 'নিবিড় পরিচর্যা কেন্দ্রে ভর্তি'),
+    ]:
+        rows.append(_sr('select_one mnm_code', code, en, bn))
+
+    rows.append(_sr('note', 'q3_head',
+        '3. Life-threatening conditions / Organ-dysfunction-based',
+        '৩. জীবন-হুমকিস্বরূপ অবস্থা / অঙ্গ-ব্যর্থতা'))
+    for code, en, bn in [
+        ('life_cardio',  'Cardiovascular dysfunction [Shock, use of continuous vasoactive drugs, cardiac arrest, cardio pulmonary resuscitation, severe hypoperfusion (lactate >5 mmol/L or >45mg/dL), severe acidosis pH<7.1]', 'হৃদ-সংবহন ব্যর্থতা'),
+        ('life_resp',    'Respiratory dysfunction [Acute cyanosis, gasping, severe tachypnea (respiratory rate >40 breaths per minute), Severe bradypnea (respiratory rate <6 breaths per minute), Severe hypoxemia (PAO2/FiO2 < 200, O2 saturation <90% for ≥60 min), intubation and ventilation not related to anesthesia]', 'শ্বাসতন্ত্রের ব্যর্থতা'),
+        ('life_renal',   'Renal dysfunction: [Oliguria non-responsive to fluids or diuretics Dialysis for acute renal failure, severe acute azotemia (creatinine ≥300 μmol/mL or ≥3.5 mg/dL]', 'বৃক্কীয় ব্যর্থতা'),
+        ('life_coag',    'Coagulation/ hematological dysfunction [Failure to form clots, massive transfusion of blood or red cells (≥5 units), severe acute thrombocytopenia (<50 000 platelets/mL)]', 'রক্ত জমাট / রক্তসংক্রান্ত ব্যর্থতা'),
+        ('life_hepatic', 'Hepatic dysfunction [Jaundice in the presence of pre-eclampsia, Bilirubin >100 μmol/L or >6.0 mg/dL]', 'যকৃৎ ব্যর্থতা'),
+        ('life_neuro',   'Neurological Dysfunction [Any unconsciousness (lasting ≥12 hours)/coma (including metabolic coma), stroke, Uncontrollable Fits/status epilepticus, total paralysis]', 'স্নায়বিক ব্যর্থতা'),
+        ('life_uterine', 'Uterine dysfunction/Hysterectomy [Hemorrhage or infection leading to hysterectomy]', 'জরায়ু ব্যর্থতা / হিস্টেরেক্টমি'),
+    ]:
+        rows.append(_sr('select_one mnm_code', code, en, bn))
+
+    rows.append(_sr('note', 'sec1_eligibility',
+        'If the answer is "1" or "2" or "3" to any of the questions in '
+        'Section 1 (Questions 1-3), go to the following sections (Sections '
+        '2-10). If the answer is "0" or "4" to all of the questions in '
+        'Section 1 (Questions 1-3), the woman is not eligible for this review '
+        '— no need to answer the following sections. In case of doubt on '
+        'questions 1 to 3, consult with the attending physician.',
+        'প্রথম পর্যায়ের যেকোনো প্রশ্নে উত্তর "১/২/৩" হলে পরবর্তী অংশগুলো '
+        '(২-১০) পূরণ করুন। সব উত্তর "০" বা "৪" হলে রোগী এই রিভিউয়ের জন্য '
+        'যোগ্য নন — পরবর্তী অংশ পূরণের দরকার নেই। সন্দেহ থাকলে দায়িত্বরত '
+        'চিকিৎসকের সাথে পরামর্শ করুন।'))
     rows.append(_sr('end_group', 'grp_sec1'))
 
-    # ── Section 2: Critical interventions.
-    crits = [
-        ('crit_blood',   'Use of blood products',
-         'রক্ত পরিসঞ্চালন'),
-        ('crit_radiol',  'Interventional radiology',
-         'হস্তক্ষেপমূলক রেডিওলজি'),
-        ('crit_laparot', 'Laparotomy (incl. hysterectomy)',
-         'ল্যাপারোটমি (হিস্টেরেক্টমি সহ)'),
-        ('crit_icu',     'Admission to intensive care unit',
-         'নিবিড় পরিচর্যা ইউনিটে ভর্তি'),
-    ]
+    # ── Section 2: General information (Q4-14).
     rows += [
-        _sr('begin_group', 'grp_sec2',
-            'Section 2 · Critical interventions',
-            'দ্বিতীয় পর্যায় · ক্রিটিক্যাল হস্তক্ষেপ'),
+        _sr('begin_group', 'grp_sec2g', 'Section 2 · General information',
+            'দ্বিতীয় পর্যায় · সাধারণ তথ্য'),
+        _sr('text', 'facility_name', '4. Name of health facility',
+            '৪. স্বাস্থ্য কেন্দ্রের নাম', required='yes'),
+        _sr('text', 'hospital_reg_no', '5. Hospital registration number',
+            '৫. হাসপাতাল রেজিস্ট্রেশন নম্বর'),
+        _sr('text', 'woman_name', '6. Name of the patient',
+            '৬. রোগীর নাম', required='yes'),
+        _sr('integer', 'woman_age', '7. Age of the patient (Year)',
+            '৭. রোগীর বয়স (বছর)', required='yes', constraint='. >= 10 and . <= 60'),
+        _sr('text', 'patient_address', '8. Address', '৮. ঠিকানা'),
+        _sr('date', 'event_date', '9. Date of hospital admission (dd/mm/yy)',
+            '৯. হাসপাতালে ভর্তির তারিখ', required='yes'),
+        _sr('text', 'admission_time',
+            '10. Time of hospital admission (hr/min/am/pm)', '১০. ভর্তির সময়'),
+        _sr('date', 'delivery_date',
+            '11. Date of delivery or uterine evacuation (dd/mm/yy)',
+            '১১. প্রসব/জরায়ু খালি করার তারিখ'),
+        _sr('text', 'delivery_time',
+            '12. Approximate time of delivery or uterine evacuation (hr/min/am/pm)',
+            '১২. প্রসব/জরায়ু খালি করার আনুমানিক সময়'),
+        _sr('date', 'discharge_date', '13. Date of hospital discharge (dd/mm/yy)',
+            '১৩. হাসপাতাল থেকে ছাড়ার তারিখ'),
+        _sr('date', 'review_date', '14. Date of Near-miss review (dd/mm/yy)',
+            '১৪. নিকট-মৃত্যু রিভিউয়ের তারিখ'),
+        _sr('end_group', 'grp_sec2g'),
     ]
-    for code, en, bn in crits:
-        rows.append(_sr('select_one yes_no', code, en, bn,
-            hint='Tick Yes only if clinically confirmed; choose Unknown if not documented'))
-    rows.append(_sr('end_group', 'grp_sec2'))
 
-    # ── Section 3: Life-threatening conditions.
-    life = [
-        ('life_cardio',  'Cardiovascular dysfunction (shock, arrest, severe hypoperfusion)',
-         'হৃদ-পরিচ্ছেদ ব্যর্থতা'),
-        ('life_resp',    'Respiratory dysfunction (severe tachypnoea, hypoxemia)',
-         'শ্বাসতন্ত্রের ব্যর্থতা'),
-        ('life_renal',   'Renal dysfunction (oliguria refractory to fluids, creatinine ≥1.4)',
-         'বৃক্ষীয় ব্যর্থতা'),
-        ('life_coag',    'Coagulation / haematological dysfunction (failure to clot, platelet <50k)',
-         'রক্ত জমাট ব্যর্থতা'),
-        ('life_hepatic', 'Hepatic dysfunction (jaundice, bilirubin >6.0)',
-         'যকৃত ব্যর্থতা'),
-        ('life_neuro',   'Neurological dysfunction (coma, seizure, stroke, status epilepticus)',
-         'স্নায়বিক ব্যর্থতা'),
-        ('life_uterine', 'Uterine dysfunction / hysterectomy',
-         'জরায়ু ব্যর্থতা / হিস্টেরেক্টমি'),
-    ]
+    # ── Section 3: Maternal and Perinatal Information (Q15-17).
+    # Q15 is digitised exactly as the Excel sheet structures it: a header row
+    # plus 9 checkbox items, each coded 0=No/1=Yes — NOT a single-select.
     rows += [
-        _sr('begin_group', 'grp_sec3',
-            'Section 3 · Life-threatening conditions',
-            'তৃতীয় পর্যায় · জীবন-হুমকির অবস্থা'),
+        _sr('begin_group', 'grp_sec3m',
+            'Section 3 · Maternal and Perinatal Information',
+            'তৃতীয় পর্যায় · মাতৃ ও প্রসবকালীন তথ্য'),
+        _sr('note', 'q15_head',
+            '15. Final mode of delivery / end of pregnancy: (Tick appropriate '
+            'response) (0=No; 1=Yes)',
+            '১৫. প্রসব/গর্ভাবস্থার চূড়ান্ত পরিণতি (প্রযোজ্য উত্তরে টিক দিন) (০=না; ১=হ্যাঁ)'),
     ]
-    for code, en, bn in life:
-        rows.append(_sr('select_one yes_no', code, en, bn,
-            hint='Tick Yes only if clinically confirmed; choose Unknown if not documented'))
-    rows.append(_sr('end_group', 'grp_sec3'))
+    for code, en, bn in [
+        ('mode_vaginal',             '1. Vaginal delivery', '১. স্বাভাবিক প্রসব'),
+        ('mode_csection',            '2. Caesarean section', '২. সিজারিয়ান'),
+        ('mode_complete_abortion',   '3. Complete abortion', '৩. সম্পূর্ণ গর্ভপাত'),
+        ('mode_curettage',           '4. Curettage / vacuum aspiration', '৪. কিউরেটাজ / ভ্যাকুয়াম অ্যাসপিরেশন'),
+        ('mode_medical_evacuation',  '5. Medical methods for uterine evacuation', '৫. ওষুধে জরায়ু খালি করা'),
+        ('mode_lap_ectopic',         '6. Laparotomy for ectopic pregnancy', '৬. একটোপিক প্রেগন্যান্সিতে ল্যাপারোটমি'),
+        ('mode_lap_rupture',         '7. Laparotomy for ruptured uterus', '৭. জরায়ু ফাটায় ল্যাপারোটমি'),
+        ('mode_discharged_pregnant', '8. Woman discharged while still pregnant', '৮. গর্ভাবস্থায় ছাড়পত্র'),
+        ('mode_unknown_other',       '9. Unknown / other', '৯. অজানা / অন্যান্য'),
+    ]:
+        rows.append(_sr('select_one yes_no', code, en, bn))
+    rows += [
+        _sr('integer', 'gestational_weeks',
+            '16.1 Best estimate of gestational age at delivery or abortion '
+            '(completed weeks) — not applicable if Q15 = 8 or 9',
+            '১৬.১ প্রসব/গর্ভপাতের সময় গর্ভকাল (সম্পূর্ণ সপ্তাহ)',
+            constraint='. >= 0 and . <= 45'),
+        _sr('integer', 'gestational_weeks_discharge',
+            '16.2 Best estimate of gestational age at hospital discharge '
+            '(completed weeks) — applicable if Q15 = 8',
+            '১৬.২ ছাড়ার সময় গর্ভকাল (সম্পূর্ণ সপ্তাহ)',
+            relevant="selected(${mode_discharged_pregnant},'yes')",
+            constraint='. >= 0 and . <= 45'),
+        _sr('note', 'q17_head',
+            '17. Regarding the vital status of the infant, please specify',
+            '১৭. শিশুর জীবিত অবস্থা'),
+        _sr('select_one infant_vital', 'infant_status_birth',
+            '17.1 At birth', '১৭.১ জন্মের সময়'),
+        _sr('select_one infant_vital', 'infant_status_discharge',
+            '17.2 At hospital discharge or on the 7th day of life, if still in the hospital',
+            '১৭.২ ছাড়ার সময় বা জীবনের ৭ম দিনে (হাসপাতালে থাকলে)'),
+        _sr('end_group', 'grp_sec3m'),
+    ]
 
+    # ── Section 4: Process Indicators (Q18-19).
     rows += [
-        _sr('begin_group', 'grp_delivery',
-            'Delivery & outcome', 'প্রসব ও ফলাফল'),
-        _sr('select_one mode_of_delivery', 'mode_of_delivery',
-            'Mode of delivery', 'প্রসবের পদ্ধতি'),
-        _sr('select_one delivery_outcome', 'delivery_outcome',
-            'Delivery outcome', 'প্রসবের ফলাফল'),
-        _sr('select_one cod_maternal', 'cause_of_near_miss',
-            'Primary cause of near-miss',
-            'নিকট-মৃত্যুর প্রধান কারণ', required='yes'),
-        _sr('text', 'contributory_conditions',
-            'Contributory / associated conditions',
-            'অবদানকারী / সম্পর্কিত অবস্থা'),
+        _sr('begin_group', 'grp_sec4', 'Section 4 · Process Indicators',
+            'চতুর্থ পর্যায় · প্রক্রিয়া নির্দেশক'),
+        _sr('note', 'q18_head',
+            '18. About condition at arrival in the facility and the referral '
+            'process, specify (0=No; 1=Yes)',
+            '১৮. কেন্দ্রে পৌঁছানোর সময়ের অবস্থা ও রেফারেল প্রক্রিয়া'),
+    ]
+    for code, en, bn in [
+        ('arr_delivery_before', 'Delivery or abortion occurred before arrival at hospital',
+         'হাসপাতালে আসার আগে প্রসব/গর্ভপাত হয়েছে'),
+        ('arr_delivery_3h', 'Delivery occurred within 3 hours of arrival in the hospital',
+         'আসার ৩ ঘণ্টার মধ্যে প্রসব হয়েছে'),
+        ('arr_lap_3h', 'Laparotomy done within 3 hours of hospital arrival',
+         'আসার ৩ ঘণ্টার মধ্যে ল্যাপারোটমি হয়েছে'),
+        ('arr_lap_before', 'Laparotomy done before arrival at this hospital',
+         'এই হাসপাতালে আসার আগে ল্যাপারোটমি হয়েছে'),
+        ('arr_ref_from', 'Woman referred from other hospital',
+         'অন্য হাসপাতাল থেকে রেফার করা হয়েছে'),
+        ('arr_ref_to', 'Woman referred to any higher-level hospital',
+         'উচ্চতর হাসপাতালে রেফার করা হয়েছে'),
+    ]:
+        rows.append(_sr('select_one yes_no', code, en, bn))
+
+    rows.append(_sr('note', 'q19_head',
+        '19. About use of interventions [if applicable]: please specify '
+        'whether the woman received any of the following (0=No; 1=Yes)',
+        '১৯. হস্তক্ষেপের ব্যবহার (প্রযোজ্য হলে)'))
+    rows.append(_sr('note', 'q19_1_head',
+        '19.1 Uterotonic for prevention of PPH after delivery',
+        '১৯.১ প্রসব-পরবর্তী রক্তক্ষরণ প্রতিরোধে ইউটেরোটনিক'))
+    rows.append(_sr('select_one yes_no', 'utero_prev_oxytocin', 'Oxytocin', 'অক্সিটোসিন'))
+    rows.append(_sr('select_one yes_no', 'utero_prev_other', 'Other uterotonic, specify',
+                    'অন্যান্য ইউটেরোটনিক (উল্লেখ করুন)'))
+    rows.append(_sr('text', 'utero_prev_other_specify',
+                    'Other uterotonic — specify', 'অন্যান্য ইউটেরোটনিক — উল্লেখ করুন',
+                    relevant="selected(${utero_prev_other},'yes')"))
+    rows.append(_sr('note', 'q19_2_head', '19.2 For treatment of PPH',
+                    '১৯.২ রক্তক্ষরণের চিকিৎসায়'))
+    for code, en, bn in [
+        ('pph_oxytocin',         'Oxytocin', 'অক্সিটোসিন'),
+        ('pph_ergometrine',      'Ergometrine', 'এরগোমেট্রিন'),
+        ('pph_misoprostol',      'Misoprostol', 'মিসোপ্রোস্টল'),
+        ('pph_other_utero',      'Other uterotonics', 'অন্যান্য ইউটেরোটনিক'),
+        ('pph_tranexamic',       'Tranexamic acid', 'ট্রানেক্সামিক অ্যাসিড'),
+        ('pph_carbetocin',       'Carbetocin', 'কার্বেটোসিন'),
+        ('pph_repair_tear',      'Repair of tear', 'ছিঁড়ে যাওয়া স্থান মেরামত'),
+        ('pph_remove_products',  'Removal of retained products', 'অবশিষ্ট অংশ অপসারণ'),
+        ('pph_tamponade',        'Balloon or condom tamponade', 'বেলুন/কন্ডম ট্যাম্পোনেড'),
+        ('pph_artery_ligation',  'Artery ligation (uterine/hypogastric)', 'ধমনী বন্ধন (জরায়ু/হাইপোগ্যাস্ট্রিক)'),
+        ('pph_hysterectomy',     'Hysterectomy', 'হিস্টেরেক্টমি'),
+        ('pph_abdominal_packing','Abdominal packing', 'অ্যাবডমিনাল প্যাকিং'),
+        ('pph_blood_transfusion','Blood transfusion', 'রক্ত পরিসঞ্চালন'),
+        ('pph_manual_placenta',  'Manual removal of placenta', 'হাতে গর্ভফুল অপসারণ'),
+    ]:
+        rows.append(_sr('select_one yes_no', code, en, bn))
+    rows.append(_sr('note', 'q19_3_head', '19.3 For treatment of Eclampsia',
+                    '১৯.৩ একলাম্পসিয়ার চিকিৎসায়'))
+    rows.append(_sr('select_one yes_no', 'ecl_anticonvulsant',
+                    '19.3.1 Anticonvulsant', '১৯.৩.১ অ্যান্টিকনভালসেন্ট'))
+    rows.append(_sr('select_one yes_no', 'ecl_antihypertensive',
+                    '19.3.2 Antihypertensive (Oral)', '১৯.৩.২ অ্যান্টিহাইপারটেনসিভ (মুখে)'))
+    rows.append(_sr('note', 'q19_4_head', '19.4 Antibiotics', '১৯.৪ অ্যান্টিবায়োটিক'))
+    for code, en, bn in [
+        ('abx_proph_csection',  'Prophylactic antibiotic for C-section',
+         'সিজারে প্রতিরোধমূলক অ্যান্টিবায়োটিক'),
+        ('abx_proph_laparotomy','Prophylactic antibiotic for Laparotomy',
+         'ল্যাপারোটমিতে প্রতিরোধমূলক অ্যান্টিবায়োটিক'),
+        ('abx_therapeutic',     'Parenteral, therapeutic antibiotic for severe systemic infections or sepsis',
+         'গুরুতর সংক্রমণ/সেপসিসে প্যারেন্টেরাল থেরাপিউটিক অ্যান্টিবায়োটিক'),
+    ]:
+        rows.append(_sr('select_one yes_no', code, en, bn))
+    rows.append(_sr('note', 'q19_5_head',
+        '19.5 For fetal lung maturation in case of preterm birth',
+        '১৯.৫ প্রিটার্ম জন্মে ভ্রূণের ফুসফুস পরিপক্বতায়'))
+    rows.append(_sr('select_one yes_no', 'flm_corticosteroids',
+        'Corticosteroids (Dexamethasone or Betamethason)',
+        'কর্টিকোস্টেরয়েড (ডেক্সামেথাসন বা বিটামেথাসন)'))
+    rows.append(_sr('note', 'q19_6_head', '19.6 For managing Rupture uterus',
+                    '১৯.৬ জরায়ু ফাটা ব্যবস্থাপনায়'))
+    for code, en, bn in [
+        ('rupt_lap_repair', 'Laparotomy followed by repair', 'ল্যাপারোটমি ও মেরামত'),
+        ('rupt_lap_hyster', 'Laparotomy followed by Hysterectomy', 'ল্যাপারোটমি ও হিস্টেরেক্টমি'),
+        ('rupt_blood',      'Blood transfusion', 'রক্ত পরিসঞ্চালন'),
+    ]:
+        rows.append(_sr('select_one yes_no', code, en, bn))
+    rows.append(_sr('note', 'q19_7_head', '19.7 For Severe complication of abortion',
+                    '১৯.৭ গর্ভপাতের গুরুতর জটিলতায়'))
+    for code, en, bn in [
+        ('abrt_shock',     'Shock management', 'শক ব্যবস্থাপনা'),
+        ('abrt_blood',     'Blood transfusion', 'রক্ত পরিসঞ্চালন'),
+        ('abrt_antibiotic','Therapeutic antibiotic in septic abortion',
+         'সেপটিক গর্ভপাতে থেরাপিউটিক অ্যান্টিবায়োটিক'),
+        ('abrt_dc',        'D&C', 'ডি অ্যান্ড সি'),
+    ]:
+        rows.append(_sr('select_one yes_no', code, en, bn))
+    rows.append(_sr('end_group', 'grp_sec4'))
+
+    # ── Section 5: Underlying Causes of Near-Miss (Q20).
+    rows += [
+        _sr('begin_group', 'grp_sec5', 'Section 5 · Underlying Causes of Near-Miss',
+            'পঞ্চম পর্যায় · নিকট-মৃত্যুর অন্তর্নিহিত কারণ'),
+        _sr('note', 'q20_head', '20. Please specify (0=No; 1=Yes)', '২০. উল্লেখ করুন'),
+    ]
+    for code, en, bn in [
+        ('un_abortive',        'Pregnancy with abortive outcome', 'গর্ভপাতমূলক পরিণতির গর্ভাবস্থা'),
+        ('un_ectopic_molar',   'Ectopic /Molar Pregnancy', 'একটোপিক / মোলার গর্ভাবস্থা'),
+        ('un_haemorrhage',     'Obstetric hemorrhage', 'প্রসূতি রক্তক্ষরণ'),
+        ('un_hypertensive',    'Hypertensive disorders', 'উচ্চ রক্তচাপজনিত ব্যাধি'),
+        ('un_infection',       'Pregnancy-related infection', 'গর্ভকালীন সংক্রমণ'),
+        ('un_rupture',         'Ruptured uterus', 'জরায়ু ফেটে যাওয়া'),
+        ('un_other_obstetric', 'Other obstetric diseases or complication', 'অন্যান্য প্রসূতি রোগ বা জটিলতা'),
+        ('un_medical',         'Medical/surgical/mental disease or complication', 'মেডিকেল/সার্জিকাল/মানসিক রোগ বা জটিলতা'),
+        ('un_unexpected',      'Unexpected complications of management', 'ব্যবস্থাপনার অপ্রত্যাশিত জটিলতা'),
+        ('un_coincidental',    'Coincidental conditions', 'আকস্মিক অবস্থা'),
+        ('un_unknown',         'Unknown', 'অজানা'),
+    ]:
+        rows.append(_sr('select_one yes_no', code, en, bn))
+    rows.append(_sr('end_group', 'grp_sec5'))
+
+    # ── Section 6: Contributory / Associated Conditions (Q21).
+    rows += [
+        _sr('begin_group', 'grp_sec6',
+            'Section 6 · Contributory / Associated Conditions of Near-Miss',
+            'ষষ্ঠ পর্যায় · অবদানকারী / সম্পর্কিত অবস্থা'),
+        _sr('note', 'q21_head', '21. Please specify', '২১. উল্লেখ করুন'),
+    ]
+    for code, en, bn in [
+        ('cc_anemia',      'Anemia', 'রক্তস্বল্পতা'),
+        ('cc_hiv',         'HIV infection', 'এইচআইভি সংক্রমণ'),
+        ('cc_prev_cs',     'Previous cesarean section', 'পূর্ববর্তী সিজার'),
+        ('cc_obstructed',  'Prolonged/obstructed labor', 'দীর্ঘ/বাধাগ্রস্ত প্রসব'),
+        ('cc_heart',       'Heart disease', 'হৃদরোগ'),
+        ('cc_diabetes',    'Diabetes mellitus', 'ডায়াবেটিস মেলাইটাস'),
+        ('cc_respiratory', 'Respiratory dysfunction;Asthma,TB', 'শ্বাসতন্ত্রের ব্যাধি; হাঁপানি, যক্ষ্মা'),
+        ('cc_other',       'Other condition, specify', 'অন্যান্য অবস্থা (উল্লেখ করুন)'),
+    ]:
+        rows.append(_sr('select_one yes_no', code, en, bn))
+    rows.append(_sr('text', 'cc_other_specify', 'Other condition — specify',
+                    'অন্যান্য অবস্থা — উল্লেখ করুন',
+                    relevant="selected(${cc_other},'yes')"))
+    rows.append(_sr('end_group', 'grp_sec6'))
+
+    # ── Sections 7-10: Audit narrative.
+    rows += [
+        _sr('begin_group', 'grp_sec7_10', 'Sections 7-10 · Audit narrative',
+            'সপ্তম–দশম পর্যায় · অডিট বিবরণ'),
+        _sr('text', 'interview_summary',
+            '7. Summary of interview with mother/attendant [socio-economic / '
+            'health-system factors that have the potential for developing this '
+            'case and management events]',
+            '৭. মা/সঙ্গীর সাক্ষাৎকারের সারসংক্ষেপ', app='multiline'),
         _sr('text', 'audit_summary',
-            'Audit summary',
-            'পর্যালোচনার সারসংক্ষেপ'),
-        _sr('end_group', 'grp_delivery'),
+            '8. Case summary (brief overview on clinical events)',
+            '৮. কেস সারসংক্ষেপ (ক্লিনিক্যাল ঘটনার সংক্ষিপ্ত বিবরণ)', app='multiline'),
+        _sr('note', 'sec9_head',
+            '9. Short summary of the event strengths and weaknesses [short '
+            'summary of the events surrounding the near-miss e.g. missed '
+            'opportunities and standard care, infrastructural issues, '
+            'availability of drugs, instrument, equipment or consumables etc.]',
+            '৯. ঘটনার শক্তি ও দুর্বলতার সংক্ষিপ্ত সারসংক্ষেপ'),
+        _sr('text', 'audit_strength',
+            '9.1 Strength (explain Medical or Non-Medical factors behind '
+            'successful management of this emergency case)',
+            '৯.১ শক্তি', app='multiline'),
+        _sr('text', 'audit_needs_improvement',
+            '9.2 Needs improvement (explain Medical or Non-Medical factors that '
+            'hinder the successful management of the patient with this case)',
+            '৯.২ উন্নতি প্রয়োজন', app='multiline'),
+        _sr('text', 'audit_recommendations',
+            '10. Major Recommendations (short summary of the recommendations to '
+            'address audit findings)',
+            '১০. প্রধান সুপারিশ', app='multiline'),
+        _sr('text', 'audit_team',
+            'Name and signature of Audit team members',
+            'অডিট দলের সদস্যদের নাম ও স্বাক্ষর', app='multiline'),
+        _sr('end_group', 'grp_sec7_10'),
     ]
     return rows
 
 
 def _near_miss_choices():
     ch = list(DISTRICT_CHOICES) + list(YES_NO)
+    # WHO MNM screening temporal code (Section 1, verbatim 0-4 scheme).
     ch += [
-        _ch('mode_of_delivery', 'nvd', 'NVD', 'স্বাভাবিক'),
-        _ch('mode_of_delivery', 'csection', 'C-section', 'সিজারিয়ান'),
-        _ch('mode_of_delivery', 'assisted_vaginal', 'Assisted vaginal',
-            'সহায়ক স্বাভাবিক'),
-        _ch('mode_of_delivery', 'undelivered', 'Undelivered',
-            'প্রসব হয়নি'),
+        _ch('mnm_code', '0', '0 — Not present / intervention not needed', '০ — ছিল না / দরকার হয়নি'),
+        _ch('mnm_code', '1', '1 — Present at arrival', '১ — ভর্তির সময় ছিল'),
+        _ch('mnm_code', '2', '2 — Developed within 12 hours of admission', '২ — ভর্তির ১২ ঘণ্টার মধ্যে'),
+        _ch('mnm_code', '3', '3 — Developed after 12 hours of admission', '৩ — ভর্তির ১২ ঘণ্টা পরে'),
+        _ch('mnm_code', '4', '4 — Information not available / unknown / NA', '৪ — তথ্য নেই / অজানা'),
     ]
+    # Q17 — infant vital status (0=Alive; 1=Dead).
     ch += [
-        _ch('delivery_outcome', 'livebirth',  'Live birth', 'জীবিত জন্ম'),
-        _ch('delivery_outcome', 'stillbirth', 'Stillbirth', 'মৃত জন্ম'),
-        _ch('delivery_outcome', 'na', 'N/A (undelivered)', 'প্রযোজ্য নয়'),
+        _ch('infant_vital', 'alive', 'Alive', 'জীবিত'),
+        _ch('infant_vital', 'dead',  'Dead',  'মৃত'),
     ]
-    # MNM uses the same condensed cause buckets as MPDSR Form 1.
-    cod = [
-        ('haemorrhage',       'Haemorrhage', 'রক্তক্ষরণ'),
-        ('eclampsia',         'Eclampsia / pre-eclampsia',
-         'একলাম্পসিয়া'),
-        ('sepsis',            'Sepsis', 'সেপসিস'),
-        ('obstructed_labour', 'Obstructed labour', 'বাধাগ্রস্ত শ্রম'),
-        ('abortion_related',  'Abortion-related', 'গর্ভপাতজনিত'),
-        ('embolism',          'Embolism', 'এমবোলিজম'),
-        ('indirect',          'Indirect cause', 'পরোক্ষ কারণ'),
-        ('other',             'Other', 'অন্যান্য'),
-    ]
-    ch += [_ch('cod_maternal', k, en, bn) for k, en, bn in cod]
     return ch
 
 

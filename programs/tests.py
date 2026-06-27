@@ -628,3 +628,87 @@ class Commit3CleanupFixesTest(TestCase):
         rows = resp.data if isinstance(resp.data, list) else resp.data.get('results', [])
         # fs_a should see exactly 1 row (their own submission)
         self.assertEqual(len(rows), 1)
+
+
+# ---------------------------------------------------------------------------
+# Maternal Near-Miss ingestion — verbatim WHO MNM form (0-4 screening codes,
+# derived delivery_outcome + contributory_conditions, full raw_payload).
+# ---------------------------------------------------------------------------
+class NearMissIngestTest(TestCase):
+
+    def _payload(self, **ov):
+        p = {
+            '_id': '9001', '_submitted_by': 'collector1',
+            'district': 'Dhaka', 'event_date': '2026-06-01',
+            'woman_name': 'Test Woman', 'woman_age': '28',
+            'facility_name': 'Dhaka Medical', 'gestational_weeks': '37',
+            # Section 1 — WHO 0-4 temporal codes.
+            'sev_pph': '1',        # present at arrival -> True
+            'sev_preec': '0',      # not present -> False
+            'eclampsia': '2',      # developed within 12h -> True
+            'sepsis': '4',         # unknown -> None
+            'crit_blood': '3',     # developed after 12h -> True
+            'life_uterine': '',    # blank -> None
+            # Section 3 — Q15 as 9 binary checkboxes (Excel structure);
+            # mode_of_delivery is DERIVED from the first 'yes'.
+            'mode_csection': 'yes',
+            'infant_status_birth': 'dead',     # -> delivery_outcome 'stillbirth'
+            'infant_status_discharge': 'dead',
+            # Section 5 — structured underlying flags (primary cause is
+            # DERIVED from these; the verbatim form has no cause question).
+            'un_haemorrhage': 'yes', 'un_unknown': 'no',
+            # Section 6 — contributory checklist + other.
+            'cc_anemia': 'yes', 'cc_diabetes': '1', 'cc_heart': 'no',
+            'cc_other': 'yes', 'cc_other_specify': 'Thyroid disorder',
+            # Narrative.
+            'audit_summary': 'Managed successfully after transfusion.',
+            'audit_recommendations': 'Stock more blood.',
+        }
+        p.update(ov)
+        return p
+
+    def test_screening_codes_and_derivations(self):
+        from programs.ciprb_handlers import handle_ciprb_near_miss
+        from mpdsr.ciprb_models import MaternalNearMissCase
+
+        resp = handle_ciprb_near_miss(self._payload(), 23.7, 90.4)
+        self.assertEqual(resp.status_code, 200)
+
+        c = MaternalNearMissCase.objects.get(woman_name='Test Woman')
+        # 0-4 screening mapping: 1/2/3 -> True, 0 -> False, 4/blank -> None.
+        self.assertIs(c.sev_pph, True)
+        self.assertIs(c.sev_preec, False)
+        self.assertIs(c.eclampsia, True)        # code 2 = present
+        self.assertIsNone(c.sepsis)             # code 4 = unknown
+        self.assertIs(c.crit_blood, True)       # code 3 = present
+        self.assertIsNone(c.life_uterine)       # blank
+        # mode_of_delivery derived from the Q15 binary checkboxes.
+        self.assertEqual(c.mode_of_delivery, 'csection')
+        # delivery_outcome derived from infant_status_birth.
+        self.assertEqual(c.delivery_outcome, 'stillbirth')
+        # contributory_conditions summarised from cc_* + other.
+        self.assertIn('Anemia', c.contributory_conditions)
+        self.assertIn('Diabetes mellitus', c.contributory_conditions)
+        self.assertIn('Thyroid disorder', c.contributory_conditions)
+        self.assertNotIn('Heart disease', c.contributory_conditions)  # cc_heart='no'
+        # primary cause + summary.
+        self.assertEqual(c.cause_of_near_miss, 'haemorrhage')
+        self.assertEqual(c.audit_summary, 'Managed successfully after transfusion.')
+        # full payload preserved (new structured fields live here).
+        self.assertEqual(c.raw_payload.get('un_haemorrhage'), 'yes')
+        self.assertEqual(c.raw_payload.get('audit_recommendations'), 'Stock more blood.')
+        # lands PENDING for CIPRB verification.
+        self.assertEqual(c.approval_status, 'PENDING')
+
+    def test_legacy_yes_no_still_accepted(self):
+        from programs.ciprb_handlers import handle_ciprb_near_miss
+        from mpdsr.ciprb_models import MaternalNearMissCase
+        # Pre-rebuild submissions sent yes/no/unknown — must still map.
+        handle_ciprb_near_miss(
+            self._payload(_id='9002', woman_name='Legacy Woman',
+                          sev_pph='yes', sev_preec='no', sepsis='unknown'),
+            23.7, 90.4)
+        c = MaternalNearMissCase.objects.get(woman_name='Legacy Woman')
+        self.assertIs(c.sev_pph, True)
+        self.assertIs(c.sev_preec, False)
+        self.assertIsNone(c.sepsis)
