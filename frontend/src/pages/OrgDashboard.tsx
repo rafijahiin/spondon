@@ -340,20 +340,7 @@ export function OrgDashboard({ partner }: Props) {
                 ? 'Partners in Health and Development'
                 : 'Key Population SRHR, HIV & GBV Response'}
             </p>
-            {isPHD ? (
-              <p className="hero-lede anim-rise d2">
-                {partner} delivered <b><CountUp value={totalSubmissions} /> submissions</b> this
-                month &mdash; {momChange > 0 ? '+' : ''}{momChange.toFixed(1)}% compared
-                to last month. Field staff submitting from{' '}
-                {/* Real count of the partner's active ServiceCentres (same source
-                    as SL8 and the coverage map). The legacy districts list is
-                    empty for programs-model partners, which made this read
-                    "0 centres" next to a 9-centre map; total_centres is truthful
-                    and consistent. Fall back to the mock count only while loading. */}
-                <b>{centres?.total_centres ?? displayCentres.districts?.length ?? 0} centres</b>, GPS-verified, validated
-                through KoboToolbox before reaching M&amp;E.
-              </p>
-            ) : (
+            {!isPHD && (
               <p className="hero-lede anim-rise d2">
                 Bandhu implements essential Sexual and Reproductive Health and Rights (SRHR) related
                 activities including HIV/AIDS prevention, legal support, capacity building and policy
@@ -410,7 +397,6 @@ export function OrgDashboard({ partner }: Props) {
               <div className="kicker" style={{ marginBottom: 0 }}>
                 <span className="dot" />COVERAGE
               </div>
-              <SourceChip>Validation workshop (config)</SourceChip>
             </div>
             <div className="card shimmer" style={{ padding: 10 }}>
               <PartnerOverlapMap height={340} partner={partner} />
