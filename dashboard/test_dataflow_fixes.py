@@ -76,6 +76,21 @@ class DailyReportingCiprbTest(TestCase):
         recent, *_ = daily_reporting_activity('PHD', threshold, today_start)
         self.assertEqual(recent, 0)   # CIPRB rows must not leak into PHD
 
+    def test_pending_submission_not_counted(self):
+        # APPROVED-only: a submitted-but-unapproved record must NOT count toward
+        # the daily-reporting card (it mirrors approved dashboard data).
+        make_mpdsr_case(approval='PENDING')
+        make_fistula(CIPRBFistulaCase.STAGE_SUSPECTED, approval='PENDING')
+        now = timezone.now()
+        threshold = now - datetime.timedelta(hours=24)
+        today_start = timezone.localtime(now).replace(
+            hour=0, minute=0, second=0, microsecond=0)
+        recent, today, codes, last = daily_reporting_activity(
+            'CIPRB', threshold, today_start)
+        self.assertEqual(recent, 0)
+        self.assertEqual(today, 0)
+        self.assertIsNone(last)
+
 
 class PartnerProgramsCountsTest(TestCase):
     """Defect #6 — PartnerKPIsView counts must include the programs/CIPRB

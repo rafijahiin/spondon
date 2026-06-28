@@ -1298,13 +1298,14 @@ class ProgrammeHealthFlagView(APIView):
             ))
             total = len(centres)
 
-            # Recent submissions in the 74-hour window — used for the
-            # partner-level 'silent' flag (no activity at all).
+            # Recent submissions in the window — used for the partner-level
+            # 'silent' flag. APPROVED only: the card mirrors approved dashboard
+            # data, so a submitted-but-unapproved record does not count.
             recent_qs = KoboSubmission.objects.filter(
-                partner=partner, submitted_at__gte=threshold_dt,
+                partner=partner, status=APPROVED, submitted_at__gte=threshold_dt,
             )
             todays_qs = KoboSubmission.objects.filter(
-                partner=partner, submitted_at__gte=today_start,
+                partner=partner, status=APPROVED, submitted_at__gte=today_start,
             )
             recent_submissions = recent_qs.count()
             todays_submissions = todays_qs.count()
@@ -1329,7 +1330,7 @@ class ProgrammeHealthFlagView(APIView):
 
             last_submission = (
                 KoboSubmission.objects
-                .filter(partner=partner)
+                .filter(partner=partner, status=APPROVED)
                 .order_by('-submitted_at')
                 .values_list('submitted_at', flat=True)
                 .first()
@@ -1371,7 +1372,7 @@ class ProgrammeHealthFlagView(APIView):
                     # Compute hours silent for this specific centre.
                     last_for_centre = (
                         KoboSubmission.objects
-                        .filter(partner=partner, centre_code=c.code)
+                        .filter(partner=partner, status=APPROVED, centre_code=c.code)
                         .order_by('-submitted_at')
                         .values_list('submitted_at', flat=True)
                         .first()

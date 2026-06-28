@@ -148,10 +148,11 @@ def daily_reporting_activity(organisation: str, threshold_dt, today_start):
     """Field-reporting activity from the PROGRAMS submission models, for the
     daily-reporting health widget.
 
-    Counts ALL submissions (any approval status) — a centre that submitted but
-    is not yet approved has still *reported*; approval is a separate gate. The
-    legacy KoboSubmission table holds none of the partners' current data, so
-    without this the widget reads 0/silent for PHD/Bandhu/CIPRB forever.
+    Counts ONLY APPROVED submissions, so the card mirrors the approved data the
+    rest of the dashboards show: a submitted-but-unapproved record does not yet
+    count, and on a clean system the card reads 0. The legacy KoboSubmission
+    table holds none of the partners' current data, so without this the widget
+    reads 0/silent for PHD/Bandhu/CIPRB forever.
 
     Returns (recent_count, today_count, today_centre_codes, last_submitted_at).
     """
@@ -183,7 +184,9 @@ def daily_reporting_activity(organisation: str, threshold_dt, today_start):
         if not {'organisation', 'created_at', 'approval_status'} <= fields:
             continue
         try:
-            base = model.objects.all()
+            # APPROVED only — the daily-reporting card mirrors approved dashboard
+            # data (pending/manager-approved rows are not yet counted).
+            base = model.objects.filter(approval_status='APPROVED')
             if organisation:
                 base = base.filter(organisation=organisation)
             recent_count += base.filter(created_at__gte=threshold_dt).count()
