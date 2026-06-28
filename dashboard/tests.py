@@ -41,6 +41,12 @@ def make_submission(partner, form_type, district='Dhaka', status=SubmissionStatu
 
 class KPIViewTest(TestCase):
     def setUp(self):
+        # KPIView caches its payload for 60s keyed by org scope. The LocMemCache
+        # persists across tests in one process, so without this clear a test
+        # reads a PRIOR test's cached counts (e.g. mom_change=100 in a test that
+        # created no data). Clear it so each test computes fresh.
+        from django.core.cache import cache
+        cache.clear()
         self.client = APIClient()
         self.phd = make_user('pm@phd.org', Organisation.PHD, Role.MANAGER)
         self.bondhu = make_user('bm@bandhu.org', Organisation.BANDHU, Role.MANAGER)

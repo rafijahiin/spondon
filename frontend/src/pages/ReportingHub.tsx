@@ -234,7 +234,11 @@ export default function ReportingHub() {
     }
   }
 
-  const anomalyAlerts = (alerts ?? []).filter((a) => a.alert_type === 'anomaly' && !a.acknowledged)
+  // The alert engine (tracker/alerts.py via the run_alerts command) emits
+  // below_target / overdue_cases / submission_gap / daily_silence — never the
+  // 'anomaly' type, so filtering on 'anomaly' alone left this banner
+  // permanently empty by construction. Surface every unacknowledged alert.
+  const anomalyAlerts = (alerts ?? []).filter((a) => !a.acknowledged)
   const dateStr = new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' }).toUpperCase()
 
   return (
@@ -529,9 +533,9 @@ export default function ReportingHub() {
       {anomalyAlerts.length > 0 && (
         <section className="section" style={{ marginTop: 40 }}>
           <SectionHead
-            kicker="AI ANOMALY ALERTS"
-            title={`${anomalyAlerts.length} anomalies detected`}
-            sub="AI-generated alerts flagging unexpected data patterns."
+            kicker="REPORTING ALERTS"
+            title={`${anomalyAlerts.length} ${anomalyAlerts.length === 1 ? 'alert needs' : 'alerts need'} attention`}
+            sub="Below-target indicators, overdue cases, and 48-hour submission gaps flagged by the tracker."
           />
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {anomalyAlerts.map((a) => <AlertCard key={a.id} alert={a} />)}

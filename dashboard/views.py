@@ -40,6 +40,110 @@ def _pending_qs(user):
     )
 
 
+def _partner_programs_counts(partner, month_start, month_end):
+    """(this_month_approved, pending) for a single partner from the programs
+    submission models — and, for CIPRB, the mpdsr/fistula surveillance models.
+
+    The legacy KoboSubmission table holds none of these partners' live field
+    data (PHD/Bandhu route through the programs models; CIPRB through the
+    mpdsr/fistula models), so the per-partner KPI tiles + pending banner read 0
+    without this. The field-triple guard skips registry/aggregate tables that
+    are not submissions (e.g. ServiceCenter, MPDSRFacilityCount)."""
+    from django.apps import apps
+    this_month = pending = 0
+    triple = {'organisation', 'created_at', 'approval_status'}
+    models = [
+        m for m in apps.get_app_config('programs').get_models()
+        if triple <= {f.name for f in m._meta.get_fields()}
+    ]
+    if partner == 'CIPRB':
+        for _al, _mn in (
+            ('fistula', 'CIPRBFistulaCase'), ('mpdsr', 'MPDSRCase'),
+            ('mpdsr', 'MaternalNearMissCase'), ('mpdsr', 'MPDSRAction'),
+            ('mpdsr', 'MPDSRDeathNotification'),
+        ):
+            try:
+                models.append(apps.get_model(_al, _mn))
+            except Exception:
+                pass
+    for model in models:
+        try:
+            base = model.objects.filter(organisation=partner)
+            this_month += base.filter(
+                approval_status='APPROVED',
+                created_at__gte=month_start, created_at__lt=month_end,
+            ).count()
+            pending += base.filter(approval_status='PENDING').count()
+        except Exception:
+            pass
+    return this_month, pending
+
+
+def _district_activity_programs(orgs, month_start, month_end, trend_start):
+    """Per-district month counts + per-day trend from the programs (district via
+    the center FK) and CIPRB (direct district) submission models, for the given
+    organisations. Counts APPROVED+PENDING — i.e. "received/visible" — matching
+    the legacy KoboSubmission visibility rule (_base_qs) used by CentresView.
+    Returns (month_counts: {district: int}, trend_map: {district: {date: int}})."""
+    from django.apps import apps
+    from django.db.models import Count
+    from django.db.models.functions import TruncDate
+    month_counts: dict[str, int] = {}
+    trend_map: dict[str, dict] = {}
+    # "Received/visible" = anything not rejected. The programs + CIPRB models use
+    # uppercase approval_status literals (PENDING / MANAGER_APPROVED / APPROVED) —
+    # NOT the lowercase submissions.SubmissionStatus enum used for KoboSubmission —
+    # so we exclude the rejected state rather than enum-match, matching the
+    # APPROVED+PENDING visibility rule CentresView applies to KoboSubmission.
+    def _accumulate(base, district_expr):
+        for r in (base.filter(created_at__gte=month_start, created_at__lt=month_end)
+                      .exclude(**{district_expr: ''})
+                      .values(district_expr).annotate(c=Count('id'))):
+            d = r[district_expr]
+            if d:
+                month_counts[d] = month_counts.get(d, 0) + r['c']
+        for r in (base.filter(created_at__gte=trend_start)
+                      .exclude(**{district_expr: ''})
+                      .annotate(_day=TruncDate('created_at'))
+                      .values(district_expr, '_day').annotate(c=Count('id'))):
+            d = r[district_expr]
+            if d:
+                day_bucket = trend_map.setdefault(d, {})
+                day_bucket[r['_day']] = day_bucket.get(r['_day'], 0) + r['c']
+
+    triple = {'organisation', 'created_at', 'approval_status'}
+    for model in apps.get_app_config('programs').get_models():
+        fields = {f.name for f in model._meta.get_fields()}
+        if not (triple <= fields) or 'center' not in fields:
+            continue
+        try:
+            _accumulate(
+                model.objects.filter(
+                    organisation__in=orgs).exclude(approval_status='REJECTED'),
+                'center__district')
+        except Exception:
+            pass
+    for _al, _mn in (
+        ('fistula', 'CIPRBFistulaCase'), ('mpdsr', 'MPDSRCase'),
+        ('mpdsr', 'MaternalNearMissCase'), ('mpdsr', 'MPDSRAction'),
+        ('mpdsr', 'MPDSRDeathNotification'),
+    ):
+        try:
+            CModel = apps.get_model(_al, _mn)
+        except Exception:
+            continue
+        if 'district' not in {f.name for f in CModel._meta.get_fields()}:
+            continue
+        try:
+            _accumulate(
+                CModel.objects.filter(
+                    organisation__in=orgs).exclude(approval_status='REJECTED'),
+                'district')
+        except Exception:
+            pass
+    return month_counts, trend_map
+
+
 # ---------------------------------------------------------------------------
 # KPI cards
 # ---------------------------------------------------------------------------
@@ -134,6 +238,40 @@ class KPIView(APIView):
                 pending_count += pqs.count()
         except (NameError, Exception):
             pass
+        # CIPRB surveillance models (fistula / MPDSR / near-miss / action /
+        # death-notification) live in the mpdsr + fistula apps, not the programs
+        # app, so they were absent from the programme-wide "submissions this
+        # month" and "awaiting review" counts. Add them for users who may see
+        # CIPRB (UNFPA / CIPRB / developer); a PHD- or Bandhu-only manager is not
+        # shown CIPRB volume.
+        try:
+            from django.apps import apps as _apps
+            _ciprb_visible = (
+                request.user.can_see_all_orgs
+                or 'CIPRB' in allowed_partners(request.user)
+            )
+            if _ciprb_visible:
+                for _al, _mn in (
+                    ('fistula', 'CIPRBFistulaCase'), ('mpdsr', 'MPDSRCase'),
+                    ('mpdsr', 'MaternalNearMissCase'), ('mpdsr', 'MPDSRAction'),
+                    ('mpdsr', 'MPDSRDeathNotification'),
+                ):
+                    try:
+                        CModel = _apps.get_model(_al, _mn)
+                    except Exception:
+                        continue
+                    this_month_count += CModel.objects.filter(
+                        approval_status='APPROVED',
+                        created_at__gte=month_start, created_at__lt=month_end,
+                    ).count()
+                    prev_month_count += CModel.objects.filter(
+                        approval_status='APPROVED',
+                        created_at__gte=prev_start, created_at__lt=prev_end,
+                    ).count()
+                    pending_count += CModel.objects.filter(
+                        approval_status='PENDING').count()
+        except Exception:
+            pass
         # Active workers (last 30 days) — distinct submitters. Count the legacy
         # KoboSubmission worker_name AND the programs-model submitted_by_kobo_user,
         # because PHD/Bandhu field data lands in the programs models; the
@@ -215,23 +353,61 @@ class KPIView(APIView):
             total_stillbirths_reviewed = int(agg.get('sb_r') or 0)
         except Exception:
             pass
+        # Live MPDSR surveillance — ADD the approved case-review rows
+        # (mpdsr.MPDSRCase, the review register) and notification-slip rows
+        # (mpdsr.MPDSRDeathNotification) so these cumulative "to date" executive
+        # totals reflect real-time KoboToolbox submissions, not ONLY Sayeed's
+        # periodic Excel aggregate (MPDSRFacilityCount, counted above). The two
+        # sources are complementary: the Excel holds historical bulk figures,
+        # the live forms capture new deaths going forward.
         try:
-            from fistula.models import FistulaCornerCase
-            total_fistula_patients = FistulaCornerCase.objects.count()
-            total_fistula_referred = FistulaCornerCase.objects.exclude(
-                referral_date__isnull=True,
-            ).count() + FistulaCornerCase.objects.exclude(
-                referral_outcome='',
-            ).exclude(referral_date__isnull=False).count()
-            # Surgically repaired = the two "successful" outcome categories
-            # (dry + not-dry), excluding failed. Rehabilitated & reintegrated =
-            # any cash/livestock/training/reintegration support recorded.
-            fistula_repaired = FistulaCornerCase.objects.filter(
-                surgery_outcome__in=[FistulaCornerCase.OUTCOME_DRY,
-                                     FistulaCornerCase.OUTCOME_NOT_DRY],
+            from mpdsr.models import MPDSRCase, DeathType
+            from mpdsr.ciprb_models import MPDSRDeathNotification
+            _rev = MPDSRCase.objects.filter(approval_status='APPROVED')
+            total_md_reviewed += _rev.filter(death_type=DeathType.MATERNAL).count()
+            # Perinatal = neonatal reviews (f2/f5); stillbirth reviews would be
+            # f3/f6, kept separate to avoid double-counting (no f3/f6 form is
+            # deployed today, so the stillbirth-review add is 0 until one exists).
+            total_nd_reviewed += (
+                _rev.filter(death_type=DeathType.PERINATAL)
+                    .exclude(sub_form_type__in=['f3', 'f6']).count()
+            )
+            total_stillbirths_reviewed += _rev.filter(
+                sub_form_type__in=['f3', 'f6']).count()
+            _ntf = MPDSRDeathNotification.objects.filter(approval_status='APPROVED')
+            total_md_notified += _ntf.filter(
+                death_kind=MPDSRDeathNotification.KIND_MATERNAL).count()
+            total_nd_notified += _ntf.filter(
+                death_kind=MPDSRDeathNotification.KIND_NEONATAL).count()
+            total_stillbirths_notified += _ntf.filter(
+                death_kind=MPDSRDeathNotification.KIND_STILLBIRTH).count()
+        except Exception:
+            pass
+        try:
+            # Live CIPRB fistula surveillance. The Fistula Question Bank
+            # (ciprb_fistula_questions_v1) writes fistula.CIPRBFistulaCase with a
+            # MONOTONIC current_stage (suspected→diagnosed→referred→repaired→
+            # rehabilitated); a case at a later stage has passed every earlier
+            # one. This is the SAME source as the CIPRB dashboard funnel +
+            # F.C / F.Camp indicators (see indicators/ciprb.py), so the homepage
+            # KPIs and the CIPRB page never disagree. (Was reading the legacy
+            # fistula.FistulaCornerCase, whose webhook route was removed
+            # 2026-06-20 — it is now Excel/manual-entry only, so live repaired /
+            # rehabilitated submissions never reached these cards.)
+            from fistula.ciprb_models import CIPRBFistulaCase
+            _fq = CIPRBFistulaCase.objects.filter(approval_status='APPROVED')
+            total_fistula_patients = _fq.count()  # every case is 'suspected' first
+            total_fistula_referred = _fq.filter(
+                current_stage__in=[CIPRBFistulaCase.STAGE_REFERRED,
+                                   CIPRBFistulaCase.STAGE_REPAIRED,
+                                   CIPRBFistulaCase.STAGE_REHABILITATED],
             ).count()
-            fistula_reintegrated = FistulaCornerCase.objects.filter(
-                received_rehab_support=True,
+            fistula_repaired = _fq.filter(
+                current_stage__in=[CIPRBFistulaCase.STAGE_REPAIRED,
+                                   CIPRBFistulaCase.STAGE_REHABILITATED],
+            ).count()
+            fistula_reintegrated = _fq.filter(
+                current_stage=CIPRBFistulaCase.STAGE_REHABILITATED,
             ).count()
         except Exception:
             pass
@@ -568,13 +744,34 @@ class CentresView(APIView):
         today = now.date()
         day_axis = [today - _dt.timedelta(days=i) for i in range(13, -1, -1)]
 
+        # Merge in the programs + CIPRB submission models. The legacy
+        # KoboSubmission rows above hold none of the partners' live field data
+        # (PHD/Bandhu route through the programs models, CIPRB through the
+        # mpdsr/fistula models), so the ranking was permanently empty for them.
+        # Combine the per-district counts + 14-day trend from both sources, then
+        # re-rank by the combined total.
+        orgs = (
+            [partner] if (partner and partner in allowed_partners(request.user))
+            else list(allowed_partners(request.user))
+        )
+        combined_counts: dict[str, int] = {r['district']: r['count'] for r in rows}
+        prog_counts, prog_trend = _district_activity_programs(
+            orgs, month_start, month_end, trend_start)
+        for d, c in prog_counts.items():
+            combined_counts[d] = combined_counts.get(d, 0) + c
+        for d, daymap in prog_trend.items():
+            bucket = trend_map.setdefault(d, {})
+            for day, c in daymap.items():
+                bucket[day] = bucket.get(day, 0) + c
+
         districts = []
-        for rank, row in enumerate(rows, start=1):
-            d = row['district']
+        for rank, (d, count) in enumerate(
+            sorted(combined_counts.items(), key=lambda kv: -kv[1]), start=1,
+        ):
             trend = [trend_map.get(d, {}).get(day, 0) for day in day_axis]
             districts.append({
                 'district': d,
-                'count': row['count'],
+                'count': count,
                 'rank': rank,
                 'trend': trend,
             })
@@ -705,9 +902,18 @@ class PartnerKPIsView(APIView):
         approved = KoboSubmission.objects.filter(partner=partner, status__in=[APPROVED, PENDING])
         this_month = approved.filter(submitted_at__gte=month_start, submitted_at__lt=month_end)
 
+        # PHD/Bandhu/CIPRB live field data lands in the programs + mpdsr/fistula
+        # models, not the legacy KoboSubmission table queried above — so add
+        # those counts, otherwise the tiles + pending banner read a permanent 0.
+        prog_month, prog_pending = _partner_programs_counts(
+            partner, month_start, month_end)
+
         return Response({
-            'submissions_this_month': this_month.count(),
-            'pending': KoboSubmission.objects.filter(partner=partner, status=PENDING).count(),
+            'submissions_this_month': this_month.count() + prog_month,
+            'pending': (
+                KoboSubmission.objects.filter(partner=partner, status=PENDING).count()
+                + prog_pending
+            ),
             'active_workers': (
                 approved
                 .filter(submitted_at__gte=thirty_days_ago)

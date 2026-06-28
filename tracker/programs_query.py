@@ -159,7 +159,26 @@ def daily_reporting_activity(organisation: str, threshold_dt, today_start):
     recent_count = today_count = 0
     today_codes: set[str] = set()
     last = None
-    for model in apps.get_app_config('programs').get_models():
+    # The CIPRB surveillance models (MPDSR cases / actions / near-miss /
+    # death-notifications / fistula) live in the mpdsr + fistula apps, NOT the
+    # programs app — so a programs-only scan left the CIPRB daily-reporting tile
+    # permanently silent regardless of real CIPRB submissions. Add them
+    # explicitly; each carries organisation/created_at/approval_status, so the
+    # field guard below still applies (aggregate/legacy tables without the triple
+    # are skipped automatically).
+    models = list(apps.get_app_config('programs').get_models())
+    for _app_label, _model_name in (
+        ('mpdsr',   'MPDSRCase'),
+        ('mpdsr',   'MPDSRAction'),
+        ('mpdsr',   'MaternalNearMissCase'),
+        ('mpdsr',   'MPDSRDeathNotification'),
+        ('fistula', 'CIPRBFistulaCase'),
+    ):
+        try:
+            models.append(apps.get_model(_app_label, _model_name))
+        except Exception:
+            pass
+    for model in models:
         fields = {f.name for f in model._meta.get_fields()}
         if not {'organisation', 'created_at', 'approval_status'} <= fields:
             continue
