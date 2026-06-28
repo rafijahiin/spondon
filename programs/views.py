@@ -148,8 +148,13 @@ def _apply_decision(obj, user, action_type, reason):
             obj.manager_approved_at = now
             obj.rejected_reason = ''
         elif two_stage and cur == 'MANAGER_APPROVED':
-            if not (is_super or is_unfpa):
-                return Response({'detail': 'Final approval is for UNFPA.'},
+            # Stage 2 is UNFPA-ONLY. A developer/super may do stage 1 (support),
+            # but must NOT finalise a Bandhu record — otherwise one actor (or the
+            # developer) bypasses the UNFPA gate the two-stage flow exists to
+            # enforce. Only UNFPA closes stage 2. (Bug 2026-06: a developer could
+            # self-approve both stages because is_super was accepted here too.)
+            if not is_unfpa:
+                return Response({'detail': 'Final approval is for UNFPA only.'},
                                 status=status.HTTP_403_FORBIDDEN)
             obj.approval_status = 'APPROVED'
             obj.approved_by = user
@@ -1056,8 +1061,11 @@ class PendingApprovalsView(views.APIView):
             if is_unfpa:
                 return _pending_for_model(qs, model_type, 'Bandhu', statuses=('MANAGER_APPROVED',))
             if is_super:
+                # Stage-1 / single-stage only. A super can no longer finalise a
+                # Bandhu MANAGER_APPROVED item (that is UNFPA-only), so it must
+                # not sit in their action queue as an un-actionable row.
                 return _pending_for_model(qs, model_type, None,
-                                          statuses=('PENDING', 'MANAGER_APPROVED'))
+                                          statuses=('PENDING',))
             return _pending_for_model(qs, model_type, org, statuses=('PENDING',))
 
         all_pending = []
