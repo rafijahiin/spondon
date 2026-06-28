@@ -61,6 +61,30 @@ def _ch(lst, name, en, bn=''):
     return [lst, name, en, bn]
 
 
+# Question types that cannot carry `required`. Everything else is made mandatory.
+_NO_REQUIRED = {
+    'note', 'calculate', 'begin_group', 'end_group',
+    'begin_repeat', 'end_repeat', 'start', 'end', 'today',
+    'deviceid', 'phonenumber', 'username', 'audit',
+}
+
+
+def _require_all(survey):
+    """CIPRB directive: every question is mandatory except the screening rows
+    that already set it. Set required='yes' on every input row (leaving notes,
+    calculates, group markers and metadata alone, and never overwriting a row
+    that already chose a value). relevant-gated rows only enforce when shown, so
+    skip logic and 'Other (specify)' fields keep working."""
+    out = []
+    for row in survey:
+        row = list(row)
+        base_type = (row[0] or '').split()[0]
+        if base_type not in _NO_REQUIRED and not row[5]:
+            row[5] = 'yes'
+        out.append(row)
+    return out
+
+
 def _wb(form_id, form_title, survey, choices):
     wb = openpyxl.Workbook()
     wb.remove(wb.active)
@@ -914,7 +938,7 @@ class Command(BaseCommand):
         for f in FORMS:
             if only and f['id'] != only:
                 continue
-            survey  = f['survey']()
+            survey  = _require_all(f['survey']())
             choices = f['choices']()
             wb = _wb(f['id'], f['title'], survey, choices)
             path = os.path.join(out, f['file'])
