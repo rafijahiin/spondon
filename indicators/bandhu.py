@@ -10,6 +10,7 @@ from programs.models import (
     GBVCase, Referral, ServiceCenter, TrainingEvent, CoordMeeting, MobileHealthCamp,
     IECMaterial,
 )
+from ._centers import active_center_ids
 
 ORG = 'Bandhu'
 APPROVED = 'APPROVED'
@@ -111,11 +112,16 @@ def compute_I_BND_1_5_sti(org, period_start, period_end):
     ).count()
 
 
-def compute_I_BND_1_6(org):
-    """KP clinic (Dhaka). Target: 1"""
-    return ServiceCenter.objects.filter(
+def compute_I_BND_1_6(org, period_start, period_end):
+    """KP clinic (Dhaka) functional. Target: 1.
+
+    Counts the Dhaka KP-clinic centre only once it is actually delivering
+    services in the period (>=1 approved record). A configured-but-idle centre
+    reads 0 until real activity arrives — see indicators/_centers.py."""
+    base = ServiceCenter.objects.filter(
         organisation=org, is_active=True, district__icontains='Dhaka'
-    ).count()
+    )
+    return len(active_center_ids(period_start, period_end, base))
 
 
 def compute_I_BND_1_7(org, period_start, period_end):
@@ -128,12 +134,17 @@ def compute_I_BND_1_7(org, period_start, period_end):
     ).values('client').distinct().count()
 
 
-def compute_I_BND_1_8(org):
+def compute_I_BND_1_8(org, period_start, period_end):
     """Community-friendly drop-in centres established/strengthened.
-    Target: 8 (MIS doc — one per project district)."""
-    return ServiceCenter.objects.filter(
+    Target: 8 (MIS doc — one per project district).
+
+    Counts DIC centres actually delivering services in the period (>=1 approved
+    record). A configured-but-idle DIC reads 0 until real activity arrives, so a
+    pre-launch system shows 0/8, not 8/8 — see indicators/_centers.py."""
+    base = ServiceCenter.objects.filter(
         organisation=org, is_active=True, center_type='DIC'
-    ).count()
+    )
+    return len(active_center_ids(period_start, period_end, base))
 
 
 def compute_I_BND_1_9(org, period_start, period_end):
@@ -270,9 +281,9 @@ ACTIVITY_REGISTRY = {
     '1.4a': compute_I_BND_1_4A,
     '1.5a': compute_I_BND_1_5_sti,      # STI services (clinic)
     '1.5b': compute_I_BND_1_5_hiv,      # HIV testing (HTC register)
-    '1.6':  compute_I_BND_1_6,          # org-only, no period
+    '1.6':  compute_I_BND_1_6,          # functional Dhaka KP clinic (activity-gated)
     '1.7':  compute_I_BND_1_7,
-    '1.8':  compute_I_BND_1_8,          # org-only, no period
+    '1.8':  compute_I_BND_1_8,          # functional DICs (activity-gated)
     '1.9':  compute_I_BND_1_9,
     '2.1':  compute_I_BND_2_1,
     '2.2':  compute_I_BND_2_2,
@@ -285,4 +296,4 @@ ACTIVITY_REGISTRY = {
 }
 
 # Codes whose compute function takes only (org) — no period args.
-ORG_ONLY_CODES = {'1.6', '1.8'}
+ORG_ONLY_CODES = set()  # 1.6/1.8 are now period-aware (activity-gated functional centres)

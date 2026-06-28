@@ -18,6 +18,7 @@ from programs.models import (
     ServiceCenter, TrainingEvent, StockEntry, IECMaterial,
     GBVCornerRecord,
 )
+from ._centers import active_center_ids
 
 APPROVED = 'APPROVED'
 
@@ -124,14 +125,17 @@ def compute_SL7(org, period_start, period_end):
 
 
 # ── SL8 — Functional brothel-based SRHR service centres ──────────────────────
-# SIDA target is 9 BROTHEL-type centres. Filter by center_type to exclude
-# mobile / sub-DIC / generic rows that may sit alongside in the same partner.
-def compute_SL8(org):
-    return ServiceCenter.objects.filter(
+# SIDA target is 9 BROTHEL-type centres. A centre counts as FUNCTIONAL only once
+# it is actually delivering services in the period (>=1 approved record) — so a
+# configured-but-idle brothel centre reads 0 until real activity arrives, and a
+# pre-launch system shows 0, not 9. See indicators/_centers.py.
+def compute_SL8(org, period_start, period_end):
+    base = ServiceCenter.objects.filter(
         organisation=org,
         is_active=True,
         center_type=ServiceCenter.BROTHEL,
-    ).count()
+    )
+    return len(active_center_ids(period_start, period_end, base))
 
 
 # ── SL9 — Mobile health camps conducted ──────────────────────────────────────
@@ -242,7 +246,7 @@ ACTIVITY_REGISTRY = {
     'SL5e':  compute_SL5e,
     'SL6':   compute_SL6,
     'SL7':   compute_SL7,
-    'SL8':   compute_SL8,           # org-only
+    'SL8':   compute_SL8,           # functional brothel centres (activity-gated)
     'SL9':   compute_SL9,
     'SL10':  compute_SL10,
     'SL11':  compute_SL11,
@@ -255,4 +259,4 @@ ACTIVITY_REGISTRY = {
     'SL16':  compute_SL16,
 }
 
-ORG_ONLY_CODES = {'SL8'}
+ORG_ONLY_CODES = set()  # SL8 is now period-aware (activity-gated functional centres)
