@@ -340,22 +340,38 @@ export function OrgDashboard({ partner }: Props) {
                 ? 'Partners in Health and Development'
                 : 'Key Population SRHR, HIV & GBV Response'}
             </p>
-            <p className="hero-lede anim-rise d2">
-              {partner} delivered <b><CountUp value={totalSubmissions} /> submissions</b> this
-              month &mdash; {momChange > 0 ? '+' : ''}{momChange.toFixed(1)}% compared
-              to last month. Field staff submitting from{' '}
-              {/* Real count of the partner's active ServiceCentres (same source
-                  as SL8 and the coverage map). The legacy districts list is
-                  empty for programs-model partners, which made this read
-                  "0 centres" next to a 9-centre map; total_centres is truthful
-                  and consistent. Fall back to the mock count only while loading. */}
-              <b>{centres?.total_centres ?? displayCentres.districts?.length ?? 0} centres</b>, GPS-verified, validated
-              through KoboToolbox before reaching M&amp;E.
-            </p>
+            {isPHD ? (
+              <p className="hero-lede anim-rise d2">
+                {partner} delivered <b><CountUp value={totalSubmissions} /> submissions</b> this
+                month &mdash; {momChange > 0 ? '+' : ''}{momChange.toFixed(1)}% compared
+                to last month. Field staff submitting from{' '}
+                {/* Real count of the partner's active ServiceCentres (same source
+                    as SL8 and the coverage map). The legacy districts list is
+                    empty for programs-model partners, which made this read
+                    "0 centres" next to a 9-centre map; total_centres is truthful
+                    and consistent. Fall back to the mock count only while loading. */}
+                <b>{centres?.total_centres ?? displayCentres.districts?.length ?? 0} centres</b>, GPS-verified, validated
+                through KoboToolbox before reaching M&amp;E.
+              </p>
+            ) : (
+              <p className="hero-lede anim-rise d2">
+                Bandhu implements essential Sexual and Reproductive Health and Rights (SRHR) related
+                activities including HIV/AIDS prevention, legal support, capacity building and policy
+                advocacy to bring positive changes and address social, religious, cultural and legal
+                impediments to the protection of human rights. Bandhu mainly works to support the{' '}
+                <b>Gender Diverse Population (GDP)</b> who often face serious difficulties in accessing
+                citizen services. The principles, activities and approaches of Bandhu correspond to
+                national priorities for health care interventions and are directly linked with the
+                current National Strategic Plan for HIV/AIDS response. All of Bandhu&rsquo;s work is
+                being carried out within the framework of health as a fundamental human right as
+                outlined in the National Health Policy.
+              </p>
+            )}
 
             {/* Partner & project brief (PHD) — supplied by PHD Project Director
                 K.S.M. Tarique. Fills the hero's left column and gives context
-                next to the live numbers. PHD-only; Bandhu keeps its own copy. */}
+                next to the live numbers. PHD-only; Bandhu's partner descriptor
+                is rendered as its hero lede above (no ABOUT/PROJECT split). */}
             {isPHD && (
               <div className="anim-rise d3" style={{ marginTop: 20, paddingTop: 18, borderTop: '1px solid var(--hair)', maxWidth: 560 }}>
                 <div className="kicker" style={{ marginBottom: 8 }}><span className="dot" />ABOUT THE PARTNER</div>
@@ -386,6 +402,7 @@ export function OrgDashboard({ partner }: Props) {
                 </p>
               </div>
             )}
+
           </div>
 
           <div className="hero-right anim-rise d4">
