@@ -148,15 +148,21 @@ def daily_reporting_activity(organisation: str, threshold_dt, today_start):
     """Field-reporting activity from the PROGRAMS submission models, for the
     daily-reporting health widget.
 
-    Counts ONLY APPROVED submissions, so the card mirrors the approved data the
-    rest of the dashboards show: a submitted-but-unapproved record does not yet
-    count, and on a clean system the card reads 0. The legacy KoboSubmission
-    table holds none of the partners' current data, so without this the widget
-    reads 0/silent for PHD/Bandhu/CIPRB forever.
+    Counts ONLY APPROVED field SUBMISSIONS, so the card mirrors the approved
+    service/case records the approval queue tracks: a submitted-but-unapproved
+    record does not yet count, and on a clean system the card reads 0. The
+    auto-approved registration/master-list models (Client) and self-reported
+    monthly aggregates (PHDCounsellingReport) are EXCLUDED — they are not per-day
+    field submissions, and counting them made the card read e.g. "43" off a batch
+    of registrations when only one real submission existed. The legacy
+    KoboSubmission table holds none of the partners' current data, so without
+    this the widget reads 0/silent for PHD/Bandhu/CIPRB forever.
 
     Returns (recent_count, today_count, today_centre_codes, last_submitted_at).
     """
     from django.apps import apps
+    # Auto-approved, non-submission models that must not inflate the daily count.
+    EXCLUDE = {'Client', 'PHDCounsellingReport'}
     recent_count = today_count = 0
     today_codes: set[str] = set()
     last = None
@@ -180,6 +186,8 @@ def daily_reporting_activity(organisation: str, threshold_dt, today_start):
         except Exception:
             pass
     for model in models:
+        if model.__name__ in EXCLUDE:
+            continue
         fields = {f.name for f in model._meta.get_fields()}
         if not {'organisation', 'created_at', 'approval_status'} <= fields:
             continue

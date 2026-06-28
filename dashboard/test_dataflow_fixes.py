@@ -91,6 +91,23 @@ class DailyReportingCiprbTest(TestCase):
         self.assertEqual(today, 0)
         self.assertIsNone(last)
 
+    def test_registration_not_counted(self):
+        # Auto-approved Client registrations (master-list entries) must NOT count
+        # toward daily reporting — they inflated the card to "43" off a batch of
+        # registrations when only one real submission existed.
+        from programs.models import ServiceCenter, Client
+        centre = ServiceCenter.objects.create(
+            organisation='Bandhu', name='DIC', code='BND-DIC-RT',
+            center_type='DIC', district='Dhaka')
+        Client.objects.create(
+            organisation='Bandhu', center=centre, client_id='C-RT-1', name='X')
+        now = timezone.now()
+        threshold = now - datetime.timedelta(hours=24)
+        today_start = timezone.localtime(now).replace(
+            hour=0, minute=0, second=0, microsecond=0)
+        recent, *_ = daily_reporting_activity('Bandhu', threshold, today_start)
+        self.assertEqual(recent, 0)   # registration excluded even though APPROVED
+
 
 class PartnerProgramsCountsTest(TestCase):
     """Defect #6 — PartnerKPIsView counts must include the programs/CIPRB
