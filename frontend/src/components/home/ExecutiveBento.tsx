@@ -448,7 +448,7 @@ export function ExecutiveBento({ progress }: Props) {
         <Card
           kicker="CIPRB · NEAR-MISS CASES"
           value={fmtNum(kpis?.near_miss_total ?? 0)}
-          sub={t('bento.nearMissSub', { defaultValue: 'maternal near-miss (WHO MNM)' })}
+          sub={t('bento.nearMissSub', { defaultValue: 'maternal near-miss audits' })}
           icon={<Activity size={12} />}
           delay={0.35}
         />

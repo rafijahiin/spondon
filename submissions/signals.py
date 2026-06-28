@@ -231,13 +231,25 @@ def _create_fistula_campaign(submission):
 
 def _is_keypop_baseline(submission):
     """True for the D5 key-population instruments (Hijra / FSW) — they
-    materialise into BaselineResponse, NOT the legacy generic BaselineSurvey."""
+    materialise into BaselineResponse, NOT the legacy generic BaselineSurvey.
+
+    The deployed forms set a hidden `population` calc ('hijra'/'fsw'), so a live
+    submission carries it. But if that calc didn't land in raw_data (e.g. an
+    Enketo preview that skips calculates), we still route correctly: ANY baseline
+    form whose id is not the legacy `spondon_baseline_v1` is a key-population
+    interview. Without this fallback, approval silently materialised nothing and
+    the baseline tab stayed empty."""
     raw = submission.raw_data or {}
     if (raw.get('population') or '').lower() in ('hijra', 'fsw'):
         return True
-    xf = (raw.get('_xform_id_string') or '').lower()
-    return (xf in ('ciprb_baseline_hijra_v1', 'ciprb_baseline_fsw_v1')
-            or 'hijra' in xf or 'fsw' in xf)
+    xf = (raw.get('_xform_id_string') or raw.get('_xform_id') or '').lower()
+    if 'hijra' in xf or 'fsw' in xf:
+        return True
+    # Any BASELINE submission that is not the legacy generic survey is a
+    # key-population interview → BaselineResponse.
+    if xf and 'spondon_baseline' not in xf:
+        return True
+    return False
 
 
 def _create_baseline_survey(submission):
@@ -255,11 +267,19 @@ def _create_baseline_survey(submission):
 
 
 def _create_baseline_response(submission):
-    if submission.form_type != FormType.BASELINE or not _is_keypop_baseline(submission):
+    if submission.form_type != FormType.BASELINE:
+        return
+    if not _is_keypop_baseline(submission):
+        logger.warning(
+            'Baseline submission %s approved but not recognised as a key-population '
+            'interview (no population field / xform id) — BaselineResponse NOT created.',
+            submission.id)
         return
     try:
         from baseline.models import BaselineResponse
-        BaselineResponse.objects.get_or_create_from_submission(submission)
+        obj, created = BaselineResponse.objects.get_or_create_from_submission(submission)
+        logger.info('BaselineResponse %s for submission %s (created=%s)',
+                    obj.id, submission.id, created)
     except Exception as exc:
         logger.error('BaselineResponse creation failed for submission %s: %s', submission.id, exc)
 

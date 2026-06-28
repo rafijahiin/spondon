@@ -195,7 +195,7 @@ export function NearMissPanel({ districts }: { districts?: readonly string[] | n
         <div>
           <div className="kicker">
             <span className="dot" style={{ background: CIPRB_BLUE }} />
-            MATERNAL NEAR MISS · WHO MNM AUDIT
+            MATERNAL NEAR MISS AUDIT · CIPRB-9
           </div>
           <h3 style={{ margin: '6px 0 2px', fontSize: 18, fontWeight: 700, color: 'var(--ink)' }}>
             Maternal Near Miss surveillance
