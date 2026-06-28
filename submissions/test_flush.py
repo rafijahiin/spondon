@@ -13,6 +13,8 @@ from submissions.models import KoboSubmission, FormType, SubmissionStatus
 from fistula.ciprb_models import CIPRBFistulaCase
 from mpdsr.models import MPDSRCase, DeathType, ReviewStatus
 from baseline.models import BaselineResponse
+from pharmacy.models import PrescriptionRecord, Drug
+from partners.models import Partner
 
 
 class FlushPracticeDataTest(TestCase):
@@ -41,6 +43,11 @@ class FlushPracticeDataTest(TestCase):
             cause_of_death='Hemorrhage', status=ReviewStatus.REPORTED,
             approval_status='APPROVED')
         BaselineResponse.objects.create(population='hijra', district='Dhaka')
+        # Pharmacy data — direct manager entry, NOT via KoboSubmission. Proves the
+        # dynamic all-apps approval_status sweep reaches beyond the programs app.
+        PrescriptionRecord.objects.create(
+            client_id='C-1', partner=Partner.objects.first(), center=self.real_centre,
+            date=datetime.date.today(), drug=Drug.choices[0][0], quantity=1)
 
     def test_dry_run_deletes_nothing(self):
         call_command('flush_practice_data', stdout=StringIO())
@@ -57,6 +64,7 @@ class FlushPracticeDataTest(TestCase):
         self.assertEqual(CIPRBFistulaCase.objects.count(), 0)
         self.assertEqual(MPDSRCase.objects.count(), 0)
         self.assertEqual(BaselineResponse.objects.count(), 0)
+        self.assertEqual(PrescriptionRecord.objects.count(), 0)  # pharmacy swept too
 
         # Configuration preserved.
         self.assertTrue(User.objects.filter(pk=self.user.pk).exists())

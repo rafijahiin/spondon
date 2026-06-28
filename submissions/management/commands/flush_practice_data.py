@@ -38,54 +38,66 @@ class Command(BaseCommand):
         parser.add_argument('--confirm', action='store_true',
                             help='Actually delete. Without this it is a dry run.')
 
+    # Configuration models that must SURVIVE the wipe (never submission data).
+    CONFIG_KEEP = {
+        'accounts.User', 'partners.Partner',
+        'indicators.IndicatorTarget', 'indicators.KoboFormMapping',
+        'tracker.MonthlyTarget',
+        'programs.ServiceCenter',  # real registry kept; demo rows handled separately
+    }
+
     def _ordered_targets(self):
-        """(label, queryset) pairs in FK-safe delete order: leaves first, then
-        the PROTECT parents (Client, then demo ServiceCenters) last."""
-        targets = []
-
-        # 1. mpdsr case/aggregate models (FK to KoboSubmission is SET_NULL).
-        from mpdsr.models import (
-            MPDSRCase, MPDSRAction, MPDSRActionPlanSummary,
-            MPDSRFacilityCount, MPDSRDistrictDenominator,
-        )
-        from mpdsr.ciprb_models import MaternalNearMissCase, MPDSRDeathNotification
-        for m in (MPDSRCase, MPDSRAction, MPDSRActionPlanSummary,
-                  MPDSRFacilityCount, MPDSRDistrictDenominator,
-                  MaternalNearMissCase, MPDSRDeathNotification):
-            targets.append((f'mpdsr.{m.__name__}', m.objects.all()))
-
-        # 2. fistula case models.
-        from fistula.models import FistulaCornerCase, FistulaCampaign, FistulaCampaignVisit
-        from fistula.ciprb_models import CIPRBFistulaCase
-        for m in (CIPRBFistulaCase, FistulaCornerCase, FistulaCampaign, FistulaCampaignVisit):
-            targets.append((f'fistula.{m.__name__}', m.objects.all()))
-
-        # 3. baseline.
-        from baseline.models import BaselineResponse, BaselineSurvey
-        for m in (BaselineResponse, BaselineSurvey):
-            targets.append((f'baseline.{m.__name__}', m.objects.all()))
-
-        # 4. tracker generated alerts (keeps MonthlyTarget config).
-        from tracker.models import Alert
-        targets.append(('tracker.Alert', Alert.objects.all()))
-
-        # 5. programs submission models (anything with approval_status), Client LAST
-        #    because ClinicVisit/HIVSTITest/… reference it with on_delete=PROTECT.
+        """(label, queryset) pairs in FK-safe delete order. Every model carrying
+        approval_status across ALL apps is practice/submission data — programs,
+        pharmacy prescriptions, mpdsr/fistula cases, training, etc. Plus the data
+        models that lack approval_status (aggregates, visits, baseline, alerts).
+        Config (users, real centres, targets, form mappings) is preserved.
+        Order: leaf submission/case rows first; the PROTECT parents (Client, then
+        demo ServiceCenters) last; the whole run is wrapped in one transaction."""
         from programs.models import Client, ServiceCenter
-        prog_models = [
-            m for m in apps.get_app_config('programs').get_models()
-            if any(f.name == 'approval_status' for f in m._meta.get_fields())
-        ]
-        for m in sorted(prog_models, key=lambda x: x is Client):  # Client (True) sorts last
-            targets.append((f'programs.{m.__name__}', m.objects.all()))
 
-        # 6. legacy KoboSubmission (all). Deleted after the case/programs rows that
-        #    reference it (those FKs are SET_NULL, but delete after them anyway).
+        # 1. Every approval_status data model across ALL apps, EXCEPT Client
+        #    (a PROTECT parent referenced by ClinicVisit/HIVSTITest/pharmacy/…).
+        approval_models = [
+            m for m in apps.get_models()
+            if f'{m._meta.app_label}.{m.__name__}' not in self.CONFIG_KEEP
+            and any(f.name == 'approval_status' for f in m._meta.get_fields())
+        ]
+        seen = set(approval_models)
+        targets = []
+        for m in approval_models:
+            if m is Client:
+                continue  # Client deleted late (step 4)
+            targets.append((f'{m._meta.app_label}.{m.__name__}', m.objects.all()))
+
+        # 2. Data models WITHOUT approval_status (aggregates / visits / baseline /
+        #    alerts). Skip any already captured above.
+        EXTRA = [
+            ('mpdsr', 'MPDSRActionPlanSummary'), ('mpdsr', 'MPDSRFacilityCount'),
+            ('mpdsr', 'MPDSRDistrictDenominator'), ('mpdsr', 'MPDSRDeathNotification'),
+            ('fistula', 'FistulaCornerCase'), ('fistula', 'FistulaCampaign'),
+            ('fistula', 'FistulaCampaignVisit'),
+            ('baseline', 'BaselineResponse'), ('baseline', 'BaselineSurvey'),
+            ('tracker', 'Alert'),
+        ]
+        for app_label, name in EXTRA:
+            try:
+                m = apps.get_model(app_label, name)
+            except LookupError:
+                continue
+            if m in seen:
+                continue
+            seen.add(m)
+            targets.append((f'{app_label}.{name}', m.objects.all()))
+
+        # 3. Legacy KoboSubmission (case FKs to it are SET_NULL).
         from submissions.models import KoboSubmission
         targets.append(('submissions.KoboSubmission', KoboSubmission.objects.all()))
 
-        # 7. demo ServiceCenters only (real registry kept). Deleted last, after the
-        #    rows that PROTECT-reference them are gone.
+        # 4. Client — after every row that PROTECT-references it is gone.
+        targets.append(('programs.Client', Client.objects.all()))
+
+        # 5. demo ServiceCenters only (real registry kept), last of all.
         targets.append((
             'programs.ServiceCenter[demo PHD-/BANDHU-]',
             ServiceCenter.objects.filter(
