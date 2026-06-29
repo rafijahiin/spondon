@@ -252,7 +252,6 @@ function NotifyVsReview({
             {t('mpdsrViz.notifySub')}
           </p>
         </div>
-        <SourceChip>CIPRB MPDSR forms + Excel denominators</SourceChip>
       </div>
 
       <div className="card" style={{ padding: 24 }}>
@@ -1077,7 +1076,6 @@ function ReportingRatePerDistrict({
             {t('mpdsrViz.perDistrictSub')}
           </p>
         </div>
-        <SourceChip>CIPRB MPDSR forms + Excel denominators</SourceChip>
       </div>
       <div className="card" style={{ padding: 20 }}>
         {rows.length === 0 ? (

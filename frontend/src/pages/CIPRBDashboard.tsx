@@ -14,9 +14,8 @@
  */
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { motion, AnimatePresence, useReducedMotion } from 'motion/react'
 import {
-  ClipboardList, Megaphone, Search, Stethoscope, Send, Scissors,
+  ClipboardList, Search, Stethoscope, Send, Scissors,
   Clock, MapPin, X, AlertTriangle, HeartHandshake, Info,
 } from 'lucide-react'
 import { api } from '@/api/client'
@@ -24,7 +23,6 @@ import { usePolling } from '@/hooks/usePolling'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { PageLoader } from '@/components/ui/LoadingSpinner'
 import { formatDate, formatDateTime } from '@/utils/format'
-import { FistulaCornerPanel, FistulaCampaignPanel } from '@/components/fistula/FistulaPanels'
 import { PartnerOverlapMap } from '@/components/maps/PartnerOverlapMap'
 import { SourceChip } from '@/components/ui/SourceChip'
 import { FistulaVisualizations } from '@/components/ciprb/FistulaVisualizations'
@@ -41,8 +39,6 @@ const CIPRB_BLUE = '#F96000'
 
 const CAUSE_KEYS = ['pph', 'eclampsia', 'sepsis', 'obstructed_labour', 'other'] as const
 const PLACE_KEYS = ['facility', 'home', 'in_transit'] as const
-
-type FistulaTabKey = 'corner' | 'campaign'
 
 // Reporting period presets — default is the contract window per Animesh.
 // Annual cycle is for September annual-reporting needs on MPDSR + Fistula.
@@ -66,17 +62,6 @@ const REPORTING_PERIODS: ReportingPeriodDef[] = [
     from: '2026-05-21',
     to: '2026-11-20',
   },
-]
-
-interface FistulaTabDef {
-  key: FistulaTabKey
-  labelKey: string
-  icon: React.ReactNode
-}
-
-const FISTULA_TABS: FistulaTabDef[] = [
-  { key: 'corner',   labelKey: 'ciprb.tabCorner',   icon: <ClipboardList size={16} /> },
-  { key: 'campaign', labelKey: 'ciprb.tabCampaign', icon: <Megaphone size={16} /> },
 ]
 
 // ─── Fistula KPI helpers ─────────────────────────────────────────────────────
@@ -440,23 +425,6 @@ function MPDSRSection({
           {t('mpdsr.subtitle', { defaultValue: 'Maternal & Perinatal Death Surveillance' })}
         </p>
 
-        {/* Period indicator — makes the active reporting window obvious
-            above the MPDSR visualisations. TODO BN: translate label. */}
-        <p style={{
-          marginTop: 10, marginBottom: 0,
-          fontSize: 13, color: 'var(--ink-3)', fontWeight: 500,
-        }}>
-          <span style={{ color: 'var(--muted)', fontWeight: 500 }}>{t('ciprbExtras.periodLabel')}</span>
-          <span style={{ color: CIPRB_BLUE, fontWeight: 600 }}>{period.rangeLabel}</span>
-          <span style={{ color: 'var(--muted)', fontWeight: 400, marginLeft: 8 }}>
-            · figures are cumulative (all data to date)
-          </span>
-        </p>
-        <p style={{ marginTop: 4, marginBottom: 0, fontSize: 12, color: 'var(--muted)', fontStyle: 'italic' }}>
-          These figures update live from field submissions — CIPRB has no approval step. The case
-          status below is the clinical review stage, not a data check.
-        </p>
-
         {overdueCount > 0 && (
           <div style={{ marginTop: 12 }}>
             <span style={{
@@ -479,9 +447,6 @@ function MPDSRSection({
 
       {/* ─── Geographic coverage map (SIDA / GAC / CP highlight) ─── */}
       <div>
-        <div style={{ marginBottom: 8 }}>
-          <SourceChip>CIPRB M&E Framework</SourceChip>
-        </div>
         <MPDSRDistrictMap />
       </div>
 
@@ -673,10 +638,7 @@ type DonorKey = keyof typeof DONOR_FILTERS
 
 export default function CIPRBDashboard() {
   const { t } = useTranslation()
-  const [active, setActive] = useState<FistulaTabKey>('corner')
   const [donorKey, setDonorKey] = useState<DonorKey>('all')
-  const reduce = useReducedMotion()
-  const activeTab = FISTULA_TABS.find((tab) => tab.key === active)!
   // Reporting-period selector retired — everything reports on the contract
   // window. activePeriod is fixed to that window so downstream filters still
   // receive a from/to range.
@@ -928,83 +890,6 @@ export default function CIPRBDashboard() {
       {/* ───────────────── Fistula 17 major indicators (CIPRB spec) ───────────────── */}
       <section className="section" style={{ marginTop: 8 }}>
         <FistulaIndicators districts={activeDonor.districts} />
-      </section>
-
-      {/* ───────────────── Fistula registers (collapsible — raw data) ───────────────── */}
-      <section className="section" style={{ marginTop: 8 }}>
-        <details style={{
-          border: '1px solid var(--hair)', borderRadius: 12,
-          background: 'var(--surface)', padding: 0,
-        }}>
-          <summary style={{
-            padding: '14px 18px', cursor: 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            fontWeight: 600, fontSize: 14, color: 'var(--ink)',
-            listStyle: 'none',
-          }}>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
-              <ClipboardList size={16} color={CIPRB_BLUE} />
-              {t('ciprbExtras.rawFistula')}
-            </span>
-            <span style={{ fontSize: 11, color: 'var(--muted)', letterSpacing: '0.06em' }}>
-              {t('ciprbExtras.clickToExpand')}
-            </span>
-          </summary>
-          <div style={{ padding: 18, borderTop: '1px solid var(--hair)' }}>
-        <div
-          role="tablist"
-          aria-label="CIPRB Fistula registers"
-          style={{
-            display: 'flex', flexWrap: 'wrap', gap: 8,
-            padding: 6,
-            background: 'var(--surface-2)',
-            borderRadius: 14,
-            border: '1px solid var(--hair)',
-            width: 'fit-content',
-            marginBottom: 20,
-          }}
-        >
-          {FISTULA_TABS.map((tab) => {
-            const isActive = active === tab.key
-            return (
-              <button
-                key={tab.key}
-                role="tab"
-                aria-selected={isActive}
-                onClick={() => setActive(tab.key)}
-                style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 8,
-                  padding: '8px 14px',
-                  fontSize: 13.5,
-                  fontWeight: isActive ? 600 : 500,
-                  color: isActive ? '#fff' : 'var(--ink-2)',
-                  background: isActive ? CIPRB_BLUE : 'transparent',
-                  border: 'none',
-                  borderRadius: 10,
-                  cursor: 'pointer',
-                  transitionProperty: 'background-color, color',
-                  transitionDuration: '180ms',
-                }}
-              >
-                {tab.icon}
-                <span>{t(tab.labelKey)}</span>
-              </button>
-            )
-          })}
-        </div>
-
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={activeTab.key}
-            initial={{ opacity: 0, y: reduce ? 0 : 8 }}
-            animate={{ opacity: 1, y: 0, transition: { duration: 0.25, ease: [0.22, 1, 0.36, 1] } }}
-            exit={{ opacity: 0, y: reduce ? 0 : -6, transition: { duration: 0.16, ease: [0.4, 0, 1, 1] } }}
-          >
-            {activeTab.key === 'corner' ? <FistulaCornerPanel /> : <FistulaCampaignPanel />}
-          </motion.div>
-        </AnimatePresence>
-          </div>
-        </details>
       </section>
 
       {/* ───────────────── Divider ───────────────── */}
