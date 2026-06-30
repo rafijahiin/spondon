@@ -44,10 +44,14 @@ EXPOSE 8080
 # Boot must be fast or the healthcheck times out. migrate + the gated
 # user/centre seeds are quick; the heavy demo seeds + worker_name backfill
 # now run ONLY when REFRESH_DEMO_SEED=1 (on demand), not on every boot.
+# approve_pending_bandhu_clients is a fast, NON-destructive cleanup (not a wipe):
+# Bandhu registration is auto-approved, so any Bandhu client left PENDING is
+# stranded — this flips it to APPROVED. It is GATED on APPROVE_PENDING_BANDHU=1
+# (deliberate one-time run, like SEED_DB): set it, redeploy, then unset it.
 # DESTRUCTIVE WIPES ARE NO LONGER AUTO-RUN FROM THE ENTRYPOINT. A stale env
 # var must never wipe live PII on a routine redeploy (security hardening,
 # audit DCK-1/DCK-4). Run them deliberately, out-of-band, AFTER a backup:
 #   railway run python manage.py flush_practice_data --confirm
 #   railway run python manage.py purge_phd_data --confirm
 #   railway run python manage.py prune_phd_centres --confirm
-CMD ["sh", "-c", "python manage.py migrate --noinput && python manage.py seed_users && python manage.py seed_centers && python manage.py backfill_f4_facility && if [ \"$REFRESH_DEMO_SEED\" = \"1\" ]; then python manage.py seed_demo_mpdsr --purge && python manage.py seed_demo_fistula --purge && python manage.py seed_demo_phd_bandhu --purge && python manage.py seed_demo_mpdsr && python manage.py seed_demo_phd_bandhu && python manage.py seed_demo_fistula && python manage.py backfill_worker_name && python manage.py backfill_f4_facility; fi && gunicorn spondon.wsgi --bind 0.0.0.0:$PORT --workers 1 --threads 4 --timeout 120"]
+CMD ["sh", "-c", "python manage.py migrate --noinput && python manage.py seed_users && python manage.py seed_centers && python manage.py backfill_f4_facility && if [ \"$APPROVE_PENDING_BANDHU\" = \"1\" ]; then python manage.py approve_pending_bandhu_clients; fi && if [ \"$REFRESH_DEMO_SEED\" = \"1\" ]; then python manage.py seed_demo_mpdsr --purge && python manage.py seed_demo_fistula --purge && python manage.py seed_demo_phd_bandhu --purge && python manage.py seed_demo_mpdsr && python manage.py seed_demo_phd_bandhu && python manage.py seed_demo_fistula && python manage.py backfill_worker_name && python manage.py backfill_f4_facility; fi && gunicorn spondon.wsgi --bind 0.0.0.0:$PORT --workers 1 --threads 4 --timeout 120"]
