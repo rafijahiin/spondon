@@ -2,7 +2,7 @@
  * OrgDashboard — editorial light console for PHD and Bondhu.
  *
  * Matches the design prototype: hero section with partner headline,
- * KPI tiles, stacked area chart, form grid, and centres table.
+ * KPI tiles, stacked area chart, and form grid.
  *
  * Data hierarchy:
  *  1. Real programs API (/api/dashboard/programs-summary/) — used when total > 0
@@ -32,9 +32,9 @@ import { CumulativeAverageTile } from '@/components/indicators/CumulativeAverage
 import { PhdHeadlineCards } from '@/components/phd/PhdHeadlineCards'
 import { BandhuHeadlineCards } from '@/components/bandhu/BandhuHeadlineCards'
 import { formatDate } from '@/utils/format'
-import type { PartnerKPIs, CentresResponse, Alert, ProgramsSummary } from '@/types'
+import type { PartnerKPIs, Alert, ProgramsSummary } from '@/types'
 import {
-  MOCK_PROGRAMS, MOCK_KPIS, MOCK_CENTRES,
+  MOCK_PROGRAMS, MOCK_KPIS,
 } from '@/data/mockDashboardData'
 
 type Partner = 'PHD' | 'Bandhu'
@@ -252,12 +252,6 @@ export function OrgDashboard({ partner }: Props) {
     interval: 30_000,
   })
 
-  const { data: centres } = usePolling<CentresResponse>({
-    fetcher: () =>
-      api.get(`/dashboard/centres/?partner=${partner}`).then((r) => r.data),
-    interval: 60_000,
-  })
-
   const { data: summary } = usePolling<OrgSummaryResponse>({
     fetcher: () =>
       api.get(`/dashboard/org-summary/?partner=${partner}`).then((r) => r.data),
@@ -282,7 +276,6 @@ export function OrgDashboard({ partner }: Props) {
   const usingMock = false
   const displayPrograms: ProgramsSummary = programs ?? MOCK_PROGRAMS[partner]
   const displayKpis: PartnerKPIs = kpis ?? MOCK_KPIS[partner]
-  const displayCentres: CentresResponse = centres ?? MOCK_CENTRES[partner]
 
   const categories = displayPrograms.categories ?? {}
   const monthlyTrend = displayPrograms.monthly_trend ?? []
@@ -490,85 +483,11 @@ export function OrgDashboard({ partner }: Props) {
         </div>
       </section>
 
-      {/* ═══════════════════════════════════════════════════════════════
-           CENTRES TABLE
-           Show ONLY when there is genuine district-level submission data.
-           Before any real submissions, the centres list falls back to demo
-           data ("6 active districts" etc.) which is misleading on a
-           freshly-launched programme — so hide the whole section (all orgs)
-           until field workers actually submit. It reappears automatically
-           once /api/dashboard/centres/ returns real districts.
-           ═══════════════════════════════════════════════════════════════ */}
-      {!!(centres && centres.districts.length > 0) && (
-      <section className="section" style={{ marginTop: 56, marginBottom: 80 }}>
-        <SectionHead
-          kicker={t('org.sectionCentresKicker')}
-          title={t('org.sectionCentresTitle', { count: displayCentres.districts?.length ?? 0 })}
-          sub={t('org.sectionCentresSub', { partner })}
-          right={<SourceChip>{partner} KoboSubmissions</SourceChip>}
-        />
-        <div className="card flush">
-          <table className="tbl">
-            <thead>
-              <tr>
-                <th>{t('org.thRank')}</th>
-                <th>{t('org.thDistrict')}</th>
-                <th style={{ width: 200 }}>{t('org.thTrend14d')}</th>
-                <th style={{ textAlign: 'right' }}>{t('org.thThisMonth')}</th>
-                <th>{t('org.thStatus')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(displayCentres.districts ?? []).map((d) => (
-                <tr key={d.district}>
-                  <td>
-                    <span style={{
-                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                      width: 24, height: 24, borderRadius: '50%',
-                      fontSize: 11, fontWeight: 700,
-                      background: d.rank <= 3 ? 'var(--unfpa)' : 'var(--surface-3)',
-                      color: d.rank <= 3 ? '#fff' : 'var(--muted)',
-                    }}>
-                      {d.rank}
-                    </span>
-                  </td>
-                  <td>
-                    <div style={{ fontWeight: 500, fontSize: 13.5 }}>{d.district}</div>
-                  </td>
-                  <td>
-                    <Sparkline
-                      data={
-                        d.trend && d.trend.length > 0
-                          ? d.trend
-                          : [
-                              Math.round(d.count * 0.55),
-                              Math.round(d.count * 0.7),
-                              Math.round(d.count * 0.85),
-                              d.count,
-                            ]
-                      }
-                      color="var(--unfpa)"
-                      w={180} h={28}
-                    />
-                  </td>
-                  <td className="num-display" style={{ textAlign: 'right', fontSize: 22, fontFamily: 'var(--display)', fontStyle: 'italic' }}>
-                    {d.count}
-                  </td>
-                  <td><span className="tag emerald">{t('org.tagLive')}</span></td>
-                </tr>
-              ))}
-              {!displayCentres.districts?.length && (
-                <tr>
-                  <td colSpan={5} style={{ padding: 24, textAlign: 'center', color: 'var(--muted)' }}>
-                    {t('org.noDistrictData')}
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </section>
-      )}
+      {/* Centres / "active districts" table removed 2026-06-30: the 14-day
+          trend sparkline was synthesised from the current count (not real
+          history), and the "KoboSubmissions" source label was inaccurate -
+          PHD/Bandhu field data lives in the programs models, not the legacy
+          KoboSubmission table. */}
 
       {/* AI Weekly Summary card removed per Animesh — placeholder narrative
           at low data volume read as filler; the indicator grid + KPI tiles
