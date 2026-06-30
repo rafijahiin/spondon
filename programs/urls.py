@@ -9,6 +9,7 @@ from .views import (
     GBVCaseViewSet,
     IECMaterialViewSet,
     OutreachSessionViewSet, GroupEducationSessionViewSet, WellnessLogbookEntryViewSet,
+    PHDCounsellingReportViewSet,
     ReferralViewSet,
     StockEntryViewSet, TemperatureLogViewSet,
     SafetyHygieneKitViewSet, StoreRequisitionViewSet,
@@ -37,6 +38,7 @@ router.register('gbv-cases',           GBVCaseViewSet,                basename='
 router.register('iec-materials',       IECMaterialViewSet,            basename='iec-material')
 router.register('outreach-sessions',   OutreachSessionViewSet,        basename='outreach-session')
 router.register('wellness-logbook',    WellnessLogbookEntryViewSet,   basename='wellness-logbook')
+router.register('counselling-reports', PHDCounsellingReportViewSet,   basename='counselling-report')
 router.register('group-education',     GroupEducationSessionViewSet,  basename='group-education')
 router.register('referrals',           ReferralViewSet,               basename='referral')
 router.register('stock-entries',       StockEntryViewSet,             basename='stock-entry')

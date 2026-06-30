@@ -14,6 +14,7 @@ from .models import (
     Referral,
     StockEntry, TemperatureLog, SafetyHygieneKit, StoreRequisition,
     TrainingEvent, CoordMeeting, MobileHealthCamp, VisitorRegister,
+    PHDCounsellingReport,
 )
 from fistula.ciprb_models import CIPRBFistulaCase
 from mpdsr.models import MPDSRCase, MPDSRAction
@@ -313,6 +314,15 @@ class WellnessLogbookEntrySerializer(serializers.ModelSerializer):
         model = WellnessLogbookEntry
         # raw_payload kept — the approver needs the full F-01 submission to
         # review before approving.
+        fields = '__all__'
+        read_only_fields = ['approval_status', 'approved_by', 'approved_at',
+                            'kobo_submission_id']
+
+
+class PHDCounsellingReportSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PHDCounsellingReport
+        # raw_payload kept — the approver reviews the full monthly summary.
         fields = '__all__'
         read_only_fields = ['approval_status', 'approved_by', 'approved_at',
                             'kobo_submission_id']

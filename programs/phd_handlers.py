@@ -294,17 +294,17 @@ def _phd_counselling(payload: dict, lat, lng) -> HttpResponse:
     """counselling section → PHDCounsellingReport (monthly aggregate).
 
     A whole monthly counselling report was previously logged and discarded.
-    Persist it as a real row. It is a self-reported MONTHLY SUMMARY (not a
-    per-patient record), so it is AUTO-APPROVED and counts immediately —
-    it does not pass through the per-record manager review queue (consistent
-    with how registration is auto-approved). Idempotent via kobo_submission_id."""
+    Persist it as a real row. It lands PENDING and a PHD manager approves it in
+    the website queue before its counts feed the dashboard — every form in the
+    site is reviewed (Rafi: nothing auto-approves). Idempotent via
+    kobo_submission_id."""
     if _already_exists(PHDCounsellingReport, payload):
         return HttpResponse('OK', status=200)
     center = _get_center(payload, ORG)
 
     PHDCounsellingReport.objects.create(
         organisation=ORG,
-        approval_status='APPROVED',
+        approval_status=PHDCounsellingReport.PENDING,
         center=center,
         report_date=_date(payload.get('counsel_date')) or timezone.now().date(),
         prepared_by=_str(payload.get('counsel_prepared_by')),

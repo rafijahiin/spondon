@@ -521,9 +521,12 @@ def handle_bandhu_activity_ops(payload, lat, lng):
 def handle_bandhu_mother_list(payload, lat, lng):
     """F-1.1 Mother List → create/update the Bandhu Client (the master list).
 
-    Auto-approved (like PHD registration) so the service forms' pulldata
-    autofill finds the client immediately. This is NOT part of the two-stage
-    review (Rafi's decision: registration auto-approves)."""
+    Lands PENDING — a Bandhu manager (then UNFPA, two-stage) approves each
+    registration in the website queue, so every enrolment is reviewed. Field
+    logging is NOT blocked meanwhile: export_bandhu_clients keeps every
+    non-rejected (PENDING / MANAGER_APPROVED / APPROVED) client in
+    bandhu_clients.csv, so the service forms' pulldata autofill finds her the
+    moment she registers (she only drops out if the registration is REJECTED)."""
     center = _get_center(payload, ORG)
     if not center:
         return HttpResponse('center not found', status=400)
@@ -555,7 +558,7 @@ def handle_bandhu_mother_list(payload, lat, lng):
         # Nullable: absent/empty stays None rather than defaulting to False.
         'uses_fp_method': _nullable_bool(payload, 'ml_fp_method'),
         'current_status': Client.ACTIVE,
-        'approval_status': Client.APPROVED,
+        'approval_status': Client.PENDING,
         'kobo_submission_id': kobo_id or None,
         'submitted_by_kobo_user': _str(payload.get('_submitted_by')),
         'latitude': lat, 'longitude': lng, 'raw_payload': payload,
@@ -584,7 +587,7 @@ def handle_bandhu_mother_list(payload, lat, lng):
                           'latitude', 'longitude', 'raw_payload'):
                     setattr(locked, f, defaults[f])
                 locked.current_status = Client.ACTIVE
-                locked.approval_status = Client.APPROVED
+                locked.approval_status = Client.PENDING
                 locked.save()
                 logger.info(
                     'Bandhu Mother List upgraded stub client %s (ml_id_no=%s) → %r',

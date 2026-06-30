@@ -233,10 +233,12 @@ def kobo_webhook(request):
     # PENDING and a CIPRB supervisor approves each interview in the baseline
     # area before it counts. MPDSR (F1–F6 combined) and FISTULA (legacy
     # campaign) still queue for manager review (broader field-staff submitters).
-    _AUTO_APPROVE = {
-        FormType.FISTULA_STAGED,
-        FormType.MPDSR_RESPONSE_PLAN,
-    }
+    # Nothing auto-approves at ingest — every form goes through the approval
+    # queue. Fistula-staged and MPDSR-response-plan (CIPRB-owned) now land
+    # PENDING; a CIPRB manager approves each one in the KoboSubmission queue
+    # (CanApproveSubmissions, partner=CIPRB) — the same gate MPDSR / Fistula /
+    # Baseline already use. (Rafi: everything in the site must be approved.)
+    _AUTO_APPROVE = set()
     initial_status = SubmissionStatus.APPROVED if form_type in _AUTO_APPROVE else SubmissionStatus.PENDING
 
     # MPDSR and Baseline are CIPRB-owned surveillance/survey activities.

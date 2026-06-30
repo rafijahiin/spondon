@@ -59,7 +59,7 @@ from .serializers import (
     GBVCaseSerializer, GBVCaseDetailSerializer,
     IECMaterialSerializer,
     OutreachSessionSerializer, GroupEducationSessionSerializer,
-    WellnessLogbookEntrySerializer,
+    WellnessLogbookEntrySerializer, PHDCounsellingReportSerializer,
     ReferralSerializer, ReferralOutcomeSerializer,
     StockEntrySerializer, TemperatureLogSerializer,
     SafetyHygieneKitSerializer, StoreRequisitionSerializer,
@@ -503,6 +503,15 @@ class WellnessLogbookEntryViewSet(OrgFilteredViewSet):
     permission_classes = [CanWriteFieldRecord]  # field-worker service data
 
 
+class PHDCounsellingReportViewSet(OrgFilteredViewSet):
+    """PHD monthly counselling summary — approval detail (register table).
+    A self-reported aggregate; lands PENDING and a PHD manager approves it
+    before its counts feed the dashboard. raw_payload retained for review."""
+    queryset = PHDCounsellingReport.objects.select_related('center').all()
+    serializer_class = PHDCounsellingReportSerializer
+    permission_classes = [CanWriteFieldRecord]  # PHD counsellor data
+
+
 class GroupEducationSessionViewSet(OrgFilteredViewSet):
     queryset = GroupEducationSession.objects.select_related('center').all()
     serializer_class = GroupEducationSessionSerializer
@@ -697,6 +706,8 @@ def _build_summary(obj, model_type: str) -> str:
             return f"GBV case {obj.incident_date}" + (f" · {', '.join(types)}" if types else '')
         if model_type == 'wellness_logbook':
             return f"F-01 logbook {obj.service_date} · client {obj.client_id or '–'}"
+        if model_type == 'counselling_report':
+            return f"Counselling report {obj.report_date} · {obj.total_count} sessions"
         if model_type == 'outreach_session':
             return f"Outreach {obj.session_date} · {obj.individual_contacts} contacts · {obj.condoms_distributed_free} condoms"
         if model_type == 'group_education':
@@ -994,6 +1005,7 @@ _APPROVAL_MODELS = [
     ('coord_meeting',        lambda: CoordMeeting.objects),
     ('mobile_camp',          lambda: MobileHealthCamp.objects),
     ('nil_report',           lambda: NilReport.objects),
+    ('counselling_report',   lambda: PHDCounsellingReport.objects),
     ('fistula_case',         lambda: CIPRBFistulaCase.objects),
     ('mpdsr_case',           lambda: MPDSRCase.objects),
     ('mpdsr_notification',   lambda: MPDSRDeathNotification.objects),
@@ -1021,6 +1033,7 @@ _ENDPOINT_OVERRIDES = {
     'gbv_case': 'gbv-cases',
     'outreach_session': 'outreach-sessions',
     'wellness_logbook': 'wellness-logbook',
+    'counselling_report': 'counselling-reports',
     'group_education': 'group-education',
     'referral': 'referrals',
     'safety_hygiene_kit': 'hygiene-kits',
@@ -1164,6 +1177,7 @@ class PendingApprovalsView(views.APIView):
                 'gbv_case': 'spondon_gbv_case_v1',
                 'outreach_session': 'spondon_outreach_v1',
                 'wellness_logbook': 'bandhu_service_log_v1',
+                'counselling_report': 'phd_service_log_v1',
                 'group_education': 'spondon_group_edu_v1',
                 'referral': 'spondon_referral_v1',
                 'safety_hygiene_kit': 'spondon_hygiene_kit_v1',

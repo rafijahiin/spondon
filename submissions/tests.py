@@ -60,8 +60,8 @@ class WebhookIngestTest(TestCase):
     def test_valid_payload_creates_submission(self, mock_tg):
         # MPDSR is CIPRB-owned surveillance: the record is always attributed to
         # CIPRB regardless of the collector org named in the payload, and lands
-        # PENDING for the manager-approval path (only the staged fistula / MPDSR
-        # response-plan forms auto-approve).
+        # PENDING for the manager-approval path. Nothing auto-approves at ingest
+        # any more — every form goes through the approval queue.
         payload = mpdsr_payload()
         resp = self.client.post(
             WEBHOOK_URL, data=json.dumps(payload), content_type='application/json', **TEST_AUTH
