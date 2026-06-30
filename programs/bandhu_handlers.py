@@ -36,7 +36,7 @@ from .webhook import (
 )
 from .models import (
     Client, ClinicVisit, HIVSTITestResult, IndividualCounselling,
-    GBVCase, Referral, OutreachSession, MobileHealthCamp,
+    GBVCase, Referral, OutreachSession, MobileHealthCamp, WellnessLogbookEntry,
     TrainingEvent, CoordMeeting, IECMaterial,
 )
 
@@ -254,16 +254,26 @@ def _bnd_hiv_identified(payload, lat, lng):
 
 
 def _bnd_logbook(payload, lat, lng):
-    """F-01 Wellness Centre Service Logbook — Kobo-only, NOT retained in SIMPLE.
+    """F-01 Wellness Centre Service Logbook → WellnessLogbookEntry (PENDING).
 
-    This returns 200 with no database write: the logbook's services are already
-    counted via the canonical Patient Record (F-05) and HTC (F-06) tools, so
-    re-persisting would double-count, and the programs webhook stores no
-    KoboSubmission. The raw payload therefore exists ONLY in KoboToolbox.
-    TODO(audit H1): add a raw-payload retention model + migration so the F-01
-    submission is preserved in SIMPLE for audit, without feeding any indicator.
+    Persisted as a REVIEWABLE record so every F-01 submission lands in the
+    approval queue (previously this was a Kobo-only no-op). The entry is NOT
+    read by any indicator — the services are counted via the Patient Record
+    (F-05) / HTC (F-06) tools, so retaining F-01 here cannot double-count the
+    numbers. The full submission is preserved in raw_payload for the reviewer.
     """
-    return HttpResponse('OK', status=200)
+    center = _get_center(payload, ORG)
+    if not center:
+        return HttpResponse('center not found', status=400)
+    if _already_exists(WellnessLogbookEntry, payload):
+        return HttpResponse('OK', status=200)
+    WellnessLogbookEntry.objects.create(
+        organisation=ORG, center=center,
+        service_date=_date(payload.get('log_date')) or _sub_date(payload),
+        client_id=_str(payload.get('log_client_id')),
+        **_base_kwargs(payload, lat, lng),
+    )
+    return HttpResponse('Created', status=201)
 
 
 def handle_bandhu_service_log(payload, lat, lng):

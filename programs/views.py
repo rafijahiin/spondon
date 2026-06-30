@@ -34,7 +34,7 @@ from .models import (
     ClinicVisit, HIVSTITestResult, ADRRecord, AutoclaveLog, AntenatalCard,
     HTCCounselling, IndividualCounselling, MHScreening,
     GBVCase, GBVAccessLog,
-    OutreachSession, GroupEducationSession,
+    OutreachSession, GroupEducationSession, WellnessLogbookEntry,
     Referral,
     IECMaterial,
     StockEntry, TemperatureLog, SafetyHygieneKit, StoreRequisition,
@@ -59,6 +59,7 @@ from .serializers import (
     GBVCaseSerializer, GBVCaseDetailSerializer,
     IECMaterialSerializer,
     OutreachSessionSerializer, GroupEducationSessionSerializer,
+    WellnessLogbookEntrySerializer,
     ReferralSerializer, ReferralOutcomeSerializer,
     StockEntrySerializer, TemperatureLogSerializer,
     SafetyHygieneKitSerializer, StoreRequisitionSerializer,
@@ -493,6 +494,15 @@ class OutreachSessionViewSet(OrgFilteredViewSet):
     permission_classes = [CanWriteOutreach]  # Manager-only write per handoff
 
 
+class WellnessLogbookEntryViewSet(OrgFilteredViewSet):
+    """F-01 Wellness Centre Service Logbook — approval detail (register table).
+    Bandhu service record; carries no decrypted-PII columns, only client_id +
+    raw_payload. Reviewed via the standard two-stage Bandhu flow."""
+    queryset = WellnessLogbookEntry.objects.select_related('center').all()
+    serializer_class = WellnessLogbookEntrySerializer
+    permission_classes = [CanWriteFieldRecord]  # field-worker service data
+
+
 class GroupEducationSessionViewSet(OrgFilteredViewSet):
     queryset = GroupEducationSession.objects.select_related('center').all()
     serializer_class = GroupEducationSessionSerializer
@@ -685,6 +695,8 @@ def _build_summary(obj, model_type: str) -> str:
                                       ('Economic', 'gbv_economic'), ('Psychological', 'gbv_psychological')]
                      if getattr(obj, f, False)]
             return f"GBV case {obj.incident_date}" + (f" · {', '.join(types)}" if types else '')
+        if model_type == 'wellness_logbook':
+            return f"F-01 logbook {obj.service_date} · client {obj.client_id or '–'}"
         if model_type == 'outreach_session':
             return f"Outreach {obj.session_date} · {obj.individual_contacts} contacts · {obj.condoms_distributed_free} condoms"
         if model_type == 'group_education':
@@ -974,6 +986,7 @@ _APPROVAL_MODELS = [
     ('mh_screening',         lambda: MHScreening.objects),
     ('gbv_case',             lambda: GBVCase.objects),
     ('outreach_session',     lambda: OutreachSession.objects),
+    ('wellness_logbook',     lambda: WellnessLogbookEntry.objects),
     ('group_education',      lambda: GroupEducationSession.objects),
     ('referral',             lambda: Referral.objects),
     ('safety_hygiene_kit',   lambda: SafetyHygieneKit.objects),
@@ -1007,6 +1020,7 @@ _ENDPOINT_OVERRIDES = {
     'mh_screening': 'mh-screening',
     'gbv_case': 'gbv-cases',
     'outreach_session': 'outreach-sessions',
+    'wellness_logbook': 'wellness-logbook',
     'group_education': 'group-education',
     'referral': 'referrals',
     'safety_hygiene_kit': 'hygiene-kits',
@@ -1149,6 +1163,7 @@ class PendingApprovalsView(views.APIView):
                 'mh_screening': 'spondon_mh_screening_v1',
                 'gbv_case': 'spondon_gbv_case_v1',
                 'outreach_session': 'spondon_outreach_v1',
+                'wellness_logbook': 'bandhu_service_log_v1',
                 'group_education': 'spondon_group_edu_v1',
                 'referral': 'spondon_referral_v1',
                 'safety_hygiene_kit': 'spondon_hygiene_kit_v1',

@@ -4,7 +4,7 @@ from .clinic import ClinicVisit, HIVSTITestResult, ADRRecord, AutoclaveLog, Ante
 from .counselling import HTCCounselling, IndividualCounselling, MHScreening
 from .gbv import GBVCase, GBVAccessLog
 from .iec import IECMaterial
-from .outreach import OutreachSession, GroupEducationSession
+from .outreach import OutreachSession, GroupEducationSession, WellnessLogbookEntry
 from .referral import Referral
 from .supply import StockEntry, TemperatureLog, SafetyHygieneKit, StoreRequisition
 from .operations import TrainingEvent, CoordMeeting, MobileHealthCamp, VisitorRegister
@@ -20,7 +20,7 @@ __all__ = [
     'GBVCornerRecord',
     'PHDCounsellingReport',
     'IECMaterial',
-    'OutreachSession', 'GroupEducationSession',
+    'OutreachSession', 'GroupEducationSession', 'WellnessLogbookEntry',
     'Referral',
     'StockEntry', 'TemperatureLog', 'SafetyHygieneKit', 'StoreRequisition',
     'TrainingEvent', 'CoordMeeting', 'MobileHealthCamp', 'VisitorRegister',

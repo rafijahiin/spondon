@@ -10,7 +10,7 @@ from .models import (
     HTCCounselling, IndividualCounselling, MHScreening,
     GBVCase,
     IECMaterial,
-    OutreachSession, GroupEducationSession,
+    OutreachSession, GroupEducationSession, WellnessLogbookEntry,
     Referral,
     StockEntry, TemperatureLog, SafetyHygieneKit, StoreRequisition,
     TrainingEvent, CoordMeeting, MobileHealthCamp, VisitorRegister,
@@ -306,6 +306,16 @@ class OutreachSessionSerializer(serializers.ModelSerializer):
         fields = '__all__'
         read_only_fields = ['approval_status', 'approved_by', 'approved_at',
                             'kobo_submission_id', 'submitted_at']
+
+
+class WellnessLogbookEntrySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = WellnessLogbookEntry
+        # raw_payload kept — the approver needs the full F-01 submission to
+        # review before approving.
+        fields = '__all__'
+        read_only_fields = ['approval_status', 'approved_by', 'approved_at',
+                            'kobo_submission_id']
 
 
 class GroupEducationSessionSerializer(serializers.ModelSerializer):

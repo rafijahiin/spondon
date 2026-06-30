@@ -109,3 +109,29 @@ class GroupEducationSession(SubmissionBase):
 
     def __str__(self):
         return f'Group Ed {self.session_date} — {self.topic[:40]}'
+
+
+class WellnessLogbookEntry(SubmissionBase):
+    """F-01 Wellness Centre Service Logbook — a REVIEWABLE retention record.
+
+    The F-01 logbook is the centre's own day-book of services. Those services
+    are *counted* via the Patient Record (F-05) and HTC (F-06) tools, so this
+    model is deliberately NOT read by any indicator — keeping it out of the
+    numbers avoids double-counting. It exists so every F-01 submission lands in
+    the approval queue and is preserved in SIMPLE, not only in KoboToolbox. The
+    full submission is kept in raw_payload for the reviewer (audit H1)."""
+    organisation = models.CharField(max_length=20, choices=ORG_CHOICES, db_index=True)
+    center = models.ForeignKey(
+        'programs.ServiceCenter', on_delete=models.PROTECT,
+        related_name='wellness_logbook_entries',
+    )
+    service_date = models.DateField(null=True, blank=True, db_index=True)
+    client_id = models.CharField(max_length=50, blank=True)
+
+    class Meta:
+        ordering = ['-service_date']
+        verbose_name = 'Wellness logbook entry'
+        verbose_name_plural = 'Wellness logbook entries'
+
+    def __str__(self):
+        return f'F-01 logbook {self.service_date} — {self.client_id}'
