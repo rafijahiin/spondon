@@ -91,3 +91,43 @@ class PHDCounsellingApprovalTest(TestCase):
         r = c.get('/api/programs/pending-approvals/')
         self.assertEqual(r.status_code, 200)
         self.assertIn('counselling_report', str(r.content))
+
+
+class BandhuClientApproveButtonTest(TestCase):
+    """Regression: a Bandhu manager MUST be able to approve a Mother List
+    registration from the queue. Client is a plain TimestampedModel (not a
+    SubmissionBase), so the Bandhu two-stage path set manager_approved_by on it
+    → AttributeError → 500 → dead approve button. Registration is single-stage:
+    the manager's approval finalises it."""
+    def setUp(self):
+        cache.clear()
+        self.center = _center('Bandhu', 'BAN-001')
+        self.mgr = User.objects.create_user(
+            email='bmgr@x.org', password='Str0ng-Passw0rd-2026', full_name='B Mgr',
+            organisation='Bandhu', role='manager',
+        )
+        self.reg = Client.objects.create(
+            organisation='Bandhu', center=self.center, client_id='01-0009',
+            name='Asha', approval_status=Client.PENDING,
+        )
+
+    def _post(self, action='approve'):
+        c = APIClient()
+        c.force_authenticate(self.mgr)
+        return c.post('/api/programs/pending-approvals/', {
+            'id': str(self.reg.id), 'model_type': 'client_reg', 'action': action,
+            'reason': 'duplicate' if action == 'reject' else '',
+        }, format='json')
+
+    def test_manager_approve_finalises_registration(self):
+        r = self._post('approve')
+        self.assertEqual(r.status_code, 200, r.content)
+        self.reg.refresh_from_db()
+        self.assertEqual(self.reg.approval_status, Client.APPROVED)
+        self.assertEqual(self.reg.approved_by, self.mgr)
+
+    def test_manager_reject_works_too(self):
+        r = self._post('reject')
+        self.assertEqual(r.status_code, 200, r.content)
+        self.reg.refresh_from_db()
+        self.assertEqual(self.reg.approval_status, Client.REJECTED)

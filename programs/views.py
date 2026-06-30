@@ -135,7 +135,15 @@ def _apply_decision(obj, user, action_type, reason):
             or (is_unfpa and obj.organisation == 'Bandhu')):
         return Response({'detail': 'Not authorised.'}, status=status.HTTP_403_FORBIDDEN)
 
-    two_stage = (obj.organisation == 'Bandhu')
+    # Two-stage (Bandhu manager → UNFPA) applies ONLY to models that carry the
+    # manager-stage fields, i.e. SubmissionBase records. Client (the Mother List
+    # registry) is a plain TimestampedModel with PENDING/APPROVED/REJECTED only
+    # and NO manager_approved_by/at — so a Bandhu registration is single-stage:
+    # the manager's approval finalises it. Without this guard, approving a Bandhu
+    # Client ran `obj.manager_approved_by = user` → AttributeError → 500 (the
+    # "approve button does nothing" bug, exposed once registration stopped
+    # auto-approving). hasattr keeps every real SubmissionBase model two-stage.
+    two_stage = (obj.organisation == 'Bandhu') and hasattr(obj, 'manager_approved_by')
     cur = obj.approval_status
     now = timezone.now()
 
