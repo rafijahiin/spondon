@@ -1,5 +1,6 @@
 from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
 from .models import User
 
@@ -92,6 +93,15 @@ class UserCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['email', 'username', 'first_name', 'last_name', 'full_name', 'organisation', 'role', 'password']
+
+    def validate_password(self, value):
+        # Enforce AUTH_PASSWORD_VALIDATORS on admin-created accounts (audit
+        # AUTH-03): this create path previously bypassed them entirely.
+        try:
+            validate_password(value)
+        except DjangoValidationError as e:
+            raise serializers.ValidationError(list(e.messages))
+        return value
 
     def create(self, validated_data):
         first = validated_data.pop('first_name', '')

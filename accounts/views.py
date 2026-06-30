@@ -1,8 +1,11 @@
 from django.contrib.auth import login, logout, update_session_auth_hash
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import ensure_csrf_cookie
 from rest_framework import permissions, status
 from rest_framework.response import Response
+from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 
@@ -28,6 +31,8 @@ class CSRFView(APIView):
 
 class LoginView(APIView):
     permission_classes = [permissions.AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = 'login'
 
     def post(self, request):
         serializer = LoginSerializer(data=request.data, context={'request': request})
@@ -98,6 +103,13 @@ class UserViewSet(ModelViewSet):
 
         password = data.get('password', '')
         if password:
+            try:
+                validate_password(password, instance)
+            except DjangoValidationError as e:
+                return Response(
+                    {'password': list(e.messages)},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
             instance.set_password(password)
 
         instance.save()

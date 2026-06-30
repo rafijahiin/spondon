@@ -144,7 +144,7 @@ AUTH_USER_MODEL = 'accounts.User'
 
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator', 'OPTIONS': {'min_length': 12}},
     {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
@@ -170,6 +170,13 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
     ],
+    # Brute-force protection (audit AUTH-01): the login endpoint is the only
+    # anonymous credential-checking surface. ScopedRateThrottle('login') on
+    # LoginView reads this rate. Uses the `default` cache (Redis if configured,
+    # else per-process LocMem — adequate for the single gunicorn worker).
+    'DEFAULT_THROTTLE_RATES': {
+        'login': '10/min',
+    },
 }
 
 LOGIN_URL = '/login/'
