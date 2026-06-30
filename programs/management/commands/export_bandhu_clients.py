@@ -60,16 +60,9 @@ def build_csv():
     the PHD rule)."""
     qs = (
         Client.objects
-        # Include non-rejected (PENDING / MANAGER_APPROVED) as well as APPROVED.
-        # Registration now lands PENDING and a manager (then UNFPA) approves it,
-        # but a worker must be able to log services for a freshly-registered
-        # mother BEFORE that approval completes — so she stays in the lookup CSV
-        # the moment she registers and only drops out if REJECTED. The two-stage
-        # MANAGER_APPROVED state is included too, or she would vanish from the
-        # CSV in the window between the manager's and UNFPA's approval. Mirrors
-        # the PHD rule (export_phd_clients).
-        .filter(organisation='Bandhu')
-        .exclude(approval_status=Client.REJECTED)
+        # Bandhu registration is auto-approved, so APPROVED == every real
+        # registered client (stubs are excluded by the name filters below).
+        .filter(organisation='Bandhu', approval_status=Client.APPROVED)
         .exclude(name='')
         .exclude(name='Unknown')
         .order_by('client_id')
@@ -177,7 +170,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         self.stdout.write('\nExport Bandhu clients (Mother List -> bandhu_clients.csv)\n')
         csv_bytes, n = build_csv()
-        self.stdout.write(f'  {n} loggable client(s), {len(csv_bytes)} bytes')
+        self.stdout.write(f'  {n} approved client(s), {len(csv_bytes)} bytes')
         if not options['upload']:
             self.stdout.write('  (dry run — pass --upload to push to Kobo)')
             return

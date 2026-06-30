@@ -23,7 +23,11 @@ def _center(org, code):
     )
 
 
-class BandhuRegistrationApprovalTest(TestCase):
+class BandhuRegistrationAutoApproveTest(TestCase):
+    """Bandhu Mother List registration is AUTO-APPROVED (Rafi 2026-06-30): the
+    field manages its own registry and the service forms' pulldata must find a
+    client the instant she registers. (PHD FSW registration is manager-approved
+    — partner-specific.)"""
     def setUp(self):
         cache.clear()
         self.center = _center('Bandhu', 'BAN-001')
@@ -36,28 +40,17 @@ class BandhuRegistrationApprovalTest(TestCase):
         }
         return handle_bandhu_mother_list(payload, lat=23.7, lng=90.4)
 
-    def test_registration_lands_pending_not_approved(self):
+    def test_registration_auto_approved(self):
         resp = self._register()
         self.assertEqual(resp.status_code, 201)
         c = Client.objects.get(client_id='01-0001')
-        self.assertEqual(c.approval_status, Client.PENDING)
+        self.assertEqual(c.approval_status, Client.APPROVED)
 
-    def test_pending_client_is_loggable_in_csv(self):
-        # A freshly-registered (PENDING) mother must still be in the lookup CSV
-        # so the field can record her services before approval completes.
+    def test_registered_client_is_in_lookup_csv(self):
         self._register(name='Asha')
         csv_bytes, n = build_csv()
         self.assertEqual(n, 1)
-        self.assertIn(b'01-0001', csv_bytes)
         self.assertIn(b'Asha', csv_bytes)
-
-    def test_rejected_client_drops_out_of_csv(self):
-        self._register()
-        c = Client.objects.get(client_id='01-0001')
-        c.approval_status = Client.REJECTED
-        c.save()
-        _, n = build_csv()
-        self.assertEqual(n, 0)
 
 
 class PHDCounsellingApprovalTest(TestCase):
@@ -94,11 +87,12 @@ class PHDCounsellingApprovalTest(TestCase):
 
 
 class BandhuClientApproveButtonTest(TestCase):
-    """Regression: a Bandhu manager MUST be able to approve a Mother List
-    registration from the queue. Client is a plain TimestampedModel (not a
-    SubmissionBase), so the Bandhu two-stage path set manager_approved_by on it
-    → AttributeError → 500 → dead approve button. Registration is single-stage:
-    the manager's approval finalises it."""
+    """Defensive regression for _apply_decision. Client is a plain
+    TimestampedModel (not a SubmissionBase) with no manager-stage fields, so the
+    Bandhu two-stage path used to run obj.manager_approved_by = user on it →
+    AttributeError → 500. Bandhu registration now auto-approves so a Client is
+    not normally queued, but the approval machinery must still never 500 on a
+    non-SubmissionBase model — it must approve/reject single-stage."""
     def setUp(self):
         cache.clear()
         self.center = _center('Bandhu', 'BAN-001')
