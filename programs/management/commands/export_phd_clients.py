@@ -89,7 +89,13 @@ def build_csv() -> tuple[bytes, int]:
     Form 1 (FSW Registration), and that always sets at least name."""
     qs = (
         Client.objects
-        .filter(organisation='PHD', approval_status=Client.APPROVED)
+        # Include PENDING as well as APPROVED. A freshly-registered FSW must be
+        # loggable immediately — field workers cannot wait for the PHD manager's
+        # approval to record her services — so her PENDING registration still
+        # flows into the Service Log's pulldata(). REJECTED registrations are
+        # excluded: a rejected FSW correctly drops back out of the lookup.
+        .filter(organisation='PHD',
+                approval_status__in=[Client.APPROVED, Client.PENDING])
         .exclude(name='')         # drop stubs
         .order_by('client_id')
     )

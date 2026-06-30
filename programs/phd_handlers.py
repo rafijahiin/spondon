@@ -109,12 +109,14 @@ def handle_phd_registration(payload: dict, lat, lng) -> HttpResponse:
         'uses_fp_method':      _nullable_bool(payload, 'uses_fp'),
         'notes':               _str(payload.get('remarks')),
         'current_status':      Client.ACTIVE,
-        # Registration needs no manager approval — a field worker
-        # enrolling an FSW is the source of truth for the Master List.
-        # Auto-approving here is what lets her flow into phd_clients.csv
-        # (the exporter filters approval_status=APPROVED) so the Service
-        # Log's pulldata() finds her immediately after registration.
-        'approval_status':     Client.APPROVED,
+        # Registration lands PENDING — a PHD manager approves each FSW
+        # enrolment in the website queue, so the registration record itself
+        # gets reviewed. Field logging is NOT blocked by this: export_phd_clients
+        # now includes PENDING (not only APPROVED) clients in phd_clients.csv, so
+        # the Service Log's pulldata() finds her immediately after submission —
+        # before the manager acts. A REJECTED registration drops back out of the
+        # CSV (she stops being loggable). See export_phd_clients.build_csv().
+        'approval_status':     Client.PENDING,
         'kobo_submission_id':  kobo_id or None,
         'submitted_by_kobo_user': _str(payload.get('_submitted_by')),
         'latitude':  lat,
@@ -148,7 +150,10 @@ def handle_phd_registration(payload: dict, lat, lng) -> HttpResponse:
                           'raw_payload'):
                     setattr(locked, f, defaults[f])
                 locked.current_status = Client.ACTIVE
-                locked.approval_status = Client.APPROVED
+                # Upgrading a stub IS a real registration, so it needs the
+                # manager's approval too — land it PENDING, same as a fresh
+                # registration above (not APPROVED).
+                locked.approval_status = Client.PENDING
                 locked.save()
                 logger.info(
                     'PHD registration upgraded stub client %s (id_no=%s)',
