@@ -157,20 +157,27 @@ def daily_reporting_activity(organisation: str, threshold_dt, today_start):
     intent; the earlier APPROVED-only filter under-reported every partner while a
     review backlog existed.
 
-    The auto-approved registration/master-list models (Client) and self-reported
-    monthly aggregates (PHDCounsellingReport) are STILL EXCLUDED — they are not
-    per-day field submissions, and counting them made the card read e.g. "43" off
-    a batch of registrations when only one real submission existed. (That was the
-    real inflation the APPROVED-only filter over-corrected for; the EXCLUDE set
-    fixes it precisely without hiding pending field reports.) The legacy
-    KoboSubmission table holds none of the partners' current data, so without
-    this the widget reads 0/silent for PHD/Bandhu/CIPRB forever.
+    Client REGISTRATIONS COUNT (both orgs, same rule). Registering a client is
+    real field-reporting work — for PHD it IS the main daily activity (FSW
+    registration), and excluding it made PHD read 0 while it had a pending
+    registration backlog, even though Bandhu (auto-approved registrations, service
+    records elsewhere) showed a number. The rule is per-TYPE and identical for
+    both partners, never per-org.
+
+    Only PHDCounsellingReport is EXCLUDED — it is a self-reported MONTHLY desk
+    aggregate (one row = a whole month's counselling summary), not a per-event
+    field submission, so it would misrepresent daily activity. (The old "43 off a
+    batch of registrations" inflation was a bulk-load artefact, not normal field
+    reporting; a real daily registration IS a report and should show.) The legacy
+    KoboSubmission table holds none of the partners' current data, so without this
+    the widget reads 0/silent for PHD/Bandhu/CIPRB forever.
 
     Returns (recent_count, today_count, today_centre_codes, last_submitted_at).
     """
     from django.apps import apps
-    # Auto-approved, non-submission models that must not inflate the daily count.
-    EXCLUDE = {'Client', 'PHDCounsellingReport'}
+    # Monthly desk aggregates only — never a per-org exclusion. Client
+    # registrations count as field reporting for BOTH PHD and Bandhu.
+    EXCLUDE = {'PHDCounsellingReport'}
     recent_count = today_count = 0
     today_codes: set[str] = set()
     last = None
@@ -231,10 +238,10 @@ def programs_last_by_centre(organisation: str):
     data lives entirely in the programs models — every non-today centre showed
     "hours silent = —" even when it had submitted recently. Same status rule as
     daily_reporting_activity (submission-based, exclude REJECTED) and the same
-    EXCLUDE set (auto-approved registrations / monthly aggregates)."""
+    EXCLUDE set (monthly desk aggregates only; Client registrations count)."""
     from django.apps import apps
     from django.db.models import Max
-    EXCLUDE = {'Client', 'PHDCounsellingReport'}
+    EXCLUDE = {'PHDCounsellingReport'}
     result: dict[str, datetime.datetime] = {}
     models = list(apps.get_app_config('programs').get_models())
     for _app_label, _model_name in (

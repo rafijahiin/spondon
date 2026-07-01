@@ -94,22 +94,29 @@ class DailyReportingCiprbTest(TestCase):
         self.assertEqual(today, 2)
         self.assertIsNotNone(last)
 
-    def test_registration_not_counted(self):
-        # Auto-approved Client registrations (master-list entries) must NOT count
-        # toward daily reporting — they inflated the card to "43" off a batch of
-        # registrations when only one real submission existed.
+    def test_registration_counts_for_both_orgs(self):
+        # A client registration IS field-reporting work and counts for BOTH orgs
+        # under the SAME rule. PHD's daily activity is FSW registration (pending),
+        # so excluding Client made PHD read 0 while Bandhu (registrations
+        # auto-approved, service records elsewhere) showed a number. Whether the
+        # registration is PENDING (PHD) or APPROVED (Bandhu) is irrelevant.
         from programs.models import ServiceCenter, Client
-        centre = ServiceCenter.objects.create(
-            organisation='Bandhu', name='DIC', code='BND-DIC-RT',
-            center_type='DIC', district='Dhaka')
-        Client.objects.create(
-            organisation='Bandhu', center=centre, client_id='C-RT-1', name='X')
         now = timezone.now()
         threshold = now - datetime.timedelta(hours=24)
         today_start = timezone.localtime(now).replace(
             hour=0, minute=0, second=0, microsecond=0)
-        recent, *_ = daily_reporting_activity('Bandhu', threshold, today_start)
-        self.assertEqual(recent, 0)   # registration excluded even though APPROVED
+        for org, code, status in (
+            ('PHD', 'PHD-RT', 'PENDING'),      # FSW registration is manager-approved
+            ('Bandhu', 'BND-RT', 'APPROVED'),  # Mother List is auto-approved
+        ):
+            centre = ServiceCenter.objects.create(
+                organisation=org, name='C', code=code,
+                center_type='DIC', district='Dhaka')
+            Client.objects.create(
+                organisation=org, center=centre, client_id=f'{code}-1',
+                name='X', approval_status=status)
+            recent, *_ = daily_reporting_activity(org, threshold, today_start)
+            self.assertEqual(recent, 1, f'{org} registration must count as a report')
 
     def test_per_centre_last_uses_programs_models(self):
         # The per-centre 'hours silent' drill-down must see programs-model
