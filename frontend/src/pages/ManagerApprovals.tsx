@@ -659,6 +659,19 @@ export default function ManagerApprovals() {
   // ── Queue ───────────────────────────────────────────────────────────────────
 
   const allItems = toQueueItems(programsData ?? null, submissions ?? null)
+
+  // Tab badges count the TRUE pre-cap backlog, not the returned page. The
+  // programs queue is capped at 200 rows/model, so counting the returned list
+  // left the partner badge stuck ("Bandhu 317 won't drop even after I approve"
+  // — approving one just back-filled a hidden row). counts_by_org is the real
+  // per-partner total from the server; legacy KoboSubmission rows (near-zero for
+  // PHD/Bandhu/CIPRB field data) are added from the returned list.
+  const progOrgCounts = programsData?.counts_by_org ?? {}
+  const legacyItems = allItems.filter(x => x.kind === 'legacy')
+  const orgCount = (orgs: string[]) =>
+    orgs.reduce((s, o) => s + (progOrgCounts[o] ?? 0), 0) +
+    legacyItems.filter(x => orgs.includes(x.organisation)).length
+  const allCount = (programsData?.total ?? 0) + legacyItems.length
   const reviewedItems = [
     ...toQueueItems(reviewedProgramsData ?? null, null),
     ...reviewedQueueItems(reviewedSubs ?? null),
@@ -911,11 +924,11 @@ export default function ManagerApprovals() {
               </div>
               <div className="pills">
                 {([
-                  { key: 'all'    as const, label: t('approvals.filterAll'),    count: allItems.length },
+                  { key: 'all'    as const, label: t('approvals.filterAll'),    count: allCount },
                   { key: 'urgent' as const, label: t('approvals.filterUrgent'), count: allItems.filter(x => x.urgent).length },
-                  { key: 'phd'    as const, label: t('approvals.filterPHD'),    count: allItems.filter(x => x.organisation === 'PHD').length },
-                  { key: 'bondhu' as const, label: t('approvals.filterBondhu'), count: allItems.filter(x => x.organisation === 'Bandhu' || x.organisation === 'Bondhu').length },
-                  { key: 'ciprb'  as const, label: 'CIPRB', count: allItems.filter(x => x.organisation === 'CIPRB').length },
+                  { key: 'phd'    as const, label: t('approvals.filterPHD'),    count: orgCount(['PHD']) },
+                  { key: 'bondhu' as const, label: t('approvals.filterBondhu'), count: orgCount(['Bandhu', 'Bondhu']) },
+                  { key: 'ciprb'  as const, label: 'CIPRB', count: orgCount(['CIPRB']) },
                   ...(canSeeBaseline ? [{ key: 'baseline' as const, label: 'Baseline', count: baselineItems.length }] : []),
                   { key: 'reviewed' as const, label: 'Reviewed', count: reviewedItems.length },
                 ]).map(f => (

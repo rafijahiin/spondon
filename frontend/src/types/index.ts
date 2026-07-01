@@ -513,6 +513,10 @@ export interface ProgramPendingResponse {
   returned?: number             // rows actually carried in `items`
   truncated?: boolean           // true when total > returned (queue capped)
   counts_by_type: Record<string, number>
+  /** TRUE pre-cap backlog per partner. Drives the queue's partner tab badges so
+   *  they reflect the real total and drop on every approval — not the capped
+   *  page (which back-fills a hidden row and leaves the badge stuck). */
+  counts_by_org?: Record<string, number>
   items: ProgramPendingItem[]
 }
 

@@ -231,6 +231,27 @@ class OrgIsolationSmokeTest(TestCase):
         self.assertIn('PHD', orgs)
         self.assertIn('Bandhu', orgs)
 
+    def test_counts_by_org_is_true_backlog_not_the_capped_page(self):
+        """The partner tab badge must count the REAL pending backlog, not the
+        capped page. Regression for '317 won't drop even after I approve': the
+        display cap truncated the returned rows, so the badge (counted from the
+        page) back-filled a hidden row and never moved. counts_by_org is derived
+        from an aggregate BEFORE the [:_CAP] slice, so it stays the DB truth even
+        when `items` is truncated — and it must be org-scoped."""
+        # Every pending Bandhu record across all approval models.
+        from programs.models import OutreachSession
+        true_bandhu = (
+            ClinicVisit.objects.filter(organisation='Bandhu', approval_status='PENDING').count()
+            + OutreachSession.objects.filter(organisation='Bandhu', approval_status='PENDING').count()
+        )
+        self.client.force_authenticate(user=self.bandhu_mgr)
+        resp = self.client.get('/api/programs/pending-approvals/')
+        self.assertEqual(resp.status_code, 200)
+        # Badge count matches the DB truth for Bandhu...
+        self.assertGreaterEqual(resp.data['counts_by_org'].get('Bandhu', 0), true_bandhu)
+        # ...and a Bandhu manager's counts never leak PHD.
+        self.assertNotIn('PHD', resp.data['counts_by_org'])
+
     # ── Helpers ────────────────────────────────────────────────────────────
 
     @staticmethod

@@ -907,6 +907,16 @@ def _pending_for_model(queryset, model_type: str, org_filter_org=None,
     # truncated row count, silently undercounting the backlog.)
     _CAP = 200
     full_count = qs.count()
+    # TRUE per-organisation backlog (before the display cap) so the queue's
+    # partner tabs (Bandhu / PHD / CIPRB) count the real pending total, not the
+    # capped page. Without this the tab badge was computed from the returned
+    # rows: approving one just back-filled a hidden row and the number never
+    # moved ("317 won't go down even after I approve"). (Fault F1 follow-up.)
+    from django.db.models import Count as _Count
+    counts_by_org = {
+        row['organisation']: row['n']
+        for row in qs.values('organisation').annotate(n=_Count('id'))
+    }
     results = []
     for obj in qs.order_by('created_at')[:_CAP]:
         results.append({
@@ -941,7 +951,7 @@ def _pending_for_model(queryset, model_type: str, org_filter_org=None,
             'longitude': float(getattr(obj, 'longitude', None)) if getattr(obj, 'longitude', None) else None,
             'kobo_submission_id': obj.kobo_submission_id or '',
         })
-    return results, full_count
+    return results, full_count, counts_by_org
 
 
 # endpoint → (queryset, model_type)
@@ -1105,9 +1115,12 @@ class PendingApprovalsView(views.APIView):
 
         all_pending = []
         grand_total = 0
+        full_counts_by_org = {}   # TRUE pre-cap backlog per partner (drives tabs)
         for model_type, qs_fn in _APPROVAL_MODELS:
-            items, full_count = lane(qs_fn(), model_type)
+            items, full_count, counts_by_org = lane(qs_fn(), model_type)
             grand_total += full_count
+            for _org, _n in counts_by_org.items():
+                full_counts_by_org[_org] = full_counts_by_org.get(_org, 0) + _n
             for item in items:
                 item['endpoint'] = _ENDPOINT_OVERRIDES.get(model_type, model_type + 's')
             all_pending.extend(items)
@@ -1133,6 +1146,10 @@ class PendingApprovalsView(views.APIView):
             'returned': len(all_pending),
             'truncated': grand_total > len(all_pending),
             'counts_by_type': counts,
+            # TRUE per-partner backlog (pre-cap). The frontend tabs use this so
+            # the Bandhu/PHD/CIPRB badge reflects the real pending count and
+            # drops on every approval, instead of counting the capped page.
+            'counts_by_org': full_counts_by_org,
             'items': all_pending,
         })
 
