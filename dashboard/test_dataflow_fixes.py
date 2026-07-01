@@ -16,7 +16,7 @@ from accounts.models import Organisation, Role, User
 from dashboard.views import (
     _partner_programs_counts, _district_activity_programs,
 )
-from tracker.programs_query import daily_reporting_activity
+from tracker.programs_query import daily_reporting_activity, programs_last_by_centre
 
 from fistula.ciprb_models import CIPRBFistulaCase
 from mpdsr.models import MPDSRCase, DeathType, ReviewStatus
@@ -110,6 +110,33 @@ class DailyReportingCiprbTest(TestCase):
             hour=0, minute=0, second=0, microsecond=0)
         recent, *_ = daily_reporting_activity('Bandhu', threshold, today_start)
         self.assertEqual(recent, 0)   # registration excluded even though APPROVED
+
+    def test_per_centre_last_uses_programs_models(self):
+        # The per-centre 'hours silent' drill-down must see programs-model
+        # submissions (PHD/Bandhu have no KoboSubmission rows). A pending clinic
+        # visit at a centre gives that centre a last-report time; a rejected one
+        # does not, and auto-approved registrations (Client) are excluded.
+        from programs.models import ServiceCenter, Client, ClinicVisit
+        centre = ServiceCenter.objects.create(
+            organisation='Bandhu', name='DIC', code='BND-PC-1',
+            center_type='DIC', district='Dhaka')
+        cl = Client.objects.create(
+            organisation='Bandhu', center=centre, client_id='PC-1', name='A')
+        ClinicVisit.objects.create(
+            organisation='Bandhu', center=centre, client=cl,
+            visit_date=datetime.date.today(), approval_status='PENDING')
+        by_centre = programs_last_by_centre('Bandhu')
+        self.assertIn('BND-PC-1', by_centre)          # pending visit is a report
+        self.assertIsNotNone(by_centre['BND-PC-1'])
+
+        # A different centre with ONLY a rejected visit must not appear.
+        centre2 = ServiceCenter.objects.create(
+            organisation='Bandhu', name='DIC2', code='BND-PC-2',
+            center_type='DIC', district='Dhaka')
+        ClinicVisit.objects.create(
+            organisation='Bandhu', center=centre2, client=cl,
+            visit_date=datetime.date.today(), approval_status='REJECTED')
+        self.assertNotIn('BND-PC-2', programs_last_by_centre('Bandhu'))
 
 
 class PartnerProgramsCountsTest(TestCase):

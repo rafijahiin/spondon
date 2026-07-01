@@ -222,6 +222,56 @@ def daily_reporting_activity(organisation: str, threshold_dt, today_start):
     return recent_count, today_count, today_codes, last
 
 
+def programs_last_by_centre(organisation: str):
+    """Map centre_code → most recent non-REJECTED submission datetime across the
+    programs + CIPRB surveillance models, in one aggregate pass per model.
+
+    Powers the per-centre "hours silent" drill-down. Without it that drill-down
+    read only the legacy KoboSubmission table, so for PHD/Bandhu — whose field
+    data lives entirely in the programs models — every non-today centre showed
+    "hours silent = —" even when it had submitted recently. Same status rule as
+    daily_reporting_activity (submission-based, exclude REJECTED) and the same
+    EXCLUDE set (auto-approved registrations / monthly aggregates)."""
+    from django.apps import apps
+    from django.db.models import Max
+    EXCLUDE = {'Client', 'PHDCounsellingReport'}
+    result: dict[str, datetime.datetime] = {}
+    models = list(apps.get_app_config('programs').get_models())
+    for _app_label, _model_name in (
+        ('mpdsr',   'MPDSRCase'),
+        ('mpdsr',   'MPDSRAction'),
+        ('mpdsr',   'MaternalNearMissCase'),
+        ('mpdsr',   'MPDSRDeathNotification'),
+        ('fistula', 'CIPRBFistulaCase'),
+    ):
+        try:
+            models.append(apps.get_model(_app_label, _model_name))
+        except Exception:
+            pass
+    for model in models:
+        if model.__name__ in EXCLUDE:
+            continue
+        fields = {f.name for f in model._meta.get_fields()}
+        if not {'organisation', 'created_at', 'approval_status'} <= fields:
+            continue
+        if 'center' not in fields:
+            continue
+        try:
+            qs = model.objects.exclude(approval_status='REJECTED')
+            if organisation:
+                qs = qs.filter(organisation=organisation)
+            for row in qs.values('center__code').annotate(last=Max('created_at')):
+                code, last = row['center__code'], row['last']
+                if not code or last is None:
+                    continue
+                if code not in result or last > result[code]:
+                    result[code] = last
+        except Exception as exc:
+            logger.debug('programs_last_by_centre(%s, %s): %s',
+                         organisation, model.__name__, exc)
+    return result
+
+
 def count_legacy(form_type_key: str, organisation: str,
                  year: int, month: int) -> int:
     """Count approved legacy KoboSubmission records."""

@@ -1373,7 +1373,9 @@ class ProgrammeHealthFlagView(APIView):
             # in the programs models, NOT the legacy KoboSubmission table queried
             # above, so the legacy-only counts read 0/silent for them otherwise.
             # Counts all statuses — submitting is "reporting"; approval is separate.
-            from tracker.programs_query import daily_reporting_activity
+            from tracker.programs_query import (
+                daily_reporting_activity, programs_last_by_centre,
+            )
             p_recent, p_today, p_today_codes, p_last = daily_reporting_activity(
                 partner, threshold_dt, today_start,
             )
@@ -1382,6 +1384,10 @@ class ProgrammeHealthFlagView(APIView):
             todays_centre_codes |= p_today_codes
             if p_last and (last_submission is None or p_last > last_submission):
                 last_submission = p_last
+            # Per-centre last submission from the programs models (one aggregate
+            # pass), so the per-centre 'hours silent' drill-down works for PHD/
+            # Bandhu whose field data isn't in the legacy KoboSubmission table.
+            prog_last_by_centre = programs_last_by_centre(partner)
 
             partner_silent_hours = None
             if last_submission:
@@ -1402,14 +1408,21 @@ class ProgrammeHealthFlagView(APIView):
                 if c.code in todays_centre_codes:
                     submitted_today_count += 1
                 else:
-                    # Compute hours silent for this specific centre.
-                    last_for_centre = (
+                    # Compute hours silent for this specific centre — the most
+                    # recent report across BOTH the legacy KoboSubmission table
+                    # and the programs models (PHD/Bandhu live only in the latter).
+                    kobo_last = (
                         KoboSubmission.objects
                         .filter(partner=partner, centre_code=c.code)
                         .exclude(status=SubmissionStatus.REJECTED)
                         .order_by('-submitted_at')
                         .values_list('submitted_at', flat=True)
                         .first()
+                    )
+                    prog_last = prog_last_by_centre.get(c.code)
+                    last_for_centre = max(
+                        (d for d in (kobo_last, prog_last) if d is not None),
+                        default=None,
                     )
                     centre_hrs = (
                         round((now - last_for_centre).total_seconds() / 3600.0, 1)
