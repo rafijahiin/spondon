@@ -443,6 +443,35 @@ class NewComputeFunctionsTest(TestCase):
             center_type=ServiceCenter.BROTHEL, district='Dhaka',
         )
 
+    def test_bnd_1_1_counts_mother_list_not_service_forms(self):
+        """KP reached (1.1) is the Mother List registry, not F-05/F-06 services.
+        Registered (approved, named) Bandhu clients count; stubs and service
+        ClinicVisits do not."""
+        from programs.models import ServiceCenter, Client, ClinicVisit
+        from indicators.bandhu import compute_I_BND_1_1
+        from datetime import date
+        centre = ServiceCenter.objects.create(
+            organisation='Bandhu', name='C-ML', code='ML-1',
+            center_type=ServiceCenter.DIC, district='Dhaka')
+        # Two real Mother List registrations (auto-approved, named).
+        c1 = Client.objects.create(organisation='Bandhu', center=centre,
+                                   client_id='ML-01', name='Asha',
+                                   approval_status=Client.APPROVED)
+        Client.objects.create(organisation='Bandhu', center=centre,
+                              client_id='ML-02', name='Rani',
+                              approval_status=Client.APPROVED)
+        # A stub (service log cited an unregistered id) — must NOT count.
+        Client.objects.create(organisation='Bandhu', center=centre,
+                              client_id='ML-STUB', name='Unknown',
+                              approval_status=Client.APPROVED)
+        # A service record — must NOT drive KP-reached any more.
+        ClinicVisit.objects.create(organisation='Bandhu', center=centre,
+                                   client=c1, visit_date=date(2026, 6, 2),
+                                   hiv_screening_done=True,
+                                   approval_status=ClinicVisit.APPROVED)
+        n = compute_I_BND_1_1('Bandhu', date(2026, 5, 21), date(2026, 11, 20))
+        self.assertEqual(n, 2)   # the two named registrations only
+
     def test_phd_sl15a_counts_message_boards(self):
         from programs.models import IECMaterial
         from partners.models import Partner

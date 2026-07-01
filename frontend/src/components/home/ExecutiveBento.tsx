@@ -454,7 +454,7 @@ export function ExecutiveBento({ progress }: Props) {
         {indCard('PHD', ['SL10', 'SL11', 'SL12', 'SL13'], 'PHD · Providers trained', 'gender-sensitive SRHR training', 0.14)}
         {indCard('PHD', 'SL16', 'PHD · GBV corners', 'established & operational', 0.17)}
         {/* Bandhu — UNFPA marquee indicators (mirror the Bandhu dashboard) */}
-        {indCard('Bandhu', '1.1', 'Bandhu · KP reached', 'HIV/STI screening & FP', 0.2)}
+        {indCard('Bandhu', '1.1', 'Bandhu · KP reached', 'registered in the Mother List', 0.2)}
         {indCard('Bandhu', '1.8', 'Bandhu · Wellness centres', 'established & strengthened', 0.23)}
         {indCard('Bandhu', '1.4a', 'Bandhu · Outreach sessions', 'outreach & health-education', 0.26)}
         {indCard('Bandhu', ['2.1', '2.2', '2.5'], 'Bandhu · Providers trained', 'managers, midwives & peers', 0.29)}

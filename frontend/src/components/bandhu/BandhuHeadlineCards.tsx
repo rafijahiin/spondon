@@ -37,7 +37,7 @@ interface CardDef {
 }
 
 const CARDS: CardDef[] = [
-  { key: 'served',    kind: 'number', codes: ['1.1'],               label: 'Key Population Reached',    sub: 'HIV/STI screening, counselling & FP',  sl: '1.1',          icon: <HeartPulse size={15} /> },
+  { key: 'served',    kind: 'number', codes: ['1.1'],               label: 'Key Population Reached',    sub: 'Registered in the Mother List',        sl: '1.1',          icon: <HeartPulse size={15} /> },
   { key: 'dic',       kind: 'ring',   codes: ['1.8'],               label: 'Wellness Centres',          sub: 'Established & strengthened',            sl: '1.8',          icon: <Home size={15} /> },
   { key: 'outreach',  kind: 'number', codes: ['1.4a'],              label: 'Outreach Sessions',         sub: 'Outreach & health-education sessions',  sl: '1.4a',         icon: <Activity size={15} /> },
   { key: 'providers', kind: 'number', codes: ['2.1', '2.2', '2.5'], label: 'Service Providers Trained', sub: 'Managers, midwives & peer educators',   sl: '2.1·2.2·2.5', icon: <GraduationCap size={15} /> },

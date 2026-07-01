@@ -5,7 +5,7 @@ Period args: period_start, period_end are date objects.
 """
 from django.db.models import Q, Sum
 from programs.models import (
-    ClinicVisit, HIVSTITestResult, HTCCounselling,
+    Client, ClinicVisit, HIVSTITestResult, HTCCounselling,
     IndividualCounselling, GroupEducationSession, OutreachSession,
     GBVCase, Referral, ServiceCenter, TrainingEvent, CoordMeeting, MobileHealthCamp,
     IECMaterial,
@@ -17,24 +17,28 @@ APPROVED = 'APPROVED'
 
 
 def compute_I_BND_1_1(org, period_start, period_end):
-    """KP individuals receiving HIV/STI screening + FP counselling. Target: 4,000"""
-    clinic_clients = ClinicVisit.objects.filter(
-        organisation=org, approval_status=APPROVED,
-        visit_date__range=(period_start, period_end),
-    ).filter(
-        Q(hiv_screening_done=True) | Q(sti_screening_done=True)
-    ).values_list('client_id', flat=True).distinct()
+    """KP individuals reached — the Mother List registry. Target: 4,000.
 
-    # HIV testing services (F-06 → HIVSTITestResult) also count as a KP who
-    # received an integrated service; union by client so a person screened in
-    # clinic AND tested at HTC is counted once.
-    htc_clients = HIVSTITestResult.objects.filter(
-        organisation=org, approval_status=APPROVED,
-        testing_date__range=(period_start, period_end),
-    ).values_list('client_id', flat=True).distinct()
+    Rafi's M&E decision (2026-07-01): 'KP reached' is measured by the Mother
+    List (F-1.1 registration) — the register of KP individuals the programme has
+    enrolled — NOT the F-05/F-06 service sub-counts. HIV/STI/HTC service delivery
+    is tracked separately by 1.5a (STI services) and 1.5b (HIV testing), so this
+    no longer double-reads those forms.
 
-    all_client_ids = set(list(clinic_clients) + list(htc_clients))
-    return len(all_client_ids)
+    Counts registered, APPROVED, non-stub Bandhu clients by registration date
+    (Client.created_at). Cumulative = the whole registry; monthly = new
+    registrations that month. Registration is auto-approved for Bandhu, so the
+    number reflects the live Mother List (stubs — name ''/'Unknown' created by a
+    service log citing an unregistered ID — are excluded, mirroring the client
+    lookup-CSV exporter)."""
+    return (
+        Client.objects.filter(
+            organisation=org, approval_status=Client.APPROVED,
+            created_at__date__range=(period_start, period_end),
+        )
+        .exclude(name='').exclude(name='Unknown')
+        .values('client_id').distinct().count()
+    )
 
 
 def compute_I_BND_1_2(org, period_start, period_end):
