@@ -25,8 +25,8 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { motion, useReducedMotion } from 'motion/react'
 import {
-  FileText, Clock, Users, Heart, Activity, AlertTriangle,
-  TrendingUp, TrendingDown, Target, ShieldAlert,
+  FileText, Clock, Users, Heart, AlertTriangle,
+  TrendingUp, TrendingDown, Target,
 } from 'lucide-react'
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts'
 import { api } from '@/api/client'
@@ -260,14 +260,34 @@ export function ExecutiveBento({ progress }: Props) {
 
   // Render a PHD/Bandhu major-indicator card from the loaded progress array:
   // cumulative achievement vs the programme target, with a status-banded bar.
-  const indCard = (org: PartnerCode, code: string, label: string, note: string, delay: number) => {
-    const p = (progress ?? []).find(r => r.organisation === org && r.activity_code === code)
-    const ach = typeof p?.achievement === 'number' ? p.achievement : 0
-    const tgt = p?.target_value ?? null
-    const pct = p?.percentage ?? null
+  const indCard = (
+    org: PartnerCode,
+    code: string | string[],
+    label: string,
+    note: string,
+    delay: number,
+  ) => {
+    // Accept one code or many (summed) — mirrors the partner dashboards' marquee
+    // cards, where "Service Providers Trained" aggregates several codes
+    // (PHD SL10–13, Bandhu 2.1+2.2+2.5) into one number + target.
+    const codes = Array.isArray(code) ? code : [code]
+    const rows = (progress ?? []).filter(
+      r => r.organisation === org && codes.includes(r.activity_code),
+    )
+    let ach = 0
+    let tgt: number | null = null
+    for (const r of rows) {
+      ach += typeof r.achievement === 'number' ? r.achievement : 0
+      if (r.target_value != null) tgt = (tgt ?? 0) + Number(r.target_value)
+    }
+    // Single code → trust the server's percentage; summed → recompute from the
+    // aggregated achievement/target so the bar matches the combined number.
+    const pct = rows.length === 1
+      ? (rows[0].percentage ?? null)
+      : (tgt && tgt > 0 ? (ach / tgt) * 100 : null)
     return (
       <Card
-        key={`${org}-${code}`}
+        key={`${org}-${codes.join('-')}`}
         kicker={label.toUpperCase()}
         value={fmtNum(ach)}
         sub={tgt != null ? `of ${fmtNum(tgt)} · ${note}` : note}
@@ -408,9 +428,12 @@ export function ExecutiveBento({ progress }: Props) {
 
       {/* ── MAJOR INDICATORS · ALL PARTNERS · TILL DATE ──────────────────
           Merged into the executive summary so the headline status (above) and
-          the programme's signature numbers read as one block. Two reach metrics
-          each for PHD & Bandhu (cumulative vs target, with a bar); four CIPRB
-          surveillance outputs (counts — CIPRB targets are not set). */}
+          the programme's signature numbers read as one block. Mirrors each
+          partner dashboard's marquee: PHD (SL1 reached · SL8 centres · SL4
+          outreach · SL10–13 providers · SL16 GBV corners) and Bandhu (1.1
+          reached · 1.8 centres · 1.4a outreach · 2.1+2.2+2.5 providers), each
+          cumulative vs target with a bar; plus CIPRB's two fistula outcome
+          counts (CIPRB targets are not set). */}
       <div className="kicker" style={{ margin: '30px 0 12px' }}>
         <span className="dot" style={{ background: 'var(--unfpa)' }} />
         {t('bento.majorKicker', { defaultValue: 'MAJOR INDICATORS · ALL PARTNERS · TILL DATE' })}
@@ -424,43 +447,31 @@ export function ExecutiveBento({ progress }: Props) {
           gap: 14,
         }}
       >
-        {/* PHD — reach + GBV */}
+        {/* PHD — SIDA marquee indicators (mirror the PHD dashboard) */}
         {indCard('PHD', 'SL1', 'PHD · FSWs reached', 'HIV/STI screening & FP', 0.05)}
-        {indCard('PHD', 'SL2', 'PHD · GBV survivors', 'supported & referred', 0.1)}
-        {/* Bandhu — reach + GBV */}
-        {indCard('Bandhu', '1.1', 'Bandhu · KP reached', 'HIV prevention services', 0.15)}
-        {indCard('Bandhu', '1.2', 'Bandhu · GBV survivors', 'supported & referred', 0.2)}
-        {/* CIPRB — fistula outcomes + maternal surveillance (counts) */}
+        {indCard('PHD', 'SL8', 'PHD · Wellness centres', 'providing SRHR services', 0.08)}
+        {indCard('PHD', 'SL4', 'PHD · Outreach sessions', 'SRHR / HIV / GBV awareness', 0.11)}
+        {indCard('PHD', ['SL10', 'SL11', 'SL12', 'SL13'], 'PHD · Providers trained', 'gender-sensitive SRHR training', 0.14)}
+        {indCard('PHD', 'SL16', 'PHD · GBV corners', 'established & operational', 0.17)}
+        {/* Bandhu — UNFPA marquee indicators (mirror the Bandhu dashboard) */}
+        {indCard('Bandhu', '1.1', 'Bandhu · KP reached', 'HIV/STI screening & FP', 0.2)}
+        {indCard('Bandhu', '1.8', 'Bandhu · Wellness centres', 'established & strengthened', 0.23)}
+        {indCard('Bandhu', '1.4a', 'Bandhu · Outreach sessions', 'outreach & health-education', 0.26)}
+        {indCard('Bandhu', ['2.1', '2.2', '2.5'], 'Bandhu · Providers trained', 'managers, midwives & peers', 0.29)}
+        {/* CIPRB — fistula outcomes (counts; CIPRB targets are not set) */}
         <Card
           kicker="CIPRB · FISTULA REPAIRED"
           value={fmtNum(kpis?.fistula_repaired ?? 0)}
           sub={t('bento.fistulaRepairedSub', { defaultValue: 'surgically repaired (dry + not-dry)' })}
           icon={<Heart size={12} />}
-          delay={0.25}
+          delay={0.32}
         />
         <Card
           kicker="CIPRB · REHABILITATED"
           value={fmtNum(kpis?.fistula_reintegrated ?? 0)}
           sub={t('bento.fistulaReintegratedSub', { defaultValue: '& reintegrated' })}
           icon={<Users size={12} />}
-          delay={0.3}
-        />
-        <Card
-          kicker="CIPRB · NEAR-MISS CASES"
-          value={fmtNum(kpis?.near_miss_total ?? 0)}
-          sub={t('bento.nearMissSub', { defaultValue: 'maternal near-miss audits' })}
-          icon={<Activity size={12} />}
           delay={0.35}
-        />
-        <Card
-          kicker="CIPRB · MATERNAL DEATHS REVIEWED"
-          value={fmtNum(kpis?.total_md_reviewed ?? 0)}
-          sub={t('bento.mdReviewedSub', {
-            defaultValue: 'of {{n}} notified',
-            n: fmtNum(kpis?.total_md_notified ?? 0),
-          })}
-          icon={<ShieldAlert size={12} />}
-          delay={0.4}
         />
       </div>
 
