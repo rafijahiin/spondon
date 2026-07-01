@@ -1330,14 +1330,15 @@ class ProgrammeHealthFlagView(APIView):
             total = len(centres)
 
             # Recent submissions in the window — used for the partner-level
-            # 'silent' flag. APPROVED only: the card mirrors approved dashboard
-            # data, so a submitted-but-unapproved record does not count.
+            # 'silent' flag. Submission-based (exclude only REJECTED): daily
+            # reporting tracks whether the field submitted, not whether a manager
+            # has approved it yet — a pending record is still a report.
             recent_qs = KoboSubmission.objects.filter(
-                partner=partner, status=APPROVED, submitted_at__gte=threshold_dt,
-            )
+                partner=partner, submitted_at__gte=threshold_dt,
+            ).exclude(status=SubmissionStatus.REJECTED)
             todays_qs = KoboSubmission.objects.filter(
-                partner=partner, status=APPROVED, submitted_at__gte=today_start,
-            )
+                partner=partner, submitted_at__gte=today_start,
+            ).exclude(status=SubmissionStatus.REJECTED)
             recent_submissions = recent_qs.count()
             todays_submissions = todays_qs.count()
             # How many of today's touches were explicit zero/no-activity
@@ -1361,7 +1362,8 @@ class ProgrammeHealthFlagView(APIView):
 
             last_submission = (
                 KoboSubmission.objects
-                .filter(partner=partner, status=APPROVED)
+                .filter(partner=partner)
+                .exclude(status=SubmissionStatus.REJECTED)
                 .order_by('-submitted_at')
                 .values_list('submitted_at', flat=True)
                 .first()
@@ -1403,7 +1405,8 @@ class ProgrammeHealthFlagView(APIView):
                     # Compute hours silent for this specific centre.
                     last_for_centre = (
                         KoboSubmission.objects
-                        .filter(partner=partner, status=APPROVED, centre_code=c.code)
+                        .filter(partner=partner, centre_code=c.code)
+                        .exclude(status=SubmissionStatus.REJECTED)
                         .order_by('-submitted_at')
                         .values_list('submitted_at', flat=True)
                         .first()

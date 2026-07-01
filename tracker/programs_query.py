@@ -148,13 +148,21 @@ def daily_reporting_activity(organisation: str, threshold_dt, today_start):
     """Field-reporting activity from the PROGRAMS submission models, for the
     daily-reporting health widget.
 
-    Counts ONLY APPROVED field SUBMISSIONS, so the card mirrors the approved
-    service/case records the approval queue tracks: a submitted-but-unapproved
-    record does not yet count, and on a clean system the card reads 0. The
-    auto-approved registration/master-list models (Client) and self-reported
-    monthly aggregates (PHDCounsellingReport) are EXCLUDED — they are not per-day
-    field submissions, and counting them made the card read e.g. "43" off a batch
-    of registrations when only one real submission existed. The legacy
+    Counts SUBMISSIONS regardless of approval status (only REJECTED is excluded)
+    — because daily reporting answers "did the field team submit today?", which
+    is independent of whether a manager has approved the record yet. A record
+    submitted this morning but still PENDING/MANAGER_APPROVED in the queue IS a
+    report, and must not read as silence. This matches the gap-alert engine
+    (has_recent_programs, which never filtered on approval) and the caller's
+    intent; the earlier APPROVED-only filter under-reported every partner while a
+    review backlog existed.
+
+    The auto-approved registration/master-list models (Client) and self-reported
+    monthly aggregates (PHDCounsellingReport) are STILL EXCLUDED — they are not
+    per-day field submissions, and counting them made the card read e.g. "43" off
+    a batch of registrations when only one real submission existed. (That was the
+    real inflation the APPROVED-only filter over-corrected for; the EXCLUDE set
+    fixes it precisely without hiding pending field reports.) The legacy
     KoboSubmission table holds none of the partners' current data, so without
     this the widget reads 0/silent for PHD/Bandhu/CIPRB forever.
 
@@ -192,9 +200,10 @@ def daily_reporting_activity(organisation: str, threshold_dt, today_start):
         if not {'organisation', 'created_at', 'approval_status'} <= fields:
             continue
         try:
-            # APPROVED only — the daily-reporting card mirrors approved dashboard
-            # data (pending/manager-approved rows are not yet counted).
-            base = model.objects.filter(approval_status='APPROVED')
+            # Submission-based: any record that arrived and was not rejected is a
+            # report (PENDING / MANAGER_APPROVED / APPROVED all count). Approval
+            # is the manager's separate QA step, not a precondition for "reported".
+            base = model.objects.exclude(approval_status='REJECTED')
             if organisation:
                 base = base.filter(organisation=organisation)
             recent_count += base.filter(created_at__gte=threshold_dt).count()

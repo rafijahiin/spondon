@@ -76,20 +76,23 @@ class DailyReportingCiprbTest(TestCase):
         recent, *_ = daily_reporting_activity('PHD', threshold, today_start)
         self.assertEqual(recent, 0)   # CIPRB rows must not leak into PHD
 
-    def test_pending_submission_not_counted(self):
-        # APPROVED-only: a submitted-but-unapproved record must NOT count toward
-        # the daily-reporting card (it mirrors approved dashboard data).
+    def test_pending_submission_counts_as_reported(self):
+        # Daily reporting is submission-based: a submitted-but-unapproved record
+        # IS a report (the field did its job; approval is the manager's separate
+        # step). Only REJECTED records are excluded. Previously this counted
+        # APPROVED-only, so a pending backlog made partners read as falsely silent.
         make_mpdsr_case(approval='PENDING')
         make_fistula(CIPRBFistulaCase.STAGE_SUSPECTED, approval='PENDING')
+        make_mpdsr_case(approval='REJECTED')   # rejected must NOT count
         now = timezone.now()
         threshold = now - datetime.timedelta(hours=24)
         today_start = timezone.localtime(now).replace(
             hour=0, minute=0, second=0, microsecond=0)
         recent, today, codes, last = daily_reporting_activity(
             'CIPRB', threshold, today_start)
-        self.assertEqual(recent, 0)
-        self.assertEqual(today, 0)
-        self.assertIsNone(last)
+        self.assertEqual(recent, 2)   # the two PENDING reports, not the rejected
+        self.assertEqual(today, 2)
+        self.assertIsNotNone(last)
 
     def test_registration_not_counted(self):
         # Auto-approved Client registrations (master-list entries) must NOT count
