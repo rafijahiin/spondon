@@ -25,13 +25,12 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { motion, useReducedMotion } from 'motion/react'
 import {
-  FileText, Clock, Users, Heart, AlertTriangle,
-  TrendingUp, TrendingDown, Target,
+  Users, Heart, TrendingUp, TrendingDown, Target,
 } from 'lucide-react'
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts'
 import { api } from '@/api/client'
 import { PARTNER_COLORS, type PartnerCode } from '@/data/partnerDistricts'
-import type { KPIs, IndicatorProgress, Alert } from '@/types'
+import type { KPIs, IndicatorProgress } from '@/types'
 
 const PARTNERS: PartnerCode[] = ['PHD', 'Bandhu', 'CIPRB']
 
@@ -157,32 +156,19 @@ function Card({
 export function ExecutiveBento({ progress }: Props) {
   const { t, i18n } = useTranslation()
   const [kpis, setKpis] = useState<KPIs | null>(null)
-  const [openAlerts, setOpenAlerts] = useState<number | null>(null)
   const [now, setNow] = useState(new Date())
-  // Animesh's MoM comparison toggle — flip the SUBMISSIONS · THIS MONTH
-  // card between absolute counts (default) and percentage-change view.
-  const [momMode, setMomMode] = useState<'abs' | 'pct'>('abs')
 
   const fmtNum = (n: number) =>
     n.toLocaleString(i18n.language?.startsWith('bn') ? 'bn-BD' : 'en-US')
 
-  // Fetch KPIs + open-alert count, then re-poll every 30s so the cards
-  // (e.g. AWAITING REVIEW) actually stay live — matching the section's
-  // "refreshed every 30 seconds" promise. Previously this ran once on mount,
-  // so a new pending submission never appeared until a full page reload.
+  // Fetch KPIs (the CIPRB fistula counts for the cards below), re-polling every
+  // 30s so the numbers stay live and the elapsed-to-date clock (now) advances.
   useEffect(() => {
     let cancelled = false
     const fetchAll = () => {
       api.get<KPIs>('/dashboard/kpis/')
         .then((r) => { if (!cancelled) setKpis(r.data) })
         .catch(() => { /* fallback handled by ?? 0 in render */ })
-      api.get('/dashboard/alerts/?acknowledged=false')
-        .then((r) => {
-          if (cancelled) return
-          const list = Array.isArray(r.data) ? r.data : (r.data?.results ?? [])
-          setOpenAlerts((list as Alert[]).length)
-        })
-        .catch(() => { if (!cancelled) setOpenAlerts(null) })
     }
     fetchAll()
     const id = setInterval(() => { fetchAll(); setNow(new Date()) }, 30_000)
@@ -246,17 +232,11 @@ export function ExecutiveBento({ progress }: Props) {
     }
   })
 
-  const hasTargets = stats.overallPct != null
-  const attainColor = bandColor(stats.overallPct)
-
   const fmtSync = (() => {
     const diff = (Date.now() - now.getTime()) / 1000
     if (diff < 60) return t('bento.syncJustNow', { defaultValue: 'just now' })
     return t('bento.syncMinutes', { count: Math.floor(diff / 60), defaultValue: `${Math.floor(diff / 60)}m ago` })
   })()
-
-  const alertsValue = openAlerts == null ? '—' : fmtNum(openAlerts)
-  const alertsCritical = (openAlerts ?? 0) > 0
 
   // Render a PHD/Bandhu major-indicator card from the loaded progress array:
   // cumulative achievement vs the programme target, with a status-banded bar.
@@ -300,143 +280,29 @@ export function ExecutiveBento({ progress }: Props) {
 
   return (
     <section className="section bento-section" style={{ marginTop: 36 }}>
-      <div className="section-head">
+      {/* ── MAJOR INDICATORS · ALL PARTNERS · TILL DATE ──────────────────
+          The programme's signature numbers, one block. Mirrors each partner
+          dashboard's marquee: PHD (SL1 reached · SL8 centres · SL4 outreach ·
+          SL10–13 providers · SL16 GBV corners) and Bandhu (1.1 reached · 1.8
+          centres · 1.4a outreach · 2.1+2.2+2.5 providers), each cumulative vs
+          target with a bar; plus CIPRB's two fistula outcome counts (CIPRB
+          targets are not set). The old "Executive summary" KPI cards (open
+          alerts / awaiting review / indicators on track / submissions) were
+          removed per Rafi — the awaiting-review count disagreed with the
+          approval-queue badge and the block was redundant. */}
+      <div className="section-head" style={{ marginBottom: 12 }}>
         <div>
           <div className="kicker" style={{ marginBottom: 8 }}>
             <span className="dot" style={{ background: 'var(--unfpa)' }} />
-            {t('bento.kicker', { defaultValue: 'EXECUTIVE SUMMARY' })}
+            {t('bento.majorKicker', { defaultValue: 'MAJOR INDICATORS · ALL PARTNERS · TILL DATE' })}
           </div>
           <h2 className="section-title">
             {t('bento.title', { defaultValue: 'Executive summary' })}
           </h2>
           <p className="section-sub">
-            {t('bento.subtitle', {
-              defaultValue: 'Is the programme on track, and does anything need attention.',
-            })}
+            {t('bento.subtitle', { defaultValue: 'The headline numbers across all three partners.' })}
           </p>
         </div>
-      </div>
-
-      <div
-        className="bento-grid"
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
-          gridAutoRows: 'minmax(120px, auto)',
-          gap: 14,
-        }}
-      >
-        {/* ProgrammeAttainmentPie removed — Animesh: "heavily confusing".
-            Programme totals + dual cumulative/monthly progress on each
-            indicator card carry the equivalent information without the
-            5-slice pie. ProgrammeAttainmentPie component definition is
-            still in this file (unused) — safe to delete in a later sweep. */}
-
-        {/* What needs attention — top-right */}
-        <Card
-          kicker={t('bento.alerts', { defaultValue: 'OPEN ALERTS' })}
-          value={alertsValue}
-          sub={alertsCritical
-            ? t('bento.alertsActive', { defaultValue: 'need attention' })
-            : t('bento.alertsSteady', { defaultValue: 'all systems steady' })}
-          icon={<AlertTriangle size={12} />}
-          valueColor={alertsCritical ? '#F10F45' : undefined}
-          emphasis={alertsCritical ? 'standard' : 'muted'}
-          delay={0.05}
-        />
-        <Card
-          kicker={t('bento.pending', { defaultValue: 'AWAITING REVIEW' })}
-          value={fmtNum(kpis?.submissions_pending ?? 0)}
-          sub={t('bento.pendingSub', { defaultValue: 'manager queue' })}
-          icon={<Clock size={12} />}
-          delay={0.1}
-        />
-
-        {/* Indicators on track + submissions activity */}
-        <Card
-          kicker={
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-              {t('bento.indicators', { defaultValue: 'INDICATORS ON TRACK' })}
-              <span
-                title={t('bento.indicatorsHelp', {
-                  defaultValue: 'On track = an indicator that has reached at least the share of its target the contract period has elapsed — i.e. it is on pace for today, not measured against the full six-month target. Indicators below that have fallen behind the expected run-rate for this point in the programme.',
-                })}
-                aria-label="What counts as on track"
-                style={{
-                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                  width: 13, height: 13, borderRadius: 999, background: 'var(--surface-3)',
-                  color: 'var(--muted)', fontSize: 9, fontWeight: 700, cursor: 'help',
-                  border: '1px solid var(--hair)', textTransform: 'none', letterSpacing: 0,
-                }}
-              >i</span>
-            </span>
-          }
-          value={hasTargets ? `${stats.onTrack} / ${stats.total}` : '—'}
-          sub={hasTargets
-            ? t('bento.indicatorsSub', { defaultValue: 'on pace to date' })
-            : t('bento.indicatorEmpty', { defaultValue: 'no targets confirmed yet' })}
-          icon={<TrendingUp size={12} />}
-          delay={0.15}
-        />
-        <Card
-          kicker={
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-              {t('bento.submissionsMtd', { defaultValue: 'SUBMISSIONS · THIS MONTH' })}
-              {/* Animesh's MoM toggle. Click to flip the value between
-                  absolute MTD count and % change vs previous month. */}
-              <button
-                onClick={(e) => {
-                  e.preventDefault()
-                  setMomMode(m => m === 'abs' ? 'pct' : 'abs')
-                }}
-                style={{
-                  fontSize: 9, padding: '2px 6px', borderRadius: 999,
-                  background: momMode === 'pct' ? 'var(--unfpa)' : 'var(--surface-2)',
-                  color: momMode === 'pct' ? '#fff' : 'var(--ink-3)',
-                  border: '1px solid var(--hair)', cursor: 'pointer',
-                  fontWeight: 700, letterSpacing: '0.06em',
-                }}
-                title={t('bento.momToggleTooltip', { defaultValue: 'Toggle absolute / percentage' })}
-              >
-                {momMode === 'abs' ? '%' : '#'}
-              </button>
-            </span>
-          }
-          value={momMode === 'abs'
-            ? fmtNum(kpis?.submissions_this_month ?? 0)
-            : (kpis?.mom_change_percent != null
-                ? `${kpis.mom_change_percent > 0 ? '+' : ''}${kpis.mom_change_percent.toFixed(0)}%`
-                : '—')
-          }
-          sub={momMode === 'abs'
-            ? t('bento.vsLastMonth', {
-                defaultValue: 'vs {{prev}} last month',
-                prev: fmtNum(kpis?.previous_month_submissions ?? 0),
-              })
-            : t('bento.momPctSub', {
-                defaultValue: '{{cur}} this month vs {{prev}} last month',
-                cur: fmtNum(kpis?.submissions_this_month ?? 0),
-                prev: fmtNum(kpis?.previous_month_submissions ?? 0),
-              })
-          }
-          trend={momMode === 'abs' ? (kpis?.mom_change_percent ?? null) : null}
-          icon={<FileText size={12} />}
-          delay={0.2}
-        />
-
-      </div>
-
-      {/* ── MAJOR INDICATORS · ALL PARTNERS · TILL DATE ──────────────────
-          Merged into the executive summary so the headline status (above) and
-          the programme's signature numbers read as one block. Mirrors each
-          partner dashboard's marquee: PHD (SL1 reached · SL8 centres · SL4
-          outreach · SL10–13 providers · SL16 GBV corners) and Bandhu (1.1
-          reached · 1.8 centres · 1.4a outreach · 2.1+2.2+2.5 providers), each
-          cumulative vs target with a bar; plus CIPRB's two fistula outcome
-          counts (CIPRB targets are not set). */}
-      <div className="kicker" style={{ margin: '30px 0 12px' }}>
-        <span className="dot" style={{ background: 'var(--unfpa)' }} />
-        {t('bento.majorKicker', { defaultValue: 'MAJOR INDICATORS · ALL PARTNERS · TILL DATE' })}
       </div>
       <div
         className="bento-grid"
