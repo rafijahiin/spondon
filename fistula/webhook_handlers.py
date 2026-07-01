@@ -15,7 +15,7 @@ import logging
 from django.http import HttpResponse
 from django.utils import timezone
 
-from .models import FistulaCornerCase, FistulaCampaignVisit
+from .models import FistulaCornerCase, FistulaCampaignVisit, FistulaCampaign
 
 logger = logging.getLogger(__name__)
 
@@ -91,6 +91,15 @@ def _already_exists_campaign(payload) -> bool:
     return FistulaCampaignVisit.objects.filter(
         submission__kobo_id=str(payload.get('_id', '')),
     ).exists() if payload.get('_id') else False
+
+
+def _already_exists_daily_campaign(payload) -> bool:
+    """Dedupe the daily CHW-activity report on its Kobo submission _id."""
+    kobo_id = str(payload.get('_id', '')).strip()
+    return (
+        FistulaCampaign.objects.filter(kobo_submission_id=kobo_id).exists()
+        if kobo_id else False
+    )
 
 
 # ─── Handlers ────────────────────────────────────────────────────────────────
@@ -175,5 +184,58 @@ def handle_fistula_campaign_visit(payload, lat, lng):
         longitude=lng,
         submitted_by_kobo_user=_str(payload.get('_submitted_by')),
         submitted_by=_resolve_submitter(payload),
+    )
+    return HttpResponse('Created', status=201)
+
+
+def handle_ciprb_fistula_campaign(payload, lat, lng):
+    """ciprb_fistula_campaign_v1 → FistulaCampaign (daily CHW activity report).
+
+    The rebuilt campaign form is a DAILY activity/reach roll-up (NOT individual
+    patient registration). One submission → one FistulaCampaign row, landing
+    PENDING for single-stage CIPRB approval. Deduped on the Kobo _id."""
+    if _already_exists_daily_campaign(payload):
+        return HttpResponse('OK', status=200)
+
+    FistulaCampaign.objects.create(
+        partner='CIPRB',
+        organisation='CIPRB',
+        approval_status='PENDING',
+        campaign_date=_date(payload.get('collection_date')) or timezone.now().date(),
+        # Location
+        district=_str(payload.get('district')),
+        upazila=_str(payload.get('upazila')),
+        union=_str(payload.get('union')),
+        # Staff head-counts
+        staff_hi_ahi=_int(payload.get('staff_hi_ahi')),
+        staff_ha=_int(payload.get('staff_ha')),
+        staff_chcp=_int(payload.get('staff_chcp')),
+        staff_fwv=_int(payload.get('staff_fwv')),
+        staff_fpi=_int(payload.get('staff_fpi')),
+        staff_fwa=_int(payload.get('staff_fwa')),
+        staff_chw=_int(payload.get('staff_chw')),
+        # Community focal points
+        focal_community=_int(payload.get('focal_community')),
+        focal_epi=_int(payload.get('focal_epi')),
+        focal_fwc=_int(payload.get('focal_fwc')),
+        focal_cc=_int(payload.get('focal_cc')),
+        # Reach
+        households_visited=_int(payload.get('households_visited')),
+        population_covered=_int(payload.get('population_covered')),
+        # Outcomes (form field → model field)
+        suspected_fistula_cases=_int(payload.get('suspected_patients')),
+        confirmed_fistula_cases=_int(payload.get('diagnosed_patients')),
+        cases_referred=_int(payload.get('referral')),
+        cases_surgery_completed=_int(payload.get('surgeries')),
+        cases_social_reintegration=_int(payload.get('rehabilitation')),
+        # Enumerator
+        enumerator_name=_str(payload.get('enumerator_name')),
+        enumerator_mobile=_str(payload.get('enumerator_mobile')),
+        # Provenance
+        kobo_submission_id=_str(payload.get('_id')),
+        submitted_by_kobo_user=_str(payload.get('_submitted_by')),
+        raw_payload=payload,
+        latitude=lat,
+        longitude=lng,
     )
     return HttpResponse('Created', status=201)

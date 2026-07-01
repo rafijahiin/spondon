@@ -17,6 +17,7 @@ from .models import (
     PHDCounsellingReport,
 )
 from fistula.ciprb_models import CIPRBFistulaCase
+from fistula.models import FistulaCampaign
 from mpdsr.models import MPDSRCase, MPDSRAction
 from mpdsr.ciprb_models import MPDSRDeathNotification, MaternalNearMissCase
 
@@ -32,6 +33,20 @@ class CIPRBFistulaCaseSerializer(serializers.ModelSerializer):
             'id', 'approval_status', 'approved_by', 'approved_at',
             'rejected_reason', 'kobo_submission_id', 'submitted_by_kobo_user',
             'created_at', 'updated_at',
+        ]
+
+
+class FistulaCampaignApprovalSerializer(serializers.ModelSerializer):
+    """Detail serializer for the Fistula Campaign (daily CHW activity) approval
+    queue. Exposes raw_payload for the manager 'What was submitted' readout; the
+    approval columns are read-only (set via approve/reject)."""
+    class Meta:
+        model = FistulaCampaign
+        fields = '__all__'
+        read_only_fields = [
+            'id', 'approval_status', 'approved_by', 'approved_at',
+            'rejected_reason', 'kobo_submission_id', 'submitted_by_kobo_user',
+            'case_hash', 'created_at', 'updated_at',
         ]
 
 

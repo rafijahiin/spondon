@@ -42,9 +42,10 @@ from .models import (
     NilReport, PHDCounsellingReport,
 )
 from fistula.ciprb_models import CIPRBFistulaCase
+from fistula.models import FistulaCampaign
 from mpdsr.models import MPDSRCase, MPDSRAction, STUB_ACTIVITY_SENTINEL
 from mpdsr.ciprb_models import MPDSRDeathNotification, MaternalNearMissCase
-from .serializers import CIPRBFistulaCaseSerializer
+from .serializers import CIPRBFistulaCaseSerializer, FistulaCampaignApprovalSerializer
 from .serializers import (
     MPDSRCaseApprovalSerializer,
     MPDSRDeathNotificationApprovalSerializer,
@@ -757,6 +758,9 @@ def _build_summary(obj, model_type: str) -> str:
             if (obj.name or '').strip():
                 parts.append(obj.name + (f" ({obj.age})" if obj.age else ''))
             return ' · '.join(p for p in parts if p)
+        if model_type == 'fistula_campaign':
+            return (f"Fistula campaign {obj.campaign_date} · {obj.district} · "
+                    f"{obj.households_visited} HH / {obj.population_covered} pop")
         if model_type == 'mpdsr_case':
             parts = [obj.sub_form_label or 'MPDSR review',
                      obj.get_death_type_display(), obj.district,
@@ -967,6 +971,17 @@ class CIPRBFistulaCaseViewSet(OrgFilteredViewSet):
     serializer_class = CIPRBFistulaCaseSerializer
 
 
+class FistulaCampaignViewSet(OrgFilteredViewSet):
+    """CIPRB Fistula Campaign (daily CHW activity) — detail + approve/reject for
+    the manager queue. Single-stage CIPRB (Tanjina / Setu). These are aggregate
+    daily reach reports (no row-level patient PII), but they carry raw_payload
+    and feed the CIPRB dashboard, so reads stay gated by CanAccessFistulaCases —
+    the same CIPRB-scoped gate as CIPRBFistulaCase."""
+    permission_classes = [CanAccessFistulaCases]
+    queryset = FistulaCampaign.objects.select_related('approved_by').all()
+    serializer_class = FistulaCampaignApprovalSerializer
+
+
 class MPDSRCaseApprovalViewSet(OrgFilteredViewSet):
     """MPDSR review cases — detail + approve/reject for the manager queue
     (single-stage CIPRB). Distinct from mpdsr.MPDSRCaseViewSet (the post-approval
@@ -1025,6 +1040,7 @@ _APPROVAL_MODELS = [
     ('nil_report',           lambda: NilReport.objects),
     ('counselling_report',   lambda: PHDCounsellingReport.objects),
     ('fistula_case',         lambda: CIPRBFistulaCase.objects),
+    ('fistula_campaign',     lambda: FistulaCampaign.objects),
     ('mpdsr_case',           lambda: MPDSRCase.objects),
     ('mpdsr_notification',   lambda: MPDSRDeathNotification.objects),
     ('near_miss_case',       lambda: MaternalNearMissCase.objects),
@@ -1060,6 +1076,7 @@ _ENDPOINT_OVERRIDES = {
     'mobile_camp': 'mobile-camps',
     'nil_report': 'nil-reports',
     'fistula_case': 'fistula-cases',
+    'fistula_campaign': 'fistula-campaigns',
     'mpdsr_case': 'mpdsr-cases',
     'mpdsr_notification': 'mpdsr-notifications',
     'near_miss_case': 'near-miss-cases',

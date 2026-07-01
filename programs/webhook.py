@@ -1035,16 +1035,26 @@ def _lazy_nil(name):
     return wrapper
 
 
+def _lazy_fistula(name):
+    """Lazy import — fistula.webhook_handlers imports from programs.models."""
+    def wrapper(payload, lat, lng):
+        from fistula import webhook_handlers
+        return getattr(webhook_handlers, name)(payload, lat, lng)
+    return wrapper
+
+
 FORM_HANDLERS: dict = {
     # ── CIPRB Phase 2 — 9 new forms (Fistula QB, MPDSR 1/2/4/5, Social
     #    Autopsy, 2 notification slips, Maternal Near Miss). ──
     'ciprb_fistula_questions_v1':
         _lazy_ciprb('handle_ciprb_fistula'),
-    # Campaign identification form — same handler: registers a SUSPECTED
-    # CIPRBFistulaCase with the same district-code IDs, so campaign-identified
-    # women flow into the fistula pipeline (later stages via the Question Bank).
+    # Daily CHW-activity campaign form — the rebuilt form is a DAILY
+    # activity/reach report (households visited, population covered, staff/focal
+    # head-counts, suspected/diagnosed/referral/surgery/rehab counts), NOT
+    # individual patient registration. Each submission → one FistulaCampaign row
+    # (PENDING for single-stage CIPRB approval).
     'ciprb_fistula_campaign_v1':
-        _lazy_ciprb('handle_ciprb_fistula'),
+        _lazy_fistula('handle_ciprb_fistula_campaign'),
     'ciprb_mpdsr_community_maternal_v1':
         _lazy_ciprb('handle_ciprb_mpdsr_community_maternal'),
     'ciprb_mpdsr_community_neonatal_v1':

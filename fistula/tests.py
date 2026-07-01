@@ -239,3 +239,75 @@ class StatsEndpointTest(TestCase):
         self.client.force_authenticate(user=self.phd)
         resp = self.client.get(f'{BASE_URL}stats/')
         self.assertEqual(resp.data['total_sessions'], 0)
+
+
+# ─── Daily CHW campaign webhook handler ──────────────────────────────────────
+
+def _daily_campaign_payload(kobo_id='daily-1'):
+    """A ciprb_fistula_campaign_v1 (daily CHW activity) submission payload."""
+    return {
+        '_id': kobo_id,
+        '_xform_id_string': 'ciprb_fistula_campaign_v1',
+        '_submitted_by': 'chw_rina',
+        'organisation': 'CIPRB',
+        'collection_date': '2026-07-01',
+        'union': 'abc',
+        'upazila': 'Dhanmondi',
+        'district': 'dhaka',
+        'staff_hi_ahi': '2', 'staff_ha': '3', 'staff_chcp': '1',
+        'staff_fwv': '1', 'staff_fpi': '0', 'staff_fwa': '4', 'staff_chw': '6',
+        'focal_community': '5', 'focal_epi': '2', 'focal_fwc': '1', 'focal_cc': '3',
+        'households_visited': '120',
+        'population_covered': '540',
+        'suspected_patients': '7',
+        'diagnosed_patients': '3',
+        'referral': '2',
+        'surgeries': '1',
+        'rehabilitation': '4',
+        'enumerator_name': 'Rina Akter',
+        'enumerator_mobile': '01710000000',
+    }
+
+
+class CIPRBFistulaDailyCampaignWebhookTest(TestCase):
+
+    def test_creates_pending_campaign_with_correct_mappings(self):
+        from fistula.webhook_handlers import handle_ciprb_fistula_campaign
+        resp = handle_ciprb_fistula_campaign(
+            _daily_campaign_payload(), lat=23.75, lng=90.38)
+        self.assertEqual(resp.status_code, 201)
+
+        self.assertEqual(FistulaCampaign.objects.count(), 1)
+        camp = FistulaCampaign.objects.get()
+        # Partner / org / approval
+        self.assertEqual(camp.partner, 'CIPRB')
+        self.assertEqual(camp.organisation, 'CIPRB')
+        self.assertEqual(camp.approval_status, 'PENDING')
+        # CIP prefix on the auto case_hash (the save() prefix fix)
+        self.assertTrue(camp.case_hash.startswith('FST-CIP-'), camp.case_hash)
+        # Reach
+        self.assertEqual(camp.households_visited, 120)
+        self.assertEqual(camp.population_covered, 540)
+        # Staff / focal head-counts
+        self.assertEqual(camp.staff_chw, 6)
+        self.assertEqual(camp.focal_community, 5)
+        # Outcome mappings (form field → model field)
+        self.assertEqual(camp.suspected_fistula_cases, 7)      # suspected_patients
+        self.assertEqual(camp.confirmed_fistula_cases, 3)      # diagnosed_patients
+        self.assertEqual(camp.cases_referred, 2)               # referral
+        self.assertEqual(camp.cases_surgery_completed, 1)      # surgeries
+        self.assertEqual(camp.cases_social_reintegration, 4)   # rehabilitation
+        # Provenance
+        self.assertEqual(camp.kobo_submission_id, 'daily-1')
+        self.assertEqual(camp.submitted_by_kobo_user, 'chw_rina')
+        self.assertEqual(camp.enumerator_name, 'Rina Akter')
+        self.assertEqual(str(camp.campaign_date), '2026-07-01')
+
+    def test_idempotent_on_kobo_id(self):
+        from fistula.webhook_handlers import handle_ciprb_fistula_campaign
+        payload = _daily_campaign_payload(kobo_id='dup-9')
+        r1 = handle_ciprb_fistula_campaign(payload, lat=None, lng=None)
+        r2 = handle_ciprb_fistula_campaign(payload, lat=None, lng=None)
+        self.assertEqual(r1.status_code, 201)
+        self.assertEqual(r2.status_code, 200)   # deduped
+        self.assertEqual(FistulaCampaign.objects.count(), 1)

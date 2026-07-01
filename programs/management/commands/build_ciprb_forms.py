@@ -665,16 +665,16 @@ def _fistula_choices():
     ch += [
         _ch('genital_fistula_type', 'vvf', 'Vesico-vaginal fistula (VVF)',
             'ভেসিকো-ভ্যাজাইনাল ফিস্টুলা (VVF)'),
-        _ch('genital_fistula_type', 'rvf', 'Recto-vaginal fistula (RVF)',
+        _ch('genital_fistula_type', 'rvf', 'Recto vaginal fistula (RVF)',
             'রেক্টো-ভ্যাজাইনাল ফিস্টুলা (RVF)'),
         _ch('genital_fistula_type', 'ureterovaginal',
             'Uretero-vaginal', 'ইউরেটেরো-ভ্যাজাইনাল'),
         _ch('genital_fistula_type', 'urethrovaginal',
             'Urethro-vaginal', 'ইউরেথ্রো-ভ্যাজাইনাল'),
         _ch('genital_fistula_type', 'vesicouterine',
-            'Vesico-uterine', 'ভেসিকো-ইউটেরাইন'),
+            'Vesico-Uterine', 'ভেসিকো-ইউটেরাইন'),
         _ch('genital_fistula_type', 'vesicocervical',
-            'Vesico-cervical', 'ভেসিকো-সারভিকাল'),
+            'Vesico-Cervical', 'ভেসিকো-সারভিকাল'),
         _ch('genital_fistula_type', 'other', 'Other', 'অন্যান্য'),
     ]
     ch += [
@@ -686,7 +686,7 @@ def _fistula_choices():
     ]
     ch += [
         _ch('surgery_outcome_v2', 'success_dry',
-            'Successfully repaired and dry',
+            'Successfully repaired with a dry',
             'সফলভাবে নিরাময়, শুকনো'),
         _ch('surgery_outcome_v2', 'success_not_dry',
             'Successfully repaired but not dry',
@@ -715,7 +715,7 @@ def _fistula_choices():
         _ch('rehab_support_types', 'tree_plant',   'Tree plant', 'বৃক্ষরোপণ'),
         _ch('rehab_support_types', 'sewing',       'Sewing machine',
             'সেলাই মেশিন'),
-        _ch('rehab_support_types', 'vgf_card',     'VGF card',
+        _ch('rehab_support_types', 'vgf_card',     'VGF Card',
             'ভিজিএফ কার্ড'),
         _ch('rehab_support_types', 'disability',   'Disability card',
             'প্রতিবন্ধী কার্ড'),
@@ -3726,70 +3726,82 @@ def _response_plan_choices():
 
 
 # ╔══════════════════════════════════════════════════════════════════════════╗
-# ║  FORM — CIPRB Fistula Campaign (door-to-door suspected identification)    ║
-# ║  Source: Campaign_Obs. Fistula Identification 2026 (Individual sheet).    ║
-# ║  Registers a SUSPECTED CIPRBFistulaCase using the SAME district-code IDs  ║
-# ║  + field names as the Question Bank, so a campaign-identified woman flows ║
-# ║  straight into the fistula pipeline (later stages recorded on the         ║
-# ║  Question Bank form via the same ID). Routed to handle_ciprb_fistula.     ║
+# ║  FORM — CIPRB Fistula Campaign (Daily CHW Activity report)                ║
+# ║  Source: "Mass Campaign on: End Obstetric Fistula in Bangladesh" —        ║
+# ║  "Reporting on Daily activities of CHW". This is a DAILY activity/reach   ║
+# ║  roll-up (households visited, population covered, staff/focal head-counts, ║
+# ║  suspected/diagnosed/referral/surgery/rehab counts) — NOT individual      ║
+# ║  patient registration. Each submission → one fistula.FistulaCampaign row  ║
+# ║  (PENDING, single-stage CIPRB). Routed to handle_ciprb_fistula_campaign.  ║
 # ╚══════════════════════════════════════════════════════════════════════════╝
 def _fistula_campaign_survey():
-    rows = _meta('Campaign serial number (SN)', 'ক্যাম্পেইন ক্রমিক নং')
-    rows += [
-        _sr('calculate', 'stage', calc="'suspected'"),
-        _sr('calculate', 'suspected_date', calc='${collection_date}'),
-        _sr('calculate', '_dist_code', calc=_fistula_dist_code_calc()),
-    ]
-    NORM_PC = ("translate(normalize-space(${patient_code}),"
-               "'abcdefghijklmnopqrstuvwxyz','ABCDEFGHIJKLMNOPQRSTUVWXYZ')")
-    rows += [
-        _sr('begin_group', 'grp_camp',
-            'Suspected fistula patient (campaign)',
-            'সন্দেহজনক ফিস্টুলা রোগী (ক্যাম্পেইন)'),
-        _sr('note', '_dist_code_show',
-            'Your district code is ${_dist_code}. Type the Patient ID as '
-            '${_dist_code}-0001, ${_dist_code}-0002, … (4 digits after the dash).',
-            'আপনার জেলা কোড ${_dist_code}। রোগীর আইডি: ${_dist_code}-0001, … '
-            '(ড্যাশের পরে ৪ অঙ্ক)।'),
-        _sr('text', 'patient_code',
-            'Patient ID (district code + serial, e.g. 1-0001)',
-            'রোগীর আইডি (জেলা কোড + ক্রমিক, যেমন ১-০০০১)', required='yes',
-            constraint=("regex(normalize-space(.), "
-                        "concat('^', ${_dist_code}, '-[0-9]{4}$')) and "
-                        "pulldata('fistula_clients','patient_name','id_no'," + NORM_PC + ")=''"),
-            cmsg='⚠ Invalid or duplicate ID — must be <district-code>-<4 digits> '
-                 '(Dhaka = 10-0001) and not already registered.',
-            hint='Format: district number + 4-digit serial. Dhaka = 10-0001.'),
-        _sr('text', 'name', 'Name of suspected patient', 'সন্দেহজনক রোগীর নাম', required='yes'),
-        _sr('text', 'contact_number', 'Contact number', 'যোগাযোগ নম্বর',
+    # Verbatim header notes from the paper form.
+    rows = [
+        _sr('note', '_hdr1',
+            'Mass Campaign on: End Obstetric Fistula in Bangladesh',
+            'বাংলাদেশে প্রসূতিজনিত ফিস্টুলা নির্মূলে গণ-অভিযান'),
+        _sr('note', '_hdr2',
+            'Reporting on Daily activities of CHW',
+            'সিএইচডব্লিউ-এর দৈনিক কার্যক্রমের প্রতিবেদন'),
+        # Hidden CIPRB org tag + required GPS (matches the other CIPRB forms).
+        _sr('calculate', 'organisation', '', '', calc="'CIPRB'"),
+        _sr('geopoint', 'location',
+            'GPS location (required — step outside if no signal)',
+            'জিপিএস অবস্থান (প্রয়োজনীয়)', required='yes'),
+        # Enumerator (person filling the daily form).
+        _sr('text', 'enumerator_name',
+            'Your name (person filling this form)',
+            'আপনার নাম (কে পূরণ করছেন)', required='yes'),
+        _sr('text', 'enumerator_designation', 'Designation', 'পদবী'),
+        _sr('text', 'enumerator_mobile', 'Mobile number', 'মোবাইল নম্বর',
             constraint='regex(., "^[0-9+ -]{6,20}$") or .=""',
             cmsg='Enter a valid phone number.'),
-        _sr('integer', 'age', 'Age (years)', 'বয়স (বছর)',
-            required='yes', constraint='. >= 8 and . <= 90', cmsg='8–90'),
-        _sr('select_one education', 'education', 'Education', 'শিক্ষা'),
-        _sr('text', 'profession_patient', 'Profession', 'পেশা'),
-        _sr('text', 'husband', "Husband's name", 'স্বামীর নাম'),
-        _sr('text', 'husband_profession', "Husband's profession", 'স্বামীর পেশা'),
-        _sr('select_one place_of_delivery', 'place_of_last_delivery',
-            'Place / mode of last delivery', 'শেষ প্রসবের স্থান / পদ্ধতি'),
-        _sr('select_one delivery_outcome', 'delivery_outcome',
-            'Delivery outcome (Live / Still birth)', 'প্রসবের ফলাফল'),
-        _sr('text', 'duration_suffering', 'Duration of suffering', 'ভোগার সময়কাল',
-            hint='e.g. 5 years / 8 months. / যেমন ৫ বছর / ৮ মাস।'),
-        _sr('text', 'source_information', "Source of patient's information",
-            'রোগীর তথ্যের উৎস'),
-        _sr('select_one yes_no', 'from_haor',
-            'Patient from a Haor (wetland) area?', 'রোগী কি হাওর এলাকার?'),
-        _sr('text', 'remarks', 'Remarks', 'মন্তব্য', app='multiline'),
-        _sr('end_group', 'grp_camp'),
+    ]
+
+    def _n(name, en, bn):
+        """A non-negative integer count field (>= 0 guard)."""
+        return _sr('integer', name, en, bn,
+                   constraint='. >= 0', cmsg='Must be 0 or more.')
+
+    rows += [
+        _sr('begin_group', 'grp_daily',
+            'Daily CHW activity', 'দৈনিক সিএইচডব্লিউ কার্যক্রম'),
+        # ── Location (verbatim English labels).
+        _sr('date', 'collection_date', 'Date', 'তারিখ', required='yes'),
+        _sr('text', 'union', 'Union (as per name like abc,bcd,asdf etc)',
+            'ইউনিয়ন (নাম অনুযায়ী, যেমন abc,bcd,asdf ইত্যাদি)', required='yes'),
+        _sr('text', 'upazila', 'Upazila', 'উপজেলা', required='yes'),
+        _sr('select_one district', 'district', 'District', 'জেলা', required='yes'),
+        # ── Staff head-counts (cadre abbreviations kept in Bangla too).
+        _n('staff_hi_ahi', 'No of HI &AHI', 'HI ও AHI সংখ্যা'),
+        _n('staff_ha',     'No of HA',      'HA সংখ্যা'),
+        _n('staff_chcp',   'No of CHCP',    'CHCP সংখ্যা'),
+        _n('staff_fwv',    'No of FWV',     'FWV সংখ্যা'),
+        _n('staff_fpi',    'No of FPI',     'FPI সংখ্যা'),
+        _n('staff_fwa',    'No of FWA',     'FWA সংখ্যা'),
+        _n('staff_chw',    'No of CHW',     'CHW সংখ্যা'),
+        # ── Community focal points.
+        _n('focal_community', 'Focal point(Community)', 'ফোকাল পয়েন্ট (কমিউনিটি)'),
+        _n('focal_epi',       'Focal point(EPI)',       'ফোকাল পয়েন্ট (EPI)'),
+        _n('focal_fwc',       'Focal point(FWC)',       'ফোকাল পয়েন্ট (FWC)'),
+        _n('focal_cc',        'Focal point(CC)',        'ফোকাল পয়েন্ট (CC)'),
+        # ── Reach.
+        _n('households_visited', '# of Households Visited', 'পরিদর্শিত পরিবারের সংখ্যা'),
+        _n('population_covered', 'No of population covered', 'অন্তর্ভুক্ত জনসংখ্যা'),
+        # ── Outcomes.
+        _n('suspected_patients', '# of Suspected Patients', 'সন্দেহজনক রোগীর সংখ্যা'),
+        _n('diagnosed_patients', '# of Diagnosed Patients', 'নির্ণীত রোগীর সংখ্যা'),
+        _n('referral',           '# of Referral',           'রেফারেলের সংখ্যা'),
+        _n('surgeries',          '# of Surgeries',          'অস্ত্রোপচারের সংখ্যা'),
+        _n('rehabilitation',     '# of Rehabilitation',     'পুনর্বাসনের সংখ্যা'),
+        _sr('end_group', 'grp_daily'),
     ]
     return rows
 
 
 def _fistula_campaign_choices():
-    # Reuse the Question Bank choice lists (district, yes/no, education,
-    # place/mode of delivery, delivery outcome).
-    return list(_fistula_choices())
+    # Only the district select_one is used on the daily form.
+    return list(DISTRICT_CHOICES)
 
 
 FORMS = [
@@ -3799,7 +3811,7 @@ FORMS = [
          survey=_fistula_survey, choices=_fistula_choices),
     dict(file='CIPRB-1b_Fistula_Campaign.xlsx',
          id='ciprb_fistula_campaign_v1',
-         title='CIPRB — Fistula Campaign (Identification)',
+         title='CIPRB — Fistula Campaign (Daily CHW Activity)',
          survey=_fistula_campaign_survey, choices=_fistula_campaign_choices),
     dict(file='CIPRB-2_MPDSR_Form_01_Community_Maternal.xlsx',
          id='ciprb_mpdsr_community_maternal_v1',

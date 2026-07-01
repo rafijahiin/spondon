@@ -118,6 +118,15 @@ class FistulaCampaignManager(models.Manager):
 
 
 class FistulaCampaign(models.Model):
+    # Approval workflow — single-stage CIPRB (Tanjina/Setu), mirroring
+    # CIPRBFistulaCase. The webhook handler sets a NEW daily report to PENDING;
+    # the manager finalises it in the shared /approvals queue.
+    APPROVAL_CHOICES = [
+        ('PENDING', 'Pending'),
+        ('APPROVED', 'Approved'),
+        ('REJECTED', 'Rejected'),
+    ]
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     case_hash = models.CharField(max_length=30, unique=True, blank=True, db_index=True)
 
@@ -128,6 +137,7 @@ class FistulaCampaign(models.Model):
         related_name='fistula_campaign',
     )
     partner = models.CharField(max_length=20, db_index=True)
+    organisation = models.CharField(max_length=20, default='CIPRB', db_index=True)
     district = models.CharField(max_length=100, blank=True)
     upazila = models.CharField(max_length=100, blank=True)
     union = models.CharField(max_length=100, blank=True)
@@ -149,6 +159,21 @@ class FistulaCampaign(models.Model):
     # population covered' maps to population_covered.
     households_visited = models.PositiveIntegerField(default=0)
     population_covered = models.PositiveIntegerField(default=0)
+
+    # ── Daily CHW-activity staff head-counts (rebuilt daily campaign form).
+    #    Cadre abbreviations kept as-is: HI/AHI, HA, CHCP, FWV, FPI, FWA, CHW.
+    staff_hi_ahi = models.PositiveIntegerField(default=0)
+    staff_ha     = models.PositiveIntegerField(default=0)
+    staff_chcp   = models.PositiveIntegerField(default=0)
+    staff_fwv    = models.PositiveIntegerField(default=0)
+    staff_fpi    = models.PositiveIntegerField(default=0)
+    staff_fwa    = models.PositiveIntegerField(default=0)
+    staff_chw    = models.PositiveIntegerField(default=0)
+    # Community focal points engaged that day.
+    focal_community = models.PositiveIntegerField(default=0)
+    focal_epi       = models.PositiveIntegerField(default=0)
+    focal_fwc       = models.PositiveIntegerField(default=0)
+    focal_cc        = models.PositiveIntegerField(default=0)
 
     # Case identification
     suspected_fistula_cases = models.PositiveSmallIntegerField(default=0)
@@ -183,6 +208,32 @@ class FistulaCampaign(models.Model):
     latitude = models.DecimalField(max_digits=10, decimal_places=7, null=True, blank=True)
     longitude = models.DecimalField(max_digits=10, decimal_places=7, null=True, blank=True)
 
+    # ── Enumerator (person filling the daily form).
+    enumerator_name = models.CharField(max_length=200, blank=True)
+    enumerator_mobile = models.CharField(max_length=30, blank=True)
+
+    # ── Kobo provenance / audit.
+    kobo_submission_id = models.CharField(max_length=100, blank=True, default='')
+    submitted_by_kobo_user = models.CharField(max_length=100, blank=True, default='')
+    raw_payload = models.JSONField(default=dict, blank=True)
+
+    # ── Manager approval (single-stage CIPRB — Tanjina/Setu). NEW daily reports
+    #    land PENDING via the webhook handler; the shared queue approves them.
+    approval_status = models.CharField(
+        max_length=20, choices=APPROVAL_CHOICES, default='PENDING', db_index=True)
+    approved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='+')
+    approved_at = models.DateTimeField(null=True, blank=True)
+    rejected_reason = models.TextField(blank=True, default='')
+    # Queue-infrastructure parity only: the shared approval queue unconditionally
+    # select_related's 'center'. Fistula is district-based (no ServiceCenter), so
+    # this stays NULL and the queue renders '–' — but the column must EXIST or the
+    # join raises FieldError and 500s the whole queue. (Same note as CIPRBFistulaCase.)
+    center = models.ForeignKey(
+        'programs.ServiceCenter', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='+')
+
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         null=True, blank=True,
@@ -206,7 +257,7 @@ class FistulaCampaign(models.Model):
     def save(self, *args, **kwargs):
         if not self.case_hash:
             year = self.campaign_date.year if self.campaign_date else timezone.now().year
-            prefix = 'PHD' if self.partner == 'PHD' else 'BON'
+            prefix = 'CIP' if self.partner == 'CIPRB' else ('PHD' if self.partner == 'PHD' else 'BON')
             count = (
                 FistulaCampaign.objects
                 .filter(partner=self.partner, campaign_date__year=year)

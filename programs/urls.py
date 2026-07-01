@@ -17,6 +17,7 @@ from .views import (
     MobileHealthCampViewSet, VisitorRegisterViewSet,
     PendingApprovalsView, NilReportView,
     CIPRBFistulaCaseViewSet,
+    FistulaCampaignViewSet,
     MPDSRCaseApprovalViewSet,
     MPDSRDeathNotificationViewSet,
     MaternalNearMissViewSet,
@@ -50,6 +51,7 @@ router.register('coord-meetings',      CoordMeetingViewSet,           basename='
 router.register('mobile-camps',        MobileHealthCampViewSet,       basename='mobile-camp')
 router.register('visitor-register',    VisitorRegisterViewSet,        basename='visitor-register')
 router.register('fistula-cases',       CIPRBFistulaCaseViewSet,       basename='fistula-case')
+router.register('fistula-campaigns',   FistulaCampaignViewSet,        basename='fistula-campaign')
 router.register('mpdsr-cases',         MPDSRCaseApprovalViewSet,      basename='prog-mpdsr-case')
 router.register('mpdsr-notifications', MPDSRDeathNotificationViewSet, basename='prog-mpdsr-notification')
 router.register('near-miss-cases',     MaternalNearMissViewSet,       basename='prog-near-miss')
