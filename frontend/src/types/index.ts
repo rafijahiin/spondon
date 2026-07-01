@@ -149,6 +149,9 @@ export interface CentresResponse {
 export interface PartnerKPIs {
   submissions_this_month: number
   pending: number
+  /** Bandhu two-stage: manager-approved, awaiting UNFPA final sign-off. Still
+   *  uncounted by indicators. 0 for single-stage orgs (PHD). */
+  pending_unfpa?: number
   active_workers: number
   fistula_cases: number
   mpdsr_cases: number

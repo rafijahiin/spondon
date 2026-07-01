@@ -129,6 +129,58 @@ class PartnerProgramsCountsTest(TestCase):
         self.assertEqual(pending, 0)
 
 
+class BandhuTwoStageBucketTest(TestCase):
+    """A Bandhu manager approval must MOVE a record from the manager bucket to
+    the UNFPA bucket — not silently clear it. The org banner reads pending
+    (manager stage) + pending_unfpa (MANAGER_APPROVED, awaiting UNFPA); both are
+    still uncounted by the indicators until UNFPA finalises. Regression for the
+    'I approve but the number just vanishes and nothing counts' report."""
+
+    def setUp(self):
+        cache.clear()
+        from programs.models import ServiceCenter, Client, ClinicVisit
+        self.centre = ServiceCenter.objects.create(
+            organisation='Bandhu', name='DIC', code='BND-2S',
+            center_type='DIC', district='Dhaka', is_active=True)
+        self.client_obj = Client.objects.create(
+            organisation='Bandhu', center=self.centre, client_id='2S-1',
+            name='Asha', approval_status='APPROVED')
+        self.cv = ClinicVisit.objects.create(
+            organisation='Bandhu', center=self.centre, client=self.client_obj,
+            visit_date=timezone.now().date(), approval_status='PENDING')
+        self.mgr = User.objects.create_user(
+            email='b2s@x.org', password='Str0ng-Passw0rd-2026', full_name='Mgr',
+            organisation=Organisation.BANDHU, role=Role.MANAGER)
+
+    def _kpis(self):
+        c = APIClient()
+        c.force_authenticate(self.mgr)
+        r = c.get(f'{BASE_URL}partner-kpis/?partner=Bandhu')
+        self.assertEqual(r.status_code, 200, r.content)
+        return r.data
+
+    def test_manager_approval_moves_bucket_not_clears(self):
+        d = self._kpis()
+        self.assertEqual(d['pending'], 1)          # awaiting manager
+        self.assertEqual(d['pending_unfpa'], 0)    # nothing at UNFPA yet
+
+        # Stage 1: Bandhu manager approves → MANAGER_APPROVED.
+        self.cv.approval_status = 'MANAGER_APPROVED'
+        self.cv.save()
+        cache.clear()
+        d = self._kpis()
+        self.assertEqual(d['pending'], 0)          # left the manager bucket
+        self.assertEqual(d['pending_unfpa'], 1)    # now awaiting UNFPA — NOT gone
+
+        # Stage 2: UNFPA finalises → APPROVED, clears both buckets.
+        self.cv.approval_status = 'APPROVED'
+        self.cv.save()
+        cache.clear()
+        d = self._kpis()
+        self.assertEqual(d['pending'], 0)
+        self.assertEqual(d['pending_unfpa'], 0)
+
+
 class DistrictActivityTest(TestCase):
     """Defect #7 — CentresView district ranking must derive from the
     programs/CIPRB models, not only KoboSubmission."""

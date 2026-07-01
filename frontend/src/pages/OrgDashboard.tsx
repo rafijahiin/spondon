@@ -409,15 +409,35 @@ export function OrgDashboard({ partner }: Props) {
             figures below count APPROVED only — without this, a manager who
             never opens /approvals sees permanent zeros and thinks it's broken.
             (Bandhu needs a 2nd UNFPA sign-off before anything counts.) */}
-        {(kpis?.pending ?? 0) > 0 && (
+        {((kpis?.pending ?? 0) > 0 || (kpis?.pending_unfpa ?? 0) > 0) && (
           <a href="/approvals" style={{
             display: 'block', textDecoration: 'none', marginBottom: 16,
             padding: '12px 16px', borderRadius: 12,
             background: 'rgba(233,151,10,0.08)', border: '1px solid rgba(233,151,10,0.32)',
             color: 'var(--ink)', fontSize: 13.5, lineHeight: 1.5,
           }}>
-            ⏳ <b>{kpis?.pending}</b> submission{(kpis?.pending ?? 0) === 1 ? '' : 's'} awaiting approval
-            {isPHD ? '' : ' (manager → UNFPA)'} — <b>not counted</b> in the figures below until approved. Open Approvals →
+            {isPHD ? (
+              <>
+                ⏳ <b>{kpis?.pending}</b> submission{(kpis?.pending ?? 0) === 1 ? '' : 's'} awaiting approval
+                {' '}— <b>not counted</b> in the figures below until approved. Open Approvals →
+              </>
+            ) : (
+              // Bandhu two-stage: show BOTH gates so a manager approval visibly
+              // moves work from the manager bucket to the UNFPA bucket, instead
+              // of the number dropping to zero while the data is still frozen.
+              <>
+                ⏳ Awaiting approval (nothing below counts until <b>UNFPA</b> signs off):
+                <span style={{ display: 'block', marginTop: 4 }}>
+                  • <b>{kpis?.pending ?? 0}</b> awaiting <b>Bandhu manager</b> review
+                </span>
+                <span style={{ display: 'block' }}>
+                  • <b>{kpis?.pending_unfpa ?? 0}</b> manager-approved — awaiting <b>UNFPA</b> final sign-off
+                </span>
+                <span style={{ display: 'block', marginTop: 4, color: 'var(--muted)' }}>
+                  Open Approvals →
+                </span>
+              </>
+            )}
           </a>
         )}
         {isPHD ? <PhdHeadlineCards /> : <BandhuHeadlineCards />}

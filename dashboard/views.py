@@ -79,6 +79,32 @@ def _partner_programs_counts(partner, month_start, month_end):
     return this_month, pending
 
 
+def _partner_manager_approved_count(partner):
+    """Count records at MANAGER_APPROVED — Bandhu stage-1 (manager) is done but
+    the UNFPA stage-2 sign-off is not, so they are STILL not counted by the
+    indicators (which count APPROVED only).
+
+    These were invisible on the org page: the pending banner counted only
+    PENDING, so a Bandhu manager approval dropped the number to 0 while the data
+    stayed frozen awaiting UNFPA — reading as "I approved but nothing happened".
+    Surfacing them as their own bucket makes the two-stage flow honest: a manager
+    approval MOVES an item from the manager bucket to the UNFPA bucket rather
+    than silently clearing it. Only the programs models carry MANAGER_APPROVED
+    (legacy KoboSubmission is single-stage), so only they are scanned."""
+    from django.apps import apps
+    triple = {'organisation', 'created_at', 'approval_status'}
+    total = 0
+    for model in apps.get_app_config('programs').get_models():
+        if not (triple <= {f.name for f in model._meta.get_fields()}):
+            continue
+        try:
+            total += model.objects.filter(
+                organisation=partner, approval_status='MANAGER_APPROVED').count()
+        except Exception:
+            pass
+    return total
+
+
 def _district_activity_programs(orgs, month_start, month_end, trend_start):
     """Per-district month counts + per-day trend from the programs (district via
     the center FK) and CIPRB (direct district) submission models, for the given
@@ -914,6 +940,11 @@ class PartnerKPIsView(APIView):
                 KoboSubmission.objects.filter(partner=partner, status=PENDING).count()
                 + prog_pending
             ),
+            # Bandhu two-stage: items the manager has approved but UNFPA has not
+            # yet finalised. Still uncounted by indicators; shown as a distinct
+            # "awaiting UNFPA sign-off" bucket so a manager approval visibly moves
+            # work forward instead of appearing to vanish. 0 for single-stage orgs.
+            'pending_unfpa': _partner_manager_approved_count(partner),
             'active_workers': (
                 approved
                 .filter(submitted_at__gte=thirty_days_ago)
