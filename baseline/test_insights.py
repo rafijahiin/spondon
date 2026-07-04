@@ -48,6 +48,18 @@ class BaselineInsightsTests(TestCase):
         # Unknown code passes through.
         self.assertEqual(value_label('hijra', 'a212_nid', 'zzz'), 'zzz')
 
+    def test_seeded_interview_is_complete(self):
+        # A reviewer must see the WHOLE questionnaire, not a thin subset. Each
+        # seeded interview answers most of the ~180-question form, grouped into
+        # its real modules (not a generic "Other" bucket).
+        r = BaselineResponse.objects.filter(population='hijra').first()
+        rows = humanize('hijra', r.raw_data)
+        self.assertGreater(len(rows), 150)
+        sections = {row['section'] for row in rows}
+        self.assertGreater(len(sections), 8)
+        self.assertLess(sum(1 for s in sections if s == 'Other'), 3)
+        self.assertTrue(any('Module' in s for s in sections))
+
     def test_humanize_and_headline_readable(self):
         r = BaselineResponse.objects.filter(population='hijra').first()
         rows = humanize('hijra', r.raw_data)

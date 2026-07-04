@@ -83,10 +83,9 @@ class Command(BaseCommand):
             made = []
             seq = 0
             for pop, count in plan:
-                ch = schema[pop]['choices']
                 for i in range(count):
                     seq += 1
-                    raw = self._build_raw(pop, ch, seq)
+                    raw = self._build_raw(pop, schema[pop], seq)
                     dist = raw.get('district', 'dhaka')
                     lat, lng = GEO.get(dist, GEO['dhaka'])
                     jitter = lambda: random.uniform(-0.05, 0.05)
@@ -125,8 +124,12 @@ class Command(BaseCommand):
             f'(verified rows: {verified}) · {keep_pending} left pending.'))
 
     # ── realistic answer generation ──────────────────────────────────────────
-    def _build_raw(self, pop, ch, seq):
-        # ch maps FIELD name -> {code: label}. pick() reads by field name.
+    def _build_raw(self, pop, ps, seq):
+        # ps = form_schema[pop] with choices / types / order. pick() reads by field name.
+        ch = ps['choices']
+        types = ps['types']
+        order = ps['order']
+
         def pick(field, weights=None):
             return _pick(ch.get(field), weights)
 
@@ -190,5 +193,74 @@ class Command(BaseCommand):
                 'b108': int(random.triangular(3000, 45000, 12000)),
                 'b114': pick('b114'),
             })
+        # ── Complete the rest of the questionnaire ────────────────────────────
+        # A real baseline interview answers the whole ~180-question form, so a
+        # reviewer can only verify a COMPLETE record. Fill every remaining field
+        # with a valid, plausible value (the weighted fields above are kept as-is
+        # so the charts stay realistic). Nothing is merged or summarised — each
+        # answer is stored faithfully and shown verbatim on the approval card.
+        def fill(name, typ):
+            low = name.lower()
+            if typ == 'geopoint':
+                return None  # GPS lives on the submission row, not raw_data
+            # conditional "other (specify)" free-text — left blank unless its
+            # parent select actually chose "other", which we don't simulate.
+            if 'other' in low or 'specify' in low or low.endswith(('_oth', '_txt')):
+                return None
+            cmap = ch.get(name)
+            if cmap:
+                codes = [c for c in cmap.keys() if c != '']
+                if not codes:
+                    return None
+                if typ.startswith('select_multiple'):
+                    k = min(len(codes), random.randint(1, 3))
+                    return ' '.join(random.sample(codes, k))
+                return random.choice(codes)
+            if typ == 'integer':
+                if 'age' in low:
+                    return age
+                if 'year' in low:
+                    return random.randint(0, 15)
+                if 'month' in low:
+                    return random.randint(0, 11)
+                if 'child' in low:
+                    return random.randint(0, 4)
+                if any(w in low for w in ('member', 'hh', 'people', 'person',
+                                          'count', 'number', '_no', 'no_', 'times')):
+                    return random.randint(1, 6)
+                if any(w in low for w in ('income', 'taka', 'bdt', 'amount', 'rent',
+                                          'commission', 'fee', 'debt', 'share', 'exp',
+                                          'salary', 'money', 'earn', 'cost')):
+                    return random.choice([0, 1500, 3000, 5000, 8000, 12000])
+                return random.randint(0, 4)
+            if typ == 'decimal':
+                return random.choice([0, 1, 2, 3])
+            if typ == 'date':
+                return '2026-06-%02d' % random.randint(1, 28)
+            if typ == 'time':
+                return '%02d:%02d' % (random.randint(8, 17), random.choice([0, 15, 30, 45]))
+            if typ == 'text':
+                if any(w in low for w in ('name', 'code', 'interviewer', 'supervisor', 'enumerator')):
+                    return 'Demo Field Staff'
+                if 'upazila' in low or 'thana' in low:
+                    return 'Sadar'
+                if 'union' in low or 'ward' in low:
+                    return 'Ward 3'
+                if 'mobile' in low or 'phone' in low:
+                    return '017' + str(random.randint(10000000, 99999999))
+                if any(w in low for w in ('district', 'ancestral', 'home', 'address', 'place')):
+                    return 'Dhaka'
+                if any(w in low for w in ('serial', 'cluster', 'site')):
+                    return name.upper()[:20]
+                return None  # unknown free text → leave blank
+            return None
+
+        for name in order:
+            if name in base:  # keep the weighted demographic fields as set above
+                continue
+            v = fill(name, types.get(name, 'text'))
+            if v is not None:
+                base[name] = v
+
         # drop any None (choice list absent) so we never store nulls
         return {k: v for k, v in base.items() if v is not None}

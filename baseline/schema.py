@@ -69,11 +69,15 @@ def humanize(population, raw):
     """Full answer set as readable rows, grouped by questionnaire section.
 
     Returns [{section, field, question, value, answer}] for every answered,
-    non-meta field — ordered by the section order below then form order.
+    non-meta field. Sections and rows follow the real questionnaire order (a
+    section sorts by its first field's position in the form; rows within a
+    section keep form order), so the review reads top-to-bottom like the paper
+    instrument.
     """
     schema = pop_schema(population)
     labels = schema.get('labels', {}) or {}
     sections = schema.get('sections', {}) or {}
+    idx = {name: i for i, name in enumerate(schema.get('order', []) or [])}
     rows = []
     for key, val in (raw or {}).items():
         if _hidden(key) or val in ('', None, []):
@@ -84,23 +88,16 @@ def humanize(population, raw):
             'question': labels.get(key, key),
             'value': str(val),
             'answer': value_label(population, key, val),
+            '_i': idx.get(key, 10 ** 6),
         })
-    order = {name: i for i, name in enumerate(SECTION_ORDER)}
-    rows.sort(key=lambda r: order.get(r['section'], len(SECTION_ORDER)))
+    sec_first = {}
+    for r in rows:
+        s = r['section']
+        sec_first[s] = min(sec_first.get(s, r['_i']), r['_i'])
+    rows.sort(key=lambda r: (sec_first.get(r['section'], 10 ** 6), r['_i']))
+    for r in rows:
+        r.pop('_i', None)
     return rows
-
-
-SECTION_ORDER = [
-    'Screening & identification',
-    'A · Respondent profile',
-    'B · Livelihood & household',
-    'C · Sexual & reproductive health',
-    'D · Health services & access',
-    'E · Rights, violence & wellbeing',
-    'F · Knowledge & awareness',
-    'G · Additional',
-    'Other',
-]
 
 
 def headline(population, raw):
