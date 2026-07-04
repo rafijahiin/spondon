@@ -316,6 +316,17 @@ class KoboSubmissionViewSet(OrgFilterMixin, ModelViewSet):
 
     def get_queryset(self):
         qs = super().get_queryset()
+        # Baseline interviews have their OWN CIPRB verification queue
+        # (/baseline/verification/, BaselineVerificationViewSet). They must never
+        # surface in this generic approval queue: (1) the frontend renders them
+        # as a wrong 'legacy' card in the CIPRB tab, duplicating the Baseline
+        # tab; (2) approving via this lane is gated only by CanApproveSubmissions
+        # (dev/supervisor/manager) which side-steps the narrower CanApproveBaseline
+        # gate (developer + CIPRB manager) — e.g. a UNFPA supervisor could approve
+        # a baseline here. Enforce the exclusion the line-311 comment always
+        # intended. Shared by list/retrieve/approve/reject, so baseline is
+        # unreachable through this viewset entirely (approve it via /baseline/).
+        qs = qs.exclude(form_type=FormType.BASELINE)
         status_param = self.request.query_params.get('status')
         form_type = self.request.query_params.get('form_type')
         if status_param:

@@ -138,8 +138,10 @@ class BaselineResponseViewSet(OrgFilterMixin, ModelViewSet):
 class BaselineVerificationViewSet(ViewSet):
     """CIPRB verification gate — list PENDING baseline interviews and
     approve/reject each one. Approving flips the KoboSubmission to APPROVED,
-    which materialises the verified BaselineResponse (signal). Lives inside the
-    baseline area; baseline never appears in the PHD/Bandhu Manager Approvals."""
+    which materialises the verified BaselineResponse (signal). This is the ONLY
+    approval surface for baseline: KoboSubmissionViewSet.get_queryset excludes
+    form_type=BASELINE, so baseline never appears in the generic Manager
+    Approvals queue (any org tab) and cannot be approved via /submissions/."""
 
     def get_permissions(self):
         # Split read vs write: anyone in CIPRB/UNFPA (or developer) may VIEW the

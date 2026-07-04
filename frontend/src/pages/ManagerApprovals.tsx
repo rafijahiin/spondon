@@ -330,7 +330,10 @@ function toQueueItems(programsData: ProgramPendingResponse | null, submissions: 
 
   // Legacy submissions (pending only)
   if (submissions) {
-    for (const s of submissions.filter(s => s.status === 'pending')) {
+    // Baseline interviews live in the dedicated Baseline tab (baselineQueueItems)
+    // — never render them here as a generic 'legacy' card. The backend already
+    // excludes them from /submissions/; this is defence-in-depth.
+    for (const s of submissions.filter(s => s.status === 'pending' && s.form_type !== 'baseline')) {
       const formName = s.form_type_display || s.form_type.replace(/_/g, ' ')
       items.push({
         id: s.id,
@@ -360,6 +363,7 @@ function toQueueItems(programsData: ProgramPendingResponse | null, submissions: 
 function reviewedQueueItems(submissions: Submission[] | null): QueueItem[] {
   if (!submissions) return []
   return submissions
+    .filter(s => s.form_type !== 'baseline')  // baseline audit lives in its own area
     .slice()
     .sort((a, b) => (b.reviewed_at ?? '').localeCompare(a.reviewed_at ?? ''))
     .map(s => {

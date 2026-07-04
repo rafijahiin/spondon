@@ -399,3 +399,69 @@ class SignalTest(TestCase):
         sub.save()
         sub.refresh_from_db()
         self.assertEqual(sub.status, SubmissionStatus.PENDING)
+
+
+@override_settings(**TEST_UIDS)
+class BaselineExcludedFromSubmissionsQueueTest(TestCase):
+    """Regression: baseline interviews have their own CIPRB verification queue
+    (/api/baseline/verification/) and must NOT leak into the generic approval
+    queue (/api/submissions/) at ANY status — otherwise the frontend renders
+    them as a wrong kind='legacy' card in the CIPRB tab, and they become
+    approvable via /submissions/<id>/approve/ (CanApproveSubmissions),
+    side-stepping the narrower CanApproveBaseline gate."""
+
+    def setUp(self):
+        self.client = APIClient()
+        # A CIPRB manager sees all orgs and passes both CanApproveSubmissions and
+        # CanViewBaseline — one user exercises both endpoints.
+        self.ciprb_manager = make_user('tanjina@ciprb.org', Organisation.CIPRB, Role.MANAGER)
+        self.client.force_authenticate(user=self.ciprb_manager)
+
+    def _mk(self, form_type, status, kobo_id):
+        sub = KoboSubmission.objects.create(
+            kobo_id=kobo_id, form_type=form_type, partner='CIPRB',
+            worker_name='Enum', district='Dhaka', region='Dhaka',
+            submitted_at='2024-06-01T08:00:00+00:00',
+            raw_data={'population': 'hijra', 'questionnaire_serial': 'H-9', '_id': kobo_id},
+            status=SubmissionStatus.PENDING,
+        )
+        if status != SubmissionStatus.PENDING:
+            # .update() bypasses the approval post_save signal — this test only
+            # needs the row to carry the target status, not to materialise.
+            KoboSubmission.objects.filter(pk=sub.pk).update(status=status)
+        return sub
+
+    def _form_types(self, status):
+        resp = self.client.get('/api/submissions/', {'status': status})
+        self.assertEqual(resp.status_code, 200)
+        rows = resp.data if isinstance(resp.data, list) else resp.data['results']
+        return [r['form_type'] for r in rows]
+
+    def test_pending_baseline_absent_from_submissions_queue(self):
+        self._mk(FormType.BASELINE, SubmissionStatus.PENDING, 'bl-p')
+        self._mk(FormType.FISTULA, SubmissionStatus.PENDING, 'fi-p')  # control stays
+        fts = self._form_types(SubmissionStatus.PENDING)
+        self.assertNotIn(FormType.BASELINE, fts)
+        self.assertIn(FormType.FISTULA, fts)
+
+    def test_approved_baseline_absent_from_submissions_queue(self):
+        self._mk(FormType.BASELINE, SubmissionStatus.APPROVED, 'bl-a')
+        self.assertNotIn(FormType.BASELINE, self._form_types(SubmissionStatus.APPROVED))
+
+    def test_rejected_baseline_absent_from_submissions_queue(self):
+        self._mk(FormType.BASELINE, SubmissionStatus.REJECTED, 'bl-r')
+        self.assertNotIn(FormType.BASELINE, self._form_types(SubmissionStatus.REJECTED))
+
+    def test_baseline_detail_not_reachable_via_submissions(self):
+        # Closes the approve side-door: get_object() shares get_queryset, so a
+        # baseline id 404s on /submissions/<id>/ (and thus approve/reject).
+        sub = self._mk(FormType.BASELINE, SubmissionStatus.PENDING, 'bl-d')
+        resp = self.client.get(f'/api/submissions/{sub.pk}/')
+        self.assertEqual(resp.status_code, 404)
+
+    def test_pending_baseline_still_in_verification_queue(self):
+        self._mk(FormType.BASELINE, SubmissionStatus.PENDING, 'bl-v')
+        resp = self.client.get('/api/baseline/verification/')
+        self.assertEqual(resp.status_code, 200)
+        rows = resp.data if isinstance(resp.data, list) else resp.data.get('results', [])
+        self.assertEqual(len(rows), 1)
