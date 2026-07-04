@@ -276,6 +276,12 @@ interface QueueItem {
   gps_missing?: boolean
   duplicate_preview?: boolean
   raw_data?: Record<string, any>
+  // Readable, server-resolved detail for the baseline card (real question/answer
+  // text, not codes). headline = curated at-a-glance facts; answers = full
+  // interview grouped by questionnaire section.
+  headline?: { label: string; value: string }[]
+  answers?: BaselineAnswerRow[]
+  answer_count?: number
   urgent?: boolean
   latitude?: string
   longitude?: string
@@ -377,10 +383,28 @@ function reviewedQueueItems(submissions: Submission[] | null): QueueItem[] {
     })
 }
 
+interface BaselineAnswerRow {
+  section: string
+  field: string
+  question: string
+  value: string
+  answer: string
+}
+
+// Group readable answers by questionnaire section, in section order.
+function groupBaselineAnswers(rows: BaselineAnswerRow[]): [string, BaselineAnswerRow[]][] {
+  const m = new Map<string, BaselineAnswerRow[]>()
+  for (const r of rows) {
+    if (!m.has(r.section)) m.set(r.section, [])
+    m.get(r.section)!.push(r)
+  }
+  return Array.from(m.entries())
+}
+
 // Map PENDING D5 baseline verification rows into queue items so the Baseline
 // tab reuses the same spine/selection machinery. The verification list already
-// carries everything the focus panel needs (raw_data + dup/gps flags), so these
-// items never trigger a detail fetch (skipped in the detail effect by kind).
+// carries everything the focus panel needs (headline + answers + dup/gps flags),
+// so these items never trigger a detail fetch (skipped in the detail effect by kind).
 function baselineQueueItems(rows: any[] | null): QueueItem[] {
   if (!rows) return []
   return rows.map((r) => {
@@ -405,6 +429,9 @@ function baselineQueueItems(rows: any[] | null): QueueItem[] {
       gps_missing: !!r.gps_missing,
       duplicate_preview: !!r.duplicate_preview,
       is_baseline_duplicate: !!r.duplicate_preview,
+      headline: Array.isArray(r.headline) ? r.headline : [],
+      answers: Array.isArray(r.answers) ? r.answers : [],
+      answer_count: r.answer_count ?? (Array.isArray(r.answers) ? r.answers.length : 0),
       raw_data: r.raw_data || {},
     }
   })
@@ -1076,17 +1103,45 @@ export default function ManagerApprovals() {
                   </div>
                 )}
 
-                {/* Raw coded answers */}
+                {/* Respondent profile — readable at-a-glance facts (real labels, not codes) */}
+                {selected.headline && selected.headline.length > 0 && (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 10, marginBottom: 16 }}>
+                    {selected.headline.map((h) => (
+                      <div key={h.label} style={{ background: 'var(--surface-2, rgba(0,0,0,0.02))', border: '1px solid var(--hair)', borderRadius: 10, padding: '8px 11px', minWidth: 0 }}>
+                        <div style={{ fontSize: 10.5, fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'var(--muted)' }}>{h.label}</div>
+                        <div style={{ fontSize: 13, color: 'var(--ink)', marginTop: 2, wordBreak: 'break-word' }}>{h.value || '—'}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Full interview — readable question/answer, grouped by section */}
                 <button
                   onClick={() => setShowRaw(v => !v)}
                   style={{ background: 'none', border: '1px solid var(--hair)', borderRadius: 8, padding: '4px 10px', fontSize: 11, color: 'var(--ink-2)', cursor: 'pointer', marginBottom: 10 }}
                 >
-                  {showRaw ? 'Hide' : 'Show'} all answers ({Object.keys(selected.raw_data ?? {}).length})
+                  {showRaw ? 'Hide' : 'Review'} full interview ({selected.answer_count ?? (selected.answers?.length ?? 0)})
                 </button>
                 {showRaw && (
-                  <pre className="scroll-thin" style={{ maxHeight: 320, overflow: 'auto', fontSize: 11, lineHeight: 1.5, background: 'var(--surface-2, rgba(0,0,0,0.02))', border: '1px solid var(--hair)', borderRadius: 10, padding: 12, marginBottom: 16, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-                    {JSON.stringify(selected.raw_data ?? {}, null, 2)}
-                  </pre>
+                  <div className="scroll-thin" style={{ maxHeight: 360, overflow: 'auto', border: '1px solid var(--hair)', borderRadius: 10, padding: 12, marginBottom: 16, display: 'flex', flexDirection: 'column', gap: 14 }}>
+                    {(selected.answers && selected.answers.length > 0) ? (
+                      groupBaselineAnswers(selected.answers).map(([section, rows]) => (
+                        <div key={section}>
+                          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'var(--unfpa, #F96000)', marginBottom: 8 }}>{section}</div>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '8px 18px' }}>
+                            {rows.map((r) => (
+                              <div key={r.field} style={{ fontSize: 12.5, minWidth: 0 }}>
+                                <div style={{ color: 'var(--muted)', lineHeight: 1.3 }}>{r.question}</div>
+                                <div style={{ color: 'var(--ink)', fontWeight: 600, wordBreak: 'break-word', marginTop: 1 }}>{r.answer || r.value}</div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div style={{ fontSize: 12.5, color: 'var(--muted)' }}>No answers recorded for this interview.</div>
+                    )}
+                  </div>
                 )}
 
                 {/* Decision */}
