@@ -17,6 +17,7 @@ import random
 from datetime import timedelta
 
 from django.core.management.base import BaseCommand
+from django.db.models.signals import post_save
 from django.utils import timezone
 
 from baseline.models import BaselineResponse
@@ -71,42 +72,52 @@ class Command(BaseCommand):
             subs.delete()
             self.stdout.write(f'Wiped {n} prior demo submission(s).')
 
-        plan = [('hijra', opts['hijra']), ('fsw', opts['fsw'])]
-        made = []
-        seq = 0
-        for pop, count in plan:
-            ch = schema[pop]['choices']
-            for i in range(count):
-                seq += 1
-                raw = self._build_raw(pop, ch, seq)
-                dist = raw.get('district', 'dhaka')
-                lat, lng = GEO.get(dist, GEO['dhaka'])
-                jitter = lambda: random.uniform(-0.05, 0.05)
-                gps_missing = random.random() < 0.08
-                sub = KoboSubmission.objects.create(
-                    kobo_id=f'{PREFIX}{pop}-{seq:04d}',
-                    form_type=FormType.BASELINE,
-                    partner='CIPRB',
-                    worker_name=random.choice(INTERVIEWERS),
-                    district=dist.title(),
-                    region='',
-                    latitude=None if gps_missing else round(lat + jitter(), 6),
-                    longitude=None if gps_missing else round(lng + jitter(), 6),
-                    submitted_at=timezone.now() - timedelta(days=random.randint(0, 40),
-                                                             hours=random.randint(0, 23)),
-                    raw_data=raw,
-                    status=SubmissionStatus.PENDING,
-                )
-                made.append(sub)
+        # Seed with the approval post_save signal DISCONNECTED: on prod each save
+        # would otherwise fan out telegram + email notifications, and this service
+        # has no outbound network — the stalled calls blow past the boot healthcheck
+        # window. We materialise the verified BaselineResponse directly instead.
+        from submissions.signals import on_submission_status_change
+        post_save.disconnect(on_submission_status_change, sender=KoboSubmission)
+        try:
+            plan = [('hijra', opts['hijra']), ('fsw', opts['fsw'])]
+            made = []
+            seq = 0
+            for pop, count in plan:
+                ch = schema[pop]['choices']
+                for i in range(count):
+                    seq += 1
+                    raw = self._build_raw(pop, ch, seq)
+                    dist = raw.get('district', 'dhaka')
+                    lat, lng = GEO.get(dist, GEO['dhaka'])
+                    jitter = lambda: random.uniform(-0.05, 0.05)
+                    gps_missing = random.random() < 0.08
+                    sub = KoboSubmission.objects.create(
+                        kobo_id=f'{PREFIX}{pop}-{seq:04d}',
+                        form_type=FormType.BASELINE,
+                        partner='CIPRB',
+                        worker_name=random.choice(INTERVIEWERS),
+                        district=dist.title(),
+                        region='',
+                        latitude=None if gps_missing else round(lat + jitter(), 6),
+                        longitude=None if gps_missing else round(lng + jitter(), 6),
+                        submitted_at=timezone.now() - timedelta(days=random.randint(0, 40),
+                                                                hours=random.randint(0, 23)),
+                        raw_data=raw,
+                        status=SubmissionStatus.PENDING,
+                    )
+                    made.append(sub)
 
-        # Approve all but the last N (kept PENDING to demo the review queue).
-        random.shuffle(made)
-        keep_pending = max(0, opts['pending'])
-        approve = made[keep_pending:]
-        for sub in approve:
-            sub.status = SubmissionStatus.APPROVED
-            sub.reviewed_at = timezone.now()
-            sub.save()  # signal materialises BaselineResponse
+            # Approve all but the last N (kept PENDING to demo the review queue).
+            random.shuffle(made)
+            keep_pending = max(0, opts['pending'])
+            approve = made[keep_pending:]
+            for sub in approve:
+                sub.status = SubmissionStatus.APPROVED
+                sub.reviewed_at = timezone.now()
+                sub.save(update_fields=['status', 'reviewed_at'])
+                BaselineResponse.objects.get_or_create_from_submission(sub)
+        finally:
+            post_save.connect(on_submission_status_change, sender=KoboSubmission)
 
         verified = BaselineResponse.objects.filter(submission__kobo_id__startswith=PREFIX).count()
         self.stdout.write(self.style.SUCCESS(
