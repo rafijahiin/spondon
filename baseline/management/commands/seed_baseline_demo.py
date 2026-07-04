@@ -1,0 +1,183 @@
+"""Seed realistic demo baseline interviews (Hijra + FSW) so the /baseline
+dashboard shows real insights and the verification card shows real detail.
+
+Creates PENDING KoboSubmissions with plausible answers keyed to the two live
+forms' real field codes, then APPROVES most (the post_save signal materialises
+the verified BaselineResponse), leaving a few PENDING to demo the review queue.
+
+    python manage.py seed_baseline_demo --hijra 24 --fsw 20 --pending 6 --wipe
+
+Idempotent-ish: --wipe first removes any prior demo rows (kobo_id prefix
+DEMO-BL-) so re-runs don't accumulate. Demo-only; never run against real data
+without --wipe intent.
+"""
+import json
+import os
+import random
+from datetime import timedelta
+
+from django.core.management.base import BaseCommand
+from django.utils import timezone
+
+from baseline.models import BaselineResponse
+from submissions.models import FormType, KoboSubmission, SubmissionStatus
+
+PREFIX = 'DEMO-BL-'
+SCHEMA = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'form_schema.json')
+
+XFORM = {'hijra': 'ciprb_baseline_hijra_v1', 'fsw': 'ciprb_baseline_fsw_v1'}
+INTERVIEWERS = ['Shipra Rani / IV-01', 'Rahim Uddin / IV-02', 'Nadia Akter / IV-03',
+                'Jamal Hossain / IV-04', 'Papri Das / IV-05', 'Sohel Rana / IV-06']
+# rough district -> (lat, lng) for plausible GPS
+GEO = {
+    'sunamganj': (25.07, 91.40), 'habiganj': (24.37, 91.41), 'manikganj': (23.86, 90.00),
+    'narayanganj': (23.62, 90.50), 'chandpur': (23.23, 90.66), 'noakhali': (22.87, 91.10),
+    'chittagong': (22.36, 91.83), 'bandarban': (22.19, 92.22), 'rajbari': (23.76, 89.64),
+    'faridpur': (23.60, 89.84), 'jashore': (23.17, 89.21), 'khulna': (22.85, 89.56),
+    'dhaka': (23.81, 90.41),
+}
+
+
+def _pick(cmap, weights_by_code=None):
+    """Pick a code from a {code: label} choice dict; optional weights add realism."""
+    codes = list((cmap or {}).keys())
+    if not codes:
+        return None
+    if weights_by_code:
+        w = [weights_by_code.get(c, 1) for c in codes]
+        return random.choices(codes, weights=w, k=1)[0]
+    return random.choice(codes)
+
+
+class Command(BaseCommand):
+    help = 'Seed realistic demo baseline interviews for the /baseline dashboard.'
+
+    def add_arguments(self, parser):
+        parser.add_argument('--hijra', type=int, default=24)
+        parser.add_argument('--fsw', type=int, default=20)
+        parser.add_argument('--pending', type=int, default=6,
+                            help='How many to leave PENDING (rest are approved).')
+        parser.add_argument('--wipe', action='store_true',
+                            help='Remove prior DEMO-BL- rows before seeding.')
+
+    def handle(self, *args, **opts):
+        with open(SCHEMA, encoding='utf-8') as f:
+            schema = json.load(f)
+
+        if opts['wipe']:
+            subs = KoboSubmission.objects.filter(kobo_id__startswith=PREFIX)
+            BaselineResponse.objects.filter(submission__in=subs).delete()
+            n = subs.count()
+            subs.delete()
+            self.stdout.write(f'Wiped {n} prior demo submission(s).')
+
+        plan = [('hijra', opts['hijra']), ('fsw', opts['fsw'])]
+        made = []
+        seq = 0
+        for pop, count in plan:
+            ch = schema[pop]['choices']
+            for i in range(count):
+                seq += 1
+                raw = self._build_raw(pop, ch, seq)
+                dist = raw.get('district', 'dhaka')
+                lat, lng = GEO.get(dist, GEO['dhaka'])
+                jitter = lambda: random.uniform(-0.05, 0.05)
+                gps_missing = random.random() < 0.08
+                sub = KoboSubmission.objects.create(
+                    kobo_id=f'{PREFIX}{pop}-{seq:04d}',
+                    form_type=FormType.BASELINE,
+                    partner='CIPRB',
+                    worker_name=random.choice(INTERVIEWERS),
+                    district=dist.title(),
+                    region='',
+                    latitude=None if gps_missing else round(lat + jitter(), 6),
+                    longitude=None if gps_missing else round(lng + jitter(), 6),
+                    submitted_at=timezone.now() - timedelta(days=random.randint(0, 40),
+                                                             hours=random.randint(0, 23)),
+                    raw_data=raw,
+                    status=SubmissionStatus.PENDING,
+                )
+                made.append(sub)
+
+        # Approve all but the last N (kept PENDING to demo the review queue).
+        random.shuffle(made)
+        keep_pending = max(0, opts['pending'])
+        approve = made[keep_pending:]
+        for sub in approve:
+            sub.status = SubmissionStatus.APPROVED
+            sub.reviewed_at = timezone.now()
+            sub.save()  # signal materialises BaselineResponse
+
+        verified = BaselineResponse.objects.filter(submission__kobo_id__startswith=PREFIX).count()
+        self.stdout.write(self.style.SUCCESS(
+            f'Seeded {len(made)} interviews · approved {len(approve)} '
+            f'(verified rows: {verified}) · {keep_pending} left pending.'))
+
+    # ── realistic answer generation ──────────────────────────────────────────
+    def _build_raw(self, pop, ch, seq):
+        # ch maps FIELD name -> {code: label}. pick() reads by field name.
+        def pick(field, weights=None):
+            return _pick(ch.get(field), weights)
+
+        age = int(random.triangular(18, 45, 26))
+        serial = f'{PREFIX}{pop.upper()}-{seq:04d}'
+        base = {
+            '_xform_id_string': XFORM[pop],
+            'population': pop,
+            'questionnaire_serial': serial,
+            'consent': '1',
+            'interview_language': '1',
+            'survey_round': 'baseline',
+        }
+        if pop == 'hijra':
+            dist = pick('district')
+            base.update({
+                'district': dist,
+                'a201_district': dist,
+                'interview_method': '1',
+                's1_selection': pick('s1_selection'),
+                's2_age': age,
+                's3_member': '1',
+                's4_residence': pick('s4_residence'),
+                'a102_respondent_type': pick('a102_respondent_type'),
+                'a204_area': pick('a204_area'),
+                'a205_age': age,
+                'a206_religion': pick('a206_religion', {'1': 82, '2': 12}),
+                'a207_ethnicity': pick('a207_ethnicity'),
+                'a208_marital': pick('a208_marital'),
+                'a209_education': pick('a209_education',
+                                       {'00': 22, '01': 18, '05': 20, '08': 14, '10': 12}),
+                'a210_student': pick('a210_student', {'2': 80}),
+                'a211_mobile': pick('a211_mobile', {'1': 45, '2': 40, '3': 15}),
+                'a212_nid': pick('a212_nid', {'1': 68, '2': 32}),
+                'a301': pick('a301'),
+                'a302_gender': pick('a302_gender'),
+                'b101_live_with': pick('b101_live_with'),
+                'b102_hh_members': random.randint(1, 8),
+                'b104_share': int(random.triangular(2000, 40000, 9000)),
+                'b108_worked': pick('b108_worked', {'1': 70}),
+                'b111_main_occupation': pick('b111_main_occupation'),
+            })
+        else:  # fsw
+            dist = pick('district')
+            base.update({
+                'district': dist,
+                'site_code': pick('site_code'),
+                's1_age': age,
+                's2_sexwork': '1',
+                's3_residence': pick('s3_residence'),
+                'a203': age,
+                'a204': pick('a204', {'1': 78, '2': 16}),
+                'a205': pick('a205'),
+                'a206': pick('a206'),
+                'a207': pick('a207', {'00': 30, '01': 22, '05': 20, '08': 12, '10': 8}),
+                'a208': pick('a208', {'1': 40, '2': 42, '3': 18}),
+                'a209': pick('a209', {'1': 60, '2': 40}),
+                'a213': random.randint(0, 4),
+                'a214': random.randint(0, 3),
+                'b101': pick('b101'),
+                'b108': int(random.triangular(3000, 45000, 12000)),
+                'b114': pick('b114'),
+            })
+        # drop any None (choice list absent) so we never store nulls
+        return {k: v for k, v in base.items() if v is not None}

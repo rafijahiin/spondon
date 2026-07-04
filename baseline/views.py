@@ -12,7 +12,9 @@ from accounts.permissions import (
 )
 from submissions.models import KoboSubmission, FormType, SubmissionStatus
 from .duplicate_detector import flag_duplicates_for_partner
+from .insights import compute_insights
 from .models import BaselineSurvey, BaselineResponse, SurveyType
+from .schema import headline, humanize, load_schema
 from .serializers import BaselineSurveySerializer, BaselineResponseSerializer
 
 
@@ -107,6 +109,18 @@ class BaselineResponseViewSet(OrgFilterMixin, ModelViewSet):
         })
 
     @action(detail=False, methods=['get'])
+    def insights(self, request):
+        """Chart-ready aggregation over VERIFIED responses for the /baseline
+        analytics section. Honours ?population= / ?district= via get_queryset."""
+        return Response(compute_insights(self.get_queryset()))
+
+    @action(detail=False, methods=['get'])
+    def schema(self, request):
+        """Field labels + choice maps for both instruments — lets the frontend
+        render coded answers as real question/answer text. Static; cache it."""
+        return Response(load_schema())
+
+    @action(detail=False, methods=['get'])
     def export(self, request):
         qs = self.get_queryset()
         resp = HttpResponse(content_type='text/csv')
@@ -161,8 +175,11 @@ class BaselineVerificationViewSet(ViewSet):
                 'interviewer': s.worker_name,
                 'submitted_at': s.submitted_at,
                 'gps_missing': s.latitude is None,
+                'answer_count': sum(1 for v in raw.values() if v not in ('', None, [])),
                 'duplicate_preview': counts.get((pop, ser.upper()), 0) > 1,
-                'raw_data': raw,
+                # Curated, readable summary + full grouped Q/A for the review card.
+                'headline': headline(pop, raw),
+                'answers': humanize(pop, raw),
             })
         return Response(out)
 
