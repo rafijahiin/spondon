@@ -79,7 +79,12 @@ def _require_all(survey):
     for row in survey:
         row = list(row)
         base_type = (row[0] or '').split()[0]
-        if base_type not in _NO_REQUIRED and not row[5]:
+        # A matrix HEADER row (appearance='label') only renders the choice labels
+        # as column headings — it has no input widget, so making it required is
+        # unsatisfiable and blocks the whole form ("this response is required" on
+        # a row that can't be answered). Never require label-appearance headers.
+        is_matrix_header = (row[10] or '') == 'label'
+        if base_type not in _NO_REQUIRED and not is_matrix_header and not row[5]:
             row[5] = 'yes'
         out.append(row)
     return out
