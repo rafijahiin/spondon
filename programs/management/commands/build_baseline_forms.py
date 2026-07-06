@@ -165,34 +165,23 @@ def _hijra_meta():
         _sr('calculate', 'population',   '', '', calc="'hijra'"),
         _sr('calculate', 'survey_round', '', '', calc="'baseline'"),
 
-        _sr('text', 'questionnaire_serial',
-            'Questionnaire Serial No.', 'প্রশ্নপত্রের সিরিয়াল নং',
-            required='yes',
-            constraint=("pulldata('respondents_hijra','serial','serial',"
-                        + _NORM_SERIAL + ")=''"),
-            cmsg='⚠ This serial is already recorded. Use a new, unique serial. / '
-                 '⚠ এই সিরিয়ালটি ইতিমধ্যে রেকর্ড করা হয়েছে। নতুন, অনন্য সিরিয়াল ব্যবহার করুন।',
-            hint='Must be unique per questionnaire.'),
-        _sr('calculate', '_dup_serial',
-            calc=("pulldata('respondents_hijra','serial','serial',"
-                  + _NORM_SERIAL + ")")),
-        _sr('note', '_dup_warn',
-            '⚠ This serial is already recorded — do not enter the same respondent twice.',
-            '⚠ এই সিরিয়ালটি ইতিমধ্যে রেকর্ড করা হয়েছে — একই উত্তরদাতাকে দুবার লিখবেন না।',
-            relevant="${questionnaire_serial}!='' and ${_dup_serial}!=''"),
+        # Hidden auto-generated record ID (replaces the manual serial). Form-open
+        # timestamp frozen once via once(); submission_id combines it with the
+        # collector + district for dedup / traceability.
+        _sr('calculate', '_id_ts',
+            calc="once(format-date-time(now(),'%Y%m%d%H%M%S'))"),
 
         _sr('text', 'cluster_site_code', 'Cluster/Site Code', 'ক্লাস্টার/সাইট কোড',
             required='yes'),
         _sr('select_one district', 'district', 'District', 'জেলা', required='yes'),
         _sr('calculate', 'district_code', calc=_hijra_dist_code_calc()),
 
-        _sr('text', 'interviewer_name_code', 'Name & Code of Interviewer',
-            'সাক্ষাৎকারগ্রহণকারীর নাম ও কোড', required='yes'),
-        _sr('text', 'supervisor_name_code', 'Name & Code of Supervisor',
-            'সুপারভাইজারের নাম ও কোড'),
+        _sr('select_one dc_hijra', 'dc_code', 'Data Collector', 'ডেটা সংগ্রহকারী',
+            required='yes', hint='Select your name.'),
+        _sr('calculate', 'submission_id',
+            calc="concat(${dc_code},'-',${district_code},'-',${_id_ts})"),
         _sr('date', 'interview_date', 'Interview Date (Day/Month/Year)',
             'সাক্ষাৎকারের তারিখ (দিন/মাস/বছর)', required='yes', default='today()'),
-        _sr('time', 'start_time', 'Start Time', 'শুরুর সময়'),
         _sr('integer', 'interview_attempts', 'Number of Interview Attempts',
             'সাক্ষাৎকারের প্রচেষ্টার সংখ্যা'),
         _sr('select_one interview_language', 'interview_language',
@@ -294,6 +283,9 @@ def _hijra_consent():
             'No consent — thank the respondent and end the interview.',
             'সম্মতি নেই — উত্তরদাতাকে ধন্যবাদ জানিয়ে সাক্ষাৎকার শেষ করুন।',
             relevant="${consent}='2'"),
+        # Auto interview start — captured the moment consent = Yes (device time).
+        _sr('calculate', 'interview_start',
+            calc="once(if(${consent}='1', now(), ''))"),
     ]
 
 
@@ -638,6 +630,7 @@ def _hijra_module1_choices():
         _ch('occupation', '14', 'Unable to work due to illness/disability',
             'অসুস্থতা/প্রতিবন্ধিতার কারণে কাজ করতে অক্ষম'),
         _ch('occupation', '15', 'Other (specify)', 'অন্যান্য (উল্লেখ করুন)'),
+        _ch('occupation', '16', 'No occupation', 'কোনো পেশা নেই'),
     ]
     return rows
 
@@ -661,6 +654,9 @@ def _hijra_survey():
         if r[1] in _Q4_GATE and r[6] and '${q4_3}' not in r[6]:
             r[6] = r[6] + " and ${q4_3}!='2'"
     rows += mod
+    # Auto interview end — captured when the interview-outcome (c3) is recorded.
+    rows.append(_sr('calculate', 'interview_end',
+                    calc="once(if(${c3}!='', now(), ''))"))
     return rows
 
 
@@ -685,6 +681,19 @@ def _hijra_choices():
         _ch('selection_method', '4', 'Other', 'অন্যান্য'),
         _ch('residence_len', '1', 'Less than 6 months', '৬ মাসের কম'),
         _ch('residence_len', '2', '6 months or more', '৬ মাস বা তার বেশি'),
+        # Data collectors (Hijra survey) — enumerator selects their name; code stored.
+        _ch('dc_hijra', '1', 'Md. Abdullah-Al-Mahbub', 'Md. Abdullah-Al-Mahbub'),
+        _ch('dc_hijra', '2', 'Md. Mamun Hawlader', 'Md. Mamun Hawlader'),
+        _ch('dc_hijra', '3', 'Kamal Hossain', 'Kamal Hossain'),
+        _ch('dc_hijra', '4', 'Md Shajjadul Islam Shagor', 'Md Shajjadul Islam Shagor'),
+        _ch('dc_hijra', '5', 'Golam Dastagir Sunny', 'Golam Dastagir Sunny'),
+        _ch('dc_hijra', '6', 'Moklesur Rahman', 'Moklesur Rahman'),
+        _ch('dc_hijra', '7', 'Md. Iqbal Hossain', 'Md. Iqbal Hossain'),
+        _ch('dc_hijra', '8', 'Md. Saiful Islam', 'Md. Saiful Islam'),
+        _ch('dc_hijra', '9', 'Golam Mehedi', 'Golam Mehedi'),
+        _ch('dc_hijra', '10', 'Md. Firoz', 'Md. Firoz'),
+        _ch('dc_hijra', '11', 'Md. Awlad Hossain Ahmmad', 'Md. Awlad Hossain Ahmmad'),
+        _ch('dc_hijra', '12', 'Md. Mahbubul Huq', 'Md. Mahbubul Huq'),
     ]
     rows += _hijra_module1_choices()
     from ._hijra_modules import hijra_module_choices
@@ -734,30 +743,18 @@ def _fsw_meta():
         _sr('calculate', 'organisation', '', '', calc="'CIPRB'"),
         _sr('calculate', 'population',   '', '', calc="'fsw'"),
         _sr('calculate', 'survey_round', '', '', calc="'baseline'"),
-        _sr('text', 'questionnaire_serial',
-            'Questionnaire Serial No.', 'প্রশ্নমালার ক্রমিক নং', required='yes',
-            constraint=("pulldata('respondents_fsw','serial','serial',"
-                        + _NORM_SERIAL + ")=''"),
-            cmsg='⚠ This serial is already recorded. Use a new, unique serial. / '
-                 '⚠ এই সিরিয়ালটি ইতিমধ্যে রেকর্ড করা হয়েছে। নতুন, অনন্য সিরিয়াল ব্যবহার করুন।',
-            hint='Must be unique per questionnaire.'),
-        _sr('calculate', '_dup_serial',
-            calc=("pulldata('respondents_fsw','serial','serial',"
-                  + _NORM_SERIAL + ")")),
-        _sr('note', '_dup_warn',
-            '⚠ This serial is already recorded — do not enter the same respondent twice.',
-            '⚠ এই সিরিয়ালটি ইতিমধ্যে রেকর্ড করা হয়েছে — একই উত্তরদাতাকে দুবার লিখবেন না।',
-            relevant="${questionnaire_serial}!='' and ${_dup_serial}!=''"),
+        # Hidden auto-generated record ID (replaces the manual serial).
+        _sr('calculate', '_id_ts',
+            calc="once(format-date-time(now(),'%Y%m%d%H%M%S'))"),
         _sr('select_one district', 'district', 'District Code', 'জেলা কোড', required='yes'),
         _sr('select_one fsw_site', 'site_code', 'Brothel Site Code', 'ব্রোথেল সাইট কোড',
             required='yes'),
-        _sr('text', 'interviewer_name_code', 'Interviewer Name & Code',
-            'সাক্ষাৎকার গ্রহণকারীর নাম ও কোড', required='yes'),
-        _sr('text', 'supervisor_name_code', 'Supervisor Name & Code',
-            'সুপারভাইজারের নাম ও কোড'),
+        _sr('select_one dc_fsw', 'dc_code', 'Data Collector', 'ডেটা সংগ্রহকারী',
+            required='yes', hint='Select your name.'),
+        _sr('calculate', 'submission_id',
+            calc="concat(${dc_code},'-',${site_code},'-',${_id_ts})"),
         _sr('date', 'interview_date', 'Interview Date (DD/MM/YYYY)',
             'সাক্ষাৎকারের তারিখ (দিন/মাস/বছর)', required='yes', default='today()'),
-        _sr('time', 'start_time', 'Start Time', 'শুরুর সময়'),
         _sr('integer', 'interview_attempts', 'Interview Attempt Number',
             'সাক্ষাৎকার গ্রহণের প্রচেষ্টার সংখ্যা'),
         _sr('select_one interview_language', 'interview_language',
@@ -822,6 +819,9 @@ def _fsw_consent():
             'No consent — thank the respondent and end the interview.',
             'সম্মতি নেই — উত্তরদাতাকে ধন্যবাদ জানিয়ে সাক্ষাৎকার শেষ করুন।',
             relevant="${consent}='2'"),
+        # Auto interview start — captured the moment consent = Yes (device time).
+        _sr('calculate', 'interview_start',
+            calc="once(if(${consent}='1', now(), ''))"),
     ]
 
 
@@ -881,6 +881,9 @@ def _fsw_survey():
     rows += _fsw_screening()
     from ._fsw_modules import fsw_module_survey
     rows += fsw_module_survey()
+    # Auto interview end — captured when the interview-outcome (c3) is recorded.
+    rows.append(_sr('calculate', 'interview_end',
+                    calc="once(if(${c3}!='', now(), ''))"))
     return rows
 
 
@@ -900,6 +903,14 @@ def _fsw_choices():
         _ch('s4_list', '1', 'Yes, she is on the selected list', 'হ্যাঁ, নির্বাচিত তালিকায় আছেন'),
         _ch('s4_list', '2', 'Replacement respondent per protocol (state reason)',
             'প্রোটোকল অনুযায়ী প্রতিস্থাপিত উত্তরদাতা (কারণ উল্লেখ করুন)'),
+        # Data collectors (FSW survey, all female) — enumerator selects name; code stored.
+        _ch('dc_fsw', '1', 'Mst. Mahfuza Sultana', 'Mst. Mahfuza Sultana'),
+        _ch('dc_fsw', '2', 'Dipty Biswas', 'Dipty Biswas'),
+        _ch('dc_fsw', '3', 'Pakhi Akter', 'Pakhi Akter'),
+        _ch('dc_fsw', '4', 'Nargis Khanam', 'Nargis Khanam'),
+        _ch('dc_fsw', '5', 'Sabita Rani Halder', 'Sabita Rani Halder'),
+        _ch('dc_fsw', '6', 'Zannatul Ferdous Khan', 'Zannatul Ferdous Khan'),
+        _ch('dc_fsw', '7', 'Aparna Rani Dey', 'Aparna Rani Dey'),
     ]
     from ._fsw_modules import fsw_module_choices
     rows += fsw_module_choices()
