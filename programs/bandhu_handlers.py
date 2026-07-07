@@ -258,11 +258,14 @@ def _norm_client_id(raw, center):
     centre's district-code prefix (repairs the free-text IDs like '0002' that
     never matched the Mother List). Anything already in DD-NNNN form is kept."""
     raw = str(raw or '').strip().upper()
-    if not raw or '-' in raw or not raw.isdigit():
+    # Only a BARE 4-digit serial gets the district prefix. Anything else — already
+    # DD-NNNN, or a malformed typo like '070002' — is left verbatim rather than
+    # emitting a fake ID that matches no Mother List row.
+    if '-' in raw or not (raw.isdigit() and len(raw) == 4):
         return raw
     from .management.commands.build_bandhu_forms import BANDHU_DISTRICT_CODE
-    dd = BANDHU_DISTRICT_CODE.get(getattr(center, 'district', ''), '')
-    return f'{dd}-{raw.zfill(4)}' if dd else raw
+    dd = BANDHU_DISTRICT_CODE.get(getattr(center, 'district', ''), '00')  # match the form fallback
+    return f'{dd}-{raw}'
 
 
 def _log_service_fields(payload):
@@ -309,7 +312,10 @@ def _bnd_logbook(payload, lat, lng):
     if _str(payload.get('ml_name')):
         reg = dict(payload)
         reg['ml_id_no'] = norm_id or raw_id
-        handle_bandhu_mother_list(reg, lat, lng)
+        resp = handle_bandhu_mother_list(reg, lat, lng)
+        if getattr(resp, 'status_code', 200) >= 400:
+            logger.warning('F-01 inline registration failed (%s) for id %r',
+                           getattr(resp, 'status_code', '?'), reg['ml_id_no'])
     WellnessLogbookEntry.objects.create(
         organisation=ORG, center=center,
         service_date=_date(payload.get('log_date')) or _sub_date(payload),

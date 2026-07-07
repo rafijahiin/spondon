@@ -54,15 +54,11 @@ def compute_I_BND_1_1(org, period_start, period_end):
 def compute_I_BND_1_2(org, period_start, period_end):
     """GBV survivors screened and referred. Target: 120 (MIS doc).
 
-    GBVCase (F-02 register) + F-01 logbook rows flagged gbv — Bandhu records GBV
-    as a logbook tick, so the logbook is the main source."""
-    return (
-        GBVCase.objects.filter(
-            organisation=org, approval_status=APPROVED,
-            incident_date__range=(period_start, period_end),
-        ).count()
-        + _logbook(org, period_start, period_end).filter(gbv=True).count()
-    )
+    SINGLE SOURCE — the F-01 logbook gbv tick. Bandhu records GBV only in the
+    logbook (the F-02 record type is removed from the Bandhu Service Log), so the
+    logbook is counted alone — never summed with GBVCase — to guarantee no
+    double-count if a stray/legacy F-02 row ever coexists."""
+    return _logbook(org, period_start, period_end).filter(gbv=True).count()
 
 
 def compute_I_BND_1_3(org, period_start, period_end):
@@ -73,14 +69,9 @@ def compute_I_BND_1_3(org, period_start, period_end):
     GroupEducationSession(topic~'mental') term was dead weight (no Bandhu
     handler writes GroupEducationSession) that could inflate 1.3 if a generic
     group-ed row ever landed under org=Bandhu, so it is removed."""
-    return (
-        IndividualCounselling.objects.filter(
-            organisation=org, approval_status=APPROVED,
-            session_date__range=(period_start, period_end),
-            issue_psychosocial=True,
-        ).count()
-        + _logbook(org, period_start, period_end).filter(mental_health=True).count()
-    )
+    # SINGLE SOURCE — the F-01 logbook mental_health tick (F-03 record type is
+    # removed from the Bandhu Service Log), counted alone to avoid any double-count.
+    return _logbook(org, period_start, period_end).filter(mental_health=True).count()
 
 
 def compute_I_BND_1_4A(org, period_start, period_end):
@@ -114,13 +105,9 @@ def compute_I_BND_1_5_hiv(org, period_start, period_end):
     framework's definition of "received HIV testing services" and is a
     DEFINITION choice for UNFPA to confirm, not a bug — do not add a result
     filter without their sign-off."""
-    return (
-        HIVSTITestResult.objects.filter(
-            organisation=org, approval_status=APPROVED,
-            testing_date__range=(period_start, period_end),
-        ).count()
-        + _logbook(org, period_start, period_end).filter(htc=True).count()
-    )
+    # SINGLE SOURCE — the F-01 logbook htc tick (F-06 record type is removed from
+    # the Bandhu Service Log), counted alone to avoid any double-count.
+    return _logbook(org, period_start, period_end).filter(htc=True).count()
 
 
 def compute_I_BND_1_5_sti(org, period_start, period_end):
@@ -131,14 +118,9 @@ def compute_I_BND_1_5_sti(org, period_start, period_end):
     for "received STI services" — this is a DEFINITION choice for UNFPA to
     confirm (screening vs treatment/case), not a bug. Do not narrow to
     STI-case/treatment fields without their sign-off."""
-    return (
-        ClinicVisit.objects.filter(
-            organisation=org, approval_status=APPROVED,
-            visit_date__range=(period_start, period_end),
-            sti_screening_done=True,
-        ).count()
-        + _logbook(org, period_start, period_end).filter(sti_screening=True).count()
-    )
+    # SINGLE SOURCE — the F-01 logbook sti_screening tick (F-05 record type is
+    # removed from the Bandhu Service Log), counted alone to avoid any double-count.
+    return _logbook(org, period_start, period_end).filter(sti_screening=True).count()
 
 
 def compute_I_BND_1_6(org, period_start, period_end):

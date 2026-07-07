@@ -95,6 +95,28 @@ class WellnessLogbookTest(TestCase):
         self.assertEqual(bnd.compute_I_BND_1_3('Bandhu', p0, p1), 1)
         self.assertEqual(bnd.compute_I_BND_4_1('Bandhu', p0, p1), 4)
 
+    def test_specific_model_row_does_not_double_the_logbook(self):
+        # Single-source guard: a stray/legacy GBVCase in the same period must NOT
+        # be summed on top of the logbook's gbv count (the review's HIGH finding).
+        from programs.models import GBVCase
+        p0, p1 = date(2026, 6, 1), date(2026, 6, 30)
+        GBVCase.objects.create(
+            organisation='Bandhu', center=self.center,
+            interview_date=date(2026, 6, 10), incident_date=date(2026, 6, 10),
+            approval_status=GBVCase.APPROVED,
+        )
+        _f01(kobo_id='7001', cid='09-0001', log_gbv='yes')
+        e = WellnessLogbookEntry.objects.get()
+        e.approval_status = WellnessLogbookEntry.APPROVED
+        e.save(update_fields=['approval_status'])
+        # logbook-only → 1 (the GBVCase is never added), not 2.
+        self.assertEqual(bnd.compute_I_BND_1_2('Bandhu', p0, p1), 1)
+
+    def test_six_digit_typo_id_left_verbatim(self):
+        _f01(kobo_id='7002', cid='070002')  # DD+serial typed with no dash
+        e = WellnessLogbookEntry.objects.get()
+        self.assertEqual(e.client_id_norm, '070002')  # NOT mangled to a fake '09-070002'
+
     def test_bare_serial_id_normalised_to_dd_nnnn(self):
         _f01(cid='0002')  # bare serial, no district prefix
         e = WellnessLogbookEntry.objects.get()

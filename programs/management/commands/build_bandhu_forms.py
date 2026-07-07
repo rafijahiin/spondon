@@ -666,13 +666,13 @@ def _service_log_survey():
 
 def _service_log_choices():
     rows = list(_centre_choices()) + _shared_choices()
+    # SINGLE SOURCE (2026-07 MIS rewire): every per-client service is recorded as
+    # a tick on the F-01 logbook, which the indicators count. The F-05/F-06/F-02/
+    # F-03/daily-counseling record types are REMOVED so a service can never be
+    # filed twice (logbook flag + specific register) — the code-level guarantee of
+    # "no double-count". Referral + F-08 stay: 1.7 (ART linkage) needs their detail.
     for v, en, bn in [
         ('wellness_logbook', 'Wellness Centre Service Logbook (F-01)', 'F-01 লগবুক'),
-        ('patient_record',   'Patient Record Register (F-05)', 'F-05 রোগীর রেকর্ড'),
-        ('htc',              'HTC Service Register (F-06)', 'F-06 এইচটিসি'),
-        ('gbv',              'GBV Register (F-02)', 'F-02 জিবিভি'),
-        ('mh_counseling',    'Mental Health Counseling (F-03)', 'F-03 মানসিক স্বাস্থ্য'),
-        ('counseling_daily', 'Daily Counseling Form', 'দৈনিক কাউন্সেলিং'),
         ('referral',         'Referral Register', 'রেফারেল রেজিস্টার'),
         ('hiv_identified',   'F-08 HIV Identified (detailed)', 'F-08 এইচআইভি শনাক্ত'),
     ]:
