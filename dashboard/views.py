@@ -1135,28 +1135,39 @@ class ProgramsSummaryView(APIView):
     permission_classes = [IsSupervisorOrManager]
 
     def get(self, request):
-        from tracker.programs_query import PROGRAMS_REGISTRY, ORG_FORM_TYPES, count_programs
+        from tracker.programs_query import (
+            PROGRAMS_REGISTRY, ORG_FORM_TYPES, count_programs,
+            available_program_months,
+        )
 
         partner = request.query_params.get('partner', '')
         if not partner or partner not in allowed_partners(request.user):
             return Response({'detail': 'partner required or access denied.'}, status=400)
 
-        now = timezone.now()
-        try:
-            year = int(request.query_params.get('year', now.year))
-            month = int(request.query_params.get('month', now.month))
-        except (ValueError, TypeError):
-            year, month = now.year, now.month
-
         # Only query form types relevant to this partner
         org_keys = [k for k in ORG_FORM_TYPES.get(partner, list(PROGRAMS_REGISTRY.keys()))
                     if k in PROGRAMS_REGISTRY]
+
+        # This panel is "what's being submitted" — an intake view, so it counts
+        # ALL submissions (not approved-only) and, when no month is requested,
+        # opens on the latest month that actually HAS data. Otherwise a partner
+        # whose data is all from last month lands on an empty current month.
+        avail = available_program_months(partner, org_keys)
+        now = timezone.now()
+        default_y, default_m = (
+            (avail[0]['year'], avail[0]['month']) if avail else (now.year, now.month)
+        )
+        try:
+            year = int(request.query_params.get('year', default_y))
+            month = int(request.query_params.get('month', default_m))
+        except (ValueError, TypeError):
+            year, month = default_y, default_m
 
         # Per-form-type counts for this month
         counts: dict[str, dict] = {}
         for key in org_keys:
             _, label, label_bn, category = PROGRAMS_REGISTRY[key]
-            c = count_programs(key, partner, year, month)
+            c = count_programs(key, partner, year, month, approved_only=False)
             counts[key] = {
                 'count': c,
                 'label': label,
@@ -1173,7 +1184,7 @@ class ProgramsSummaryView(APIView):
 
         # Previous-month comparison
         py, pm = _months_ago(year, month, 1)
-        prev_total = sum(count_programs(key, partner, py, pm) for key in org_keys)
+        prev_total = sum(count_programs(key, partner, py, pm, approved_only=False) for key in org_keys)
         mom_change = (
             round((total - prev_total) / prev_total * 100, 1)
             if prev_total > 0
@@ -1185,15 +1196,15 @@ class ProgramsSummaryView(APIView):
         for i in range(5, -1, -1):
             my, mm = _months_ago(year, month, i)
             clinical = sum(
-                count_programs(k, partner, my, mm)
+                count_programs(k, partner, my, mm, approved_only=False)
                 for k in org_keys if PROGRAMS_REGISTRY[k][3] == 'Clinical'
             )
             community = sum(
-                count_programs(k, partner, my, mm)
+                count_programs(k, partner, my, mm, approved_only=False)
                 for k in org_keys if PROGRAMS_REGISTRY[k][3] == 'Community'
             )
             operations = sum(
-                count_programs(k, partner, my, mm)
+                count_programs(k, partner, my, mm, approved_only=False)
                 for k in org_keys if PROGRAMS_REGISTRY[k][3] == 'Operations'
             )
             monthly_trend.append({
@@ -1213,6 +1224,11 @@ class ProgramsSummaryView(APIView):
             reverse=True,
         )[:8]
 
+        available_months = [
+            {**a, 'label': f"{MONTH_NAMES[a['month']]} {a['year']}"}
+            for a in avail
+        ]
+
         return Response({
             'partner': partner,
             'year': year,
@@ -1224,6 +1240,8 @@ class ProgramsSummaryView(APIView):
             'counts': counts,
             'monthly_trend': monthly_trend,
             'top_forms': top_forms,
+            'available_months': available_months,
+            'counts_all_submissions': True,  # intake view: PENDING + approved
         })
 
 

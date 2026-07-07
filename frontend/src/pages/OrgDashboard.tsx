@@ -235,15 +235,18 @@ export function OrgDashboard({ partner }: Props) {
 
   // ── Real API data ──────────────────────────────────────────────────────────
 
-  const now = new Date()
-  const [year] = useState(now.getFullYear())
-  const [month] = useState(now.getMonth() + 1)
+  // null = let the backend open on the latest month that actually has data
+  // (a partner whose data is all from last month must not land on an empty
+  // current month). Once the user picks from the selector, it pins that month.
+  const [period, setPeriod] = useState<{ year: number; month: number } | null>(null)
 
   const { data: programs, loading: programsLoading } = usePolling<ProgramsSummary>({
-    fetcher: () =>
-      api.get(`/dashboard/programs-summary/?partner=${partner}&year=${year}&month=${month}`)
-         .then((r) => r.data),
+    fetcher: () => {
+      const q = period ? `&year=${period.year}&month=${period.month}` : ''
+      return api.get(`/dashboard/programs-summary/?partner=${partner}${q}`).then((r) => r.data)
+    },
     interval: 60_000,
+    deps: [partner, period?.year, period?.month],
   })
 
   const { data: kpis, loading: kpisLoading } = usePolling<PartnerKPIs>({
@@ -283,6 +286,11 @@ export function OrgDashboard({ partner }: Props) {
   // it shows this org's REAL form types — at 0 before launch — instead of the
   // generic demo list. Empty only while the first request is still loading.
   const topForms = programs?.top_forms ?? []
+  const availableMonths = programs?.available_months ?? []
+  // The month the panel is currently showing (backend echoes it back). Drives
+  // the selector's value so it reflects the auto-picked latest-with-data month.
+  const selectedMonthKey =
+    programs?.year && programs?.month ? `${programs.year}-${programs.month}` : ''
 
   const sparkClinical = monthlyTrend.map((m) => m.clinical)
   const sparkCommunity = monthlyTrend.map((m) => m.community)
@@ -454,19 +462,51 @@ export function OrgDashboard({ partner }: Props) {
       {/* ═══════════════════════════════════════════════════════════════
            FORM GRID
            ═══════════════════════════════════════════════════════════════ */}
-      {topForms.length > 0 && (
+      {(topForms.length > 0 || availableMonths.length > 0) && (
         <section className="section" style={{ marginTop: 56 }}>
           <SectionHead
             kicker={t('org.sectionFormsKicker')}
             title={t('org.sectionFormsTitle')}
             sub={t('org.sectionFormsSub')}
-            right={<SourceChip>{isPHD ? 'PHD 1 + PHD 2' : 'Bandhu 1 + Bandhu 2'}</SourceChip>}
+            right={
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                {availableMonths.length > 0 && (
+                  <select
+                    aria-label="Month"
+                    value={selectedMonthKey}
+                    onChange={(e) => {
+                      const [y, m] = e.target.value.split('-').map(Number)
+                      setPeriod({ year: y, month: m })
+                    }}
+                    style={{
+                      appearance: 'none', cursor: 'pointer',
+                      background: 'var(--surface)', color: 'var(--ink)',
+                      border: '1px solid var(--hair)', borderRadius: 10,
+                      padding: '6px 12px', fontSize: 13, fontWeight: 600,
+                    }}
+                  >
+                    {availableMonths.map((mo) => (
+                      <option key={`${mo.year}-${mo.month}`} value={`${mo.year}-${mo.month}`}>
+                        {mo.label}
+                      </option>
+                    ))}
+                  </select>
+                )}
+                <SourceChip>{isPHD ? 'PHD 1 + PHD 2' : 'Bandhu 1 + Bandhu 2'}</SourceChip>
+              </div>
+            }
           />
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 14 }}>
-            {topForms.map((f) => (
-              <FormBox key={f.key} form={f} />
-            ))}
-          </div>
+          {topForms.length > 0 ? (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 14 }}>
+              {topForms.map((f) => (
+                <FormBox key={f.key} form={f} />
+              ))}
+            </div>
+          ) : (
+            <div className="card" style={{ padding: '28px 20px', color: 'var(--muted)', fontSize: 14 }}>
+              No submissions recorded for this month.
+            </div>
+          )}
         </section>
       )}
 

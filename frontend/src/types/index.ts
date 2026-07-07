@@ -434,6 +434,8 @@ export interface ProgramsSummary {
   counts: Record<string, ProgramsFormCount>
   monthly_trend: ProgramsMonthPoint[]
   top_forms: Array<ProgramsFormCount & { key: string }>
+  available_months?: Array<{ year: number; month: number; label: string }>
+  counts_all_submissions?: boolean
 }
 
 // ─── Indicator types (programs / indicators apps) ────────────────────────────

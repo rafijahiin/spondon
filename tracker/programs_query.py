@@ -35,6 +35,7 @@ PROGRAMS_REGISTRY: dict[str, tuple[str, str, str, str]] = {
     'mh_screening':       ('MHScreening',            'MH Screenings',         'মানসিক স্বাস্থ্য',      'Clinical'),
     'gbv_case':           ('GBVCase',                'GBV Cases',             'জিবিভি কেস',             'Community'),
     'outreach_session':   ('OutreachSession',        'Outreach Sessions',     'আউটরিচ সেশন',           'Community'),
+    'wellness_logbook':   ('WellnessLogbookEntry',   'Wellness Logbook (F-01)','ওয়েলনেস লগবুক',        'Community'),
     'hygiene_kit':        ('SafetyHygieneKit',       'Hygiene Kits',          'হাইজিন কিট',             'Community'),
     'coord_meeting':      ('CoordMeeting',           'Coord. Meetings',       'সমন্বয় সভা',            'Operations'),
     'mobile_camp':        ('MobileHealthCamp',       'Mobile Health Camps',   'মোবাইল ক্যাম্প',        'Operations'),
@@ -74,6 +75,10 @@ ORG_FORM_TYPES: dict[str, list[str]] = {
         # TrainingEvent/CoordMeeting (F-12), IECMaterial (F-14).
         # (Autoclave / ADR / MH-screening / HTC-counselling / group-education
         # / hygiene-kit are NOT Bandhu tools — removed.)
+        # F-01 Wellness Logbook is Bandhu's PRIMARY record — every per-client
+        # service is logged here (they file no separate F-05/F-06), so it must
+        # lead the intake panel or their biggest dataset stays invisible.
+        'wellness_logbook',
         # Clinical
         'clinic_visit', 'hiv_sti_test',
         # Community
@@ -91,24 +96,59 @@ def _get_programs_model(model_name: str):
 
 
 def count_programs(form_type_key: str, organisation: str,
-                   year: int, month: int) -> int:
-    """Count approved programs submissions for a period."""
+                   year: int, month: int, approved_only: bool = True) -> int:
+    """Count programs submissions for a period.
+
+    approved_only=True (default) → APPROVED rows only, as the indicators, alerts
+    and progress tracker require. approved_only=False → every submission that
+    came in (PENDING + MANAGER_APPROVED + APPROVED, excluding REJECTED), for the
+    "what's being submitted" intake panel, which is about field activity, not
+    sign-off."""
     if form_type_key not in PROGRAMS_REGISTRY:
         return 0
     model_name = PROGRAMS_REGISTRY[form_type_key][0]
     try:
         model = _get_programs_model(model_name)
         qs = model.objects.filter(
-            approval_status='APPROVED',
             created_at__year=year,
             created_at__month=month,
         )
+        if approved_only:
+            qs = qs.filter(approval_status='APPROVED')
+        else:
+            qs = qs.exclude(approval_status='REJECTED')
         if organisation:
             qs = qs.filter(organisation=organisation)
         return qs.count()
     except Exception as exc:
         logger.debug('count_programs(%s, %s): %s', form_type_key, organisation, exc)
         return 0
+
+
+def available_program_months(organisation: str, form_type_keys: list[str],
+                             limit: int = 12) -> list[dict]:
+    """Distinct (year, month) that have ANY submission for this partner across
+    the given form types, newest first. Powers the intake panel's month picker
+    so a partner whose data is all from last month is not stranded on an empty
+    current month. Counts all statuses (intake view)."""
+    from django.db.models import DateField
+    from django.db.models.functions import TruncMonth
+    months: set[tuple[int, int]] = set()
+    for key in form_type_keys:
+        if key not in PROGRAMS_REGISTRY:
+            continue
+        try:
+            model = _get_programs_model(PROGRAMS_REGISTRY[key][0])
+            qs = model.objects.exclude(approval_status='REJECTED')
+            if organisation:
+                qs = qs.filter(organisation=organisation)
+            for d in qs.annotate(m=TruncMonth('created_at')).values_list('m', flat=True).distinct():
+                if d:
+                    months.add((d.year, d.month))
+        except Exception as exc:
+            logger.debug('available_program_months(%s, %s): %s', key, organisation, exc)
+    ordered = sorted(months, reverse=True)[:limit]
+    return [{'year': y, 'month': m} for y, m in ordered]
 
 
 def last_submission_programs(form_type_key: str,
