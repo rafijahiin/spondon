@@ -225,10 +225,11 @@ def compute_I_BND_2_6(org, period_start, period_end):
 def compute_I_BND_4_1(org, period_start, period_end):
     """IEC/SBCC materials distributed. Target: 50,000.
 
-    Now reads from IECMaterial (audit FIX 12.2 added the model) plus the
-    legacy outreach/clinic counts so historical rows from before the
-    workshop still contribute. The IECMaterial path is the canonical one
-    going forward."""
+    Canonical source is IECMaterial, plus IEC quantities recorded on outreach
+    (F-04 or_iec). Clinic-visit condoms are NOT counted here — condoms are not
+    IEC/SBCC materials (Ashis / CIPRB MIS review, 2026-07-07); counting them
+    under 4.1 over-stated the indicator, so the ClinicVisit.condoms_distributed
+    term was removed."""
     iec = IECMaterial.objects.filter(
         organisation=org, approval_status=APPROVED,
         date_distributed__range=(period_start, period_end),
@@ -243,12 +244,7 @@ def compute_I_BND_4_1(org, period_start, period_end):
         session_date__range=(period_start, period_end),
     ).aggregate(t=Sum('iec_bcc_materials_distributed'))['t'] or 0
 
-    clinic = ClinicVisit.objects.filter(
-        organisation=org, approval_status=APPROVED,
-        visit_date__range=(period_start, period_end),
-    ).aggregate(t=Sum('condoms_distributed'))['t'] or 0
-
-    return iec + outreach + clinic
+    return iec + outreach
 
 
 def compute_I_BND_4_2(org, period_start, period_end):
