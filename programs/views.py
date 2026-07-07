@@ -718,7 +718,20 @@ def _build_summary(obj, model_type: str) -> str:
         if model_type == 'counselling_report':
             return f"Counselling report {obj.report_date} · {obj.total_count} sessions"
         if model_type == 'outreach_session':
-            return f"Outreach {obj.session_date} · {obj.individual_contacts} contacts · {obj.condoms_distributed_free} condoms"
+            # individual_contacts is 0 for Bandhu (F-04 has no such field), so
+            # only show the parts that carry a value — avoids a uniform, useless
+            # "0 contacts · 0 condoms" on every Bandhu card.
+            bits = []
+            if getattr(obj, 'individual_contacts', 0):
+                bits.append(f"{obj.individual_contacts} contacts")
+            if getattr(obj, 'condoms_distributed_free', 0):
+                bits.append(f"{obj.condoms_distributed_free} condoms")
+            if getattr(obj, 'hiv_aids_sti_knowledge_sessions', 0):
+                bits.append(f"{obj.hiv_aids_sti_knowledge_sessions} awareness")
+            spot = (getattr(obj, 'spot_name', '') or '').strip()
+            if spot:
+                bits.append(spot)
+            return f"Outreach {obj.session_date}" + (' · ' + ' · '.join(bits) if bits else '')
         if model_type == 'group_education':
             return f"Group session {obj.session_date} · {obj.topic[:40]} · {obj.participant_count} participants"
         if model_type == 'referral':
@@ -856,8 +869,28 @@ def _build_narrative(obj, model_type: str) -> str:
             return (f"On {obj.testing_date}, an HIV/STI test was recorded for {who} — "
                     f"HIV result {obj.hiv_result or 'not stated'}, syphilis {obj.syphilis_result or 'not stated'}.")
         if model_type == 'outreach_session':
-            return (f"On {obj.session_date}, an outreach session reached {obj.individual_contacts} individual "
-                    f"contact(s) and distributed {obj.condoms_distributed_free} condoms.")
+            spot = (getattr(obj, 'spot_name', '') or '').strip()
+            at = f" at {spot}" if spot else ""
+            dist = []
+            for lab, f in [('condom', 'condoms_distributed_free'),
+                           ('lubricant', 'lubricants_distributed_free'),
+                           ('awareness session', 'hiv_aids_sti_knowledge_sessions'),
+                           ('IEC material', 'iec_bcc_materials_distributed')]:
+                v = getattr(obj, f, 0) or 0
+                if v:
+                    dist.append(f"{v} {lab}" + ("s" if v != 1 else ""))
+            refs = sum(getattr(obj, f, 0) or 0 for f in (
+                'referral_mental_health', 'referral_gbv', 'referral_legal_services',
+                'referral_htc_hts', 'referral_other'))
+            parts = []
+            if getattr(obj, 'individual_contacts', 0):
+                parts.append(f"reached {obj.individual_contacts} individual contact(s)")
+            if dist:
+                parts.append("distributed " + ", ".join(dist))
+            if refs:
+                parts.append(f"made {refs} referral" + ("s" if refs != 1 else ""))
+            body = "; ".join(parts) if parts else "recorded no distributions or referrals"
+            return f"On {obj.session_date}, an outreach session{at} {body}."
         if model_type == 'wellness_logbook':
             tg_lab = _TG_LABELS.get((getattr(obj, 'tg_code', '') or '').strip(), '')
             who = f"a {tg_lab} client" if tg_lab else "a client"

@@ -292,6 +292,31 @@ def _log_service_fields(payload):
     )
 
 
+def _outreach_service_fields(payload):
+    """Map the F-04 Daily Outreach block → OutreachSession count columns.
+    Shared by the live handler and the backfill command so the mapping never
+    drifts. F-04 has no individual-contacts field, so that column is not set
+    here (it stays 0 for Bandhu; only CIPRB/spondon outreach captures it)."""
+    return dict(
+        condoms_distributed_free=_int(payload.get('or_condom')),
+        lubricants_distributed_free=_int(payload.get('or_lubricant')),
+        hiv_aids_sti_knowledge_sessions=_int(payload.get('or_awareness')),
+        iec_bcc_materials_distributed=_int(payload.get('or_iec')),
+        # OutreachSession has no STI/GH/counseling/recreation columns, so those
+        # referral counts fold into referral_other rather than being aliased onto
+        # the wrong field (H2: or_ref_sti was previously mis-written to htc).
+        referral_mental_health=_int(payload.get('or_ref_mental_health')),
+        referral_gbv=_int(payload.get('or_ref_gbv')),
+        referral_other=(
+            _int(payload.get('or_ref_sti'))
+            + _int(payload.get('or_ref_gh'))
+            + _int(payload.get('or_ref_counseling'))
+            + _int(payload.get('or_ref_recreation'))
+            + _int(payload.get('or_ref_single_education'))
+        ),
+    )
+
+
 def _bnd_logbook(payload, lat, lng):
     """F-01 Wellness Centre Service Logbook → WellnessLogbookEntry.
 
@@ -360,23 +385,7 @@ def _bnd_outreach(payload, lat, lng):
         session_date=_date(payload.get('or_date')) or _sub_date(payload),
         peer_educator_name=_str(payload.get('or_peer_educator')),
         spot_name=_str(payload.get('or_spot')),
-        condoms_distributed_free=_int(payload.get('or_condom')),
-        lubricants_distributed_free=_int(payload.get('or_lubricant')),
-        hiv_aids_sti_knowledge_sessions=_int(payload.get('or_awareness')),
-        iec_bcc_materials_distributed=_int(payload.get('or_iec')),
-        # F-04 referral counts (PositiveSmallIntegerField → store the count, not
-        # a bool). OutreachSession has no STI/GH/counseling/recreation columns,
-        # so those go to referral_other rather than being aliased onto the wrong
-        # field (H2: or_ref_sti was previously mis-written to referral_htc_hts).
-        referral_mental_health=_int(payload.get('or_ref_mental_health')),
-        referral_gbv=_int(payload.get('or_ref_gbv')),
-        referral_other=(
-            _int(payload.get('or_ref_sti'))
-            + _int(payload.get('or_ref_gh'))
-            + _int(payload.get('or_ref_counseling'))
-            + _int(payload.get('or_ref_recreation'))
-            + _int(payload.get('or_ref_single_education'))
-        ),
+        **_outreach_service_fields(payload),
         **_base_kwargs(payload, lat, lng),
     )
     return HttpResponse('Created', status=201)
