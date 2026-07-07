@@ -39,6 +39,7 @@ from .models import (
     GBVCase, Referral, OutreachSession, MobileHealthCamp, WellnessLogbookEntry,
     TrainingEvent, CoordMeeting, IECMaterial,
 )
+from ._base_choices import BANDHU_DISTRICT_CODE
 
 logger = logging.getLogger(__name__)
 
@@ -263,7 +264,6 @@ def _norm_client_id(raw, center):
     # emitting a fake ID that matches no Mother List row.
     if '-' in raw or not (raw.isdigit() and len(raw) == 4):
         return raw
-    from .management.commands.build_bandhu_forms import BANDHU_DISTRICT_CODE
     dd = BANDHU_DISTRICT_CODE.get(getattr(center, 'district', ''), '00')  # match the form fallback
     return f'{dd}-{raw}'
 

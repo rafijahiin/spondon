@@ -158,17 +158,11 @@ def _centre_choices():
     return out
 
 
-# ─── Beneficiary-ID district codes (Bandhu handwritten note, 2026-06-20) ───────
-# Each Wellness Centre sits in one district. The beneficiary ID is composed as
-# {2-digit district code}-{4-digit serial} so every ID has one fixed shape and
-# the service forms' pulldata lookup always resolves. Codes are Bandhu's own,
-# keyed by the centre's district.
-BANDHU_DISTRICT_CODE = {
-    'Bandarban': '01', 'Chittagong': '02', 'Chattogram': '02',
-    'Chandpur': '03', 'Noakhali': '04', 'Sunamganj': '05',
-    'Habiganj': '06', 'Manikganj': '07', 'Narayanganj': '08',
-    'Dhaka': '09',   # Dhaka KP clinic — confirmed as the 9th Bandhu code (2026-06-20).
-}
+# ─── Beneficiary-ID district codes ────────────────────────────────────────────
+# {2-digit district code}-{4-digit serial}. Now sourced from programs/_base_choices
+# so the webhook handler shares the SAME map without importing this openpyxl-bearing
+# module (openpyxl is absent in the prod runtime).
+from programs._base_choices import BANDHU_DISTRICT_CODE  # noqa: E402
 
 
 def _centre_to_district_code():
