@@ -141,6 +141,29 @@ class WellnessLogbookTest(TestCase):
         self.assertEqual(Client.objects.filter(client_id='09-0200').count(), 1)
         self.assertEqual(Client.objects.get(client_id='09-0200').name, 'Existing')
 
+    def test_narrative_describes_the_services_not_just_the_title(self):
+        # The approval card's "In plain language" line must read the service
+        # ticks, not repeat the F-01 title. (Rafi: plain language was problematic.)
+        from programs.views import _build_narrative
+        _f01(cid='05-0010', log_tg='01', log_counseling='yes', log_htc='yes',
+             log_condom='3', log_referral='ART')
+        e = WellnessLogbookEntry.objects.get()
+        text = _build_narrative(e, 'wellness_logbook')
+        self.assertIn('MSM client', text)          # tg_code 01 → MSM
+        self.assertIn('05-0010', text)
+        self.assertIn('HIV test', text)
+        self.assertIn('counselling', text)
+        self.assertIn('3 condoms', text)
+        self.assertIn('ART', text)
+        self.assertNotIn('F-01 logbook', text)     # not the bare title fallback
+
+    def test_narrative_handles_an_empty_logbook_gracefully(self):
+        from programs.views import _build_narrative
+        _f01(cid='09-0011')  # no service ticks
+        e = WellnessLogbookEntry.objects.get()
+        text = _build_narrative(e, 'wellness_logbook')
+        self.assertIn('no services were recorded', text)
+
     def test_backfill_repairs_existing_rows(self):
         # An old-style row: flags empty, bare-serial id — as they exist in prod.
         _f01(cid='0007', log_htc='yes', log_iec='2')

@@ -858,6 +858,31 @@ def _build_narrative(obj, model_type: str) -> str:
         if model_type == 'outreach_session':
             return (f"On {obj.session_date}, an outreach session reached {obj.individual_contacts} individual "
                     f"contact(s) and distributed {obj.condoms_distributed_free} condoms.")
+        if model_type == 'wellness_logbook':
+            tg_lab = _TG_LABELS.get((getattr(obj, 'tg_code', '') or '').strip(), '')
+            who = f"a {tg_lab} client" if tg_lab else "a client"
+            ticks = [lab for lab, f in [
+                ('HIV test', 'htc'), ('STI screening', 'sti_screening'),
+                ('clinical care', 'clinical'), ('GBV support', 'gbv'),
+                ('mental-health support', 'mental_health'), ('counselling', 'counseling'),
+                ('legal support', 'legal'), ('recreation', 'recreation'),
+                ('group education', 'group_edu'),
+            ] if getattr(obj, f, False)]
+            counts = []
+            for lab, f in [('condom', 'condom'), ('condom demo', 'condom_demo'),
+                           ('lubricant', 'lubricant'), ('awareness session', 'awareness'),
+                           ('IEC material', 'iec')]:
+                v = getattr(obj, f, 0) or 0
+                if v:
+                    counts.append(f"{v} {lab}" + ("s" if v != 1 else ""))
+            given = ticks + counts
+            where = obj.center.name if obj.center_id else 'the wellness centre'
+            body = ("received " + ", ".join(given)) if given else "no services were recorded"
+            refs = (getattr(obj, 'referral_codes', '') or '').strip()
+            if refs:
+                body += f"; referred (code {refs})"
+            cid = obj.client_id or '–'
+            return f"On {obj.service_date}, {who} (ID {cid}) at {where} {body}."
         if model_type == 'referral':
             dest = (getattr(obj, 'referred_to', '') or '').strip() or 'a service'
             reason = (getattr(obj, 'referral_reason', '') or '').strip()
