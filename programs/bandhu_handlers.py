@@ -272,7 +272,9 @@ def _log_service_fields(payload):
     """Map the F-01 services block → WellnessLogbookEntry flag/count columns.
     Shared by the live handler and the backfill command."""
     yn = lambda k: _str(payload.get(k)).lower() == 'yes'
-    n = lambda k: _int_or_none(payload.get(k)) or 0
+    # Counts are PositiveIntegerField — clamp to >=0 (some legacy rows carry a
+    # stray negative that violates the DB check constraint).
+    n = lambda k: max(0, _int_or_none(payload.get(k)) or 0)
     return dict(
         tg_code=_str(payload.get('log_tg')),
         sti_screening=yn('log_sti_screening'),

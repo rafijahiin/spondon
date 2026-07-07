@@ -27,26 +27,30 @@ class Command(BaseCommand):
         commit = opts['commit']
         qs = WellnessLogbookEntry.objects.select_related('center')
         total = qs.count()
-        changed = repaired = 0
+        changed = repaired = skipped = 0
         for e in qs.iterator():
-            payload = e.raw_payload or {}
-            fields = _log_service_fields(payload)
-            norm = _norm_client_id(e.client_id, e.center)
-            dirty = False
-            for k, v in fields.items():
-                if getattr(e, k) != v:
-                    setattr(e, k, v)
+            try:
+                payload = e.raw_payload or {}
+                fields = _log_service_fields(payload)
+                norm = _norm_client_id(e.client_id, e.center)
+                dirty = False
+                for k, v in fields.items():
+                    if getattr(e, k) != v:
+                        setattr(e, k, v)
+                        dirty = True
+                if e.client_id_norm != norm:
+                    if norm and norm != (e.client_id or '').strip().upper():
+                        repaired += 1
+                    e.client_id_norm = norm
                     dirty = True
-            if e.client_id_norm != norm:
-                if norm and norm != (e.client_id or '').strip().upper():
-                    repaired += 1
-                e.client_id_norm = norm
-                dirty = True
-            if dirty:
-                changed += 1
-                if commit:
-                    e.save(update_fields=list(fields.keys()) + ['client_id_norm'])
+                if dirty:
+                    changed += 1
+                    if commit:
+                        e.save(update_fields=list(fields.keys()) + ['client_id_norm'])
+            except Exception as exc:  # one bad legacy row must not abort the whole backfill
+                skipped += 1
+                self.stderr.write(f'skip logbook row {e.pk}: {exc}')
         mode = 'COMMITTED' if commit else 'DRY-RUN (no writes)'
         self.stdout.write(self.style.SUCCESS(
             f'{mode}: {changed}/{total} logbook rows updated; '
-            f'{repaired} client IDs normalised to DD-NNNN.'))
+            f'{repaired} client IDs normalised; {skipped} skipped.'))
