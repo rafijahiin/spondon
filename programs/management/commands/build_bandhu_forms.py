@@ -431,14 +431,60 @@ def _service_log_survey():
                  'Which register are you recording?', 'কোন রেজিস্টার পূরণ করছেন?', required='yes',
                  hint='Pick the register/form you are filling now. / এখন যে রেজিস্টার/ফর্ম পূরণ করছেন তা নির্বাচন করুন।')]
 
-    # F-01 Wellness Centre Service Logbook
+    # F-01 Wellness Centre Service Logbook — CONSOLIDATED register-or-log.
+    # The worker types only the 4-digit serial; the DD- district prefix is added
+    # automatically so the ID always matches the Mother List. A NEW client (ID
+    # not found) is registered inline via the ml_* block; a returning client
+    # skips straight to services. One sheet: registration + services in F-01.
     rows += [
         _sr('begin_group', 'grp_logbook', 'F-01 · Wellness Centre Service Logbook',
             'F-01 · ওয়েলনেস সেন্টার সার্ভিস লগবুক', relevant=R('wellness_logbook')),
-        _sr('note','_log_kobo_only','Note: F-01 logbook entries are kept in KoboToolbox only and are NOT counted in SIMPLE — also record each service under F-05/F-06.','দ্রষ্টব্য: F-01 লগবুক শুধু KoboToolbox-এ থাকে, SIMPLE-এ গণনা হয় না — প্রতিটি সেবা F-05/F-06-এও লিখুন।'),
         _sr('date', 'log_date', 'Date', 'তারিখ', required='yes'),
-        _sr('text', 'log_client_id', 'ID #', 'আইডি', required='yes'),
+        _sr('calculate', 'logbook_dist_code', calc=_bandhu_dist_code_calc()),
+        _sr('text', 'log_serial', 'Beneficiary serial (4 digits)',
+            'সুবিধাভোগী ক্রমিক (৪ অঙ্ক)', required='yes',
+            constraint="regex(., '^[0-9]{4}$')",
+            cmsg='Enter exactly 4 digits, e.g. 0001. / ঠিক ৪ অঙ্ক দিন, যেমন 0001।',
+            hint='The district code is added automatically. / জেলা কোড স্বয়ংক্রিয়ভাবে যুক্ত হবে।'),
+        _sr('calculate', 'log_client_id',
+            calc="concat(${logbook_dist_code}, '-', ${log_serial})"),
+        _sr('note', '_log_id_show', '🆔 Client ID: ${log_client_id}',
+            '🆔 ক্লায়েন্ট আইডি: ${log_client_id}', relevant="${log_serial}!=''"),
         *_id_lookup('log_client_id'),
+
+        # ── New client → register inline (only when the ID is not in the Mother List) ──
+        _sr('begin_group', 'grp_log_reg', 'New client — register',
+            'নতুন ক্লায়েন্ট — নিবন্ধন',
+            relevant="${log_client_id}!='' and ${_log_client_id_name}=''"),
+        _sr('note', '_reg_hint', 'This ID is new — please register the client.',
+            'এই আইডি নতুন — অনুগ্রহ করে ক্লায়েন্ট নিবন্ধন করুন।'),
+        _sr('text', 'ml_name', 'Name', 'নাম', required='yes'),
+        _sr('text', 'ml_parent_name', "Father's / Mother's name", 'পিতা/মাতার নাম'),
+        _sr('integer', 'ml_birth_year', 'Birth year', 'জন্ম সাল',
+            constraint='. >= 1940 and . <= 2012', cmsg='1940–2012'),
+        _sr('select_one tg_code', 'ml_gender', 'Gender (TG code)', 'লিঙ্গ (টিজি কোড)'),
+        _sr('text', 'ml_address', 'Current address (area name)', 'বর্তমান ঠিকানা (এলাকার নাম)'),
+        _sr('text', 'ml_spot', 'Spot name', 'স্পটের নাম'),
+        _sr('select_one education', 'ml_education', 'Education', 'শিক্ষা'),
+        _sr('select_one marital', 'ml_marital', 'Marital status', 'বৈবাহিক অবস্থা'),
+        _sr('integer', 'ml_children_u18', 'Number of children under 18',
+            '১৮ বছরের নিচে সন্তান সংখ্যা', relevant="${ml_marital}!='1'"),
+        _sr('select_one occupation', 'ml_occupation', 'Income source (occupation)',
+            'আয়ের উৎস (পেশা)'),
+        _sr('integer', 'ml_avg_day', 'Average sex-work contacts per day', 'দৈনিক গড় যোগাযোগ'),
+        _sr('select_one yn_code', 'ml_needle_drug',
+            'Takes any drug via needle-syringe? (Yes-1/No-0)',
+            'সুঁই-সিরিঞ্জে নেশা গ্রহণ করেন? (হ্যাঁ-১/না-০)'),
+        _sr('select_one yn_code', 'ml_has_nid',
+            'Has a National ID card? (Yes-1/No-0)', 'জাতীয় পরিচয়পত্র আছে? (হ্যাঁ-১/না-০)'),
+        _sr('select_one yn_code', 'ml_fp_method',
+            'Uses any family-planning method? (Yes-1/No-0)',
+            'পরিবার পরিকল্পনার পদ্ধতি ব্যবহার করেন? (হ্যাঁ-১/না-০)',
+            relevant="${ml_marital}!='1'"),
+        _sr('select_one ml_status', 'ml_current_status', 'Current status', 'বর্তমান অবস্থা'),
+        _sr('end_group', 'grp_log_reg'),
+
+        # ── Services provided this visit ──
         _sr('select_one tg_code', 'log_tg', 'TG (Code)', 'টিজি কোড'),
         _sr('note', '_log_services', 'Services provided (enter count where applicable):', ''),
         _sr('integer', 'log_condom', 'Condom', 'কনডম'),
@@ -446,8 +492,9 @@ def _service_log_survey():
         _sr('integer', 'log_lubricant', 'Lubricant', 'লুব্রিকেন্ট'),
         _sr('integer', 'log_awareness', 'Awareness session', 'সচেতনতা সেশন'),
         _sr('integer', 'log_iec', 'IEC distribution', 'আইইসি বিতরণ'),
+        _sr('select_one yes_no', 'log_sti_screening', 'STI screening done', 'এসটিআই স্ক্রিনিং'),
         _sr('select_one yes_no', 'log_clinical', 'Clinical services', 'ক্লিনিক্যাল সেবা'),
-        _sr('select_one yes_no', 'log_htc', 'HTC', 'এইচটিসি'),
+        _sr('select_one yes_no', 'log_htc', 'HTC (HIV test)', 'এইচটিসি (এইচআইভি পরীক্ষা)'),
         _sr('select_one yes_no', 'log_mental_health', 'Mental health', 'মানসিক স্বাস্থ্য'),
         _sr('select_one yes_no', 'log_gbv', 'GBV', 'জিবিভি'),
         _sr('select_one yes_no', 'log_legal', 'Legal support', 'আইনি সহায়তা'),

@@ -253,24 +253,68 @@ def _bnd_hiv_identified(payload, lat, lng):
     return HttpResponse('Created', status=201)
 
 
-def _bnd_logbook(payload, lat, lng):
-    """F-01 Wellness Centre Service Logbook → WellnessLogbookEntry (PENDING).
+def _norm_client_id(raw, center):
+    """Normalise a logbook client ID to DD-NNNN. A bare 4-digit serial gets the
+    centre's district-code prefix (repairs the free-text IDs like '0002' that
+    never matched the Mother List). Anything already in DD-NNNN form is kept."""
+    raw = str(raw or '').strip().upper()
+    if not raw or '-' in raw or not raw.isdigit():
+        return raw
+    from .management.commands.build_bandhu_forms import BANDHU_DISTRICT_CODE
+    dd = BANDHU_DISTRICT_CODE.get(getattr(center, 'district', ''), '')
+    return f'{dd}-{raw.zfill(4)}' if dd else raw
 
-    Persisted as a REVIEWABLE record so every F-01 submission lands in the
-    approval queue (previously this was a Kobo-only no-op). The entry is NOT
-    read by any indicator — the services are counted via the Patient Record
-    (F-05) / HTC (F-06) tools, so retaining F-01 here cannot double-count the
-    numbers. The full submission is preserved in raw_payload for the reviewer.
-    """
+
+def _log_service_fields(payload):
+    """Map the F-01 services block → WellnessLogbookEntry flag/count columns.
+    Shared by the live handler and the backfill command."""
+    yn = lambda k: _str(payload.get(k)).lower() == 'yes'
+    n = lambda k: _int_or_none(payload.get(k)) or 0
+    return dict(
+        tg_code=_str(payload.get('log_tg')),
+        sti_screening=yn('log_sti_screening'),
+        htc=yn('log_htc'),
+        clinical=yn('log_clinical'),
+        gbv=yn('log_gbv'),
+        mental_health=yn('log_mental_health'),
+        counseling=yn('log_counseling'),
+        legal=yn('log_legal'),
+        recreation=yn('log_recreation'),
+        group_edu=yn('log_group_edu'),
+        referral_codes=' '.join(_multi(payload, 'log_referral')),
+        condom=n('log_condom'), condom_demo=n('log_condom_demo'),
+        lubricant=n('log_lubricant'), awareness=n('log_awareness'), iec=n('log_iec'),
+    )
+
+
+def _bnd_logbook(payload, lat, lng):
+    """F-01 Wellness Centre Service Logbook → WellnessLogbookEntry.
+
+    Now the CANONICAL Bandhu per-client service record. The service flags are
+    mapped to columns and READ by the Bandhu service indicators (1.2/1.3/1.5a/
+    1.5b/4.1). Because Bandhu files no F-05/F-06 rows, this logbook is the single
+    source and cannot double-count. The client ID is normalised to DD-NNNN so the
+    service always links to its Mother List registration. Full payload kept in
+    raw_payload for the reviewer."""
     center = _get_center(payload, ORG)
     if not center:
         return HttpResponse('center not found', status=400)
     if _already_exists(WellnessLogbookEntry, payload):
         return HttpResponse('OK', status=200)
+    raw_id = _str(payload.get('log_client_id'))
+    norm_id = _norm_client_id(raw_id, center)
+    # Consolidated F-01 registers a NEW client inline (the ml_* registration
+    # fields are present only when the ID was not found in the Mother List).
+    # Reuse the tested Mother List handler so registration behaves identically.
+    if _str(payload.get('ml_name')):
+        reg = dict(payload)
+        reg['ml_id_no'] = norm_id or raw_id
+        handle_bandhu_mother_list(reg, lat, lng)
     WellnessLogbookEntry.objects.create(
         organisation=ORG, center=center,
         service_date=_date(payload.get('log_date')) or _sub_date(payload),
-        client_id=_str(payload.get('log_client_id')),
+        client_id=raw_id, client_id_norm=norm_id,
+        **_log_service_fields(payload),
         **_base_kwargs(payload, lat, lng),
     )
     return HttpResponse('Created', status=201)

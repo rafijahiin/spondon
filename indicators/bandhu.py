@@ -8,8 +8,18 @@ from programs.models import (
     Client, ClinicVisit, HIVSTITestResult, HTCCounselling,
     IndividualCounselling, GroupEducationSession, OutreachSession,
     GBVCase, Referral, ServiceCenter, TrainingEvent, CoordMeeting, MobileHealthCamp,
-    IECMaterial,
+    IECMaterial, WellnessLogbookEntry,
 )
+
+
+def _logbook(org, period_start, period_end):
+    """APPROVED F-01 logbook rows in the period — the canonical Bandhu service
+    source. Bandhu files no F-05/F-06, so counting these plus the (near-empty)
+    specific-form models is a single source, not a double-count."""
+    return WellnessLogbookEntry.objects.filter(
+        organisation=org, approval_status=APPROVED,
+        service_date__range=(period_start, period_end),
+    )
 from ._centers import active_center_ids
 
 ORG = 'Bandhu'
@@ -42,11 +52,17 @@ def compute_I_BND_1_1(org, period_start, period_end):
 
 
 def compute_I_BND_1_2(org, period_start, period_end):
-    """GBV survivors screened and referred. Target: 120 (MIS doc)."""
-    return GBVCase.objects.filter(
-        organisation=org, approval_status=APPROVED,
-        incident_date__range=(period_start, period_end),
-    ).count()
+    """GBV survivors screened and referred. Target: 120 (MIS doc).
+
+    GBVCase (F-02 register) + F-01 logbook rows flagged gbv — Bandhu records GBV
+    as a logbook tick, so the logbook is the main source."""
+    return (
+        GBVCase.objects.filter(
+            organisation=org, approval_status=APPROVED,
+            incident_date__range=(period_start, period_end),
+        ).count()
+        + _logbook(org, period_start, period_end).filter(gbv=True).count()
+    )
 
 
 def compute_I_BND_1_3(org, period_start, period_end):
@@ -57,11 +73,14 @@ def compute_I_BND_1_3(org, period_start, period_end):
     GroupEducationSession(topic~'mental') term was dead weight (no Bandhu
     handler writes GroupEducationSession) that could inflate 1.3 if a generic
     group-ed row ever landed under org=Bandhu, so it is removed."""
-    return IndividualCounselling.objects.filter(
-        organisation=org, approval_status=APPROVED,
-        session_date__range=(period_start, period_end),
-        issue_psychosocial=True,
-    ).count()
+    return (
+        IndividualCounselling.objects.filter(
+            organisation=org, approval_status=APPROVED,
+            session_date__range=(period_start, period_end),
+            issue_psychosocial=True,
+        ).count()
+        + _logbook(org, period_start, period_end).filter(mental_health=True).count()
+    )
 
 
 def compute_I_BND_1_4A(org, period_start, period_end):
@@ -95,10 +114,13 @@ def compute_I_BND_1_5_hiv(org, period_start, period_end):
     framework's definition of "received HIV testing services" and is a
     DEFINITION choice for UNFPA to confirm, not a bug — do not add a result
     filter without their sign-off."""
-    return HIVSTITestResult.objects.filter(
-        organisation=org, approval_status=APPROVED,
-        testing_date__range=(period_start, period_end),
-    ).count()
+    return (
+        HIVSTITestResult.objects.filter(
+            organisation=org, approval_status=APPROVED,
+            testing_date__range=(period_start, period_end),
+        ).count()
+        + _logbook(org, period_start, period_end).filter(htc=True).count()
+    )
 
 
 def compute_I_BND_1_5_sti(org, period_start, period_end):
@@ -109,11 +131,14 @@ def compute_I_BND_1_5_sti(org, period_start, period_end):
     for "received STI services" — this is a DEFINITION choice for UNFPA to
     confirm (screening vs treatment/case), not a bug. Do not narrow to
     STI-case/treatment fields without their sign-off."""
-    return ClinicVisit.objects.filter(
-        organisation=org, approval_status=APPROVED,
-        visit_date__range=(period_start, period_end),
-        sti_screening_done=True,
-    ).count()
+    return (
+        ClinicVisit.objects.filter(
+            organisation=org, approval_status=APPROVED,
+            visit_date__range=(period_start, period_end),
+            sti_screening_done=True,
+        ).count()
+        + _logbook(org, period_start, period_end).filter(sti_screening=True).count()
+    )
 
 
 def compute_I_BND_1_6(org, period_start, period_end):
@@ -244,7 +269,10 @@ def compute_I_BND_4_1(org, period_start, period_end):
         session_date__range=(period_start, period_end),
     ).aggregate(t=Sum('iec_bcc_materials_distributed'))['t'] or 0
 
-    return iec + outreach
+    logbook = _logbook(org, period_start, period_end).aggregate(
+        t=Sum('iec'))['t'] or 0
+
+    return iec + outreach + logbook
 
 
 def compute_I_BND_4_2(org, period_start, period_end):

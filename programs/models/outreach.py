@@ -112,21 +112,45 @@ class GroupEducationSession(SubmissionBase):
 
 
 class WellnessLogbookEntry(SubmissionBase):
-    """F-01 Wellness Centre Service Logbook — a REVIEWABLE retention record.
+    """F-01 Wellness Centre Service Logbook — the consolidated per-client, per-day
+    service record and the CANONICAL Bandhu service source.
 
-    The F-01 logbook is the centre's own day-book of services. Those services
-    are *counted* via the Patient Record (F-05) and HTC (F-06) tools, so this
-    model is deliberately NOT read by any indicator — keeping it out of the
-    numbers avoids double-counting. It exists so every F-01 submission lands in
-    the approval queue and is preserved in SIMPLE, not only in KoboToolbox. The
-    full submission is kept in raw_payload for the reviewer (audit H1)."""
+    Bandhu records all per-client services here (they do not file the separate
+    F-05/F-06 registers), so as of the 2026-07 MIS review the individual service
+    flags below are mapped to columns and READ by the Bandhu service indicators
+    (1.2 GBV, 1.3 MHPSS, 1.5a STI, 1.5b HIV, 4.1 IEC). Because F-05/F-06 carry no
+    Bandhu rows, counting this logbook is the single source — it does not
+    double-count. The full submission is still kept in raw_payload for review."""
     organisation = models.CharField(max_length=20, choices=ORG_CHOICES, db_index=True)
     center = models.ForeignKey(
         'programs.ServiceCenter', on_delete=models.PROTECT,
         related_name='wellness_logbook_entries',
     )
     service_date = models.DateField(null=True, blank=True, db_index=True)
+    # As-submitted ID kept verbatim for audit; client_id_norm is the DD-NNNN
+    # normalised form the indicators/join use (backfilled from centre + serial).
     client_id = models.CharField(max_length=50, blank=True)
+    client_id_norm = models.CharField(max_length=50, blank=True, db_index=True)
+    tg_code = models.CharField(max_length=10, blank=True)
+
+    # ─── Service flags (F-01 services block) — counted by the Bandhu indicators ──
+    sti_screening = models.BooleanField(default=False)   # → 1.5a STI services
+    htc = models.BooleanField(default=False)             # → 1.5b HIV testing
+    clinical = models.BooleanField(default=False)
+    gbv = models.BooleanField(default=False)             # → 1.2 GBV
+    mental_health = models.BooleanField(default=False)   # → 1.3 MHPSS
+    counseling = models.BooleanField(default=False)
+    legal = models.BooleanField(default=False)
+    recreation = models.BooleanField(default=False)
+    group_edu = models.BooleanField(default=False)
+    referral_codes = models.CharField(max_length=100, blank=True)
+
+    # ─── Service counts ──────────────────────────────────────────────────────
+    condom = models.PositiveIntegerField(default=0)
+    condom_demo = models.PositiveIntegerField(default=0)
+    lubricant = models.PositiveIntegerField(default=0)
+    awareness = models.PositiveIntegerField(default=0)
+    iec = models.PositiveIntegerField(default=0)         # → 4.1 IEC distributed
 
     class Meta:
         ordering = ['-service_date']
