@@ -24,7 +24,10 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         qs = WellnessLogbookEntry.objects.filter(
             organisation='Bandhu',
-            approval_status=WellnessLogbookEntry.PENDING,
+            approval_status__in=[
+                WellnessLogbookEntry.PENDING,
+                WellnessLogbookEntry.MANAGER_APPROVED,  # also promote stage-1 backlog
+            ],
             created_at__lt=CUTOFF,
         )
         n = qs.update(approval_status=WellnessLogbookEntry.APPROVED)
