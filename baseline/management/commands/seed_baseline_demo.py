@@ -81,6 +81,7 @@ class Command(BaseCommand):
         try:
             plan = [('hijra', opts['hijra']), ('fsw', opts['fsw'])]
             made = []
+            used_ids = []
             seq = 0
             for pop, count in plan:
                 for i in range(count):
@@ -90,17 +91,40 @@ class Command(BaseCommand):
                     lat, lng = GEO.get(dist, GEO['dhaka'])
                     jitter = lambda: random.uniform(-0.05, 0.05)
                     gps_missing = random.random() < 0.08
+                    # ── Fieldwork signals (for the monitoring dashboard) ──
+                    iv = random.choice(INTERVIEWERS)          # 'Name / IV-0X'
+                    dc = iv.split('/')[-1].strip()            # collector code IV-0X
+                    submitted = timezone.now() - timedelta(
+                        days=random.randint(0, 18), hours=random.randint(8, 20),
+                        minutes=random.randint(0, 59))
+                    # duration mostly 22–55 min; ~6% suspiciously short (rushed flag)
+                    dur = random.randint(3, 8) if random.random() < 0.06 else int(
+                        random.triangular(22, 55, 38))
+                    start = submitted - timedelta(minutes=dur)
+                    outcome = random.choices(['1', '2', '3', '4'],
+                                             weights=[86, 7, 4, 3], k=1)[0]
+                    # ~4% share a prior submission_id → duplicate flag demo
+                    if used_ids and random.random() < 0.04:
+                        sub_id = random.choice(used_ids)
+                    else:
+                        sub_id = f'{dc}-{dist[:3].upper()}-{seq:05d}'
+                        used_ids.append(sub_id)
+                    raw.update({
+                        'dc_code': dc, 'c3': outcome,
+                        'interview_start': start.strftime('%Y-%m-%dT%H:%M:%S'),
+                        'interview_end': submitted.strftime('%Y-%m-%dT%H:%M:%S'),
+                        'submission_id': sub_id,
+                    })
                     sub = KoboSubmission.objects.create(
                         kobo_id=f'{PREFIX}{pop}-{seq:04d}',
                         form_type=FormType.BASELINE,
                         partner='CIPRB',
-                        worker_name=random.choice(INTERVIEWERS),
+                        worker_name=iv,
                         district=dist.title(),
                         region='',
                         latitude=None if gps_missing else round(lat + jitter(), 6),
                         longitude=None if gps_missing else round(lng + jitter(), 6),
-                        submitted_at=timezone.now() - timedelta(days=random.randint(0, 40),
-                                                                hours=random.randint(0, 23)),
+                        submitted_at=submitted,
                         raw_data=raw,
                         status=SubmissionStatus.PENDING,
                     )

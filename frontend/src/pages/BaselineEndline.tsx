@@ -25,6 +25,7 @@ import { api, apiErrorMessage } from '@/api/client'
 import { usePolling } from '@/hooks/usePolling'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { BarBreakdown, Histogram, DonutBreakdown } from '@/components/ciprb/IndicatorCharts'
+import { FieldworkMonitor, type Monitoring } from '@/components/baseline/FieldworkMonitor'
 
 type Pop = 'hijra' | 'fsw'
 type Lens = 'all' | Pop
@@ -115,6 +116,10 @@ export default function BaselineEndline() {
     fetcher: () => api.get('/baseline/responses/insights/').then((r) => r.data),
     interval: 60_000,
   })
+  const { data: monitoring } = usePolling<Monitoring>({
+    fetcher: () => api.get('/baseline/responses/monitoring/').then((r) => r.data),
+    interval: 30_000,
+  })
   const { data: pending, loading, refetch: refetchPending } = usePolling<PendingItem[]>({
     fetcher: () => api.get('/baseline/verification/').then((r) =>
       Array.isArray(r.data) ? r.data : (r.data?.results ?? [])),
@@ -204,15 +209,12 @@ export default function BaselineEndline() {
         </p>
       </section>
 
-      {/* Headline counts */}
-      <section className="section" style={{ marginTop: 12 }}>
-        <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
-          <Stat label="Pending" value={stats?.pending ?? 0} sub="awaiting your review" accent="var(--coral)" />
-          <Stat label="Verified · Hijra" value={stats?.verified_hijra ?? 0} sub="Bandhu population" />
-          <Stat label="Verified · FSW" value={stats?.verified_fsw ?? 0} sub="PHD population" />
-          <Stat label="Verified total" value={stats?.verified_total ?? 0} accent="var(--unfpa)" />
-          <Stat label="Duplicates" value={stats?.duplicates ?? 0} sub="flagged" accent="var(--amber)" />
-        </div>
+      {/* ── Fieldwork Command Center — the collection monitor ─────────────── */}
+      <section className="section" style={{ marginTop: 16 }}>
+        <div className="kicker" style={{ marginBottom: 12 }}><span className="dot" /> Fieldwork command center · every collected interview</div>
+        {monitoring
+          ? <FieldworkMonitor m={monitoring} />
+          : <div className="card" style={{ padding: 28, textAlign: 'center', color: 'var(--muted)' }}>Loading collection monitor…</div>}
       </section>
 
       {err && (

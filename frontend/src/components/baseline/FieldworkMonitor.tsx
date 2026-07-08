@@ -1,0 +1,342 @@
+/**
+ * Baseline Fieldwork Command Center.
+ *
+ * The operational face of the /baseline monitor: pace against sample target,
+ * per-enumerator and per-district throughput, interview duration & outcome, and
+ * the data-quality flags — computed over EVERY collected interview (pending +
+ * verified), so the team can catch collection problems while they're still
+ * fixable. Source: GET /baseline/responses/monitoring/.
+ */
+import { useState } from 'react'
+import {
+  Users, Clock, MapPin, CheckCircle2, ChevronLeft, ChevronRight,
+  Gauge, Copy, Timer,
+} from 'lucide-react'
+import {
+  ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid,
+} from 'recharts'
+import { BarBreakdown, DonutBreakdown, Histogram } from '@/components/ciprb/IndicatorCharts'
+
+const ORANGE = '#F96000'
+const TEAL = '#0E8F8F'
+
+type Pop = 'hijra' | 'fsw'
+interface Progress { population: Pop; collected: number; target: number | null; pct: number | null }
+interface DayStat {
+  date: string; hijra: number; fsw: number; total: number
+  completed: number; partial: number; refused: number; interrupted: number
+  rushed: number; gps_missing: number
+}
+interface Bucket { name: string; value: number }
+interface Collector {
+  code: string; n: number; avg_min: number | null; completion_pct: number
+  short: number; hijra: number; fsw: number
+}
+export interface Monitoring {
+  total: number
+  by_status: Record<string, number>
+  progress: Progress[]
+  targets: Record<Pop, number>
+  outcomes: Bucket[]
+  districts: Bucket[]
+  sites: Bucket[]
+  daily: { date: string; hijra: number; fsw: number; total: number }[]
+  days: DayStat[]
+  duration: { bands: Bucket[]; avg_min: number | null; median_min: number | null; measured: number }
+  collectors: Collector[]
+  quality: {
+    gps_ok: number; gps_missing: number; gps_pct: number
+    duplicates: number; duplicate_ids: string[]
+    short_interviews: number
+    short_rows: { collector: string; district: string; minutes: number; population: string }[]
+  }
+}
+
+const rec = (b: Bucket[] | undefined): Record<string, number> =>
+  Object.fromEntries((b || []).map((x) => [x.name, x.value]))
+
+const POP = { hijra: 'Hijra / Gender-diverse', fsw: 'Female Sex Worker' } as const
+
+/* ── progress ring — shows % of target when a sample size is set, otherwise a
+ *    neutral count ring (targets are unknown until the protocol confirms them) */
+function Ring({ p }: { p: Progress }) {
+  const hasTarget = p.target != null && p.target > 0 && p.pct != null
+  const R = 52, C = 2 * Math.PI * R
+  const pct = hasTarget ? Math.min(100, p.pct as number) : 100
+  const colour = p.population === 'hijra' ? ORANGE : TEAL
+  return (
+    <div className="card" style={{ display: 'flex', alignItems: 'center', gap: 18, flex: '1 1 300px', minWidth: 280 }}>
+      <div style={{ position: 'relative', width: 128, height: 128, flexShrink: 0 }}>
+        <svg width={128} height={128} style={{ transform: 'rotate(-90deg)' }}>
+          <circle cx={64} cy={64} r={R} fill="none" stroke="var(--hair)" strokeWidth={11} />
+          <circle
+            cx={64} cy={64} r={R} fill="none" stroke={colour} strokeWidth={11}
+            strokeLinecap="round" strokeDasharray={C}
+            strokeDashoffset={C * (1 - pct / 100)}
+            opacity={hasTarget ? 1 : 0.28}
+            style={{ transition: 'stroke-dashoffset .8s cubic-bezier(.22,1,.36,1)' }}
+          />
+        </svg>
+        <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', textAlign: 'center' }}>
+          <div>
+            <div style={{ fontFamily: 'var(--display)', fontStyle: 'italic', fontSize: hasTarget ? 30 : 34, lineHeight: 1, color: colour, fontVariantNumeric: 'tabular-nums' }}>
+              {hasTarget ? `${p.pct}%` : p.collected}
+            </div>
+            <div style={{ fontSize: 10.5, color: 'var(--muted)', marginTop: 2 }}>{hasTarget ? 'of target' : 'interviews'}</div>
+          </div>
+        </div>
+      </div>
+      <div style={{ minWidth: 0 }}>
+        <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--ink)' }}>{POP[p.population]}</div>
+        {hasTarget ? (
+          <>
+            <div style={{ fontFamily: 'var(--display)', fontStyle: 'italic', fontSize: 34, lineHeight: 1.05, color: 'var(--ink)', fontVariantNumeric: 'tabular-nums' }}>
+              {p.collected}<span style={{ fontSize: 17, color: 'var(--muted)', fontStyle: 'normal' }}> / {p.target}</span>
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 3 }}>{(p.target as number) - p.collected} to go</div>
+          </>
+        ) : (
+          <>
+            <div style={{ fontFamily: 'var(--display)', fontStyle: 'italic', fontSize: 34, lineHeight: 1.05, color: 'var(--ink)', fontVariantNumeric: 'tabular-nums' }}>{p.collected}</div>
+            <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 3 }}>collected · target to be set</div>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
+/* ── KPI chip ───────────────────────────────────────────────────────────── */
+function Kpi({ icon, value, label, tone }: { icon: React.ReactNode; value: string; label: string; tone?: string }) {
+  return (
+    <div className="card snug" style={{ display: 'flex', alignItems: 'center', gap: 11, flex: '1 1 150px', minWidth: 150 }}>
+      <span style={{ display: 'grid', placeItems: 'center', width: 34, height: 34, borderRadius: 9, background: tone ? `${tone}1a` : 'rgba(249,96,0,.10)', color: tone || 'var(--unfpa)', flexShrink: 0 }}>{icon}</span>
+      <div style={{ minWidth: 0 }}>
+        <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--ink)', fontVariantNumeric: 'tabular-nums', lineHeight: 1.1 }}>{value}</div>
+        <div style={{ fontSize: 11, color: 'var(--muted)' }}>{label}</div>
+      </div>
+    </div>
+  )
+}
+
+function Card({ kicker, title, right, children, grow = '1 1 320px' }: { kicker: string; title: string; right?: React.ReactNode; children: React.ReactNode; grow?: string }) {
+  return (
+    <div className="card" style={{ padding: 18, flex: grow, minWidth: 280, display: 'flex', flexDirection: 'column' }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 10, gap: 8 }}>
+        <div>
+          <div className="kicker"><span className="dot" style={{ background: ORANGE }} />{kicker}</div>
+          <h4 style={{ margin: '4px 0 0', fontSize: 14.5, fontWeight: 700, color: 'var(--ink)' }}>{title}</h4>
+        </div>
+        {right}
+      </div>
+      <div style={{ flex: 1 }}>{children}</div>
+    </div>
+  )
+}
+
+/* ── enumerator table ───────────────────────────────────────────────────── */
+function CollectorTable({ rows }: { rows: Collector[] }) {
+  const max = Math.max(1, ...rows.map((r) => r.n))
+  return (
+    <div style={{ overflowX: 'auto' }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5 }}>
+        <thead>
+          <tr style={{ textAlign: 'left', color: 'var(--muted)', fontSize: 11, textTransform: 'uppercase', letterSpacing: '.05em' }}>
+            <th style={{ padding: '6px 8px 6px 0' }}>Collector</th>
+            <th style={{ padding: '6px 8px' }}>Interviews</th>
+            <th style={{ padding: '6px 8px' }}>Avg time</th>
+            <th style={{ padding: '6px 8px' }}>Completed</th>
+            <th style={{ padding: '6px 0 6px 8px', textAlign: 'right' }}>Flags</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr key={r.code} style={{ borderTop: '1px solid var(--hair)' }}>
+              <td style={{ padding: '8px 8px 8px 0', fontWeight: 700, color: 'var(--ink)', whiteSpace: 'nowrap' }}>{r.code}</td>
+              <td style={{ padding: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 700, minWidth: 22 }}>{r.n}</span>
+                  <span style={{ flex: 1, minWidth: 60, height: 6, borderRadius: 3, background: 'var(--hair)', overflow: 'hidden' }}>
+                    <span style={{ display: 'block', height: '100%', width: `${(r.n / max) * 100}%`, background: ORANGE }} />
+                  </span>
+                </div>
+              </td>
+              <td style={{ padding: '8px', fontVariantNumeric: 'tabular-nums' }}>{r.avg_min != null ? `${r.avg_min}m` : '—'}</td>
+              <td style={{ padding: '8px', fontVariantNumeric: 'tabular-nums' }}>
+                <span style={{ color: r.completion_pct >= 85 ? 'var(--emerald)' : r.completion_pct >= 70 ? 'var(--amber)' : 'var(--coral)', fontWeight: 700 }}>{r.completion_pct}%</span>
+              </td>
+              <td style={{ padding: '8px 0 8px 8px', textAlign: 'right' }}>
+                {r.short > 0
+                  ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11.5, color: 'var(--coral)', fontWeight: 700 }}><Timer size={13} />{r.short} rushed</span>
+                  : <span style={{ color: 'var(--muted)' }}>—</span>}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+/* ── quality flag card ──────────────────────────────────────────────────── */
+function Flag({ icon, n, label, tone, note }: { icon: React.ReactNode; n: number | string; label: string; tone: string; note?: string }) {
+  return (
+    <div className="card snug" style={{ flex: '1 1 180px', minWidth: 170, borderLeft: `3px solid ${tone}` }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: tone }}>{icon}<span style={{ fontSize: 11.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.04em' }}>{label}</span></div>
+      <div style={{ fontFamily: 'var(--display)', fontStyle: 'italic', fontSize: 32, lineHeight: 1.1, color: 'var(--ink)', fontVariantNumeric: 'tabular-nums', marginTop: 2 }}>{n}</div>
+      {note && <div style={{ fontSize: 11.5, color: 'var(--muted)' }}>{note}</div>}
+    </div>
+  )
+}
+
+function TimelineTip({ active, payload, label }: any) {
+  if (!active || !payload?.length) return null
+  return (
+    <div style={{ background: 'var(--surface)', border: '1px solid var(--hair)', borderRadius: 8, padding: '8px 10px', fontSize: 12, boxShadow: '0 6px 20px rgba(0,0,0,.12)' }}>
+      <div style={{ fontWeight: 700, marginBottom: 3 }}>{label}</div>
+      {payload.map((p: any) => (
+        <div key={p.name} style={{ color: p.color }}>{p.name}: <b>{p.value}</b></div>
+      ))}
+    </div>
+  )
+}
+
+/* ── daily update — the "previous day" digest NK asked for, in-dashboard ── */
+function DStat({ value, label, accent, big }: { value: number; label: string; accent?: string; big?: boolean }) {
+  return (
+    <div>
+      <div style={{ fontFamily: 'var(--display)', fontStyle: 'italic', fontSize: big ? 40 : 26, lineHeight: 1, color: accent || 'var(--ink)', fontVariantNumeric: 'tabular-nums' }}>{value}</div>
+      <div style={{ fontSize: 11.5, color: 'var(--muted)', marginTop: 2 }}>{label}</div>
+    </div>
+  )
+}
+
+function DailyUpdate({ days }: { days: DayStat[] }) {
+  const [i, setI] = useState(Math.max(0, days.length - 1))
+  if (!days.length) return null
+  const idx = Math.min(i, days.length - 1)
+  const d = days[idx]
+  const issues = d.rushed + d.gps_missing
+  const nice = (() => {
+    try { return new Date(d.date + 'T00:00:00').toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }) }
+    catch { return d.date }
+  })()
+  const chip = { display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 700, padding: '4px 10px', borderRadius: 999 } as const
+  return (
+    <div className="card" style={{ padding: 18, borderLeft: `3px solid ${ORANGE}` }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
+        <div>
+          <div className="kicker"><span className="dot" style={{ background: ORANGE }} />Daily update · previous day</div>
+          <h3 style={{ margin: '4px 0 0', fontSize: 19, fontWeight: 800, color: 'var(--ink)' }}>{nice}</h3>
+        </div>
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+          <button className="pill" onClick={() => setI(Math.max(0, idx - 1))} disabled={idx <= 0} style={{ display: 'grid', placeItems: 'center', padding: '6px 8px' }} aria-label="Previous day"><ChevronLeft size={15} /></button>
+          <select value={idx} onChange={(e) => setI(Number(e.target.value))} style={{ appearance: 'none', cursor: 'pointer', background: 'var(--surface)', color: 'var(--ink)', border: '1px solid var(--hair)', borderRadius: 9, padding: '6px 12px', fontSize: 12.5, fontWeight: 600 }}>
+            {days.map((dd, k) => <option key={dd.date} value={k}>{dd.date}</option>)}
+          </select>
+          <button className="pill" onClick={() => setI(Math.min(days.length - 1, idx + 1))} disabled={idx >= days.length - 1} style={{ display: 'grid', placeItems: 'center', padding: '6px 8px' }} aria-label="Next day"><ChevronRight size={15} /></button>
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', gap: 22, flexWrap: 'wrap', alignItems: 'flex-end', marginTop: 14 }}>
+        <DStat big value={d.total} label="interviews collected" accent={ORANGE} />
+        <DStat value={d.hijra} label="Hijra" />
+        <DStat value={d.fsw} label="FSW" />
+        <div style={{ borderLeft: '1px solid var(--hair)', paddingLeft: 22, display: 'flex', gap: 22 }}>
+          <DStat value={d.completed} label="completed" accent="var(--emerald)" />
+          <DStat value={d.partial} label="partial" />
+          <DStat value={d.refused} label="refused" />
+        </div>
+      </div>
+
+      <div style={{ marginTop: 15, display: 'flex', gap: 9, flexWrap: 'wrap', alignItems: 'center' }}>
+        <span style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.05em' }}>Quality flags</span>
+        {issues === 0
+          ? <span style={{ ...chip, color: 'var(--emerald)', background: 'rgba(14,143,80,.10)' }}><CheckCircle2 size={14} />No flags this day</span>
+          : <>
+              {d.rushed > 0 && <span style={{ ...chip, color: '#E5484D', background: 'rgba(229,72,77,.10)' }}><Timer size={13} />{d.rushed} rushed (&lt;10m)</span>}
+              {d.gps_missing > 0 && <span style={{ ...chip, color: '#E5484D', background: 'rgba(229,72,77,.10)' }}><MapPin size={13} />{d.gps_missing} missing GPS</span>}
+            </>}
+      </div>
+    </div>
+  )
+}
+
+export function FieldworkMonitor({ m }: { m: Monitoring }) {
+  const verified = m.by_status?.approved ?? m.by_status?.APPROVED ?? 0
+  const pending = m.by_status?.pending ?? m.by_status?.PENDING ?? 0
+  const completedPct = (() => {
+    const c = m.outcomes.find((o) => o.name === 'Completed')?.value ?? 0
+    const t = m.outcomes.reduce((s, o) => s + o.value, 0)
+    return t ? Math.round((100 * c) / t) : 0
+  })()
+
+  return (
+    <section style={{ marginTop: 8 }}>
+      <DailyUpdate days={m.days} />
+      {/* progress rings */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, marginTop: 14 }}>
+        {m.progress.map((p) => <Ring key={p.population} p={p} />)}
+        <div className="card" style={{ flex: '1 1 260px', minWidth: 240, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+          <div style={{ fontSize: 11.5, fontWeight: 600, letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--muted)' }}>Interviews collected</div>
+          <div style={{ fontFamily: 'var(--display)', fontStyle: 'italic', fontSize: 48, lineHeight: 1, color: 'var(--unfpa)', fontVariantNumeric: 'tabular-nums' }}>{m.total}</div>
+          <div style={{ fontSize: 12.5, color: 'var(--muted)', marginTop: 4 }}>{verified} verified · {pending} awaiting sign-off</div>
+        </div>
+      </div>
+
+      {/* KPI strip */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginTop: 14 }}>
+        <Kpi icon={<Users size={17} />} value={String(m.total)} label="Total interviews" />
+        <Kpi icon={<CheckCircle2 size={17} />} value={`${completedPct}%`} label="Completed outcome" tone="#0E8F8F" />
+        <Kpi icon={<Clock size={17} />} value={m.duration.avg_min != null ? `${m.duration.avg_min}m` : '—'} label="Avg interview" />
+        <Kpi icon={<MapPin size={17} />} value={`${m.quality.gps_pct}%`} label="GPS captured" />
+        <Kpi icon={<Copy size={17} />} value={String(m.quality.duplicates)} label="Duplicates" tone={m.quality.duplicates ? '#E5484D' : undefined} />
+        <Kpi icon={<Timer size={17} />} value={String(m.quality.short_interviews)} label="Rushed (<10m)" tone={m.quality.short_interviews ? '#E5484D' : undefined} />
+      </div>
+
+      {/* timeline + outcomes */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, marginTop: 14 }}>
+        <Card kicker="Collection pace" title="Interviews per day" grow="2 1 460px" right={<span style={{ fontSize: 11.5, color: 'var(--muted)' }}>{m.daily.length} days</span>}>
+          <div style={{ height: 210 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={m.daily} margin={{ top: 6, right: 8, left: -18, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="gH" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={ORANGE} stopOpacity={0.5} /><stop offset="100%" stopColor={ORANGE} stopOpacity={0.02} /></linearGradient>
+                  <linearGradient id="gF" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={TEAL} stopOpacity={0.45} /><stop offset="100%" stopColor={TEAL} stopOpacity={0.02} /></linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--hair)" vertical={false} />
+                <XAxis dataKey="date" tick={{ fontSize: 10, fill: 'var(--muted)' }} tickFormatter={(d) => String(d).slice(5)} interval="preserveStartEnd" />
+                <YAxis tick={{ fontSize: 10, fill: 'var(--muted)' }} allowDecimals={false} width={30} />
+                <Tooltip content={<TimelineTip />} />
+                <Area type="monotone" dataKey="hijra" name="Hijra" stackId="1" stroke={ORANGE} fill="url(#gH)" strokeWidth={2} />
+                <Area type="monotone" dataKey="fsw" name="FSW" stackId="1" stroke={TEAL} fill="url(#gF)" strokeWidth={2} />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </Card>
+        <DonutBreakdown kicker="Interview outcome" title="How interviews ended" data={rec(m.outcomes)} />
+      </div>
+
+      {/* duration + districts */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, marginTop: 14 }}>
+        <Histogram kicker="Interview duration" title={`Length distribution · median ${m.duration.median_min ?? '—'}m`} data={rec(m.duration.bands)} />
+        <BarBreakdown kicker="Coverage" title="Interviews by district" data={rec(m.districts)} />
+      </div>
+
+      {/* enumerators */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, marginTop: 14 }}>
+        <Card kicker="Field team" title="Enumerator throughput & quality" grow="1 1 100%">
+          <CollectorTable rows={m.collectors} />
+        </Card>
+      </div>
+
+      {/* quality flags */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginTop: 14 }}>
+        <Flag icon={<MapPin size={15} />} n={`${m.quality.gps_pct}%`} label="GPS captured" tone="#0E8F8F" note={`${m.quality.gps_missing} missing location`} />
+        <Flag icon={<Copy size={15} />} n={m.quality.duplicates} label="Duplicate ids" tone={m.quality.duplicates ? '#E5484D' : '#0E8F8F'} note={m.quality.duplicates ? 'needs review' : 'none detected'} />
+        <Flag icon={<Timer size={15} />} n={m.quality.short_interviews} label="Rushed interviews" tone={m.quality.short_interviews ? '#E5484D' : '#0E8F8F'} note="under 10 minutes" />
+        <Flag icon={<Gauge size={15} />} n={`${m.duration.avg_min ?? '—'}m`} label="Median / avg length" tone="#F96000" note={`${m.duration.measured} timed`} />
+      </div>
+    </section>
+  )
+}

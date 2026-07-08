@@ -13,6 +13,7 @@ from accounts.permissions import (
 from submissions.models import KoboSubmission, FormType, SubmissionStatus
 from .duplicate_detector import flag_duplicates_for_partner
 from .insights import compute_insights
+from .monitoring import compute_monitoring
 from .models import BaselineSurvey, BaselineResponse, SurveyType
 from .schema import headline, humanize, load_schema
 from .serializers import BaselineSurveySerializer, BaselineResponseSerializer
@@ -113,6 +114,17 @@ class BaselineResponseViewSet(OrgFilterMixin, ModelViewSet):
         """Chart-ready aggregation over VERIFIED responses for the /baseline
         analytics section. Honours ?population= / ?district= via get_queryset."""
         return Response(compute_insights(self.get_queryset()))
+
+    @action(detail=False, methods=['get'])
+    def monitoring(self, request):
+        """Fieldwork + data-quality monitoring over ALL collected baseline
+        submissions (pending + approved) — the collection command center. Reads
+        the submissions directly (not just verified rows) because monitoring is
+        about the collection itself: pace, per-site/enumerator throughput,
+        interview duration/outcome, and the quality flags."""
+        from submissions.models import KoboSubmission, FormType
+        subs = KoboSubmission.objects.filter(form_type=FormType.BASELINE)
+        return Response(compute_monitoring(subs))
 
     @action(detail=False, methods=['get'])
     def schema(self, request):
