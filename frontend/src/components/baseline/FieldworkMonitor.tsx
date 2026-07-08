@@ -9,8 +9,7 @@
  */
 import { useState } from 'react'
 import {
-  Users, Clock, MapPin, CheckCircle2, ChevronLeft, ChevronRight,
-  Gauge, Copy, Timer,
+  Users, Clock, MapPin, CheckCircle2, Gauge, Copy, Timer,
 } from 'lucide-react'
 import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid,
@@ -211,53 +210,104 @@ function DStat({ value, label, accent, big }: { value: number; label: string; ac
   )
 }
 
-function DailyUpdate({ days }: { days: DayStat[] }) {
-  const [i, setI] = useState(Math.max(0, days.length - 1))
+const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+const isoLocal = (dt: Date) => `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`
+
+function DailyCalendar({ days }: { days: DayStat[] }) {
+  const byDate = new Map(days.map((d) => [d.date, d]))
+  const sortedDates = [...days.map((d) => d.date)].sort()
+  const [sel, setSel] = useState(sortedDates.length ? sortedDates[sortedDates.length - 1] : '')
   if (!days.length) return null
-  const idx = Math.min(i, days.length - 1)
-  const d = days[idx]
-  const issues = d.rushed + d.gps_missing
-  const nice = (() => {
-    try { return new Date(d.date + 'T00:00:00').toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }) }
-    catch { return d.date }
-  })()
+
+  const first = new Date(sortedDates[0] + 'T00:00:00')
+  const last = new Date(sortedDates[sortedDates.length - 1] + 'T00:00:00')
+  const gridStart = new Date(first); gridStart.setDate(gridStart.getDate() - gridStart.getDay())
+  const gridEnd = new Date(last); gridEnd.setDate(gridEnd.getDate() + (6 - gridEnd.getDay()))
+  const cells: Date[] = []
+  for (const c = new Date(gridStart); c <= gridEnd; c.setDate(c.getDate() + 1)) cells.push(new Date(c))
+  const weeks: Date[][] = []
+  for (let i = 0; i < cells.length; i += 7) weeks.push(cells.slice(i, i + 7))
+  const max = Math.max(1, ...days.map((d) => d.total))
+
+  const d = byDate.get(sel)
   const chip = { display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 700, padding: '4px 10px', borderRadius: 999 } as const
+  const nice = d ? (() => { try { return new Date(d.date + 'T00:00:00').toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }) } catch { return d.date } })() : ''
+
   return (
     <div className="card" style={{ padding: 18, borderLeft: `3px solid ${ORANGE}` }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <div className="kicker"><span className="dot" style={{ background: ORANGE }} />Daily update · previous day</div>
-          <h3 style={{ margin: '4px 0 0', fontSize: 19, fontWeight: 800, color: 'var(--ink)' }}>{nice}</h3>
+          <div className="kicker"><span className="dot" style={{ background: ORANGE }} />Collection calendar</div>
+          <h3 style={{ margin: '4px 0 0', fontSize: 16, fontWeight: 800, color: 'var(--ink)' }}>Pick a day to see its update</h3>
         </div>
-        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-          <button className="pill" onClick={() => setI(Math.max(0, idx - 1))} disabled={idx <= 0} style={{ display: 'grid', placeItems: 'center', padding: '6px 8px' }} aria-label="Previous day"><ChevronLeft size={15} /></button>
-          <select value={idx} onChange={(e) => setI(Number(e.target.value))} style={{ appearance: 'none', cursor: 'pointer', background: 'var(--surface)', color: 'var(--ink)', border: '1px solid var(--hair)', borderRadius: 9, padding: '6px 12px', fontSize: 12.5, fontWeight: 600 }}>
-            {days.map((dd, k) => <option key={dd.date} value={k}>{dd.date}</option>)}
-          </select>
-          <button className="pill" onClick={() => setI(Math.min(days.length - 1, idx + 1))} disabled={idx >= days.length - 1} style={{ display: 'grid', placeItems: 'center', padding: '6px 8px' }} aria-label="Next day"><ChevronRight size={15} /></button>
-        </div>
-      </div>
-
-      <div style={{ display: 'flex', gap: 22, flexWrap: 'wrap', alignItems: 'flex-end', marginTop: 14 }}>
-        <DStat big value={d.total} label="interviews collected" accent={ORANGE} />
-        <DStat value={d.hijra} label="Hijra" />
-        <DStat value={d.fsw} label="FSW" />
-        <div style={{ borderLeft: '1px solid var(--hair)', paddingLeft: 22, display: 'flex', gap: 22 }}>
-          <DStat value={d.completed} label="completed" accent="var(--emerald)" />
-          <DStat value={d.partial} label="partial" />
-          <DStat value={d.refused} label="refused" />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11, color: 'var(--muted)' }}>
+          <span>fewer</span>
+          {[0.18, 0.4, 0.62, 0.85, 1].map((o) => <span key={o} style={{ width: 13, height: 13, borderRadius: 3, background: `rgba(249,96,0,${o})` }} />)}
+          <span>more</span>
+          <span style={{ width: 13, height: 13, borderRadius: 3, background: 'transparent', border: '1.5px solid #E5484D', marginLeft: 6 }} /><span>flagged</span>
         </div>
       </div>
 
-      <div style={{ marginTop: 15, display: 'flex', gap: 9, flexWrap: 'wrap', alignItems: 'center' }}>
-        <span style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.05em' }}>Quality flags</span>
-        {issues === 0
-          ? <span style={{ ...chip, color: 'var(--emerald)', background: 'rgba(14,143,80,.10)' }}><CheckCircle2 size={14} />No flags this day</span>
-          : <>
-              {d.rushed > 0 && <span style={{ ...chip, color: '#E5484D', background: 'rgba(229,72,77,.10)' }}><Timer size={13} />{d.rushed} rushed (&lt;10m)</span>}
-              {d.gps_missing > 0 && <span style={{ ...chip, color: '#E5484D', background: 'rgba(229,72,77,.10)' }}><MapPin size={13} />{d.gps_missing} missing GPS</span>}
-            </>}
+      {/* calendar grid */}
+      <div style={{ marginTop: 14, overflowX: 'auto' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(38px, 1fr))', gap: 6, minWidth: 300 }}>
+          {WEEKDAYS.map((w) => <div key={w} style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--muted)', textAlign: 'center', textTransform: 'uppercase', letterSpacing: '.03em' }}>{w}</div>)}
+          {weeks.flat().map((dt) => {
+            const key = isoLocal(dt)
+            const stat = byDate.get(key)
+            const n = stat?.total ?? 0
+            const inRange = dt >= first && dt <= last
+            const flagged = stat ? (stat.rushed + stat.gps_missing) > 0 : false
+            const isSel = key === sel
+            const bg = n > 0 ? `rgba(249,96,0,${0.18 + 0.82 * (n / max)})` : (inRange ? 'var(--hair)' : 'transparent')
+            const textCol = n / max > 0.55 ? '#fff' : 'var(--ink)'
+            return (
+              <button
+                key={key}
+                onClick={() => stat && setSel(key)}
+                title={`${key} · ${n} interview${n === 1 ? '' : 's'}${flagged ? ` · ${(stat!.rushed + stat!.gps_missing)} flag(s)` : ''}`}
+                disabled={!stat}
+                style={{
+                  position: 'relative', aspectRatio: '1 / 1', borderRadius: 7, background: bg,
+                  border: isSel ? `2px solid ${ORANGE}` : flagged ? '1.5px solid #E5484D' : '1px solid var(--hair)',
+                  cursor: stat ? 'pointer' : 'default', color: inRange ? textCol : 'var(--muted)',
+                  opacity: inRange ? 1 : 0.35, display: 'flex', flexDirection: 'column',
+                  alignItems: 'center', justifyContent: 'center', padding: 2, transition: 'transform .12s',
+                }}
+              >
+                <span style={{ fontSize: 11, fontWeight: 600, lineHeight: 1 }}>{dt.getDate()}</span>
+                {n > 0 && <span style={{ fontSize: 12.5, fontWeight: 800, fontVariantNumeric: 'tabular-nums', lineHeight: 1.1 }}>{n}</span>}
+              </button>
+            )
+          })}
+        </div>
       </div>
+
+      {/* selected-day detail */}
+      {d && (
+        <div style={{ marginTop: 16, paddingTop: 15, borderTop: '1px solid var(--hair)' }}>
+          <h4 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: 'var(--ink)' }}>{nice}</h4>
+          <div style={{ display: 'flex', gap: 22, flexWrap: 'wrap', alignItems: 'flex-end', marginTop: 12 }}>
+            <DStat big value={d.total} label="interviews" accent={ORANGE} />
+            <DStat value={d.hijra} label="Hijra" />
+            <DStat value={d.fsw} label="FSW" />
+            <div style={{ borderLeft: '1px solid var(--hair)', paddingLeft: 22, display: 'flex', gap: 22 }}>
+              <DStat value={d.completed} label="completed" accent="var(--emerald)" />
+              <DStat value={d.partial} label="partial" />
+              <DStat value={d.refused} label="refused" />
+            </div>
+          </div>
+          <div style={{ marginTop: 14, display: 'flex', gap: 9, flexWrap: 'wrap', alignItems: 'center' }}>
+            <span style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.05em' }}>Quality flags</span>
+            {(d.rushed + d.gps_missing) === 0
+              ? <span style={{ ...chip, color: 'var(--emerald)', background: 'rgba(14,143,80,.10)' }}><CheckCircle2 size={14} />No flags this day</span>
+              : <>
+                  {d.rushed > 0 && <span style={{ ...chip, color: '#E5484D', background: 'rgba(229,72,77,.10)' }}><Timer size={13} />{d.rushed} rushed (&lt;10m)</span>}
+                  {d.gps_missing > 0 && <span style={{ ...chip, color: '#E5484D', background: 'rgba(229,72,77,.10)' }}><MapPin size={13} />{d.gps_missing} missing GPS</span>}
+                </>}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -273,7 +323,7 @@ export function FieldworkMonitor({ m }: { m: Monitoring }) {
 
   return (
     <section style={{ marginTop: 8 }}>
-      <DailyUpdate days={m.days} />
+      <DailyCalendar days={m.days} />
       {/* progress rings */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, marginTop: 14 }}>
         {m.progress.map((p) => <Ring key={p.population} p={p} />)}
@@ -308,8 +358,8 @@ export function FieldworkMonitor({ m }: { m: Monitoring }) {
                 <XAxis dataKey="date" tick={{ fontSize: 10, fill: 'var(--muted)' }} tickFormatter={(d) => String(d).slice(5)} interval="preserveStartEnd" />
                 <YAxis tick={{ fontSize: 10, fill: 'var(--muted)' }} allowDecimals={false} width={30} />
                 <Tooltip content={<TimelineTip />} />
-                <Area type="monotone" dataKey="hijra" name="Hijra" stackId="1" stroke={ORANGE} fill="url(#gH)" strokeWidth={2} />
-                <Area type="monotone" dataKey="fsw" name="FSW" stackId="1" stroke={TEAL} fill="url(#gF)" strokeWidth={2} />
+                <Area type="monotone" dataKey="hijra" name="Hijra" stackId="1" stroke={ORANGE} fill="url(#gH)" strokeWidth={2} isAnimationActive={false} />
+                <Area type="monotone" dataKey="fsw" name="FSW" stackId="1" stroke={TEAL} fill="url(#gF)" strokeWidth={2} isAnimationActive={false} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
