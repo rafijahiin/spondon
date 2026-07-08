@@ -164,6 +164,41 @@ def _restructure_violence(rows):
     return out
 
 
+def _add_other_specify(survey, choices):
+    """Systemic fix for NK's recurring 'Other has no text box' finding: after
+    EVERY select_one/select_multiple whose choice list carries a standalone
+    'Other' / 'Other (specify)' option, guarantee an inline <field>_other text
+    box gated on that option. COMPOSITE categories where 'Other' is bundled into
+    a real code (e.g. 'Intersex/Other', 'Queer/Non-binary/Other', 'Madrasa/Other')
+    are deliberately NOT matched — only a standalone Other gets a box. Idempotent:
+    a field that already has its _other row is left untouched. This means any Other
+    option added in future automatically gets its box — the class of bug stops
+    recurring instead of being chased one report at a time."""
+    other_code = {}
+    for row in choices:
+        ln, code, en = row[0], str(row[1]), str(row[2] or '')
+        if ln in other_code:
+            continue
+        if _re.fullmatch(r'others?\s*(\(.*\))?', en.strip(), _re.I):
+            other_code[ln] = code
+    names = {r[1] for r in survey if r[1]}
+    out = []
+    for r in survey:
+        out.append(r)
+        m = _re.match(r'(select_one|select_multiple)\s+(\S+)', str(r[0] or ''))
+        if not m:
+            continue
+        field, ln = r[1], m.group(2)
+        code = other_code.get(ln)
+        if not code or f'{field}_other' in names:
+            continue
+        rel = (f"selected(${{{field}}},'{code}')" if m.group(1) == 'select_multiple'
+               else f"${{{field}}}='{code}'")
+        out.append(_sr('text', field + '_other', 'Other (specify)',
+                       'অন্যান্য (উল্লেখ করুন)', relevant=rel))
+    return out
+
+
 def _wb(form_id, form_title, survey, choices):
     wb = openpyxl.Workbook()
     wb.remove(wb.active)
@@ -1067,8 +1102,10 @@ class Command(BaseCommand):
         for f in FORMS:
             if only and f['id'] != only:
                 continue
-            survey  = _require_all(f['survey']())
             choices = f['choices']()
+            # Guarantee an inline text box after every standalone 'Other' option
+            # (systemic fix), THEN mark inputs required.
+            survey  = _require_all(_add_other_specify(f['survey'](), choices))
             wb = _wb(f['id'], f['title'], survey, choices)
             path = os.path.join(out, f['file'])
             wb.save(path)
