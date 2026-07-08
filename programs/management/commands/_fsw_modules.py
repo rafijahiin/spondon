@@ -264,6 +264,7 @@ _sr('text','q9_8_other','Other (specify)','অন্যান্য (উল্�
 _sr('select_one q9_9_opts','q9_9','Q9.9 Besides the centre, how else would you like to receive services/information?','Q9.9 সেন্টার ছাড়া আর কীভাবে সেবা/তথ্য পেতে চান?'),
 _sr('text','q9_9_other','Other (specify)','অন্যান্য (উল্লেখ করুন)', relevant="${q9_9}='7'"),
 _sr('select_one q9_10_opts','q9_10','Q9.10 Who providing services would make you feel most comfortable? (Up to 2)','Q9.10 সেবা কে প্রদান করলে আপনি বেশি স্বাচ্ছন্দ্য বোধ করবেন? (সর্বোচ্চ ২টি)'),
+_sr('text','q9_10_other','Other (specify)','অন্যান্য (উল্লেখ করুন)', relevant="${q9_10}='6'"),
 _sr('select_one q9_11_opts','q9_11','Q9.11 What time of day would be most convenient to visit?','Q9.11 কোন সময় সেন্টার ভিজিট করা সুবিধাজনক?'),
 _sr('select_one q9_12_opts','q9_12','Q9.12 If the centre is useful, will you tell others about it?','Q9.12 সেন্টার উপকারী হলে অন্যদের বলবেন কি?'),
 _sr('select_one q9_13_opts','q9_13','Q9.13 What is the single most important thing for the centre to do to earn trust?','Q9.13 সবচেয়ে গুরুত্বপূর্ণ কী করলে সেন্টার বিশ্বাস অর্জন করবে?'),
@@ -291,9 +292,7 @@ _sr('select_one c3_opts','c3','Interview outcome','সাক্ষাৎকা�
 _sr('text','c3_partial','Partially completed (indicate last question)','আংশিক শেষ (শেষ প্রশ্ন উল্লেখ করুন)', relevant="${c3}='2'"),
 _sr('date','dc_date','Date:','তারিখ:'),
 _sr('text','sup_name','Verified by Supervisor (name, code, signature):','সুপারভাইজার দ্বারা যাচাই (নাম, কোড, স্বাক্ষর):'),
-_sr('date','sup_date','Date:','তারিখ:'),
 _sr('text','de_name','Data Entry / Verification:','ডেটা এন্ট্রি/ভেরিফিকেশন:'),
-_sr('date','de_date','Date:','তারিখ:'),
 _sr('end_group','grp_module9')
     ]
 
@@ -847,7 +846,7 @@ _ch('q9_10_opts','1','Peer community member','পিয়ার কমিউন
 _ch('q9_10_opts','2','Female doctor/paramedic','নারী ডাক্তার/প্যারামেডিক'),
 _ch('q9_10_opts','3','Male doctor/paramedic','পুরুষ ডাক্তার/প্যারামেডিক'),
 _ch('q9_10_opts','4','Counsellor','কাউন্সেলর'),
-_ch('q9_10_opts','5','No preference','কোনো পছন্দ নেই'),
+_ch('q9_10_opts','5','No preference','কোনো পছন্দ নেই'), _ch('q9_10_opts','6','Other (specify)','অন্যান্য (উল্লেখ করুন)'),
 _ch('q9_11_opts','1','Morning','সকাল'),
 _ch('q9_11_opts','2','Noon','দুপুর'),
 _ch('q9_11_opts','3','Afternoon','বিকাল'),

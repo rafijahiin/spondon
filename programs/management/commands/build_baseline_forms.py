@@ -90,6 +90,80 @@ def _require_all(survey):
     return out
 
 
+import re as _re
+
+
+def _restructure_violence(rows):
+    """NK feedback (vi)/(vii): in the Q7 violence batteries, record the
+    perpetrator(s) SEPARATELY for the lifetime event and the past-12-month event,
+    and place each perpetrator's 'Other (specify)' box directly under it.
+
+    Per violence item the order becomes:
+        <p>_ever  ->  <p>_perp (lifetime, existing field kept for data continuity)
+        ->  <p>_perp_other  ->  <p>_12mo  ->  <p>_perp_12mo (new)  ->  <p>_perp_12mo_other (new)
+
+    Keyed purely on field-name suffixes, so it works for BOTH forms and every
+    section without hand-editing dozens of rows. The 'Other' code for the new
+    12-month box is DERIVED from each item's existing lifetime _perp_other row,
+    so the Hijra ('13') vs FSW ('12') codes can never be mixed up. Items that have
+    no _perp column (e.g. Hijra Q7.3 self-behaviour) are left untouched — their
+    existing ever->12mo gate already satisfies NK.
+    """
+    by_name = {r[1]: r for r in rows if r[1]}
+
+    def _has_perp(prefix):
+        return prefix.startswith('q7_') and (prefix + '_perp') in by_name
+
+    # Rows pulled up into a restructured block must be skipped at their old spot.
+    consumed = set()
+    for r in rows:
+        nm = r[1]
+        if nm and nm.endswith('_ever'):
+            prefix = nm[:-len('_ever')]
+            if _has_perp(prefix):
+                for suf in ('_12mo', '_perp', '_perp_other'):
+                    if (prefix + suf) in by_name:
+                        consumed.add(prefix + suf)
+
+    def _twelve_month_rows(perp_row, prefix):
+        p = list(perp_row)                      # clone the lifetime perp row
+        p[1] = prefix + '_perp_12mo'
+        p[2] = 'In the past 12 months — ' + (perp_row[2] or '')
+        p[3] = 'গত ১২ মাসে — ' + (perp_row[3] or '')
+        p[6] = "${%s_12mo}='1'" % prefix        # show only if the 12-month event = Yes
+        out = [p]
+        other = by_name.get(prefix + '_perp_other')
+        code = None
+        if other is not None:
+            m = _re.search(r"selected\([^,]+,'(\w+)'\)", other[6] or '')
+            if m:
+                code = m.group(1)
+        if code:
+            out.append(_sr('text', prefix + '_perp_12mo_other',
+                           'Other (specify)', 'অন্যান্য (উল্লেখ করুন)',
+                           relevant="selected(${%s_perp_12mo},'%s')" % (prefix, code)))
+        return out
+
+    out = []
+    for r in rows:
+        nm = r[1]
+        if nm and nm.endswith('_ever'):
+            prefix = nm[:-len('_ever')]
+            if _has_perp(prefix):
+                out.append(r)                                   # ever
+                out.append(by_name[prefix + '_perp'])           # perp (lifetime)
+                if (prefix + '_perp_other') in by_name:
+                    out.append(by_name[prefix + '_perp_other'])  # its Other, now inline
+                if (prefix + '_12mo') in by_name:
+                    out.append(by_name[prefix + '_12mo'])        # past-12-month Yes/No
+                    out.extend(_twelve_month_rows(by_name[prefix + '_perp'], prefix))
+                continue
+        if nm in consumed:
+            continue
+        out.append(r)
+    return out
+
+
 def _wb(form_id, form_title, survey, choices):
     wb = openpyxl.Workbook()
     wb.remove(wb.active)
@@ -286,6 +360,15 @@ def _hijra_consent():
         # Auto interview start — captured the moment consent = Yes (device time).
         _sr('calculate', 'interview_start',
             calc="once(if(${consent}='1', now(), ''))"),
+        # NK feedback (i): a calculate renders nothing, so the enumerator never
+        # saw a start time. Surface it — formatted copy + read-only note that
+        # appears the instant consent is given.
+        _sr('calculate', 'interview_start_disp',
+            calc="once(if(${consent}='1', format-date-time(now(), '%Y-%m-%d %H:%M'), ''))"),
+        _sr('note', 'interview_start_note',
+            'Interview start time (auto-recorded): ${interview_start_disp}',
+            'সাক্ষাৎকার শুরুর সময় (স্বয়ংক্রিয়ভাবে রেকর্ড করা হয়েছে): ${interview_start_disp}',
+            relevant="${interview_start_disp}!=''"),
     ]
 
 
@@ -653,10 +736,21 @@ def _hijra_survey():
     for r in mod:
         if r[1] in _Q4_GATE and r[6] and '${q4_3}' not in r[6]:
             r[6] = r[6] + " and ${q4_3}!='2'"
+    # NK feedback (vi)/(vii): split perpetrators into lifetime + past-12-month and
+    # move each Other-specify box directly under its perpetrator question.
+    mod = _restructure_violence(mod)
     rows += mod
     # Auto interview end — captured when the interview-outcome (c3) is recorded.
     rows.append(_sr('calculate', 'interview_end',
                     calc="once(if(${c3}!='', now(), ''))"))
+    # NK feedback (iii): surface the auto-captured end time at the very end of
+    # the form (read-only note, appears once the interview outcome is recorded).
+    rows.append(_sr('calculate', 'interview_end_disp',
+                    calc="once(if(${c3}!='', format-date-time(now(), '%Y-%m-%d %H:%M'), ''))"))
+    rows.append(_sr('note', 'interview_end_note',
+                    'Interview end time (auto-recorded): ${interview_end_disp}',
+                    'সাক্ষাৎকার শেষ হওয়ার সময় (স্বয়ংক্রিয়ভাবে রেকর্ড করা হয়েছে): ${interview_end_disp}',
+                    relevant="${interview_end_disp}!=''"))
     return rows
 
 
@@ -822,6 +916,15 @@ def _fsw_consent():
         # Auto interview start — captured the moment consent = Yes (device time).
         _sr('calculate', 'interview_start',
             calc="once(if(${consent}='1', now(), ''))"),
+        # NK feedback (i): a calculate renders nothing, so the enumerator never
+        # saw a start time. Surface it — formatted copy + read-only note that
+        # appears the instant consent is given.
+        _sr('calculate', 'interview_start_disp',
+            calc="once(if(${consent}='1', format-date-time(now(), '%Y-%m-%d %H:%M'), ''))"),
+        _sr('note', 'interview_start_note',
+            'Interview start time (auto-recorded): ${interview_start_disp}',
+            'সাক্ষাৎকার শুরুর সময় (স্বয়ংক্রিয়ভাবে রেকর্ড করা হয়েছে): ${interview_start_disp}',
+            relevant="${interview_start_disp}!=''"),
     ]
 
 
@@ -880,10 +983,19 @@ def _fsw_survey():
     rows += _fsw_consent()
     rows += _fsw_screening()
     from ._fsw_modules import fsw_module_survey
-    rows += fsw_module_survey()
+    # NK feedback (vi)/(vii): same perpetrator split as the Hijra form.
+    rows += _restructure_violence(fsw_module_survey())
     # Auto interview end — captured when the interview-outcome (c3) is recorded.
     rows.append(_sr('calculate', 'interview_end',
                     calc="once(if(${c3}!='', now(), ''))"))
+    # NK feedback (iii): surface the auto-captured end time at the very end of
+    # the form (read-only note, appears once the interview outcome is recorded).
+    rows.append(_sr('calculate', 'interview_end_disp',
+                    calc="once(if(${c3}!='', format-date-time(now(), '%Y-%m-%d %H:%M'), ''))"))
+    rows.append(_sr('note', 'interview_end_note',
+                    'Interview end time (auto-recorded): ${interview_end_disp}',
+                    'সাক্ষাৎকার শেষ হওয়ার সময় (স্বয়ংক্রিয়ভাবে রেকর্ড করা হয়েছে): ${interview_end_disp}',
+                    relevant="${interview_end_disp}!=''"))
     return rows
 
 
