@@ -291,8 +291,6 @@ _sr('text','c2','Interviewer\'s observations','ইন্টারভিউয়
 _sr('select_one c3_opts','c3','Interview outcome','সাক্ষাৎকারের ফলাফল'),
 _sr('text','c3_partial','Partially completed (indicate last question)','আংশিক শেষ (শেষ প্রশ্ন উল্লেখ করুন)', relevant="${c3}='2'"),
 _sr('date','dc_date','Date:','তারিখ:'),
-_sr('text','sup_name','Verified by Supervisor (name, code, signature):','সুপারভাইজার দ্বারা যাচাই (নাম, কোড, স্বাক্ষর):'),
-_sr('text','de_name','Data Entry / Verification:','ডেটা এন্ট্রি/ভেরিফিকেশন:'),
 _sr('end_group','grp_module9')
     ]
 
