@@ -197,15 +197,15 @@ export default function BaselineEndline() {
           <span className="live-dot" />
           <span>BASELINE STUDIES</span>
           <span className="sep">/</span>
-          <span>CIPRB VERIFICATION &amp; ANALYSIS</span>
+          <span>CIPRB FIELDWORK MONITORING</span>
         </div>
         <h1 className="hero-headline anim-rise d1" style={{ fontSize: 'clamp(40px, 6vw, 76px)', marginBottom: 8 }}>
-          <span className="figure" style={{ color: 'var(--unfpa)' }}>Verify</span> &amp; understand.
+          <span className="figure" style={{ color: 'var(--unfpa)' }}>Monitor</span> &amp; understand.
         </h1>
         <p className="hero-lede anim-rise d2" style={{ maxWidth: 720, marginTop: 14 }}>
-          Every Hijra and Female Sex Worker baseline interview arrives here for CIPRB sign-off. Approve
-          to count it — then read the population profile as it builds: who is being reached, where, and
-          how their lives look at baseline.
+          Live monitoring of the Hijra and Female Sex Worker baseline collection: how many interviews come
+          in each day, from which sites and enumerators, at what quality — then the population profile as it
+          builds, module by module.
         </p>
       </section>
 
@@ -226,7 +226,7 @@ export default function BaselineEndline() {
       {/* ── Insights ─────────────────────────────────────────────────────── */}
       <section className="section" style={{ marginTop: 30 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 14 }}>
-          <div className="kicker"><span className="dot" /> Baseline profile · verified interviews</div>
+          <div className="kicker"><span className="dot" /> Baseline profile · by questionnaire module</div>
           <div className="pills">
             {([['all', 'Both'], ['hijra', 'Hijra'], ['fsw', 'FSW']] as const).map(([v, label]) => (
               <button key={v} className={`pill ${lens === v ? 'on' : ''}`} onClick={() => setLens(v as Lens)}>{label}</button>
@@ -237,7 +237,7 @@ export default function BaselineEndline() {
         {!hasInsights ? (
           <div className="card" style={{ padding: 32, textAlign: 'center', color: 'var(--muted)' }}>
             <ShieldCheck size={26} style={{ opacity: 0.5 }} />
-            <p style={{ marginTop: 10, fontSize: 14 }}>No verified interviews yet. Approve interviews below and the profile builds here automatically.</p>
+            <p style={{ marginTop: 10, fontSize: 14 }}>No interviews yet. The population profile builds here automatically as interviews arrive.</p>
           </div>
         ) : (
           <>
@@ -267,95 +267,10 @@ export default function BaselineEndline() {
         )}
       </section>
 
-      {/* ── Pending verification queue ───────────────────────────────────── */}
-      <section className="section" style={{ marginTop: 32 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 14 }}>
-          <div className="kicker"><span className="dot" /> Pending verification</div>
-          <div className="pills">
-            {([['', 'All'], ['hijra', 'Hijra'], ['fsw', 'FSW']] as const).map(([v, label]) => (
-              <button key={v} className={`pill ${popFilter === v ? 'on' : ''}`} onClick={() => setPopFilter(v as '' | Pop)}>{label}</button>
-            ))}
-            <button className="btn" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }} onClick={exportCsv} disabled={exporting}>
-              {exporting ? <LoadingSpinner size="sm" /> : <Download size={14} />} Export verified
-            </button>
-          </div>
-        </div>
-
-        {loading && !pending ? (
-          <div className="card" style={{ padding: 28, textAlign: 'center' }}><LoadingSpinner /></div>
-        ) : items.length === 0 ? (
-          <div className="card" style={{ padding: 32, textAlign: 'center', color: 'var(--muted)' }}>
-            <Inbox size={26} style={{ opacity: 0.5 }} />
-            <p style={{ marginTop: 10, fontSize: 14 }}>No interviews waiting for verification.</p>
-          </div>
-        ) : (
-          <div style={{ display: 'grid', gap: 12 }}>
-            {items.map((p) => {
-              const isOpen = expanded === p.submission_id
-              return (
-                <div key={p.submission_id} className="card" style={{ padding: 18 }}>
-                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap' }}>
-                    <div style={{ minWidth: 0 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
-                        <span className={`tag ${p.population === 'hijra' ? 'violet' : 'blue'}`}>{POP_LABEL[p.population] || p.population || '—'}</span>
-                        <span className="mono" style={{ fontSize: 13, fontWeight: 600 }}>{p.serial || '(no serial)'}</span>
-                        {p.duplicate_preview && <span className="tag amber" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><AlertTriangle size={11} /> Possible duplicate</span>}
-                        {p.gps_missing && <span className="tag" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><MapPinOff size={11} /> No GPS</span>}
-                      </div>
-                      <div className="mono mute" style={{ fontSize: 11 }}>
-                        by {p.interviewer || 'unknown'} · {new Date(p.submitted_at).toLocaleString()}
-                      </div>
-                    </div>
-                    <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-                      <button className="btn brand" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
-                        disabled={busy === p.submission_id} onClick={() => review(p.submission_id, 'approve')}>
-                        {busy === p.submission_id ? <LoadingSpinner size="sm" /> : <Check size={14} />} Approve
-                      </button>
-                      <button className="btn ghost" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
-                        disabled={busy === p.submission_id} onClick={() => setRejecting(rejecting === p.submission_id ? null : p.submission_id)}>
-                        <X size={14} /> Reject
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Readable headline grid — the "better detail" at a glance */}
-                  {p.headline && p.headline.length > 0 && (
-                    <div style={{ marginTop: 14, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 10 }}>
-                      {p.headline.map((h) => (
-                        <div key={h.label} style={{ background: 'var(--surface-2)', border: '1px solid var(--hair)', borderRadius: 10, padding: '8px 11px', minWidth: 0 }}>
-                          <div style={{ fontSize: 10.5, fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'var(--muted)' }}>{h.label}</div>
-                          <div style={{ fontSize: 13, color: 'var(--ink)', marginTop: 2, overflowWrap: 'anywhere' }}>{h.value || '—'}</div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {rejecting === p.submission_id && (
-                    <div style={{ marginTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                      <input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Reason for rejecting (tells the field team what to correct)…"
-                        style={{ flex: 1, minWidth: 220, padding: '8px 12px', borderRadius: 10, border: '1px solid var(--hair)', background: 'var(--surface-2)', fontSize: 13 }} />
-                      <button className="btn" style={{ color: 'var(--rose)' }} disabled={busy === p.submission_id}
-                        onClick={() => review(p.submission_id, 'reject', reason)}>Confirm reject</button>
-                    </div>
-                  )}
-
-                  <button className="btn ghost" style={{ marginTop: 12, display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12.5 }}
-                    onClick={() => setExpanded(isOpen ? null : p.submission_id)}>
-                    {isOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />} {isOpen ? 'Hide' : 'Review'} full interview ({p.answer_count})
-                  </button>
-
-                  {isOpen && <FullAnswers answers={p.answers} />}
-                </div>
-              )
-            })}
-          </div>
-        )}
-      </section>
-
       <section className="section" style={{ marginTop: 24, marginBottom: 80 }}>
         <div className="card" style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 10, color: 'var(--muted)', fontSize: 12.5 }}>
           <ShieldCheck size={16} style={{ color: 'var(--emerald)' }} />
-          CIPRB-only. Verified interviews feed the baseline analysis above; the full response set is preserved for the D5 report.
+          CIPRB-conducted baseline. Every interview is monitored above as it arrives; the full response set is preserved for the D5 report.
         </div>
       </section>
     </>

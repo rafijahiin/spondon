@@ -248,10 +248,10 @@ function DailyCalendar({ days }: { days: DayStat[] }) {
         </div>
       </div>
 
-      {/* calendar grid */}
-      <div style={{ marginTop: 14, overflowX: 'auto' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(38px, 1fr))', gap: 6, minWidth: 300 }}>
-          {WEEKDAYS.map((w) => <div key={w} style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--muted)', textAlign: 'center', textTransform: 'uppercase', letterSpacing: '.03em' }}>{w}</div>)}
+      <div style={{ marginTop: 14, display: 'flex', gap: 24, flexWrap: 'wrap', alignItems: 'flex-start' }}>
+      {/* calendar grid — compact fixed cells */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 30px)', gap: 4 }}>
+          {WEEKDAYS.map((w) => <div key={w} style={{ fontSize: 9, fontWeight: 700, color: 'var(--muted)', textAlign: 'center', textTransform: 'uppercase' }}>{w[0]}</div>)}
           {weeks.flat().map((dt) => {
             const key = isoLocal(dt)
             const stat = byDate.get(key)
@@ -268,24 +268,22 @@ function DailyCalendar({ days }: { days: DayStat[] }) {
                 title={`${key} · ${n} interview${n === 1 ? '' : 's'}${flagged ? ` · ${(stat!.rushed + stat!.gps_missing)} flag(s)` : ''}`}
                 disabled={!stat}
                 style={{
-                  position: 'relative', aspectRatio: '1 / 1', borderRadius: 7, background: bg,
+                  width: 30, height: 30, borderRadius: 6, background: bg,
                   border: isSel ? `2px solid ${ORANGE}` : flagged ? '1.5px solid #E5484D' : '1px solid var(--hair)',
                   cursor: stat ? 'pointer' : 'default', color: inRange ? textCol : 'var(--muted)',
-                  opacity: inRange ? 1 : 0.35, display: 'flex', flexDirection: 'column',
-                  alignItems: 'center', justifyContent: 'center', padding: 2, transition: 'transform .12s',
+                  opacity: inRange ? 1 : 0.3, display: 'grid', placeItems: 'center', padding: 0,
+                  fontSize: 10.5, fontWeight: 700, fontVariantNumeric: 'tabular-nums',
                 }}
               >
-                <span style={{ fontSize: 11, fontWeight: 600, lineHeight: 1 }}>{dt.getDate()}</span>
-                {n > 0 && <span style={{ fontSize: 12.5, fontWeight: 800, fontVariantNumeric: 'tabular-nums', lineHeight: 1.1 }}>{n}</span>}
+                {dt.getDate()}
               </button>
             )
           })}
         </div>
-      </div>
 
-      {/* selected-day detail */}
+      {/* selected-day detail — beside the calendar */}
       {d && (
-        <div style={{ marginTop: 16, paddingTop: 15, borderTop: '1px solid var(--hair)' }}>
+        <div style={{ flex: '1 1 230px', minWidth: 210 }}>
           <h4 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: 'var(--ink)' }}>{nice}</h4>
           <div style={{ display: 'flex', gap: 22, flexWrap: 'wrap', alignItems: 'flex-end', marginTop: 12 }}>
             <DStat big value={d.total} label="interviews" accent={ORANGE} />
@@ -308,6 +306,7 @@ function DailyCalendar({ days }: { days: DayStat[] }) {
           </div>
         </div>
       )}
+      </div>
     </div>
   )
 }
