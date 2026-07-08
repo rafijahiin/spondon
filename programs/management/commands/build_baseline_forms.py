@@ -775,17 +775,10 @@ def _hijra_survey():
     # move each Other-specify box directly under its perpetrator question.
     mod = _restructure_violence(mod)
     rows += mod
-    # Auto interview end — captured when the interview-outcome (c3) is recorded.
-    rows.append(_sr('calculate', 'interview_end',
-                    calc="once(if(${c3}!='', now(), ''))"))
-    # NK feedback (iii): surface the auto-captured end time at the very end of
-    # the form (read-only note, appears once the interview outcome is recorded).
-    rows.append(_sr('calculate', 'interview_end_disp',
-                    calc="once(if(${c3}!='', format-date-time(now(), '%Y-%m-%d %H:%M'), ''))"))
-    rows.append(_sr('note', 'interview_end_note',
-                    'Interview end time (auto-recorded): ${interview_end_disp}',
-                    'সাক্ষাৎকার শেষ হওয়ার সময় (স্বয়ংক্রিয়ভাবে রেকর্ড করা হয়েছে): ${interview_end_disp}',
-                    relevant="${interview_end_disp}!=''"))
+    # End time = the moment the enumerator SUBMITS. The XForm `end` meta stamps
+    # the device clock at finalize/submit. It is not shown on screen (it only
+    # exists once the form is submitted); it is stored in the submission data.
+    rows.append(_sr('end', 'interview_end'))
     return rows
 
 
@@ -1020,17 +1013,10 @@ def _fsw_survey():
     from ._fsw_modules import fsw_module_survey
     # NK feedback (vi)/(vii): same perpetrator split as the Hijra form.
     rows += _restructure_violence(fsw_module_survey())
-    # Auto interview end — captured when the interview-outcome (c3) is recorded.
-    rows.append(_sr('calculate', 'interview_end',
-                    calc="once(if(${c3}!='', now(), ''))"))
-    # NK feedback (iii): surface the auto-captured end time at the very end of
-    # the form (read-only note, appears once the interview outcome is recorded).
-    rows.append(_sr('calculate', 'interview_end_disp',
-                    calc="once(if(${c3}!='', format-date-time(now(), '%Y-%m-%d %H:%M'), ''))"))
-    rows.append(_sr('note', 'interview_end_note',
-                    'Interview end time (auto-recorded): ${interview_end_disp}',
-                    'সাক্ষাৎকার শেষ হওয়ার সময় (স্বয়ংক্রিয়ভাবে রেকর্ড করা হয়েছে): ${interview_end_disp}',
-                    relevant="${interview_end_disp}!=''"))
+    # End time = the moment the enumerator SUBMITS. The XForm `end` meta stamps
+    # the device clock at finalize/submit. It is not shown on screen (it only
+    # exists once the form is submitted); it is stored in the submission data.
+    rows.append(_sr('end', 'interview_end'))
     return rows
 
 
