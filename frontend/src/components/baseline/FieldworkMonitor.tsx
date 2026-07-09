@@ -66,46 +66,24 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   )
 }
 
-/* ── compact progress ring (used inside the pulse band) ─────────────────── */
-function RingMini({ p }: { p: Progress }) {
-  const hasTarget = p.target != null && p.target > 0 && p.pct != null
-  const R = 40, C = 2 * Math.PI * R
-  const pct = hasTarget ? Math.min(100, p.pct as number) : 100
+/* ── population split rows: count + share of total (no target scaffolding —
+ *    targets are unknown and there's no place to set them) ─────────────────── */
+function PopRow({ p, total }: { p: Progress; total: number }) {
   const colour = p.population === 'hijra' ? ORANGE : TEAL
-  const gid = `ring-${p.population}`
+  const share = total > 0 ? Math.round((100 * p.collected) / total) : 0
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 13, flex: '1 1 190px', minWidth: 180 }}>
-      <div style={{ position: 'relative', width: 96, height: 96, flexShrink: 0 }}>
-        <svg width={96} height={96} style={{ transform: 'rotate(-90deg)' }}>
-          <defs>
-            <linearGradient id={gid} x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0%" stopColor={colour} />
-              <stop offset="100%" stopColor={p.population === 'hijra' ? '#FFB27A' : '#5FC8C8'} />
-            </linearGradient>
-          </defs>
-          <circle cx={48} cy={48} r={R} fill="none" stroke="var(--hair)" strokeWidth={9} />
-          <circle
-            cx={48} cy={48} r={R} fill="none" stroke={`url(#${gid})`} strokeWidth={9}
-            strokeLinecap="round" strokeDasharray={C}
-            strokeDashoffset={C * (1 - pct / 100)}
-            opacity={hasTarget ? 1 : 0.32}
-            style={{ transition: 'stroke-dashoffset .8s cubic-bezier(.22,1,.36,1)' }}
-          />
-        </svg>
-        <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', textAlign: 'center' }}>
-          <div style={{ fontFamily: 'var(--display)', fontStyle: 'normal', fontSize: hasTarget ? 22 : 26, lineHeight: 1, color: colour, fontVariantNumeric: 'tabular-nums' }}>
-            {hasTarget ? `${p.pct}%` : p.collected}
-          </div>
-        </div>
+    <div>
+      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 10 }}>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: 12.5, fontWeight: 700, color: 'var(--ink)' }}>
+          <span style={{ width: 9, height: 9, borderRadius: 999, background: colour, flexShrink: 0 }} />{POP[p.population]}
+        </span>
+        <span style={{ fontFamily: 'var(--display)', fontSize: 28, fontWeight: 800, color: colour, fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>{p.collected}</span>
       </div>
-      <div style={{ minWidth: 0 }}>
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700, color: 'var(--ink)' }}>
-          <span style={{ width: 8, height: 8, borderRadius: 999, background: colour }} />{POP[p.population]}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginTop: 6 }}>
+        <div style={{ flex: 1, height: 7, borderRadius: 4, background: 'var(--hair)', overflow: 'hidden' }}>
+          <div style={{ height: '100%', width: `${share}%`, background: colour, borderRadius: 4, transition: 'width .6s ease' }} />
         </div>
-        <div style={{ fontFamily: 'var(--display)', fontStyle: 'normal', fontSize: 27, lineHeight: 1.1, color: 'var(--ink)', fontVariantNumeric: 'tabular-nums', marginTop: 2 }}>
-          {p.collected}{hasTarget && <span style={{ fontSize: 15, color: 'var(--muted)', fontStyle: 'normal' }}> / {p.target}</span>}
-        </div>
-        <div style={{ fontSize: 11.5, color: 'var(--muted)' }}>{hasTarget ? `${(p.target as number) - p.collected} to go` : 'target to be set'}</div>
+        <span style={{ fontSize: 11.5, color: 'var(--muted)', width: 30, textAlign: 'right', flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>{share}%</span>
       </div>
     </div>
   )
@@ -146,8 +124,9 @@ function FieldPulse({ m, verified, pending }: { m: Monitoring; verified: number;
             </div>
           </div>
         )}
-        <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap', flex: '2 1 380px' }}>
-          {m.progress.map((p) => <RingMini key={p.population} p={p} />)}
+        <div style={{ flex: '2 1 300px', minWidth: 260, display: 'flex', flexDirection: 'column', gap: 14, justifyContent: 'center' }}>
+          <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', color: 'var(--muted)' }}>By key population</div>
+          {m.progress.map((p) => <PopRow key={p.population} p={p} total={m.total} />)}
         </div>
       </div>
     </div>
