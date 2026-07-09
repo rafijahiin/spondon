@@ -146,7 +146,7 @@ class Command(BaseCommand):
         # at n≈20 a 14% rate lands on 0 about 6% of the time, which looks broken.
         parser.add_argument('--hijra', type=int, default=100)
         parser.add_argument('--fsw', type=int, default=80)
-        parser.add_argument('--pending', type=int, default=10,
+        parser.add_argument('--pending', type=int, default=0,
                             help='How many to leave PENDING (rest are approved).')
         parser.add_argument('--wipe', action='store_true',
                             help='Remove prior DEMO-BL- rows before seeding.')
