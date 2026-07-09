@@ -39,6 +39,84 @@ GEO = {
 }
 
 
+def _W(d):
+    """Weighted pick from {code: weight}."""
+    return random.choices(list(d), weights=list(d.values()), k=1)[0]
+
+
+def _realistic_srhr(pop, base):
+    """Give the major-SRHR-indicator fields plausible, correlated values so the
+    demo dashboard shows a believable baseline (not random-fill artefacts)."""
+    R = random.random
+    # ── Food insecurity (FIES) — severity-ordered; most people 0–4 affirmed,
+    #    ~15% affirm 7+/9 (severe). Hijra c101–c109 / FSW b301_a–i occurrence.
+    lvl = random.choices(range(10), weights=[20, 15, 14, 12, 10, 8, 7, 6, 5, 3], k=1)[0]
+    if pop == 'hijra':
+        for i in range(1, 10):
+            yes = i <= lvl
+            base[f'c10{i}'] = '1' if yes else '0'
+            if yes:
+                base[f'c10{i}a'] = _W({'1': 45, '2': 40, '3': 15})
+    else:
+        for i, c in enumerate('abcdefghi', 1):
+            yes = i <= lvl
+            base[f'b301_{c}_occ'] = '1' if yes else '0'
+            if yes:
+                base[f'b301_{c}_times'] = _W({'1': 45, '2': 40, '3': 15})
+    # ── PHQ-9 — mixture: a ~14% depressed subgroup gives a realistic tail so
+    #    prevalence (≥10) ≈ 20%, moderate/severe (≥15) ≈ 8%, item-9 ideation ≈ 15%.
+    depressed = R() < 0.14
+    for i in range(1, 10):
+        if i == 9:
+            w = {'0': 66, '1': 18, '2': 10, '3': 6} if depressed else {'0': 89, '1': 7, '2': 3, '3': 1}
+        else:
+            w = {'0': 20, '1': 26, '2': 31, '3': 23} if depressed else {'0': 63, '1': 24, '2': 9, '3': 4}
+        base[f'q8_3_{i}'] = _W(w)
+    # ── Violence Q7.1 grid — ~13%/item so "any" over 11–12 rows ≈ 60%
+    v_items = (list('abcdefghijk') if pop == 'hijra'
+               else ['i', 'ii', 'iii', 'iv', 'v', 'vi', 'vii', 'viii', 'ix', 'x', 'xi', 'xii'])
+    for c in v_items:
+        yes = R() < 0.13
+        base[f'q7_1_{c}_ever'] = '1' if yes else '2'
+        if yes:
+            base[f'q7_1_{c}_12mo'] = '1' if R() < 0.5 else '2'
+    # ── Discrimination Q2.1 grid — ~13%/item so "any" over 14–15 rows ≈ 85%
+    for c in ('abcdefghijklmno' if pop == 'hijra' else 'abcdefghijklmn'):
+        base[f'q2_1_{c}'] = '1' if R() < 0.13 else '2'
+    # ── Consistent condom use q4_7 — Always ~62%/type so "all always" ≈ 25–30%
+    for c in ('abcd' if pop == 'hijra' else 'abc'):
+        base[f'q4_7_{c}'] = _W({'1': 62, '2': 24, '3': 9, '8': 5})
+    # ── HIV/STI knowledge yes/no items — bias toward correct (realistic 60–70%)
+    for i in ((1, 2, 3, 4, 6, 7, 8, 9, 10) if pop == 'hijra' else (1, 2, 3, 4, 8, 9, 10)):
+        f = f'q3_{i}'
+        if f in base and str(base[f]) in ('1', '2'):
+            base[f] = '1' if R() < 0.68 else '2'
+    # ── Key single-choice indicators that otherwise read random ──
+    if pop == 'hijra':
+        base['q2_5'] = _W({'1': 22, '2': 30, '3': 28, '4': 20})       # community participation
+        base['q5_8'] = _W({'1': 62, '2': 38})                         # ever HIV-tested
+        if base['q5_8'] == '1':
+            base['q5_9'] = _W({'1': 55, '2': 28, '3': 17})            # recency
+            base['q5_11'] = _W({'1': 40, '2': 18, '3': 14, '4': 28})  # counselling
+        base['q5_15'] = _W({'1': 55, '2': 25, '3': 20})               # STI treatment done
+        base['q6_1'] = _W({'1': 64, '2': 36})                         # facility used
+        base['q6_5'] = _W({'1': 14, '2': 30, '3': 34, '4': 22})       # satisfaction
+        base['q2_19'] = _W({'1': 28, '2': 72})                        # received legal
+    else:
+        base['q4_5'] = _W({'1': 72, '2': 28})                         # condom at last client sex
+        base['q4_9'] = _W({'1': 48, '2': 38, '3': 14})                # can refuse client
+        base['b112'] = _W({'1': 30, '2': 40, '3': 26, '99': 4})       # income autonomy
+        base['b114'] = _W({'1': 34, '2': 66})                         # savings
+        base['q5_8'] = _W({'1': 55, '2': 45})                         # ever tested for STI
+        base['q5_9'] = _W({'1': 33, '2': 67})                         # diagnosed with STI
+        base['q5_11'] = _W({'1': 40, '2': 42, '3': 18})               # syphilis test
+        base['q5_10'] = _W({'1': 50, '2': 28, '3': 22})               # STI treatment done
+        base['q6_1'] = _W({'1': 60, '2': 40})
+        base['q6_4'] = _W({'1': 16, '2': 34, '3': 32, '4': 18})       # satisfaction
+        base['q7_18'] = _W({'1': 38, '2': 57, '99': 5})               # help-seeking after GBV
+        base['q2_19'] = _W({'1': 34, '2': 66})
+
+
 def _pick(cmap, weights_by_code=None):
     """Pick a code from a {code: label} choice dict; optional weights add realism."""
     codes = list((cmap or {}).keys())
@@ -285,6 +363,12 @@ class Command(BaseCommand):
             v = fill(name, types.get(name, 'text'))
             if v is not None:
                 base[name] = v
+
+        # The generic fill above puts a RANDOM code in every scale/grid item, which
+        # makes the SRHR indicators nonsense (0% food insecurity, 100% GBV, 90%
+        # depression). Overwrite the fields that feed the major-indicator panel with
+        # realistic, severity-ordered distributions so the review dashboard reads true.
+        _realistic_srhr(pop, base)
 
         # drop any None (choice list absent) so we never store nulls
         return {k: v for k, v in base.items() if v is not None}

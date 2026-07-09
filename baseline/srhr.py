@@ -80,10 +80,26 @@ def _fies_count(raw, pop):
 HIJRA_GBV = [f'q7_1_{c}' for c in 'abcdefghijk']
 FSW_GBV = [f'q7_1_{c}' for c in ('i', 'ii', 'iii', 'iv', 'v', 'vi', 'vii',
                                  'viii', 'ix', 'x', 'xi', 'xii')]
-# FSW Q7.1 row groups by violence type (per the instrument's section headers).
-FSW_PHYS = FSW_GBV[0:3]
-FSW_PSY = FSW_GBV[3:5]
-FSW_SEX = FSW_GBV[5:8]
+# FSW Q7.1 row groups by violence type — verified against each row's actual
+# text, NOT a positional guess: i/ii/iii = physical (slapped/beaten, hit with
+# object/burned, weapon threat); iv/v = psychological (humiliated, threatened
+# with outing); vi/vii/ix = sexual (forced sex, coerced/non-consensual condom
+# removal, coerced via threats/blackmail/debt). viii/x/xi are economic
+# (payment withheld, money/property taken, eviction) — deliberately excluded
+# from the physical/sexual/psychological split; xii (movement restricted) is
+# a distinct confinement item, also excluded from the 3-way split.
+FSW_PHYS = [f'q7_1_{c}' for c in ('i', 'ii', 'iii')]
+FSW_PSY = [f'q7_1_{c}' for c in ('iv', 'v')]
+FSW_SEX = [f'q7_1_{c}' for c in ('vi', 'vii', 'ix')]
+
+# Direction of each indicator: 'bad' = higher is a worse outcome (coloured as a
+# concern), 'neutral' = descriptive (no value judgement), else 'good'.
+_BAD = {
+    'discr_any', 'discr_police', 'discr_work', 'discr_housing', 'discr_evict',
+    'discr_denial', 'legal_unmet', 'health_poor', 'sti_sympt', 'sti_told_12m',
+    'gbv_any', 'gbv_phys', 'gbv_sex', 'gbv_emot',
+}
+_NEUTRAL = {'sex_active', 'brothel_based'}
 
 
 def compute_srhr(responses):
@@ -173,9 +189,17 @@ def compute_srhr(responses):
                 P('discr_evict').add(_s(raw, 'q2_1_b') == '1', _s(raw, 'q2_1_b') in ('1', '2'))
                 P('discr_denial').add(_s(raw, 'q2_1_c') == '1', _s(raw, 'q2_1_c') in ('1', '2'))
                 P('discr_police').add(_s(raw, 'q2_1_j') == '1', _s(raw, 'q2_1_j') in ('1', '2'))
-                aware = [1 for c in 'abcde' if _s(raw, f'q2_12_{c}') == '1']
-                seen_aw = any(_s(raw, f'q2_12_{c}') in ('1', '2') for c in 'abcde')
-                P('rights_aware').add(bool(aware), seen_aw)
+                # Rights-awareness composite (doc cites "Q2.12-Q2.19" as a range):
+                # q2_12_a-e = training received on rights/justice/services/advocacy;
+                # q2_13 = aware of laws/legal protections; q2_14 = aware of social
+                # safety net programmes; q2_17 = aware of skills programmes. q2_15/
+                # 16/18 are outcome/detail items (not awareness) and q2_19 is the
+                # separate "received legal services" indicator — excluded here.
+                aw_fields = [f'q2_12_{c}' for c in 'abcde'] + ['q2_13', 'q2_14', 'q2_17']
+                aware_vals = [_s(raw, f) for f in aw_fields]
+                seen_aw = any(v in ('1', '2') for v in aware_vals)
+                any_aware = any(v == '1' for v in aware_vals)
+                P('rights_aware').add(any_aware, seen_aw)
                 P('legal_got').add(_s(raw, 'q2_19') == '1', _s(raw, 'q2_19') in ('1', '2'))
                 v = _s(raw, 'q2_21')
                 P('legal_unmet').add(bool(v) and '00' not in v.split(), bool(v))
@@ -231,9 +255,9 @@ def compute_srhr(responses):
             a = aggs.get(key)
             return {'value': a.pct() if a else None, 'n': a.d if a else 0}
 
-        def tile(key, label, ref, kind='pct'):
-            base = pct(key) if kind == 'pct' else key
-            return {'label': label, 'ref': ref, **base}
+        def tile(key, label, ref):
+            d = 'bad' if key in _BAD else ('neutral' if key in _NEUTRAL else 'good')
+            return {'label': label, 'ref': ref, 'dir': d, **pct(key)}
 
         phq_prev = round(100 * sum(1 for s2 in phq_scores if s2 >= 10) / len(phq_scores)) if phq_scores else None
         phq_modsev = round(100 * sum(1 for s2 in phq_scores if s2 >= 15) / len(phq_scores)) if phq_scores else None
@@ -242,17 +266,17 @@ def compute_srhr(responses):
         k_sti = round(sum(know_sti) / len(know_sti)) if know_sti else None
 
         common_mh = [
-            {'label': 'Depression prevalence (PHQ-9 ≥ 10)', 'ref': 'PHQ-9', 'value': phq_prev, 'n': len(phq_scores)},
-            {'label': 'Moderate/severe depression (PHQ-9 ≥ 15)', 'ref': 'PHQ-9', 'value': phq_modsev, 'n': len(phq_scores)},
-            {'label': 'Suicidal ideation (item 9 > 0)', 'ref': 'PHQ-9 · 9', 'value': phq_sui.pct(), 'n': phq_sui.d},
+            {'label': 'Depression prevalence (PHQ-9 ≥ 10)', 'ref': 'PHQ-9', 'dir': 'bad', 'value': phq_prev, 'n': len(phq_scores)},
+            {'label': 'Moderate/severe depression (PHQ-9 ≥ 15)', 'ref': 'PHQ-9', 'dir': 'bad', 'value': phq_modsev, 'n': len(phq_scores)},
+            {'label': 'Suicidal ideation (item 9 > 0)', 'ref': 'PHQ-9 · 9', 'dir': 'bad', 'value': phq_sui.pct(), 'n': phq_sui.d},
         ]
 
         if pop == 'hijra':
             modules = [
                 ('Livelihood & economic security', [
                     tile('employed', 'Worked in the past 7 days', 'B108'),
-                    {'label': 'Median monthly income', 'ref': 'B104', 'value': med_inc, 'n': len(incomes), 'unit': '৳'},
-                    {'label': 'Severe food insecurity (FIES 7+/9)', 'ref': 'C101–C109', 'value': fies_sev.pct(), 'n': fies_sev.d},
+                    {'label': 'Median monthly income', 'ref': 'B104', 'dir': 'neutral', 'value': med_inc, 'n': len(incomes), 'unit': '৳'},
+                    {'label': 'Severe food insecurity (FIES 7+/9)', 'ref': 'C101–C109', 'dir': 'bad', 'value': fies_sev.pct(), 'n': fies_sev.d},
                 ]),
                 ('Discrimination, rights & legal access', [
                     tile('discr_any', 'Experienced any discrimination', 'Q2.1'),
@@ -264,8 +288,8 @@ def compute_srhr(responses):
                     tile('legal_unmet', 'Needed but did not seek legal support', 'Q2.21'),
                 ]),
                 ('HIV & STI knowledge', [
-                    {'label': 'HIV knowledge score', 'ref': 'Q3.1–3.7', 'value': k_hiv, 'n': len(know_hiv), 'unit': 'score'},
-                    {'label': 'STI knowledge score', 'ref': 'Q3.8–3.10', 'value': k_sti, 'n': len(know_sti), 'unit': 'score'},
+                    {'label': 'HIV knowledge score', 'ref': 'Q3.1–3.7', 'dir': 'good', 'value': k_hiv, 'n': len(know_hiv), 'unit': 'score'},
+                    {'label': 'STI knowledge score', 'ref': 'Q3.8–3.10', 'dir': 'good', 'value': k_sti, 'n': len(know_sti), 'unit': 'score'},
                 ]),
                 ('Sexual behaviour & prevention', [
                     tile('sex_active', 'Sexually active in last 12 months', 'Q4.3'),
@@ -290,10 +314,10 @@ def compute_srhr(responses):
             modules = [
                 ('Livelihood & economic security', [
                     tile('brothel_based', 'Brothel-based (vs street-based)', 'B101'),
-                    {'label': 'Median monthly income from sex work', 'ref': 'B108', 'value': med_inc, 'n': len(incomes), 'unit': '৳'},
+                    {'label': 'Median monthly income from sex work', 'ref': 'B108', 'dir': 'neutral', 'value': med_inc, 'n': len(incomes), 'unit': '৳'},
                     tile('income_autonomy', 'Full control over own income', 'B112'),
                     tile('savings', 'Has savings', 'B114'),
-                    {'label': 'Severe food insecurity (FIES 7+/9)', 'ref': 'B301', 'value': fies_sev.pct(), 'n': fies_sev.d},
+                    {'label': 'Severe food insecurity (FIES 7+/9)', 'ref': 'B301', 'dir': 'bad', 'value': fies_sev.pct(), 'n': fies_sev.d},
                 ]),
                 ('Discrimination, rights & legal access', [
                     tile('discr_any', 'Experienced any discrimination', 'Q2.1'),
@@ -306,8 +330,8 @@ def compute_srhr(responses):
                     tile('legal_unmet', 'Unmet need for legal support', 'Q2.21'),
                 ]),
                 ('HIV & STI knowledge', [
-                    {'label': 'HIV knowledge score', 'ref': 'Q3.1–3.7', 'value': k_hiv, 'n': len(know_hiv), 'unit': 'score'},
-                    {'label': 'STI knowledge score', 'ref': 'Q3.8–3.10', 'value': k_sti, 'n': len(know_sti), 'unit': 'score'},
+                    {'label': 'HIV knowledge score', 'ref': 'Q3.1–3.7', 'dir': 'good', 'value': k_hiv, 'n': len(know_hiv), 'unit': 'score'},
+                    {'label': 'STI knowledge score', 'ref': 'Q3.8–3.10', 'dir': 'good', 'value': k_sti, 'n': len(know_sti), 'unit': 'score'},
                 ]),
                 ('Sexual behaviour & prevention', [
                     tile('condom_consistent', 'Consistent condom use (all partners)', 'Q4.7'),
