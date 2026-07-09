@@ -242,7 +242,7 @@ export default function BaselineEndline() {
           <span>CIPRB FIELDWORK MONITORING</span>
         </div>
         <h1 className="hero-headline anim-rise d1" style={{ fontSize: 'clamp(40px, 6vw, 76px)', marginBottom: 8 }}>
-          <span className="figure" style={{ color: 'var(--unfpa)' }}>Monitor</span> &amp; understand.
+          <span className="figure" style={{ color: 'var(--unfpa)' }}>Baseline</span> Monitoring Dashboard.
         </h1>
         <p className="hero-lede anim-rise d2" style={{ maxWidth: 720, marginTop: 14 }}>
           Live monitoring of the Hijra and Female Sex Worker baseline collection: how many interviews come
