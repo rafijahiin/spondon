@@ -280,8 +280,9 @@ def _hijra_meta():
         _sr('calculate', '_id_ts',
             calc="once(format-date-time(now(),'%Y%m%d%H%M%S'))"),
 
-        _sr('text', 'cluster_site_code', 'Cluster/Site Code', 'ক্লাস্টার/সাইট কোড',
-            required='yes'),
+        # Cluster/Site Code removed (Rafi 2026-07-09) to match the FSW form, which
+        # has no free-text cluster/site code — district + data-collector identify
+        # the record, and submission_id already keys on district_code, not this.
         _sr('select_one district', 'district', 'District', 'জেলা', required='yes'),
         _sr('calculate', 'district_code', calc=_hijra_dist_code_calc()),
 
