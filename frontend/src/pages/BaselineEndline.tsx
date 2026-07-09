@@ -24,7 +24,7 @@ import {
 import { api, apiErrorMessage } from '@/api/client'
 import { usePolling } from '@/hooks/usePolling'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
-import { BarBreakdown, Histogram, DonutBreakdown } from '@/components/ciprb/IndicatorCharts'
+import { BarBreakdown, DonutBreakdown, ColumnBreakdown, StackedBar } from '@/components/ciprb/IndicatorCharts'
 import { FieldworkMonitor, type Monitoring } from '@/components/baseline/FieldworkMonitor'
 import { SrhrIndicators, type Srhr } from '@/components/baseline/SrhrIndicators'
 
@@ -76,12 +76,21 @@ const POP_LABEL: Record<string, string> = {
   fsw: 'Female Sex Worker',
 }
 
+/** Collapse whitespace and spaces around a slash so near-identical category
+ *  labels ("SSC/Dakhil" vs "SSC / Dakhil") merge into one bar instead of two. */
+function normName(name: string): string {
+  return (name || '').replace(/\s*\/\s*/g, '/').replace(/\s+/g, ' ').trim()
+}
+
 /** array[{name,value}] -> Record<name, value>; 'all' merges both pops by name. */
 function toRecord(dim: PopDim | undefined, lens: Lens): Record<string, number> {
   if (!dim) return {}
   const src = lens === 'all' ? [...dim.hijra, ...dim.fsw] : dim[lens] || []
   const out: Record<string, number> = {}
-  for (const b of src) out[b.name] = (out[b.name] || 0) + b.value
+  for (const b of src) {
+    const k = normName(b.name)
+    out[k] = (out[k] || 0) + b.value
+  }
   return out
 }
 
@@ -258,17 +267,21 @@ export default function BaselineEndline() {
               <KpiChip icon={<Smartphone size={17} />} label="own a mobile phone" value={lensKpi.mobile_pct != null ? `${lensKpi.mobile_pct}%` : '—'} />
             </div>
 
-            {/* Chart grid — reuses the CIPRB indicator primitives (solid pies, no donuts) */}
+            {/* Chart grid — a deliberate mix of four distinct shapes so no two
+                neighbouring cards read as the same visual: vertical columns for
+                ordered bands, ranked horizontal bars for the many-category
+                dimensions, solid pies for the few-category splits, and a 100%
+                stacked bar. Every card carries counts + percentages. */}
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14 }}>
-              <Histogram title="Age distribution" kicker="Completed age (years)" data={toRecord(insights?.age_band, lens)} />
+              <ColumnBreakdown title="Age distribution" kicker="Completed age (years)" data={toRecord(insights?.age_band, lens)} />
               <BarBreakdown title="District coverage" kicker="Where interviews came from" data={toRecord(insights?.district, lens)} />
-              <BarBreakdown title="Highest education" kicker="Educational attainment" data={toRecord(insights?.education, lens)} />
               <DonutBreakdown title="Marital / partnership status" kicker="Current status" data={toRecord(insights?.marital, lens)} />
-              <Histogram title="Monthly income" kicker="Taka per month (banded)" data={toRecord(insights?.income_band, lens)} />
-              <DonutBreakdown title="Religion" kicker="Reported religion" data={toRecord(insights?.religion, lens)} />
+              <ColumnBreakdown title="Monthly income" kicker="Taka per month (banded)" data={toRecord(insights?.income_band, lens)} />
+              <BarBreakdown title="Highest education" kicker="Educational attainment" data={toRecord(insights?.education, lens)} />
+              <StackedBar title="Religion" kicker="Reported religion" data={toRecord(insights?.religion, lens)} />
               {lens === 'all' && (
                 <DonutBreakdown title="Population reached" kicker="Key population split"
-                  data={Object.fromEntries((insights?.population ?? []).map((p) => [p.name, p.value]))} />
+                  data={Object.fromEntries((insights?.population ?? []).map((p) => [normName(p.name), p.value]))} />
               )}
             </div>
           </>

@@ -7,7 +7,7 @@
  * concern. Value + a magnitude bar + the source question + the answered-n it was
  * computed over. Source: GET /baseline/responses/srhr/.
  */
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import {
   Briefcase, Scale, BookOpenCheck, HeartHandshake, Stethoscope, Brain, ShieldAlert,
 } from 'lucide-react'
@@ -36,37 +36,66 @@ const MODULE_META: { match: RegExp; icon: React.ReactNode }[] = [
 ]
 const iconFor = (name: string) => MODULE_META.find((m) => m.match.test(name))?.icon ?? <HeartHandshake size={15} />
 
-function Tile({ ind }: { ind: Indicator }) {
+const SHORT: Record<Pop, string> = { hijra: 'Hijra', fsw: 'FSW' }
+
+function fmt(value: number | null, unit?: string) {
+  const isPctLike = !unit || unit === 'score'
+  return value == null ? '—'
+    : unit === '৳' ? `৳${value.toLocaleString()}`
+    : `${value}${isPctLike ? '%' : ''}`
+}
+
+/** One labelled comparison bar inside a tile (the selected population is drawn
+ *  in the indicator's directional colour; the other population is muted grey so
+ *  the contrast between the two key populations reads at a glance). */
+function MiniBar({ name, value, unit, color, strong, max }: {
+  name: string; value: number | null; unit?: string; color: string; strong?: boolean; max: number
+}) {
+  const isPct = !unit || unit === 'score'
+  const w = value == null ? 0 : isPct ? Math.min(100, value) : Math.min(100, (value / max) * 100)
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      <span style={{ width: 38, flexShrink: 0, fontSize: 10.5, color: 'var(--muted)', fontWeight: strong ? 700 : 500 }}>{name}</span>
+      <div style={{ flex: 1, height: 6, borderRadius: 3, background: 'var(--hair)', overflow: 'hidden' }}>
+        <div style={{ height: '100%', width: `${w}%`, background: color, borderRadius: 3, transition: 'width .8s cubic-bezier(.22,1,.36,1)' }} />
+      </div>
+      <span style={{ width: 46, flexShrink: 0, textAlign: 'right', fontSize: 11.5, fontWeight: 700, color, fontVariantNumeric: 'tabular-nums' }}>
+        {fmt(value, unit)}
+      </span>
+    </div>
+  )
+}
+
+function Tile({ ind, pop, otherVal }: { ind: Indicator; pop: Pop; otherVal: number | null }) {
   const col = ind.value == null ? 'var(--muted)' : dirColor(ind.dir)
-  const isPctLike = !ind.unit || ind.unit === 'score'
-  const display =
-    ind.value == null ? '—'
-    : ind.unit === '৳' ? `৳${ind.value.toLocaleString()}`
-    : `${ind.value}${isPctLike ? '%' : ''}`
-  const barPct = ind.value != null && isPctLike ? Math.min(100, ind.value) : null
+  const other: Pop = pop === 'hijra' ? 'fsw' : 'hijra'
+  const max = ind.unit === '৳'
+    ? Math.max(1, ind.value ?? 0, otherVal ?? 0) * 1.1
+    : 100
   return (
     <div style={{
       background: 'var(--surface-2, var(--surface))', border: '1px solid var(--hair)',
-      borderRadius: 13, padding: '13px 14px 11px', minWidth: 0, minHeight: 128,
-      display: 'flex', flexDirection: 'column', gap: 8,
+      borderRadius: 13, padding: '13px 14px 12px', minWidth: 0, minHeight: 138,
+      display: 'flex', flexDirection: 'column', gap: 9,
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
         <span style={{
           fontFamily: 'var(--display)', fontStyle: 'italic', fontSize: 30, lineHeight: 1,
           color: col, fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.01em',
-        }}>{display}</span>
+        }}>{fmt(ind.value, ind.unit)}</span>
         <span className="mono" style={{
           fontSize: 9.5, color: 'var(--muted)', padding: '2px 6px', borderRadius: 5,
           border: '1px solid var(--hair)', whiteSpace: 'nowrap', flexShrink: 0,
         }}>{ind.ref}</span>
       </div>
-      {barPct != null && (
-        <div style={{ height: 5, borderRadius: 3, background: 'var(--hair)', overflow: 'hidden' }}>
-          <div style={{ height: '100%', width: `${barPct}%`, background: col, borderRadius: 3, transition: 'width .8s cubic-bezier(.22,1,.36,1)' }} />
-        </div>
-      )}
       <div style={{ fontSize: 12.5, color: 'var(--ink)', lineHeight: 1.35, fontWeight: 500, textWrap: 'pretty' as any }}>{ind.label}</div>
-      <div style={{ fontSize: 10.5, color: 'var(--muted)', marginTop: 'auto', paddingTop: 2 }}>n&nbsp;=&nbsp;{ind.n}</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginTop: 'auto' }}>
+        <MiniBar name={SHORT[pop]} value={ind.value} unit={ind.unit} color={col} strong max={max} />
+        {otherVal != null && (
+          <MiniBar name={SHORT[other]} value={otherVal} unit={ind.unit} color="var(--muted)" max={max} />
+        )}
+      </div>
+      <div style={{ fontSize: 10.5, color: 'var(--muted)', paddingTop: 1 }}>n&nbsp;=&nbsp;{ind.n}</div>
     </div>
   )
 }
@@ -82,6 +111,15 @@ function LegendDot({ c, label }: { c: string; label: string }) {
 export function SrhrIndicators({ data }: { data: Srhr }) {
   const [pop, setPop] = useState<Pop>('hijra')
   const d = data[pop]
+  const other: Pop = pop === 'hijra' ? 'fsw' : 'hijra'
+  // Same indicator in the OTHER population, keyed by label — lets each tile show
+  // the Hijra-vs-FSW contrast instead of a single lone percentage.
+  const otherByLabel = useMemo(() => {
+    const m = new Map<string, number | null>()
+    for (const mod of data[other]?.modules ?? [])
+      for (const ind of mod.indicators) m.set(ind.label, ind.value)
+    return m
+  }, [data, other])
   if (!d) return null
   return (
     <section className="section" style={{ marginTop: 34 }}>
@@ -95,6 +133,9 @@ export function SrhrIndicators({ data }: { data: Srhr }) {
             <LegendDot c={GOOD} label="positive outcome" />
             <LegendDot c={CONCERN} label="concern / higher is worse" />
             <LegendDot c={NEUTRAL} label="descriptive" />
+            <span style={{ fontSize: 11.5, color: 'var(--muted)' }}>
+              · each tile: <b style={{ color: 'var(--ink)' }}>{POP_LABEL[pop].split(' ')[0]}</b> vs the grey <b style={{ color: 'var(--ink)' }}>{SHORT[other]}</b> bar
+            </span>
           </div>
         </div>
         <div className="pills">
@@ -115,7 +156,9 @@ export function SrhrIndicators({ data }: { data: Srhr }) {
               <span style={{ fontSize: 11, color: 'var(--muted)', marginLeft: 'auto', fontVariantNumeric: 'tabular-nums' }}>{m.indicators.length} indicators</span>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(196px, 1fr))', gap: 11 }}>
-              {m.indicators.map((ind) => <Tile key={ind.label} ind={ind} />)}
+              {m.indicators.map((ind) => (
+                <Tile key={ind.label} ind={ind} pop={pop} otherVal={otherByLabel.get(ind.label) ?? null} />
+              ))}
             </div>
           </div>
         ))}

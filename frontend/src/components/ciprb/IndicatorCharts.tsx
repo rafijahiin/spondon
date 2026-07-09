@@ -208,6 +208,95 @@ export function DonutBreakdown({
   )
 }
 
+/** Vertical columns for ordered bands (age, income). A deliberately different
+ *  shape from the horizontal BarBreakdown so neighbouring cards never read as
+ *  the same chart. Keeps key order by default (bands are already ordered). */
+export function ColumnBreakdown({
+  title, kicker, data, labels = {}, ordered = true,
+}: {
+  title: string
+  kicker?: string
+  data: Record<string, number>
+  labels?: Record<string, string>
+  ordered?: boolean
+}) {
+  const total = totalOf(data)
+  let entries = Object.entries(data || {}).map(([k, v]) => ({
+    k, label: labels[k] || k, value: v || 0,
+  }))
+  if (!ordered) entries = entries.sort((a, b) => b.value - a.value)
+  const max = Math.max(1, ...entries.map(e => e.value))
+  const BAR_AREA = 132
+  return (
+    <Frame kicker={kicker} title={title}>
+      {total === 0 ? <Empty label={title} /> : (
+        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 10 }}>
+          {entries.map(e => {
+            const pct = total > 0 ? Math.round((e.value / total) * 100) : 0
+            const h = e.value > 0 ? Math.max(4, Math.round((e.value / max) * (BAR_AREA - 26))) : 0
+            return (
+              <div key={e.k} style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <div style={{ height: BAR_AREA, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', alignItems: 'center', gap: 4, width: '100%' }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink)', fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>
+                    {e.value}<span className="mute" style={{ fontSize: 10, marginLeft: 3 }}>{pct}%</span>
+                  </div>
+                  <div style={{ width: '66%', maxWidth: 46, height: h, background: CIPRB_ORANGE, borderRadius: '5px 5px 0 0', transition: 'height 400ms ease' }} />
+                </div>
+                <div style={{ fontSize: 10.5, color: 'var(--ink-2)', marginTop: 7, textAlign: 'center', lineHeight: 1.2, textWrap: 'pretty' as any }}>{e.label}</div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </Frame>
+  )
+}
+
+/** A single 100%-wide stacked proportion bar + legend. Best for a few
+ *  mutually-exclusive shares (religion, population split) — a third distinct
+ *  shape alongside pies, columns and horizontal bars. */
+export function StackedBar({
+  title, kicker, data, labels = {},
+}: {
+  title: string
+  kicker?: string
+  data: Record<string, number>
+  labels?: Record<string, string>
+}) {
+  const total = totalOf(data)
+  const segs = Object.entries(data || {})
+    .map(([k, v], i) => ({ name: labels[k] || k, value: v || 0, color: PALETTE[i % PALETTE.length] }))
+    .filter(d => d.value > 0)
+    .sort((a, b) => b.value - a.value)
+  const pct = (v: number) => total > 0 ? Math.round((v / total) * 100) : 0
+  return (
+    <Frame kicker={kicker} title={title}>
+      {total === 0 ? <Empty label={title} /> : (
+        <div>
+          <div style={{ display: 'flex', height: 34, borderRadius: 9, overflow: 'hidden', border: '1px solid var(--hair)' }}>
+            {segs.map(s => (
+              <div key={s.name} title={`${s.name}: ${s.value} (${pct(s.value)}%)`}
+                style={{ width: `${pct(s.value)}%`, background: s.color, display: 'grid', placeItems: 'center', color: '#fff', fontSize: 11, fontWeight: 700, minWidth: 2, transition: 'width 400ms ease' }}>
+                {pct(s.value) >= 9 ? `${pct(s.value)}%` : ''}
+              </div>
+            ))}
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 13, fontSize: 12.5 }}>
+            {segs.map(s => (
+              <div key={s.name} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ width: 10, height: 10, borderRadius: 3, background: s.color, flexShrink: 0 }} />
+                <span style={{ flex: 1, color: 'var(--ink-2)' }}>{s.name}</span>
+                <b style={{ fontVariantNumeric: 'tabular-nums' }}>{s.value}</b>
+                <span className="mute" style={{ fontSize: 11, width: 36, textAlign: 'right' }}>{pct(s.value)}%</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </Frame>
+  )
+}
+
 /** A single ratio highlighted as a big stat (e.g. PNC received yes/total,
  *  livebirth/total). Picks the `highlight` key as numerator. */
 export function StatTile({
