@@ -90,7 +90,7 @@ function PopRow({ p, total }: { p: Progress; total: number }) {
 }
 
 /* ── the field-pulse hero: headline count + daily sparkline + progress rings */
-function FieldPulse({ m, verified, pending }: { m: Monitoring; verified: number; pending: number }) {
+function FieldPulse({ m }: { m: Monitoring }) {
   const spark = m.daily
   return (
     <div className="card" style={{ padding: 0, overflow: 'hidden', borderRadius: 16 }}>
@@ -100,7 +100,7 @@ function FieldPulse({ m, verified, pending }: { m: Monitoring; verified: number;
           <div className="kicker"><span className="live-dot" /> Field pulse · live</div>
           <div style={{ fontFamily: 'var(--display)', fontStyle: 'normal', fontSize: 62, lineHeight: 1, color: 'var(--unfpa)', fontVariantNumeric: 'tabular-nums', letterSpacing: '-.02em', marginTop: 6 }}>{m.total}</div>
           <div style={{ fontSize: 13, color: 'var(--muted)', marginTop: 5 }}>
-            interviews collected · <b style={{ color: 'var(--emerald)' }}>{verified}</b> verified · {pending} pending
+            interviews collected
           </div>
         </div>
         {spark.length > 1 && (
@@ -383,8 +383,6 @@ function DailyCalendar({ days }: { days: DayStat[] }) {
 }
 
 export function FieldworkMonitor({ m }: { m: Monitoring }) {
-  const verified = m.by_status?.approved ?? m.by_status?.APPROVED ?? 0
-  const pending = m.by_status?.pending ?? m.by_status?.PENDING ?? 0
   const completedPct = (() => {
     const c = m.outcomes.find((o) => o.name === 'Completed')?.value ?? 0
     const t = m.outcomes.reduce((s, o) => s + o.value, 0)
@@ -393,7 +391,7 @@ export function FieldworkMonitor({ m }: { m: Monitoring }) {
 
   return (
     <section style={{ marginTop: 8 }}>
-      <FieldPulse m={m} verified={verified} pending={pending} />
+      <FieldPulse m={m} />
 
       <div style={{ marginTop: 14 }}><KpiBand m={m} completedPct={completedPct} /></div>
 

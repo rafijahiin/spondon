@@ -588,16 +588,13 @@ export default function ManagerApprovals() {
     (['Bandhu', 'PHD'].includes(user.organisation) && ['manager', 'org_lead'].includes(user.role))
     || ['developer', 'supervisor'].includes(user.role)
   )
-  // D5 baseline verification access (mirrors accounts/permissions.py exactly):
-  //   SEE the tab     → CIPRB + UNFPA orgs, or the developer (read-only for the rest).
-  //   APPROVE/REJECT  → developer OR the CIPRB manager (Tanjina) ONLY.
-  // PHD/Bandhu never see the tab; UNFPA + CIPRB org_lead (Sayeed) are view-only.
-  const canSeeBaseline = !!user && (
-    user.role === 'developer' || ['CIPRB', 'UNFPA'].includes(user.organisation)
-  )
-  const canApproveBaseline = !!user && (
-    user.role === 'developer' || (user.organisation === 'CIPRB' && user.role === 'manager')
-  )
+  // Baseline no longer needs approval (Rafi 2026-07-09: the D5 baseline
+  // auto-approves at ingest — every completed interview counts immediately), so
+  // its verification tab is retired: nothing ever pends here now. Forced false so
+  // the tab, the /baseline/verification/ fetch and the queue all drop out without
+  // unpicking every reference.
+  const canSeeBaseline = false
+  const canApproveBaseline = false
   // Filter state persisted to localStorage so navigating away and
   // back restores the user's last selected filter (§9 state-preservation).
   const FILTER_KEY = 'approvals.filter'
@@ -605,7 +602,7 @@ export default function ManagerApprovals() {
   const [filter, setFilter] = useState<FilterKey>(() => {
     if (typeof window === 'undefined') return 'all'
     const stored = window.localStorage.getItem(FILTER_KEY)
-    if (stored === 'all' || stored === 'urgent' || stored === 'phd' || stored === 'bondhu' || stored === 'ciprb' || stored === 'reviewed' || stored === 'baseline') {
+    if (stored === 'all' || stored === 'urgent' || stored === 'phd' || stored === 'bondhu' || stored === 'ciprb' || stored === 'reviewed') {
       return stored
     }
     return 'all'
