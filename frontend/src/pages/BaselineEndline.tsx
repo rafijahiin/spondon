@@ -300,10 +300,20 @@ export default function BaselineEndline() {
                 ordered bands, ranked horizontal bars for the many-category
                 dimensions, solid pies for the few-category splits, and a 100%
                 stacked bar. Every card carries counts + percentages. */}
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14 }}>
-              <ColumnBreakdown title="Age distribution" kicker="Completed age (years)" data={toRecord(insights?.age_band, lens)} />
-              <DonutBreakdown title="Marital / partnership status" kicker="Current status" data={toRecord(insights?.marital, lens)} />
-              <ColumnBreakdown title="Monthly income" kicker="Taka per month (banded)" data={toRecord(insights?.income_band, lens)} />
+            {/* Feature row: age + income stacked in a narrow left column so the
+                marital pie (long, many-category legend) gets a wide slot to
+                breathe beside them. */}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, alignItems: 'flex-start' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14, flex: '1 1 300px', minWidth: 280 }}>
+                <div><ColumnBreakdown title="Age distribution" kicker="Completed age (years)" data={toRecord(insights?.age_band, lens)} /></div>
+                <div><ColumnBreakdown title="Monthly income" kicker="Taka per month (banded)" data={toRecord(insights?.income_band, lens)} /></div>
+              </div>
+              <div style={{ flex: '1.6 1 360px', minWidth: 320, display: 'flex' }}>
+                <DonutBreakdown title="Marital / partnership status" kicker="Current status" data={toRecord(insights?.marital, lens)} />
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, marginTop: 14 }}>
               <BarBreakdown title="Highest education" kicker="Educational attainment" data={bandEducation(toRecord(insights?.education, lens))} ordered />
               <StackedBar title="Religion" kicker="Reported religion" data={toRecord(insights?.religion, lens)} />
               {lens === 'all' && (
