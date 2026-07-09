@@ -1,0 +1,340 @@
+"""Major SRHR indicators — the module-based analytical summary of the baseline.
+
+Computes the indicator list CIPRB specified (Dashbroad.docx) over VERIFIED
+responses, per key population, grouped by questionnaire module. Every indicator
+is mapped to the REAL digitised field(s) by content (the paper numbering drifted
+in places — e.g. the FSW instrument has no dedicated HIV-testing/counselling
+item, so the nearest true measures are reported and labelled honestly).
+
+Conventions
+- pct indicators: numerator/denominator over answered rows only; N/A, don't-know
+  and refusal codes are excluded from the denominator.
+- PHQ-9: sum of q8_3_1..q8_3_9 (0–3 each). Prevalence = score >= 10;
+  moderate/severe = >= 15; suicidal ideation = item 9 > 0.
+- FIES: count of affirmed items (Hijra c101–c109; FSW b301_a..i occurrence).
+  Severe food insecurity = 7+ of 9 affirmed (FIES-standard cutoff).
+- Knowledge scores: mean % of items answered correctly ('1' = Yes/correct).
+"""
+from statistics import median
+
+_SKIP = {'', None, '8', '98', '99', '00'}   # non-substantive codes (per-list overrides below)
+
+
+def _s(raw, f):
+    v = raw.get(f)
+    return None if v is None else str(v).strip()
+
+
+def _int(raw, f):
+    try:
+        return int(float(raw.get(f)))
+    except (TypeError, ValueError):
+        return None
+
+
+class Agg:
+    """num/den accumulator -> pct."""
+    def __init__(self):
+        self.n = 0
+        self.d = 0
+
+    def add(self, hit, ok=True):
+        if ok:
+            self.d += 1
+            if hit:
+                self.n += 1
+
+    def pct(self):
+        return round(100 * self.n / self.d) if self.d else None
+
+
+def _grid_any(raw, fields, yes='1', skip=('', None, '8', '99', '98')):
+    """(any_yes, answered_any) over a Yes/No grid."""
+    hit = seen = False
+    for f in fields:
+        v = _s(raw, f)
+        if v in skip:
+            continue
+        seen = True
+        if v == yes:
+            hit = True
+    return hit, seen
+
+
+def _phq(raw):
+    items = [_int(raw, f'q8_3_{i}') for i in range(1, 10)]
+    if any(v is None for v in items):
+        return None, None
+    return sum(items), items[8]
+
+
+def _fies_count(raw, pop):
+    fields = ([f'c10{i}' for i in range(1, 10)] if pop == 'hijra'
+              else [f'b301_{c}_occ' for c in 'abcdefghi'])
+    vals = [_s(raw, f) for f in fields]
+    if all(v in ('', None) for v in vals):
+        return None
+    return sum(1 for v in vals if v == '1')
+
+
+HIJRA_GBV = [f'q7_1_{c}' for c in 'abcdefghijk']
+FSW_GBV = [f'q7_1_{c}' for c in ('i', 'ii', 'iii', 'iv', 'v', 'vi', 'vii',
+                                 'viii', 'ix', 'x', 'xi', 'xii')]
+# FSW Q7.1 row groups by violence type (per the instrument's section headers).
+FSW_PHYS = FSW_GBV[0:3]
+FSW_PSY = FSW_GBV[3:5]
+FSW_SEX = FSW_GBV[5:8]
+
+
+def compute_srhr(responses):
+    """responses: iterable of verified BaselineResponse. -> module-grouped
+    indicator values per population."""
+    rows = {'hijra': [], 'fsw': []}
+    for r in responses:
+        pop = (r.population or '').lower()
+        if pop in rows:
+            rows[pop].append(r.raw_data or {})
+
+    out = {}
+    for pop, data in rows.items():
+        n = len(data)
+        aggs = {}
+
+        def P(key):
+            return aggs.setdefault(key, Agg())
+
+        incomes, phq_scores, phq_sui, fies_sev, know_hiv, know_sti = [], [], Agg(), Agg(), [], []
+
+        for raw in data:
+            if pop == 'hijra':
+                P('employed').add(_s(raw, 'b108_worked') == '1', _s(raw, 'b108_worked') in ('1', '2'))
+                inc = _int(raw, 'b104_share')
+                if inc:
+                    incomes.append(inc)
+                hit, seen = _grid_any(raw, [f'q2_1_{c}' for c in 'abcdefghijklmno'])
+                P('discr_any').add(hit, seen)
+                P('discr_police').add(_s(raw, 'q2_1_k') == '1', _s(raw, 'q2_1_k') in ('1', '2'))
+                P('discr_work').add(_s(raw, 'q2_1_g') == '1', _s(raw, 'q2_1_g') in ('1', '2'))
+                v = _s(raw, 'q2_5')
+                P('community').add(v in ('3', '4'), v in ('1', '2', '3', '4'))
+                v = _s(raw, 'q2_12')
+                P('rights_aware').add(bool(v) and '98' not in (v or ''), bool(v))
+                P('legal_got').add(_s(raw, 'q2_19') == '1', _s(raw, 'q2_19') in ('1', '2'))
+                v = _s(raw, 'q2_21')
+                P('legal_unmet').add(bool(v) and '00' not in v.split(), bool(v))
+                hiv_items = [1 if _s(raw, f'q3_{i}') == '1' else 0 for i in range(1, 8)
+                             if _s(raw, f'q3_{i}') in ('1', '2')]
+                if hiv_items:
+                    know_hiv.append(100 * sum(hiv_items) / len(hiv_items))
+                sti_items = [1 if _s(raw, f'q3_{i}') == '1' else 0 for i in (8, 9, 10)
+                             if _s(raw, f'q3_{i}') in ('1', '2')]
+                if sti_items:
+                    know_sti.append(100 * sum(sti_items) / len(sti_items))
+                P('sex_active').add(_s(raw, 'q4_3') == '1', _s(raw, 'q4_3') in ('1', '2'))
+                # consistent condom = Always with every applicable partner type
+                cvals = [_s(raw, f'q4_7_{c}') for c in 'abcd']
+                appl = [v for v in cvals if v in ('1', '2', '3')]
+                if appl:
+                    P('condom_consistent').add(all(v == '1' for v in appl))
+                v = _s(raw, 'q4_8')
+                P('lube_water').add(v == '1', v in ('1', '2', '3', '4'))
+                v = _s(raw, 'q5_1')
+                P('health_poor').add(v in ('4', '5'), v in ('1', '2', '3', '4', '5'))
+                hit, seen = _grid_any(raw, [f'q5_4_{c}' for c in 'abcd'])
+                P('sti_sympt').add(hit, seen)
+                ever = _s(raw, 'q5_8')
+                if ever == '2':
+                    P('hiv_test_12m').add(False)
+                elif ever == '1':
+                    v = _s(raw, 'q5_9')
+                    if v in ('1', '2', '3'):
+                        P('hiv_test_12m').add(v == '1')
+                v = _s(raw, 'q5_11')
+                P('hiv_counsel').add(v in ('1', '2', '3'), v in ('1', '2', '3', '4'))
+                v = _s(raw, 'q5_15')
+                P('sti_treat_done').add(v == '1', v in ('1', '2', '3'))
+                P('svc_used').add(_s(raw, 'q6_1') == '1', _s(raw, 'q6_1') in ('1', '2'))
+                v = _s(raw, 'q6_5')
+                P('svc_satisfied').add(v in ('3', '4'), v in ('1', '2', '3', '4'))
+                gbv_hit, gbv_seen = _grid_any(raw, [f + '_ever' for f in HIJRA_GBV])
+                P('gbv_any').add(gbv_hit, gbv_seen)
+            else:
+                v = _s(raw, 'b101')
+                P('brothel_based').add(v in ('1', '2'), bool(v))
+                inc = _int(raw, 'b108')
+                if inc:
+                    incomes.append(inc)
+                v = _s(raw, 'b112')
+                P('income_autonomy').add(v == '1', v in ('1', '2', '3'))
+                P('savings').add(_s(raw, 'b114') == '1', _s(raw, 'b114') in ('1', '2'))
+                hit, seen = _grid_any(raw, [f'q2_1_{c}' for c in 'abcdefghijklmn'])
+                P('discr_any').add(hit, seen)
+                P('discr_housing').add(_s(raw, 'q2_1_a') == '1', _s(raw, 'q2_1_a') in ('1', '2'))
+                P('discr_evict').add(_s(raw, 'q2_1_b') == '1', _s(raw, 'q2_1_b') in ('1', '2'))
+                P('discr_denial').add(_s(raw, 'q2_1_c') == '1', _s(raw, 'q2_1_c') in ('1', '2'))
+                P('discr_police').add(_s(raw, 'q2_1_j') == '1', _s(raw, 'q2_1_j') in ('1', '2'))
+                aware = [1 for c in 'abcde' if _s(raw, f'q2_12_{c}') == '1']
+                seen_aw = any(_s(raw, f'q2_12_{c}') in ('1', '2') for c in 'abcde')
+                P('rights_aware').add(bool(aware), seen_aw)
+                P('legal_got').add(_s(raw, 'q2_19') == '1', _s(raw, 'q2_19') in ('1', '2'))
+                v = _s(raw, 'q2_21')
+                P('legal_unmet').add(bool(v) and '00' not in v.split(), bool(v))
+                hiv_items = [1 if _s(raw, f'q3_{i}') == '1' else 0 for i in range(1, 8)
+                             if _s(raw, f'q3_{i}') in ('1', '2')]
+                if hiv_items:
+                    know_hiv.append(100 * sum(hiv_items) / len(hiv_items))
+                sti_items = [1 if _s(raw, f'q3_{i}') == '1' else 0 for i in (8, 9, 10)
+                             if _s(raw, f'q3_{i}') in ('1', '2')]
+                if sti_items:
+                    know_sti.append(100 * sum(sti_items) / len(sti_items))
+                cvals = [_s(raw, f'q4_7_{c}') for c in 'abc']
+                appl = [v for v in cvals if v in ('1', '2', '3')]
+                if appl:
+                    P('condom_consistent').add(all(v == '1' for v in appl))
+                v = _s(raw, 'q4_5')
+                P('condom_last_client').add(v == '1', v in ('1', '2'))
+                v = _s(raw, 'q4_9')
+                P('refuse_client').add(v == '1', v in ('1', '2', '3'))
+                v = _s(raw, 'q5_1')
+                P('health_poor').add(v in ('4', '5'), v in ('1', '2', '3', '4', '5'))
+                hit, seen = _grid_any(raw, [f'q5_4_{c}' for c in 'abcde'])
+                P('sti_sympt').add(hit, seen)
+                P('sti_tested').add(_s(raw, 'q5_8') == '1', _s(raw, 'q5_8') in ('1', '2'))
+                P('sti_told_12m').add(_s(raw, 'q5_9') == '1', _s(raw, 'q5_9') in ('1', '2'))
+                v = _s(raw, 'q5_11')
+                P('syph_test_12m').add(v == '1', v in ('1', '2', '3'))
+                v = _s(raw, 'q5_10')
+                P('sti_treat_done').add(v == '1', v in ('1', '2', '3'))
+                P('svc_used').add(_s(raw, 'q6_1') == '1', _s(raw, 'q6_1') in ('1', '2'))
+                v = _s(raw, 'q6_4')
+                P('svc_satisfied').add(v in ('3', '4'), v in ('1', '2', '3', '4'))
+                gbv_hit, gbv_seen = _grid_any(raw, [f + '_ever' for f in FSW_GBV])
+                P('gbv_any').add(gbv_hit, gbv_seen)
+                h, s2 = _grid_any(raw, [f + '_ever' for f in FSW_PHYS])
+                P('gbv_phys').add(h, s2)
+                h, s2 = _grid_any(raw, [f + '_ever' for f in FSW_SEX])
+                P('gbv_sex').add(h, s2)
+                h, s2 = _grid_any(raw, [f + '_ever' for f in FSW_PSY])
+                P('gbv_emot').add(h, s2)
+                v = _s(raw, 'q7_18')
+                P('gbv_help').add(v == '1', v in ('1', '2'))
+
+            score, item9 = _phq(raw)
+            if score is not None:
+                phq_scores.append(score)
+                phq_sui.add(item9 > 0)
+            fc = _fies_count(raw, pop)
+            if fc is not None:
+                fies_sev.add(fc >= 7)
+
+        def pct(key):
+            a = aggs.get(key)
+            return {'value': a.pct() if a else None, 'n': a.d if a else 0}
+
+        def tile(key, label, ref, kind='pct'):
+            base = pct(key) if kind == 'pct' else key
+            return {'label': label, 'ref': ref, **base}
+
+        phq_prev = round(100 * sum(1 for s2 in phq_scores if s2 >= 10) / len(phq_scores)) if phq_scores else None
+        phq_modsev = round(100 * sum(1 for s2 in phq_scores if s2 >= 15) / len(phq_scores)) if phq_scores else None
+        med_inc = int(median(incomes)) if incomes else None
+        k_hiv = round(sum(know_hiv) / len(know_hiv)) if know_hiv else None
+        k_sti = round(sum(know_sti) / len(know_sti)) if know_sti else None
+
+        common_mh = [
+            {'label': 'Depression prevalence (PHQ-9 ≥ 10)', 'ref': 'PHQ-9', 'value': phq_prev, 'n': len(phq_scores)},
+            {'label': 'Moderate/severe depression (PHQ-9 ≥ 15)', 'ref': 'PHQ-9', 'value': phq_modsev, 'n': len(phq_scores)},
+            {'label': 'Suicidal ideation (item 9 > 0)', 'ref': 'PHQ-9 · 9', 'value': phq_sui.pct(), 'n': phq_sui.d},
+        ]
+
+        if pop == 'hijra':
+            modules = [
+                ('Livelihood & economic security', [
+                    tile('employed', 'Worked in the past 7 days', 'B108'),
+                    {'label': 'Median monthly income', 'ref': 'B104', 'value': med_inc, 'n': len(incomes), 'unit': '৳'},
+                    {'label': 'Severe food insecurity (FIES 7+/9)', 'ref': 'C101–C109', 'value': fies_sev.pct(), 'n': fies_sev.d},
+                ]),
+                ('Discrimination, rights & legal access', [
+                    tile('discr_any', 'Experienced any discrimination', 'Q2.1'),
+                    tile('discr_police', 'Police harassment', 'Q2.1k'),
+                    tile('discr_work', 'Workplace discrimination', 'Q2.1g'),
+                    tile('community', 'Participates in community events', 'Q2.5'),
+                    tile('rights_aware', 'Aware of any legal right/policy', 'Q2.12'),
+                    tile('legal_got', 'Received legal services', 'Q2.19'),
+                    tile('legal_unmet', 'Needed but did not seek legal support', 'Q2.21'),
+                ]),
+                ('HIV & STI knowledge', [
+                    {'label': 'HIV knowledge score', 'ref': 'Q3.1–3.7', 'value': k_hiv, 'n': len(know_hiv), 'unit': 'score'},
+                    {'label': 'STI knowledge score', 'ref': 'Q3.8–3.10', 'value': k_sti, 'n': len(know_sti), 'unit': 'score'},
+                ]),
+                ('Sexual behaviour & prevention', [
+                    tile('sex_active', 'Sexually active in last 12 months', 'Q4.3'),
+                    tile('condom_consistent', 'Consistent condom use (all partners)', 'Q4.7'),
+                    tile('lube_water', 'Water-based lubricant with condoms', 'Q4.8'),
+                ]),
+                ('Health status, testing & services', [
+                    tile('health_poor', 'Self-rated poor/very poor health', 'Q5.1'),
+                    tile('sti_sympt', 'STI symptoms in last 12 months', 'Q5.4'),
+                    tile('hiv_test_12m', 'HIV test within last 12 months', 'Q5.8–5.9'),
+                    tile('hiv_counsel', 'Counselling at last HIV test', 'Q5.11'),
+                    tile('sti_treat_done', 'Completed STI treatment', 'Q5.15'),
+                    tile('svc_used', 'Used a health facility (12 m)', 'Q6.1'),
+                    tile('svc_satisfied', 'Most/all needs met by services', 'Q6.5'),
+                ]),
+                ('Mental health (PHQ-9)', common_mh),
+                ('Gender-based violence', [
+                    tile('gbv_any', 'Any GBV experience (lifetime)', 'Q7.1'),
+                ]),
+            ]
+        else:
+            modules = [
+                ('Livelihood & economic security', [
+                    tile('brothel_based', 'Brothel-based (vs street-based)', 'B101'),
+                    {'label': 'Median monthly income from sex work', 'ref': 'B108', 'value': med_inc, 'n': len(incomes), 'unit': '৳'},
+                    tile('income_autonomy', 'Full control over own income', 'B112'),
+                    tile('savings', 'Has savings', 'B114'),
+                    {'label': 'Severe food insecurity (FIES 7+/9)', 'ref': 'B301', 'value': fies_sev.pct(), 'n': fies_sev.d},
+                ]),
+                ('Discrimination, rights & legal access', [
+                    tile('discr_any', 'Experienced any discrimination', 'Q2.1'),
+                    tile('discr_housing', 'Housing discrimination', 'Q2.1a'),
+                    tile('discr_evict', 'Brothel eviction threat', 'Q2.1b'),
+                    tile('discr_denial', 'Service denial in public places', 'Q2.1c'),
+                    tile('discr_police', 'Police harassment', 'Q2.1j'),
+                    tile('rights_aware', 'Aware of any legal protection', 'Q2.12'),
+                    tile('legal_got', 'Received legal support', 'Q2.19'),
+                    tile('legal_unmet', 'Unmet need for legal support', 'Q2.21'),
+                ]),
+                ('HIV & STI knowledge', [
+                    {'label': 'HIV knowledge score', 'ref': 'Q3.1–3.7', 'value': k_hiv, 'n': len(know_hiv), 'unit': 'score'},
+                    {'label': 'STI knowledge score', 'ref': 'Q3.8–3.10', 'value': k_sti, 'n': len(know_sti), 'unit': 'score'},
+                ]),
+                ('Sexual behaviour & prevention', [
+                    tile('condom_consistent', 'Consistent condom use (all partners)', 'Q4.7'),
+                    tile('condom_last_client', 'Condom at last sex with client', 'Q4.5'),
+                    tile('refuse_client', 'Can refuse a client who rejects condoms', 'Q4.9'),
+                ]),
+                ('Health status, testing & services', [
+                    tile('health_poor', 'Self-rated poor/very poor health', 'Q5.1'),
+                    tile('sti_sympt', 'STI symptoms in last 12 months', 'Q5.4'),
+                    tile('sti_tested', 'Ever tested for an STI (non-HIV)', 'Q5.8'),
+                    tile('sti_told_12m', 'Diagnosed with an STI (12 m)', 'Q5.9'),
+                    tile('syph_test_12m', 'Syphilis test within 12 months', 'Q5.11'),
+                    tile('sti_treat_done', 'Completed STI treatment', 'Q5.10'),
+                    tile('svc_used', 'Used a health facility (12 m)', 'Q6.1'),
+                    tile('svc_satisfied', 'Most/all needs met by services', 'Q6.4'),
+                ]),
+                ('Mental health (PHQ-9)', common_mh),
+                ('Gender-based violence', [
+                    tile('gbv_any', 'Any GBV experience (lifetime)', 'Q7.1'),
+                    tile('gbv_phys', 'Physical violence', 'Q7.1 i–iii'),
+                    tile('gbv_sex', 'Sexual violence', 'Q7.1 vi–viii'),
+                    tile('gbv_emot', 'Psychological violence', 'Q7.1 iv–v'),
+                    tile('gbv_help', 'Sought help after GBV (12 m)', 'Q7.18'),
+                ]),
+            ]
+
+        out[pop] = {'n': n, 'modules': [
+            {'module': name, 'indicators': inds} for name, inds in modules
+        ]}
+    return out

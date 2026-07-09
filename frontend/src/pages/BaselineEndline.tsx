@@ -26,6 +26,7 @@ import { usePolling } from '@/hooks/usePolling'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { BarBreakdown, Histogram, DonutBreakdown } from '@/components/ciprb/IndicatorCharts'
 import { FieldworkMonitor, type Monitoring } from '@/components/baseline/FieldworkMonitor'
+import { SrhrIndicators, type Srhr } from '@/components/baseline/SrhrIndicators'
 
 type Pop = 'hijra' | 'fsw'
 type Lens = 'all' | Pop
@@ -119,6 +120,10 @@ export default function BaselineEndline() {
   const { data: monitoring } = usePolling<Monitoring>({
     fetcher: () => api.get('/baseline/responses/monitoring/').then((r) => r.data),
     interval: 30_000,
+  })
+  const { data: srhr } = usePolling<Srhr>({
+    fetcher: () => api.get('/baseline/responses/srhr/').then((r) => r.data),
+    interval: 60_000,
   })
   const { data: pending, loading, refetch: refetchPending } = usePolling<PendingItem[]>({
     fetcher: () => api.get('/baseline/verification/').then((r) =>
@@ -222,6 +227,9 @@ export default function BaselineEndline() {
           <div className="card" style={{ background: 'rgba(233,69,96,0.06)', borderColor: 'rgba(233,69,96,0.2)', color: 'var(--rose)', padding: '10px 14px', fontSize: 13 }}>{err}</div>
         </section>
       )}
+
+      {/* ── Major SRHR indicators, by questionnaire module ────────────────── */}
+      {srhr && <SrhrIndicators data={srhr} />}
 
       {/* ── Insights ─────────────────────────────────────────────────────── */}
       <section className="section" style={{ marginTop: 30 }}>

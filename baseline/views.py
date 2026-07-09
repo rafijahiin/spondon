@@ -116,6 +116,13 @@ class BaselineResponseViewSet(OrgFilterMixin, ModelViewSet):
         return Response(compute_insights(self.get_queryset()))
 
     @action(detail=False, methods=['get'])
+    def srhr(self, request):
+        """Major SRHR indicators (CIPRB's Dashbroad list) over verified
+        responses, grouped by questionnaire module, per population."""
+        from .srhr import compute_srhr
+        return Response(compute_srhr(self.get_queryset()))
+
+    @action(detail=False, methods=['get'])
     def monitoring(self, request):
         """Fieldwork + data-quality monitoring over ALL collected baseline
         submissions (pending + approved) — the collection command center. Reads
