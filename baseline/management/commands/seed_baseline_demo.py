@@ -96,7 +96,7 @@ def _realistic_srhr(pop, base):
     for c in ('abcd' if pop == 'hijra' else 'abc'):
         base[f'q4_7_{c}'] = _W({'1': 62, '2': 24, '3': 9, '8': 5})
     # ── HIV/STI knowledge yes/no items — bias toward correct (realistic 60–70%)
-    for i in ((1, 2, 3, 4, 6, 7, 8, 9, 10) if pop == 'hijra' else (1, 2, 3, 4, 8, 9, 10)):
+    for i in ((1, 2, 3, 4, 6, 7, 8, 9, 10) if pop == 'hijra' else (1, 2, 3, 4, 6, 7, 8, 9, 10)):
         f = f'q3_{i}'
         if f in base and str(base[f]) in ('1', '2'):
             base[f] = '1' if R() < 0.68 else '2'

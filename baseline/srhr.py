@@ -138,8 +138,14 @@ def compute_srhr(responses):
                 P('legal_got').add(_s(raw, 'q2_19') == '1', _s(raw, 'q2_19') in ('1', '2'))
                 v = _s(raw, 'q2_21')
                 P('legal_unmet').add(bool(v) and '00' not in v.split(), bool(v))
-                hiv_items = [1 if _s(raw, f'q3_{i}') == '1' else 0 for i in range(1, 8)
-                             if _s(raw, f'q3_{i}') in ('1', '2')]
+                # HIV-knowledge items differ by form: the Hijra Q3.1–3.7 block is
+                # all HIV, but the FSW form shifts — its Q3.1–3.3 are contraception
+                # / condom-access, and only Q3.4–3.7 are HIV. Score the real HIV
+                # yes/no items per form so the FSW score isn't diluted.
+                hiv_ks = (['q3_1', 'q3_5', 'q3_6', 'q3_7'] if pop == 'hijra'
+                          else ['q3_4', 'q3_6', 'q3_7'])
+                hiv_items = [1 if _s(raw, f) == '1' else 0 for f in hiv_ks
+                             if _s(raw, f) in ('1', '2')]
                 if hiv_items:
                     know_hiv.append(100 * sum(hiv_items) / len(hiv_items))
                 sti_items = [1 if _s(raw, f'q3_{i}') == '1' else 0 for i in (8, 9, 10)
@@ -203,8 +209,14 @@ def compute_srhr(responses):
                 P('legal_got').add(_s(raw, 'q2_19') == '1', _s(raw, 'q2_19') in ('1', '2'))
                 v = _s(raw, 'q2_21')
                 P('legal_unmet').add(bool(v) and '00' not in v.split(), bool(v))
-                hiv_items = [1 if _s(raw, f'q3_{i}') == '1' else 0 for i in range(1, 8)
-                             if _s(raw, f'q3_{i}') in ('1', '2')]
+                # HIV-knowledge items differ by form: the Hijra Q3.1–3.7 block is
+                # all HIV, but the FSW form shifts — its Q3.1–3.3 are contraception
+                # / condom-access, and only Q3.4–3.7 are HIV. Score the real HIV
+                # yes/no items per form so the FSW score isn't diluted.
+                hiv_ks = (['q3_1', 'q3_5', 'q3_6', 'q3_7'] if pop == 'hijra'
+                          else ['q3_4', 'q3_6', 'q3_7'])
+                hiv_items = [1 if _s(raw, f) == '1' else 0 for f in hiv_ks
+                             if _s(raw, f) in ('1', '2')]
                 if hiv_items:
                     know_hiv.append(100 * sum(hiv_items) / len(hiv_items))
                 sti_items = [1 if _s(raw, f'q3_{i}') == '1' else 0 for i in (8, 9, 10)
@@ -250,6 +262,9 @@ def compute_srhr(responses):
             fc = _fies_count(raw, pop)
             if fc is not None:
                 fies_sev.add(fc >= 7)
+            # PrEP / PEP awareness — both forms ask these as yes/no at Q3.6 / Q3.7.
+            P('prep_aware').add(_s(raw, 'q3_6') == '1', _s(raw, 'q3_6') in ('1', '2'))
+            P('pep_aware').add(_s(raw, 'q3_7') == '1', _s(raw, 'q3_7') in ('1', '2'))
 
         def pct(key):
             a = aggs.get(key)
@@ -289,6 +304,8 @@ def compute_srhr(responses):
                 ]),
                 ('HIV & STI knowledge', [
                     {'label': 'HIV knowledge score', 'ref': 'Q3.1–3.7', 'dir': 'good', 'value': k_hiv, 'n': len(know_hiv), 'unit': 'score'},
+                    tile('prep_aware', 'Aware of PrEP', 'Q3.6'),
+                    tile('pep_aware', 'Aware of PEP', 'Q3.7'),
                     {'label': 'STI knowledge score', 'ref': 'Q3.8–3.10', 'dir': 'good', 'value': k_sti, 'n': len(know_sti), 'unit': 'score'},
                 ]),
                 ('Sexual behaviour & prevention', [
@@ -330,7 +347,9 @@ def compute_srhr(responses):
                     tile('legal_unmet', 'Unmet need for legal support', 'Q2.21'),
                 ]),
                 ('HIV & STI knowledge', [
-                    {'label': 'HIV knowledge score', 'ref': 'Q3.1–3.7', 'dir': 'good', 'value': k_hiv, 'n': len(know_hiv), 'unit': 'score'},
+                    {'label': 'HIV knowledge score', 'ref': 'Q3.4–3.7', 'dir': 'good', 'value': k_hiv, 'n': len(know_hiv), 'unit': 'score'},
+                    tile('prep_aware', 'Aware of PrEP', 'Q3.6'),
+                    tile('pep_aware', 'Aware of PEP', 'Q3.7'),
                     {'label': 'STI knowledge score', 'ref': 'Q3.8–3.10', 'dir': 'good', 'value': k_sti, 'n': len(know_sti), 'unit': 'score'},
                 ]),
                 ('Sexual behaviour & prevention', [
