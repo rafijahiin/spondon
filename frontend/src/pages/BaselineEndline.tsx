@@ -82,6 +82,34 @@ function normName(name: string): string {
   return (name || '').replace(/\s*\/\s*/g, '/').replace(/\s+/g, ' ').trim()
 }
 
+// The raw education codes sprawl into ~13 near-duplicate rows ("Class 5–7" vs
+// "Grades 5–7", "Bachelor's" vs "Master's"). Fold them into clean ordinal bands
+// so the chart reads as an attainment distribution, not a messy code list.
+const EDU_BANDS: { match: RegExp; label: string }[] = [
+  { match: /no formal|no education|never|illiterate/i, label: 'No formal education' },
+  { match: /(^|[^0-9])1\s*[–-]\s*4/i, label: 'Class 1–4' },
+  { match: /5\s*[–-]\s*7/i, label: 'Class 5–7' },
+  { match: /8\s*[–-]\s*9/i, label: 'Class 8–9' },
+  { match: /ssc|dakhil/i, label: 'SSC / Dakhil' },
+  { match: /hsc|alim|higher secondary/i, label: 'HSC / Alim' },
+  { match: /bachelor|master|honours|graduate|post-?grad|degree/i, label: 'Higher (Bachelor+)' },
+  { match: /vocation|technical|trade|diploma/i, label: 'Vocational / technical' },
+  { match: /madrasa|qawmi|ebtedayee/i, label: 'Madrasa / other' },
+]
+const EDU_ORDER = ['No formal education', 'Class 1–4', 'Class 5–7', 'Class 8–9',
+  'SSC / Dakhil', 'HSC / Alim', 'Vocational / technical', 'Higher (Bachelor+)', 'Madrasa / other']
+function bandEducation(rec: Record<string, number>): Record<string, number> {
+  const merged: Record<string, number> = {}
+  for (const [k, v] of Object.entries(rec)) {
+    const band = EDU_BANDS.find((b) => b.match.test(k))?.label || 'Other'
+    merged[band] = (merged[band] || 0) + v
+  }
+  const out: Record<string, number> = {}
+  for (const b of EDU_ORDER) if (merged[b]) out[b] = merged[b]
+  if (merged['Other']) out['Other'] = merged['Other']
+  return out
+}
+
 /** array[{name,value}] -> Record<name, value>; 'all' merges both pops by name. */
 function toRecord(dim: PopDim | undefined, lens: Lens): Record<string, number> {
   if (!dim) return {}
@@ -276,7 +304,7 @@ export default function BaselineEndline() {
               <ColumnBreakdown title="Age distribution" kicker="Completed age (years)" data={toRecord(insights?.age_band, lens)} />
               <DonutBreakdown title="Marital / partnership status" kicker="Current status" data={toRecord(insights?.marital, lens)} />
               <ColumnBreakdown title="Monthly income" kicker="Taka per month (banded)" data={toRecord(insights?.income_band, lens)} />
-              <BarBreakdown title="Highest education" kicker="Educational attainment" data={toRecord(insights?.education, lens)} />
+              <BarBreakdown title="Highest education" kicker="Educational attainment" data={bandEducation(toRecord(insights?.education, lens))} ordered />
               <StackedBar title="Religion" kicker="Reported religion" data={toRecord(insights?.religion, lens)} />
               {lens === 'all' && (
                 <DonutBreakdown title="Population reached" kicker="Key population split"

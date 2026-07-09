@@ -27,6 +27,17 @@ function totalOf(data: Record<string, number>): number {
   return Object.values(data || {}).reduce((s, v) => s + (v || 0), 0)
 }
 
+// Ranked bars shade by magnitude — the largest bar is deep orange, smaller bars
+// fade to a light tint. Adds depth + hierarchy so a column of bars doesn't read
+// as one flat block of colour.
+const SHADE_LIGHT = [253, 191, 148]  // #FDBF94
+const SHADE_DEEP = [194, 60, 0]      // #C23C00
+function shade(ratio: number): string {
+  const t = Math.max(0, Math.min(1, ratio || 0))
+  const c = SHADE_LIGHT.map((v, i) => Math.round(v + (SHADE_DEEP[i] - v) * t))
+  return `rgb(${c[0]}, ${c[1]}, ${c[2]})`
+}
+
 function Empty({ label }: { label: string }) {
   return (
     <div style={{
@@ -93,7 +104,7 @@ export function BarBreakdown({
               <div style={{ height: 6, borderRadius: 3, background: 'var(--surface-3)', overflow: 'hidden' }}>
                 <div style={{
                   width: `${(e.value / max) * 100}%`, height: '100%',
-                  background: CIPRB_ORANGE, borderRadius: 3,
+                  background: shade(e.value / max), borderRadius: 3,
                   transition: 'width 400ms ease',
                 }} />
               </div>
@@ -240,7 +251,7 @@ export function ColumnBreakdown({
                   <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink)', fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>
                     {e.value}<span className="mute" style={{ fontSize: 10, marginLeft: 3 }}>{pct}%</span>
                   </div>
-                  <div style={{ width: '66%', maxWidth: 46, height: h, background: CIPRB_ORANGE, borderRadius: '5px 5px 0 0', transition: 'height 400ms ease' }} />
+                  <div style={{ width: '66%', maxWidth: 46, height: h, background: shade(e.value / max), borderRadius: '5px 5px 0 0', transition: 'height 400ms ease' }} />
                 </div>
                 <div style={{ fontSize: 10.5, color: 'var(--ink-2)', marginTop: 7, textAlign: 'center', lineHeight: 1.2, textWrap: 'pretty' as any }}>{e.label}</div>
               </div>
