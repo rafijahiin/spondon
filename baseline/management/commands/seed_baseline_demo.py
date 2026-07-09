@@ -72,6 +72,15 @@ def _realistic_srhr(pop, base):
         else:
             w = {'0': 20, '1': 26, '2': 31, '3': 23} if depressed else {'0': 63, '1': 24, '2': 9, '3': 4}
         base[f'q8_3_{i}'] = _W(w)
+    # ── STI symptoms Q5.4 grid — most people have NO symptoms; only ~20% report
+    #    any. The generic fill randomises each of the 4–5 symptom rows, which makes
+    #    "any symptom" compound to ~85% (implausible). Gate it: ~20% symptomatic,
+    #    and only those affirm 1–2 specific rows; everyone else is a clean "no".
+    sym_cols = 'abcd' if pop == 'hijra' else 'abcde'
+    picked = (set(random.sample(list(sym_cols), random.randint(1, 2)))
+              if R() < 0.20 else set())
+    for c in sym_cols:
+        base[f'q5_4_{c}'] = '1' if c in picked else '2'
     # ── Violence Q7.1 grid — ~13%/item so "any" over 11–12 rows ≈ 60%
     v_items = (list('abcdefghijk') if pop == 'hijra'
                else ['i', 'ii', 'iii', 'iv', 'v', 'vi', 'vii', 'viii', 'ix', 'x', 'xi', 'xii'])
@@ -108,7 +117,7 @@ def _realistic_srhr(pop, base):
         base['b112'] = _W({'1': 30, '2': 40, '3': 26, '99': 4})       # income autonomy
         base['b114'] = _W({'1': 34, '2': 66})                         # savings
         base['q5_8'] = _W({'1': 55, '2': 45})                         # ever tested for STI
-        base['q5_9'] = _W({'1': 33, '2': 67})                         # diagnosed with STI
+        base['q5_9'] = _W({'1': 22, '2': 78})                         # diagnosed with STI (coherent w/ ~20% symptomatic)
         base['q5_11'] = _W({'1': 40, '2': 42, '3': 18})               # syphilis test
         base['q5_10'] = _W({'1': 50, '2': 28, '3': 22})               # STI treatment done
         base['q6_1'] = _W({'1': 60, '2': 40})
@@ -132,9 +141,12 @@ class Command(BaseCommand):
     help = 'Seed realistic demo baseline interviews for the /baseline dashboard.'
 
     def add_arguments(self, parser):
-        parser.add_argument('--hijra', type=int, default=24)
-        parser.add_argument('--fsw', type=int, default=20)
-        parser.add_argument('--pending', type=int, default=6,
+        # Sample large enough that a ~14% indicator (severe food insecurity,
+        # depression) reads stably instead of hitting 0% by small-sample chance —
+        # at n≈20 a 14% rate lands on 0 about 6% of the time, which looks broken.
+        parser.add_argument('--hijra', type=int, default=100)
+        parser.add_argument('--fsw', type=int, default=80)
+        parser.add_argument('--pending', type=int, default=10,
                             help='How many to leave PENDING (rest are approved).')
         parser.add_argument('--wipe', action='store_true',
                             help='Remove prior DEMO-BL- rows before seeding.')
