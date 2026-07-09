@@ -184,6 +184,7 @@ class Command(BaseCommand):
                     # ── Fieldwork signals (for the monitoring dashboard) ──
                     iv = random.choice(INTERVIEWERS)          # 'Name / IV-0X'
                     dc = iv.split('/')[-1].strip()            # collector code IV-0X
+                    dc_name = f"{iv.split('/')[0].strip()} ({dc})"  # 'Name (IV-0X)'
                     submitted = timezone.now() - timedelta(
                         days=random.randint(0, 18), hours=random.randint(8, 20),
                         minutes=random.randint(0, 59))
@@ -201,6 +202,10 @@ class Command(BaseCommand):
                         used_ids.append(sub_id)
                     raw.update({
                         'dc_code': dc, 'c3': outcome,
+                        # the enumerator's in-form identity (name + code) — what
+                        # the monitoring dashboard shows, not the Kobo login
+                        'dc_name': dc_name,
+                        'interviewer_name_code': dc_name,
                         'interview_start': start.strftime('%Y-%m-%dT%H:%M:%S'),
                         'interview_end': submitted.strftime('%Y-%m-%dT%H:%M:%S'),
                         'submission_id': sub_id,

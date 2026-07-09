@@ -9,7 +9,7 @@
  */
 import { useState } from 'react'
 import {
-  Users, Clock, MapPin, CheckCircle2, Gauge, Copy, Timer,
+  Users, Clock, MapPin, CheckCircle2, Gauge, Copy, Timer, TrendingUp,
 } from 'lucide-react'
 import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid,
@@ -56,64 +56,133 @@ const rec = (b: Bucket[] | undefined): Record<string, number> =>
 
 const POP = { hijra: 'Hijra / Gender-diverse', fsw: 'Female Sex Worker' } as const
 
-/* ── progress ring — shows % of target when a sample size is set, otherwise a
- *    neutral count ring (targets are unknown until the protocol confirms them) */
-function Ring({ p }: { p: Progress }) {
+/* ── section divider ───────────────────────────────────────────────────── */
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '28px 2px 14px' }}>
+      <span style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: '.14em', textTransform: 'uppercase', color: 'var(--ink-3, var(--muted))' }}>{children}</span>
+      <span style={{ flex: 1, height: 1, background: 'linear-gradient(90deg, var(--hair), transparent)' }} />
+    </div>
+  )
+}
+
+/* ── compact progress ring (used inside the pulse band) ─────────────────── */
+function RingMini({ p }: { p: Progress }) {
   const hasTarget = p.target != null && p.target > 0 && p.pct != null
-  const R = 52, C = 2 * Math.PI * R
+  const R = 40, C = 2 * Math.PI * R
   const pct = hasTarget ? Math.min(100, p.pct as number) : 100
   const colour = p.population === 'hijra' ? ORANGE : TEAL
+  const gid = `ring-${p.population}`
   return (
-    <div className="card" style={{ display: 'flex', alignItems: 'center', gap: 18, flex: '1 1 300px', minWidth: 280 }}>
-      <div style={{ position: 'relative', width: 128, height: 128, flexShrink: 0 }}>
-        <svg width={128} height={128} style={{ transform: 'rotate(-90deg)' }}>
-          <circle cx={64} cy={64} r={R} fill="none" stroke="var(--hair)" strokeWidth={11} />
+    <div style={{ display: 'flex', alignItems: 'center', gap: 13, flex: '1 1 190px', minWidth: 180 }}>
+      <div style={{ position: 'relative', width: 96, height: 96, flexShrink: 0 }}>
+        <svg width={96} height={96} style={{ transform: 'rotate(-90deg)' }}>
+          <defs>
+            <linearGradient id={gid} x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stopColor={colour} />
+              <stop offset="100%" stopColor={p.population === 'hijra' ? '#FFB27A' : '#5FC8C8'} />
+            </linearGradient>
+          </defs>
+          <circle cx={48} cy={48} r={R} fill="none" stroke="var(--hair)" strokeWidth={9} />
           <circle
-            cx={64} cy={64} r={R} fill="none" stroke={colour} strokeWidth={11}
+            cx={48} cy={48} r={R} fill="none" stroke={`url(#${gid})`} strokeWidth={9}
             strokeLinecap="round" strokeDasharray={C}
             strokeDashoffset={C * (1 - pct / 100)}
-            opacity={hasTarget ? 1 : 0.28}
+            opacity={hasTarget ? 1 : 0.32}
             style={{ transition: 'stroke-dashoffset .8s cubic-bezier(.22,1,.36,1)' }}
           />
         </svg>
         <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', textAlign: 'center' }}>
-          <div>
-            <div style={{ fontFamily: 'var(--display)', fontStyle: 'italic', fontSize: hasTarget ? 30 : 34, lineHeight: 1, color: colour, fontVariantNumeric: 'tabular-nums' }}>
-              {hasTarget ? `${p.pct}%` : p.collected}
-            </div>
-            <div style={{ fontSize: 10.5, color: 'var(--muted)', marginTop: 2 }}>{hasTarget ? 'of target' : 'interviews'}</div>
+          <div style={{ fontFamily: 'var(--display)', fontStyle: 'italic', fontSize: hasTarget ? 22 : 26, lineHeight: 1, color: colour, fontVariantNumeric: 'tabular-nums' }}>
+            {hasTarget ? `${p.pct}%` : p.collected}
           </div>
         </div>
       </div>
       <div style={{ minWidth: 0 }}>
-        <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--ink)' }}>{POP[p.population]}</div>
-        {hasTarget ? (
-          <>
-            <div style={{ fontFamily: 'var(--display)', fontStyle: 'italic', fontSize: 34, lineHeight: 1.05, color: 'var(--ink)', fontVariantNumeric: 'tabular-nums' }}>
-              {p.collected}<span style={{ fontSize: 17, color: 'var(--muted)', fontStyle: 'normal' }}> / {p.target}</span>
-            </div>
-            <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 3 }}>{(p.target as number) - p.collected} to go</div>
-          </>
-        ) : (
-          <>
-            <div style={{ fontFamily: 'var(--display)', fontStyle: 'italic', fontSize: 34, lineHeight: 1.05, color: 'var(--ink)', fontVariantNumeric: 'tabular-nums' }}>{p.collected}</div>
-            <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 3 }}>collected · target to be set</div>
-          </>
-        )}
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700, color: 'var(--ink)' }}>
+          <span style={{ width: 8, height: 8, borderRadius: 999, background: colour }} />{POP[p.population]}
+        </div>
+        <div style={{ fontFamily: 'var(--display)', fontStyle: 'italic', fontSize: 27, lineHeight: 1.1, color: 'var(--ink)', fontVariantNumeric: 'tabular-nums', marginTop: 2 }}>
+          {p.collected}{hasTarget && <span style={{ fontSize: 15, color: 'var(--muted)', fontStyle: 'normal' }}> / {p.target}</span>}
+        </div>
+        <div style={{ fontSize: 11.5, color: 'var(--muted)' }}>{hasTarget ? `${(p.target as number) - p.collected} to go` : 'target to be set'}</div>
       </div>
     </div>
   )
 }
 
-/* ── KPI chip ───────────────────────────────────────────────────────────── */
-function Kpi({ icon, value, label, tone }: { icon: React.ReactNode; value: string; label: string; tone?: string }) {
+/* ── the field-pulse hero: headline count + daily sparkline + progress rings */
+function FieldPulse({ m, verified, pending }: { m: Monitoring; verified: number; pending: number }) {
+  const spark = m.daily
   return (
-    <div className="card snug" style={{ display: 'flex', alignItems: 'center', gap: 11, flex: '1 1 150px', minWidth: 150 }}>
-      <span style={{ display: 'grid', placeItems: 'center', width: 34, height: 34, borderRadius: 9, background: tone ? `${tone}1a` : 'rgba(249,96,0,.10)', color: tone || 'var(--unfpa)', flexShrink: 0 }}>{icon}</span>
-      <div style={{ minWidth: 0 }}>
-        <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--ink)', fontVariantNumeric: 'tabular-nums', lineHeight: 1.1 }}>{value}</div>
-        <div style={{ fontSize: 11, color: 'var(--muted)' }}>{label}</div>
+    <div className="card" style={{ padding: 0, overflow: 'hidden', borderRadius: 16 }}>
+      <div style={{ height: 4, background: 'linear-gradient(90deg, #F96000, #FF9D4D 45%, #0E8F8F)' }} />
+      <div style={{ padding: '20px 22px', display: 'flex', gap: 24, flexWrap: 'wrap', alignItems: 'center' }}>
+        <div style={{ flex: '1 1 190px', minWidth: 180 }}>
+          <div className="kicker"><span className="live-dot" /> Field pulse · live</div>
+          <div style={{ fontFamily: 'var(--display)', fontStyle: 'italic', fontSize: 62, lineHeight: 1, color: 'var(--unfpa)', fontVariantNumeric: 'tabular-nums', letterSpacing: '-.02em', marginTop: 6 }}>{m.total}</div>
+          <div style={{ fontSize: 13, color: 'var(--muted)', marginTop: 5 }}>
+            interviews collected · <b style={{ color: 'var(--emerald)' }}>{verified}</b> verified · {pending} pending
+          </div>
+        </div>
+        {spark.length > 1 && (
+          <div style={{ flex: '2 1 260px', minWidth: 220 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'var(--muted)', marginBottom: 2 }}>
+              <TrendingUp size={13} style={{ color: ORANGE }} /> Daily collection pace · {m.daily.length} days
+            </div>
+            <div style={{ height: 66 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={spark} margin={{ top: 4, right: 2, left: 2, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="pulseG" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={ORANGE} stopOpacity={0.42} />
+                      <stop offset="100%" stopColor={ORANGE} stopOpacity={0.02} />
+                    </linearGradient>
+                  </defs>
+                  <Tooltip content={<TimelineTip />} cursor={{ stroke: 'var(--hair)' }} />
+                  <Area type="monotone" dataKey="total" name="Interviews" stroke={ORANGE} strokeWidth={2.4} fill="url(#pulseG)" isAnimationActive={false} dot={false} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        )}
+        <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap', flex: '2 1 380px' }}>
+          {m.progress.map((p) => <RingMini key={p.population} p={p} />)}
+        </div>
       </div>
+    </div>
+  )
+}
+
+/* ── KPI band (one card, hairline-separated metrics) ────────────────────── */
+function KpiCell({ icon, value, label, tone }: { icon: React.ReactNode; value: string; label: string; tone: string }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: '1 1 168px', minWidth: 158, padding: '4px 6px' }}>
+      <span style={{ display: 'grid', placeItems: 'center', width: 38, height: 38, borderRadius: 11, background: `${tone}18`, color: tone, flexShrink: 0 }}>{icon}</span>
+      <div style={{ minWidth: 0 }}>
+        <div style={{ fontFamily: 'var(--display)', fontStyle: 'italic', fontSize: 26, lineHeight: 1, color: 'var(--ink)', fontVariantNumeric: 'tabular-nums' }}>{value}</div>
+        <div style={{ fontSize: 11.5, color: 'var(--muted)', marginTop: 3 }}>{label}</div>
+      </div>
+    </div>
+  )
+}
+function KpiBand({ m, completedPct }: { m: Monitoring; completedPct: number }) {
+  const cells = [
+    { icon: <Users size={18} />, value: String(m.total), label: 'Total interviews', tone: ORANGE },
+    { icon: <CheckCircle2 size={18} />, value: `${completedPct}%`, label: 'Completed outcome', tone: TEAL },
+    { icon: <Clock size={18} />, value: m.duration.avg_min != null ? `${m.duration.avg_min}m` : '—', label: 'Avg interview', tone: '#6E56CF' },
+    { icon: <MapPin size={18} />, value: `${m.quality.gps_pct}%`, label: 'GPS captured', tone: m.quality.gps_pct >= 90 ? 'var(--emerald)' : 'var(--amber)' },
+    { icon: <Copy size={18} />, value: String(m.quality.duplicates), label: 'Duplicates', tone: m.quality.duplicates ? 'var(--coral)' : 'var(--emerald)' },
+    { icon: <Timer size={18} />, value: String(m.quality.short_interviews), label: 'Rushed (<10m)', tone: m.quality.short_interviews ? 'var(--coral)' : 'var(--emerald)' },
+  ]
+  return (
+    <div className="card" style={{ padding: '14px 12px', display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'stretch' }}>
+      {cells.map((c, i) => (
+        <div key={c.label} style={{ display: 'flex', flex: '1 1 168px', minWidth: 158 }}>
+          {i > 0 && <span style={{ width: 1, background: 'var(--hair)', margin: '4px 8px 4px 0', flexShrink: 0 }} />}
+          <KpiCell {...c} />
+        </div>
+      ))}
     </div>
   )
 }
@@ -133,46 +202,69 @@ function Card({ kicker, title, right, children, grow = '1 1 320px' }: { kicker: 
   )
 }
 
-/* ── enumerator table ───────────────────────────────────────────────────── */
-function CollectorTable({ rows }: { rows: Collector[] }) {
+/* ── enumerator roster — avatar rows, ranked by throughput ──────────────── */
+const AV_COLORS = ['#F96000', '#0E8F8F', '#6E56CF', '#C44E00', '#2F9E7E', '#B3541E', '#3E63DD', '#9A4500']
+function parseCollector(code: string) {
+  const m = /^(.*?)\s*\(([^)]*)\)\s*$/.exec(code || '')
+  return m ? { name: m[1].trim(), code: m[2].trim() } : { name: code || 'Unknown', code: '' }
+}
+function initialsOf(name: string) {
+  const parts = name.split(/\s+/).filter(Boolean)
+  const two = (parts[0]?.[0] || '') + (parts[1]?.[0] || '')
+  return (two || name.slice(0, 2) || '—').toUpperCase()
+}
+function colorFor(s: string) {
+  const n = [...(s || '')].reduce((a, c) => a + c.charCodeAt(0), 0)
+  return AV_COLORS[n % AV_COLORS.length]
+}
+function CollectorList({ rows }: { rows: Collector[] }) {
   const max = Math.max(1, ...rows.map((r) => r.n))
+  if (!rows.length) return <div style={{ padding: 20, color: 'var(--muted)', fontSize: 12.5, textAlign: 'center' }}>No enumerator activity yet.</div>
   return (
-    <div style={{ overflowX: 'auto' }}>
-      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5 }}>
-        <thead>
-          <tr style={{ textAlign: 'left', color: 'var(--muted)', fontSize: 11, textTransform: 'uppercase', letterSpacing: '.05em' }}>
-            <th style={{ padding: '6px 8px 6px 0' }}>Collector</th>
-            <th style={{ padding: '6px 8px' }}>Interviews</th>
-            <th style={{ padding: '6px 8px' }}>Avg time</th>
-            <th style={{ padding: '6px 8px' }}>Completed</th>
-            <th style={{ padding: '6px 0 6px 8px', textAlign: 'right' }}>Flags</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((r) => (
-            <tr key={r.code} style={{ borderTop: '1px solid var(--hair)' }}>
-              <td style={{ padding: '8px 8px 8px 0', fontWeight: 700, color: 'var(--ink)', whiteSpace: 'nowrap' }}>{r.code}</td>
-              <td style={{ padding: '8px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 700, minWidth: 22 }}>{r.n}</span>
-                  <span style={{ flex: 1, minWidth: 60, height: 6, borderRadius: 3, background: 'var(--hair)', overflow: 'hidden' }}>
-                    <span style={{ display: 'block', height: '100%', width: `${(r.n / max) * 100}%`, background: ORANGE }} />
-                  </span>
+    <div style={{ display: 'flex', flexDirection: 'column' }}>
+      {rows.map((r, i) => {
+        const { name, code } = parseCollector(r.code)
+        const av = colorFor(r.code)
+        const compTone = r.completion_pct >= 85 ? 'var(--emerald)' : r.completion_pct >= 70 ? 'var(--amber)' : 'var(--coral)'
+        return (
+          <div key={r.code} style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '8px 14px', padding: '11px 4px', borderTop: i ? '1px solid var(--hair)' : 'none' }}>
+            {/* identity */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: '3 1 200px', minWidth: 180 }}>
+              <span style={{ width: 20, textAlign: 'right', fontSize: 12, fontWeight: 700, color: 'var(--muted)', fontVariantNumeric: 'tabular-nums', flexShrink: 0 }}>{i + 1}</span>
+              <span style={{ display: 'grid', placeItems: 'center', width: 38, height: 38, borderRadius: 11, background: `${av}1c`, color: av, fontSize: 13, fontWeight: 800, flexShrink: 0, letterSpacing: '.02em' }}>{initialsOf(name)}</span>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--ink)', lineHeight: 1.2 }}>{name}</div>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 2 }}>
+                  {code && <span className="mono" style={{ fontSize: 10, color: 'var(--muted)', border: '1px solid var(--hair)', borderRadius: 4, padding: '1px 5px' }}>{code}</span>}
+                  <span style={{ fontSize: 11, color: 'var(--muted)' }}>{r.hijra} Hijra · {r.fsw} FSW</span>
                 </div>
-              </td>
-              <td style={{ padding: '8px', fontVariantNumeric: 'tabular-nums' }}>{r.avg_min != null ? `${r.avg_min}m` : '—'}</td>
-              <td style={{ padding: '8px', fontVariantNumeric: 'tabular-nums' }}>
-                <span style={{ color: r.completion_pct >= 85 ? 'var(--emerald)' : r.completion_pct >= 70 ? 'var(--amber)' : 'var(--coral)', fontWeight: 700 }}>{r.completion_pct}%</span>
-              </td>
-              <td style={{ padding: '8px 0 8px 8px', textAlign: 'right' }}>
+              </div>
+            </div>
+            {/* metrics — stays together, wraps under identity on narrow widths */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: '4 1 300px', minWidth: 288, justifyContent: 'flex-end' }}>
+              <div style={{ flex: '1 1 90px', minWidth: 74, display: 'flex', alignItems: 'center', gap: 9 }}>
+                <span style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 800, fontSize: 15, color: 'var(--ink)', minWidth: 22, textAlign: 'right' }}>{r.n}</span>
+                <span style={{ flex: 1, height: 7, borderRadius: 4, background: 'var(--hair)', overflow: 'hidden', minWidth: 40 }}>
+                  <span style={{ display: 'block', height: '100%', width: `${(r.n / max) * 100}%`, background: av, borderRadius: 4, transition: 'width .5s ease' }} />
+                </span>
+              </div>
+              <div style={{ width: 50, textAlign: 'center', flexShrink: 0 }}>
+                <div style={{ fontSize: 12.5, fontVariantNumeric: 'tabular-nums', color: 'var(--ink)' }}>{r.avg_min != null ? `${r.avg_min}m` : '—'}</div>
+                <div style={{ fontSize: 10, color: 'var(--muted)' }}>avg</div>
+              </div>
+              <div style={{ width: 54, textAlign: 'center', flexShrink: 0 }}>
+                <div style={{ fontSize: 12.5, fontWeight: 800, color: compTone, fontVariantNumeric: 'tabular-nums' }}>{r.completion_pct}%</div>
+                <div style={{ fontSize: 10, color: 'var(--muted)' }}>complete</div>
+              </div>
+              <div style={{ width: 78, textAlign: 'right', flexShrink: 0 }}>
                 {r.short > 0
                   ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11.5, color: 'var(--coral)', fontWeight: 700 }}><Timer size={13} />{r.short} rushed</span>
-                  : <span style={{ color: 'var(--muted)' }}>—</span>}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+                  : <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11.5, color: 'var(--emerald)' }}><CheckCircle2 size={13} />clean</span>}
+              </div>
+            </div>
+          </div>
+        )
+      })}
     </div>
   )
 }
@@ -322,28 +414,12 @@ export function FieldworkMonitor({ m }: { m: Monitoring }) {
 
   return (
     <section style={{ marginTop: 8 }}>
+      <FieldPulse m={m} verified={verified} pending={pending} />
+
+      <div style={{ marginTop: 14 }}><KpiBand m={m} completedPct={completedPct} /></div>
+
+      <SectionLabel>Collection pace &amp; outcomes</SectionLabel>
       <DailyCalendar days={m.days} />
-      {/* progress rings */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, marginTop: 14 }}>
-        {m.progress.map((p) => <Ring key={p.population} p={p} />)}
-        <div className="card" style={{ flex: '1 1 260px', minWidth: 240, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-          <div style={{ fontSize: 11.5, fontWeight: 600, letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--muted)' }}>Interviews collected</div>
-          <div style={{ fontFamily: 'var(--display)', fontStyle: 'italic', fontSize: 48, lineHeight: 1, color: 'var(--unfpa)', fontVariantNumeric: 'tabular-nums' }}>{m.total}</div>
-          <div style={{ fontSize: 12.5, color: 'var(--muted)', marginTop: 4 }}>{verified} verified · {pending} awaiting sign-off</div>
-        </div>
-      </div>
-
-      {/* KPI strip */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginTop: 14 }}>
-        <Kpi icon={<Users size={17} />} value={String(m.total)} label="Total interviews" />
-        <Kpi icon={<CheckCircle2 size={17} />} value={`${completedPct}%`} label="Completed outcome" tone="#0E8F8F" />
-        <Kpi icon={<Clock size={17} />} value={m.duration.avg_min != null ? `${m.duration.avg_min}m` : '—'} label="Avg interview" />
-        <Kpi icon={<MapPin size={17} />} value={`${m.quality.gps_pct}%`} label="GPS captured" />
-        <Kpi icon={<Copy size={17} />} value={String(m.quality.duplicates)} label="Duplicates" tone={m.quality.duplicates ? '#E5484D' : undefined} />
-        <Kpi icon={<Timer size={17} />} value={String(m.quality.short_interviews)} label="Rushed (<10m)" tone={m.quality.short_interviews ? '#E5484D' : undefined} />
-      </div>
-
-      {/* timeline + outcomes */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, marginTop: 14 }}>
         <Card kicker="Collection pace" title="Interviews per day" grow="2 1 460px" right={<span style={{ fontSize: 11.5, color: 'var(--muted)' }}>{m.daily.length} days</span>}>
           <div style={{ height: 210 }}>
@@ -366,21 +442,19 @@ export function FieldworkMonitor({ m }: { m: Monitoring }) {
         <DonutBreakdown kicker="Interview outcome" title="How interviews ended" data={rec(m.outcomes)} />
       </div>
 
-      {/* duration + districts */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, marginTop: 14 }}>
         <Histogram kicker="Interview duration" title={`Length distribution · median ${m.duration.median_min ?? '—'}m`} data={rec(m.duration.bands)} />
         <BarBreakdown kicker="Coverage" title="Interviews by district" data={rec(m.districts)} />
       </div>
 
-      {/* enumerators */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, marginTop: 14 }}>
-        <Card kicker="Field team" title="Enumerator throughput & quality" grow="1 1 100%">
-          <CollectorTable rows={m.collectors} />
-        </Card>
-      </div>
+      <SectionLabel>Field team</SectionLabel>
+      <Card kicker="Enumerators" title="Throughput &amp; quality, ranked" grow="1 1 100%"
+        right={<span style={{ fontSize: 11.5, color: 'var(--muted)' }}>{m.collectors.length} active</span>}>
+        <CollectorList rows={m.collectors} />
+      </Card>
 
-      {/* quality flags */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginTop: 14 }}>
+      <SectionLabel>Data quality</SectionLabel>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
         <Flag icon={<MapPin size={15} />} n={`${m.quality.gps_pct}%`} label="GPS captured" tone="#0E8F8F" note={`${m.quality.gps_missing} missing location`} />
         <Flag icon={<Copy size={15} />} n={m.quality.duplicates} label="Duplicate ids" tone={m.quality.duplicates ? '#E5484D' : '#0E8F8F'} note={m.quality.duplicates ? 'needs review' : 'none detected'} />
         <Flag icon={<Timer size={15} />} n={m.quality.short_interviews} label="Rushed interviews" tone={m.quality.short_interviews ? '#E5484D' : '#0E8F8F'} note="under 10 minutes" />

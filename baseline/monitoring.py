@@ -131,7 +131,12 @@ def compute_monitoring(subs):
             if dkey:
                 day_flags[dkey]['gps_missing'] += 1
 
-        dc = raw.get('dc_code') or (s.worker_name or '').split('/')[-1].strip() or '—'
+        # Collector identity comes from INSIDE the form (the enumerator's own
+        # name/code field), never the Kobo account username. dc_name (FSW) and
+        # interviewer_name_code (both) are the real fields; dc_code is a legacy
+        # code fallback. Un-tagged submissions read 'Unknown', not the Kobo login.
+        dc = (str(raw.get('dc_name') or raw.get('interviewer_name_code')
+                  or raw.get('dc_code') or '').strip()) or 'Unknown'
         c = coll[dc]
         c['n'] += 1
         c['pop'][pop] += 1
