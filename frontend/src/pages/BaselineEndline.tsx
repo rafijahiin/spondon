@@ -98,7 +98,7 @@ function Stat({ label, value, sub, accent }: { label: string; value: number | st
   return (
     <div className="card snug" style={{ minWidth: 140 }}>
       <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--muted)' }}>{label}</div>
-      <div style={{ fontFamily: 'var(--display)', fontStyle: 'italic', fontSize: 38, lineHeight: 1, color: accent || 'var(--ink)', marginTop: 4, fontVariantNumeric: 'tabular-nums' }}>{value}</div>
+      <div style={{ fontFamily: 'var(--display)', fontStyle: 'normal', fontSize: 38, lineHeight: 1, color: accent || 'var(--ink)', marginTop: 4, fontVariantNumeric: 'tabular-nums' }}>{value}</div>
       {sub && <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 4 }}>{sub}</div>}
     </div>
   )
@@ -274,7 +274,6 @@ export default function BaselineEndline() {
                 stacked bar. Every card carries counts + percentages. */}
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14 }}>
               <ColumnBreakdown title="Age distribution" kicker="Completed age (years)" data={toRecord(insights?.age_band, lens)} />
-              <BarBreakdown title="District coverage" kicker="Where interviews came from" data={toRecord(insights?.district, lens)} />
               <DonutBreakdown title="Marital / partnership status" kicker="Current status" data={toRecord(insights?.marital, lens)} />
               <ColumnBreakdown title="Monthly income" kicker="Taka per month (banded)" data={toRecord(insights?.income_band, lens)} />
               <BarBreakdown title="Highest education" kicker="Educational attainment" data={toRecord(insights?.education, lens)} />

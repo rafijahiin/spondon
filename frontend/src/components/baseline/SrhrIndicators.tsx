@@ -80,7 +80,7 @@ function Tile({ ind, pop, otherVal }: { ind: Indicator; pop: Pop; otherVal: numb
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
         <span style={{
-          fontFamily: 'var(--display)', fontStyle: 'italic', fontSize: 30, lineHeight: 1,
+          fontFamily: 'var(--display)', fontStyle: 'normal', fontSize: 30, lineHeight: 1,
           color: col, fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.01em',
         }}>{fmt(ind.value, ind.unit)}</span>
         <span className="mono" style={{
@@ -126,7 +126,7 @@ export function SrhrIndicators({ data }: { data: Srhr }) {
       <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', marginBottom: 8 }}>
         <div>
           <div className="kicker"><span className="dot" /> Major SRHR indicators · verified interviews</div>
-          <h2 style={{ margin: '6px 0 0', fontFamily: 'var(--display)', fontStyle: 'italic', fontSize: 30, lineHeight: 1.05, color: 'var(--ink)' }}>
+          <h2 style={{ margin: '6px 0 0', fontFamily: 'var(--display)', fontStyle: 'normal', fontSize: 30, lineHeight: 1.05, color: 'var(--ink)' }}>
             The baseline picture, module by module
           </h2>
           <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 10 }}>

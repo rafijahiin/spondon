@@ -93,7 +93,7 @@ function RingMini({ p }: { p: Progress }) {
           />
         </svg>
         <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', textAlign: 'center' }}>
-          <div style={{ fontFamily: 'var(--display)', fontStyle: 'italic', fontSize: hasTarget ? 22 : 26, lineHeight: 1, color: colour, fontVariantNumeric: 'tabular-nums' }}>
+          <div style={{ fontFamily: 'var(--display)', fontStyle: 'normal', fontSize: hasTarget ? 22 : 26, lineHeight: 1, color: colour, fontVariantNumeric: 'tabular-nums' }}>
             {hasTarget ? `${p.pct}%` : p.collected}
           </div>
         </div>
@@ -102,7 +102,7 @@ function RingMini({ p }: { p: Progress }) {
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700, color: 'var(--ink)' }}>
           <span style={{ width: 8, height: 8, borderRadius: 999, background: colour }} />{POP[p.population]}
         </div>
-        <div style={{ fontFamily: 'var(--display)', fontStyle: 'italic', fontSize: 27, lineHeight: 1.1, color: 'var(--ink)', fontVariantNumeric: 'tabular-nums', marginTop: 2 }}>
+        <div style={{ fontFamily: 'var(--display)', fontStyle: 'normal', fontSize: 27, lineHeight: 1.1, color: 'var(--ink)', fontVariantNumeric: 'tabular-nums', marginTop: 2 }}>
           {p.collected}{hasTarget && <span style={{ fontSize: 15, color: 'var(--muted)', fontStyle: 'normal' }}> / {p.target}</span>}
         </div>
         <div style={{ fontSize: 11.5, color: 'var(--muted)' }}>{hasTarget ? `${(p.target as number) - p.collected} to go` : 'target to be set'}</div>
@@ -120,7 +120,7 @@ function FieldPulse({ m, verified, pending }: { m: Monitoring; verified: number;
       <div style={{ padding: '20px 22px', display: 'flex', gap: 24, flexWrap: 'wrap', alignItems: 'center' }}>
         <div style={{ flex: '1 1 190px', minWidth: 180 }}>
           <div className="kicker"><span className="live-dot" /> Field pulse · live</div>
-          <div style={{ fontFamily: 'var(--display)', fontStyle: 'italic', fontSize: 62, lineHeight: 1, color: 'var(--unfpa)', fontVariantNumeric: 'tabular-nums', letterSpacing: '-.02em', marginTop: 6 }}>{m.total}</div>
+          <div style={{ fontFamily: 'var(--display)', fontStyle: 'normal', fontSize: 62, lineHeight: 1, color: 'var(--unfpa)', fontVariantNumeric: 'tabular-nums', letterSpacing: '-.02em', marginTop: 6 }}>{m.total}</div>
           <div style={{ fontSize: 13, color: 'var(--muted)', marginTop: 5 }}>
             interviews collected · <b style={{ color: 'var(--emerald)' }}>{verified}</b> verified · {pending} pending
           </div>
@@ -160,7 +160,7 @@ function KpiCell({ icon, value, label, tone }: { icon: React.ReactNode; value: s
     <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: '1 1 168px', minWidth: 158, padding: '4px 6px' }}>
       <span style={{ display: 'grid', placeItems: 'center', width: 38, height: 38, borderRadius: 11, background: `${tone}18`, color: tone, flexShrink: 0 }}>{icon}</span>
       <div style={{ minWidth: 0 }}>
-        <div style={{ fontFamily: 'var(--display)', fontStyle: 'italic', fontSize: 26, lineHeight: 1, color: 'var(--ink)', fontVariantNumeric: 'tabular-nums' }}>{value}</div>
+        <div style={{ fontFamily: 'var(--display)', fontStyle: 'normal', fontSize: 26, lineHeight: 1, color: 'var(--ink)', fontVariantNumeric: 'tabular-nums' }}>{value}</div>
         <div style={{ fontSize: 11.5, color: 'var(--muted)', marginTop: 3 }}>{label}</div>
       </div>
     </div>
@@ -274,7 +274,7 @@ function Flag({ icon, n, label, tone, note }: { icon: React.ReactNode; n: number
   return (
     <div className="card snug" style={{ flex: '1 1 180px', minWidth: 170, borderLeft: `3px solid ${tone}` }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: tone }}>{icon}<span style={{ fontSize: 11.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.04em' }}>{label}</span></div>
-      <div style={{ fontFamily: 'var(--display)', fontStyle: 'italic', fontSize: 32, lineHeight: 1.1, color: 'var(--ink)', fontVariantNumeric: 'tabular-nums', marginTop: 2 }}>{n}</div>
+      <div style={{ fontFamily: 'var(--display)', fontStyle: 'normal', fontSize: 32, lineHeight: 1.1, color: 'var(--ink)', fontVariantNumeric: 'tabular-nums', marginTop: 2 }}>{n}</div>
       {note && <div style={{ fontSize: 11.5, color: 'var(--muted)' }}>{note}</div>}
     </div>
   )
@@ -296,7 +296,7 @@ function TimelineTip({ active, payload, label }: any) {
 function DStat({ value, label, accent, big }: { value: number; label: string; accent?: string; big?: boolean }) {
   return (
     <div>
-      <div style={{ fontFamily: 'var(--display)', fontStyle: 'italic', fontSize: big ? 40 : 26, lineHeight: 1, color: accent || 'var(--ink)', fontVariantNumeric: 'tabular-nums' }}>{value}</div>
+      <div style={{ fontFamily: 'var(--display)', fontStyle: 'normal', fontSize: big ? 40 : 26, lineHeight: 1, color: accent || 'var(--ink)', fontVariantNumeric: 'tabular-nums' }}>{value}</div>
       <div style={{ fontSize: 11.5, color: 'var(--muted)', marginTop: 2 }}>{label}</div>
     </div>
   )
