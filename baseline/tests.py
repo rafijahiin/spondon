@@ -125,3 +125,48 @@ class BaselineSurveyAPITest(TestCase):
         resp = self.client.post(f'{BASE_URL}scan_duplicates/')
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.data['flagged'], 1)
+
+
+class DeriveFromKoboPayloadTest(TestCase):
+    """Guards the three bugs that made the whole baseline dashboard read wrong:
+    nested Kobo keys, a guessed population, and a dedup key pointing at a field
+    the live forms never collect."""
+
+    HIJRA = 'aBT7aCL9p4FGcW4WwXZcr6'
+    FSW = 'aVsJ7VJ35k8GshpQpnXygC'
+
+    def _payload(self, asset, **fields):
+        # Exactly how Kobo serialises a grouped answer.
+        raw = {'_xform_id_string': asset, '_id': 1}
+        raw.update({f'grp_admin/{k}': v for k, v in fields.items()})
+        return raw
+
+    def test_population_comes_from_the_form_not_a_substring_guess(self):
+        from .derive import derive_fields
+        self.assertEqual(derive_fields(self._payload(self.FSW))['population'], 'fsw')
+        self.assertEqual(derive_fields(self._payload(self.HIJRA))['population'], 'hijra')
+
+    def test_unknown_form_yields_no_population_rather_than_a_default(self):
+        from .derive import derive_fields
+        self.assertIsNone(derive_fields({'_xform_id_string': 'someone_elses_form'})['population'])
+
+    def test_grouped_fields_are_read_not_dropped(self):
+        from .derive import derive_fields
+        raw = self._payload(self.FSW, district='Khulna', site_code='S3')
+        raw['grp_module9/c3'] = '1'
+        raw['grp_fsw_a2/s1_age'] = 31
+        d = derive_fields(raw)
+        self.assertEqual(d['district'], 'Khulna')
+        self.assertEqual(d['site_code'], 'S3')
+        self.assertEqual(d['interview_outcome'], '1')
+        self.assertEqual(d['age'], 31)
+
+    def test_serial_uses_submission_id_the_field_the_forms_actually_collect(self):
+        from .derive import derive_fields
+        d = derive_fields(self._payload(self.HIJRA, submission_id='HJ-DHK-007'))
+        self.assertEqual(d['serial'], 'HJ-DHK-007')
+
+    def test_serial_falls_back_to_legacy_questionnaire_serial(self):
+        from .derive import derive_fields
+        d = derive_fields(self._payload(self.HIJRA, questionnaire_serial='OLD-1'))
+        self.assertEqual(d['serial'], 'OLD-1')

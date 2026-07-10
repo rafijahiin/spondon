@@ -45,7 +45,12 @@ def derive_fields(raw, fallback_district=''):
     return {
         'population': resolve_population(raw),
         'survey_round': 'endline' if 'endline' in round_raw else 'baseline',
-        'serial': str(raw.get('questionnaire_serial') or '').strip(),
+        # The dedup key. Both live forms collect `submission_id` (collector + area
+        # + the moment the form was opened); neither collects questionnaire_serial,
+        # which is kept only as a fallback for older payloads. Reading the dead
+        # field alone left every row un-deduped and `duplicates` stuck at 0.
+        'serial': str(raw.get('submission_id')
+                      or raw.get('questionnaire_serial') or '').strip(),
         'district': str(raw.get('district') or fallback_district or '').strip(),
         'site_code': str(raw.get('cluster_site_code') or raw.get('site_code') or '').strip(),
         'age': age,

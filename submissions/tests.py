@@ -120,14 +120,15 @@ class WebhookIngestTest(TestCase):
         self.assertEqual(KoboSubmission.objects.first().status, SubmissionStatus.PENDING)
 
     @patch('submissions.views.send_submission_alert')
-    def test_baseline_lands_pending(self, _):
-        """D5 verification gate (2026-06-25): baseline no longer auto-approves —
-        it lands PENDING for CIPRB verification and is attributed to CIPRB."""
+    def test_baseline_auto_approves(self, _):
+        """Baseline is a CIPRB-run research survey, not a service record: there is
+        nothing for a manager to approve, so it lands APPROVED at ingest (the D5
+        verification gate of 2026-06-25 was retired). Still attributed to CIPRB."""
         payload = mpdsr_payload(_xform_id_string='uid_baseline', _id='2003')
         resp = self.client.post(WEBHOOK_URL, data=json.dumps(payload), content_type='application/json', **TEST_AUTH)
         self.assertEqual(resp.status_code, 201)
         sub = KoboSubmission.objects.first()
-        self.assertEqual(sub.status, SubmissionStatus.PENDING)
+        self.assertEqual(sub.status, SubmissionStatus.APPROVED)
         self.assertEqual(sub.partner, 'CIPRB')
 
     @patch('submissions.views.send_submission_alert')

@@ -10,6 +10,7 @@ from rest_framework.viewsets import ModelViewSet, ViewSet
 from accounts.permissions import (
     IsSupervisorOrManager, CanViewBaseline, CanApproveBaseline, OrgFilterMixin,
 )
+from submissions.flatten import flatten_group_keys
 from submissions.models import KoboSubmission, FormType, SubmissionStatus
 from .duplicate_detector import flag_duplicates_for_partner
 from .insights import compute_insights
@@ -60,12 +61,6 @@ class BaselineSurveyViewSet(OrgFilterMixin, ModelViewSet):
 
 # ── D5 key-population baseline (Hijra / FSW) — CIPRB-conducted ────────────────
 
-def _population(raw):
-    """Resolved from the source form (asset UID / id_string), never guessed."""
-    from .populations import resolve_population
-    return resolve_population(raw, default='') or ''
-
-
 def _pending_baseline():
     """PENDING key-population baseline submissions awaiting CIPRB verification."""
     return KoboSubmission.objects.filter(
@@ -96,19 +91,30 @@ class BaselineResponseViewSet(OrgFilterMixin, ModelViewSet):
     @action(detail=False, methods=['get'])
     def stats(self, request):
         qs = self.get_queryset()
-        # Population from the FORM, not the stored column (older rows misfiled
-        # every FSW interview as hijra).
-        pops = Counter(
-            derive_fields(r.raw_data, fallback_district=r.district)['population'] or r.population
-            # NB: no .only() here — the queryset uses select_related('submission'),
-            # and deferring a select_related field raises FieldError (500).
-            for r in qs
-        )
+        # Population and dedup key come from the FORM, not the stored columns:
+        # older rows misfiled every FSW interview as hijra, and `is_duplicate` was
+        # computed against questionnaire_serial — a field neither live form
+        # collects — so the stored flag is False on every row ever ingested.
+        pops = Counter()
+        serials = Counter()
+        total = 0
+        # NB: no .only() here — the queryset uses select_related('submission'),
+        # and deferring a select_related field raises FieldError (500).
+        for r in qs:
+            total += 1
+            d = derive_fields(r.raw_data, fallback_district=r.district)
+            pops[d['population'] or r.population] += 1
+            key = (d['population'] or r.population, (d['serial'] or '').upper())
+            if key[1]:
+                serials[key] += 1
+        # Count the EXTRA copies: 3 uploads of one interview = 2 duplicates.
+        # Same rule as monitoring.py, so the two panels can't disagree.
+        duplicates = sum(n - 1 for n in serials.values() if n > 1)
         return Response({
-            'verified_total': qs.count(),
+            'verified_total': total,
             'verified_hijra': pops.get('hijra', 0),
             'verified_fsw': pops.get('fsw', 0),
-            'duplicates': qs.filter(is_duplicate=True).count(),
+            'duplicates': duplicates,
             'pending': _pending_baseline().count(),
         })
 
@@ -192,22 +198,25 @@ class BaselineVerificationViewSet(ViewSet):
         counts = Counter()
         for raw in KoboSubmission.objects.filter(
                 form_type=FormType.BASELINE).values_list('raw_data', flat=True):
-            raw = raw or {}
-            ser = (raw.get('questionnaire_serial') or '').strip().upper()
+            d = derive_fields(raw or {})
+            ser = d['serial'].upper()
             if ser:
-                counts[(_population(raw), ser)] += 1
+                counts[(d['population'] or '', ser)] += 1
         out = []
         for s in pending:
-            raw = s.raw_data or {}
-            pop = _population(raw)
-            ser = (raw.get('questionnaire_serial') or '').strip()
+            # Kobo nests grouped answers as 'group/field' — flatten before reading
+            # district / age / the Q&A card, or every one of them renders blank.
+            raw = flatten_group_keys(s.raw_data or {})
+            d = derive_fields(raw, fallback_district=s.district)
+            pop = d['population'] or ''
+            ser = d['serial']
             out.append({
                 'submission_id': str(s.id),
                 'population': pop,
                 'serial': ser,
-                'district': raw.get('district') or s.district or '',
-                'site_code': raw.get('cluster_site_code') or raw.get('site_code') or '',
-                'age': raw.get('s2_age') or raw.get('s1_age') or '',
+                'district': d['district'],
+                'site_code': d['site_code'],
+                'age': d['age'] if d['age'] is not None else '',
                 'interviewer': s.worker_name,
                 'submitted_at': s.submitted_at,
                 'gps_missing': s.latitude is None,
