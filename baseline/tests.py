@@ -170,3 +170,52 @@ class DeriveFromKoboPayloadTest(TestCase):
         from .derive import derive_fields
         d = derive_fields(self._payload(self.HIJRA, questionnaire_serial='OLD-1'))
         self.assertEqual(d['serial'], 'OLD-1')
+
+
+class InterviewDurationTest(TestCase):
+    """Duration is measured consent -> Submit. An enumerator who leaves the form
+    open submits hours later, so the raw mean describes their working session,
+    not the interview. The headline figure must exclude those."""
+
+    class _Sub:
+        status = 'approved'
+        district = 'Dhaka'
+        latitude = None
+        longitude = None
+        submitted_at = None
+
+        def __init__(self, raw):
+            self.raw_data = raw
+
+    def _sub(self, start, end, dc='1'):
+        return self._Sub({
+            '_xform_id_string': 'aBT7aCL9p4FGcW4WwXZcr6',
+            'grp_admin/population': 'hijra', 'grp_admin/dc_code': dc,
+            'grp_admin/district': 'Dhaka', 'grp_module9/c3': '1',
+            'interview_start': start, 'interview_end': end,
+        })
+
+    def setUp(self):
+        self.subs = [
+            self._sub('2026-07-10T09:00:00', '2026-07-10T09:50:00'),  # 50m
+            self._sub('2026-07-10T11:00:00', '2026-07-10T11:54:00'),  # 54m
+            self._sub('2026-07-10T09:00:00', '2026-07-10T18:00:00'),  # 540m, left open
+        ]
+
+    def test_headline_average_excludes_forms_left_open(self):
+        from .monitoring import compute_monitoring
+        d = compute_monitoring(self.subs)['duration']
+        self.assertEqual(d['interview_avg_min'], 52.0)   # (50 + 54) / 2
+        self.assertEqual(d['interview_n'], 2)
+
+    def test_raw_average_is_kept_so_the_exclusion_stays_inspectable(self):
+        from .monitoring import compute_monitoring
+        self.assertEqual(compute_monitoring(self.subs)['duration']['avg_min'], 214.7)
+
+    def test_enumerator_average_excludes_their_left_open_forms(self):
+        from .monitoring import compute_monitoring
+        m = compute_monitoring(self.subs)
+        row = m['collectors'][0]
+        self.assertEqual(row['avg_min'], 52.0)
+        self.assertEqual(row['long'], 1)
+        self.assertEqual(row['n'], 3)
