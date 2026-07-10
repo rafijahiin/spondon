@@ -30,6 +30,11 @@ DURATION_BANDS = [(0, 10, '<10m'), (10, 20, '10–20m'), (20, 30, '20–30m'),
 # The baseline is a ~50-minute CAPI interview. Anything materially shorter was
 # not administered in full, so CIPRB treats under 40 minutes as rushed.
 SHORT_MINUTES = 40
+# Duration is measured from CONSENT to SUBMIT. If the enumerator consents, then
+# leaves the form open and submits hours later, that span is their working
+# session, not the interview. Anything over this is flagged as "form left open"
+# and excluded from the TYPICAL length, so it can't quietly inflate the average.
+LONG_MINUTES = 120
 
 
 def _parse_dt(v):
@@ -91,6 +96,7 @@ def compute_monitoring(subs):
     coll = defaultdict(lambda: {'n': 0, 'dur': [], 'complete': 0, 'short': 0, 'pop': Counter()})
     id_rows = defaultdict(list)   # submission_id -> the records sharing it
     short_rows = []
+    long_rows = []
     points = []
 
     for s in subs:
@@ -166,6 +172,9 @@ def compute_monitoring(subs):
                                'population': pop, 'date': dkey or ''})
             if dkey:
                 day_flags[dkey]['rushed'] += 1
+        if dm is not None and dm > LONG_MINUTES:
+            long_rows.append({'collector': dc, 'district': dist, 'minutes': dm,
+                              'population': pop, 'date': dkey or ''})
 
         # A duplicate is the SAME interview uploaded more than once: submission_id
         # is a per-form-instance id (collector + area + the moment the interview
@@ -235,6 +244,8 @@ def compute_monitoring(subs):
                       for _, _, lab in DURATION_BANDS],
             'avg_min': round(sum(durations) / len(durations), 1) if durations else None,
             'median_min': _median(durations),
+            # Best estimate of an actual interview: excludes forms left open.
+            'typical_min': _median([d for d in durations if d <= LONG_MINUTES]),
             'measured': len(durations),
         },
         'collectors': collectors,
@@ -245,6 +256,9 @@ def compute_monitoring(subs):
             'duplicate_rows': duplicate_rows,
             'short_interviews': len(short_rows),
             'short_minutes': SHORT_MINUTES,
+            'long_interviews': len(long_rows),
+            'long_minutes': LONG_MINUTES,
+            'long_rows': sorted(long_rows, key=lambda r: -r['minutes'])[:20],
             'short_rows': sorted(short_rows, key=lambda r: r['minutes'])[:20],
         },
         'map_points': points,

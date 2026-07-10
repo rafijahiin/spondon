@@ -14,6 +14,7 @@ from submissions.models import KoboSubmission, FormType, SubmissionStatus
 from .duplicate_detector import flag_duplicates_for_partner
 from .insights import compute_insights
 from .monitoring import compute_monitoring
+from .derive import derive_fields
 from .models import BaselineSurvey, BaselineResponse, SurveyType
 from .schema import headline, humanize, load_schema
 from .serializers import BaselineSurveySerializer, BaselineResponseSerializer
@@ -95,10 +96,16 @@ class BaselineResponseViewSet(OrgFilterMixin, ModelViewSet):
     @action(detail=False, methods=['get'])
     def stats(self, request):
         qs = self.get_queryset()
+        # Population from the FORM, not the stored column (older rows misfiled
+        # every FSW interview as hijra).
+        pops = Counter(
+            derive_fields(r.raw_data, fallback_district=r.district)['population'] or r.population
+            for r in qs.only('population', 'district', 'raw_data')
+        )
         return Response({
             'verified_total': qs.count(),
-            'verified_hijra': qs.filter(population='hijra').count(),
-            'verified_fsw': qs.filter(population='fsw').count(),
+            'verified_hijra': pops.get('hijra', 0),
+            'verified_fsw': pops.get('fsw', 0),
             'duplicates': qs.filter(is_duplicate=True).count(),
             'pending': _pending_baseline().count(),
         })
@@ -142,8 +149,20 @@ class BaselineResponseViewSet(OrgFilterMixin, ModelViewSet):
         w.writerow(['serial', 'population', 'survey_round', 'district', 'site_code',
                     'age', 'interview_outcome', 'is_duplicate', 'created_at'])
         for r in qs:
-            w.writerow([r.serial, r.population, r.survey_round, r.district, r.site_code,
-                        r.age or '', r.interview_outcome, r.is_duplicate,
+            # Derive from raw_data at READ time. Rows ingested before the flatten /
+            # population fixes have wrong stored columns (every FSW interview filed
+            # as 'hijra', blank district/age/outcome). Deriving here keeps the export
+            # correct without a bulk UPDATE of production data. Stored value is used
+            # only when the payload cannot answer.
+            d = derive_fields(r.raw_data, fallback_district=r.district)
+            w.writerow([d['serial'] or r.serial,
+                        d['population'] or r.population,
+                        d['survey_round'] or r.survey_round,
+                        d['district'] or r.district,
+                        d['site_code'] or r.site_code,
+                        (d['age'] if d['age'] is not None else (r.age or '')),
+                        d['interview_outcome'] or r.interview_outcome,
+                        r.is_duplicate,
                         r.created_at.isoformat()])
         return resp
 

@@ -5,6 +5,7 @@ from django.db import models
 
 from submissions.flatten import flatten_group_keys
 
+from .derive import derive_fields
 from .populations import resolve_population
 
 logger = logging.getLogger(__name__)
@@ -177,23 +178,21 @@ class BaselineResponseManager(models.Manager):
         # Flatten Kobo's 'group/field' keys so derived fields resolve, and store the
         # flattened copy so downstream readers see flat names.
         raw = flatten_group_keys(submission.raw_data or {})
-        # Population comes from the FORM, never a default. `_xform_id_string` is
-        # the asset UID, which contains no 'fsw' — the old substring check silently
-        # filed every FSW interview as Hijra. See baseline/populations.py.
-        population = resolve_population(raw)
+        # One derivation, shared with the CSV export (baseline/derive.py) so the
+        # export can never disagree with what was stored.
+        d = derive_fields(raw, fallback_district=submission.district)
+        population = d['population']
         if population is None:
             logger.error('BaselineResponse: population unresolved for submission %s '
                          '(kobo_id=%s) — defaulting to hijra; CHECK THIS RECORD.',
                          submission.id, submission.kobo_id)
             population = 'hijra'
-        round_raw = (raw.get('survey_round') or '').lower()
-        survey_round = SurveyType.ENDLINE if 'endline' in round_raw else SurveyType.BASELINE
-        serial = (raw.get('questionnaire_serial') or '').strip()
-        district = (raw.get('district') or submission.district or '').strip()
-        site_code = (raw.get('cluster_site_code') or raw.get('site_code') or '').strip()
-        age = _safe_int(raw.get('s2_age') or raw.get('s1_age')
-                        or raw.get('a205_age') or raw.get('a203_age'))
-        outcome = (raw.get('c3') or raw.get('interview_outcome') or '').strip()
+        survey_round = SurveyType.ENDLINE if d['survey_round'] == 'endline' else SurveyType.BASELINE
+        serial = d['serial']
+        district = d['district']
+        site_code = d['site_code']
+        age = d['age']
+        outcome = d['interview_outcome']
 
         # Duplicate flag — the serial is the unique key (kept PLAINTEXT; Fernet
         # would break the match). Flag if the same serial is already on file for

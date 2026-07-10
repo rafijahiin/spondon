@@ -9,7 +9,7 @@
  */
 import { useState } from 'react'
 import {
-  Users, Clock, MapPin, CheckCircle2, Gauge, Copy, Timer, TrendingUp,
+  Users, Clock, MapPin, CheckCircle2, Gauge, Copy, Timer, TrendingUp, Hourglass,
 } from 'lucide-react'
 import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid,
@@ -45,7 +45,7 @@ export interface Monitoring {
   sites: Bucket[]
   daily: { date: string; hijra: number; fsw: number; total: number }[]
   days: DayStat[]
-  duration: { bands: Bucket[]; avg_min: number | null; median_min: number | null; measured: number }
+  duration: { bands: Bucket[]; avg_min: number | null; median_min: number | null; typical_min: number | null; measured: number }
   collectors: Collector[]
   quality: {
     gps_ok: number; gps_missing: number; gps_pct: number
@@ -54,6 +54,9 @@ export interface Monitoring {
     short_interviews: number
     short_minutes: number
     short_rows: ShortRow[]
+    long_interviews: number
+    long_minutes: number
+    long_rows: ShortRow[]
   }
 }
 
@@ -259,7 +262,8 @@ function QualityDetail({ m }: { m: Monitoring }) {
   const dups = m.quality.duplicate_rows ?? []
   const shorts = m.quality.short_rows ?? []
   const lim = m.quality.short_minutes ?? 40
-  if (!dups.length && !shorts.length) return null
+  const longs = m.quality.long_rows ?? []
+  if (!dups.length && !shorts.length && !longs.length) return null
   const row: React.CSSProperties = {
     display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0',
     borderTop: '1px solid var(--hair)', fontSize: 12.5, flexWrap: 'wrap',
@@ -282,6 +286,27 @@ function QualityDetail({ m }: { m: Monitoring }) {
               <span style={{ color: 'var(--muted)', flex: 1, minWidth: 150 }}>
                 {g.records[0]?.collector} · {g.records[0]?.district}
                 {g.records.some((r) => r.date) && ` · ${g.records.map((r) => r.date).filter(Boolean).join(', ')}`}
+              </span>
+            </div>
+          ))}
+        </Card>
+      )}
+      {(m.quality.long_rows ?? []).length > 0 && (
+        <Card kicker="Form left open" grow="1 1 420px"
+          title={`${m.quality.long_interviews} interview${m.quality.long_interviews === 1 ? '' : 's'} over ${m.quality.long_minutes} minutes`}>
+          <p style={note}>
+            Duration is measured from <b style={{ color: 'var(--ink)' }}>consent</b> to
+            <b style={{ color: 'var(--ink)' }}> Submit</b>. These were consented, then submitted
+            hours later — that span is the enumerator's working session, not the interview, and it
+            inflates the average. Ask them to press Submit at the end of each interview. These are
+            excluded from the typical length above.
+          </p>
+          {(m.quality.long_rows ?? []).map((r, i) => (
+            <div key={`long-${r.collector}-${r.date}-${i}`} style={row}>
+              <span style={{ color: 'var(--coral)', fontWeight: 800, width: 58, fontVariantNumeric: 'tabular-nums' }}>{Math.round(r.minutes)}m</span>
+              <span style={{ fontWeight: 700, color: 'var(--ink)' }}>{r.collector}</span>
+              <span style={{ color: 'var(--muted)', flex: 1, minWidth: 130 }}>
+                {r.district} · {r.population === 'fsw' ? 'FSW' : 'Hijra'}{r.date && ` · ${r.date}`}
               </span>
             </div>
           ))}
@@ -481,7 +506,7 @@ export function FieldworkMonitor({ m }: { m: Monitoring }) {
       </div>
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, marginTop: 14 }}>
-        <Histogram kicker="Interview duration" title={`Length distribution · median ${m.duration.median_min ?? '—'}m`} data={rec(m.duration.bands)} />
+        <Histogram kicker="Interview duration" title={`Length distribution · typical ${m.duration.typical_min ?? m.duration.median_min ?? '—'}m`} data={rec(m.duration.bands)} />
         <BarBreakdown kicker="Coverage" title="Interviews by district" data={rec(m.districts)} />
       </div>
 
@@ -496,7 +521,10 @@ export function FieldworkMonitor({ m }: { m: Monitoring }) {
         <Flag icon={<MapPin size={15} />} n={`${m.quality.gps_pct}%`} label="GPS captured" tone="#0E8F8F" note={`${m.quality.gps_missing} missing location`} />
         <Flag icon={<Copy size={15} />} n={m.quality.duplicates} label="Duplicate uploads" tone={m.quality.duplicates ? '#E5484D' : '#0E8F8F'} note={m.quality.duplicates ? 'same interview sent twice' : 'none detected'} />
         <Flag icon={<Timer size={15} />} n={m.quality.short_interviews} label="Rushed interviews" tone={m.quality.short_interviews ? '#E5484D' : '#0E8F8F'} note={`under ${m.quality.short_minutes ?? 40} minutes`} />
-        <Flag icon={<Gauge size={15} />} n={`${m.duration.avg_min ?? '—'}m`} label="Median / avg length" tone="#F96000" note={`${m.duration.measured} timed`} />
+        <Flag icon={<Gauge size={15} />} n={`${m.duration.typical_min ?? m.duration.median_min ?? '—'}m`} label="Typical interview" tone="#F96000"
+          note={`average ${m.duration.avg_min ?? '—'}m · ${m.duration.measured} timed`} />
+        <Flag icon={<Hourglass size={15} />} n={m.quality.long_interviews ?? 0} label="Form left open" tone={(m.quality.long_interviews ?? 0) ? '#E5484D' : '#0E8F8F'}
+          note={`over ${m.quality.long_minutes ?? 120} minutes`} />
       </div>
       <QualityDetail m={m} />
     </section>
