@@ -1,25 +1,26 @@
 /**
- * Baseline studies — CIPRB verification + data-driven monitoring (D5).
+ * Baseline studies — CIPRB fieldwork monitoring (D5).
  *
- * Two surfaces on one page:
- *   1. INSIGHTS — charts built from every VERIFIED interview's full answer set
- *      (age, district, education, marital, religion, income + NID/mobile KPIs),
- *      split by key population (Hijra / FSW). Source: /baseline/responses/insights/.
- *   2. VERIFICATION — the CIPRB sign-off queue. Each pending interview shows a
- *      readable headline + the full grouped Q/A (labels resolved server-side),
- *      then Approve (materialises the record) or Reject.
+ * Three surfaces on one page:
+ *   1. FIELDWORK — pace, per-site/enumerator throughput, duration, quality flags,
+ *      over EVERY collected interview. Source: /baseline/responses/monitoring/.
+ *   2. SRHR — the major indicators, per questionnaire module.
+ *   3. INSIGHTS — the population profile as it builds (age, district, education,
+ *      marital, religion, income + NID/mobile KPIs), split by key population.
+ *
+ * There is no verification queue: baseline is a CIPRB-run research survey, so
+ * submissions auto-approve at ingest and there is nothing for a manager to sign
+ * off. The /baseline/verification/ endpoints still exist but are unused here.
  *
  * Endpoints (CIPRB-scoped):
+ *   GET  /baseline/responses/monitoring/    fieldwork + data quality
+ *   GET  /baseline/responses/srhr/          SRHR indicators by module
  *   GET  /baseline/responses/insights/      chart aggregation
- *   GET  /baseline/responses/stats/         headline counts
- *   GET  /baseline/verification/            pending queue (+ headline + answers)
- *   POST /baseline/verification/<id>/approve|reject/
- *   GET  /baseline/responses/export/        verified CSV
+ *   GET  /baseline/responses/export/        CSV of every response
  */
 import { useMemo, useState } from 'react'
 import {
-  ShieldCheck, AlertTriangle, MapPinOff, Download, Check, X,
-  ChevronDown, ChevronUp, Inbox, MapPin, CreditCard, Smartphone, CalendarDays,
+  ShieldCheck, Download, MapPin, CreditCard, Smartphone, CalendarDays,
 } from 'lucide-react'
 import { api, apiErrorMessage } from '@/api/client'
 import { usePolling } from '@/hooks/usePolling'
@@ -45,30 +46,6 @@ interface Insights {
   marital: PopDim
   religion: PopDim
   income_band: PopDim
-}
-interface HeadlineItem { label: string; value: string }
-interface AnswerRow { section: string; field: string; question: string; value: string; answer: string }
-interface PendingItem {
-  submission_id: string
-  population: Pop | ''
-  serial: string
-  district: string
-  site_code: string
-  age: string | number
-  interviewer: string
-  submitted_at: string
-  gps_missing: boolean
-  answer_count: number
-  duplicate_preview: boolean
-  headline: HeadlineItem[]
-  answers: AnswerRow[]
-}
-interface Stats {
-  verified_total: number
-  verified_hijra: number
-  verified_fsw: number
-  duplicates: number
-  pending: number
 }
 
 const POP_LABEL: Record<string, string> = {
@@ -122,15 +99,6 @@ function toRecord(dim: PopDim | undefined, lens: Lens): Record<string, number> {
   return out
 }
 
-function Stat({ label, value, sub, accent }: { label: string; value: number | string; sub?: string; accent?: string }) {
-  return (
-    <div className="card snug" style={{ minWidth: 140 }}>
-      <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--muted)' }}>{label}</div>
-      <div style={{ fontFamily: 'var(--display)', fontStyle: 'normal', fontSize: 38, lineHeight: 1, color: accent || 'var(--ink)', marginTop: 4, fontVariantNumeric: 'tabular-nums' }}>{value}</div>
-      {sub && <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 4 }}>{sub}</div>}
-    </div>
-  )
-}
 
 /** Small KPI chip with an icon — used inside the insights strip. */
 function KpiChip({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
@@ -146,11 +114,7 @@ function KpiChip({ icon, label, value }: { icon: React.ReactNode; label: string;
 }
 
 export default function BaselineEndline() {
-  const { data: stats, refetch: refetchStats } = usePolling<Stats>({
-    fetcher: () => api.get('/baseline/responses/stats/').then((r) => r.data),
-    interval: 30_000,
-  })
-  const { data: insights, refetch: refetchInsights } = usePolling<Insights>({
+  const { data: insights } = usePolling<Insights>({
     fetcher: () => api.get('/baseline/responses/insights/').then((r) => r.data),
     interval: 60_000,
   })
@@ -162,25 +126,9 @@ export default function BaselineEndline() {
     fetcher: () => api.get('/baseline/responses/srhr/').then((r) => r.data),
     interval: 60_000,
   })
-  const { data: pending, loading, refetch: refetchPending } = usePolling<PendingItem[]>({
-    fetcher: () => api.get('/baseline/verification/').then((r) =>
-      Array.isArray(r.data) ? r.data : (r.data?.results ?? [])),
-    interval: 30_000,
-  })
-
   const [lens, setLens] = useState<Lens>('all')
-  const [expanded, setExpanded] = useState<string | null>(null)
-  const [busy, setBusy] = useState<string | null>(null)
-  const [rejecting, setRejecting] = useState<string | null>(null)
-  const [reason, setReason] = useState('')
   const [err, setErr] = useState('')
-  const [popFilter, setPopFilter] = useState<'' | Pop>('')
   const [exporting, setExporting] = useState(false)
-
-  const items = useMemo(
-    () => (pending ?? []).filter((p) => !popFilter || p.population === popFilter),
-    [pending, popFilter],
-  )
 
   // KPI figures for the selected lens.
   const lensKpi = useMemo(() => {
@@ -199,20 +147,6 @@ export default function BaselineEndline() {
     }
     return insights.kpis[lens]
   }, [insights, lens])
-
-  async function review(id: string, action: 'approve' | 'reject', note = '') {
-    setBusy(id); setErr('')
-    try {
-      await api.post(`/baseline/verification/${id}/${action}/`,
-        action === 'reject' ? { reason: note } : { note })
-      setRejecting(null); setReason('')
-      await Promise.all([refetchPending(), refetchStats(), refetchInsights()])
-    } catch (e) {
-      setErr(apiErrorMessage(e, 'Action failed.'))
-    } finally {
-      setBusy(null)
-    }
-  }
 
   async function exportCsv() {
     setExporting(true)
@@ -253,7 +187,13 @@ export default function BaselineEndline() {
 
       {/* ── Fieldwork Command Center — the collection monitor ─────────────── */}
       <section className="section" style={{ marginTop: 16 }}>
-        <div className="kicker" style={{ marginBottom: 12 }}><span className="dot" /> Fieldwork command center · every collected interview</div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
+          <div className="kicker"><span className="dot" /> Fieldwork command center · every collected interview</div>
+          <button className="btn" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+            onClick={exportCsv} disabled={exporting}>
+            {exporting ? <LoadingSpinner size="sm" /> : <Download size={14} />} Export CSV
+          </button>
+        </div>
         {monitoring
           ? <FieldworkMonitor m={monitoring} />
           : <div className="card" style={{ padding: 28, textAlign: 'center', color: 'var(--muted)' }}>Loading collection monitor…</div>}
@@ -336,34 +276,3 @@ export default function BaselineEndline() {
 }
 
 /** Full interview answers, grouped by questionnaire section, in plain language. */
-function FullAnswers({ answers }: { answers: AnswerRow[] }) {
-  const groups = useMemo(() => {
-    const m = new Map<string, AnswerRow[]>()
-    for (const a of answers || []) {
-      if (!m.has(a.section)) m.set(a.section, [])
-      m.get(a.section)!.push(a)
-    }
-    return Array.from(m.entries())
-  }, [answers])
-
-  if (!answers || answers.length === 0) {
-    return <div style={{ marginTop: 12, fontSize: 12.5, color: 'var(--muted)' }}>No answers recorded.</div>
-  }
-  return (
-    <div style={{ marginTop: 12, borderTop: '1px solid var(--hair)', paddingTop: 12, display: 'flex', flexDirection: 'column', gap: 16 }}>
-      {groups.map(([section, rows]) => (
-        <div key={section}>
-          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'var(--unfpa)', marginBottom: 8 }}>{section}</div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '8px 20px' }}>
-            {rows.map((r) => (
-              <div key={r.field} style={{ fontSize: 12.5, minWidth: 0 }}>
-                <div style={{ color: 'var(--muted)', lineHeight: 1.3 }}>{r.question}</div>
-                <div style={{ color: 'var(--ink)', fontWeight: 600, overflowWrap: 'anywhere', marginTop: 1 }}>{r.answer || r.value}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      ))}
-    </div>
-  )
-}
