@@ -52,7 +52,15 @@ class Agg:
         return round(100 * self.n / self.d) if self.d else None
 
 
-def _grid_any(raw, fields, yes='1', skip=('', None, '8', '99', '98')):
+# Non-substantive answer codes on the Yes/No grids: 8 = Not applicable,
+# 97 = Other (specify), 98 = Don't know, 99 = Decline/Prefer not to say. These are
+# EXCLUDED from the denominator — counting them as an implicit "No" would invent a
+# negative the respondent never gave (the Hijra Q7.1/Q7.2 batteries gained codes 8
+# and 97 on 2026-07-10, which silently deflated GBV prevalence until this).
+_GRID_SKIP = ('', None, '8', '97', '98', '99')
+
+
+def _grid_any(raw, fields, yes='1', skip=_GRID_SKIP):
     """(any_yes, answered_any) over a Yes/No grid."""
     hit = seen = False
     for f in fields:
