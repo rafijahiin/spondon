@@ -307,7 +307,7 @@ function QualityDetail({ m }: { m: Monitoring }) {
             <b style={{ color: 'var(--ink)' }}> Submit</b>. These were consented, then submitted
             hours later — that span is the enumerator's working session, not the interview, and it
             inflates the average. Ask them to press Submit at the end of each interview. These are
-            excluded from the typical length above.
+            excluded from the average length above.
           </p>
           {(m.quality.long_rows ?? []).map((r, i) => (
             <div key={`long-${r.collector}-${r.date}-${i}`} style={row}>
