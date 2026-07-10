@@ -219,3 +219,51 @@ class InterviewDurationTest(TestCase):
         self.assertEqual(row['avg_min'], 52.0)
         self.assertEqual(row['long'], 1)
         self.assertEqual(row['n'], 3)
+
+
+class InterviewEndSourceTest(TestCase):
+    """The end of the interview is stamped at the outcome question
+    (interview_end_actual), NOT at Submit. A form left in draft for hours must
+    still read its real length; only rows lacking the stamp fall back to submit
+    time and can be flagged 'left open'."""
+
+    class _Sub:
+        status = 'approved'; district = 'Dhaka'; latitude = 23.8; longitude = 90.4
+        submitted_at = None
+
+        def __init__(self, raw):
+            self.raw_data = raw
+
+    def _row(self, start, actual, submit):
+        raw = {'_xform_id_string': 'aBT7aCL9p4FGcW4WwXZcr6',
+               'grp_admin/population': 'hijra', 'grp_admin/dc_code': '1',
+               'grp_admin/district': 'Dhaka', 'grp_module9/c3': '1',
+               'interview_start': start, 'interview_end': submit}
+        if actual:
+            raw['interview_end_actual'] = actual
+        return self._Sub(raw)
+
+    def test_draft_lag_is_ignored_when_the_true_end_is_present(self):
+        from .monitoring import compute_monitoring
+        # 50m interview, submitted 8 hours later.
+        d = compute_monitoring([
+            self._row('2026-07-11T09:00:00', '2026-07-11T09:50:00', '2026-07-11T17:50:00'),
+        ])['duration']
+        self.assertEqual(d['interview_avg_min'], 50.0)
+        self.assertEqual(d['true_end_n'], 1)
+
+    def test_true_end_row_is_not_flagged_left_open(self):
+        from .monitoring import compute_monitoring
+        m = compute_monitoring([
+            self._row('2026-07-11T09:00:00', '2026-07-11T09:50:00', '2026-07-11T17:50:00'),
+        ])
+        self.assertEqual(m['quality']['long_interviews'], 0)
+
+    def test_legacy_row_without_true_end_falls_back_and_can_flag(self):
+        from .monitoring import compute_monitoring
+        m = compute_monitoring([
+            self._row('2026-07-11T09:00:00', None, '2026-07-11T18:00:00'),  # 9h, no stamp
+        ])
+        self.assertEqual(m['duration']['true_end_n'], 0)
+        self.assertEqual(m['quality']['long_interviews'], 1)
+        self.assertIsNone(m['duration']['interview_avg_min'])  # excluded, nothing left

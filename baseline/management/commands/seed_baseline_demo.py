@@ -235,17 +235,29 @@ class Command(BaseCommand):
                     submitted = timezone.now() - timedelta(
                         days=random.randint(0, 18), hours=random.randint(8, 20),
                         minutes=random.randint(0, 59))
-                    # The instrument runs ~50 min. Mirror the real thresholds so the
-                    # demo exercises BOTH quality flags: ~6% rushed (<40m) and ~4%
-                    # 'form left open' (>120m, consented then submitted much later).
-                    r = random.random()
-                    if r < 0.06:
-                        dur = random.randint(12, 34)          # rushed
-                    elif r < 0.10:
-                        dur = random.randint(150, 300)        # form left open
+                    # The instrument runs ~50 min. `iv_len` is the REAL interview
+                    # length; ~6% are rushed (<40m). Submit happens some time later
+                    # (`submit_lag`) — usually minutes, sometimes hours when a form
+                    # is left in draft.
+                    iv_len = (random.randint(12, 34) if random.random() < 0.06
+                              else int(random.triangular(42, 66, 50)))
+                    # ~80% of rows are on the new form version, which stamps the end
+                    # of the interview at the outcome question (interview_end_actual)
+                    # — so their duration is real no matter how late they submit. The
+                    # rest are legacy rows with only the submit time; among those, a
+                    # big submit_lag shows up as "form left open".
+                    has_true_end = random.random() < 0.80
+                    if has_true_end:
+                        # Mostly submitted promptly; 25% sit in draft for hours — the
+                        # true-end stamp must make that invisible to the duration.
+                        submit_lag = (random.randint(0, 15) if random.random() < 0.75
+                                      else random.randint(150, 420))
                     else:
-                        dur = int(random.triangular(42, 66, 50))
-                    start = submitted - timedelta(minutes=dur)
+                        # Legacy: ~a quarter left open (>120m submit lag), rest prompt.
+                        submit_lag = (random.randint(150, 300) if random.random() < 0.25
+                                      else random.randint(0, 20))
+                    end_actual = submitted - timedelta(minutes=submit_lag)
+                    start = end_actual - timedelta(minutes=iv_len)
                     outcome = random.choices(['1', '2', '3', '4'],
                                              weights=[86, 7, 4, 3], k=1)[0]
                     # ~4% share a prior submission_id → duplicate flag demo
@@ -259,9 +271,12 @@ class Command(BaseCommand):
                         # The dashboard must resolve the name from this code.
                         'dc_code': dc, 'c3': outcome,
                         'interview_start': start.strftime('%Y-%m-%dT%H:%M:%S'),
+                        # interview_end = SUBMIT time (the XForm `end` meta).
                         'interview_end': submitted.strftime('%Y-%m-%dT%H:%M:%S'),
                         'submission_id': sub_id,
                     })
+                    if has_true_end:
+                        raw['interview_end_actual'] = end_actual.strftime('%Y-%m-%dT%H:%M:%S')
                     plat = None if gps_missing else round(lat + jitter(), 6)
                     plng = None if gps_missing else round(lng + jitter(), 6)
                     sub = KoboSubmission.objects.create(

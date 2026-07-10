@@ -780,6 +780,28 @@ def _hijra_module1_choices():
     return rows
 
 
+def _interview_end_fields():
+    """Two end-of-interview timestamps, kept separate on purpose.
+
+    `interview_end_actual` freezes the device clock the moment the enumerator
+    answers the interview-outcome question `c3` — i.e. the true end of the
+    interview, captured while it is still live. It uses the same once()/now()
+    pattern as `interview_start` (frozen at consent), so navigating back to edit
+    does not move it.
+
+    `interview_end` is the XForm `end` meta: the finalize/SUBMIT time. Duration is
+    consent -> Submit, so anything the enumerator did between answering c3 and
+    pressing Submit (leaving the form in draft, an open tab, the offline outbox)
+    lands in that span. We keep it only so submit-lag stays inspectable; the
+    dashboard measures interview length from interview_end_actual, not this.
+    """
+    return [
+        _sr('calculate', 'interview_end_actual',
+            calc="once(if(${c3}!='', now(), ''))"),
+        _sr('end', 'interview_end'),
+    ]
+
+
 def _hijra_survey():
     rows = []
     rows += _hijra_meta()
@@ -802,10 +824,7 @@ def _hijra_survey():
     # move each Other-specify box directly under its perpetrator question.
     mod = _restructure_violence(mod)
     rows += mod
-    # End time = the moment the enumerator SUBMITS. The XForm `end` meta stamps
-    # the device clock at finalize/submit. It is not shown on screen (it only
-    # exists once the form is submitted); it is stored in the submission data.
-    rows.append(_sr('end', 'interview_end'))
+    rows += _interview_end_fields()
     return rows
 
 
@@ -1031,10 +1050,7 @@ def _fsw_survey():
     from ._fsw_modules import fsw_module_survey
     # NK feedback (vi)/(vii): same perpetrator split as the Hijra form.
     rows += _restructure_violence(fsw_module_survey())
-    # End time = the moment the enumerator SUBMITS. The XForm `end` meta stamps
-    # the device clock at finalize/submit. It is not shown on screen (it only
-    # exists once the form is submitted); it is stored in the submission data.
-    rows.append(_sr('end', 'interview_end'))
+    rows += _interview_end_fields()
     return rows
 
 

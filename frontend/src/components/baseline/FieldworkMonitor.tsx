@@ -49,6 +49,7 @@ export interface Monitoring {
     bands: Bucket[]; avg_min: number | null; median_min: number | null
     typical_min: number | null; measured: number
     interview_avg_min: number | null; interview_n: number
+    true_end_n: number
   }
   collectors: Collector[]
   quality: {
@@ -303,10 +304,11 @@ function QualityDetail({ m }: { m: Monitoring }) {
         <Card kicker="Form left open" grow="1 1 420px"
           title={`${m.quality.long_interviews} interview${m.quality.long_interviews === 1 ? '' : 's'} over ${m.quality.long_minutes} minutes`}>
           <p style={note}>
-            Duration is measured from <b style={{ color: 'var(--ink)' }}>consent</b> to
-            <b style={{ color: 'var(--ink)' }}> Submit</b>. These were consented, then submitted
-            hours later — that span is the enumerator's working session, not the interview, and it
-            inflates the average. Ask them to press Submit at the end of each interview. These are
+            These interviews have no in-form end time, so their length is estimated from
+            <b style={{ color: 'var(--ink)' }}> consent&nbsp;→&nbsp;Submit</b> — and they were
+            submitted hours after they were taken, which measures the enumerator's working session,
+            not the interview. The current form stamps the end at the outcome question, so newer
+            records are immune to this; the count falls to zero as the old records age out. These are
             excluded from the average length above.
           </p>
           {(m.quality.long_rows ?? []).map((r, i) => (
@@ -534,7 +536,9 @@ export function FieldworkMonitor({ m }: { m: Monitoring }) {
             ? `${m.duration.interview_n} interviews · ${m.quality.long_interviews} left open, excluded`
             : `${m.duration.interview_n} interviews timed`} />
         <Flag icon={<Hourglass size={15} />} n={m.quality.long_interviews ?? 0} label="Form left open" tone={(m.quality.long_interviews ?? 0) ? '#E5484D' : '#0E8F8F'}
-          note={`over ${m.quality.long_minutes ?? 120} minutes`} />
+          note={(m.quality.long_interviews ?? 0)
+            ? `older records, no in-form end time`
+            : `all measured from the interview`} />
       </div>
       <QualityDetail m={m} />
     </section>

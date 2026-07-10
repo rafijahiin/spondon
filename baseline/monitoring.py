@@ -55,11 +55,23 @@ def _parse_dt(v):
 
 
 def _duration_min(raw):
-    a, b = _parse_dt(raw.get('interview_start')), _parse_dt(raw.get('interview_end'))
+    # End of the INTERVIEW, not of the submission. interview_end_actual freezes
+    # at the outcome question (c3), so it excludes any time the form then spent in
+    # draft / an open tab / the offline outbox before Submit. interview_end (the
+    # XForm `end` meta = finalize time) is the fallback for rows collected before
+    # this field existed.
+    a = _parse_dt(raw.get('interview_start'))
+    b = _parse_dt(raw.get('interview_end_actual')) or _parse_dt(raw.get('interview_end'))
     if not a or not b:
         return None
     m = (b - a).total_seconds() / 60.0
     return round(m, 1) if 0 < m < 600 else None
+
+
+def _has_true_end(raw):
+    """True when this row carries the in-interview end stamp (interview_end_actual),
+    so its duration is a real interview length rather than a submit-lag estimate."""
+    return bool(_parse_dt(raw.get('interview_end_actual')))
 
 
 def _band(v, bands):
@@ -91,7 +103,9 @@ def compute_monitoring(subs):
                                      'completed': 0, 'partial': 0, 'refused': 0,
                                      'interrupted': 0, 'rushed': 0, 'gps_missing': 0})
     dur_band = Counter()
-    durations = []
+    durations = []          # every timed row, raw
+    real_durations = []     # only rows whose duration is a trustworthy interview length
+    true_end_n = 0          # rows carrying the in-interview end stamp
     gps_ok = gps_missing = 0
     coll = defaultdict(lambda: {'n': 0, 'dur': [], 'complete': 0, 'short': 0, 'long': 0, 'pop': Counter()})
     id_rows = defaultdict(list)   # submission_id -> the records sharing it
@@ -131,8 +145,19 @@ def compute_monitoring(subs):
                 df[ok] += 1
 
         dm = _duration_min(raw)
+        # A row's duration is trustworthy when it carries the in-interview end
+        # stamp (interview_end_actual) — then it is a real interview length, long
+        # or short. Rows without it fall back to submit time; those are treated as
+        # "left open" only when the submit-lag estimate exceeds LONG_MINUTES.
+        true_end = _has_true_end(raw)
+        trustworthy = true_end or (dm is not None and dm <= LONG_MINUTES)
+        left_open = dm is not None and not true_end and dm > LONG_MINUTES
+        if true_end:
+            true_end_n += 1
         if dm is not None:
             durations.append(dm)
+            if trustworthy:
+                real_durations.append(dm)
             b = _band(dm, DURATION_BANDS)
             if b:
                 dur_band[b] += 1
@@ -162,10 +187,11 @@ def compute_monitoring(subs):
         c = coll[dc]
         c['n'] += 1
         c['pop'][pop] += 1
-        # Only genuine interviews feed an enumerator's average. A form left open
-        # for nine hours measures their working day, not how long they sat with a
-        # respondent — averaging it in made careful enumerators look like outliers.
-        if dm is not None and dm <= LONG_MINUTES:
+        # Only trustworthy durations feed an enumerator's average. A form left open
+        # for nine hours (no in-interview end stamp, submit hours later) measures
+        # their working day, not how long they sat with a respondent — averaging it
+        # in made careful enumerators look like outliers.
+        if dm is not None and trustworthy:
             c['dur'].append(dm)
         if oc == '1':
             c['complete'] += 1
@@ -175,7 +201,7 @@ def compute_monitoring(subs):
                                'population': pop, 'date': dkey or ''})
             if dkey:
                 day_flags[dkey]['rushed'] += 1
-        if dm is not None and dm > LONG_MINUTES:
+        if left_open:
             c['long'] += 1
             long_rows.append({'collector': dc, 'district': dist, 'minutes': dm,
                               'population': pop, 'date': dkey or ''})
@@ -233,13 +259,14 @@ def compute_monitoring(subs):
 
     days = [{'date': d, **day_flags[d]} for d in sorted(day_flags)]
 
-    # THE headline duration: the mean length of an actual interview. Forms left
-    # open (see LONG_MINUTES) are excluded, because they measure the enumerator's
-    # session, not the interview — including them put the "average" at 307m for a
-    # ~50-minute questionnaire. `avg_min` below keeps the raw, unfiltered mean so
-    # the exclusion stays visible rather than hidden.
-    real = [d for d in durations if d <= LONG_MINUTES]
-    interview_avg = round(sum(real) / len(real), 1) if real else None
+    # THE headline duration: the mean length of an actual interview. A row counts
+    # when it carries the in-interview end stamp (interview_end_actual, frozen at
+    # the outcome question) OR — for older rows without it — when the submit-lag
+    # estimate is still under LONG_MINUTES. Forms left open are excluded, because
+    # they measure the enumerator's session, not the interview; including them put
+    # the "average" at 307m for a ~50-minute questionnaire. `avg_min` below keeps
+    # the raw, unfiltered mean so the exclusion stays visible rather than hidden.
+    interview_avg = round(sum(real_durations) / len(real_durations), 1) if real_durations else None
 
     return {
         'total': total,
@@ -260,10 +287,13 @@ def compute_monitoring(subs):
             'median_min': _median(durations),
             # The average length of an actual interview — headline this.
             'interview_avg_min': interview_avg,
-            'interview_n': len(real),
+            'interview_n': len(real_durations),
             # Median of the same set: resistant to a single stray long record.
-            'typical_min': _median(real),
+            'typical_min': _median(real_durations),
             'measured': len(durations),
+            # How many timed rows carry the in-interview end stamp. Once every row
+            # has it, "left open" goes to 0 and the average needs no exclusions.
+            'true_end_n': true_end_n,
         },
         'collectors': collectors,
         'quality': {
