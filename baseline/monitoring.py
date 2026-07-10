@@ -93,7 +93,7 @@ def compute_monitoring(subs):
     dur_band = Counter()
     durations = []
     gps_ok = gps_missing = 0
-    coll = defaultdict(lambda: {'n': 0, 'dur': [], 'complete': 0, 'short': 0, 'pop': Counter()})
+    coll = defaultdict(lambda: {'n': 0, 'dur': [], 'complete': 0, 'short': 0, 'long': 0, 'pop': Counter()})
     id_rows = defaultdict(list)   # submission_id -> the records sharing it
     short_rows = []
     long_rows = []
@@ -173,6 +173,7 @@ def compute_monitoring(subs):
             if dkey:
                 day_flags[dkey]['rushed'] += 1
         if dm is not None and dm > LONG_MINUTES:
+            c['long'] += 1
             long_rows.append({'collector': dc, 'district': dist, 'minutes': dm,
                               'population': pop, 'date': dkey or ''})
 
@@ -199,7 +200,7 @@ def compute_monitoring(subs):
             'code': dc, 'n': c['n'],
             'avg_min': round(sum(c['dur']) / len(c['dur']), 1) if c['dur'] else None,
             'completion_pct': round(100 * c['complete'] / c['n']) if c['n'] else 0,
-            'short': c['short'],
+            'short': c['short'], 'long': c['long'],
             'hijra': c['pop'].get('hijra', 0), 'fsw': c['pop'].get('fsw', 0),
         })
 

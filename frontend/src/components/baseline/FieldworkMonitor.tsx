@@ -33,7 +33,7 @@ interface DupGroup { submission_id: string; count: number; records: DupRecord[] 
 interface ShortRow { collector: string; district: string; minutes: number; population: string; date: string }
 interface Collector {
   code: string; n: number; avg_min: number | null; completion_pct: number
-  short: number; hijra: number; fsw: number
+  short: number; long: number; hijra: number; fsw: number
 }
 export interface Monitoring {
   total: number
@@ -244,10 +244,12 @@ function CollectorList({ rows }: { rows: Collector[] }) {
                 <div style={{ fontSize: 12.5, fontWeight: 800, color: compTone, fontVariantNumeric: 'tabular-nums' }}>{r.completion_pct}%</div>
                 <div style={{ fontSize: 10, color: 'var(--muted)' }}>complete</div>
               </div>
-              <div style={{ width: 78, textAlign: 'right', flexShrink: 0 }}>
+              <div style={{ width: 92, textAlign: 'right', flexShrink: 0 }}>
                 {r.short > 0
                   ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11.5, color: 'var(--coral)', fontWeight: 700 }}><Timer size={13} />{r.short} rushed</span>
-                  : <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11.5, color: 'var(--emerald)' }}><CheckCircle2 size={13} />clean</span>}
+                  : (r.long ?? 0) > 0
+                    ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11.5, color: 'var(--coral)', fontWeight: 700 }}><Hourglass size={13} />{r.long} left open</span>
+                    : <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11.5, color: 'var(--emerald)' }}><CheckCircle2 size={13} />clean</span>}
               </div>
             </div>
           </div>
