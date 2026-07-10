@@ -13,6 +13,8 @@ c3 (interview outcome), submission_id (dedup), GPS, and submitted_at.
 from collections import Counter, defaultdict
 from datetime import datetime
 
+from .collectors import collector_name
+
 # Sample-size targets per key population. UNKNOWN until the protocol sets them —
 # leave blank so the dashboard shows collected COUNTS, not a fake % of target.
 # Fill in (e.g. {'hijra': 250, 'fsw': 250}) once CIPRB confirms the sample size.
@@ -131,12 +133,18 @@ def compute_monitoring(subs):
             if dkey:
                 day_flags[dkey]['gps_missing'] += 1
 
-        # Collector identity comes from INSIDE the form (the enumerator's own
-        # name/code field), never the Kobo account username. dc_name (FSW) and
-        # interviewer_name_code (both) are the real fields; dc_code is a legacy
-        # code fallback. Un-tagged submissions read 'Unknown', not the Kobo login.
-        dc = (str(raw.get('dc_name') or raw.get('interviewer_name_code')
-                  or raw.get('dc_code') or '').strip()) or 'Unknown'
+        # Collector identity comes from INSIDE the form, never the Kobo account
+        # username. The live forms ask "Data Collector" as a select_one, so the
+        # submission stores only the CODE (dc_code = '1', '2', …) — resolve it to
+        # the enumerator's name via the shared roster, otherwise the roster would
+        # read "1", "2", "3". dc_name / interviewer_name_code are honoured first
+        # (older form versions + the demo seed write them). Un-tagged submissions
+        # read 'Unknown', never the Kobo login.
+        dc = str(raw.get('dc_name') or raw.get('interviewer_name_code') or '').strip()
+        if not dc:
+            code = raw.get('dc_code')
+            dc = collector_name(pop, code) or (f'Collector {code}' if code not in (None, '') else '')
+        dc = dc or 'Unknown'
         c = coll[dc]
         c['n'] += 1
         c['pop'][pop] += 1

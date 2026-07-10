@@ -32,6 +32,8 @@ Run:
 """
 import os
 import openpyxl
+
+from baseline.collectors import DATA_COLLECTORS
 from openpyxl.styles import Font, PatternFill, Alignment
 from openpyxl.utils import get_column_letter
 from django.core.management.base import BaseCommand
@@ -805,18 +807,9 @@ def _hijra_choices():
         _ch('residence_len', '1', 'Less than 6 months', '৬ মাসের কম'),
         _ch('residence_len', '2', '6 months or more', '৬ মাস বা তার বেশি'),
         # Data collectors (Hijra survey) — enumerator selects their name; code stored.
-        _ch('dc_hijra', '1', 'Md. Abdullah-Al-Mahbub', 'Md. Abdullah-Al-Mahbub'),
-        _ch('dc_hijra', '2', 'Md. Mamun Hawlader', 'Md. Mamun Hawlader'),
-        _ch('dc_hijra', '3', 'Kamal Hossain', 'Kamal Hossain'),
-        _ch('dc_hijra', '4', 'Md Shajjadul Islam Shagor', 'Md Shajjadul Islam Shagor'),
-        _ch('dc_hijra', '5', 'Golam Dastagir Sunny', 'Golam Dastagir Sunny'),
-        _ch('dc_hijra', '6', 'Moklesur Rahman', 'Moklesur Rahman'),
-        _ch('dc_hijra', '7', 'Md. Iqbal Hossain', 'Md. Iqbal Hossain'),
-        _ch('dc_hijra', '8', 'Md. Saiful Islam', 'Md. Saiful Islam'),
-        _ch('dc_hijra', '9', 'Golam Mehedi', 'Golam Mehedi'),
-        _ch('dc_hijra', '10', 'Md. Firoz', 'Md. Firoz'),
-        _ch('dc_hijra', '11', 'Md. Awlad Hossain Ahmmad', 'Md. Awlad Hossain Ahmmad'),
-        _ch('dc_hijra', '12', 'Md. Mahbubul Huq', 'Md. Mahbubul Huq'),
+        # Generated from baseline/collectors.py — the single source of truth that
+        # baseline/monitoring.py also reads to turn dc_code into a name.
+        *[_ch('dc_hijra', c, n, n) for c, n in DATA_COLLECTORS['hijra'].items()],
     ]
     rows += _hijra_module1_choices()
     from ._hijra_modules import hijra_module_choices
@@ -1038,13 +1031,9 @@ def _fsw_choices():
         _ch('s4_list', '2', 'Replacement respondent per protocol (state reason)',
             'প্রোটোকল অনুযায়ী প্রতিস্থাপিত উত্তরদাতা (কারণ উল্লেখ করুন)'),
         # Data collectors (FSW survey, all female) — enumerator selects name; code stored.
-        _ch('dc_fsw', '1', 'Mst. Mahfuza Sultana', 'Mst. Mahfuza Sultana'),
-        _ch('dc_fsw', '2', 'Dipty Biswas', 'Dipty Biswas'),
-        _ch('dc_fsw', '3', 'Pakhi Akter', 'Pakhi Akter'),
-        _ch('dc_fsw', '4', 'Nargis Khanam', 'Nargis Khanam'),
-        _ch('dc_fsw', '5', 'Sabita Rani Halder', 'Sabita Rani Halder'),
-        _ch('dc_fsw', '6', 'Zannatul Ferdous Khan', 'Zannatul Ferdous Khan'),
-        _ch('dc_fsw', '7', 'Aparna Rani Dey', 'Aparna Rani Dey'),
+        # Generated from baseline/collectors.py — the single source of truth that
+        # baseline/monitoring.py also reads to turn dc_code into a name.
+        *[_ch('dc_fsw', c, n, n) for c, n in DATA_COLLECTORS['fsw'].items()],
     ]
     from ._fsw_modules import fsw_module_choices
     rows += fsw_module_choices()
