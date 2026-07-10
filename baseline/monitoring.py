@@ -14,6 +14,7 @@ from collections import Counter, defaultdict
 from datetime import datetime
 
 from .collectors import collector_name
+from .populations import resolve_population
 
 # Sample-size targets per key population. UNKNOWN until the protocol sets them —
 # leave blank so the dashboard shows collected COUNTS, not a fake % of target.
@@ -92,7 +93,8 @@ def compute_monitoring(subs):
 
     for s in subs:
         raw = s.raw_data or {}
-        pop = (raw.get('population') or '').lower() or 'hijra'
+        # Resolved from the source form, not defaulted (see baseline/populations.py).
+        pop = resolve_population(raw, default='hijra')
         total += 1
         by_pop[pop] += 1
         by_status[(s.status or 'PENDING')] += 1

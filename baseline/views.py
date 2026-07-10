@@ -60,15 +60,9 @@ class BaselineSurveyViewSet(OrgFilterMixin, ModelViewSet):
 # ── D5 key-population baseline (Hijra / FSW) — CIPRB-conducted ────────────────
 
 def _population(raw):
-    pop = (raw.get('population') or '').lower()
-    if pop in ('hijra', 'fsw'):
-        return pop
-    xf = (raw.get('_xform_id_string') or '').lower()
-    if 'hijra' in xf:
-        return 'hijra'
-    if 'fsw' in xf:
-        return 'fsw'
-    return ''
+    """Resolved from the source form (asset UID / id_string), never guessed."""
+    from .populations import resolve_population
+    return resolve_population(raw, default='') or ''
 
 
 def _pending_baseline():

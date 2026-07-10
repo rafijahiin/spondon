@@ -1,6 +1,11 @@
+import logging
 import uuid
 
 from django.db import models
+
+from .populations import resolve_population
+
+logger = logging.getLogger(__name__)
 
 
 def _safe_int(value):
@@ -168,10 +173,15 @@ class BaselineSurvey(models.Model):
 class BaselineResponseManager(models.Manager):
     def get_or_create_from_submission(self, submission):
         raw = submission.raw_data or {}
-        population = (raw.get('population') or '').lower()
-        if population not in ('hijra', 'fsw'):
-            xf = (raw.get('_xform_id_string') or '').lower()
-            population = 'fsw' if 'fsw' in xf else 'hijra'
+        # Population comes from the FORM, never a default. `_xform_id_string` is
+        # the asset UID, which contains no 'fsw' — the old substring check silently
+        # filed every FSW interview as Hijra. See baseline/populations.py.
+        population = resolve_population(raw)
+        if population is None:
+            logger.error('BaselineResponse: population unresolved for submission %s '
+                         '(kobo_id=%s) — defaulting to hijra; CHECK THIS RECORD.',
+                         submission.id, submission.kobo_id)
+            population = 'hijra'
         round_raw = (raw.get('survey_round') or '').lower()
         survey_round = SurveyType.ENDLINE if 'endline' in round_raw else SurveyType.BASELINE
         serial = (raw.get('questionnaire_serial') or '').strip()
