@@ -100,7 +100,9 @@ class BaselineResponseViewSet(OrgFilterMixin, ModelViewSet):
         # every FSW interview as hijra).
         pops = Counter(
             derive_fields(r.raw_data, fallback_district=r.district)['population'] or r.population
-            for r in qs.only('population', 'district', 'raw_data')
+            # NB: no .only() here — the queryset uses select_related('submission'),
+            # and deferring a select_related field raises FieldError (500).
+            for r in qs
         )
         return Response({
             'verified_total': qs.count(),
