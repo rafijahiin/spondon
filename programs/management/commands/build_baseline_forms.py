@@ -30,12 +30,14 @@ Run:
     python manage.py build_baseline_forms                 # writes xlsx
     python manage.py build_baseline_forms --only ciprb_baseline_hijra_v1
 """
+import json
 import os
 import openpyxl
 
 from baseline.collectors import DATA_COLLECTORS
 from openpyxl.styles import Font, PatternFill, Alignment
 from openpyxl.utils import get_column_letter
+from django.conf import settings
 from django.core.management.base import BaseCommand
 
 HERE   = os.path.dirname(os.path.abspath(__file__))
@@ -199,6 +201,28 @@ def _add_other_specify(survey, choices):
         out.append(_sr('text', field + '_other', 'Other (specify)',
                        'অন্যান্য (উল্লেখ করুন)', relevant=rel))
     return out
+
+
+def _field_paths(survey):
+    """field name -> 'group/subgroup/field', mirroring how KoboToolbox serialises
+    a submission. Emitted to baseline/field_paths.json so the demo seed can build
+    a payload shaped exactly like a real one. Generated from the survey rows here
+    so the map can never drift from the forms it describes."""
+    stack, paths = [], {}
+    for r in survey:
+        qtype = str(r[0] or '').strip()
+        name = str(r[1] or '').strip()
+        if qtype == 'begin_group':
+            stack.append(name)
+            continue
+        if qtype == 'end_group':
+            if stack:
+                stack.pop()
+            continue
+        if not name or qtype == 'note':
+            continue
+        paths[name] = '/'.join(stack + [name]) if stack else name
+    return paths
 
 
 def _wb(form_id, form_title, survey, choices):
@@ -1075,6 +1099,7 @@ class Command(BaseCommand):
         out = opts['output_dir']
         os.makedirs(out, exist_ok=True)
         only = opts.get('only', '')
+        all_paths = {}
         for f in FORMS:
             if only and f['id'] != only:
                 continue
@@ -1083,8 +1108,22 @@ class Command(BaseCommand):
             # (systemic fix), THEN mark inputs required.
             survey  = _require_all(_add_other_specify(f['survey'](), choices))
             wb = _wb(f['id'], f['title'], survey, choices)
+            all_paths['fsw' if 'fsw' in f['id'] else 'hijra'] = _field_paths(survey)
             path = os.path.join(out, f['file'])
             wb.save(path)
             self.stdout.write(self.style.SUCCESS(
                 f"  OK  {f['file']:34s}  {len(survey):3d} rows  id: {f['id']}"))
+        # Keep baseline/field_paths.json in lockstep with the forms it describes.
+        # `--only` builds one form, so merge rather than overwrite.
+        fp = os.path.join(settings.BASE_DIR, 'baseline', 'field_paths.json')
+        merged = {}
+        if os.path.exists(fp):
+            with open(fp, encoding='utf-8') as fh:
+                merged = json.load(fh)
+        merged.update(all_paths)
+        with open(fp, 'w', encoding='utf-8') as fh:
+            json.dump(merged, fh, ensure_ascii=False, indent=1, sort_keys=True)
+            fh.write('\n')
+        self.stdout.write('  OK  baseline/field_paths.json      ' + '  '.join(
+            f'{k}: {len(v)} fields' for k, v in sorted(merged.items())))
         self.stdout.write(f'\nWritten to {os.path.abspath(out)}/')
