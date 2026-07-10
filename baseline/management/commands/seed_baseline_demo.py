@@ -14,12 +14,14 @@ without --wipe intent.
 import json
 import os
 import random
+import uuid
 from datetime import timedelta
 
 from django.core.management.base import BaseCommand
 from django.db.models.signals import post_save
 from django.utils import timezone
 
+from baseline.collectors import DATA_COLLECTORS
 from baseline.models import BaselineResponse
 from submissions.models import FormType, KoboSubmission, SubmissionStatus
 
@@ -27,8 +29,50 @@ PREFIX = 'DEMO-BL-'
 SCHEMA = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'form_schema.json')
 
 XFORM = {'hijra': 'ciprb_baseline_hijra_v1', 'fsw': 'ciprb_baseline_fsw_v1'}
-INTERVIEWERS = ['Shipra Rani / IV-01', 'Rahim Uddin / IV-02', 'Nadia Akter / IV-03',
-                'Jamal Hossain / IV-04', 'Papri Das / IV-05', 'Sohel Rana / IV-06']
+
+# The deployed Kobo assets. A real payload stamps the ASSET UID (not the readable
+# id_string) into _xform_id_string — that is exactly what broke population
+# resolution, so the demo must reproduce it.
+ASSET_UID = {'hijra': 'aBT7aCL9p4FGcW4WwXZcr6', 'fsw': 'aVsJ7VJ35k8GshpQpnXygC'}
+
+# field -> 'group/sub/field' path, generated from the DEPLOYED XLSForms.
+FIELD_PATHS = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'field_paths.json')
+
+
+def _to_kobo_payload(flat, pop, paths, submitted, lat, lng, seq):
+    """Turn the flat answer dict into a payload shaped like a REAL Kobo submission.
+
+    Kobo serialises grouped questions as 'group/field' and adds its own meta keys.
+    The demo seed used to emit FLAT keys and invent fields the forms never collect
+    (dc_name, interviewer_name_code, questionnaire_serial). That fiction is why the
+    dashboard read healthy for weeks while the real ingest path was broken: every
+    reader was validated against data no enumerator could ever produce.
+
+    Any answer whose name is not in the deployed form is DROPPED, so the demo can
+    never contain a field the real instrument lacks.
+    """
+    out = {}
+    for key, val in flat.items():
+        path = paths.get(key)
+        if path is None:
+            continue                      # not a field in the deployed form
+        out[path] = val
+
+    out.update({
+        '_id': 900000 + seq,
+        '_uuid': str(uuid.uuid4()),
+        '_status': 'submitted_via_web',
+        '__version__': 'vDemoSeed',
+        '_xform_id_string': ASSET_UID[pop],
+        '_submitted_by': 'baseline89',    # the Kobo LOGIN — must never name a collector
+        '_submission_time': submitted.strftime('%Y-%m-%dT%H:%M:%S'),
+        'formhub/uuid': uuid.uuid4().hex,
+        'meta/rootUuid': 'uuid:' + str(uuid.uuid4()),
+    })
+    if lat is not None and lng is not None:
+        out['_geolocation'] = [lat, lng]
+    return out
 # rough district -> (lat, lng) for plausible GPS
 GEO = {
     'sunamganj': (25.07, 91.40), 'habiganj': (24.37, 91.41), 'manikganj': (23.86, 90.00),
@@ -154,6 +198,8 @@ class Command(BaseCommand):
     def handle(self, *args, **opts):
         with open(SCHEMA, encoding='utf-8') as f:
             schema = json.load(f)
+        with open(FIELD_PATHS, encoding='utf-8') as f:
+            paths_all = json.load(f)
 
         if opts['wipe']:
             subs = KoboSubmission.objects.filter(kobo_id__startswith=PREFIX)
@@ -182,15 +228,23 @@ class Command(BaseCommand):
                     jitter = lambda: random.uniform(-0.05, 0.05)
                     gps_missing = random.random() < 0.08
                     # ── Fieldwork signals (for the monitoring dashboard) ──
-                    iv = random.choice(INTERVIEWERS)          # 'Name / IV-0X'
-                    dc = iv.split('/')[-1].strip()            # collector code IV-0X
-                    dc_name = f"{iv.split('/')[0].strip()} ({dc})"  # 'Name (IV-0X)'
+                    # Pick a REAL data collector: dc_code is the select_one CODE the
+                    # form stores ('1'..'12'), from the same roster that generates the
+                    # dropdown. The seed must never invent a code the form can't emit.
+                    dc, dc_display = random.choice(list(DATA_COLLECTORS[pop].items()))
                     submitted = timezone.now() - timedelta(
                         days=random.randint(0, 18), hours=random.randint(8, 20),
                         minutes=random.randint(0, 59))
-                    # duration mostly 22–55 min; ~6% suspiciously short (rushed flag)
-                    dur = random.randint(3, 8) if random.random() < 0.06 else int(
-                        random.triangular(22, 55, 38))
+                    # The instrument runs ~50 min. Mirror the real thresholds so the
+                    # demo exercises BOTH quality flags: ~6% rushed (<40m) and ~4%
+                    # 'form left open' (>120m, consented then submitted much later).
+                    r = random.random()
+                    if r < 0.06:
+                        dur = random.randint(12, 34)          # rushed
+                    elif r < 0.10:
+                        dur = random.randint(150, 300)        # form left open
+                    else:
+                        dur = int(random.triangular(42, 66, 50))
                     start = submitted - timedelta(minutes=dur)
                     outcome = random.choices(['1', '2', '3', '4'],
                                              weights=[86, 7, 4, 3], k=1)[0]
@@ -201,26 +255,29 @@ class Command(BaseCommand):
                         sub_id = f'{dc}-{dist[:3].upper()}-{seq:05d}'
                         used_ids.append(sub_id)
                     raw.update({
+                        # Only dc_code — the real forms carry NO collector name.
+                        # The dashboard must resolve the name from this code.
                         'dc_code': dc, 'c3': outcome,
-                        # the enumerator's in-form identity (name + code) — what
-                        # the monitoring dashboard shows, not the Kobo login
-                        'dc_name': dc_name,
-                        'interviewer_name_code': dc_name,
                         'interview_start': start.strftime('%Y-%m-%dT%H:%M:%S'),
                         'interview_end': submitted.strftime('%Y-%m-%dT%H:%M:%S'),
                         'submission_id': sub_id,
                     })
+                    plat = None if gps_missing else round(lat + jitter(), 6)
+                    plng = None if gps_missing else round(lng + jitter(), 6)
                     sub = KoboSubmission.objects.create(
                         kobo_id=f'{PREFIX}{pop}-{seq:04d}',
                         form_type=FormType.BASELINE,
                         partner='CIPRB',
-                        worker_name=iv,
+                        worker_name='baseline89',   # Kobo login, as Kobo sends it
                         district=dist.title(),
                         region='',
-                        latitude=None if gps_missing else round(lat + jitter(), 6),
-                        longitude=None if gps_missing else round(lng + jitter(), 6),
+                        latitude=plat,
+                        longitude=plng,
                         submitted_at=submitted,
-                        raw_data=raw,
+                        # A payload shaped exactly like KoboToolbox sends it:
+                        # 'group/field' keys + Kobo meta. Nothing flat, nothing invented.
+                        raw_data=_to_kobo_payload(raw, pop, paths_all[pop],
+                                                  submitted, plat, plng, seq),
                         status=SubmissionStatus.PENDING,
                     )
                     made.append(sub)
@@ -257,7 +314,6 @@ class Command(BaseCommand):
         base = {
             '_xform_id_string': XFORM[pop],
             'population': pop,
-            'questionnaire_serial': serial,
             'consent': '1',
             'interview_language': '1',
             'survey_round': 'baseline',
