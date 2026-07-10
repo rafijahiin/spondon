@@ -45,7 +45,11 @@ export interface Monitoring {
   sites: Bucket[]
   daily: { date: string; hijra: number; fsw: number; total: number }[]
   days: DayStat[]
-  duration: { bands: Bucket[]; avg_min: number | null; median_min: number | null; typical_min: number | null; measured: number }
+  duration: {
+    bands: Bucket[]; avg_min: number | null; median_min: number | null
+    typical_min: number | null; measured: number
+    interview_avg_min: number | null; interview_n: number
+  }
   collectors: Collector[]
   quality: {
     gps_ok: number; gps_missing: number; gps_pct: number
@@ -158,7 +162,9 @@ function KpiBand({ m, completedPct }: { m: Monitoring; completedPct: number }) {
   const cells = [
     { icon: <Users size={18} />, value: String(m.total), label: 'Total interviews', tone: ORANGE },
     { icon: <CheckCircle2 size={18} />, value: `${completedPct}%`, label: 'Completed outcome', tone: TEAL },
-    { icon: <Clock size={18} />, value: m.duration.avg_min != null ? `${m.duration.avg_min}m` : '—', label: 'Avg interview', tone: '#6E56CF' },
+    // Forms left open are excluded — see monitoring.py. The raw mean of every
+    // timed record is an enumerator-session length, not an interview length.
+    { icon: <Clock size={18} />, value: m.duration.interview_avg_min != null ? `${m.duration.interview_avg_min}m` : '—', label: 'Avg interview', tone: '#6E56CF' },
     { icon: <MapPin size={18} />, value: `${m.quality.gps_pct}%`, label: 'GPS captured', tone: m.quality.gps_pct >= 90 ? 'var(--emerald)' : 'var(--amber)' },
     { icon: <Copy size={18} />, value: String(m.quality.duplicates), label: 'Duplicates', tone: m.quality.duplicates ? 'var(--coral)' : 'var(--emerald)' },
     { icon: <Timer size={18} />, value: String(m.quality.short_interviews), label: `Rushed (<${m.quality.short_minutes ?? 40}m)`, tone: m.quality.short_interviews ? 'var(--coral)' : 'var(--emerald)' },
@@ -508,7 +514,7 @@ export function FieldworkMonitor({ m }: { m: Monitoring }) {
       </div>
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, marginTop: 14 }}>
-        <Histogram kicker="Interview duration" title={`Length distribution · typical ${m.duration.typical_min ?? m.duration.median_min ?? '—'}m`} data={rec(m.duration.bands)} />
+        <Histogram kicker="Interview duration" title={`Length distribution · average ${m.duration.interview_avg_min ?? '—'}m`} data={rec(m.duration.bands)} />
         <BarBreakdown kicker="Coverage" title="Interviews by district" data={rec(m.districts)} />
       </div>
 
@@ -523,8 +529,10 @@ export function FieldworkMonitor({ m }: { m: Monitoring }) {
         <Flag icon={<MapPin size={15} />} n={`${m.quality.gps_pct}%`} label="GPS captured" tone="#0E8F8F" note={`${m.quality.gps_missing} missing location`} />
         <Flag icon={<Copy size={15} />} n={m.quality.duplicates} label="Duplicate uploads" tone={m.quality.duplicates ? '#E5484D' : '#0E8F8F'} note={m.quality.duplicates ? 'same interview sent twice' : 'none detected'} />
         <Flag icon={<Timer size={15} />} n={m.quality.short_interviews} label="Rushed interviews" tone={m.quality.short_interviews ? '#E5484D' : '#0E8F8F'} note={`under ${m.quality.short_minutes ?? 40} minutes`} />
-        <Flag icon={<Gauge size={15} />} n={`${m.duration.typical_min ?? m.duration.median_min ?? '—'}m`} label="Typical interview" tone="#F96000"
-          note={`average ${m.duration.avg_min ?? '—'}m · ${m.duration.measured} timed`} />
+        <Flag icon={<Gauge size={15} />} n={`${m.duration.interview_avg_min ?? '—'}m`} label="Avg interview length" tone="#F96000"
+          note={m.quality.long_interviews
+            ? `${m.duration.interview_n} interviews · ${m.quality.long_interviews} left open, excluded`
+            : `${m.duration.interview_n} interviews timed`} />
         <Flag icon={<Hourglass size={15} />} n={m.quality.long_interviews ?? 0} label="Form left open" tone={(m.quality.long_interviews ?? 0) ? '#E5484D' : '#0E8F8F'}
           note={`over ${m.quality.long_minutes ?? 120} minutes`} />
       </div>

@@ -162,7 +162,10 @@ def compute_monitoring(subs):
         c = coll[dc]
         c['n'] += 1
         c['pop'][pop] += 1
-        if dm is not None:
+        # Only genuine interviews feed an enumerator's average. A form left open
+        # for nine hours measures their working day, not how long they sat with a
+        # respondent — averaging it in made careful enumerators look like outliers.
+        if dm is not None and dm <= LONG_MINUTES:
             c['dur'].append(dm)
         if oc == '1':
             c['complete'] += 1
@@ -230,6 +233,14 @@ def compute_monitoring(subs):
 
     days = [{'date': d, **day_flags[d]} for d in sorted(day_flags)]
 
+    # THE headline duration: the mean length of an actual interview. Forms left
+    # open (see LONG_MINUTES) are excluded, because they measure the enumerator's
+    # session, not the interview — including them put the "average" at 307m for a
+    # ~50-minute questionnaire. `avg_min` below keeps the raw, unfiltered mean so
+    # the exclusion stays visible rather than hidden.
+    real = [d for d in durations if d <= LONG_MINUTES]
+    interview_avg = round(sum(real) / len(real), 1) if real else None
+
     return {
         'total': total,
         'by_status': {k: by_status[k] for k in by_status},
@@ -243,10 +254,15 @@ def compute_monitoring(subs):
         'duration': {
             'bands': [{'name': lab, 'value': dur_band.get(lab, 0)}
                       for _, _, lab in DURATION_BANDS],
+            # Raw mean over EVERY timed record, forms-left-open included. Kept only
+            # so the filtered figure can be compared against it; do not headline it.
             'avg_min': round(sum(durations) / len(durations), 1) if durations else None,
             'median_min': _median(durations),
-            # Best estimate of an actual interview: excludes forms left open.
-            'typical_min': _median([d for d in durations if d <= LONG_MINUTES]),
+            # The average length of an actual interview — headline this.
+            'interview_avg_min': interview_avg,
+            'interview_n': len(real),
+            # Median of the same set: resistant to a single stray long record.
+            'typical_min': _median(real),
             'measured': len(durations),
         },
         'collectors': collectors,
