@@ -27,6 +27,10 @@ interface DayStat {
   rushed: number; gps_missing: number
 }
 interface Bucket { name: string; value: number }
+/** One interview inside a duplicate group (same submission uploaded twice). */
+interface DupRecord { collector: string; district: string; population: string; date: string; minutes: number | null }
+interface DupGroup { submission_id: string; count: number; records: DupRecord[] }
+interface ShortRow { collector: string; district: string; minutes: number; population: string; date: string }
 interface Collector {
   code: string; n: number; avg_min: number | null; completion_pct: number
   short: number; hijra: number; fsw: number
@@ -46,8 +50,10 @@ export interface Monitoring {
   quality: {
     gps_ok: number; gps_missing: number; gps_pct: number
     duplicates: number; duplicate_ids: string[]
+    duplicate_rows: DupGroup[]
     short_interviews: number
-    short_rows: { collector: string; district: string; minutes: number; population: string }[]
+    short_minutes: number
+    short_rows: ShortRow[]
   }
 }
 
@@ -152,7 +158,7 @@ function KpiBand({ m, completedPct }: { m: Monitoring; completedPct: number }) {
     { icon: <Clock size={18} />, value: m.duration.avg_min != null ? `${m.duration.avg_min}m` : '—', label: 'Avg interview', tone: '#6E56CF' },
     { icon: <MapPin size={18} />, value: `${m.quality.gps_pct}%`, label: 'GPS captured', tone: m.quality.gps_pct >= 90 ? 'var(--emerald)' : 'var(--amber)' },
     { icon: <Copy size={18} />, value: String(m.quality.duplicates), label: 'Duplicates', tone: m.quality.duplicates ? 'var(--coral)' : 'var(--emerald)' },
-    { icon: <Timer size={18} />, value: String(m.quality.short_interviews), label: 'Rushed (<10m)', tone: m.quality.short_interviews ? 'var(--coral)' : 'var(--emerald)' },
+    { icon: <Timer size={18} />, value: String(m.quality.short_interviews), label: `Rushed (<${m.quality.short_minutes ?? 40}m)`, tone: m.quality.short_interviews ? 'var(--coral)' : 'var(--emerald)' },
   ]
   return (
     <div className="card" style={{ padding: '14px 12px', display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'stretch' }}>
@@ -244,6 +250,61 @@ function CollectorList({ rows }: { rows: Collector[] }) {
           </div>
         )
       })}
+    </div>
+  )
+}
+
+/* ── quality detail: name the flagged interviews so they can be acted on ─── */
+function QualityDetail({ m }: { m: Monitoring }) {
+  const dups = m.quality.duplicate_rows ?? []
+  const shorts = m.quality.short_rows ?? []
+  const lim = m.quality.short_minutes ?? 40
+  if (!dups.length && !shorts.length) return null
+  const row: React.CSSProperties = {
+    display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0',
+    borderTop: '1px solid var(--hair)', fontSize: 12.5, flexWrap: 'wrap',
+  }
+  const note: React.CSSProperties = { fontSize: 12, color: 'var(--muted)', margin: '0 0 6px', lineHeight: 1.45 }
+  return (
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, marginTop: 14 }}>
+      {dups.length > 0 && (
+        <Card kicker="Duplicate uploads" grow="1 1 420px"
+          title={`${m.quality.duplicates} extra cop${m.quality.duplicates === 1 ? 'y' : 'ies'} to remove`}>
+          <p style={note}>
+            The <b style={{ color: 'var(--ink)' }}>same interview</b> was uploaded more than once
+            (identical submission id — usually Submit tapped twice, or a saved draft re-sent).
+            Find the id in KoboToolbox and delete the extra copies, keeping one.
+          </p>
+          {dups.map((g) => (
+            <div key={g.submission_id} style={row}>
+              <span className="mono" style={{ fontSize: 11, color: 'var(--ink)', border: '1px solid var(--hair)', borderRadius: 5, padding: '2px 6px' }}>{g.submission_id}</span>
+              <span style={{ color: 'var(--coral)', fontWeight: 700, fontSize: 11.5 }}>{g.count}× uploaded</span>
+              <span style={{ color: 'var(--muted)', flex: 1, minWidth: 150 }}>
+                {g.records[0]?.collector} · {g.records[0]?.district}
+                {g.records.some((r) => r.date) && ` · ${g.records.map((r) => r.date).filter(Boolean).join(', ')}`}
+              </span>
+            </div>
+          ))}
+        </Card>
+      )}
+      {shorts.length > 0 && (
+        <Card kicker="Rushed interviews" grow="1 1 420px"
+          title={`${m.quality.short_interviews} under ${lim} minutes`}>
+          <p style={note}>
+            The questionnaire takes about 50 minutes. These finished in under {lim} — likely not
+            administered in full. Check with the enumerator before the data is used.
+          </p>
+          {shorts.map((r, i) => (
+            <div key={`${r.collector}-${r.date}-${i}`} style={row}>
+              <span style={{ color: 'var(--coral)', fontWeight: 800, width: 50, fontVariantNumeric: 'tabular-nums' }}>{r.minutes}m</span>
+              <span style={{ fontWeight: 700, color: 'var(--ink)' }}>{r.collector}</span>
+              <span style={{ color: 'var(--muted)', flex: 1, minWidth: 130 }}>
+                {r.district} · {r.population === 'fsw' ? 'FSW' : 'Hijra'}{r.date && ` · ${r.date}`}
+              </span>
+            </div>
+          ))}
+        </Card>
+      )}
     </div>
   )
 }
@@ -433,10 +494,11 @@ export function FieldworkMonitor({ m }: { m: Monitoring }) {
       <SectionLabel>Data quality</SectionLabel>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
         <Flag icon={<MapPin size={15} />} n={`${m.quality.gps_pct}%`} label="GPS captured" tone="#0E8F8F" note={`${m.quality.gps_missing} missing location`} />
-        <Flag icon={<Copy size={15} />} n={m.quality.duplicates} label="Duplicate ids" tone={m.quality.duplicates ? '#E5484D' : '#0E8F8F'} note={m.quality.duplicates ? 'needs review' : 'none detected'} />
-        <Flag icon={<Timer size={15} />} n={m.quality.short_interviews} label="Rushed interviews" tone={m.quality.short_interviews ? '#E5484D' : '#0E8F8F'} note="under 10 minutes" />
+        <Flag icon={<Copy size={15} />} n={m.quality.duplicates} label="Duplicate uploads" tone={m.quality.duplicates ? '#E5484D' : '#0E8F8F'} note={m.quality.duplicates ? 'same interview sent twice' : 'none detected'} />
+        <Flag icon={<Timer size={15} />} n={m.quality.short_interviews} label="Rushed interviews" tone={m.quality.short_interviews ? '#E5484D' : '#0E8F8F'} note={`under ${m.quality.short_minutes ?? 40} minutes`} />
         <Flag icon={<Gauge size={15} />} n={`${m.duration.avg_min ?? '—'}m`} label="Median / avg length" tone="#F96000" note={`${m.duration.measured} timed`} />
       </div>
+      <QualityDetail m={m} />
     </section>
   )
 }

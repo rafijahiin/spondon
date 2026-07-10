@@ -24,7 +24,9 @@ OUTCOME_LABEL = {'1': 'Completed', '2': 'Partial', '3': 'Refused', '4': 'Interru
 DURATION_BANDS = [(0, 10, '<10m'), (10, 20, '10–20m'), (20, 30, '20–30m'),
                   (30, 40, '30–40m'), (40, 50, '40–50m'), (50, 60, '50–60m'),
                   (60, 10 ** 6, '60m+')]
-SHORT_MINUTES = 10          # interviews shorter than this are flagged as rushed
+# The baseline is a ~50-minute CAPI interview. Anything materially shorter was
+# not administered in full, so CIPRB treats under 40 minutes as rushed.
+SHORT_MINUTES = 40
 
 
 def _parse_dt(v):
@@ -84,7 +86,7 @@ def compute_monitoring(subs):
     durations = []
     gps_ok = gps_missing = 0
     coll = defaultdict(lambda: {'n': 0, 'dur': [], 'complete': 0, 'short': 0, 'pop': Counter()})
-    id_seen = Counter()
+    id_rows = defaultdict(list)   # submission_id -> the records sharing it
     short_rows = []
     points = []
 
@@ -155,13 +157,21 @@ def compute_monitoring(subs):
         if dm is not None and dm < SHORT_MINUTES:
             c['short'] += 1
             short_rows.append({'collector': dc, 'district': dist, 'minutes': dm,
-                               'population': pop})
+                               'population': pop, 'date': dkey or ''})
             if dkey:
                 day_flags[dkey]['rushed'] += 1
 
+        # A duplicate is the SAME interview uploaded more than once: submission_id
+        # is a per-form-instance id (collector + area + the moment the interview
+        # was opened), so a repeat means the same questionnaire was submitted twice
+        # — a double-tap on Submit, or a saved draft re-sent. Keep the offending
+        # records so the dashboard can SHOW which ones to go and fix in Kobo.
         sid = raw.get('submission_id')
         if sid:
-            id_seen[sid] += 1
+            id_rows[str(sid)].append({
+                'collector': dc, 'district': dist, 'population': pop,
+                'date': dkey or '', 'minutes': dm,
+            })
 
     # ── shape outputs ──
     def buckets(counter, top=None):
@@ -178,8 +188,16 @@ def compute_monitoring(subs):
             'hijra': c['pop'].get('hijra', 0), 'fsw': c['pop'].get('fsw', 0),
         })
 
-    duplicates = sum(v - 1 for v in id_seen.values() if v > 1)
-    dup_ids = [k for k, v in id_seen.items() if v > 1]
+    # `duplicates` counts the EXTRA copies (3 uploads of one interview = 2 extras),
+    # and duplicate_rows names them so the team can act instead of guessing.
+    dup_groups = {sid: rows for sid, rows in id_rows.items() if len(rows) > 1}
+    duplicates = sum(len(rows) - 1 for rows in dup_groups.values())
+    duplicate_rows = sorted(
+        ({'submission_id': sid, 'count': len(rows), 'records': rows}
+         for sid, rows in dup_groups.items()),
+        key=lambda g: -g['count'],
+    )[:20]
+    dup_ids = list(dup_groups)[:20]
 
     daily_series = [{'date': d, 'hijra': daily[d].get('hijra', 0),
                      'fsw': daily[d].get('fsw', 0),
@@ -217,8 +235,10 @@ def compute_monitoring(subs):
         'quality': {
             'gps_ok': gps_ok, 'gps_missing': gps_missing,
             'gps_pct': round(100 * gps_ok / total) if total else 0,
-            'duplicates': duplicates, 'duplicate_ids': dup_ids[:20],
+            'duplicates': duplicates, 'duplicate_ids': dup_ids,
+            'duplicate_rows': duplicate_rows,
             'short_interviews': len(short_rows),
+            'short_minutes': SHORT_MINUTES,
             'short_rows': sorted(short_rows, key=lambda r: r['minutes'])[:20],
         },
         'map_points': points,
