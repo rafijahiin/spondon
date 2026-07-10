@@ -265,12 +265,7 @@ export default function BaselineEndline() {
         )}
       </section>
 
-      <section className="section" style={{ marginTop: 24, marginBottom: 80 }}>
-        <div className="card" style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 10, color: 'var(--muted)', fontSize: 12.5 }}>
-          <ShieldCheck size={16} style={{ color: 'var(--emerald)' }} />
-          CIPRB-conducted baseline. Every interview is monitored above as it arrives; the full response set is preserved for the D5 report.
-        </div>
-      </section>
+      <div style={{ marginBottom: 80 }} />
     </>
   )
 }
