@@ -7,6 +7,8 @@ from django.http import HttpResponse
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
+
+from .flatten import flatten_group_keys
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -195,6 +197,14 @@ def kobo_webhook(request):
         # payload.get(...) below → 500 → Kobo retries forever and STRANDS the
         # GBV/MPDSR/fistula submission. Reject cleanly instead.
         return HttpResponse('Bad Request — expected a JSON object', status=400)
+
+    # Kobo serialises grouped questions as 'group/field'. Every reader downstream
+    # (district/site extraction here, then monitoring, srhr, insights) uses flat
+    # leaf names, so add the flat aliases ONCE, here. Originals are KEPT, so no
+    # handler that reads a prefixed path can break. Without this the D5 baseline
+    # stored 300+ nested keys nothing could read — every indicator returned n=0
+    # while the answers sat in the payload. See submissions/flatten.py.
+    payload = flatten_group_keys(payload)
 
     kobo_id = str(payload.get('_id', '')).strip()
     if not kobo_id:

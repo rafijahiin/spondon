@@ -13,6 +13,8 @@ c3 (interview outcome), submission_id (dedup), GPS, and submitted_at.
 from collections import Counter, defaultdict
 from datetime import datetime
 
+from submissions.flatten import flatten_group_keys
+
 from .collectors import collector_name
 from .populations import resolve_population
 
@@ -92,7 +94,9 @@ def compute_monitoring(subs):
     points = []
 
     for s in subs:
-        raw = s.raw_data or {}
+        # Kobo stores grouped answers as 'group/field' — flatten so dc_code,
+        # population, c3, submission_id and every field below actually resolve.
+        raw = flatten_group_keys(s.raw_data or {})
         # Resolved from the source form, not defaulted (see baseline/populations.py).
         pop = resolve_population(raw, default='hijra')
         total += 1

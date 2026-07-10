@@ -15,6 +15,10 @@ Conventions
   Severe food insecurity = 7+ of 9 affirmed (FIES-standard cutoff).
 - Knowledge scores: mean % of items answered correctly ('1' = Yes/correct).
 """
+from submissions.flatten import flatten_group_keys
+
+from .populations import resolve_population
+
 from statistics import median
 
 _SKIP = {'', None, '8', '98', '99', '00'}   # non-substantive codes (per-list overrides below)
@@ -107,9 +111,13 @@ def compute_srhr(responses):
     indicator values per population."""
     rows = {'hijra': [], 'fsw': []}
     for r in responses:
-        pop = (r.population or '').lower()
+        # Kobo stores grouped answers as 'group/field'; flatten so the indicator
+        # field names below actually match. Population is resolved from the FORM,
+        # not the stored column (which older rows may have misfiled).
+        raw = flatten_group_keys(r.raw_data or {})
+        pop = resolve_population(raw, default=(r.population or '').lower())
         if pop in rows:
-            rows[pop].append(r.raw_data or {})
+            rows[pop].append(raw)
 
     out = {}
     for pop, data in rows.items():

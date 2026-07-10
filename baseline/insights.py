@@ -8,6 +8,9 @@ schema.value_label so the charts read in plain language.
 """
 from collections import Counter, defaultdict
 
+from submissions.flatten import flatten_group_keys
+
+from .populations import resolve_population
 from .schema import value_label
 
 # concept -> {population -> [field candidates in priority order]}
@@ -75,8 +78,10 @@ def compute_insights(responses):
     districts_seen = set()
 
     for r in responses:
-        pop = r.population or 'hijra'
-        raw = r.raw_data or {}
+        # Flatten Kobo's 'group/field' keys, and take population from the FORM
+        # rather than the stored column (older rows misfiled FSW as Hijra).
+        raw = flatten_group_keys(r.raw_data or {})
+        pop = resolve_population(raw, default=(r.population or 'hijra'))
         pop_counts[pop] += 1
         round_counts[r.survey_round or 'baseline'] += 1
 

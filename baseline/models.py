@@ -3,6 +3,8 @@ import uuid
 
 from django.db import models
 
+from submissions.flatten import flatten_group_keys
+
 from .populations import resolve_population
 
 logger = logging.getLogger(__name__)
@@ -172,7 +174,9 @@ class BaselineSurvey(models.Model):
 
 class BaselineResponseManager(models.Manager):
     def get_or_create_from_submission(self, submission):
-        raw = submission.raw_data or {}
+        # Flatten Kobo's 'group/field' keys so derived fields resolve, and store the
+        # flattened copy so downstream readers see flat names.
+        raw = flatten_group_keys(submission.raw_data or {})
         # Population comes from the FORM, never a default. `_xform_id_string` is
         # the asset UID, which contains no 'fsw' — the old substring check silently
         # filed every FSW interview as Hijra. See baseline/populations.py.
