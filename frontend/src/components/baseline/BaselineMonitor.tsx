@@ -225,11 +225,13 @@ export function BaselineMonitor() {
   const enumerators = useMemo(() => {
     const rows = (m?.collectors ?? []).map((c) => {
       const fl = flagsByEnum[c.code] ?? { critical: 0, high: 0, medium: 0 }
-      // Urgent = any critical, or a PATTERN of high flags (>=5). A handful of
-      // high flags on an otherwise solid workload is a Review, not an alarm.
+      // Urgent is reserved for genuine alarm: any critical flag, OR many high
+      // flags AND poor timing completeness together. Many high flags on an
+      // otherwise well-timed workload (long interviews, form left open) is a
+      // Review, not an emergency — this keeps red meaningful.
       const status: 'urgent' | 'review' | 'good' =
-        fl.critical >= 1 || fl.high >= 5 ? 'urgent'
-          : fl.high >= 1 || fl.medium >= 1 || c.valid_timing_pct < 50 ? 'review'
+        fl.critical >= 1 || (fl.high >= 5 && c.valid_timing_pct < 50) ? 'urgent'
+          : fl.high >= 1 || fl.medium >= 1 || c.valid_timing_pct < 80 ? 'review'
             : 'good'
       return { ...c, flags: fl, status }
     })
