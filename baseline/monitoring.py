@@ -74,16 +74,6 @@ def _has_true_end(raw):
     return bool(_parse_dt(raw.get('interview_end_actual')))
 
 
-def _submit_gap_min(raw):
-    """Minutes from consent (interview_start) to finalize/upload (interview_end).
-    NOT an interview length — it includes any time the form sat in draft/outbox.
-    Shown only as context on anomaly rows that lack the in-interview end stamp."""
-    a, b = _parse_dt(raw.get('interview_start')), _parse_dt(raw.get('interview_end'))
-    if not a or not b:
-        return None
-    return round((b - a).total_seconds() / 60.0, 1)
-
-
 def _band(v, bands):
     for lo, hi, lab in bands:
         if lo <= v < hi:
@@ -113,19 +103,14 @@ def compute_monitoring(subs):
                                      'completed': 0, 'partial': 0, 'refused': 0,
                                      'interrupted': 0, 'rushed': 0, 'gps_missing': 0})
     dur_band = Counter()
-    durations = []          # trustworthy interview lengths (in-form end stamp only)
-    real_durations = durations   # kept as an alias; both mean "measured length"
+    durations = []          # every timed row, raw
+    real_durations = []     # only rows whose duration is a trustworthy interview length
     true_end_n = 0          # rows carrying the in-interview end stamp
     gps_ok = gps_missing = 0
-    coll = defaultdict(lambda: {'n': 0, 'dur': [], 'complete': 0, 'short': 0,
-                                'long': 0, 'true_end': 0, 'no_timing': 0,
-                                'ver': set(), 'pop': Counter()})
+    coll = defaultdict(lambda: {'n': 0, 'dur': [], 'complete': 0, 'short': 0, 'long': 0, 'pop': Counter()})
     id_rows = defaultdict(list)   # submission_id -> the records sharing it
     short_rows = []
     long_rows = []
-    versions = Counter()          # __version__ -> count (which form version is live)
-    no_timing_rows = []           # NO in-interview end stamp = interview length UNKNOWN
-    bad_stamp_rows = []           # has the stamp but the span is implausible
     points = []
 
     for s in subs:
@@ -159,34 +144,23 @@ def compute_monitoring(subs):
             if ok:
                 df[ok] += 1
 
-        ver = str(raw.get('__version__') or '').strip()
-        if ver:
-            versions[ver] += 1
-
-        # Interview LENGTH is only real when it comes from the in-interview end
-        # stamp (interview_end_actual, frozen at the outcome question). Rows without
-        # it — collected on a form version that predates the field — have NO
-        # measurable length: interview_end is the finalize/upload time, and when an
-        # enumerator batch-submits their day in the evening that gap is their working
-        # session, not the interview (this is the Sabita Rani case). We DO NOT turn
-        # that gap into a duration; we surface the row as an anomaly instead.
-        dm = _duration_min(raw)          # actual-based length when the stamp exists
-        submit_gap = _submit_gap_min(raw)  # start -> finalize, for anomaly context
+        dm = _duration_min(raw)
+        # A row's duration is trustworthy when it carries the in-interview end
+        # stamp (interview_end_actual) — then it is a real interview length, long
+        # or short. Rows without it fall back to submit time; those are treated as
+        # "left open" only when the submit-lag estimate exceeds LONG_MINUTES.
         true_end = _has_true_end(raw)
+        trustworthy = true_end or (dm is not None and dm <= LONG_MINUTES)
+        left_open = dm is not None and not true_end and dm > LONG_MINUTES
         if true_end:
             true_end_n += 1
-            if dm is None:
-                bad_stamp_rows.append({'population': pop, 'date': dkey or '',
-                                       'version': ver})
-            elif dm <= LONG_MINUTES:
-                # A normal measured interview — feeds the average and the histogram.
-                durations.append(dm)
-                b = _band(dm, DURATION_BANDS)
-                if b:
-                    dur_band[b] += 1
-            # dm > LONG_MINUTES is handled below as an "unusually long" flag and is
-            # kept out of the average so one left-open-mid-interview record (e.g. a
-            # 476-minute span) cannot skew the headline.
+        if dm is not None:
+            durations.append(dm)
+            if trustworthy:
+                real_durations.append(dm)
+            b = _band(dm, DURATION_BANDS)
+            if b:
+                dur_band[b] += 1
 
         lat, lng = s.latitude, s.longitude
         if lat is not None and lng is not None:
@@ -213,36 +187,24 @@ def compute_monitoring(subs):
         c = coll[dc]
         c['n'] += 1
         c['pop'][pop] += 1
-        if ver:
-            c['ver'].add(ver)
+        # Only trustworthy durations feed an enumerator's average. A form left open
+        # for nine hours (no in-interview end stamp, submit hours later) measures
+        # their working day, not how long they sat with a respondent — averaging it
+        # in made careful enumerators look like outliers.
+        if dm is not None and trustworthy:
+            c['dur'].append(dm)
         if oc == '1':
             c['complete'] += 1
-
-        if true_end and dm is not None:
-            # A measured interview.
-            c['true_end'] += 1
-            if dm < SHORT_MINUTES:      # genuinely rushed
-                c['short'] += 1
-                short_rows.append({'collector': dc, 'district': dist, 'minutes': dm,
-                                   'population': pop, 'date': dkey or ''})
-                if dkey:
-                    day_flags[dkey]['rushed'] += 1
-            if dm > LONG_MINUTES:       # left the app open DURING the interview (rare)
-                c['long'] += 1
-                long_rows.append({'collector': dc, 'district': dist, 'minutes': dm,
-                                  'population': pop, 'date': dkey or ''})
-            else:
-                # Normal-length interview — the only kind that feeds an enumerator's
-                # average, so one left-open-mid-interview record can't skew it.
-                c['dur'].append(dm)
-        elif not true_end:
-            # No in-interview end stamp: the enumerator's device served a form
-            # version that predates the field. Interview length is UNKNOWN — this is
-            # the anomaly to chase (update the form / reopen the latest link).
-            c['no_timing'] += 1
-            no_timing_rows.append({'collector': dc, 'district': dist, 'population': pop,
-                                   'date': dkey or '', 'submit_gap_min': submit_gap,
-                                   'version': ver})
+        if dm is not None and dm < SHORT_MINUTES:
+            c['short'] += 1
+            short_rows.append({'collector': dc, 'district': dist, 'minutes': dm,
+                               'population': pop, 'date': dkey or ''})
+            if dkey:
+                day_flags[dkey]['rushed'] += 1
+        if left_open:
+            c['long'] += 1
+            long_rows.append({'collector': dc, 'district': dist, 'minutes': dm,
+                              'population': pop, 'date': dkey or ''})
 
         # A duplicate is the SAME interview uploaded more than once: submission_id
         # is a per-form-instance id (collector + area + the moment the interview
@@ -268,9 +230,6 @@ def compute_monitoring(subs):
             'avg_min': round(sum(c['dur']) / len(c['dur']), 1) if c['dur'] else None,
             'completion_pct': round(100 * c['complete'] / c['n']) if c['n'] else 0,
             'short': c['short'], 'long': c['long'],
-            # measured = interviews with a real in-form length; no_timing = interviews
-            # on an outdated form version, length unknown (the anomaly to chase).
-            'measured': c['true_end'], 'no_timing': c['no_timing'],
             'hijra': c['pop'].get('hijra', 0), 'fsw': c['pop'].get('fsw', 0),
         })
 
@@ -300,45 +259,14 @@ def compute_monitoring(subs):
 
     days = [{'date': d, **day_flags[d]} for d in sorted(day_flags)]
 
-    # THE headline duration: the mean length of an actual interview, over rows that
-    # carry the in-interview end stamp (interview_end_actual). Rows without it are
-    # NOT averaged and NOT estimated from submit time — they land in anomalies.
-    interview_avg = round(sum(durations) / len(durations), 1) if durations else None
-
-    # ── anomaly testing surface ──────────────────────────────────────────────
-    # Everything the data-manager needs to distrust a number before using it.
-    no_timing_by_collector = defaultdict(lambda: {'n': 0, 'versions': set(),
-                                                  'populations': set()})
-    for r in no_timing_rows:
-        g = no_timing_by_collector[r['collector']]
-        g['n'] += 1
-        if r['version']:
-            g['versions'].add(r['version'])
-        g['populations'].add(r['population'])
-    no_timing_collectors = sorted(
-        ({'collector': dc, 'count': g['n'],
-          'versions': sorted(g['versions']), 'populations': sorted(g['populations'])}
-         for dc, g in no_timing_by_collector.items()),
-        key=lambda x: -x['count'],
-    )
-    anomalies = {
-        # Interviews with NO measurable length (form predates interview_end_actual).
-        'no_timing_total': len(no_timing_rows),
-        'no_timing_collectors': no_timing_collectors,
-        'no_timing_rows': sorted(
-            no_timing_rows,
-            key=lambda r: -(r['submit_gap_min'] or 0))[:60],
-        # Enumerators for whom NOT ONE interview has a real length — still on an old
-        # form. These are the people to contact: reopen the latest link.
-        'stale_form_collectors': [c['code'] for c in collectors
-                                  if c['measured'] == 0 and c['no_timing'] > 0],
-        # Rows that DO carry the stamp but whose span is implausible (<=0 or >=10h).
-        'bad_stamp_total': len(bad_stamp_rows),
-        'bad_stamp_rows': bad_stamp_rows[:30],
-        # Which form versions are in the field, most-used first. The version with the
-        # highest count that still lacks timing is the one to retire.
-        'form_versions': [{'version': v, 'count': n} for v, n in versions.most_common()],
-    }
+    # THE headline duration: the mean length of an actual interview. A row counts
+    # when it carries the in-interview end stamp (interview_end_actual, frozen at
+    # the outcome question) OR — for older rows without it — when the submit-lag
+    # estimate is still under LONG_MINUTES. Forms left open are excluded, because
+    # they measure the enumerator's session, not the interview; including them put
+    # the "average" at 307m for a ~50-minute questionnaire. `avg_min` below keeps
+    # the raw, unfiltered mean so the exclusion stays visible rather than hidden.
+    interview_avg = round(sum(real_durations) / len(real_durations), 1) if real_durations else None
 
     return {
         'total': total,
@@ -353,16 +281,19 @@ def compute_monitoring(subs):
         'duration': {
             'bands': [{'name': lab, 'value': dur_band.get(lab, 0)}
                       for _, _, lab in DURATION_BANDS],
-            # Every figure here is over MEASURED interviews only (in-form end stamp).
-            'avg_min': interview_avg,
+            # Raw mean over EVERY timed record, forms-left-open included. Kept only
+            # so the filtered figure can be compared against it; do not headline it.
+            'avg_min': round(sum(durations) / len(durations), 1) if durations else None,
             'median_min': _median(durations),
+            # The average length of an actual interview — headline this.
             'interview_avg_min': interview_avg,
-            'interview_n': len(durations),
-            'typical_min': _median(durations),
+            'interview_n': len(real_durations),
+            # Median of the same set: resistant to a single stray long record.
+            'typical_min': _median(real_durations),
             'measured': len(durations),
-            # Rows carrying the in-interview end stamp vs rows still missing it.
+            # How many timed rows carry the in-interview end stamp. Once every row
+            # has it, "left open" goes to 0 and the average needs no exclusions.
             'true_end_n': true_end_n,
-            'no_timing_n': len(no_timing_rows),
         },
         'collectors': collectors,
         'quality': {
@@ -377,6 +308,5 @@ def compute_monitoring(subs):
             'long_rows': sorted(long_rows, key=lambda r: -r['minutes'])[:20],
             'short_rows': sorted(short_rows, key=lambda r: r['minutes'])[:20],
         },
-        'anomalies': anomalies,
         'map_points': points,
     }

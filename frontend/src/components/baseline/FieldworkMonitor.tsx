@@ -10,7 +10,6 @@
 import { useState } from 'react'
 import {
   Users, Clock, MapPin, CheckCircle2, Gauge, Copy, Timer, TrendingUp, Hourglass,
-  AlertTriangle, RefreshCw,
 } from 'lucide-react'
 import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid,
@@ -34,24 +33,7 @@ interface DupGroup { submission_id: string; count: number; records: DupRecord[] 
 interface ShortRow { collector: string; district: string; minutes: number; population: string; date: string }
 interface Collector {
   code: string; n: number; avg_min: number | null; completion_pct: number
-  short: number; long: number; measured: number; no_timing: number
-  hijra: number; fsw: number
-}
-interface NoTimingRow {
-  collector: string; district: string; population: string; date: string
-  submit_gap_min: number | null; version: string
-}
-interface NoTimingCollector {
-  collector: string; count: number; versions: string[]; populations: string[]
-}
-interface Anomalies {
-  no_timing_total: number
-  no_timing_collectors: NoTimingCollector[]
-  no_timing_rows: NoTimingRow[]
-  stale_form_collectors: string[]
-  bad_stamp_total: number
-  bad_stamp_rows: { population: string; date: string; version: string }[]
-  form_versions: { version: string; count: number }[]
+  short: number; long: number; hijra: number; fsw: number
 }
 export interface Monitoring {
   total: number
@@ -67,10 +49,9 @@ export interface Monitoring {
     bands: Bucket[]; avg_min: number | null; median_min: number | null
     typical_min: number | null; measured: number
     interview_avg_min: number | null; interview_n: number
-    true_end_n: number; no_timing_n: number
+    true_end_n: number
   }
   collectors: Collector[]
-  anomalies: Anomalies
   quality: {
     gps_ok: number; gps_missing: number; gps_pct: number
     duplicates: number; duplicate_ids: string[]
@@ -270,15 +251,12 @@ function CollectorList({ rows }: { rows: Collector[] }) {
                 <div style={{ fontSize: 12.5, fontWeight: 800, color: compTone, fontVariantNumeric: 'tabular-nums' }}>{r.completion_pct}%</div>
                 <div style={{ fontSize: 10, color: 'var(--muted)' }}>complete</div>
               </div>
-              <div style={{ width: 108, textAlign: 'right', flexShrink: 0 }}>
-                {(r.no_timing ?? 0) > 0
-                  ? <span title="Interviews on an outdated form version — no in-form end time recorded, so their length is unknown. Ask this enumerator to reopen the latest survey link."
-                      style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11.5, color: 'var(--amber)', fontWeight: 700 }}><AlertTriangle size={13} />{r.no_timing} no timing</span>
-                  : r.short > 0
-                    ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11.5, color: 'var(--coral)', fontWeight: 700 }}><Timer size={13} />{r.short} rushed</span>
-                    : (r.long ?? 0) > 0
-                      ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11.5, color: 'var(--coral)', fontWeight: 700 }}><Hourglass size={13} />{r.long} left open</span>
-                      : <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11.5, color: 'var(--emerald)' }}><CheckCircle2 size={13} />clean</span>}
+              <div style={{ width: 92, textAlign: 'right', flexShrink: 0 }}>
+                {r.short > 0
+                  ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11.5, color: 'var(--coral)', fontWeight: 700 }}><Timer size={13} />{r.short} rushed</span>
+                  : (r.long ?? 0) > 0
+                    ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11.5, color: 'var(--coral)', fontWeight: 700 }}><Hourglass size={13} />{r.long} left open</span>
+                    : <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11.5, color: 'var(--emerald)' }}><CheckCircle2 size={13} />clean</span>}
               </div>
             </div>
           </div>
@@ -323,13 +301,15 @@ function QualityDetail({ m }: { m: Monitoring }) {
         </Card>
       )}
       {(m.quality.long_rows ?? []).length > 0 && (
-        <Card kicker="Unusually long" grow="1 1 420px"
-          title={`${m.quality.long_interviews} measured interview${m.quality.long_interviews === 1 ? '' : 's'} over ${m.quality.long_minutes} minutes`}>
+        <Card kicker="Form left open" grow="1 1 420px"
+          title={`${m.quality.long_interviews} interview${m.quality.long_interviews === 1 ? '' : 's'} over ${m.quality.long_minutes} minutes`}>
           <p style={note}>
-            These carry a real in-form end time, but the measured length is over
-            <b style={{ color: 'var(--ink)' }}> {m.quality.long_minutes} minutes</b> — the enumerator
-            likely left the app open mid-interview. Worth a spot-check, but the length is genuine
-            (not a submit-lag artefact). They are excluded from the average above.
+            These interviews have no in-form end time, so their length is estimated from
+            <b style={{ color: 'var(--ink)' }}> consent&nbsp;→&nbsp;Submit</b> — and they were
+            submitted hours after they were taken, which measures the enumerator's working session,
+            not the interview. The current form stamps the end at the outcome question, so newer
+            records are immune to this; the count falls to zero as the old records age out. These are
+            excluded from the average length above.
           </p>
           {(m.quality.long_rows ?? []).map((r, i) => (
             <div key={`long-${r.collector}-${r.date}-${i}`} style={row}>
@@ -356,77 +336,6 @@ function QualityDetail({ m }: { m: Monitoring }) {
               <span style={{ color: 'var(--muted)', flex: 1, minWidth: 130 }}>
                 {r.district} · {r.population === 'fsw' ? 'FSW' : 'Hijra'}{r.date && ` · ${r.date}`}
               </span>
-            </div>
-          ))}
-        </Card>
-      )}
-    </div>
-  )
-}
-
-/* ── anomaly testing: interviews whose timing cannot be trusted ──────────── */
-function AnomalyPanel({ m }: { m: Monitoring }) {
-  const a = m.anomalies
-  if (!a) return null
-  const noTiming = a.no_timing_total ?? 0
-  const stale = a.stale_form_collectors ?? []
-  const byColl = a.no_timing_collectors ?? []
-  const versions = a.form_versions ?? []
-  // Nothing to flag → a single reassuring line, not an empty panel.
-  if (!noTiming && !(a.bad_stamp_total ?? 0)) {
-    return (
-      <div className="card" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10, marginTop: 12, color: 'var(--emerald)', fontSize: 12.5 }}>
-        <CheckCircle2 size={16} />
-        Every interview carries an in-form end time — all durations are measured, none estimated.
-      </div>
-    )
-  }
-  const row: React.CSSProperties = {
-    display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0',
-    borderTop: '1px solid var(--hair)', fontSize: 12.5, flexWrap: 'wrap',
-  }
-  const measured = m.duration.interview_n ?? 0
-  return (
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, marginTop: 12 }}>
-      <Card kicker="Anomaly · timing not recorded" grow="1 1 460px"
-        title={`${noTiming} interview${noTiming === 1 ? '' : 's'} with no measurable length`}>
-        <p style={{ fontSize: 12, color: 'var(--muted)', margin: '0 0 6px', lineHeight: 1.5 }}>
-          The end time is an <b style={{ color: 'var(--ink)' }}>automatic field</b> that stamps when the
-          interview reaches its outcome question. It is blank in these records because the enumerator's
-          device served an <b style={{ color: 'var(--ink)' }}>older form version</b> (a cached or already-open
-          survey tab), not because anyone forgot to enter it. Their real interview length is
-          <b style={{ color: 'var(--ink)' }}> not recoverable</b> — only the upload time exists.
-          Measured interviews so far: <b style={{ color: 'var(--emerald)' }}>{measured}</b>.
-        </p>
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)', borderRadius: 8, padding: '9px 11px', margin: '4px 0 10px', fontSize: 11.5, color: 'var(--ink)' }}>
-          <RefreshCw size={14} style={{ color: 'var(--amber)', marginTop: 1, flexShrink: 0 }} />
-          <span>Fix going forward: the enumerator submits any open form, closes all survey tabs, then
-            opens the <b>latest survey link</b> fresh (not a bookmark or old tab) and confirms the new
-            version loads.</span>
-        </div>
-        {byColl.map((c) => (
-          <div key={c.collector} style={row}>
-            <AlertTriangle size={14} style={{ color: 'var(--amber)', flexShrink: 0 }} />
-            <span style={{ fontWeight: 700, color: 'var(--ink)', minWidth: 150 }}>{c.collector}</span>
-            <span style={{ color: 'var(--amber)', fontWeight: 700 }}>{c.count} without timing</span>
-            <span style={{ color: 'var(--muted)', flex: 1, minWidth: 120 }}>
-              {c.populations.map((p) => (p === 'fsw' ? 'FSW' : 'Hijra')).join(', ')}
-              {stale.includes(c.collector) && ' · still on old form'}
-            </span>
-          </div>
-        ))}
-      </Card>
-      {versions.length > 1 && (
-        <Card kicker="Form versions in the field" grow="1 1 300px"
-          title={`${versions.length} versions live`}>
-          <p style={{ fontSize: 12, color: 'var(--muted)', margin: '0 0 6px', lineHeight: 1.5 }}>
-            Every enumerator should be on the newest version. Older ones lack the end-time field.
-          </p>
-          {versions.map((v, i) => (
-            <div key={v.version} style={row}>
-              <span className="mono" style={{ fontSize: 10.5, color: i === 0 ? 'var(--emerald)' : 'var(--muted)', border: '1px solid var(--hair)', borderRadius: 4, padding: '1px 5px' }}>{v.version || '—'}</span>
-              {i === 0 && <span style={{ fontSize: 10.5, color: 'var(--emerald)', fontWeight: 700 }}>most used</span>}
-              <span style={{ color: 'var(--ink)', fontWeight: 700, marginLeft: 'auto', fontVariantNumeric: 'tabular-nums' }}>{v.count}</span>
             </div>
           ))}
         </Card>
@@ -623,13 +532,14 @@ export function FieldworkMonitor({ m }: { m: Monitoring }) {
         <Flag icon={<Copy size={15} />} n={m.quality.duplicates} label="Duplicate uploads" tone={m.quality.duplicates ? '#E5484D' : '#0E8F8F'} note={m.quality.duplicates ? 'same interview sent twice' : 'none detected'} />
         <Flag icon={<Timer size={15} />} n={m.quality.short_interviews} label="Rushed interviews" tone={m.quality.short_interviews ? '#E5484D' : '#0E8F8F'} note={`under ${m.quality.short_minutes ?? 40} minutes`} />
         <Flag icon={<Gauge size={15} />} n={`${m.duration.interview_avg_min ?? '—'}m`} label="Avg interview length" tone="#F96000"
-          note={`${m.duration.interview_n} interview${m.duration.interview_n === 1 ? '' : 's'} measured`} />
-        <Flag icon={<AlertTriangle size={15} />} n={m.duration.no_timing_n ?? 0} label="No timing recorded" tone={(m.duration.no_timing_n ?? 0) ? '#F59E0B' : '#0E8F8F'}
-          note={(m.duration.no_timing_n ?? 0)
-            ? `old form version — length unknown`
-            : `every interview timed`} />
+          note={m.quality.long_interviews
+            ? `${m.duration.interview_n} interviews · ${m.quality.long_interviews} left open, excluded`
+            : `${m.duration.interview_n} interviews timed`} />
+        <Flag icon={<Hourglass size={15} />} n={m.quality.long_interviews ?? 0} label="Form left open" tone={(m.quality.long_interviews ?? 0) ? '#E5484D' : '#0E8F8F'}
+          note={(m.quality.long_interviews ?? 0)
+            ? `older records, no in-form end time`
+            : `all measured from the interview`} />
       </div>
-      <AnomalyPanel m={m} />
       <QualityDetail m={m} />
     </section>
   )
