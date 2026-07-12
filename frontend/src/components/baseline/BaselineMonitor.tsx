@@ -226,6 +226,16 @@ export function BaselineMonitor() {
       : (b.flags.critical * 10 + b.flags.high) - (a.flags.critical * 10 + a.flags.high) || b.n - a.n)
   }, [m, flagsByEnum, enumSearch, enumSort])
 
+  // Interviews with at least one HIGH or CRITICAL flag — not "any flag", which
+  // would inflate the card (documentation warnings affect most records).
+  const affectedHighCrit = useMemo(() => {
+    const ids = new Set<string>()
+    for (const a of anoms?.anomalies ?? []) {
+      if ((a.severity === 'critical' || a.severity === 'high') && a.record_id) ids.add(a.record_id)
+    }
+    return ids.size
+  }, [anoms])
+
   const target = (m?.progress ?? []).reduce((s, p) => s + (p.target || 0), 0)
   const rangeActive = !!(filters.dateFrom || filters.dateTo)
   const iqr = m?.duration.valid_iqr ?? [null, null]
@@ -359,7 +369,7 @@ export function BaselineMonitor() {
             <Kpi label="High & critical flags" tone={(anoms?.kpis.critical ?? 0) > 0 ? '#8E1B1B' : (anoms?.kpis.high ?? 0) > 0 ? RED : TEAL}
               value={fmt((anoms?.kpis.critical ?? 0) + (anoms?.kpis.high ?? 0))}
               sub={`${fmt(anoms?.kpis.critical ?? 0)} critical · ${fmt(anoms?.kpis.high ?? 0)} high`}
-              sub2={`${fmt(anoms?.kpis.interviews_affected ?? 0)} interviews affected`} />
+              sub2={`${fmt(affectedHighCrit)} interviews affected`} />
           </div>
 
           {/* ── 3 · collection progress ─────────────────────────────────── */}
