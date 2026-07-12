@@ -267,3 +267,78 @@ class InterviewEndSourceTest(TestCase):
         self.assertEqual(m['duration']['true_end_n'], 0)
         self.assertEqual(m['quality']['long_interviews'], 1)
         self.assertIsNone(m['duration']['interview_avg_min'])  # excluded, nothing left
+
+
+class MonitoringFilterAndTimingTest(TestCase):
+    """Server-side monitoring filters + the valid-timing/median contract:
+    missing end stays in the denominator, never becomes a duration; the median
+    uses valid, non-extreme records only."""
+
+    class _Sub:
+        status = 'approved'
+        district = 'Dhaka'
+        latitude = None
+        longitude = None
+        submitted_at = None
+
+        def __init__(self, raw):
+            self.raw_data = raw
+
+    def _sub(self, pop='hijra', dc='1', start='2026-07-10T09:00:00',
+             actual='2026-07-10T09:50:00', site='S1', ver='vNEW'):
+        uid = 'aBT7aCL9p4FGcW4WwXZcr6' if pop == 'hijra' else 'aVsJ7VJ35k8GshpQpnXygC'
+        raw = {'_xform_id_string': uid, '__version__': ver,
+               'grp_admin/population': pop, 'grp_admin/dc_code': dc,
+               'grp_admin/district': 'Dhaka', 'grp_admin/site_code': site,
+               'grp_module9/c3': '1',
+               'interview_start': start, 'interview_end': '2026-07-10T20:00:00'}
+        if actual:
+            raw['interview_end_actual'] = actual
+        return self._Sub(raw)
+
+    def setUp(self):
+        self.subs = [
+            self._sub(),                                          # 50m valid
+            self._sub(start='2026-07-11T10:00:00',
+                      actual='2026-07-11T10:40:00'),              # 40m valid
+            self._sub(start='2026-07-11T12:00:00',
+                      actual='2026-07-11T18:40:00'),              # 400m valid-but-extreme
+            self._sub(actual=None, ver='vOLD'),                   # missing end
+            self._sub(pop='fsw', dc='1', site='S9'),              # 50m valid, FSW
+        ]
+
+    def test_valid_timing_keeps_missing_end_in_denominator(self):
+        from .monitoring import compute_monitoring
+        d = compute_monitoring(self.subs)['duration']
+        self.assertEqual(d['valid_timing_n'], 4)       # 4 of 5 have usable start+end
+        self.assertEqual(d['valid_timing_pct'], 80.0)  # denominator = ALL 5
+        self.assertEqual(d['valid_median_n'], 3)       # extreme excluded from median
+        self.assertEqual(d['valid_median_min'], 50.0)
+
+    def test_population_filter(self):
+        from .monitoring import compute_monitoring
+        m = compute_monitoring(self.subs, filters={'population': 'fsw'})
+        self.assertEqual(m['total'], 1)
+
+    def test_enumerator_filter_uses_roster_name(self):
+        from .monitoring import compute_monitoring
+        m = compute_monitoring(self.subs,
+                               filters={'enumerator': 'Md. Abdullah-Al-Mahbub'})
+        self.assertEqual(m['total'], 4)   # the 4 hijra rows (dc 1)
+
+    def test_date_and_version_filters(self):
+        from .monitoring import compute_monitoring
+        m = compute_monitoring(self.subs, filters={'date_from': '2026-07-11',
+                                                   'date_to': '2026-07-11'})
+        self.assertEqual(m['total'], 2)
+        m2 = compute_monitoring(self.subs, filters={'version': 'vOLD'})
+        self.assertEqual(m2['total'], 1)
+
+    def test_collector_rows_carry_valid_timing_and_median(self):
+        from .monitoring import compute_monitoring
+        row = [c for c in compute_monitoring(self.subs)['collectors']
+               if c['code'] == 'Md. Abdullah-Al-Mahbub'][0]
+        self.assertEqual(row['n'], 4)
+        self.assertEqual(row['valid_timing'], 3)
+        self.assertEqual(row['valid_timing_pct'], 75)
+        self.assertEqual(row['median_min'], 45.0)      # median of 50, 40

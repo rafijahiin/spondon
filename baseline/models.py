@@ -293,6 +293,7 @@ class AnomalyReview(models.Model):
         ('confirmed', 'Confirmed'),
         ('corrected', 'Corrected'),
         ('false_positive', 'False positive'),
+        ('needs_verification', 'Needs field verification'),
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

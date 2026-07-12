@@ -157,9 +157,12 @@ def _mk_user():
 class AnomalyApiTests(TestCase):
     def setUp(self):
         invalidate_cache()
+        # One record with MULTIPLE flags (income missing-zero + child-count
+        # contradiction), so flag-counts vs unique-interview counts differ.
         KoboSubmission.objects.create(
             kobo_id='k1', form_type=FormType.BASELINE, status=SubmissionStatus.APPROVED,
-            partner='CIPRB', raw_data=_kobo(**{'grp_b1/b108': 12}),
+            partner='CIPRB',
+            raw_data=_kobo(**{'grp_b1/b108': 12, 'grp_a2/a213': 1, 'grp_a2/a214': 3}),
             submitted_at=timezone.now())
         self.user = _mk_user()
         self.client = APIClient()
@@ -170,11 +173,57 @@ class AnomalyApiTests(TestCase):
         self.assertEqual(r.status_code, 200)
         body = r.json()
         self.assertIn('kpis', body)
-        for k in ('critical', 'high', 'medium', 'records_requiring_review',
-                  'timing_completeness_pct', 'current_form_adoption_pct'):
+        for k in ('critical', 'high', 'medium', 'low',
+                  'interviews_affected', 'flags_reviewed', 'flags_total'):
             self.assertIn(k, body['kpis'])
         self.assertTrue(body['anomalies'])
         self.assertEqual(body['anomalies'][0]['review_status'], 'new')
+
+    def test_severity_kpis_count_flags_not_unique_interviews(self):
+        # One record with several HIGH flags: high == number of FLAGS, while
+        # interviews_affected == 1 — the corrected KPI split.
+        body = self.client.get('/api/baseline/fsw-anomalies/').json()
+        k = body['kpis']
+        total_by_sev = k['critical'] + k['high'] + k['medium'] + k['low']
+        self.assertEqual(total_by_sev, k['flags_total'])
+        self.assertGreater(k['flags_total'], k['interviews_affected'])
+        self.assertEqual(k['interviews_affected'], 1)
+
+    def test_flag_scoped_filters(self):
+        base = '/api/baseline/fsw-anomalies/'
+        body = self.client.get(base, {'severity': 'high'}).json()
+        self.assertTrue(all(a['severity'] == 'high' for a in body['anomalies']))
+        self.assertEqual(body['kpis']['medium'], 0)
+        one_rule = self.client.get(
+            base, {'rule': 'LIKELY_MISSING_ZERO_IN_INCOME'}).json()
+        self.assertEqual(set(a['rule_id'] for a in one_rule['anomalies']),
+                         {'LIKELY_MISSING_ZERO_IN_INCOME'})
+        none_reviewed = self.client.get(
+            base, {'review_status': 'confirmed'}).json()
+        self.assertEqual(none_reviewed['anomaly_count'], 0)
+        searched = self.client.get(base, {'q': 'income'}).json()
+        self.assertTrue(searched['anomaly_count'] >= 1)
+
+    def test_record_scoped_filter_narrows_denominator(self):
+        base = '/api/baseline/fsw-anomalies/'
+        hit = self.client.get(base, {'enumerator': 'Sabita Rani Halder'}).json()
+        self.assertEqual(hit['records_scanned'], 1)
+        miss = self.client.get(base, {'enumerator': 'Nobody Real'}).json()
+        self.assertEqual(miss['records_scanned'], 0)
+        self.assertEqual(miss['anomaly_count'], 0)
+
+    def test_population_all_is_default(self):
+        body = self.client.get('/api/baseline/fsw-anomalies/').json()
+        self.assertEqual(body['population'], 'all')
+
+    def test_needs_verification_is_a_valid_review_status(self):
+        body = self.client.get('/api/baseline/fsw-anomalies/').json()
+        a = body['anomalies'][0]
+        resp = self.client.post('/api/baseline/fsw-anomalies/review/', {
+            'submission_id': a['record_id'], 'rule_id': a['rule_id'],
+            'status': 'needs_verification', 'note': 'send supervisor'}, format='json')
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.json()['status'], 'needs_verification')
 
     def test_review_decision_persists_and_merges(self):
         body = self.client.get('/api/baseline/fsw-anomalies/').json()

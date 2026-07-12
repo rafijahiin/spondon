@@ -89,9 +89,30 @@ def _median(xs):
     return round((s[n // 2] if n % 2 else (s[n // 2 - 1] + s[n // 2]) / 2), 1)
 
 
-def compute_monitoring(subs):
+def _quartiles(xs):
+    """(q1, q3) by linear interpolation; None when under 4 values."""
+    if len(xs) < 4:
+        return None, None
+    s = sorted(xs)
+
+    def q(p):
+        k = (len(s) - 1) * p
+        f = int(k)
+        c = min(f + 1, len(s) - 1)
+        return round(s[f] + (s[c] - s[f]) * (k - f), 1)
+    return q(0.25), q(0.75)
+
+
+def compute_monitoring(subs, filters=None):
     """`subs`: iterable of baseline KoboSubmission (all statuses). Returns a
-    chart-ready fieldwork + quality dict."""
+    chart-ready fieldwork + quality dict.
+
+    `filters` (all optional, all ANDed): population ('fsw'/'hijra'), enumerator
+    (resolved collector name), site (site_code), version (__version__),
+    date_from / date_to (ISO date, matched on interview_start's date falling
+    back to submitted_at). Filtering happens here — where population and
+    collector are already resolved — so the API can't drift from the roster."""
+    f = filters or {}
     total = 0
     by_pop = Counter()
     by_status = Counter()
@@ -105,9 +126,16 @@ def compute_monitoring(subs):
     dur_band = Counter()
     durations = []          # every timed row, raw
     real_durations = []     # only rows whose duration is a trustworthy interview length
+    # Valid timing = usable start AND in-form end (interview_end_actual). Rows
+    # missing the end stamp stay in the DENOMINATOR (total) but are never turned
+    # into a duration. The headline median additionally excludes extreme
+    # (> LONG_MINUTES) spans, per the anomaly rules.
+    valid_timing_n = 0
+    valid_median_set = []
     true_end_n = 0          # rows carrying the in-interview end stamp
     gps_ok = gps_missing = 0
-    coll = defaultdict(lambda: {'n': 0, 'dur': [], 'complete': 0, 'short': 0, 'long': 0, 'pop': Counter()})
+    coll = defaultdict(lambda: {'n': 0, 'dur': [], 'valid': 0, 'med': [],
+                                'complete': 0, 'short': 0, 'long': 0, 'pop': Counter()})
     id_rows = defaultdict(list)   # submission_id -> the records sharing it
     short_rows = []
     long_rows = []
@@ -119,6 +147,33 @@ def compute_monitoring(subs):
         raw = flatten_group_keys(s.raw_data or {})
         # Resolved from the source form, not defaulted (see baseline/populations.py).
         pop = resolve_population(raw, default='hijra')
+
+        # Collector identity comes from INSIDE the form, never the Kobo account
+        # username — resolved BEFORE filtering so the enumerator filter uses the
+        # same name the roster displays.
+        dc = str(raw.get('dc_name') or raw.get('interviewer_name_code') or '').strip()
+        if not dc:
+            code = raw.get('dc_code')
+            dc = collector_name(pop, code) or (f'Collector {code}' if code not in (None, '') else '')
+        dc = dc or 'Unknown'
+
+        ver = str(raw.get('__version__') or '')
+        fdate_dt = _parse_dt(raw.get('interview_start')) or s.submitted_at
+        fdate = fdate_dt.strftime('%Y-%m-%d') if fdate_dt else ''
+
+        if f.get('population') and pop != f['population']:
+            continue
+        if f.get('enumerator') and dc != f['enumerator']:
+            continue
+        if f.get('site') and str(raw.get('site_code') or '') != str(f['site']):
+            continue
+        if f.get('version') and ver != f['version']:
+            continue
+        if f.get('date_from') and (not fdate or fdate < f['date_from']):
+            continue
+        if f.get('date_to') and (not fdate or fdate > f['date_to']):
+            continue
+
         total += 1
         by_pop[pop] += 1
         by_status[(s.status or 'PENDING')] += 1
@@ -154,6 +209,10 @@ def compute_monitoring(subs):
         left_open = dm is not None and not true_end and dm > LONG_MINUTES
         if true_end:
             true_end_n += 1
+            if dm is not None:
+                valid_timing_n += 1                 # usable start AND in-form end
+                if dm <= LONG_MINUTES:
+                    valid_median_set.append(dm)     # extremes stay out of the median
         if dm is not None:
             durations.append(dm)
             if trustworthy:
@@ -172,18 +231,6 @@ def compute_monitoring(subs):
             if dkey:
                 day_flags[dkey]['gps_missing'] += 1
 
-        # Collector identity comes from INSIDE the form, never the Kobo account
-        # username. The live forms ask "Data Collector" as a select_one, so the
-        # submission stores only the CODE (dc_code = '1', '2', …) — resolve it to
-        # the enumerator's name via the shared roster, otherwise the roster would
-        # read "1", "2", "3". dc_name / interviewer_name_code are honoured first
-        # (older form versions + the demo seed write them). Un-tagged submissions
-        # read 'Unknown', never the Kobo login.
-        dc = str(raw.get('dc_name') or raw.get('interviewer_name_code') or '').strip()
-        if not dc:
-            code = raw.get('dc_code')
-            dc = collector_name(pop, code) or (f'Collector {code}' if code not in (None, '') else '')
-        dc = dc or 'Unknown'
         c = coll[dc]
         c['n'] += 1
         c['pop'][pop] += 1
@@ -193,6 +240,10 @@ def compute_monitoring(subs):
         # in made careful enumerators look like outliers.
         if dm is not None and trustworthy:
             c['dur'].append(dm)
+        if true_end and dm is not None:
+            c['valid'] += 1                          # usable start+end timing
+            if dm <= LONG_MINUTES:
+                c['med'].append(dm)                  # median over valid, non-extreme
         if oc == '1':
             c['complete'] += 1
         if dm is not None and dm < SHORT_MINUTES:
@@ -228,6 +279,11 @@ def compute_monitoring(subs):
         collectors.append({
             'code': dc, 'n': c['n'],
             'avg_min': round(sum(c['dur']) / len(c['dur']), 1) if c['dur'] else None,
+            # Valid timing = usable start + in-form end; median over valid,
+            # non-extreme records only (never a submit-lag estimate).
+            'valid_timing': c['valid'],
+            'valid_timing_pct': round(100 * c['valid'] / c['n']) if c['n'] else 0,
+            'median_min': _median(c['med']),
             'completion_pct': round(100 * c['complete'] / c['n']) if c['n'] else 0,
             'short': c['short'], 'long': c['long'],
             'hijra': c['pop'].get('hijra', 0), 'fsw': c['pop'].get('fsw', 0),
@@ -294,6 +350,16 @@ def compute_monitoring(subs):
             # How many timed rows carry the in-interview end stamp. Once every row
             # has it, "left open" goes to 0 and the average needs no exclusions.
             'true_end_n': true_end_n,
+            # Valid timing coverage: usable start AND in-form end ÷ ALL filtered
+            # interviews. Missing end times stay in the denominator but never
+            # become a duration.
+            'valid_timing_n': valid_timing_n,
+            'valid_timing_pct': round(100 * valid_timing_n / total, 1) if total else 0,
+            # Headline median: valid records only, extremes (> LONG_MINUTES)
+            # excluded per the anomaly rules. IQR for the small-print range.
+            'valid_median_min': _median(valid_median_set),
+            'valid_median_n': len(valid_median_set),
+            'valid_iqr': list(_quartiles(valid_median_set)),
         },
         'collectors': collectors,
         'quality': {

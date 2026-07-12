@@ -137,10 +137,23 @@ class BaselineResponseViewSet(OrgFilterMixin, ModelViewSet):
         submissions (pending + approved) — the collection command center. Reads
         the submissions directly (not just verified rows) because monitoring is
         about the collection itself: pace, per-site/enumerator throughput,
-        interview duration/outcome, and the quality flags."""
+        interview duration/outcome, and the quality flags.
+
+        Optional filters (?population= ?enumerator= ?site= ?version=
+        ?date_from= ?date_to=) are applied inside compute_monitoring, where
+        population and collector name are already resolved. These filters are
+        for THIS monitoring surface only — they never touch the verified-
+        interview queryset the SRHR/insights endpoints aggregate."""
         from submissions.models import KoboSubmission, FormType
         subs = KoboSubmission.objects.filter(form_type=FormType.BASELINE)
-        return Response(compute_monitoring(subs))
+        p = request.query_params
+        filters = {k: p.get(k, '').strip() for k in
+                   ('population', 'enumerator', 'site', 'version',
+                    'date_from', 'date_to')}
+        filters = {k: v for k, v in filters.items() if v}
+        if filters.get('population') not in (None, 'fsw', 'hijra'):
+            filters.pop('population')
+        return Response(compute_monitoring(subs, filters=filters))
 
     @action(detail=False, methods=['get'])
     def schema(self, request):
@@ -275,53 +288,117 @@ class FswAnomalyViewSet(ViewSet):
         return [CanViewBaseline()]
 
     def list(self, request):
-        population = request.query_params.get('population', 'fsw')
-        if population not in ('fsw', 'hijra'):
-            return Response({'detail': 'population must be fsw or hijra.'},
+        """Engine report merged with review decisions, then filtered.
+
+        Filters: ?population=all|fsw|hijra (default all), plus record-scoped
+        ?enumerator= ?site= ?version= ?date_from= ?date_to=, and flag-scoped
+        ?severity= ?rule= ?review_status= ?q= (search across rule / message /
+        record id / enumerator). KPI definitions (deliberate, do not merge):
+        critical/high/medium/low count FLAGS — one interview with five problems
+        is five flags; interviews_affected counts UNIQUE interviews with >= 1
+        flag; flags_reviewed counts FLAGS whose review status is not 'new'."""
+        p = request.query_params
+        population = p.get('population', 'all')
+        if population not in ('all', 'fsw', 'hijra'):
+            return Response({'detail': 'population must be all, fsw or hijra.'},
                             status=http_status.HTTP_400_BAD_REQUEST)
-        report = build_report(population)
+        pops = ('fsw', 'hijra') if population == 'all' else (population,)
+
+        anomalies, records_index = [], []
+        current_versions = {}
+        for pop in pops:
+            rep = build_report(pop)
+            anomalies.extend(rep['anomalies'])
+            records_index.extend(rep.get('records_index', []))
+            current_versions[pop] = rep.get('current_version')
+
+        # Merge review decisions before filtering, so review_status is filterable.
         reviews = {
             (r.submission_id, r.rule_id): r
             for r in AnomalyReview.objects.select_related('reviewed_by')
         }
+        for anomaly in anomalies:
+            review = reviews.get((anomaly.get('record_id'), anomaly['rule_id']))
+            anomaly['review_status'] = review.status if review else 'new'
+            anomaly['review_note'] = review.note if review else ''
+            anomaly['reviewed_by'] = (
+                review.reviewed_by.full_name
+                if review and review.reviewed_by else None)
+            anomaly['reviewed_at'] = (
+                review.reviewed_at.isoformat()
+                if review and review.reviewed_at else None)
 
-        needs_review = set()
-        for anomaly in report['anomalies']:
-            key = (anomaly.get('record_id'), anomaly['rule_id'])
-            review = reviews.get(key)
-            if review:
-                anomaly['review_status'] = review.status
-                anomaly['review_note'] = review.note
-                anomaly['reviewed_by'] = (
-                    review.reviewed_by.full_name if review.reviewed_by else None)
-                anomaly['reviewed_at'] = (
-                    review.reviewed_at.isoformat() if review.reviewed_at else None)
-            else:
-                anomaly['review_status'] = 'new'
-                anomaly['review_note'] = ''
-                anomaly['reviewed_by'] = None
-                anomaly['reviewed_at'] = None
-            if anomaly['review_status'] == 'new' and anomaly.get('record_id'):
-                needs_review.add(anomaly['record_id'])
+        # Record-scoped filters narrow BOTH the scanned denominator and the flags.
+        rec_filters = {k: p.get(k, '').strip() for k in
+                       ('enumerator', 'site', 'version', 'date_from', 'date_to')}
+        rec_filters = {k: v for k, v in rec_filters.items() if v}
 
-        # KPI extras the single-count card could never show.
-        scanned = report['records_scanned'] or 0
-        rule_counts = report['summary']['top_rules']
-        missing_end = rule_counts.get('MISSING_INTERVIEW_END', 0)
-        old_version = rule_counts.get('OLD_FORM_VERSION', 0)
-        report['kpis'] = {
-            'critical': report['summary']['by_severity']['critical'],
-            'high': report['summary']['by_severity']['high'],
-            'medium': report['summary']['by_severity']['medium'],
-            'low': report['summary']['by_severity']['low'],
-            'records_requiring_review': len(needs_review),
-            'records_cleared': max(0, scanned - len(needs_review)),
-            'timing_completeness_pct': (
-                round(100 * (scanned - missing_end) / scanned) if scanned else 0),
-            'current_form_adoption_pct': (
-                round(100 * (scanned - old_version) / scanned) if scanned else 0),
-        }
-        return Response(report)
+        def rec_ok(r):
+            if rec_filters.get('enumerator') and r['enumerator'] != rec_filters['enumerator']:
+                return False
+            if rec_filters.get('site') and r['site'] != rec_filters['site']:
+                return False
+            if rec_filters.get('version') and r['version'] != rec_filters['version']:
+                return False
+            if rec_filters.get('date_from') and (not r['date'] or r['date'] < rec_filters['date_from']):
+                return False
+            if rec_filters.get('date_to') and (not r['date'] or r['date'] > rec_filters['date_to']):
+                return False
+            return True
+
+        records_index = [r for r in records_index if rec_ok(r)]
+        kept_ids = {r['record_id'] for r in records_index}
+        if rec_filters:
+            # Dataset-level flags without a record id can't satisfy a record-
+            # scoped filter — they drop out rather than leak through.
+            anomalies = [a for a in anomalies if a.get('record_id') in kept_ids]
+
+        # Flag-scoped filters.
+        severity = p.get('severity', '').strip().lower()
+        rule = p.get('rule', '').strip()
+        review_status = p.get('review_status', '').strip()
+        q = p.get('q', '').strip().lower()
+        if severity:
+            anomalies = [a for a in anomalies if a['severity'] == severity]
+        if rule:
+            anomalies = [a for a in anomalies if a['rule_id'] == rule]
+        if review_status:
+            anomalies = [a for a in anomalies if a['review_status'] == review_status]
+        if q:
+            anomalies = [a for a in anomalies
+                         if q in (str(a['rule_id']) + ' ' + str(a['message']) + ' '
+                                  + str(a.get('record_id') or '') + ' '
+                                  + str(a.get('enumerator') or '')).lower()]
+
+        sev = Counter(a['severity'] for a in anomalies)
+        affected = {a['record_id'] for a in anomalies if a.get('record_id')}
+        reviewed_flags = sum(1 for a in anomalies if a['review_status'] != 'new')
+        by_rule = Counter(a['rule_id'] for a in anomalies)
+
+        return Response({
+            'population': population,
+            'records_scanned': len(records_index),
+            'anomaly_count': len(anomalies),
+            'current_version': current_versions,
+            'summary': {
+                'by_severity': {k: sev.get(k, 0)
+                                for k in ('critical', 'high', 'medium', 'low')},
+                'top_rules': dict(by_rule.most_common(20)),
+            },
+            'kpis': {
+                # FLAG counts — never collapsed to unique interviews.
+                'critical': sev.get('critical', 0),
+                'high': sev.get('high', 0),
+                'medium': sev.get('medium', 0),
+                'low': sev.get('low', 0),
+                # Unique interview records with at least one (filtered) flag.
+                'interviews_affected': len(affected),
+                # FLAGS with a review decision (not 'new'), out of flags_total.
+                'flags_reviewed': reviewed_flags,
+                'flags_total': len(anomalies),
+            },
+            'anomalies': anomalies,
+        })
 
     @action(detail=False, methods=['post'])
     def review(self, request):

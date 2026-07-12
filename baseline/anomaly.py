@@ -244,6 +244,16 @@ def build_report(population='fsw', *, force=False):
     report['current_version'] = current_version
     report['resolved_fields'] = {k: v for k, v in field_map.__dict__.items()
                                  if k != 'headers'}
+    # Lightweight per-record index so the API can filter flags AND the scanned
+    # denominator by the same record-scoped criteria (enumerator/site/date/version).
+    report['records_index'] = [{
+        'record_id': r.get('_uuid'),
+        'population': population,
+        'enumerator': r.get('enumerator_name'),
+        'site': str(r.get('site_code') or ''),
+        'version': r.get('__version__') or '',
+        'date': str(r.get('interview_start') or '')[:10],
+    } for r in records]
 
     cache.set(key, report, CACHE_SECONDS)
     return report
