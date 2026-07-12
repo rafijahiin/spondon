@@ -278,3 +278,44 @@ class BaselineResponse(models.Model):
 
     def __str__(self):
         return f'{self.population} / {self.survey_round} / {self.district} / {self.serial}'
+
+
+# ─── Anomaly review decisions ────────────────────────────────────────────────
+# The FSW anomaly engine (baseline/anomaly.py + fsw_rules.py) is deterministic
+# and read-only: it NEVER edits raw Kobo data. Human review decisions live here,
+# in a SEPARATE audit table keyed on (record_id, rule_id) — one decision per
+# flagged anomaly. Correcting the underlying data is done in KoboToolbox; this
+# table only records the reviewer's verdict and note.
+
+class AnomalyReview(models.Model):
+    STATUS_CHOICES = [
+        ('new', 'New'),
+        ('confirmed', 'Confirmed'),
+        ('corrected', 'Corrected'),
+        ('false_positive', 'False positive'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    # The engine's record_id (Kobo _uuid / submission id). Plaintext, immutable.
+    submission_id = models.CharField(max_length=200, db_index=True)
+    rule_id = models.CharField(max_length=100, db_index=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='new')
+    note = models.TextField(blank=True)
+    reviewed_by = models.ForeignKey(
+        'accounts.User', null=True, blank=True,
+        on_delete=models.SET_NULL, related_name='+',
+    )
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['submission_id', 'rule_id'], name='uniq_anomaly_review'),
+        ]
+        indexes = [models.Index(fields=['status'])]
+        ordering = ['-updated_at']
+
+    def __str__(self):
+        return f'{self.submission_id} / {self.rule_id} / {self.status}'

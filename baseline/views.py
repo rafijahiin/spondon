@@ -254,3 +254,92 @@ class BaselineVerificationViewSet(ViewSet):
     @action(detail=True, methods=['post'])
     def reject(self, request, pk=None):
         return self._review(request, pk, SubmissionStatus.REJECTED, 'reason')
+
+
+# ── FSW anomaly console (deterministic rule engine) ──────────────────────────
+from rest_framework import status as http_status  # noqa: E402
+
+from .anomaly import build_report  # noqa: E402
+from .models import AnomalyReview  # noqa: E402
+
+_REVIEW_STATUSES = {c[0] for c in AnomalyReview.STATUS_CHOICES}
+
+
+class FswAnomalyViewSet(ViewSet):
+    """Read-only FSW anomaly report from the deterministic engine, merged with
+    the separate review-decision table. Never edits raw Kobo data."""
+
+    def get_permissions(self):
+        if getattr(self, 'action', None) == 'review':
+            return [CanViewBaseline()]
+        return [CanViewBaseline()]
+
+    def list(self, request):
+        report = build_report()
+        reviews = {
+            (r.submission_id, r.rule_id): r
+            for r in AnomalyReview.objects.select_related('reviewed_by')
+        }
+
+        needs_review = set()
+        for anomaly in report['anomalies']:
+            key = (anomaly.get('record_id'), anomaly['rule_id'])
+            review = reviews.get(key)
+            if review:
+                anomaly['review_status'] = review.status
+                anomaly['review_note'] = review.note
+                anomaly['reviewed_by'] = (
+                    review.reviewed_by.full_name if review.reviewed_by else None)
+                anomaly['reviewed_at'] = (
+                    review.reviewed_at.isoformat() if review.reviewed_at else None)
+            else:
+                anomaly['review_status'] = 'new'
+                anomaly['review_note'] = ''
+                anomaly['reviewed_by'] = None
+                anomaly['reviewed_at'] = None
+            if anomaly['review_status'] == 'new' and anomaly.get('record_id'):
+                needs_review.add(anomaly['record_id'])
+
+        # KPI extras the single-count card could never show.
+        scanned = report['records_scanned'] or 0
+        rule_counts = report['summary']['top_rules']
+        missing_end = rule_counts.get('MISSING_INTERVIEW_END', 0)
+        old_version = rule_counts.get('OLD_FORM_VERSION', 0)
+        report['kpis'] = {
+            'critical': report['summary']['by_severity']['critical'],
+            'high': report['summary']['by_severity']['high'],
+            'medium': report['summary']['by_severity']['medium'],
+            'low': report['summary']['by_severity']['low'],
+            'records_requiring_review': len(needs_review),
+            'records_cleared': max(0, scanned - len(needs_review)),
+            'timing_completeness_pct': (
+                round(100 * (scanned - missing_end) / scanned) if scanned else 0),
+            'current_form_adoption_pct': (
+                round(100 * (scanned - old_version) / scanned) if scanned else 0),
+        }
+        return Response(report)
+
+    @action(detail=False, methods=['post'])
+    def review(self, request):
+        """Record/replace a review decision for one (submission_id, rule_id)."""
+        sid = (request.data.get('submission_id') or '').strip()
+        rid = (request.data.get('rule_id') or '').strip()
+        new_status = (request.data.get('status') or '').strip()
+        note = request.data.get('note', '') or ''
+        if not sid or not rid:
+            return Response({'detail': 'submission_id and rule_id are required.'},
+                            status=http_status.HTTP_400_BAD_REQUEST)
+        if new_status not in _REVIEW_STATUSES:
+            return Response({'detail': f'status must be one of {sorted(_REVIEW_STATUSES)}.'},
+                            status=http_status.HTTP_400_BAD_REQUEST)
+        obj, _created = AnomalyReview.objects.update_or_create(
+            submission_id=sid, rule_id=rid,
+            defaults={'status': new_status, 'note': note,
+                      'reviewed_by': request.user, 'reviewed_at': timezone.now()},
+        )
+        return Response({
+            'submission_id': obj.submission_id, 'rule_id': obj.rule_id,
+            'status': obj.status, 'note': obj.note,
+            'reviewed_by': obj.reviewed_by.full_name if obj.reviewed_by else None,
+            'reviewed_at': obj.reviewed_at.isoformat() if obj.reviewed_at else None,
+        })

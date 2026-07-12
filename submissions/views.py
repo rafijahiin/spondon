@@ -300,6 +300,15 @@ def kobo_webhook(request):
     except Exception as exc:
         logger.error('Telegram dispatch error: %s', exc)
 
+    # A new baseline interview changes the anomaly report — drop its 5-min cache
+    # so the next dashboard load re-scans (best-effort; never block ingest).
+    if form_type == FormType.BASELINE:
+        try:
+            from baseline.anomaly import invalidate_cache
+            invalidate_cache()
+        except Exception as exc:
+            logger.warning('Anomaly cache invalidation skipped: %s', exc)
+
     logger.info(
         'Submission ingested: %s [%s / %s] status=%s',
         submission.id, form_type, submission.partner, initial_status,
