@@ -362,3 +362,75 @@ class ExclusiveMultiselectConfigTest(TestCase):
             label_map = _exclusive_label_map(schema, pop)
             self.assertEqual(len(label_map), len(EXCLUSIVE_CHOICE_CODES[pop]),
                              f'{pop}: some configured fields did not resolve')
+
+
+class HijraExclusiveAuditTest(TestCase):
+    """The Hijra half of the exclusive-option audit (plus the FSW gap it
+    exposed). Same decision rule as FSW: configured exclusives conflict with any
+    co-selection; DK-on-knowledge-lists and reason-style options never flag."""
+
+    def _ids(self, records, population='hijra'):
+        report, _ = _scan(records, population)
+        return report, {a['rule_id'] for a in report['anomalies']}
+
+    def test_dont_know_any_law_plus_naming_one_is_flagged(self):
+        rec = _hijra_kobo(**{'grp_q2/q2_12': '98 01'})
+        report, ids = self._ids([rec])
+        self.assertIn('MUTUALLY_EXCLUSIVE_MULTISELECT', ids)
+        flag = [a for a in report['anomalies']
+                if a['rule_id'] == 'MUTUALLY_EXCLUSIVE_MULTISELECT'][0]
+        self.assertEqual(flag['observed']['exclusive'], ["Don't know any"])
+
+    def test_benefit_awareness_conflicts_flagged(self):
+        for field in ('q2_13', 'q2_15'):
+            rec = _hijra_kobo(**{f'grp_q2/{field}': '98 01'})
+            _, ids = self._ids([rec])
+            self.assertIn('MUTUALLY_EXCLUSIVE_MULTISELECT', ids, field)
+
+    def test_did_not_need_assistance_plus_barrier_is_flagged(self):
+        rec = _hijra_kobo(**{'grp_q2/q2_21': '00 01'})
+        _, ids = self._ids([rec])
+        self.assertIn('MUTUALLY_EXCLUSIVE_MULTISELECT', ids)
+
+    def test_never_received_info_plus_source_is_flagged(self):
+        rec = _hijra_kobo(**{'grp_q3/q3_11': '12 01'})
+        _, ids = self._ids([rec])
+        self.assertIn('MUTUALLY_EXCLUSIVE_MULTISELECT', ids)
+
+    def test_hiv_knowledge_dk_still_not_flagged(self):
+        # DK on knowledge lists stays unconfigured — partial knowledge, not conflict.
+        for field in ('q3_2', 'q3_3', 'q3_4', 'q3_10'):
+            rec = _hijra_kobo(**{f'grp_q3/{field}': '01 98'})
+            _, ids = self._ids([rec])
+            self.assertNotIn('MUTUALLY_EXCLUSIVE_MULTISELECT', ids, field)
+
+    def test_reason_options_never_flag(self):
+        # "Did not know where to go" etc. are reasons, co-selectable by design.
+        rec = _hijra_kobo(**{'grp_q5/q5_7': '06 01'})
+        _, ids = self._ids([rec])
+        self.assertNotIn('MUTUALLY_EXCLUSIVE_MULTISELECT', ids)
+
+    def test_fsw_never_received_info_gap_now_covered(self):
+        rec = _kobo(**{'grp_q3/q3_13': '11 01'})
+        _, ids = self._ids([rec], population='fsw')
+        self.assertIn('MUTUALLY_EXCLUSIVE_MULTISELECT', ids)
+
+    def test_fsw_reasons_and_correct_answers_still_clean(self):
+        for field, val in (('q3_5', '01 05'), ('q7_21', '01 06'), ('q6_14', '08 01')):
+            rec = _kobo(**{f'grp_q/{field}': val})
+            _, ids = self._ids([rec], population='fsw')
+            self.assertNotIn('MUTUALLY_EXCLUSIVE_MULTISELECT', ids, field)
+
+    def test_two_negatives_together_are_not_a_conflict(self):
+        # q2_15: "Don't know anything" (98) + "No shelter benefits" (2) are two
+        # flavours of the same negative — both exclusive, so no flag.
+        rec = _hijra_kobo(**{'grp_q2/q2_15': '98 2'})
+        _, ids = self._ids([rec])
+        self.assertNotIn('MUTUALLY_EXCLUSIVE_MULTISELECT', ids)
+
+    def test_negative_plus_positive_benefit_is_a_conflict(self):
+        # Either negative + the actual government-directive option (1) flags.
+        for val in ('98 1', '2 1'):
+            rec = _hijra_kobo(**{'grp_q2/q2_15': val})
+            _, ids = self._ids([rec])
+            self.assertIn('MUTUALLY_EXCLUSIVE_MULTISELECT', ids, val)

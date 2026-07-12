@@ -49,16 +49,37 @@ def _cache_key(population):
 # floods of false conflicts. Deliberately NOT configured: the "Don't know"
 # codes (98) — co-selection with partial answers is common respondent
 # behaviour, not a data-entry conflict (confirmed by the manual FSW audit).
+# Decision rule (from the full-choice-list audit of both forms, 2026-07-12):
+#   CONFIGURED — options that CONTRADICT any co-selection: "None"-type answers,
+#     awareness questions' "aware of none / don't know any" (naming one right
+#     after is a conflict), "Never received such information" + naming a source,
+#     "Did not need assistance" + citing an access barrier.
+#   NOT configured — "Don't know" on health-KNOWLEDGE lists (q3_2/3/4/10:
+#     partial knowledge + DK is common respondent behaviour, per the manual
+#     audit) and "Did not know where to go"-style REASONS (legitimately
+#     co-selectable with other reasons).
 EXCLUSIVE_CHOICE_CODES: dict[str, dict[str, list[str]]] = {
     'fsw': {
         'b109': ['0'],     # other income sources — "None"
         'q2_13': ['98'],   # laws/rulings awareness — "Aware of none"
         'q2_14': ['98'],   # social schemes awareness — "Aware of none"
+        'q3_13': ['11'],   # SRH info sources — "Never received such information"
         'q8_4': ['0'],     # stress events — "None of the above"
         'q9_6': ['10'],    # Wellness Centre concerns — "No concerns"
     },
     'hijra': {
-        'q9_6': ['08'],    # Wellness Centre concerns — "No concerns"
+        'q2_12': ['98'],        # policy/law names — "Don't know any" (aware of none)
+        # q2_13/q2_15 carry TWO negatives each: "Don't know anything about this"
+        # AND an absence assertion ("No such policy exists" / "No shelter
+        # benefits for our community"). Both are exclusive, so a respondent
+        # hedging between the two negatives is NOT flagged (exclusive+exclusive
+        # has no non-exclusive co-selection); either negative + a POSITIVE
+        # benefit is a genuine conflict.
+        'q2_13': ['98', '3'],   # employment benefits — DK / "No such policy exists"
+        'q2_15': ['98', '2'],   # shelter benefits — DK / "No shelter benefits…"
+        'q2_21': ['00'],        # legal assistance — "Did not need such assistance"
+        'q3_11': ['12'],        # SRH info sources — "Never received such information"
+        'q9_6': ['08'],         # Wellness Centre concerns — "No concerns"
     },
 }
 
