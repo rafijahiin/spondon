@@ -20,14 +20,12 @@
  */
 import { useMemo, useState } from 'react'
 import {
-  ShieldCheck, Download, MapPin, CreditCard, Smartphone, CalendarDays,
+  ShieldCheck, MapPin, CreditCard, Smartphone, CalendarDays,
 } from 'lucide-react'
-import { api, apiErrorMessage } from '@/api/client'
+import { api } from '@/api/client'
 import { usePolling } from '@/hooks/usePolling'
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { BarBreakdown, DonutBreakdown, ColumnBreakdown, StackedBar } from '@/components/ciprb/IndicatorCharts'
-import { FieldworkMonitor, type Monitoring } from '@/components/baseline/FieldworkMonitor'
-import { FswAnomalyConsole } from '@/components/baseline/FswAnomalyConsole'
+import { BaselineMonitor } from '@/components/baseline/BaselineMonitor'
 import { SrhrIndicators, type Srhr } from '@/components/baseline/SrhrIndicators'
 
 type Pop = 'hijra' | 'fsw'
@@ -119,17 +117,11 @@ export default function BaselineEndline() {
     fetcher: () => api.get('/baseline/responses/insights/').then((r) => r.data),
     interval: 60_000,
   })
-  const { data: monitoring } = usePolling<Monitoring>({
-    fetcher: () => api.get('/baseline/responses/monitoring/').then((r) => r.data),
-    interval: 30_000,
-  })
   const { data: srhr } = usePolling<Srhr>({
     fetcher: () => api.get('/baseline/responses/srhr/').then((r) => r.data),
     interval: 60_000,
   })
   const [lens, setLens] = useState<Lens>('all')
-  const [err, setErr] = useState('')
-  const [exporting, setExporting] = useState(false)
 
   // KPI figures for the selected lens.
   const lensKpi = useMemo(() => {
@@ -149,68 +141,18 @@ export default function BaselineEndline() {
     return insights.kpis[lens]
   }, [insights, lens])
 
-  async function exportCsv() {
-    setExporting(true)
-    try {
-      const r = await api.get('/baseline/responses/export/', { responseType: 'blob' })
-      const url = URL.createObjectURL(r.data as Blob)
-      const a = document.createElement('a')
-      a.href = url; a.download = 'baseline_responses.csv'
-      document.body.appendChild(a); a.click(); a.remove()
-      URL.revokeObjectURL(url)
-    } catch (e) {
-      setErr(apiErrorMessage(e, 'Export failed.'))
-    } finally {
-      setExporting(false)
-    }
-  }
-
   const hasInsights = (insights?.total ?? 0) > 0
 
   return (
     <>
-      <section className="hero" style={{ paddingBottom: 18 }}>
-        <div className="hero-eyebrow anim-rise">
-          <span className="live-dot" />
-          <span>BASELINE STUDIES</span>
-          <span className="sep">/</span>
-          <span>CIPRB FIELDWORK MONITORING</span>
-        </div>
-        <h1 className="hero-headline anim-rise d1" style={{ fontSize: 'clamp(40px, 6vw, 76px)', marginBottom: 8 }}>
-          <span className="figure" style={{ color: 'var(--unfpa)' }}>Baseline</span> Monitoring Dashboard.
-        </h1>
-        <p className="hero-lede anim-rise d2" style={{ maxWidth: 720, marginTop: 14 }}>
-          Live monitoring of the Hijra and Female Sex Worker baseline collection: how many interviews come
-          in each day, from which sites and enumerators, at what quality — then the population profile as it
-          builds, module by module.
-        </p>
+      {/* ── Part 1 · fieldwork monitoring & data quality (compact) ────────── */}
+      <section className="section">
+        <BaselineMonitor />
       </section>
 
-      {/* ── Fieldwork Command Center — the collection monitor ─────────────── */}
-      <section className="section" style={{ marginTop: 16 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
-          <div className="kicker"><span className="dot" /> Fieldwork command center · every collected interview</div>
-          <button className="btn" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
-            onClick={exportCsv} disabled={exporting}>
-            {exporting ? <LoadingSpinner size="sm" /> : <Download size={14} />} Export CSV
-          </button>
-        </div>
-        {monitoring
-          ? <FieldworkMonitor m={monitoring} />
-          : <div className="card" style={{ padding: 28, textAlign: 'center', color: 'var(--muted)' }}>Loading collection monitor…</div>}
-      </section>
-
-      {err && (
-        <section className="section" style={{ marginTop: 12 }}>
-          <div className="card" style={{ background: 'rgba(233,69,96,0.06)', borderColor: 'rgba(233,69,96,0.2)', color: 'var(--rose)', padding: '10px 14px', fontSize: 13 }}>{err}</div>
-        </section>
-      )}
-
-      {/* ── FSW anomaly console — deterministic data-quality rule engine ──── */}
-      <section className="section" style={{ marginTop: 30 }}>
-        <div className="kicker" style={{ marginBottom: 12 }}><span className="dot" /> Data-quality console · anomaly detection &amp; review</div>
-        <FswAnomalyConsole />
-      </section>
+      {/* ── clean transition into Part 2 · verified baseline results ──────── */}
+      <div id="srhr" aria-hidden style={{ scrollMarginTop: 110, margin: '48px 0 0',
+        height: 1, background: 'linear-gradient(90deg, transparent, var(--hair) 20%, var(--hair) 80%, transparent)' }} />
 
       {/* ── Major SRHR indicators, by questionnaire module ────────────────── */}
       {srhr && <SrhrIndicators data={srhr} />}

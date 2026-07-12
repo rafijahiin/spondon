@@ -370,6 +370,15 @@ class FswAnomalyViewSet(ViewSet):
                                   + str(a.get('record_id') or '') + ' '
                                   + str(a.get('enumerator') or '')).lower()]
 
+        # Enrich each flag with its record's site / interview date so the queue
+        # can show them without a second lookup.
+        id_map = {r['record_id']: r for r in records_index}
+        for a in anomalies:
+            idx = id_map.get(a.get('record_id'))
+            a['site'] = idx['site'] if idx else ''
+            a['date'] = idx['date'] if idx else ''
+            a['population'] = idx['population'] if idx else ''
+
         sev = Counter(a['severity'] for a in anomalies)
         affected = {a['record_id'] for a in anomalies if a.get('record_id')}
         reviewed_flags = sum(1 for a in anomalies if a['review_status'] != 'new')

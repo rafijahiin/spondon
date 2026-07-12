@@ -113,6 +113,7 @@ def compute_monitoring(subs, filters=None):
     back to submitted_at). Filtering happens here — where population and
     collector are already resolved — so the API can't drift from the roster."""
     f = filters or {}
+    versions = Counter()      # __version__ -> count, for the form-version filter
     total = 0
     by_pop = Counter()
     by_status = Counter()
@@ -177,6 +178,8 @@ def compute_monitoring(subs, filters=None):
         total += 1
         by_pop[pop] += 1
         by_status[(s.status or 'PENDING')] += 1
+        if ver:
+            versions[ver] += 1
         dist = (raw.get('district') or s.district or '').strip().title()
         if dist:
             district[dist] += 1
@@ -334,6 +337,7 @@ def compute_monitoring(subs, filters=None):
         'sites': buckets(site, 15),
         'daily': daily_series,
         'days': days,
+        'versions': buckets(versions),
         'duration': {
             'bands': [{'name': lab, 'value': dur_band.get(lab, 0)}
                       for _, _, lab in DURATION_BANDS],
