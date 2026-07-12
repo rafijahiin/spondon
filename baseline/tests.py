@@ -173,9 +173,10 @@ class DeriveFromKoboPayloadTest(TestCase):
 
 
 class InterviewDurationTest(TestCase):
-    """Duration is measured consent -> Submit. An enumerator who leaves the form
-    open submits hours later, so the raw mean describes their working session,
-    not the interview. The headline figure must exclude those."""
+    """Interview length is measured ONLY from the in-interview end stamp
+    (interview_end_actual). A row without it has no measurable length — the
+    submit gap is the enumerator's working session, not the interview — so it is
+    excluded from every average and surfaced as an anomaly, never estimated."""
 
     class _Sub:
         status = 'approved'
@@ -187,37 +188,44 @@ class InterviewDurationTest(TestCase):
         def __init__(self, raw):
             self.raw_data = raw
 
-    def _sub(self, start, end, dc='1'):
-        return self._Sub({
+    def _sub(self, start, actual, submit, dc='1'):
+        raw = {
             '_xform_id_string': 'aBT7aCL9p4FGcW4WwXZcr6',
             'grp_admin/population': 'hijra', 'grp_admin/dc_code': dc,
             'grp_admin/district': 'Dhaka', 'grp_module9/c3': '1',
-            'interview_start': start, 'interview_end': end,
-        })
+            'interview_start': start, 'interview_end': submit, '__version__': 'vNEW',
+        }
+        if actual:
+            raw['interview_end_actual'] = actual
+        return self._Sub(raw)
 
     def setUp(self):
         self.subs = [
-            self._sub('2026-07-10T09:00:00', '2026-07-10T09:50:00'),  # 50m
-            self._sub('2026-07-10T11:00:00', '2026-07-10T11:54:00'),  # 54m
-            self._sub('2026-07-10T09:00:00', '2026-07-10T18:00:00'),  # 540m, left open
+            # measured: in-form end present, real length regardless of submit lag
+            self._sub('2026-07-10T09:00:00', '2026-07-10T09:50:00', '2026-07-10T18:00:00'),  # 50m
+            self._sub('2026-07-10T11:00:00', '2026-07-10T11:54:00', '2026-07-10T19:00:00'),  # 54m
+            # NO in-form end (old form): length unknown, must NOT be averaged
+            self._sub('2026-07-10T09:00:00', None, '2026-07-10T18:00:00'),
         ]
 
-    def test_headline_average_excludes_forms_left_open(self):
+    def test_headline_average_uses_only_measured_interviews(self):
         from .monitoring import compute_monitoring
         d = compute_monitoring(self.subs)['duration']
         self.assertEqual(d['interview_avg_min'], 52.0)   # (50 + 54) / 2
         self.assertEqual(d['interview_n'], 2)
+        self.assertEqual(d['no_timing_n'], 1)            # the old-form row
 
-    def test_raw_average_is_kept_so_the_exclusion_stays_inspectable(self):
+    def test_unstamped_row_is_an_anomaly_not_an_estimate(self):
         from .monitoring import compute_monitoring
-        self.assertEqual(compute_monitoring(self.subs)['duration']['avg_min'], 214.7)
+        a = compute_monitoring(self.subs)['anomalies']
+        self.assertEqual(a['no_timing_total'], 1)
 
-    def test_enumerator_average_excludes_their_left_open_forms(self):
+    def test_enumerator_average_uses_only_measured_interviews(self):
         from .monitoring import compute_monitoring
-        m = compute_monitoring(self.subs)
-        row = m['collectors'][0]
+        row = compute_monitoring(self.subs)['collectors'][0]
         self.assertEqual(row['avg_min'], 52.0)
-        self.assertEqual(row['long'], 1)
+        self.assertEqual(row['measured'], 2)
+        self.assertEqual(row['no_timing'], 1)
         self.assertEqual(row['n'], 3)
 
 
@@ -259,11 +267,15 @@ class InterviewEndSourceTest(TestCase):
         ])
         self.assertEqual(m['quality']['long_interviews'], 0)
 
-    def test_legacy_row_without_true_end_falls_back_and_can_flag(self):
+    def test_legacy_row_without_true_end_is_an_anomaly_not_a_duration(self):
         from .monitoring import compute_monitoring
         m = compute_monitoring([
             self._row('2026-07-11T09:00:00', None, '2026-07-11T18:00:00'),  # 9h, no stamp
         ])
         self.assertEqual(m['duration']['true_end_n'], 0)
-        self.assertEqual(m['quality']['long_interviews'], 1)
-        self.assertIsNone(m['duration']['interview_avg_min'])  # excluded, nothing left
+        self.assertIsNone(m['duration']['interview_avg_min'])  # nothing measured
+        # It is surfaced as an anomaly, NOT counted as a 9-hour "left open" interview.
+        self.assertEqual(m['quality']['long_interviews'], 0)
+        self.assertEqual(m['anomalies']['no_timing_total'], 1)
+        # ...with the submit gap kept as context (540m), not as a length.
+        self.assertEqual(m['anomalies']['no_timing_rows'][0]['submit_gap_min'], 540.0)
