@@ -56,13 +56,15 @@ class _Sub:
         self.longitude = None
 
 
-def _scan(records):
-    schema = load_schema().get('fsw', {})
-    from .anomaly import _fsw_field_map
-    shaped = [_shape_record(_Sub(r), schema) for r in records]
+def _scan(records, population='fsw'):
+    from .anomaly import FIELD_MAP_BUILDERS, _decode_fields
+    schema = load_schema().get(population, {})
+    field_map = FIELD_MAP_BUILDERS[population](schema)
+    decode = _decode_fields(field_map)
+    shaped = [_shape_record(_Sub(r), schema, population, decode) for r in records]
     headers = sorted({k for r in shaped for k in r})
     engine, _ = build_fsw_engine(headers, current_version='vCURRENT',
-                                 field_map=_fsw_field_map(schema))
+                                 field_map=field_map)
     return engine.scan(shaped), shaped
 
 
@@ -193,3 +195,54 @@ class AnomalyApiTests(TestCase):
         resp = self.client.post('/api/baseline/fsw-anomalies/review/', {
             'submission_id': 's', 'rule_id': 'R', 'status': 'nonsense'}, format='json')
         self.assertEqual(resp.status_code, 400)
+
+
+HIJRA_UID = 'aBT7aCL9p4FGcW4WwXZcr6'
+
+
+def _hijra_kobo(**over):
+    base = {
+        '_xform_id_string': HIJRA_UID, '_uuid': 'huuid-1', '__version__': 'vCURRENT',
+        'grp_admin/dc_code': '1', 'grp_admin/site_code': '2',
+        'grp_admin/interview_start': '2026-07-12T10:00:00',
+        'grp_admin/interview_end_actual': '2026-07-12T10:50:00',
+        'grp_scr/consent': '1', 'grp_scr/s2_age': 27, 'grp_a2/a205_age': 27,
+        'grp_c/c2': 'Interview conducted in private, respondent at ease.',
+    }
+    base.update(over)
+    return base
+
+
+class HijraAdapterTests(TestCase):
+    """The same engine must run on Hijra data via its own field map."""
+
+    def _ids(self, records):
+        report, _ = _scan(records, population='hijra')
+        return {a['rule_id'] for a in report['anomalies']}
+
+    def test_hijra_missing_end_on_old_form(self):
+        rec = _hijra_kobo()
+        rec.pop('grp_admin/interview_end_actual')
+        rec['__version__'] = 'vOLD'
+        ids = self._ids([rec])
+        self.assertIn('MISSING_INTERVIEW_END', ids)
+        self.assertIn('OLD_FORM_VERSION', ids)
+
+    def test_hijra_age_mismatch(self):
+        rec = _hijra_kobo(**{'grp_scr/s2_age': 27, 'grp_a2/a205_age': 40})
+        self.assertIn('AGE_MISMATCH', self._ids([rec]))
+
+    def test_hijra_weak_observation(self):
+        rec = _hijra_kobo(**{'grp_c/c2': 'Valo'})
+        self.assertIn('WEAK_INTERVIEWER_OBSERVATION', self._ids([rec]))
+
+    def test_hijra_income_missing_zero(self):
+        rec = _hijra_kobo(**{'grp_b1/b104_share': 10})
+        self.assertIn('LIKELY_MISSING_ZERO_IN_INCOME', self._ids([rec]))
+
+    def test_hijra_q95_more_than_five(self):
+        rec = _hijra_kobo(**{'grp_q9/q9_5': '01 02 03 04 05 06'})
+        self.assertIn('Q95_MORE_THAN_FIVE_SERVICES', self._ids([rec]))
+
+    def test_hijra_clean_record_has_no_flags(self):
+        self.assertEqual(self._ids([_hijra_kobo()]), set())

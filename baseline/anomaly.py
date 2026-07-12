@@ -32,14 +32,16 @@ from .schema import load_schema
 
 logger = logging.getLogger(__name__)
 
-CACHE_KEY = 'baseline:fsw:anomalies:v1'
+POPULATIONS = ('fsw', 'hijra')
 CACHE_SECONDS = 300  # 5 minutes; invalidated on new baseline ingest (see signals)
 
-# select_one fields whose rule logic inspects the answer as free text, so the
-# engine needs the decoded label, not the stored choice code.
-_DECODE_AS_LABEL = ('consent', 'b103', 'b105')
 
-# Monthly expense is split across these category fields; the engine wants a total.
+def _cache_key(population):
+    return f'baseline:{population}:anomalies:v1'
+
+
+# Monthly expense is split across these category fields (FSW); the engine wants a
+# total. Hijra has no expense breakdown, so none of these match and it is skipped.
 _EXPENSE_FIELDS = ('b110_broker', 'b110_commission', 'b110_debt',
                    'b110_family', 'b110_fees', 'b110_food', 'b110_rent',
                    'b110_other', 'b110_children', 'b110_health')
@@ -73,9 +75,11 @@ def _parse_geopoint(value):
     return lat, lon, acc
 
 
-def _shape_record(sub, schema):
+def _shape_record(sub, schema, population, decode_fields):
     """One KoboSubmission -> a flat dict the engine understands. Pure; the
-    submission's raw_data is left untouched."""
+    submission's raw_data is left untouched. `decode_fields` are the select_one
+    fields whose rule logic reads the answer as free text (consent, living
+    arrangement, duration category) — those are decoded to their label."""
     raw = flatten_group_keys(sub.raw_data or {})
     labels = schema.get('labels', {})
     choices = schema.get('choices', {})
@@ -90,7 +94,7 @@ def _shape_record(sub, schema):
             cmap = choices.get(field, {})
             for code in str(value).split() if value not in (None, '') else []:
                 rec[f'{parent}/{_san(cmap.get(str(code), code))}'] = '1'
-        elif t.startswith('select_one') and field in _DECODE_AS_LABEL:
+        elif t.startswith('select_one') and field in decode_fields:
             rec[field] = choices.get(field, {}).get(str(value), value)
         else:
             rec[field] = value
@@ -101,7 +105,7 @@ def _shape_record(sub, schema):
     rec['__version__'] = raw.get('__version__') or ''
     rec['site_code'] = raw.get('site_code') or ''
     rec['enumerator_name'] = (
-        collector_name('fsw', dc)
+        collector_name(population, dc)
         or (f'Collector {dc}' if dc not in (None, '') else 'Unknown')
     )
 
@@ -122,7 +126,7 @@ def _shape_record(sub, schema):
 
 
 def _fsw_field_map(schema):
-    """Explicit, pinned map from engine roles to our field names."""
+    """Explicit, pinned map from engine roles to the FSW form's field names."""
     b109_label = _san(schema.get('labels', {}).get('b109', 'b109'))
     return FieldMap(
         record_id='_uuid',
@@ -151,10 +155,55 @@ def _fsw_field_map(schema):
     )
 
 
-def _fsw_submissions():
+def _hijra_field_map(schema):
+    """The Hijra instrument is structured differently (gender-diverse, not
+    sex-work-by-brothel), so the sex-work / living-children fields do not exist;
+    those FieldMap roles are None and their rules skip. The population-agnostic
+    checks — consent, timing, form version, age (screening vs demographic), GPS,
+    duplicates, burst, select-multiple, income, and the free-text observation —
+    all apply, and cover the same data-quality risks (esp. missing in-form end
+    times on an outdated form)."""
+    return FieldMap(
+        record_id='_uuid',
+        enumerator='enumerator_name',
+        site='site_code',
+        version='__version__',
+        consent='consent',
+        interview_start='interview_start',
+        interview_end='interview_end_actual',
+        age_screening='s2_age',
+        age_demographic='a205_age',
+        children_total=None,
+        children_with_respondent=None,
+        children_other_location=None,
+        living_arrangement='b101_live_with',
+        sex_work_start_age=None,
+        sex_work_years=None,
+        sex_work_income='b104_share',              # monthly money received
+        other_income_none=None,
+        expenses_total='expenses_total',
+        latitude='latitude',
+        longitude='longitude',
+        gps_precision='gps_precision',
+        observation='c2',                          # free-text interviewer observation
+        headers=(),
+    )
+
+
+FIELD_MAP_BUILDERS = {'fsw': _fsw_field_map, 'hijra': _hijra_field_map}
+
+
+def _decode_fields(field_map):
+    """The select_one fields the engine reads as free text — decode these to
+    labels so 'alone' / 'more than 10 years' / 'No' match."""
+    return {f for f in (field_map.consent, field_map.living_arrangement,
+                        field_map.sex_work_years) if f}
+
+
+def _submissions(population):
     qs = KoboSubmission.objects.filter(form_type=FormType.BASELINE)
     return [s for s in qs if resolve_population(flatten_group_keys(s.raw_data or {}),
-                                                default='') == 'fsw']
+                                                default='') == population]
 
 
 def _current_version(records):
@@ -167,18 +216,23 @@ def _current_version(records):
     return versions.most_common(1)[0][0] if versions else None
 
 
-def build_report(*, force=False):
-    """Scan every FSW submission and return the engine report (cached 5 min).
-    Adds `resolved_fields` and `current_version` for transparency/debugging."""
+def build_report(population='fsw', *, force=False):
+    """Scan every submission of `population` and return the engine report
+    (cached 5 min). Adds `population`, `current_version`, and `resolved_fields`."""
+    if population not in FIELD_MAP_BUILDERS:
+        raise ValueError(f'unknown population {population!r}')
+    key = _cache_key(population)
     if not force:
-        cached = cache.get(CACHE_KEY)
+        cached = cache.get(key)
         if cached is not None:
             return cached
 
-    schema = load_schema().get('fsw', {})
-    records = [_shape_record(s, schema) for s in _fsw_submissions()]
+    schema = load_schema().get(population, {})
+    field_map = FIELD_MAP_BUILDERS[population](schema)
+    decode = _decode_fields(field_map)
+    records = [_shape_record(s, schema, population, decode)
+               for s in _submissions(population)]
     headers = sorted({k for r in records for k in r})
-    field_map = _fsw_field_map(schema)
     current_version = _current_version(records)
 
     engine, field_map = build_fsw_engine(
@@ -186,13 +240,15 @@ def build_report(*, force=False):
         field_map=field_map,
     )
     report = engine.scan(records)
+    report['population'] = population
     report['current_version'] = current_version
     report['resolved_fields'] = {k: v for k, v in field_map.__dict__.items()
                                  if k != 'headers'}
 
-    cache.set(CACHE_KEY, report, CACHE_SECONDS)
+    cache.set(key, report, CACHE_SECONDS)
     return report
 
 
 def invalidate_cache():
-    cache.delete(CACHE_KEY)
+    for population in POPULATIONS:
+        cache.delete(_cache_key(population))

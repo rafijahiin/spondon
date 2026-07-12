@@ -92,7 +92,11 @@ function Pill({ on, tone, onClick, children }: { on: boolean; tone?: string; onC
   )
 }
 
+type Population = 'fsw' | 'hijra'
+const POP_LABEL: Record<Population, string> = { fsw: 'Female Sex Worker', hijra: 'Hijra / Gender-diverse' }
+
 export function FswAnomalyConsole() {
+  const [population, setPopulation] = useState<Population>('fsw')
   const [report, setReport] = useState<Report | null>(null)
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState('')
@@ -107,7 +111,7 @@ export function FswAnomalyConsole() {
 
   async function load() {
     try {
-      const r = await api.get<Report>('/baseline/fsw-anomalies/')
+      const r = await api.get<Report>('/baseline/fsw-anomalies/', { params: { population } })
       setReport(r.data)
     } catch (e) {
       setErr(apiErrorMessage(e, 'Could not load the anomaly report.'))
@@ -115,7 +119,7 @@ export function FswAnomalyConsole() {
       setLoading(false)
     }
   }
-  useEffect(() => { load() }, [])
+  useEffect(() => { setLoading(true); setActive(null); load() /* eslint-disable-next-line */ }, [population])
 
   const anomalies = report?.anomalies ?? []
   const enumerators = useMemo(
@@ -147,12 +151,23 @@ export function FswAnomalyConsole() {
     }
   }
 
-  if (loading) return <div className="card" style={{ padding: 28, textAlign: 'center', color: 'var(--muted)' }}>Scanning FSW submissions…</div>
-  if (!report) return <div className="card" style={{ padding: 20, color: 'var(--rose)' }}>{err || 'No report.'}</div>
+  const popToggle = (
+    <div className="pills" style={{ marginBottom: 14 }}>
+      {(['fsw', 'hijra'] as Population[]).map((p) => (
+        <Pill key={p} on={population === p} onClick={() => { if (p !== population) setPopulation(p) }}>
+          {POP_LABEL[p]}
+        </Pill>
+      ))}
+    </div>
+  )
+
+  if (loading) return <div>{popToggle}<div className="card" style={{ padding: 28, textAlign: 'center', color: 'var(--muted)' }}>Scanning {POP_LABEL[population]} submissions…</div></div>
+  if (!report) return <div>{popToggle}<div className="card" style={{ padding: 20, color: 'var(--rose)' }}>{err || 'No report.'}</div></div>
 
   const k = report.kpis
   return (
     <div>
+      {popToggle}
       {/* KPI row */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
         <Kpi icon={<AlertOctagon size={14} />} value={k.critical} label="Critical" tone={SEV_TONE.critical} />
@@ -165,7 +180,7 @@ export function FswAnomalyConsole() {
       </div>
 
       <div style={{ fontSize: 11.5, color: 'var(--muted)', margin: '10px 2px 0' }}>
-        {report.records_scanned} FSW interviews scanned · {report.anomaly_count} flags · risk {report.risk_score}/100
+        {report.records_scanned} {POP_LABEL[population]} interviews scanned · {report.anomaly_count} flags · risk {report.risk_score}/100
         {report.current_version && <> · current form <span className="mono">{report.current_version}</span></>}
       </div>
 

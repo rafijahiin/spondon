@@ -208,7 +208,7 @@ export default function BaselineEndline() {
 
       {/* ── FSW anomaly console — deterministic data-quality rule engine ──── */}
       <section className="section" style={{ marginTop: 30 }}>
-        <div className="kicker" style={{ marginBottom: 12 }}><span className="dot" /> FSW data-quality console · anomaly detection &amp; review</div>
+        <div className="kicker" style={{ marginBottom: 12 }}><span className="dot" /> Data-quality console · anomaly detection &amp; review</div>
         <FswAnomalyConsole />
       </section>
 

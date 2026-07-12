@@ -579,7 +579,8 @@ def _multi_select_rules(field_map: FieldMap):
     q95_groups = [
         (parent, cols)
         for parent, cols in groups.items()
-        if re.search(r"q9\.5.*wellness centre.*up to 5", parent, re.I)
+        if re.search(r"q9\.5.*wellness cent(re|er).*(up to 5|maximum five|max\w*\s*5)",
+                     parent, re.I)
     ]
 
     def rule(record: Mapping[str, Any], row: int) -> Iterable[Anomaly]:

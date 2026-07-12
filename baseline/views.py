@@ -275,7 +275,11 @@ class FswAnomalyViewSet(ViewSet):
         return [CanViewBaseline()]
 
     def list(self, request):
-        report = build_report()
+        population = request.query_params.get('population', 'fsw')
+        if population not in ('fsw', 'hijra'):
+            return Response({'detail': 'population must be fsw or hijra.'},
+                            status=http_status.HTTP_400_BAD_REQUEST)
+        report = build_report(population)
         reviews = {
             (r.submission_id, r.rule_id): r
             for r in AnomalyReview.objects.select_related('reviewed_by')
