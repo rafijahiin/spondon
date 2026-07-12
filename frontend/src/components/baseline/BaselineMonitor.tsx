@@ -13,7 +13,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
   Download, RefreshCw, TrendingUp, AlertTriangle,
-  CheckCircle2, Search, ChevronDown,
+  CheckCircle2, Search, ChevronDown, X,
 } from 'lucide-react'
 import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid,
@@ -22,10 +22,9 @@ import { api, apiErrorMessage } from '@/api/client'
 import { BarBreakdown, Histogram } from '@/components/ciprb/IndicatorCharts'
 import { AnomalyQueue, type AnomalyReport, type Sev } from './AnomalyQueue'
 
-const ORANGE = '#F96000'
-const TEAL = '#0E8F8F'
-const AMBER = '#C08A00'
-const RED = '#E5484D'
+const ORANGE = '#F96000'   // population: Hijra (also the brand)
+const TEAL = '#0E8F8F'     // population: FSW / healthy
+const AMBER = 'var(--warn)'
 
 type Pop = 'hijra' | 'fsw'
 interface Bucket { name: string; value: number }
@@ -71,36 +70,28 @@ const fmt = (n: number) => n.toLocaleString('en-US')
 
 /* ── small building blocks ────────────────────────────────────────────────── */
 
-const selStyle: React.CSSProperties = {
-  height: 34, fontSize: 12.5, padding: '0 8px', borderRadius: 8,
-  border: '1px solid var(--hair)', background: 'var(--surface)', color: 'var(--ink)',
-  maxWidth: 170,
-}
-
-function Kpi({ label, value, sub, sub2, tone, title }: {
+function Kpi({ label, value, sub, sub2, title, valueColor }: {
   label: string; value: React.ReactNode; sub?: React.ReactNode
-  sub2?: React.ReactNode; tone?: string; title?: string
+  sub2?: React.ReactNode; title?: string; valueColor?: string
 }) {
   return (
-    <div className="card snug" title={title}
-      style={{ flex: '1 1 190px', minWidth: 175, borderTop: `3px solid ${tone || 'var(--hair)'}`,
-               display: 'flex', flexDirection: 'column', gap: 2 }}>
-      <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--muted)' }}>{label}</div>
-      <div style={{ fontFamily: 'var(--display)', fontStyle: 'normal', fontSize: 28, lineHeight: 1.08, color: 'var(--ink)', fontVariantNumeric: 'tabular-nums' }}>{value}</div>
-      {sub && <div style={{ fontSize: 12, color: 'var(--muted)' }}>{sub}</div>}
-      {sub2 && <div style={{ fontSize: 11.5, color: 'var(--muted)' }}>{sub2}</div>}
+    <div className="kpi" title={title} style={{ flex: '1 1 200px', minWidth: 178 }}>
+      <div className="kpi-l">{label}</div>
+      <div className="kpi-v" style={valueColor ? { color: valueColor } : undefined}>{value}</div>
+      {sub && <div className="kpi-s">{sub}</div>}
+      {sub2 && <div className="kpi-s2">{sub2}</div>}
     </div>
   )
 }
 
 function HBar({ label, value, max, color }: { label: string; value: number; max: number; color: string }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12 }}>
-      <span style={{ width: 92, color: 'var(--muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</span>
-      <span style={{ flex: 1, height: 8, borderRadius: 4, background: 'var(--hair)', overflow: 'hidden' }}>
-        <span style={{ display: 'block', height: '100%', width: `${max ? (100 * value) / max : 0}%`, background: color, borderRadius: 4 }} />
+    <div style={{ display: 'flex', alignItems: 'center', gap: 9, fontSize: 13 }}>
+      <span style={{ width: 96, color: 'var(--muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</span>
+      <span style={{ flex: 1, height: 10, borderRadius: 5, background: 'var(--hair)', overflow: 'hidden' }}>
+        <span style={{ display: 'block', height: '100%', width: `${max ? (100 * value) / max : 0}%`, background: color, borderRadius: 5 }} />
       </span>
-      <span style={{ width: 34, textAlign: 'right', fontWeight: 700, color: 'var(--ink)', fontVariantNumeric: 'tabular-nums' }}>{fmt(value)}</span>
+      <span style={{ width: 38, textAlign: 'right', fontWeight: 700, color: 'var(--ink)', fontVariantNumeric: 'tabular-nums' }}>{fmt(value)}</span>
     </div>
   )
 }
@@ -129,8 +120,6 @@ export function BaselineMonitor() {
   const [enumSort, setEnumSort] = useState<'n' | 'flags'>('flags')
 
   const set = (patch: Partial<Filters>) => setFilters((f) => ({ ...f, ...patch }))
-  const activeFilterCount = Object.entries(filters)
-    .filter(([k, v]) => v && !(k === 'population' && v === 'all')).length
 
   async function load() {
     setErr('')
@@ -266,71 +255,79 @@ export function BaselineMonitor() {
   const iqr = m?.duration.valid_iqr ?? [null, null]
 
   const STATUS_STYLE = {
-    good: { label: 'Good', color: TEAL, icon: <CheckCircle2 size={12} /> },
-    review: { label: 'Review', color: AMBER, icon: <AlertTriangle size={12} /> },
-    urgent: { label: 'Urgent', color: RED, icon: <AlertTriangle size={12} /> },
+    good: { label: 'Good', cls: 'tag-ok', icon: <CheckCircle2 size={12} /> },
+    review: { label: 'Review', cls: 'tag-warn', icon: <AlertTriangle size={12} /> },
+    urgent: { label: 'Urgent', cls: 'tag-crit', icon: <AlertTriangle size={12} /> },
   } as const
+  const POP_LABEL: Record<string, string> = { all: 'All populations', hijra: 'Hijra / Gender-diverse', fsw: 'Female Sex Worker' }
+  const activeChips: { key: string; label: string; clear: () => void }[] = [
+    ...(filters.population !== 'all' ? [{ key: 'pop', label: POP_LABEL[filters.population], clear: () => set({ population: 'all' as const }) }] : []),
+    ...(filters.site ? [{ key: 'site', label: `Site ${filters.site}`, clear: () => set({ site: '' }) }] : []),
+    ...(filters.enumerator ? [{ key: 'enum', label: filters.enumerator, clear: () => set({ enumerator: '' }) }] : []),
+    ...(filters.dateFrom ? [{ key: 'df', label: `From ${filters.dateFrom}`, clear: () => set({ dateFrom: '' }) }] : []),
+    ...(filters.dateTo ? [{ key: 'dt', label: `To ${filters.dateTo}`, clear: () => set({ dateTo: '' }) }] : []),
+    ...(filters.version ? [{ key: 'ver', label: `Form ${filters.version.slice(0, 10)}…`, clear: () => set({ version: '' }) }] : []),
+    ...(filters.severity ? [{ key: 'sev', label: `${filters.severity[0].toUpperCase()}${filters.severity.slice(1)} severity`, clear: () => set({ severity: '' }) }] : []),
+  ]
 
   return (
     <div>
-      {/* ── 1 · compact header ─────────────────────────────────────────── */}
-      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap', padding: '18px 0 12px' }}>
+      {/* ── 1 · header ─────────────────────────────────────────────────── */}
+      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', padding: '20px 0 16px' }}>
         <div style={{ minWidth: 260 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--unfpa)' }}>
+          <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--unfpa)' }}>
             Baseline Evaluation · Monitoring Dashboard
           </div>
-          <h1 style={{ fontFamily: 'var(--display)', fontSize: 'clamp(24px, 3vw, 32px)', margin: '4px 0 2px', color: 'var(--ink)' }}>
+          <h1 style={{ fontFamily: 'var(--display)', fontWeight: 700, fontSize: 'clamp(26px, 3.2vw, 34px)', lineHeight: 1.1, margin: '5px 0 4px', color: 'var(--ink)' }}>
             Baseline Monitoring Dashboard
           </h1>
-          <p style={{ fontSize: 13, color: 'var(--muted)', margin: 0, maxWidth: 560 }}>
+          <p style={{ fontSize: 14, color: 'var(--muted)', margin: 0, maxWidth: 620 }}>
             Fieldwork pace, enumerator performance and data quality for the Hijra and FSW baseline —
             verified results follow in the SRHR section below.
           </p>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
           {lastSync && (
-            <span style={{ fontSize: 11.5, color: 'var(--muted)', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-              <RefreshCw size={12} /> Synced {lastSync.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            <span style={{ fontSize: 13, color: 'var(--muted)', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+              <RefreshCw size={13} style={{ color: 'var(--ok)' }} /> Synced {lastSync.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </span>
           )}
           <button className="btn" onClick={exportCsv} disabled={exporting}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-            <Download size={14} /> {exporting ? 'Exporting…' : 'Export CSV'}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 38 }}>
+            <Download size={15} /> {exporting ? 'Exporting…' : 'Export CSV'}
           </button>
         </div>
       </div>
 
-      {/* ── sticky filter bar + anchors ────────────────────────────────── */}
-      <div style={{ position: 'sticky', top: 'var(--topbar, 56px)', zIndex: 40,
-                    background: 'var(--bg, var(--surface))', padding: '8px 0', margin: '0 -2px 14px',
-                    borderBottom: '1px solid var(--hair)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-          <select aria-label="Population" style={selStyle} value={filters.population}
+      {/* ── filter toolbar + anchors ───────────────────────────────────── */}
+      <div className="filterbar">
+        <div className="filterbar-row">
+          <select aria-label="Population" className="field" value={filters.population}
             onChange={(e) => set({ population: e.target.value as Filters['population'], enumerator: '', site: '' })}>
             <option value="all">All populations</option>
             <option value="hijra">Hijra / Gender-diverse</option>
             <option value="fsw">Female Sex Worker</option>
           </select>
-          <select aria-label="Site" style={selStyle} value={filters.site}
+          <select aria-label="Site" className="field" value={filters.site}
             onChange={(e) => set({ site: e.target.value })}>
             <option value="">All sites</option>
             {(m?.sites ?? []).map((s) => <option key={s.name} value={s.name}>Site {s.name}</option>)}
           </select>
-          <select aria-label="Enumerator" style={selStyle} value={filters.enumerator}
+          <select aria-label="Enumerator" className="field" value={filters.enumerator}
             onChange={(e) => set({ enumerator: e.target.value })}>
             <option value="">All enumerators</option>
             {(m?.collectors ?? []).map((c) => <option key={c.code} value={c.code}>{c.code}</option>)}
           </select>
-          <input aria-label="From date" type="date" style={selStyle} value={filters.dateFrom}
+          <input aria-label="Interview date from" type="date" className="field" value={filters.dateFrom}
             onChange={(e) => set({ dateFrom: e.target.value })} />
-          <input aria-label="To date" type="date" style={selStyle} value={filters.dateTo}
+          <input aria-label="Interview date to" type="date" className="field" value={filters.dateTo}
             onChange={(e) => set({ dateTo: e.target.value })} />
-          <select aria-label="Form version" style={selStyle} value={filters.version}
+          <select aria-label="Form version" className="field" value={filters.version}
             onChange={(e) => set({ version: e.target.value })}>
             <option value="">All form versions</option>
             {(m?.versions ?? []).map((v) => <option key={v.name} value={v.name}>{v.name.slice(0, 12)}… ({v.value})</option>)}
           </select>
-          <select aria-label="Anomaly severity" style={selStyle} value={filters.severity}
+          <select aria-label="Anomaly severity" className="field" value={filters.severity}
             onChange={(e) => set({ severity: e.target.value as Filters['severity'] })}>
             <option value="">Any severity</option>
             <option value="critical">Critical</option>
@@ -338,41 +335,46 @@ export function BaselineMonitor() {
             <option value="medium">Medium</option>
             <option value="low">Low</option>
           </select>
-          {activeFilterCount > 0 && (
-            <button className="pill" onClick={() => setFilters(EMPTY_FILTERS)}
-              style={{ color: 'var(--rose)', borderColor: 'var(--rose)' }}>
-              Reset filters ({activeFilterCount})
-            </button>
-          )}
           <span style={{ flex: 1 }} />
-          <nav aria-label="Sections" className="pills">
+          <nav aria-label="Jump to section" className="pills">
             {[['mon-overview', 'Overview'], ['mon-enum', 'Enumerators'],
               ['mon-quality', 'Data quality'], ['srhr', 'SRHR indicators']].map(([id, label]) => (
               <button key={id} className="pill" onClick={() => jump(id)}>{label}</button>
             ))}
           </nav>
         </div>
+        {activeChips.length > 0 && (
+          <div className="filterbar-row" style={{ gap: 8 }}>
+            <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--muted)' }}>Active filters:</span>
+            {activeChips.map((c) => (
+              <span key={c.key} className="chip">{c.label}
+                <button aria-label={`Remove filter ${c.label}`} onClick={c.clear}><X size={13} /></button>
+              </span>
+            ))}
+            <button className="pill" onClick={() => setFilters(EMPTY_FILTERS)}>Reset all</button>
+          </div>
+        )}
       </div>
 
       {err && (
-        <div className="card" style={{ background: 'rgba(233,69,96,0.06)', borderColor: 'rgba(233,69,96,0.2)', color: 'var(--rose)', padding: '9px 13px', fontSize: 12.5, marginBottom: 12 }}>{err}</div>
+        <div className="card" style={{ background: 'var(--high-soft)', borderColor: 'var(--high)', color: 'var(--high)', padding: '10px 14px', fontSize: 13, marginBottom: 12 }}>{err}</div>
       )}
 
       {!m ? (
-        <div className="card" style={{ padding: 26, textAlign: 'center', color: 'var(--muted)' }}>Loading fieldwork monitor…</div>
+        <div className="card" style={{ padding: 28, textAlign: 'center', color: 'var(--muted)' }}>Loading fieldwork monitor…</div>
       ) : (
         <>
           {/* ── 2 · fieldwork overview: 6 KPI cards ─────────────────────── */}
-          <div id="mon-overview" style={{ display: 'flex', flexWrap: 'wrap', gap: 12, scrollMarginTop: 110 }}>
-            <Kpi label="Total interviews" tone={ORANGE}
+          <div id="mon-overview" style={{ display: 'flex', flexWrap: 'wrap', gap: 14, scrollMarginTop: 110 }}>
+            <Kpi label="Total interviews"
               value={fmt(m.total)}
-              sub={<><TrendingUp size={11} style={{ verticalAlign: -1 }} /> {rangeActive
+              sub={<><TrendingUp size={12} style={{ verticalAlign: -2 }} /> {rangeActive
                 ? 'within the selected date range'
                 : `+${fmt(last7)} in the last 7 days`}</>} />
             {filters.population === 'all' ? (
-              <Kpi label="Population breakdown" tone={TEAL}
+              <Kpi label="Population breakdown"
                 value={
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 5, paddingTop: 4 }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6, paddingTop: 4 }}>
                     {m.progress.map((p) => (
                       <HBar key={p.population} label={p.population === 'hijra' ? 'Hijra' : 'FSW'}
                         value={p.collected} max={Math.max(...m.progress.map((x) => x.collected), 1)}
@@ -381,47 +383,45 @@ export function BaselineMonitor() {
                   </div>
                 } />
             ) : (
-              /* a one-category "breakdown" is just the total again — show site
-                 coverage for the selected population instead */
-              <Kpi label="Sites covered" tone={TEAL}
+              <Kpi label="Sites covered"
                 value={fmt(m.sites.length)}
                 sub={m.sites.slice(0, 3).map((sx) => `Site ${sx.name} · ${sx.value}`).join('   ')}
                 sub2={m.sites.length > 3 ? `+ ${m.sites.length - 3} more sites` : undefined} />
             )}
             {target ? (
-              <Kpi label="Fieldwork completion" tone={ORANGE}
+              <Kpi label="Fieldwork completion"
                 value={`${Math.round((100 * m.total) / target)}%`}
                 sub={`${fmt(m.total)} of ${fmt(target)} target`} />
             ) : (
-              /* no target set -> a completion card would duplicate the total;
-                 show an operational metric until CIPRB provides one */
-              <Kpi label="Active enumerators" tone={ORANGE}
+              <Kpi label="Active enumerators"
                 value={fmt(m.collectors.length)}
                 sub="collected during selected period"
                 sub2="Target not set — completion % returns once a target exists" />
             )}
-            <Kpi label="Valid timing coverage" tone={m.duration.valid_timing_pct >= 80 ? TEAL : AMBER}
+            <Kpi label="Valid timing coverage"
+              valueColor={m.duration.valid_timing_pct >= 80 ? 'var(--ok)' : 'var(--warn)'}
               title="Records with a usable start AND in-form end time ÷ all filtered submitted interviews. Missing end times stay in the denominator but are never treated as zero-minute interviews."
               value={`${m.duration.valid_timing_pct}%`}
               sub={`${fmt(m.duration.valid_timing_n)} of ${fmt(m.total)} interviews`} />
-            <Kpi label="Median interview" tone="#6E56CF"
+            <Kpi label="Median interview"
               title="Calculated only from interviews with valid timing, after excluding extreme form-left-open durations."
               value={m.duration.valid_median_min != null ? `${m.duration.valid_median_min}m` : '—'}
               sub={iqr[0] != null ? `IQR ${iqr[0]}–${iqr[1]}m` : undefined}
               sub2={`${fmt(m.duration.valid_median_n)} valid interviews`} />
-            <Kpi label="High & critical flags" tone={(anoms?.kpis.critical ?? 0) > 0 ? '#8E1B1B' : (anoms?.kpis.high ?? 0) > 0 ? RED : TEAL}
+            <Kpi label="High & critical flags"
+              valueColor={(anoms?.kpis.critical ?? 0) > 0 ? 'var(--crit)' : (anoms?.kpis.high ?? 0) > 0 ? 'var(--high)' : 'var(--ink)'}
               value={fmt((anoms?.kpis.critical ?? 0) + (anoms?.kpis.high ?? 0))}
               sub={`${fmt(anoms?.kpis.critical ?? 0)} critical · ${fmt(anoms?.kpis.high ?? 0)} high`}
               sub2={`${fmt(affectedHighCrit)} interviews affected`} />
           </div>
 
           {/* ── 3 · collection progress ─────────────────────────────────── */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginTop: 16 }}>
-            <div className="card" style={{ flex: '2 1 460px', minWidth: 320, padding: 16 }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 8 }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, marginTop: 20 }}>
+            <div className="card" style={{ flex: '2 1 460px', minWidth: 320, padding: 18 }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, marginBottom: 10 }}>
                 <div>
-                  <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--muted)' }}>Collection trend</div>
-                  <div style={{ fontSize: 14.5, fontWeight: 700, color: 'var(--ink)' }}>Interviews per day</div>
+                  <div style={{ fontFamily: 'var(--display)', fontWeight: 700, fontSize: 16, color: 'var(--ink)' }}>Interviews collected</div>
+                  <div style={{ fontSize: 13, color: 'var(--muted)' }}>{trendMode === 'cumulative' ? 'Cumulative' : 'Per-period'} submissions during the selected range</div>
                 </div>
                 {trend.length > 1 && (
                   <div className="pills">
@@ -437,32 +437,32 @@ export function BaselineMonitor() {
                 )}
               </div>
               {trend.length < 2 ? (
-                <div style={{ height: 190, display: 'grid', placeItems: 'center', color: 'var(--muted)', fontSize: 13 }}>
-                  Not enough data points in this range to draw a trend.
+                <div style={{ height: 200, display: 'grid', placeItems: 'center', textAlign: 'center', color: 'var(--muted)', fontSize: 13.5, padding: '0 20px' }}>
+                  No trend is available for this range. Expand the date range, or a single day shows hourly collection when data exists.
                 </div>
               ) : (
-              <div style={{ height: 190 }}>
+              <div style={{ height: 200 }}>
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={trend} margin={{ top: 4, right: 6, left: -20, bottom: 0 }}>
+                  <AreaChart data={trend} margin={{ top: 4, right: 8, left: -16, bottom: 0 }}>
                     <defs>
-                      <linearGradient id="tH" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={ORANGE} stopOpacity={0.4} /><stop offset="100%" stopColor={ORANGE} stopOpacity={0.02} /></linearGradient>
-                      <linearGradient id="tF" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={TEAL} stopOpacity={0.35} /><stop offset="100%" stopColor={TEAL} stopOpacity={0.02} /></linearGradient>
+                      <linearGradient id="tH" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={ORANGE} stopOpacity={0.35} /><stop offset="100%" stopColor={ORANGE} stopOpacity={0.02} /></linearGradient>
+                      <linearGradient id="tF" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={TEAL} stopOpacity={0.3} /><stop offset="100%" stopColor={TEAL} stopOpacity={0.02} /></linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="var(--hair)" vertical={false} />
-                    <XAxis dataKey="date" tick={{ fontSize: 10, fill: 'var(--muted)' }} tickFormatter={(d) => String(d).slice(5)} interval="preserveStartEnd" />
-                    <YAxis tick={{ fontSize: 10, fill: 'var(--muted)' }} allowDecimals={false} width={34} />
+                    <XAxis dataKey="date" tick={{ fontSize: 12, fill: 'var(--muted)' }} tickFormatter={(d) => String(d).slice(5)} interval="preserveStartEnd" />
+                    <YAxis tick={{ fontSize: 12, fill: 'var(--muted)' }} allowDecimals={false} width={34} />
                     <Tooltip content={<ChartTip />} />
-                    <Area type="monotone" dataKey="hijra" name="Hijra" stackId="1" stroke={ORANGE} fill="url(#tH)" strokeWidth={2} isAnimationActive={false} />
-                    <Area type="monotone" dataKey="fsw" name="FSW" stackId="1" stroke={TEAL} fill="url(#tF)" strokeWidth={2} isAnimationActive={false} />
+                    {filters.population !== 'fsw' && <Area type="monotone" dataKey="hijra" name="Hijra" stackId="1" stroke={ORANGE} fill="url(#tH)" strokeWidth={2} isAnimationActive={false} />}
+                    {filters.population !== 'hijra' && <Area type="monotone" dataKey="fsw" name="FSW" stackId="1" stroke={TEAL} fill="url(#tF)" strokeWidth={2} isAnimationActive={false} />}
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
               )}
             </div>
 
-            <div className="card" style={{ flex: '1 1 250px', minWidth: 240, padding: 16 }}>
-              <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--muted)' }}>Interview outcomes</div>
-              <div style={{ fontSize: 14.5, fontWeight: 700, color: 'var(--ink)', marginBottom: 10 }}>How interviews ended</div>
+            <div className="card" style={{ flex: '1 1 250px', minWidth: 240, padding: 18 }}>
+              <div style={{ fontFamily: 'var(--display)', fontWeight: 700, fontSize: 16, color: 'var(--ink)' }}>Interview outcomes</div>
+              <div style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 12 }}>How interviews ended</div>
               {(() => {
                 const rec: Record<string, number> = Object.fromEntries(m.outcomes.map((o) => [o.name, o.value]))
                 const rows = ['Completed', 'Partial', 'Refused', 'Interrupted']
@@ -470,14 +470,13 @@ export function BaselineMonitor() {
                   .filter((o, i) => i < 3 || o.value > 0)
                 const nonzero = rows.filter((o) => o.value > 0).length
                 return (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
                     {rows.map((o) => nonzero > 1 ? (
                       <HBar key={o.name} label={o.name} value={o.value}
                         max={Math.max(...rows.map((x) => x.value), 1)}
                         color={o.name === 'Completed' ? TEAL : o.name === 'Partial' ? AMBER : 'var(--muted)'} />
                     ) : (
-                      /* a single 100% bar carries no information — plain rows */
-                      <div key={o.name} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
+                      <div key={o.name} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14 }}>
                         <span style={{ color: 'var(--muted)' }}>{o.name}</span>
                         <span style={{ fontWeight: 700, color: o.value ? 'var(--ink)' : 'var(--muted)', fontVariantNumeric: 'tabular-nums' }}>{fmt(o.value)}</span>
                       </div>
@@ -485,38 +484,38 @@ export function BaselineMonitor() {
                   </div>
                 )
               })()}
-              <div style={{ marginTop: 14, paddingTop: 10, borderTop: '1px solid var(--hair)', fontSize: 12.5, color: 'var(--muted)' }}>
-                Today: <b style={{ color: 'var(--ink)' }}>{fmt(collectedToday)}</b> · Last 7 days: <b style={{ color: 'var(--ink)' }}>{fmt(last7)}</b>
+              <div style={{ marginTop: 16, paddingTop: 12, borderTop: '1px solid var(--hair)', fontSize: 13, color: 'var(--muted)' }}>
+                Today <b style={{ color: 'var(--ink)' }}>{fmt(collectedToday)}</b> · Last 7 days <b style={{ color: 'var(--ink)' }}>{fmt(last7)}</b>
               </div>
             </div>
           </div>
 
           {/* ── 4 · enumerator performance ──────────────────────────────── */}
-          <div id="mon-enum" className="card" style={{ marginTop: 16, padding: 16, scrollMarginTop: 110 }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', marginBottom: 10 }}>
+          <div id="mon-enum" className="card" style={{ marginTop: 22, padding: 18, scrollMarginTop: 110 }}>
+            <div className="dsec">
               <div>
-                <div style={{ fontSize: 15.5, fontWeight: 800, color: 'var(--ink)' }}>Enumerator performance</div>
-                <div style={{ fontSize: 12, color: 'var(--muted)' }}>Workload, timing completeness and priority data-quality flags — click a row to filter everything to that enumerator</div>
+                <h2 className="dsec-h">Enumerator performance</h2>
+                <p className="dsec-sub">Workload, timing completeness and priority flags — click a row to filter everything to that enumerator.</p>
               </div>
               <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                 <div style={{ position: 'relative' }}>
-                  <Search size={13} style={{ position: 'absolute', left: 8, top: 9, color: 'var(--muted)' }} />
-                  <input aria-label="Search enumerator" value={enumSearch} onChange={(e) => setEnumSearch(e.target.value)}
-                    placeholder="Search…" style={{ ...selStyle, paddingLeft: 26, width: 150 }} />
+                  <Search size={14} style={{ position: 'absolute', left: 9, top: 11, color: 'var(--muted)' }} />
+                  <input aria-label="Search enumerator" className="field" value={enumSearch} onChange={(e) => setEnumSearch(e.target.value)}
+                    placeholder="Search…" style={{ paddingLeft: 28, width: 160 }} />
                 </div>
-                <select aria-label="Sort enumerators" style={selStyle} value={enumSort}
+                <select aria-label="Sort enumerators" className="field" value={enumSort}
                   onChange={(e) => setEnumSort(e.target.value as 'n' | 'flags')}>
                   <option value="flags">Sort: flags</option>
                   <option value="n">Sort: interviews</option>
                 </select>
               </div>
             </div>
-            <div style={{ ...(enumerators.length > 10 ? { maxHeight: 460, overflow: 'auto' } : {}), borderTop: '1px solid var(--hair)' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, minWidth: 640 }}>
+            <div className="tscroll" style={enumerators.length > 10 ? { maxHeight: 480 } : undefined}>
+              <table className="dtable">
                 <thead>
-                  <tr style={{ position: 'sticky', top: 0, background: 'var(--surface)', zIndex: 1 }}>
+                  <tr>
                     {['Enumerator', 'Interviews', 'Valid timing', 'Median', 'High / critical', 'Status'].map((h, i) => (
-                      <th key={h} style={{ textAlign: i ? 'right' : 'left', padding: '8px 10px', fontSize: 10.5, textTransform: 'uppercase', letterSpacing: '.05em', color: 'var(--muted)', borderBottom: '1px solid var(--hair)', fontWeight: 700 }}>{h}</th>
+                      <th key={h} className={i ? 'num' : ''}>{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -529,29 +528,27 @@ export function BaselineMonitor() {
                         aria-label={`Filter by ${r.code}`}
                         onClick={() => set({ enumerator: active ? '' : r.code })}
                         onKeyDown={(e) => e.key === 'Enter' && set({ enumerator: active ? '' : r.code })}
-                        style={{ cursor: 'pointer', borderBottom: '1px solid var(--hair)',
-                                 background: active ? 'rgba(249,96,0,0.06)' : 'transparent' }}>
-                        <td style={{ padding: '8px 10px', fontWeight: 700, color: 'var(--ink)' }}>
-                          {r.code}
-                          <span style={{ fontSize: 10.5, color: 'var(--muted)', fontWeight: 500, marginLeft: 6 }}>
+                        style={{ height: 48, background: active ? 'var(--brand-soft)' : undefined }}>
+                        <td>
+                          <div style={{ fontWeight: 700, color: 'var(--ink)' }}>{r.code}</div>
+                          <div style={{ fontSize: 12.5, color: 'var(--muted)' }}>
                             {r.hijra ? `${r.hijra} Hijra` : ''}{r.hijra && r.fsw ? ' · ' : ''}{r.fsw ? `${r.fsw} FSW` : ''}
-                          </span>
+                          </div>
                         </td>
-                        <td style={{ padding: '8px 10px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 700 }}>{r.n}</td>
-                        <td style={{ padding: '8px 10px', textAlign: 'right', fontVariantNumeric: 'tabular-nums',
-                                     color: r.valid_timing_pct >= 80 ? TEAL : r.valid_timing_pct >= 50 ? AMBER : RED }}>
-                          {r.valid_timing}/{r.n} <span style={{ fontSize: 11.5 }}>· {r.valid_timing_pct}%</span>
+                        <td className="num" style={{ fontWeight: 700 }}>{r.n}</td>
+                        <td className="num">
+                          <div style={{ fontWeight: 700, color: r.valid_timing_pct >= 80 ? 'var(--ok)' : r.valid_timing_pct >= 50 ? 'var(--warn)' : 'var(--high)' }}>{r.valid_timing}/{r.n}</div>
+                          <div style={{ fontSize: 12.5, color: 'var(--muted)' }}>{r.valid_timing_pct}%</div>
                         </td>
-                        <td style={{ padding: '8px 10px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{r.median_min != null ? `${r.median_min}m` : '—'}</td>
-                        <td style={{ padding: '8px 10px', textAlign: 'right', fontVariantNumeric: 'tabular-nums',
-                                     color: r.flags.critical + r.flags.high > 0 ? RED : 'var(--muted)', fontWeight: 700 }}>
+                        <td className="num">{r.median_min != null ? `${r.median_min}m` : '—'}</td>
+                        <td className="num" style={{ fontWeight: 700, color: r.flags.critical + r.flags.high > 0 ? 'var(--high)' : 'var(--muted)' }}>
                           {r.flags.critical + r.flags.high || '—'}
                         </td>
-                        <td style={{ padding: '8px 10px', textAlign: 'right' }}>
-                          <span title={r.status === 'good'
+                        <td className="num">
+                          <span className={`tagchip ${st.cls}`}
+                            title={r.status === 'good'
                               ? 'Good — no high-priority flags and acceptable timing completeness'
-                              : `${st.label} — ${r.flags.critical + r.flags.high || r.flags.medium} interview flag${(r.flags.critical + r.flags.high || r.flags.medium) === 1 ? '' : 's'}${r.valid_timing_pct < 50 ? ` · valid timing only ${r.valid_timing_pct}%` : ''}`}
-                            style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11.5, fontWeight: 700, color: st.color }}>
+                              : `${st.label}: ${r.flags.critical + r.flags.high || r.flags.medium} interview${(r.flags.critical + r.flags.high || r.flags.medium) === 1 ? '' : 's'} with high-severity anomalies${r.valid_timing_pct < 50 ? ` · valid timing only ${r.valid_timing_pct}%` : ''}`}>
                             {st.icon}{st.label}
                           </span>
                         </td>
@@ -560,7 +557,7 @@ export function BaselineMonitor() {
                   })}
                 </tbody>
               </table>
-              {!enumerators.length && <div style={{ padding: 18, textAlign: 'center', color: 'var(--muted)', fontSize: 12.5 }}>No enumerators match.</div>}
+              {!enumerators.length && <div style={{ padding: 20, textAlign: 'center', color: 'var(--muted)', fontSize: 13 }}>No enumerators match.</div>}
             </div>
           </div>
 

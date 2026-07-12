@@ -8,7 +8,7 @@
  * Review decisions POST to /baseline/fsw-anomalies/review/ and live in a
  * separate audit table — raw Kobo responses are never edited here.
  */
-import { useMemo, useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import {
   AlertOctagon, AlertTriangle, Info, PencilLine, ShieldCheck, X, Check, Ban,
   Search, ChevronLeft, ChevronRight, MapPinned,
@@ -49,8 +49,8 @@ export interface AnomalyReport {
   anomalies: Anomaly[]
 }
 
-const SEV_TONE: Record<Sev, string> = {
-  critical: '#8E1B1B', high: '#E5484D', medium: '#C08A00', low: '#7A7F87',
+const SEV_CLS: Record<Sev, string> = {
+  critical: 'tag-crit', high: 'tag-high', medium: 'tag-warn', low: 'tag-neutral',
 }
 const SEV_ICON: Record<Sev, React.ReactNode> = {
   critical: <AlertOctagon size={13} />, high: <AlertTriangle size={13} />,
@@ -61,8 +61,8 @@ const STATUS_LABEL: Record<ReviewStatus, string> = {
   false_positive: 'False positive', needs_verification: 'Needs verification',
 }
 const STATUS_TONE: Record<ReviewStatus, string> = {
-  new: 'var(--muted)', confirmed: '#E5484D', corrected: '#0E8F8F',
-  false_positive: '#7A7F87', needs_verification: '#C08A00',
+  new: 'var(--muted)', confirmed: 'var(--high)', corrected: 'var(--ok)',
+  false_positive: 'var(--muted)', needs_verification: 'var(--warn)',
 }
 const PAGE_SIZE = 20
 
@@ -113,14 +113,17 @@ function MiniKpi({ label, value, tone, onClick, active, sub }: {
   return (
     <button onClick={onClick} disabled={!onClick}
       aria-pressed={onClick ? !!active : undefined}
+      title={onClick ? 'Filter the queue to this severity' : undefined}
       style={{
-        flex: '1 1 120px', minWidth: 112, textAlign: 'left', cursor: onClick ? 'pointer' : 'default',
-        background: active ? 'rgba(249,96,0,0.05)' : 'var(--surface)',
-        border: `1px solid ${active ? tone : 'var(--hair)'}`, borderRadius: 10, padding: '9px 11px',
+        flex: '1 1 130px', minWidth: 118, minHeight: 80, textAlign: 'left',
+        cursor: onClick ? 'pointer' : 'default', fontFamily: 'var(--ui)',
+        background: active ? 'var(--brand-soft)' : 'var(--surface)',
+        border: `1px solid ${active ? 'var(--unfpa)' : 'var(--hair)'}`,
+        borderRadius: 'var(--r-md)', padding: '10px 12px', boxShadow: 'var(--sh-1)',
       }}>
-      <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.05em', textTransform: 'uppercase', color: tone }}>{label}</div>
-      <div style={{ fontSize: 21, fontWeight: 800, color: 'var(--ink)', fontVariantNumeric: 'tabular-nums', lineHeight: 1.15 }}>{value}</div>
-      {sub && <div style={{ fontSize: 10.5, color: 'var(--muted)' }}>{sub}</div>}
+      <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.03em', textTransform: 'uppercase', color: tone }}>{label}</div>
+      <div style={{ fontFamily: 'var(--display)', fontSize: 24, fontWeight: 700, color: 'var(--ink)', fontVariantNumeric: 'tabular-nums', lineHeight: 1.2 }}>{value}</div>
+      {sub && <div style={{ fontSize: 12, color: 'var(--muted)' }}>{sub}</div>}
     </button>
   )
 }
@@ -191,178 +194,165 @@ export function AnomalyQueue({ report, severity, onSeverity, onReviewSaved }: {
   const k = report.kpis
 
   return (
-    <div className="card" style={{ padding: 16 }}>
-      <div style={{ marginBottom: 10 }}>
-        <div style={{ fontSize: 15.5, fontWeight: 800, color: 'var(--ink)' }}>Data quality &amp; anomalies</div>
-        <div style={{ fontSize: 12, color: 'var(--muted)' }}>
-          {k.flags_total.toLocaleString()} flags across {k.interviews_affected.toLocaleString()} interviews
-          (of {report.records_scanned.toLocaleString()} scanned) — severity cards count flags, not interviews
+    <div>
+      <div className="dsec">
+        <div>
+          <h2 className="dsec-h">Data quality &amp; anomalies</h2>
+          <p className="dsec-sub">
+            {k.flags_total.toLocaleString()} flags across {k.interviews_affected.toLocaleString()} interviews
+            of {report.records_scanned.toLocaleString()} scanned. Pick a priority rule to focus the queue.
+          </p>
         </div>
       </div>
 
       {/* A — compact KPI row */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-        <MiniKpi label="Critical" value={k.critical} tone={SEV_TONE.critical}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 16 }}>
+        <MiniKpi label="Critical" value={k.critical} tone="var(--crit)"
           active={severity === 'critical'} onClick={() => onSeverity(severity === 'critical' ? '' : 'critical')} sub="flags" />
-        <MiniKpi label="High" value={k.high} tone={SEV_TONE.high}
+        <MiniKpi label="High" value={k.high} tone="var(--high)"
           active={severity === 'high'} onClick={() => onSeverity(severity === 'high' ? '' : 'high')} sub="flags" />
-        <MiniKpi label="Medium" value={k.medium} tone={SEV_TONE.medium}
+        <MiniKpi label="Medium" value={k.medium} tone="var(--warn)"
           active={severity === 'medium'} onClick={() => onSeverity(severity === 'medium' ? '' : 'medium')} sub="flags" />
-        <MiniKpi label="Interviews affected" value={k.interviews_affected} tone="#6E56CF"
+        <MiniKpi label="Interviews affected" value={k.interviews_affected} tone="var(--accent)"
           sub="unique records" />
-        <MiniKpi label="Flags reviewed" value={`${k.flags_reviewed} of ${k.flags_total}`} tone="#0E8F8F"
-          sub="decisions recorded on flags" />
+        <MiniKpi label="Flags reviewed" value={`${k.flags_reviewed} of ${k.flags_total}`} tone="var(--ok)"
+          sub="decisions on flags" />
       </div>
 
-      {/* B — priority rules */}
-      {priorityRules.length > 0 && (
-        <div style={{ marginTop: 14 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', color: 'var(--muted)', marginBottom: 6 }}>
-            Priority anomaly rules · click to filter the queue
+      {/* B + C — one workspace: priority rules (span 4) beside the queue (span 8) */}
+      <div style={{ display: 'flex', gap: 14, alignItems: 'stretch', flexWrap: 'wrap' }}>
+        <div className="card" style={{ flex: '1 1 300px', minWidth: 280, padding: '14px 16px' }}>
+          <div style={{ fontFamily: 'var(--display)', fontWeight: 700, fontSize: 15, color: 'var(--ink)' }}>Priority rules</div>
+          <div style={{ fontSize: 12.5, color: 'var(--muted)', marginBottom: 6 }}>Click to focus the review queue</div>
+          {priorityRules.length ? priorityRules.map((r) => (
+            <button key={r.id} className={`prow ${rule === r.id ? 'on' : ''}`}
+              onClick={() => setLocal(() => setRule(rule === r.id ? '' : r.id))} title={r.action}>
+              <span className={`tagchip ${SEV_CLS[r.severity]}`} style={{ flexShrink: 0 }}>{SEV_ICON[r.severity]}{r.severity}</span>
+              <span style={{ flex: 1, minWidth: 0 }}>
+                <span style={{ display: 'block', fontWeight: 700, color: 'var(--ink)' }}>{humanRule(r.id)}</span>
+                <span style={{ fontSize: 12.5, color: 'var(--muted)' }}>{r.affected} interview{r.affected === 1 ? '' : 's'} · {r.enums.size} enumerator{r.enums.size === 1 ? '' : 's'}</span>
+              </span>
+              <ChevronRight size={16} style={{ color: rule === r.id ? 'var(--unfpa)' : 'var(--muted)', flexShrink: 0 }} />
+            </button>
+          )) : <div style={{ padding: '18px 0', color: 'var(--muted)', fontSize: 13 }}>No anomalies in the current filter.</div>}
+        </div>
+
+        <div className="card" style={{ flex: '2 1 520px', minWidth: 320, padding: '14px 16px', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
+            <div style={{ position: 'relative' }}>
+              <Search size={14} style={{ position: 'absolute', left: 9, top: 11, color: 'var(--muted)' }} />
+              <input aria-label="Search anomalies" className="field" value={q}
+                onChange={(e) => setLocal(() => setQ(e.target.value))}
+                placeholder="Search rule / submission / enumerator…"
+                style={{ paddingLeft: 28, width: 220 }} />
+            </div>
+            <select aria-label="Filter by rule" className="field" value={rule}
+              onChange={(e) => setLocal(() => setRule(e.target.value))} style={{ maxWidth: 200 }}>
+              <option value="">All rules</option>
+              {Object.keys(report.summary.top_rules).map((r) => <option key={r} value={r}>{humanRule(r)}</option>)}
+            </select>
+            <select aria-label="Filter by review status" className="field" value={reviewStatus}
+              onChange={(e) => setLocal(() => setReviewStatus(e.target.value as '' | ReviewStatus))}>
+              <option value="">Any review status</option>
+              {(Object.keys(STATUS_LABEL) as ReviewStatus[]).map((s) => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}
+            </select>
+            <span style={{ flex: 1 }} />
+            <span style={{ fontSize: 13, color: 'var(--muted)' }}>
+              {rows.length ? `${page * PAGE_SIZE + 1}–${Math.min((page + 1) * PAGE_SIZE, rows.length)} of ${rows.length.toLocaleString()} flags` : '0 flags'}
+            </span>
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-            {priorityRules.map((r) => (
-              <button key={r.id} onClick={() => setLocal(() => setRule(rule === r.id ? '' : r.id))}
-                title={r.action}
-                style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 8px', textAlign: 'left',
-                         background: rule === r.id ? 'rgba(249,96,0,0.06)' : 'transparent',
-                         border: 'none', borderTop: '1px solid var(--hair)', cursor: 'pointer', fontSize: 12.5 }}>
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: SEV_TONE[r.severity], fontWeight: 700, width: 76, fontSize: 11 }}>
-                  {SEV_ICON[r.severity]}{r.severity}
-                </span>
-                <span style={{ fontWeight: 700, color: 'var(--ink)', flex: '1 1 200px' }}>{humanRule(r.id)}</span>
-                <span style={{ color: 'var(--muted)', fontVariantNumeric: 'tabular-nums', width: 110, textAlign: 'right' }}>{r.affected} interviews</span>
-                <span style={{ color: 'var(--muted)', fontVariantNumeric: 'tabular-nums', width: 100, textAlign: 'right' }}>{r.enums.size} enumerator{r.enums.size === 1 ? '' : 's'}</span>
-              </button>
-            ))}
+
+          {err && <div style={{ color: 'var(--high)', fontSize: 13, marginBottom: 8 }}>{err}</div>}
+
+          <div className="tscroll" style={{ maxHeight: 520 }}>
+            <table className="dtable">
+              <thead>
+                <tr>
+                  {[['Severity', 92], ['Anomaly', 250], ['Submission', 108], ['Enumerator', 132], ['Site', 52], ['Observed', 170], ['Review', 96]].map(([h, w]) => (
+                    <th key={h as string} style={{ width: w as number }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {pageRows.map((a, i) => (
+                  <tr key={`${a.record_id}-${a.rule_id}-${i}`} tabIndex={0} role="button"
+                    aria-label={`Open ${humanRule(a.rule_id)}`}
+                    onClick={() => { setActive(a); setNote(a.review_note || '') }}
+                    onKeyDown={(e) => e.key === 'Enter' && (setActive(a), setNote(a.review_note || ''))}
+                    style={{ height: 46 }}>
+                    <td><span className={`tagchip ${SEV_CLS[a.severity]}`}>{SEV_ICON[a.severity]}{a.severity}</span></td>
+                    <td style={{ fontWeight: 700 }}>{humanRule(a.rule_id)}</td>
+                    <td className="mono" style={{ fontSize: 11.5, color: 'var(--muted)', maxWidth: 108, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.record_id || '—'}</td>
+                    <td style={{ color: 'var(--muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 140 }}>{a.enumerator || '—'}</td>
+                    <td style={{ color: 'var(--muted)' }}>{a.site || '—'}</td>
+                    <td style={{ color: 'var(--muted)', maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{fmtVal(a.observed)}</td>
+                    <td><span style={{ fontSize: 12, fontWeight: 700, color: STATUS_TONE[a.review_status] }}>{STATUS_LABEL[a.review_status]}</span></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {!rows.length && <div style={{ padding: 22, textAlign: 'center', color: 'var(--muted)', fontSize: 13 }}>No anomalies match the current filters. Reset filters or choose a wider date range.</div>}
           </div>
-        </div>
-      )}
 
-      {/* C — review queue */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', margin: '22px 0 8px' }}>
-        <div style={{ position: 'relative' }}>
-          <Search size={13} style={{ position: 'absolute', left: 8, top: 9, color: 'var(--muted)' }} />
-          <input aria-label="Search anomalies" value={q}
-            onChange={(e) => setLocal(() => setQ(e.target.value))}
-            placeholder="Search rule / submission / enumerator…"
-            style={{ height: 30, fontSize: 12, padding: '0 8px 0 26px', borderRadius: 8, border: '1px solid var(--hair)', background: 'var(--surface)', color: 'var(--ink)', width: 230 }} />
+          {pages > 1 && (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 10, marginTop: 10, fontSize: 13 }}>
+              <button className="pill" aria-label="Previous page" disabled={page === 0} onClick={() => setPage(page - 1)}><ChevronLeft size={14} /></button>
+              <span style={{ color: 'var(--muted)' }}>Page {page + 1} of {pages}</span>
+              <button className="pill" aria-label="Next page" disabled={page >= pages - 1} onClick={() => setPage(page + 1)}><ChevronRight size={14} /></button>
+            </div>
+          )}
         </div>
-        <select aria-label="Filter by rule" value={rule}
-          onChange={(e) => setLocal(() => setRule(e.target.value))}
-          style={{ height: 30, fontSize: 12, borderRadius: 8, border: '1px solid var(--hair)', background: 'var(--surface)', color: 'var(--ink)', maxWidth: 200 }}>
-          <option value="">All rules</option>
-          {Object.keys(report.summary.top_rules).map((r) => <option key={r} value={r}>{humanRule(r)}</option>)}
-        </select>
-        <select aria-label="Filter by review status" value={reviewStatus}
-          onChange={(e) => setLocal(() => setReviewStatus(e.target.value as '' | ReviewStatus))}
-          style={{ height: 30, fontSize: 12, borderRadius: 8, border: '1px solid var(--hair)', background: 'var(--surface)', color: 'var(--ink)' }}>
-          <option value="">Any review status</option>
-          {(Object.keys(STATUS_LABEL) as ReviewStatus[]).map((s) => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}
-        </select>
-        <span style={{ flex: 1 }} />
-        <span style={{ fontSize: 12, color: 'var(--muted)' }}>
-          {rows.length ? `${page * PAGE_SIZE + 1}–${Math.min((page + 1) * PAGE_SIZE, rows.length)} of ${rows.length.toLocaleString()} flags` : '0 flags'}
-        </span>
       </div>
-
-      {err && <div style={{ color: 'var(--rose)', fontSize: 12, marginBottom: 8 }}>{err}</div>}
-
-      <div style={{ maxHeight: 560, overflow: 'auto', border: '1px solid var(--hair)', borderRadius: 10 }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, minWidth: 700 }}>
-          <thead>
-            <tr style={{ position: 'sticky', top: 0, background: 'var(--surface)', zIndex: 1 }}>
-              {[['Severity', 84], ['Anomaly', 230], ['Submission', 110], ['Enumerator', 130], ['Site', 54], ['Observed', 150], ['Review', 100]].map(([h, w]) => (
-                <th key={h as string} style={{ width: w as number, textAlign: 'left', padding: '9px 12px', fontSize: 11, textTransform: 'uppercase', letterSpacing: '.05em', color: 'var(--muted)', borderBottom: '1px solid var(--hair)', fontWeight: 700 }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {pageRows.map((a, i) => (
-              <tr key={`${a.record_id}-${a.rule_id}-${i}`} tabIndex={0} role="button"
-                aria-label={`Open ${humanRule(a.rule_id)}`}
-                onClick={() => { setActive(a); setNote(a.review_note || '') }}
-                onKeyDown={(e) => e.key === 'Enter' && (setActive(a), setNote(a.review_note || ''))}
-                onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(249,96,0,0.06)' }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}
-                style={{ cursor: 'pointer', borderBottom: '1px solid var(--hair)', transition: 'background .12s' }}>
-                <td style={{ padding: '10px 12px' }}>
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: SEV_TONE[a.severity], fontWeight: 700, fontSize: 11.5 }}>{SEV_ICON[a.severity]}{a.severity}</span>
-                </td>
-                <td style={{ padding: '10px 12px', fontWeight: 600, color: 'var(--ink)', fontSize: 13 }}>{humanRule(a.rule_id)}</td>
-                <td className="mono" style={{ padding: '10px 12px', fontSize: 11, color: 'var(--muted)', maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.record_id || '—'}</td>
-                <td style={{ padding: '10px 12px', color: 'var(--muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 140 }}>{a.enumerator || '—'}</td>
-                <td style={{ padding: '10px 12px', color: 'var(--muted)' }}>{a.site || '—'}</td>
-                <td style={{ padding: '10px 12px', color: 'var(--muted)', maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{fmtVal(a.observed)}</td>
-                <td style={{ padding: '10px 12px' }}>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: STATUS_TONE[a.review_status] }}>{STATUS_LABEL[a.review_status]}</span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {!rows.length && <div style={{ padding: 20, textAlign: 'center', color: 'var(--muted)', fontSize: 12.5 }}>No anomalies match these filters.</div>}
-      </div>
-
-      {pages > 1 && (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8, marginTop: 8, fontSize: 12 }}>
-          <button className="pill" aria-label="Previous page" disabled={page === 0} onClick={() => setPage(page - 1)}><ChevronLeft size={13} /></button>
-          <span style={{ color: 'var(--muted)' }}>Page {page + 1} of {pages}</span>
-          <button className="pill" aria-label="Next page" disabled={page >= pages - 1} onClick={() => setPage(page + 1)}><ChevronRight size={13} /></button>
-        </div>
-      )}
 
       {/* side drawer */}
       {active && (
         <div onClick={() => setActive(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)', zIndex: 120, display: 'flex', justifyContent: 'flex-end' }}>
           <div onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Anomaly detail"
-            style={{ width: 'min(460px, 100%)', height: '100%', background: 'var(--surface)', boxShadow: '-8px 0 30px rgba(0,0,0,0.18)', overflowY: 'auto', padding: '20px 22px' }}>
+            style={{ width: 'min(520px, 100%)', height: '100%', background: 'var(--surface)', boxShadow: '-8px 0 30px rgba(0,0,0,0.18)', overflowY: 'auto', padding: '22px 24px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: SEV_TONE[active.severity], fontWeight: 800, fontSize: 12, textTransform: 'uppercase', letterSpacing: '.05em' }}>
-                {SEV_ICON[active.severity]}{active.severity} · {active.category}
-              </span>
-              <button onClick={() => setActive(null)} aria-label="Close" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)' }}><X size={18} /></button>
+              <span className={`tagchip ${SEV_CLS[active.severity]}`}>{SEV_ICON[active.severity]}{active.severity} · {active.category}</span>
+              <button onClick={() => setActive(null)} aria-label="Close anomaly detail" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', display: 'grid', placeItems: 'center', width: 36, height: 36, borderRadius: 8 }}><X size={19} /></button>
             </div>
-            <h3 style={{ fontSize: 17, fontWeight: 800, color: 'var(--ink)', margin: '8px 0 4px' }}>{humanRule(active.rule_id)}</h3>
-            <p style={{ fontSize: 13, color: 'var(--muted)', lineHeight: 1.5, margin: '0 0 12px' }}>{active.message}</p>
+            <h3 style={{ fontFamily: 'var(--display)', fontSize: 19, fontWeight: 700, color: 'var(--ink)', margin: '10px 0 5px' }}>{humanRule(active.rule_id)}</h3>
+            <p style={{ fontSize: 14, color: 'var(--muted)', lineHeight: 1.5, margin: '0 0 16px' }}>{active.message}</p>
 
-            {[
-              ['Rule ID', active.rule_id],
-              ['Submission', active.record_id],
-              ['Enumerator', active.enumerator],
-              ['Site', active.site],
-              ['Interview date', active.date],
-              ['Fields checked', active.fields?.join(', ')],
-              ['Observed', fmtVal(active.observed)],
-              ['Expected', fmtVal(active.expected)],
-              ['Recommended action', active.action],
-            ].map(([label, val]) => val ? (
-              <div key={label as string} style={{ display: 'flex', gap: 10, padding: '6px 0', borderTop: '1px solid var(--hair)', fontSize: 12.5 }}>
-                <span style={{ width: 128, flexShrink: 0, color: 'var(--muted)', fontWeight: 600 }}>{label}</span>
-                <span style={{ color: 'var(--ink)', wordBreak: 'break-word' }}>{val}</span>
-              </div>
-            ) : null)}
+            {([
+              ['Submission', [['Rule ID', active.rule_id], ['Submission', active.record_id], ['Enumerator', active.enumerator], ['Site', active.site], ['Interview date', active.date]]],
+              ['Evidence', [['Fields checked', active.fields?.join(', ')], ['Observed', fmtVal(active.observed)], ['Expected', fmtVal(active.expected)]]],
+              ['Recommended action', [['Action', active.action]]],
+            ] as const).map(([group, pairs]) => {
+              const rows = pairs.filter(([, v]) => v)
+              if (!rows.length) return null
+              return (
+                <div key={group} style={{ marginBottom: 16 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.04em', color: 'var(--muted)', marginBottom: 7 }}>{group}</div>
+                  <dl className="ddl">
+                    {rows.map(([label, val]) => (<React.Fragment key={label}><dt>{label}</dt><dd>{val}</dd></React.Fragment>))}
+                  </dl>
+                </div>
+              )
+            })}
 
-            <div style={{ marginTop: 16 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', color: 'var(--muted)', marginBottom: 6 }}>
-                Review · currently <span style={{ color: STATUS_TONE[active.review_status] }}>{STATUS_LABEL[active.review_status]}</span>
-                {active.reviewed_by && <span style={{ fontWeight: 500 }}> by {active.reviewed_by}</span>}
+            <div style={{ marginTop: 4, paddingTop: 16, borderTop: '1px solid var(--hair)' }}>
+              <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.04em', color: 'var(--muted)', marginBottom: 8 }}>
+                Review decision · currently <span style={{ color: STATUS_TONE[active.review_status] }}>{STATUS_LABEL[active.review_status]}</span>
+                {active.reviewed_by && <span style={{ fontWeight: 400 }}> by {active.reviewed_by}</span>}
               </div>
               <textarea value={note} onChange={(e) => setNote(e.target.value)}
                 placeholder="Note (optional): what you checked, what you found…"
-                style={{ width: '100%', minHeight: 60, fontSize: 12.5, padding: 9, resize: 'vertical', borderRadius: 8, border: '1px solid var(--hair)', background: 'var(--surface)', color: 'var(--ink)' }} />
-              <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
+                style={{ width: '100%', minHeight: 66, fontSize: 14, padding: 10, resize: 'vertical', borderRadius: 'var(--r-sm)', border: '1px solid var(--hair-2)', background: 'var(--surface)', color: 'var(--ink)', fontFamily: 'var(--ui)' }} />
+              <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
                 <button disabled={saving} onClick={() => review(active, 'confirmed')} className="btn"
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: '#E5484D', color: '#fff', borderColor: '#E5484D' }}><Check size={14} />Confirm</button>
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 5, height: 38, background: 'var(--high)', color: '#fff', borderColor: 'var(--high)' }}><Check size={15} />Confirm</button>
                 <button disabled={saving} onClick={() => review(active, 'corrected')} className="btn"
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><PencilLine size={14} />Corrected</button>
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 5, height: 38 }}><PencilLine size={15} />Corrected</button>
                 <button disabled={saving} onClick={() => review(active, 'false_positive')} className="btn"
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><Ban size={14} />False positive</button>
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 5, height: 38 }}><Ban size={15} />False positive</button>
                 <button disabled={saving} onClick={() => review(active, 'needs_verification')} className="btn"
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><MapPinned size={14} />Needs field verification</button>
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 5, height: 38 }}><MapPinned size={15} />Needs field verification</button>
               </div>
-              <p style={{ fontSize: 11, color: 'var(--muted)', marginTop: 10, lineHeight: 1.5, display: 'flex', gap: 6 }}>
-                <ShieldCheck size={13} style={{ flexShrink: 0, marginTop: 1 }} />
+              <p style={{ fontSize: 12.5, color: 'var(--muted)', marginTop: 12, lineHeight: 1.5, display: 'flex', gap: 6 }}>
+                <ShieldCheck size={14} style={{ flexShrink: 0, marginTop: 1 }} />
                 Corrections are made in KoboToolbox. This records your verdict only — the raw survey data is never edited here.
               </p>
             </div>

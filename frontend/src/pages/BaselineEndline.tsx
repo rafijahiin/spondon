@@ -158,9 +158,12 @@ export default function BaselineEndline() {
       {srhr && <SrhrIndicators data={srhr} />}
 
       {/* ── Insights ─────────────────────────────────────────────────────── */}
-      <section className="section" style={{ marginTop: 30 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 14 }}>
-          <div className="kicker"><span className="dot" /> Baseline profile · by questionnaire module</div>
+      <section className="section" style={{ marginTop: 40 }}>
+        <div className="dsec">
+          <div>
+            <h2 className="dsec-h">Baseline respondent profile</h2>
+            <p className="dsec-sub">Who was interviewed — age, income, education, marital status and more, from verified interviews.</p>
+          </div>
           <div className="pills">
             {([['all', 'Both'], ['hijra', 'Hijra'], ['fsw', 'FSW']] as const).map(([v, label]) => (
               <button key={v} className={`pill ${lens === v ? 'on' : ''}`} onClick={() => setLens(v as Lens)}>{label}</button>
@@ -197,8 +200,10 @@ export default function BaselineEndline() {
                 <div><ColumnBreakdown title="Age distribution" kicker="Completed age (years)" data={toRecord(insights?.age_band, lens)} /></div>
                 <div><ColumnBreakdown title="Monthly income" kicker="Taka per month (banded)" data={toRecord(insights?.income_band, lens)} /></div>
               </div>
+              {/* Marital status has many categories — ranked horizontal bars read
+                  far more clearly than a pie with a long legend. */}
               <div style={{ flex: '1.6 1 360px', minWidth: 320, display: 'flex' }}>
-                <DonutBreakdown title="Marital / partnership status" kicker="Current status" data={toRecord(insights?.marital, lens)} />
+                <BarBreakdown title="Marital / partnership status" kicker="Current status" data={toRecord(insights?.marital, lens)} ordered />
               </div>
             </div>
 
@@ -206,6 +211,7 @@ export default function BaselineEndline() {
               <BarBreakdown title="Highest education" kicker="Educational attainment" data={bandEducation(toRecord(insights?.education, lens))} ordered />
               <StackedBar title="Religion" kicker="Reported religion" data={toRecord(insights?.religion, lens)} />
               {lens === 'all' && (
+                /* Two-category split — a donut is fine and reads cleanly here. */
                 <DonutBreakdown title="Population reached" kicker="Key population split"
                   data={Object.fromEntries((insights?.population ?? []).map((p) => [normName(p.name), p.value]))} />
               )}

@@ -1980,3 +1980,101 @@ html.dark .leaflet-control-zoom a {
   .spine, .spine.spine-expanded { width: 88vw; }
   .spine-expanded .kobo-panel { left: 88vw; width: 12vw; min-width: 0; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Baseline monitoring dashboard — semantic status tokens + reusable pieces.
+   Font is already Atkinson Hyperlegible Next globally (var(--ui)); these only
+   add consistent severity colour + component shells so the monitoring page
+   reads as a designed workspace, not a dense admin panel.
+   ═══════════════════════════════════════════════════════════════════════════ */
+:root {
+  --ok:        #07856F;   --ok-soft:   rgba(7, 133, 111, 0.12);
+  --warn:      #B4690E;   --warn-soft: rgba(180, 105, 14, 0.13);
+  --high:      #C53030;   --high-soft: rgba(197, 48, 48, 0.12);
+  --crit:      #8F1D1D;   --crit-soft: rgba(143, 29, 29, 0.14);
+  --accent:    #6E56CF;   --accent-soft: rgba(110, 86, 207, 0.12);
+  --pop-hijra: #F96000;   --pop-fsw:   #0E8F8F;
+  --brand-soft: rgba(249, 96, 0, 0.10);
+}
+html.dark {
+  --ok: #4FC7AE; --warn: #E7A54A; --high: #F0736F; --crit: #E06A6A; --accent: #A08BF0;
+}
+
+/* Section header: title + one-line subtitle, optional right-side control */
+.dsec { display: flex; align-items: flex-end; justify-content: space-between;
+  gap: 14px; flex-wrap: wrap; margin: 0 0 16px; }
+.dsec-h { font-family: var(--display); font-weight: 700; font-size: 21px;
+  line-height: 1.15; color: var(--ink); margin: 0; }
+.dsec-sub { font-size: 13.5px; color: var(--muted); margin: 3px 0 0; max-width: 640px; }
+
+/* Filter toolbar */
+.filterbar { position: sticky; top: var(--topbar, 56px); z-index: 40;
+  background: var(--surface); border: 1px solid var(--hair);
+  border-radius: var(--r-md); padding: 10px 12px; margin-bottom: 16px;
+  display: flex; flex-direction: column; gap: 10px; box-shadow: var(--sh-1); }
+.filterbar-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.field { height: 38px; font-size: 14px; padding: 0 10px; border-radius: var(--r-sm);
+  border: 1px solid var(--hair-2); background: var(--surface); color: var(--ink);
+  font-family: var(--ui); min-width: 132px; }
+.field:focus-visible { outline: 2px solid var(--unfpa); outline-offset: 1px; border-color: var(--unfpa); }
+.chip { display: inline-flex; align-items: center; gap: 6px; height: 28px;
+  padding: 0 6px 0 10px; border-radius: 999px; font-size: 12.5px; font-weight: 700;
+  background: var(--brand-soft, rgba(249,96,0,0.10)); color: var(--unfpa);
+  border: 1px solid rgba(249,96,0,0.28); }
+.chip button { display: grid; place-items: center; width: 18px; height: 18px;
+  border: none; background: none; color: inherit; cursor: pointer; border-radius: 50%; }
+.chip button:hover { background: rgba(249,96,0,0.18); }
+
+/* KPI card */
+.kpi { background: var(--surface); border: 1px solid var(--hair);
+  border-radius: var(--r-md); padding: 16px 18px; box-shadow: var(--sh-1);
+  display: flex; flex-direction: column; gap: 3px; min-height: 116px; }
+.kpi-l { font-size: 12.5px; font-weight: 700; letter-spacing: .02em; color: var(--muted);
+  text-transform: uppercase; }
+.kpi-v { font-family: var(--display); font-weight: 700; font-size: 32px; line-height: 1.05;
+  color: var(--ink); font-variant-numeric: tabular-nums; }
+.kpi-s { font-size: 13px; color: var(--muted); }
+.kpi-s2 { font-size: 12.5px; color: var(--muted); }
+
+/* Status chip (Good / Review / Urgent, severity) */
+.tagchip { display: inline-flex; align-items: center; gap: 5px; height: 24px;
+  padding: 0 9px; border-radius: 999px; font-size: 12px; font-weight: 700;
+  white-space: nowrap; }
+.tag-ok   { background: var(--ok-soft);   color: var(--ok); }
+.tag-warn { background: var(--warn-soft); color: var(--warn); }
+.tag-high { background: var(--high-soft); color: var(--high); }
+.tag-crit { background: var(--crit-soft); color: var(--crit); }
+.tag-neutral { background: var(--surface-2); color: var(--muted); }
+
+/* Polished table */
+.dtable { width: 100%; border-collapse: collapse; font-size: 14px; }
+.dtable thead th { position: sticky; top: 0; z-index: 1; background: var(--surface-2);
+  text-align: left; font-size: 12px; font-weight: 700; letter-spacing: .02em;
+  text-transform: uppercase; color: var(--muted); padding: 10px 14px;
+  border-bottom: 1px solid var(--hair); }
+.dtable tbody td { padding: 11px 14px; border-bottom: 1px solid var(--hair);
+  color: var(--ink); vertical-align: middle; }
+.dtable tbody tr { transition: background 140ms ease; }
+.dtable tbody tr[role="button"] { cursor: pointer; }
+.dtable tbody tr[role="button"]:hover { background: var(--surface-2); }
+.dtable tbody tr[role="button"]:focus-visible { outline: 2px solid var(--unfpa); outline-offset: -2px; }
+.dtable .num { text-align: right; font-variant-numeric: tabular-nums; }
+.tscroll { overflow: auto; border: 1px solid var(--hair); border-radius: var(--r-md); }
+
+/* Priority-rule row */
+.prow { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
+  min-height: 46px; padding: 8px 10px; background: none; border: none;
+  border-top: 1px solid var(--hair); cursor: pointer; font-family: var(--ui);
+  font-size: 13.5px; transition: background 140ms ease; }
+.prow:hover { background: var(--surface-2); }
+.prow.on { background: var(--brand-soft, rgba(249,96,0,0.08)); box-shadow: inset 3px 0 0 var(--unfpa); }
+.prow:focus-visible { outline: 2px solid var(--unfpa); outline-offset: -2px; }
+
+/* Drawer definition list */
+.ddl { display: grid; grid-template-columns: 132px 1fr; gap: 4px 12px; font-size: 13.5px; }
+.ddl dt { color: var(--muted); font-weight: 700; }
+.ddl dd { color: var(--ink); margin: 0; word-break: break-word; }
+
+@media (prefers-reduced-motion: reduce) {
+  .dtable tbody tr, .prow { transition: none; }
+}
