@@ -40,6 +40,49 @@ def _cache_key(population):
     return f'baseline:{population}:anomalies:v1'
 
 
+# ── Exclusive multiselect options — EXPLICIT per-question configuration ──────
+# Keyed by our stable xform field name -> the choice CODES that are exclusive
+# for that question. The engine flags only when one of these is selected
+# together with a non-exclusive option on the SAME question. Nothing is
+# inferred from text: the old generic regex treated "Never share needles or
+# syringes" (a correct HIV-knowledge answer) as a 'none' choice and produced
+# floods of false conflicts. Deliberately NOT configured: the "Don't know"
+# codes (98) — co-selection with partial answers is common respondent
+# behaviour, not a data-entry conflict (confirmed by the manual FSW audit).
+EXCLUSIVE_CHOICE_CODES: dict[str, dict[str, list[str]]] = {
+    'fsw': {
+        'b109': ['0'],     # other income sources — "None"
+        'q2_13': ['98'],   # laws/rulings awareness — "Aware of none"
+        'q2_14': ['98'],   # social schemes awareness — "Aware of none"
+        'q8_4': ['0'],     # stress events — "None of the above"
+        'q9_6': ['10'],    # Wellness Centre concerns — "No concerns"
+    },
+    'hijra': {
+        'q9_6': ['08'],    # Wellness Centre concerns — "No concerns"
+    },
+}
+
+
+def _exclusive_label_map(schema, population):
+    """EXCLUSIVE_CHOICE_CODES (field name + codes) -> the engine's shape
+    ({sanitized parent LABEL -> set of sanitized choice LABELS}), resolved
+    through the same schema the record shaper uses so the two can't drift."""
+    labels = schema.get('labels', {})
+    choices = schema.get('choices', {})
+    out = {}
+    for field, codes in EXCLUSIVE_CHOICE_CODES.get(population, {}).items():
+        parent = _san(labels.get(field, field))
+        cmap = choices.get(field, {})
+        opts = {_san(cmap[c]) for c in codes if c in cmap}
+        if opts:
+            out[parent] = opts
+        else:
+            logger.warning('exclusive-option config: %s/%s has no matching choices '
+                           '— check EXCLUSIVE_CHOICE_CODES against the form',
+                           population, field)
+    return out
+
+
 # Monthly expense is split across these category fields (FSW); the engine wants a
 # total. Hijra has no expense breakdown, so none of these match and it is skipped.
 _EXPENSE_FIELDS = ('b110_broker', 'b110_commission', 'b110_debt',
@@ -238,6 +281,7 @@ def build_report(population='fsw', *, force=False):
     engine, field_map = build_fsw_engine(
         headers, current_version=current_version, gps_outlier_km=1.5,
         field_map=field_map,
+        exclusive_options=_exclusive_label_map(schema, population),
     )
     report = engine.scan(records)
     report['population'] = population

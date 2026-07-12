@@ -57,14 +57,15 @@ class _Sub:
 
 
 def _scan(records, population='fsw'):
-    from .anomaly import FIELD_MAP_BUILDERS, _decode_fields
+    from .anomaly import FIELD_MAP_BUILDERS, _decode_fields, _exclusive_label_map
     schema = load_schema().get(population, {})
     field_map = FIELD_MAP_BUILDERS[population](schema)
     decode = _decode_fields(field_map)
     shaped = [_shape_record(_Sub(r), schema, population, decode) for r in records]
     headers = sorted({k for r in shaped for k in r})
     engine, _ = build_fsw_engine(headers, current_version='vCURRENT',
-                                 field_map=field_map)
+                                 field_map=field_map,
+                                 exclusive_options=_exclusive_label_map(schema, population))
     return engine.scan(shaped), shaped
 
 
@@ -295,3 +296,69 @@ class HijraAdapterTests(TestCase):
 
     def test_hijra_clean_record_has_no_flags(self):
         self.assertEqual(self._ids([_hijra_kobo()]), set())
+
+
+class ExclusiveMultiselectConfigTest(TestCase):
+    """Exclusivity comes ONLY from the explicit per-question config
+    (EXCLUSIVE_CHOICE_CODES) — never from generic text matching. The old regex
+    treated 'Never share needles or syringes' (a correct HIV-knowledge answer,
+    FSW q3_5 code 05) as an exclusive 'none' choice and flooded the report."""
+
+    def _ids(self, records, population='fsw'):
+        report, _ = _scan(records, population)
+        return report, {a['rule_id'] for a in report['anomalies']}
+
+    def test_correct_hiv_answer_with_never_is_not_a_conflict(self):
+        # q3_5 "In what ways can a person protect themselves…":
+        # 01 (use condoms) + 05 (Never share needles) = a GOOD answer.
+        rec = _kobo(**{'grp_q3/q3_5': '01 05'})
+        _, ids = self._ids([rec])
+        self.assertNotIn('MUTUALLY_EXCLUSIVE_MULTISELECT', ids)
+
+    def test_dont_know_with_answers_is_not_flagged(self):
+        # 'Don't know' (98) alongside partial answers is respondent behaviour,
+        # not a data conflict — deliberately unconfigured.
+        rec = _kobo(**{'grp_q3/q3_5': '01 98'})
+        _, ids = self._ids([rec])
+        self.assertNotIn('MUTUALLY_EXCLUSIVE_MULTISELECT', ids)
+
+    def test_no_concerns_with_a_concern_is_flagged_with_labels(self):
+        # q9_6 concerns: 10 (No concerns) + 01 (a concern) = real conflict.
+        rec = _kobo(**{'grp_q9/q9_6': '10 01'})
+        report, ids = self._ids([rec])
+        self.assertIn('MUTUALLY_EXCLUSIVE_MULTISELECT', ids)
+        flag = [a for a in report['anomalies']
+                if a['rule_id'] == 'MUTUALLY_EXCLUSIVE_MULTISELECT'][0]
+        # Evidence carries the actual selected option labels.
+        self.assertEqual(flag['observed']['exclusive'], ['No concerns'])
+        self.assertTrue(flag['observed']['also_selected'])
+
+    def test_income_none_with_a_source_still_flagged(self):
+        rec = _kobo(**{'grp_b1/b109': '0 1'})
+        _, ids = self._ids([rec])
+        self.assertIn('MUTUALLY_EXCLUSIVE_MULTISELECT', ids)
+
+    def test_exclusive_alone_is_clean(self):
+        rec = _kobo(**{'grp_q9/q9_6': '10'})
+        _, ids = self._ids([rec])
+        self.assertNotIn('MUTUALLY_EXCLUSIVE_MULTISELECT', ids)
+
+    def test_hijra_no_concerns_conflict_flagged(self):
+        rec = _hijra_kobo(**{'grp_q9/q9_6': '08 01'})
+        _, ids = self._ids([rec], population='hijra')
+        self.assertIn('MUTUALLY_EXCLUSIVE_MULTISELECT', ids)
+
+    def test_hijra_dont_know_not_flagged(self):
+        rec = _hijra_kobo(**{'grp_q3/q3_2': '01 98'})
+        _, ids = self._ids([rec], population='hijra')
+        self.assertNotIn('MUTUALLY_EXCLUSIVE_MULTISELECT', ids)
+
+    def test_config_resolves_against_real_forms(self):
+        # Every configured (field, code) must exist in the deployed schema —
+        # a typo here would silently disable the rule.
+        from .anomaly import EXCLUSIVE_CHOICE_CODES, _exclusive_label_map
+        for pop in ('fsw', 'hijra'):
+            schema = load_schema()[pop]
+            label_map = _exclusive_label_map(schema, pop)
+            self.assertEqual(len(label_map), len(EXCLUSIVE_CHOICE_CODES[pop]),
+                             f'{pop}: some configured fields did not resolve')

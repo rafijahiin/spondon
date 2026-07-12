@@ -66,8 +66,43 @@ const STATUS_TONE: Record<ReviewStatus, string> = {
 }
 const PAGE_SIZE = 20
 
+/* Action-oriented labels; the technical rule ID appears only in the drawer. */
+const RULE_LABEL: Record<string, string> = {
+  MUTUALLY_EXCLUSIVE_MULTISELECT: 'Conflicting answers selected',
+  LIVES_ALONE_WITH_CHILD_PRESENT: 'Child reported while living alone',
+  SEX_WORK_YEARS_IMPOSSIBLE: 'Work-history duration impossible',
+  SEX_WORK_START_AFTER_CURRENT_AGE: 'Work started after current age',
+  MISSING_INTERVIEW_END: 'Missing interview end time',
+  OLD_FORM_VERSION: 'Old form version',
+  INTERVIEW_EXTREMELY_LONG: 'Interview extremely long',
+  INTERVIEW_LONG: 'Interview over two hours',
+  INTERVIEW_TOO_SHORT: 'Interview implausibly short',
+  END_BEFORE_START: 'End time before start time',
+  Q95_MORE_THAN_FIVE_SERVICES: 'More than five services selected',
+  OTHER_SELECTED_WITHOUT_SPECIFY: "'Other' without specify text",
+  LIKELY_MISSING_ZERO_IN_INCOME: 'Income likely missing zeros',
+  LIKELY_MISSING_ZERO_IN_EXPENSE: 'Expense likely missing zeros',
+  EXPENSES_EXCEED_INCOME_NO_OTHER_SOURCE: 'Expenses exceed stated income',
+  CHILDREN_WITH_RESPONDENT_EXCEED_TOTAL: 'Child counts contradict',
+  CHILD_DETAILS_WHEN_TOTAL_ZERO: 'Child details but zero children',
+  OTHER_CHILD_LOCATION_MISSING: "Other children's location missing",
+  OTHER_CHILD_LOCATION_NOT_NEEDED: 'Unneeded child location entered',
+  NEGATIVE_CHILD_COUNT: 'Negative child count',
+  AGE_MISMATCH: 'Screening and demographic age differ',
+  AGE_OUT_OF_RANGE: 'Age outside eligible range',
+  CONSENT_NO_BUT_INTERVIEW_COMPLETED: 'Interview recorded without consent',
+  DUPLICATE_SUBMISSION_ID: 'Duplicate submission ID',
+  EXACT_DUPLICATE_ANSWER_PATTERN: 'Identical answer pattern',
+  INTERVIEWS_STARTED_TOO_CLOSE: 'Interviews started too close together',
+  GPS_SITE_OUTLIER: 'GPS far from site cluster — verify',
+  INVALID_GPS: 'Invalid GPS coordinates',
+  INCOMPLETE_GPS: 'Incomplete GPS coordinates',
+  LOW_GPS_PRECISION: 'Low GPS precision',
+  WEAK_INTERVIEWER_OBSERVATION: 'Vague interviewer observation',
+  REPEATED_ENUMERATOR_OBSERVATION: 'Same observation repeated',
+}
 const humanRule = (id: string) =>
-  id.toLowerCase().replace(/_/g, ' ').replace(/^\w/, (c) => c.toUpperCase())
+  RULE_LABEL[id] ?? id.toLowerCase().replace(/_/g, ' ').replace(/^\w/, (c) => c.toUpperCase())
 const fmtVal = (v: unknown) =>
   v == null ? '—' : typeof v === 'object' ? JSON.stringify(v) : String(v)
 
@@ -175,8 +210,8 @@ export function AnomalyQueue({ report, severity, onSeverity, onReviewSaved }: {
           active={severity === 'medium'} onClick={() => onSeverity(severity === 'medium' ? '' : 'medium')} sub="flags" />
         <MiniKpi label="Interviews affected" value={k.interviews_affected} tone="#6E56CF"
           sub="unique records" />
-        <MiniKpi label="Flags reviewed" value={`${k.flags_reviewed}/${k.flags_total}`} tone="#0E8F8F"
-          sub="decisions recorded" />
+        <MiniKpi label="Flags reviewed" value={`${k.flags_reviewed} of ${k.flags_total}`} tone="#0E8F8F"
+          sub="decisions recorded on flags" />
       </div>
 
       {/* B — priority rules */}
@@ -205,7 +240,7 @@ export function AnomalyQueue({ report, severity, onSeverity, onReviewSaved }: {
       )}
 
       {/* C — review queue */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', margin: '14px 0 8px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', margin: '22px 0 8px' }}>
         <div style={{ position: 'relative' }}>
           <Search size={13} style={{ position: 'absolute', left: 8, top: 9, color: 'var(--muted)' }} />
           <input aria-label="Search anomalies" value={q}
@@ -226,17 +261,19 @@ export function AnomalyQueue({ report, severity, onSeverity, onReviewSaved }: {
           {(Object.keys(STATUS_LABEL) as ReviewStatus[]).map((s) => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}
         </select>
         <span style={{ flex: 1 }} />
-        <span style={{ fontSize: 11.5, color: 'var(--muted)' }}>{rows.length.toLocaleString()} flags</span>
+        <span style={{ fontSize: 12, color: 'var(--muted)' }}>
+          {rows.length ? `${page * PAGE_SIZE + 1}–${Math.min((page + 1) * PAGE_SIZE, rows.length)} of ${rows.length.toLocaleString()} flags` : '0 flags'}
+        </span>
       </div>
 
       {err && <div style={{ color: 'var(--rose)', fontSize: 12, marginBottom: 8 }}>{err}</div>}
 
       <div style={{ maxHeight: 560, overflow: 'auto', border: '1px solid var(--hair)', borderRadius: 10 }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5, minWidth: 760 }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, minWidth: 700 }}>
           <thead>
             <tr style={{ position: 'sticky', top: 0, background: 'var(--surface)', zIndex: 1 }}>
-              {['Severity', 'Anomaly', 'Submission', 'Enumerator', 'Site', 'Observed', 'Action', 'Review'].map((h) => (
-                <th key={h} style={{ textAlign: 'left', padding: '8px 10px', fontSize: 10.5, textTransform: 'uppercase', letterSpacing: '.05em', color: 'var(--muted)', borderBottom: '1px solid var(--hair)', fontWeight: 700 }}>{h}</th>
+              {[['Severity', 84], ['Anomaly', 230], ['Submission', 110], ['Enumerator', 130], ['Site', 54], ['Observed', 150], ['Review', 100]].map(([h, w]) => (
+                <th key={h as string} style={{ width: w as number, textAlign: 'left', padding: '9px 12px', fontSize: 11, textTransform: 'uppercase', letterSpacing: '.05em', color: 'var(--muted)', borderBottom: '1px solid var(--hair)', fontWeight: 700 }}>{h}</th>
               ))}
             </tr>
           </thead>
@@ -246,18 +283,19 @@ export function AnomalyQueue({ report, severity, onSeverity, onReviewSaved }: {
                 aria-label={`Open ${humanRule(a.rule_id)}`}
                 onClick={() => { setActive(a); setNote(a.review_note || '') }}
                 onKeyDown={(e) => e.key === 'Enter' && (setActive(a), setNote(a.review_note || ''))}
-                style={{ cursor: 'pointer', borderBottom: '1px solid var(--hair)' }}>
-                <td style={{ padding: '7px 10px' }}>
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: SEV_TONE[a.severity], fontWeight: 700, fontSize: 11 }}>{SEV_ICON[a.severity]}{a.severity}</span>
+                onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(249,96,0,0.06)' }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}
+                style={{ cursor: 'pointer', borderBottom: '1px solid var(--hair)', transition: 'background .12s' }}>
+                <td style={{ padding: '10px 12px' }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: SEV_TONE[a.severity], fontWeight: 700, fontSize: 11.5 }}>{SEV_ICON[a.severity]}{a.severity}</span>
                 </td>
-                <td style={{ padding: '7px 10px', fontWeight: 600, color: 'var(--ink)' }}>{humanRule(a.rule_id)}</td>
-                <td className="mono" style={{ padding: '7px 10px', fontSize: 10.5, color: 'var(--muted)', maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.record_id || '—'}</td>
-                <td style={{ padding: '7px 10px', color: 'var(--muted)' }}>{a.enumerator || '—'}</td>
-                <td style={{ padding: '7px 10px', color: 'var(--muted)' }}>{a.site || '—'}</td>
-                <td style={{ padding: '7px 10px', color: 'var(--muted)', maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{fmtVal(a.observed)}</td>
-                <td style={{ padding: '7px 10px', color: 'var(--muted)', maxWidth: 170, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.action || '—'}</td>
-                <td style={{ padding: '7px 10px' }}>
-                  <span style={{ fontSize: 10.5, fontWeight: 700, color: STATUS_TONE[a.review_status] }}>{STATUS_LABEL[a.review_status]}</span>
+                <td style={{ padding: '10px 12px', fontWeight: 600, color: 'var(--ink)', fontSize: 13 }}>{humanRule(a.rule_id)}</td>
+                <td className="mono" style={{ padding: '10px 12px', fontSize: 11, color: 'var(--muted)', maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.record_id || '—'}</td>
+                <td style={{ padding: '10px 12px', color: 'var(--muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 140 }}>{a.enumerator || '—'}</td>
+                <td style={{ padding: '10px 12px', color: 'var(--muted)' }}>{a.site || '—'}</td>
+                <td style={{ padding: '10px 12px', color: 'var(--muted)', maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{fmtVal(a.observed)}</td>
+                <td style={{ padding: '10px 12px' }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: STATUS_TONE[a.review_status] }}>{STATUS_LABEL[a.review_status]}</span>
                 </td>
               </tr>
             ))}

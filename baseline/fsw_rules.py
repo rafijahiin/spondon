@@ -182,17 +182,6 @@ def _years_lower_bound(value: Any) -> int | None:
     return mapping.get(text)
 
 
-def _is_none_choice(label: str) -> bool:
-    text = normalized_text(label)
-    return bool(
-        re.search(
-            r"(^|[/\s])(none|no concerns?|not aware|aware of none|never|no service|"
-            r"do not know|don't know|not applicable)(\b|$)",
-            text,
-        )
-    )
-
-
 def _is_other_choice(label: str) -> bool:
     text = normalized_text(label)
     return bool(re.search(r"(^|/)(other|other \(specify\)|others)(\b|$)", text))
@@ -574,8 +563,14 @@ def _simple_record_rules(field_map: FieldMap, current_version: str | None):
     return rules
 
 
-def _multi_select_rules(field_map: FieldMap):
+def _multi_select_rules(field_map: FieldMap, exclusive_options=None):
+    """`exclusive_options`: {parent column prefix -> set of choice LABELS that are
+    exclusive for THAT question} — an explicit, per-question configuration.
+    Exclusivity is NEVER inferred from generic text matching: the old regex
+    treated 'Never share needles or syringes' (a correct HIV-knowledge answer)
+    as an exclusive 'none' choice and flooded the report with false conflicts."""
     groups = _group_choice_columns(field_map.headers)
+    exclusive_options = exclusive_options or {}
     q95_groups = [
         (parent, cols)
         for parent, cols in groups.items()
@@ -591,19 +586,25 @@ def _multi_select_rules(field_map: FieldMap):
             if not selected:
                 continue
 
-            none_selected = [col for col in selected if _is_none_choice(col.rsplit("/", 1)[-1])]
-            if none_selected and len(selected) > 1:
-                yield Anomaly(
-                    "MUTUALLY_EXCLUSIVE_MULTISELECT",
-                    Severity.HIGH,
-                    "A 'none/no concerns/not aware' choice is selected together with other choices.",
-                    fields=tuple(selected),
-                    observed=[col.rsplit("/", 1)[-1] for col in selected],
-                    expected="Exclusive choice alone, or specific choices without the exclusive option",
-                    action="Verify the respondent's intended answer.",
-                    category="select_multiple",
-                    **ctx,
-                )
+            exclusive_labels = exclusive_options.get(parent)
+            if exclusive_labels:
+                chosen = [col.rsplit("/", 1)[-1] for col in selected]
+                exclusive_sel = [c for c in chosen if c in exclusive_labels]
+                others = [c for c in chosen if c not in exclusive_labels]
+                if exclusive_sel and others:
+                    yield Anomaly(
+                        "MUTUALLY_EXCLUSIVE_MULTISELECT",
+                        Severity.HIGH,
+                        "An exclusive choice is selected together with other options "
+                        "on the same question.",
+                        fields=tuple(selected),
+                        observed={"exclusive": exclusive_sel, "also_selected": others},
+                        expected=f"'{exclusive_sel[0]}' alone, or the specific options "
+                                 "without it",
+                        action="Verify the respondent's intended answer.",
+                        category="select_multiple",
+                        **ctx,
+                    )
 
             other_columns = [col for col in selected if _is_other_choice(col.rsplit("/", 1)[-1])]
             if other_columns:
@@ -832,6 +833,7 @@ def build_fsw_engine(
     current_version: str | None = None,
     gps_outlier_km: float = 1.5,
     field_map: FieldMap | None = None,
+    exclusive_options: Mapping[str, set] | None = None,
 ) -> tuple[AnomalyEngine, FieldMap]:
     # Auto-resolve from headers, or accept an explicit map (recommended for
     # production: locks resolved keys so a wording change can't silently remap a
@@ -845,7 +847,7 @@ def build_fsw_engine(
         enumerator_key=field_map.enumerator,
     )
     engine.add_record_rule(_simple_record_rules(field_map, current_version))
-    engine.add_record_rule(_multi_select_rules(field_map))
+    engine.add_record_rule(_multi_select_rules(field_map, exclusive_options))
     engine.add_dataset_rule(_duplicate_id_rule(field_map))
     engine.add_dataset_rule(_burst_rule(field_map))
     engine.add_dataset_rule(_gps_outlier_rule(field_map, gps_outlier_km))

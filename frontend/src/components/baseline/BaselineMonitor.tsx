@@ -42,6 +42,7 @@ export interface Monitoring {
   sites: Bucket[]
   versions: Bucket[]
   daily: { date: string; hijra: number; fsw: number; total: number }[]
+  hourly: { hour: string; hijra: number; fsw: number; total: number }[]
   duration: {
     bands: Bucket[]
     valid_timing_n: number; valid_timing_pct: number
@@ -71,7 +72,7 @@ const fmt = (n: number) => n.toLocaleString('en-US')
 /* ── small building blocks ────────────────────────────────────────────────── */
 
 const selStyle: React.CSSProperties = {
-  height: 30, fontSize: 12, padding: '0 8px', borderRadius: 8,
+  height: 34, fontSize: 12.5, padding: '0 8px', borderRadius: 8,
   border: '1px solid var(--hair)', background: 'var(--surface)', color: 'var(--ink)',
   maxWidth: 170,
 }
@@ -84,10 +85,10 @@ function Kpi({ label, value, sub, sub2, tone, title }: {
     <div className="card snug" title={title}
       style={{ flex: '1 1 190px', minWidth: 175, borderTop: `3px solid ${tone || 'var(--hair)'}`,
                display: 'flex', flexDirection: 'column', gap: 2 }}>
-      <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--muted)' }}>{label}</div>
+      <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--muted)' }}>{label}</div>
       <div style={{ fontFamily: 'var(--display)', fontStyle: 'normal', fontSize: 28, lineHeight: 1.08, color: 'var(--ink)', fontVariantNumeric: 'tabular-nums' }}>{value}</div>
-      {sub && <div style={{ fontSize: 11.5, color: 'var(--muted)' }}>{sub}</div>}
-      {sub2 && <div style={{ fontSize: 11, color: 'var(--muted)' }}>{sub2}</div>}
+      {sub && <div style={{ fontSize: 12, color: 'var(--muted)' }}>{sub}</div>}
+      {sub2 && <div style={{ fontSize: 11.5, color: 'var(--muted)' }}>{sub2}</div>}
     </div>
   )
 }
@@ -181,12 +182,34 @@ export function BaselineMonitor() {
   const jump = (id: string) =>
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 
-  /* derived series */
-  const trend = useMemo(() => {
+  /* derived series — adaptive resolution: 1 day -> hourly, <=31 days -> daily,
+     <=120 -> weekly, longer -> monthly. Empty periods are not connected. */
+  const { trend, trendUnit } = useMemo(() => {
     const daily = m?.daily ?? []
-    if (trendMode === 'daily') return daily
-    let h = 0, f = 0
-    return daily.map((d) => ({ ...d, hijra: (h += d.hijra), fsw: (f += d.fsw), total: h + f }))
+    if (daily.length === 1 && (m?.hourly?.length ?? 0) > 0) {
+      return { trend: m!.hourly.map((h) => ({ date: h.hour, hijra: h.hijra, fsw: h.fsw, total: h.total })), trendUnit: 'hourly' as const }
+    }
+    let series = daily
+    if (daily.length > 31) {
+      const bucket = (d: string) => {
+        if (daily.length > 120) return d.slice(0, 7)                     // month
+        const dt = new Date(d + 'T00:00:00')
+        dt.setDate(dt.getDate() - dt.getDay())                            // week start
+        return dt.toLocaleDateString('sv-SE')
+      }
+      const agg: Record<string, { date: string; hijra: number; fsw: number; total: number }> = {}
+      for (const d of daily) {
+        const k = bucket(d.date)
+        const g = (agg[k] ??= { date: k, hijra: 0, fsw: 0, total: 0 })
+        g.hijra += d.hijra; g.fsw += d.fsw; g.total += d.total
+      }
+      series = Object.values(agg).sort((a, b) => a.date.localeCompare(b.date))
+    }
+    if (trendMode === 'cumulative') {
+      let h = 0, f = 0
+      series = series.map((d) => ({ ...d, hijra: (h += d.hijra), fsw: (f += d.fsw), total: h + f }))
+    }
+    return { trend: series, trendUnit: daily.length > 120 ? 'monthly' as const : daily.length > 31 ? 'weekly' as const : 'daily' as const }
   }, [m, trendMode])
 
   const todayIso = new Date().toLocaleDateString('sv-SE')
@@ -344,19 +367,37 @@ export function BaselineMonitor() {
               sub={<><TrendingUp size={11} style={{ verticalAlign: -1 }} /> {rangeActive
                 ? 'within the selected date range'
                 : `+${fmt(last7)} in the last 7 days`}</>} />
-            <Kpi label="Population breakdown" tone={TEAL}
-              value={
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 5, paddingTop: 4 }}>
-                  {m.progress.map((p) => (
-                    <HBar key={p.population} label={p.population === 'hijra' ? 'Hijra' : 'FSW'}
-                      value={p.collected} max={Math.max(...m.progress.map((x) => x.collected), 1)}
-                      color={p.population === 'hijra' ? ORANGE : TEAL} />
-                  ))}
-                </div>
-              } />
-            <Kpi label="Fieldwork completion" tone={ORANGE}
-              value={target ? `${Math.round((100 * m.total) / target)}%` : fmt(m.total)}
-              sub={target ? `${fmt(m.total)} of ${fmt(target)} target` : 'Target not set'} />
+            {filters.population === 'all' ? (
+              <Kpi label="Population breakdown" tone={TEAL}
+                value={
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 5, paddingTop: 4 }}>
+                    {m.progress.map((p) => (
+                      <HBar key={p.population} label={p.population === 'hijra' ? 'Hijra' : 'FSW'}
+                        value={p.collected} max={Math.max(...m.progress.map((x) => x.collected), 1)}
+                        color={p.population === 'hijra' ? ORANGE : TEAL} />
+                    ))}
+                  </div>
+                } />
+            ) : (
+              /* a one-category "breakdown" is just the total again — show site
+                 coverage for the selected population instead */
+              <Kpi label="Sites covered" tone={TEAL}
+                value={fmt(m.sites.length)}
+                sub={m.sites.slice(0, 3).map((sx) => `Site ${sx.name} · ${sx.value}`).join('   ')}
+                sub2={m.sites.length > 3 ? `+ ${m.sites.length - 3} more sites` : undefined} />
+            )}
+            {target ? (
+              <Kpi label="Fieldwork completion" tone={ORANGE}
+                value={`${Math.round((100 * m.total) / target)}%`}
+                sub={`${fmt(m.total)} of ${fmt(target)} target`} />
+            ) : (
+              /* no target set -> a completion card would duplicate the total;
+                 show an operational metric until CIPRB provides one */
+              <Kpi label="Active enumerators" tone={ORANGE}
+                value={fmt(m.collectors.length)}
+                sub="collected during selected period"
+                sub2="Target not set — completion % returns once a target exists" />
+            )}
             <Kpi label="Valid timing coverage" tone={m.duration.valid_timing_pct >= 80 ? TEAL : AMBER}
               title="Records with a usable start AND in-form end time ÷ all filtered submitted interviews. Missing end times stay in the denominator but are never treated as zero-minute interviews."
               value={`${m.duration.valid_timing_pct}%`}
@@ -380,15 +421,24 @@ export function BaselineMonitor() {
                   <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--muted)' }}>Collection trend</div>
                   <div style={{ fontSize: 14.5, fontWeight: 700, color: 'var(--ink)' }}>Interviews per day</div>
                 </div>
-                <div className="pills">
-                  {(['daily', 'cumulative'] as const).map((mode) => (
-                    <button key={mode} className={`pill ${trendMode === mode ? 'on' : ''}`}
-                      onClick={() => setTrendMode(mode)}>
-                      {mode === 'daily' ? 'Daily' : 'Cumulative'}
-                    </button>
-                  ))}
-                </div>
+                {trend.length > 1 && (
+                  <div className="pills">
+                    {(['daily', 'cumulative'] as const).map((mode) => (
+                      <button key={mode} className={`pill ${trendMode === mode ? 'on' : ''}`}
+                        onClick={() => setTrendMode(mode)}>
+                        {mode === 'daily'
+                          ? (trendUnit === 'hourly' ? 'Hourly' : trendUnit === 'weekly' ? 'Weekly' : trendUnit === 'monthly' ? 'Monthly' : 'Daily')
+                          : 'Cumulative'}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
+              {trend.length < 2 ? (
+                <div style={{ height: 190, display: 'grid', placeItems: 'center', color: 'var(--muted)', fontSize: 13 }}>
+                  Not enough data points in this range to draw a trend.
+                </div>
+              ) : (
               <div style={{ height: 190 }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={trend} margin={{ top: 4, right: 6, left: -20, bottom: 0 }}>
@@ -405,22 +455,36 @@ export function BaselineMonitor() {
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
+              )}
             </div>
 
             <div className="card" style={{ flex: '1 1 250px', minWidth: 240, padding: 16 }}>
               <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--muted)' }}>Interview outcomes</div>
               <div style={{ fontSize: 14.5, fontWeight: 700, color: 'var(--ink)', marginBottom: 10 }}>How interviews ended</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
-                {m.outcomes.map((o, i) => (
-                  <HBar key={o.name} label={o.name} value={o.value}
-                    max={Math.max(...m.outcomes.map((x) => x.value), 1)}
-                    color={o.name === 'Completed' ? TEAL : i === 1 ? AMBER : 'var(--muted)'} />
-                ))}
-                {!m.outcomes.length && <div style={{ fontSize: 12, color: 'var(--muted)' }}>No outcomes recorded.</div>}
-              </div>
-              <div style={{ display: 'flex', gap: 18, marginTop: 14, paddingTop: 10, borderTop: '1px solid var(--hair)' }}>
-                <div><div style={{ fontSize: 20, fontWeight: 800, color: 'var(--ink)', fontVariantNumeric: 'tabular-nums' }}>{fmt(collectedToday)}</div><div style={{ fontSize: 11, color: 'var(--muted)' }}>today</div></div>
-                <div><div style={{ fontSize: 20, fontWeight: 800, color: 'var(--ink)', fontVariantNumeric: 'tabular-nums' }}>{fmt(last7)}</div><div style={{ fontSize: 11, color: 'var(--muted)' }}>last 7 days</div></div>
+              {(() => {
+                const rec: Record<string, number> = Object.fromEntries(m.outcomes.map((o) => [o.name, o.value]))
+                const rows = ['Completed', 'Partial', 'Refused', 'Interrupted']
+                  .map((name) => ({ name, value: rec[name] ?? 0 }))
+                  .filter((o, i) => i < 3 || o.value > 0)
+                const nonzero = rows.filter((o) => o.value > 0).length
+                return (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+                    {rows.map((o) => nonzero > 1 ? (
+                      <HBar key={o.name} label={o.name} value={o.value}
+                        max={Math.max(...rows.map((x) => x.value), 1)}
+                        color={o.name === 'Completed' ? TEAL : o.name === 'Partial' ? AMBER : 'var(--muted)'} />
+                    ) : (
+                      /* a single 100% bar carries no information — plain rows */
+                      <div key={o.name} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
+                        <span style={{ color: 'var(--muted)' }}>{o.name}</span>
+                        <span style={{ fontWeight: 700, color: o.value ? 'var(--ink)' : 'var(--muted)', fontVariantNumeric: 'tabular-nums' }}>{fmt(o.value)}</span>
+                      </div>
+                    ))}
+                  </div>
+                )
+              })()}
+              <div style={{ marginTop: 14, paddingTop: 10, borderTop: '1px solid var(--hair)', fontSize: 12.5, color: 'var(--muted)' }}>
+                Today: <b style={{ color: 'var(--ink)' }}>{fmt(collectedToday)}</b> · Last 7 days: <b style={{ color: 'var(--ink)' }}>{fmt(last7)}</b>
               </div>
             </div>
           </div>
@@ -445,8 +509,8 @@ export function BaselineMonitor() {
                 </select>
               </div>
             </div>
-            <div style={{ maxHeight: 460, overflow: 'auto', borderTop: '1px solid var(--hair)' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5, minWidth: 640 }}>
+            <div style={{ ...(enumerators.length > 10 ? { maxHeight: 460, overflow: 'auto' } : {}), borderTop: '1px solid var(--hair)' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, minWidth: 640 }}>
                 <thead>
                   <tr style={{ position: 'sticky', top: 0, background: 'var(--surface)', zIndex: 1 }}>
                     {['Enumerator', 'Interviews', 'Valid timing', 'Median', 'High / critical', 'Status'].map((h, i) => (
@@ -474,7 +538,7 @@ export function BaselineMonitor() {
                         <td style={{ padding: '8px 10px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 700 }}>{r.n}</td>
                         <td style={{ padding: '8px 10px', textAlign: 'right', fontVariantNumeric: 'tabular-nums',
                                      color: r.valid_timing_pct >= 80 ? TEAL : r.valid_timing_pct >= 50 ? AMBER : RED }}>
-                          {r.valid_timing_pct}% <span style={{ color: 'var(--muted)', fontSize: 11 }}>({r.valid_timing}/{r.n})</span>
+                          {r.valid_timing}/{r.n} <span style={{ fontSize: 11.5 }}>· {r.valid_timing_pct}%</span>
                         </td>
                         <td style={{ padding: '8px 10px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{r.median_min != null ? `${r.median_min}m` : '—'}</td>
                         <td style={{ padding: '8px 10px', textAlign: 'right', fontVariantNumeric: 'tabular-nums',
@@ -482,7 +546,10 @@ export function BaselineMonitor() {
                           {r.flags.critical + r.flags.high || '—'}
                         </td>
                         <td style={{ padding: '8px 10px', textAlign: 'right' }}>
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 700, color: st.color }}>
+                          <span title={r.status === 'good'
+                              ? 'Good — no high-priority flags and acceptable timing completeness'
+                              : `${st.label} — ${r.flags.critical + r.flags.high || r.flags.medium} interview flag${(r.flags.critical + r.flags.high || r.flags.medium) === 1 ? '' : 's'}${r.valid_timing_pct < 50 ? ` · valid timing only ${r.valid_timing_pct}%` : ''}`}
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11.5, fontWeight: 700, color: st.color }}>
                             {st.icon}{st.label}
                           </span>
                         </td>

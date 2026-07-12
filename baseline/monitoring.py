@@ -121,6 +121,7 @@ def compute_monitoring(subs, filters=None):
     site = Counter()
     outcomes = Counter()
     daily = defaultdict(Counter)          # date -> {hijra, fsw}
+    hourly = defaultdict(Counter)         # 'HH:00' -> {hijra, fsw} (single-day views)
     day_flags = defaultdict(lambda: {'hijra': 0, 'fsw': 0, 'total': 0,
                                      'completed': 0, 'partial': 0, 'refused': 0,
                                      'interrupted': 0, 'rushed': 0, 'gps_missing': 0})
@@ -190,6 +191,9 @@ def compute_monitoring(subs, filters=None):
         oc = str(raw.get('c3') or '')
         if oc:
             outcomes[OUTCOME_LABEL.get(oc, oc)] += 1
+
+        if fdate_dt:
+            hourly[fdate_dt.strftime('%H:00')][pop] += 1
 
         when = _parse_dt(raw.get('interview_end')) or s.submitted_at
         dkey = when.strftime('%Y-%m-%d') if when else None
@@ -336,6 +340,11 @@ def compute_monitoring(subs, filters=None):
         'districts': buckets(district),
         'sites': buckets(site, 15),
         'daily': daily_series,
+        # By collection hour (interview_start) — the trend chart uses this when
+        # the filtered range is a single day, where a daily series is one dot.
+        'hourly': [{'hour': h, 'hijra': hourly[h].get('hijra', 0),
+                    'fsw': hourly[h].get('fsw', 0),
+                    'total': sum(hourly[h].values())} for h in sorted(hourly)],
         'days': days,
         'versions': buckets(versions),
         'duration': {
