@@ -27,6 +27,7 @@ import { usePolling } from '@/hooks/usePolling'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { BarBreakdown, DonutBreakdown, ColumnBreakdown, StackedBar } from '@/components/ciprb/IndicatorCharts'
 import { FieldworkMonitor, type Monitoring } from '@/components/baseline/FieldworkMonitor'
+import { FswAnomalyConsole } from '@/components/baseline/FswAnomalyConsole'
 import { SrhrIndicators, type Srhr } from '@/components/baseline/SrhrIndicators'
 
 type Pop = 'hijra' | 'fsw'
@@ -204,6 +205,12 @@ export default function BaselineEndline() {
           <div className="card" style={{ background: 'rgba(233,69,96,0.06)', borderColor: 'rgba(233,69,96,0.2)', color: 'var(--rose)', padding: '10px 14px', fontSize: 13 }}>{err}</div>
         </section>
       )}
+
+      {/* ── FSW anomaly console — deterministic data-quality rule engine ──── */}
+      <section className="section" style={{ marginTop: 30 }}>
+        <div className="kicker" style={{ marginBottom: 12 }}><span className="dot" /> FSW data-quality console · anomaly detection &amp; review</div>
+        <FswAnomalyConsole />
+      </section>
 
       {/* ── Major SRHR indicators, by questionnaire module ────────────────── */}
       {srhr && <SrhrIndicators data={srhr} />}
