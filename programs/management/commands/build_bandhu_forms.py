@@ -660,13 +660,24 @@ def _service_log_survey():
 
 def _service_log_choices():
     rows = list(_centre_choices()) + _shared_choices()
-    # SINGLE SOURCE (2026-07 MIS rewire): every per-client service is recorded as
-    # a tick on the F-01 logbook, which the indicators count. The F-05/F-06/F-02/
-    # F-03/daily-counseling record types are REMOVED so a service can never be
-    # filed twice (logbook flag + specific register) — the code-level guarantee of
-    # "no double-count". Referral + F-08 stay: 1.7 (ART linkage) needs their detail.
+    # EVERY register in the MIS workbook is selectable. A previous "single source"
+    # rewire dropped F-05/F-06/F-02/F-03/daily-counseling from this list to stop a
+    # service being filed twice — but that ALSO made those registers impossible to
+    # open in Enketo, so their detail (GBV complaint, counselling issues, patient
+    # diagnosis, HTC result) could never be captured at all. Double-counting is
+    # already prevented where it belongs, in indicators/bandhu.py: 1.2/1.3/1.5a/1.5b
+    # count the F-01 logbook ALONE and never sum GBVCase / IndividualCounselling /
+    # ClinicVisit / HIVSTITestResult. So the registers are safe to restore: the
+    # logbook tick stays the counted source, the register carries the detail.
+    # programs/bandhu_handlers.py already dispatches all eight record types.
     for v, en, bn in [
         ('wellness_logbook', 'Wellness Centre Service Logbook (F-01)', 'F-01 লগবুক'),
+        ('patient_record',   'F-05 Patient Record Register', 'F-05 রোগীর রেকর্ড রেজিস্টার'),
+        ('htc',              'F-06 HTC Service Register', 'F-06 এইচটিসি সার্ভিস রেজিস্টার'),
+        ('gbv',              'F-02 GBV Register', 'F-02 জিবিভি রেজিস্টার'),
+        ('mh_counseling',    'F-03 Mental Health Counseling Register',
+                             'F-03 মানসিক স্বাস্থ্য কাউন্সেলিং রেজিস্টার'),
+        ('counseling_daily', 'Daily Counseling Form', 'দৈনিক কাউন্সেলিং ফর্ম'),
         ('referral',         'Referral Register', 'রেফারেল রেজিস্টার'),
         ('hiv_identified',   'F-08 HIV Identified (detailed)', 'F-08 এইচআইভি শনাক্ত'),
     ]:
