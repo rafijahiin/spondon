@@ -254,7 +254,7 @@ _sr('select_multiple q9_2_opts','q9_2','Q9.2 Where did you hear about it? (Multi
 _sr('text','q9_2_other','Other (specify)','অন্যান্য (উল্লেখ করুন)', relevant="${q9_1}='1' and selected(${q9_2},'7')"),
 _sr('select_one q9_3_opts','q9_3','Q9.3 Have you ever visited such a centre?','Q9.3 আপনি কি কখনও এমন কোনো সেন্টার পরিদর্শন করেছেন?', relevant="${q9_1}='1'"),
 _sr('select_one q9_4_opts','q9_4','Q9.4 (After reading description script) If such a Wellness Centre opened in your area, how likely are you to use it?','Q9.4 (বর্ণনা স্ক্রিপ্ট পড়ার পর) যদি এমন একটি ওয়েলনেস সেন্টার আপনার এলাকায় চালু হয়, আপনি এটি ব্যবহার করার কতটা সম্ভাবনা দেখেন?'),
-_sr('select_multiple q9_5_opts','q9_5','Q9.5 Which services from the Wellness Centre do you want most? (Up to 5)','Q9.5 ওয়েলনেস সেন্টার থেকে আপনি কোন কোন সেবা সবচেয়ে বেশি চান? (সর্বোচ্চ ৫টি)', relevant="${q9_4}='1' or ${q9_4}='2' or ${q9_4}='3'"),
+_sr('select_multiple q9_5_opts','q9_5','Q9.5 Which services from the Wellness Centre do you want most? (Up to 5)','Q9.5 ওয়েলনেস সেন্টার থেকে আপনি কোন কোন সেবা সবচেয়ে বেশি চান? (সর্বোচ্চ ৫টি)', relevant="${q9_4}='1' or ${q9_4}='2' or ${q9_4}='3'", constraint="count-selected(.) <= 5", cmsg="Select up to 5 services only. / সর্বোচ্চ ৫টি সেবা নির্বাচন করুন।"),
 _sr('text','q9_5_other','Other (specify)','অন্যান্য (উল্লেখ করুন)', relevant="(${q9_4}='1' or ${q9_4}='2' or ${q9_4}='3') and selected(${q9_5},'16')"),
 _sr('select_multiple q9_6_opts','q9_6','Q9.6 What concerns might you have about using such a centre? (Multiple)','Q9.6 এমন সেন্টার ব্যবহারে আপনার কী কী উদ্বেগ থাকতে পারে? (একাধিক)'),
 _sr('text','q9_6_other','Other (specify)','অন্যান্য (উল্লেখ করুন)', relevant="selected(${q9_6},'11')"),

@@ -571,12 +571,6 @@ def _multi_select_rules(field_map: FieldMap, exclusive_options=None):
     as an exclusive 'none' choice and flooded the report with false conflicts."""
     groups = _group_choice_columns(field_map.headers)
     exclusive_options = exclusive_options or {}
-    q95_groups = [
-        (parent, cols)
-        for parent, cols in groups.items()
-        if re.search(r"q9\.5.*wellness cent(re|er).*(up to 5|maximum five|max\w*\s*5)",
-                     parent, re.I)
-    ]
 
     def rule(record: Mapping[str, Any], row: int) -> Iterable[Anomaly]:
         ctx = _ctx(record, row, field_map)
@@ -627,21 +621,12 @@ def _multi_select_rules(field_map: FieldMap, exclusive_options=None):
                         **ctx,
                     )
 
-        for parent, columns in q95_groups:
-            selected = [col for col in columns if _selected(record.get(col))]
-            if len(selected) > 5:
-                severity = Severity.HIGH if len(selected) >= 8 else Severity.MEDIUM
-                yield Anomaly(
-                    "Q95_MORE_THAN_FIVE_SERVICES",
-                    severity,
-                    "More than five preferred Wellness Centre services were selected.",
-                    fields=tuple(selected),
-                    observed=len(selected),
-                    expected="Maximum 5",
-                    action="Fix the Kobo constraint and verify the respondent's top five choices.",
-                    category="select_multiple",
-                    **ctx,
-                )
+        # NB: the Q9.5 "more than five services" rule was RETIRED. The deployed
+        # form had no count-selected(.) <= 5 constraint, so respondents could pick
+        # more than five — a smooth, genuine spread (FSW ~33% picked >5), not a
+        # data-quality defect. Flagging every such record as HIGH flooded the queue
+        # with false positives. The real fix is the form constraint (now added in
+        # build_baseline_forms), which prevents it going forward; nothing to flag.
 
     return rule
 

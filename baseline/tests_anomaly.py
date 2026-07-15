@@ -94,10 +94,12 @@ class AdapterRuleTests(TestCase):
         ids, _ = self._ids([rec])
         self.assertIn('INTERVIEW_EXTREMELY_LONG', ids)
 
-    def test_q95_more_than_five(self):
+    def test_q95_over_five_is_not_flagged(self):
+        # RETIRED: the form now enforces max-5 via a constraint, and >5 on the old
+        # (unconstrained) form was genuine respondent behaviour, not a defect.
         rec = _kobo(**{'grp_q9/q9_5': '01 02 03 04 05 06'})
         ids, _ = self._ids([rec])
-        self.assertIn('Q95_MORE_THAN_FIVE_SERVICES', ids)
+        self.assertNotIn('Q95_MORE_THAN_FIVE_SERVICES', ids)
 
     def test_exclusive_choice_with_others(self):
         # b109 "other sources of income": None(0) selected with a real source(1).
@@ -290,9 +292,9 @@ class HijraAdapterTests(TestCase):
         rec = _hijra_kobo(**{'grp_b1/b104_share': 10})
         self.assertIn('LIKELY_MISSING_ZERO_IN_INCOME', self._ids([rec]))
 
-    def test_hijra_q95_more_than_five(self):
+    def test_hijra_q95_over_five_is_not_flagged(self):
         rec = _hijra_kobo(**{'grp_q9/q9_5': '01 02 03 04 05 06'})
-        self.assertIn('Q95_MORE_THAN_FIVE_SERVICES', self._ids([rec]))
+        self.assertNotIn('Q95_MORE_THAN_FIVE_SERVICES', self._ids([rec]))
 
     def test_hijra_clean_record_has_no_flags(self):
         self.assertEqual(self._ids([_hijra_kobo()]), set())
