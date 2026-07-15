@@ -516,8 +516,16 @@ export function BaselineMonitor() {
               <table className="dtable">
                 <thead>
                   <tr>
-                    {['Enumerator', 'Interviews', 'Valid timing', 'Median', 'High / critical', 'Status'].map((h, i) => (
-                      <th key={h} className={i ? 'num' : ''}>{h}</th>
+                    {([
+                      ['Enumerator', ''],
+                      ['Interviews', 'Total interviews this enumerator has collected (within the current filters).'],
+                      ['Valid timing', 'Interviews with a usable start AND in-form end time, over their total. The rest were collected on an older form version that never recorded an end time, so their length is unknown.'],
+                      ['Median', 'Median interview length, over valid-timing interviews only, excluding extreme (form-left-open) durations.'],
+                      ['High / critical', 'Number of high- or critical-severity data-quality flags on this enumerator’s interviews.'],
+                      ['Status', 'Urgent = a critical flag, or many high flags together with poor timing. Review = some flags or timing under 80%. Good = neither.'],
+                    ] as [string, string][]).map(([h, tip], i) => (
+                      <th key={h} className={i ? 'num' : ''} title={tip || undefined}
+                        style={tip ? { cursor: 'help', textDecoration: 'underline dotted', textUnderlineOffset: 3, textDecorationColor: 'var(--hair-2)' } : undefined}>{h}</th>
                     ))}
                   </tr>
                 </thead>
