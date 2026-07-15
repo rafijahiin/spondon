@@ -89,10 +89,27 @@ class AdapterRuleTests(TestCase):
         self.assertNotIn('MISSING_INTERVIEW_END', ids)
         self.assertNotIn('INTERVIEW_TOO_SHORT', ids)
 
-    def test_multi_hour_interview_excluded_and_flagged(self):
+    def test_long_interview_is_not_flagged(self):
+        # Long spans are draft/finish-later artefacts, not real long interviews —
+        # never flagged. Only short ones are a genuine issue.
         rec = _kobo(**{'grp_admin/interview_end_actual': '2026-07-12T14:30:00'})  # 4.5h
         ids, _ = self._ids([rec])
-        self.assertIn('INTERVIEW_EXTREMELY_LONG', ids)
+        self.assertNotIn('INTERVIEW_EXTREMELY_LONG', ids)
+        self.assertNotIn('INTERVIEW_LONG', ids)
+
+    def test_short_interview_under_40min_flagged(self):
+        # 25-minute interview (10:00 -> 10:25): under 40, so flagged.
+        rec = _kobo(**{'grp_admin/interview_end_actual': '2026-07-12T10:25:00'})
+        report, _ = _scan([rec])
+        flags = [a for a in report['anomalies'] if a['rule_id'] == 'INTERVIEW_TOO_SHORT']
+        self.assertEqual(len(flags), 1)
+        self.assertEqual(flags[0]['severity'], 'medium')     # 20–40 = medium
+
+    def test_very_short_interview_is_high(self):
+        rec = _kobo(**{'grp_admin/interview_end_actual': '2026-07-12T10:12:00'})  # 12 min
+        report, _ = _scan([rec])
+        flags = [a for a in report['anomalies'] if a['rule_id'] == 'INTERVIEW_TOO_SHORT']
+        self.assertEqual(flags[0]['severity'], 'high')
 
     def test_q95_over_five_is_not_flagged(self):
         # RETIRED: the form now enforces max-5 via a constraint, and >5 on the old

@@ -275,36 +275,21 @@ def _simple_record_rules(field_map: FieldMap, current_version: str | None):
                     category="timing",
                     **ctx,
                 )
-            elif minutes < 10:
+            # A SHORT interview is the only genuine timing issue: the ~50-minute
+            # questionnaire was not administered in full. Under 40 minutes is
+            # flagged (CIPRB's rushed threshold); under 20 is implausibly short.
+            # LONG durations are NOT flagged — enumerators routinely leave the form
+            # in draft and finish/submit later, so a long span is a workflow
+            # artefact, not a long interview.
+            elif minutes < 40:
                 yield Anomaly(
                     "INTERVIEW_TOO_SHORT",
-                    Severity.HIGH,
-                    "Interview duration is implausibly short for this questionnaire.",
+                    Severity.HIGH if minutes < 20 else Severity.MEDIUM,
+                    "Interview is shorter than 40 minutes — likely not administered "
+                    "in full.",
                     observed=round(minutes, 1),
-                    expected="Normally at least 20–30 minutes",
-                    action="Review the full record for skipped modules or rushed administration.",
-                    category="timing",
-                    **ctx,
-                )
-            elif minutes > 180:
-                yield Anomaly(
-                    "INTERVIEW_EXTREMELY_LONG",
-                    Severity.HIGH,
-                    "Interview duration exceeds three hours, usually because the form was left open.",
-                    observed=round(minutes, 1),
-                    expected="Normally about 30–90 minutes",
-                    action="Exclude this duration from averages and verify whether the form was paused.",
-                    category="timing",
-                    **ctx,
-                )
-            elif minutes > 120:
-                yield Anomaly(
-                    "INTERVIEW_LONG",
-                    Severity.MEDIUM,
-                    "Interview duration exceeds two hours.",
-                    observed=round(minutes, 1),
-                    expected="Normally about 30–90 minutes",
-                    action="Review whether the form was left open or the interview was interrupted.",
+                    expected="At least ~40 minutes for the full questionnaire",
+                    action="Review the record for skipped modules or rushed administration.",
                     category="timing",
                     **ctx,
                 )
