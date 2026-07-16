@@ -56,9 +56,14 @@ const SEV_ICON: Record<Sev, React.ReactNode> = {
   critical: <AlertOctagon size={13} />, high: <AlertTriangle size={13} />,
   medium: <Info size={13} />, low: <Info size={13} />,
 }
+/* Each label says what the reviewer decided, in their words. 'New' told the
+   reader nothing about what was, or was not, done to the record. */
 const STATUS_LABEL: Record<ReviewStatus, string> = {
-  new: 'New', confirmed: 'Confirmed', corrected: 'Corrected',
-  false_positive: 'False positive', needs_verification: 'Needs verification',
+  new: 'Not yet reviewed',
+  confirmed: 'Checked — a real error',
+  corrected: 'Fixed in KoboToolbox',
+  false_positive: 'Checked — the answer is right',
+  needs_verification: 'Asked the field team',
 }
 const STATUS_TONE: Record<ReviewStatus, string> = {
   new: 'var(--muted)', confirmed: 'var(--high)', corrected: 'var(--ok)',
@@ -75,8 +80,8 @@ const RULE_LABEL: Record<string, string> = {
   INTERVIEW_TOO_SHORT: 'Interview under 40 minutes',
   END_BEFORE_START: 'End time before start time',
   OTHER_SELECTED_WITHOUT_SPECIFY: "'Other' without specify text",
-  LIKELY_MISSING_ZERO_IN_INCOME: 'Income likely missing zeros',
-  LIKELY_MISSING_ZERO_IN_EXPENSE: 'Expense likely missing zeros',
+  LIKELY_MISSING_ZERO_IN_INCOME: 'Income under BDT 100 for a month',
+  LIKELY_MISSING_ZERO_IN_EXPENSE: 'Expense under BDT 100 for a month',
   CHILDREN_WITH_RESPONDENT_EXCEED_TOTAL: 'Child counts contradict',
   CHILD_DETAILS_WHEN_TOTAL_ZERO: 'Child details but zero children',
   OTHER_CHILD_LOCATION_MISSING: "Other children's location missing",
@@ -421,7 +426,7 @@ export function AnomalyQueue({ report, severity, onSeverity, onReviewSaved }: {
 
             <div style={{ marginTop: 4, paddingTop: 16, borderTop: '1px solid var(--hair)' }}>
               <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.04em', color: 'var(--muted)', marginBottom: 8 }}>
-                Review decision · currently <span style={{ color: STATUS_TONE[active.review_status] }}>{STATUS_LABEL[active.review_status]}</span>
+                Your decision · currently <span style={{ color: STATUS_TONE[active.review_status] }}>{STATUS_LABEL[active.review_status]}</span>
                 {active.reviewed_by && <span style={{ fontWeight: 400 }}> by {active.reviewed_by}</span>}
               </div>
               <textarea value={note} onChange={(e) => setNote(e.target.value)}
@@ -429,13 +434,13 @@ export function AnomalyQueue({ report, severity, onSeverity, onReviewSaved }: {
                 style={{ width: '100%', minHeight: 66, fontSize: 14, padding: 10, resize: 'vertical', borderRadius: 'var(--r-sm)', border: '1px solid var(--hair-2)', background: 'var(--surface)', color: 'var(--ink)', fontFamily: 'var(--ui)' }} />
               <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
                 <button disabled={saving} onClick={() => review(active, 'confirmed')} className="btn"
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: 5, height: 38, background: 'var(--high)', color: '#fff', borderColor: 'var(--high)' }}><Check size={15} />Confirm</button>
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 5, height: 38, background: 'var(--high)', color: '#fff', borderColor: 'var(--high)' }}><Check size={15} />It is a real error</button>
                 <button disabled={saving} onClick={() => review(active, 'corrected')} className="btn"
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: 5, height: 38 }}><PencilLine size={15} />Corrected</button>
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 5, height: 38 }}><PencilLine size={15} />I fixed it in Kobo</button>
                 <button disabled={saving} onClick={() => review(active, 'false_positive')} className="btn"
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: 5, height: 38 }}><Ban size={15} />False positive</button>
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 5, height: 38 }}><Ban size={15} />The answer is right</button>
                 <button disabled={saving} onClick={() => review(active, 'needs_verification')} className="btn"
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: 5, height: 38 }}><MapPinned size={15} />Needs field verification</button>
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 5, height: 38 }}><MapPinned size={15} />Ask the field team</button>
               </div>
               <p style={{ fontSize: 12.5, color: 'var(--muted)', marginTop: 12, lineHeight: 1.5, display: 'flex', gap: 6 }}>
                 <ShieldCheck size={14} style={{ flexShrink: 0, marginTop: 1 }} />

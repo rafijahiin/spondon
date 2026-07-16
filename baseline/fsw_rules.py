@@ -458,15 +458,22 @@ def _simple_record_rules(field_map: FieldMap, current_version: str | None,
             else False
         )
 
+        # The message states WHAT WAS FOUND, not what I think happened. "Below BDT
+        # 100 and likely missing zeros" presented a threshold I chose and a guess
+        # about the cause as if both were the finding. The reviewer decides the
+        # cause; the rule's job is to say the amount does not fit the answers around
+        # it. B108 declares only one code (99), so 8 is not a code — see codes.py.
         if _is_amount(income) and 0 < income < 100:
             yield Anomaly(
                 "LIKELY_MISSING_ZERO_IN_INCOME",
                 Severity.HIGH,
-                "Monthly income is below BDT 100 and is likely missing zeros.",
+                "The amount recorded is under BDT 100 for a whole month's income.",
                 fields=(field_map.sex_work_income,) if field_map.sex_work_income else (),
                 observed=income,
-                expected="A realistic monthly BDT amount or the refusal code",
-                action="Verify the original amount; do not automatically multiply it.",
+                expected="The amount as the respondent stated it, or 99 if she declined",
+                action="Check the original amount on paper or with the enumerator. "
+                       "It may have been typed without its last zeros — but confirm "
+                       "it; do not multiply it yourself.",
                 category="income",
                 **ctx,
             )
@@ -474,10 +481,13 @@ def _simple_record_rules(field_map: FieldMap, current_version: str | None,
             yield Anomaly(
                 "LIKELY_MISSING_ZERO_IN_EXPENSE",
                 Severity.HIGH,
-                "Monthly expense is below BDT 100 and is likely missing zeros.",
+                "The amount recorded is under BDT 100 for a whole month's spending. "
+                "The form asks for 0 where there is none, so this is neither 0 nor "
+                "a monthly amount.",
                 observed=expenses,
-                expected="A realistic monthly BDT amount",
-                action="Verify the original amount.",
+                expected="The amount as stated, or 0 if there was no such expense",
+                action="Check the original amount on paper or with the enumerator. "
+                       "Do not multiply it yourself.",
                 category="income",
                 **ctx,
             )
