@@ -553,3 +553,55 @@ class SystematicPassRegressionTest(TestCase):
             _hijra_kobo(**{'_uuid': 'b', 'grp_admin/interview_start': '2026-07-12T10:04:00'}),
         ]
         self.assertNotIn('INTERVIEWS_STARTED_TOO_CLOSE', self._ids(recs, population='hijra'))
+
+
+class RefusalCodeTest(TestCase):
+    """B108 states "(99 = Prefer not to say)" in the question text itself, so 99 in
+    a money field is a REFUSAL, not taka. Treating it as an amount flagged people
+    who simply declined to answer — and inflated their enumerator to Urgent."""
+
+    def _ids(self, records):
+        report, _ = _scan(records)
+        return {a['rule_id'] for a in report['anomalies']}
+
+    def test_refusal_code_99_is_not_missing_zeros(self):
+        rec = _kobo(**{'grp_b1/b108': 99})
+        self.assertNotIn('LIKELY_MISSING_ZERO_IN_INCOME', self._ids([rec]))
+
+    def test_dont_know_code_98_is_not_missing_zeros(self):
+        rec = _kobo(**{'grp_b1/b108': 98})
+        self.assertNotIn('LIKELY_MISSING_ZERO_IN_INCOME', self._ids([rec]))
+
+    def test_genuinely_low_income_still_flagged(self):
+        # Real FSW income runs 2,000-130,000 (median 25,000), so 80 taka/month is
+        # almost certainly 8,000 with dropped zeros — a real defect worth keeping.
+        for amount in (80, 12, 10):
+            rec = _kobo(**{'grp_b1/b108': amount})
+            self.assertIn('LIKELY_MISSING_ZERO_IN_INCOME', self._ids([rec]), amount)
+
+    def test_refusal_code_does_not_drive_the_expense_comparison(self):
+        rec = _kobo(**{'grp_b1/b108': 99, 'grp_b1/b110_family': 21000,
+                       'grp_b1/b109': '0'})
+        ids = self._ids([rec])
+        self.assertNotIn('EXPENSES_EXCEED_INCOME_NO_OTHER_SOURCE', ids)
+        self.assertNotIn('LIKELY_MISSING_ZERO_IN_INCOME', ids)
+
+
+class FlatFortyMinuteThresholdTest(TestCase):
+    """CIPRB's rule is a single 40-minute line for BOTH instruments. Do not split
+    it per population — that override was reverted."""
+
+    def test_threshold_is_40_for_both_populations(self):
+        from .anomaly import SHORT_MINUTES
+        self.assertEqual(SHORT_MINUTES['fsw'], 40)
+        self.assertEqual(SHORT_MINUTES['hijra'], 40)
+
+    def test_39_minutes_is_short_in_both(self):
+        report, _ = _scan([_kobo(**{'grp_admin/interview_end_actual':
+                                    '2026-07-12T10:39:00'})])
+        self.assertIn('INTERVIEW_TOO_SHORT',
+                      {a['rule_id'] for a in report['anomalies']})
+        report2, _ = _scan([_hijra_kobo(**{'grp_admin/interview_end_actual':
+                                           '2026-07-12T10:39:00'})], population='hijra')
+        self.assertIn('INTERVIEW_TOO_SHORT',
+                      {a['rule_id'] for a in report2['anomalies']})

@@ -188,6 +188,17 @@ def _years_lower_bound(value: Any) -> int | None:
     return mapping.get(text)
 
 
+# The questionnaire's standard non-answer codes. B108 spells it out in the question
+# text itself — "(99 = Prefer not to say)" — so 99 in an amount field is a REFUSAL,
+# not taka. Treating it as money flagged people who simply declined to answer.
+REFUSAL_CODES = {98, 99}
+
+
+def _is_amount(value) -> bool:
+    """True when a money field holds an actual amount rather than a non-answer code."""
+    return value is not None and int(value) not in REFUSAL_CODES
+
+
 def _is_other_choice(label: str) -> bool:
     text = normalized_text(label)
     return bool(re.search(r"(^|/)(other|other \(specify\)|others)(\b|$)", text))
@@ -455,7 +466,7 @@ def _simple_record_rules(field_map: FieldMap, current_version: str | None,
             else False
         )
 
-        if income is not None and 0 < income < 100:
+        if _is_amount(income) and 0 < income < 100:
             yield Anomaly(
                 "LIKELY_MISSING_ZERO_IN_INCOME",
                 Severity.HIGH,
@@ -467,7 +478,7 @@ def _simple_record_rules(field_map: FieldMap, current_version: str | None,
                 category="income",
                 **ctx,
             )
-        if expenses is not None and 0 < expenses < 100:
+        if _is_amount(expenses) and 0 < expenses < 100:
             yield Anomaly(
                 "LIKELY_MISSING_ZERO_IN_EXPENSE",
                 Severity.HIGH,
@@ -478,10 +489,10 @@ def _simple_record_rules(field_map: FieldMap, current_version: str | None,
                 category="income",
                 **ctx,
             )
-        # Only compare income vs expenses when the income figure is itself usable.
-        # An income of 12 (already flagged as missing zeros) makes this comparison
-        # meaningless — it re-flagged the SAME record with a nonsense "ratio: 1750".
-        income_usable = income is not None and income >= 100
+        # Only compare income vs expenses when the income figure is itself usable —
+        # not a refusal code (99), and not an amount already flagged as missing zeros
+        # (an income of 12 re-flagged the SAME record with a nonsense "ratio: 1750").
+        income_usable = _is_amount(income) and income >= 100
         if income_usable and expenses is not None and expenses > income and no_other_income:
             ratio = round(expenses / income, 2) if income > 0 else None
             severity = Severity.HIGH if income > 0 and ratio and ratio >= 2 else Severity.MEDIUM
@@ -819,9 +830,8 @@ def build_fsw_engine(
     # — not evidence of anything.
     engine.add_dataset_rule(_gps_outlier_rule(field_map, gps_outlier_km))
     engine.add_dataset_rule(_exact_answer_duplicate_rule(field_map))
-    # _repeated_observation_rule is NOT registered: on the real data it fired on
-    # exactly the same records as WEAK_INTERVIEWER_OBSERVATION (the observation is
-    # "N/A"), so one behaviour produced 530 low flags across two rules. The weak
-    # rule already records which interviews lack an observation; the repetition is
-    # an enumerator-coaching matter, not a second per-record defect.
+    # _repeated_observation_rule is NOT registered. Interviewer observations are not
+    # survey data and a vague or repeated one is not a fault — together with the
+    # (also removed) weak-observation rule these produced 530 low flags for one
+    # habit. Observation quality is a coaching matter, not a data-quality defect.
     return engine, field_map

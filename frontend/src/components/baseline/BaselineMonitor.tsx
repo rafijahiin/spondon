@@ -225,13 +225,13 @@ export function BaselineMonitor() {
   const enumerators = useMemo(() => {
     const rows = (m?.collectors ?? []).map((c) => {
       const fl = flagsByEnum[c.code] ?? { critical: 0, high: 0, medium: 0 }
-      // Urgent is reserved for genuine alarm: any critical flag, OR many high
-      // flags AND poor timing completeness together. Many high flags on an
-      // otherwise well-timed workload (long interviews, form left open) is a
-      // Review, not an emergency — this keeps red meaningful.
+      // Status reflects DATA-QUALITY FLAGS only. Valid-timing % is deliberately NOT
+      // part of it: a low percentage means the enumerator's device served an older
+      // form version that never recorded an end time — that is not their doing, and
+      // status must not blame them for it.
       const status: 'urgent' | 'review' | 'good' =
-        fl.critical >= 1 || (fl.high >= 5 && c.valid_timing_pct < 50) ? 'urgent'
-          : fl.high >= 1 || fl.medium >= 1 || c.valid_timing_pct < 80 ? 'review'
+        fl.critical >= 1 || fl.high >= 5 ? 'urgent'
+          : fl.high >= 1 || fl.medium >= 1 ? 'review'
             : 'good'
       return { ...c, flags: fl, status }
     })
@@ -522,7 +522,7 @@ export function BaselineMonitor() {
                       ['Valid timing', 'Interviews with a usable start AND in-form end time, over their total. The rest were collected on an older form version that never recorded an end time, so their length is unknown.'],
                       ['Median', 'Median interview length, over valid-timing interviews only, excluding extreme (form-left-open) durations.'],
                       ['High / critical', 'Number of high- or critical-severity data-quality flags on this enumerator’s interviews.'],
-                      ['Status', 'Urgent = a critical flag, or many high flags together with poor timing. Review = some flags or timing under 80%. Good = neither.'],
+                      ['Status', 'Based on data-quality flags only. Urgent = a critical flag or 5+ high flags. Review = some flags. Good = none. Valid-timing % is NOT counted — a low figure means an older form version, not the enumerator.'],
                     ] as [string, string][]).map(([h, tip], i) => (
                       <th key={h} className={i ? 'num' : ''} title={tip || undefined}
                         style={tip ? { cursor: 'help', textDecoration: 'underline dotted', textUnderlineOffset: 3, textDecorationColor: 'var(--hair-2)' } : undefined}>{h}</th>
@@ -557,8 +557,8 @@ export function BaselineMonitor() {
                         <td className="num">
                           <span className={`tagchip ${st.cls}`}
                             title={r.status === 'good'
-                              ? 'Good — no high-priority flags and acceptable timing completeness'
-                              : `${st.label}: ${r.flags.critical + r.flags.high || r.flags.medium} interview${(r.flags.critical + r.flags.high || r.flags.medium) === 1 ? '' : 's'} with high-severity anomalies${r.valid_timing_pct < 50 ? ` · valid timing only ${r.valid_timing_pct}%` : ''}`}>
+                              ? 'Good — no data-quality flags on this enumerator’s interviews'
+                              : `${st.label}: ${r.flags.critical + r.flags.high || r.flags.medium} data-quality flag${(r.flags.critical + r.flags.high || r.flags.medium) === 1 ? '' : 's'}. Valid-timing % is not counted here — a low figure means an older form version, not this enumerator.`}>
                             {st.icon}{st.label}
                           </span>
                         </td>
