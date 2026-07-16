@@ -115,6 +115,31 @@ const describeFields = (fields?: string[]): { question: string; choices: string[
   return { question: questions[0], choices }
 }
 
+/* Anything the engine reports as a key/value shape — {current_age, start_age,
+   duration_answer} on the work-history rule, {site, distance_km} on GPS — is the
+   evidence itself. Show every value as a labelled row: dropping them left the
+   drawer stating a problem it never showed. */
+const OBSERVED_LABEL: Record<string, string> = {
+  current_age: 'Age now',
+  start_age: 'Age when she started',
+  duration_answer: 'Years of sex work (as answered)',
+  income: 'Income', expenses: 'Expenses', ratio: 'Expenses ÷ income',
+  latitude: 'Latitude', longitude: 'Longitude',
+  site: 'Site', distance_km: 'Distance from the site (km)',
+}
+const observedRows = (o: unknown): [string, string][] | null => {
+  if (o == null || typeof o !== 'object' || Array.isArray(o)) return null
+  const r = o as Record<string, unknown>
+  if (r.exclusive || r.also_selected) return null   // has its own sentence
+  const rows = Object.entries(r)
+    .filter(([, v]) => v != null && v !== '')
+    .map(([k, v]) => [
+      OBSERVED_LABEL[k] ?? k.replace(/_/g, ' ').replace(/^\w/, (c) => c.toUpperCase()),
+      String(v),
+    ] as [string, string])
+  return rows.length ? rows : null
+}
+
 /* The engine's `observed` is a plain value for most rules and a shape like
    {exclusive:[...], also_selected:[...]} for the conflict rule. Rendering it as
    raw JSON made the reader parse a data structure to learn what the person
@@ -364,7 +389,8 @@ export function AnomalyQueue({ report, severity, onSeverity, onReviewSaved }: {
               const sentence = describeObserved(active.observed)
               const scalar = active.observed != null && typeof active.observed !== 'object'
                 ? String(active.observed) : null
-              if (!question && !sentence && !scalar) return null
+              const rows = observedRows(active.observed)
+              if (!question && !sentence && !scalar && !rows) return null
               return (
                 <div style={{ marginBottom: 16, padding: '12px 14px', background: 'var(--brand-soft)', borderRadius: 'var(--r-md)' }}>
                   {question && (
@@ -376,17 +402,24 @@ export function AnomalyQueue({ report, severity, onSeverity, onReviewSaved }: {
                     <p style={{ fontSize: 14, color: 'var(--ink)', lineHeight: 1.55, margin: 0 }}>{sentence}</p>
                   )}
                   {!sentence && scalar && (
-                    <>
-                      <div style={{ fontSize: 14, color: 'var(--ink)' }}>
-                        <span style={{ color: 'var(--muted)' }}>Recorded answer: </span>
-                        <strong>{scalar}</strong>
-                      </div>
-                      {active.expected && (
-                        <div style={{ fontSize: 13.5, color: 'var(--muted)', marginTop: 5 }}>
-                          Expected: {fmtVal(active.expected)}
+                    <div style={{ fontSize: 14, color: 'var(--ink)' }}>
+                      <span style={{ color: 'var(--muted)' }}>Recorded answer: </span>
+                      <strong>{scalar}</strong>
+                    </div>
+                  )}
+                  {!sentence && rows && (
+                    <div style={{ display: 'grid', gap: 4 }}>
+                      {rows.map(([k, v]) => (
+                        <div key={k} style={{ fontSize: 14, color: 'var(--ink)' }}>
+                          <span style={{ color: 'var(--muted)' }}>{k}: </span><strong>{v}</strong>
                         </div>
-                      )}
-                    </>
+                      ))}
+                    </div>
+                  )}
+                  {!sentence && active.expected && (
+                    <div style={{ fontSize: 13.5, color: 'var(--muted)', marginTop: 6 }}>
+                      Expected: {fmtVal(active.expected)}
+                    </div>
                   )}
                 </div>
               )
