@@ -167,12 +167,18 @@ def _selected(value: Any) -> bool:
 
 
 def _years_lower_bound(value: Any) -> int | None:
+    """Smallest elapsed duration (in years) the category can represent.
+
+    Duration is CONTINUOUS, so "More than 10 years" is satisfied by 10.3 years —
+    its floor is 10, not 11. Returning 11 made the rule flag a respondent who is
+    32 and started at 22 (10.x years elapsed) even though their answer was
+    literally correct."""
     text = normalized_text(value)
     if not text:
         return None
     numbers = [int(n) for n in re.findall(r"\d+", text)]
     if "more than" in text or "over" in text or "above" in text:
-        return numbers[0] + 1 if numbers else None
+        return numbers[0] if numbers else None
     if numbers:
         return min(numbers)
     mapping = {
@@ -427,8 +433,13 @@ def _simple_record_rules(field_map: FieldMap, current_version: str | None):
                     category="work_history",
                     **ctx,
                 )
+            # Both ages are COMPLETED years, so current_age - start_age is a FLOOR:
+            # a 32-year-old who started at 22 has been working [10, 11) years. Add
+            # one year of headroom for that rounding — and because a self-reported
+            # duration category is approximate (someone at 3.9 years answers
+            # "4-7 years"). Only a contradiction beyond that slack is a real defect.
             possible_years = current_age - start_age
-            if years_min is not None and years_min > possible_years:
+            if years_min is not None and years_min > possible_years + 1:
                 yield Anomaly(
                     "SEX_WORK_YEARS_IMPOSSIBLE",
                     Severity.HIGH,
@@ -438,7 +449,7 @@ def _simple_record_rules(field_map: FieldMap, current_version: str | None):
                         "start_age": start_age,
                         "duration_answer": clean_text(years_value),
                     },
-                    expected=f"At most about {possible_years} years",
+                    expected=f"At most about {possible_years} years since starting",
                     action="Verify starting age or duration category.",
                     category="work_history",
                     **ctx,

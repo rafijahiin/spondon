@@ -453,3 +453,39 @@ class HijraExclusiveAuditTest(TestCase):
             rec = _hijra_kobo(**{'grp_q2/q2_15': val})
             _, ids = self._ids([rec])
             self.assertIn('MUTUALLY_EXCLUSIVE_MULTISELECT', ids, val)
+
+
+class WorkHistoryYearsTest(TestCase):
+    """SEX_WORK_YEARS_IMPOSSIBLE must not fire on arithmetic that is actually fine.
+
+    Ages are COMPLETED years, so current_age - start_age is a floor: 32 - 22 = 10
+    means [10, 11) years elapsed — for which "More than 10 years" is literally
+    correct. The rule flags only a contradiction beyond that rounding slack.
+    b105 codes: 1 'Less than 1 year', 2 '1-3', 3 '4-7', 4 '8-10', 5 'More than 10 years'.
+    """
+
+    def _ids(self, age, start_age, b105_code):
+        rec = _kobo(**{'grp_a2/a203': age, 'grp_scr/s1_age': age,
+                       'grp_b1/b104': start_age, 'grp_b1/b105': b105_code})
+        report, _ = _scan([rec])
+        return {a['rule_id'] for a in report['anomalies']}
+
+    def test_exactly_ten_years_more_than_10_is_not_flagged(self):
+        # Rafi's case: 32, started at 22, "More than 10 years" -> TRUE, not a defect.
+        self.assertNotIn('SEX_WORK_YEARS_IMPOSSIBLE', self._ids(32, 22, '5'))
+
+    def test_boundary_rounding_slack_is_allowed(self):
+        # 31 started at 22 -> 9 floor, [9,10) elapsed; "More than 10" is within the
+        # one-year self-report/rounding slack, so not flagged.
+        self.assertNotIn('SEX_WORK_YEARS_IMPOSSIBLE', self._ids(31, 22, '5'))
+        # 25 started at 22 -> 3 floor; "4-7 years" is a plausible self-report.
+        self.assertNotIn('SEX_WORK_YEARS_IMPOSSIBLE', self._ids(25, 22, '3'))
+
+    def test_genuine_contradiction_still_flagged(self):
+        # 25 started at 22 -> at most ~3 years; "More than 10 years" is impossible.
+        self.assertIn('SEX_WORK_YEARS_IMPOSSIBLE', self._ids(25, 22, '5'))
+        # 24 started at 22 -> at most ~2 years; "8-10 years" is impossible.
+        self.assertIn('SEX_WORK_YEARS_IMPOSSIBLE', self._ids(24, 22, '4'))
+
+    def test_start_after_current_age_still_flagged(self):
+        self.assertIn('SEX_WORK_START_AFTER_CURRENT_AGE', self._ids(30, 40, '2'))
