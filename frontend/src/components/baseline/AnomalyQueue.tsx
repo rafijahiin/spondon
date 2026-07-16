@@ -94,6 +94,52 @@ const humanRule = (id: string) =>
 const fmtVal = (v: unknown) =>
   v == null ? '—' : typeof v === 'object' ? JSON.stringify(v) : String(v)
 
+/* Kobo names a select_multiple field "Question text/Choice label", so a flag on
+   three choices of one question repeated that question three times. Take the
+   question once, and keep only the choice labels. */
+const splitField = (f: string): [string, string | null] => {
+  const i = f.lastIndexOf('/')
+  return i < 0 ? [f, null] : [f.slice(0, i), f.slice(i + 1)]
+}
+const describeFields = (fields?: string[]): { question: string; choices: string[] } | null => {
+  if (!fields?.length) return null
+  const parts = fields.map(splitField)
+  const questions = [...new Set(parts.map(([q]) => q))]
+  if (questions.length !== 1) return null
+  const choices = parts.map(([, c]) => c).filter(Boolean) as string[]
+  return { question: questions[0], choices }
+}
+
+/* The engine's `observed` is a plain value for most rules and a shape like
+   {exclusive:[...], also_selected:[...]} for the conflict rule. Rendering it as
+   raw JSON made the reader parse a data structure to learn what the person
+   answered. State it as a sentence instead. */
+const describeObserved = (o: unknown): string | null => {
+  if (o == null || typeof o !== 'object' || Array.isArray(o)) return null
+  const r = o as Record<string, unknown>
+  const list = (v: unknown) => (Array.isArray(v) ? v.map(String) : [])
+  if (r.exclusive || r.also_selected) {
+    const ex = list(r.exclusive), also = list(r.also_selected)
+    if (!ex.length || !also.length) return null
+    return `The respondent is recorded as answering “${ex.join(', ')}” and, on the same question, also “${also.join('” and “')}”. These cannot both be true.`
+  }
+  return null
+}
+
+/* Compact form for the queue column, where a JSON blob truncated at 180px told
+   the reader nothing at all. */
+const briefObserved = (o: unknown): string => {
+  if (o == null) return '—'
+  if (typeof o !== 'object') return String(o)
+  const r = o as Record<string, unknown>
+  const list = (v: unknown) => (Array.isArray(v) ? v.map(String) : [])
+  const ex = list(r.exclusive), also = list(r.also_selected)
+  if (ex.length && also.length) {
+    return `“${ex[0]}” + ${also.length} other${also.length === 1 ? '' : 's'}`
+  }
+  return Object.entries(r).map(([k, v]) => `${k.replace(/_/g, ' ')} ${v}`).join(', ')
+}
+
 function MiniKpi({ label, value, tone, onClick, active, sub }: {
   label: string; value: React.ReactNode; tone: string
   onClick?: () => void; active?: boolean; sub?: string
@@ -273,7 +319,7 @@ export function AnomalyQueue({ report, severity, onSeverity, onReviewSaved }: {
                     <td className="mono" style={{ fontSize: 11.5, color: 'var(--muted)', maxWidth: 108, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.record_id || '—'}</td>
                     <td style={{ color: 'var(--muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 140 }}>{a.enumerator || '—'}</td>
                     <td style={{ color: 'var(--muted)' }}>{a.site || '—'}</td>
-                    <td style={{ color: 'var(--muted)', maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{fmtVal(a.observed)}</td>
+                    <td style={{ color: 'var(--muted)', maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={fmtVal(a.observed)}>{briefObserved(a.observed)}</td>
                     <td><span style={{ fontSize: 12, fontWeight: 700, color: STATUS_TONE[a.review_status] }}>{STATUS_LABEL[a.review_status]}</span></td>
                   </tr>
                 ))}
@@ -304,10 +350,46 @@ export function AnomalyQueue({ report, severity, onSeverity, onReviewSaved }: {
             <h3 style={{ fontFamily: 'var(--display)', fontSize: 19, fontWeight: 700, color: 'var(--ink)', margin: '10px 0 5px' }}>{humanRule(active.rule_id)}</h3>
             <p style={{ fontSize: 14, color: 'var(--muted)', lineHeight: 1.5, margin: '0 0 16px' }}>{active.message}</p>
 
+            {(() => {
+              const fd = describeFields(active.fields)
+              // A field is only worth showing if it is the questionnaire's own wording.
+              // Some rules carry the raw column name ('b108') instead — printing that
+              // as "Question asked" just swaps one piece of jargon for another.
+              const question = fd && /\s/.test(fd.question) ? fd.question : null
+              const sentence = describeObserved(active.observed)
+              const scalar = active.observed != null && typeof active.observed !== 'object'
+                ? String(active.observed) : null
+              if (!question && !sentence && !scalar) return null
+              return (
+                <div style={{ marginBottom: 16, padding: '12px 14px', background: 'var(--brand-soft)', borderRadius: 'var(--r-md)' }}>
+                  {question && (
+                    <div style={{ fontSize: 13.5, color: 'var(--ink)', lineHeight: 1.5, marginBottom: 8 }}>
+                      <span style={{ color: 'var(--muted)' }}>Question asked: </span>{question}
+                    </div>
+                  )}
+                  {sentence && (
+                    <p style={{ fontSize: 14, color: 'var(--ink)', lineHeight: 1.55, margin: 0 }}>{sentence}</p>
+                  )}
+                  {!sentence && scalar && (
+                    <>
+                      <div style={{ fontSize: 14, color: 'var(--ink)' }}>
+                        <span style={{ color: 'var(--muted)' }}>Recorded answer: </span>
+                        <strong>{scalar}</strong>
+                      </div>
+                      {active.expected && (
+                        <div style={{ fontSize: 13.5, color: 'var(--muted)', marginTop: 5 }}>
+                          Expected: {fmtVal(active.expected)}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              )
+            })()}
+
             {([
-              ['Submission', [['Rule ID', active.rule_id], ['Submission', active.record_id], ['Enumerator', active.enumerator], ['Site', active.site], ['Interview date', active.date]]],
-              ['Evidence', [['Fields checked', active.fields?.join(', ')], ['Observed', fmtVal(active.observed)], ['Expected', fmtVal(active.expected)]]],
-              ['Recommended action', [['Action', active.action]]],
+              ['What to do', [['Action', active.action]]],
+              ['This interview', [['Enumerator', active.enumerator], ['Site', active.site], ['Interview date', active.date]]],
             ] as const).map(([group, pairs]) => {
               const rows = pairs.filter(([, v]) => v)
               if (!rows.length) return null
@@ -320,6 +402,22 @@ export function AnomalyQueue({ report, severity, onSeverity, onReviewSaved }: {
                 </div>
               )
             })}
+
+            {/* The identifiers still matter — you need the submission ID to open the
+                record in KoboToolbox — but they are for looking something up, not for
+                understanding the flag, so they no longer lead. */}
+            <details style={{ marginBottom: 16 }}>
+              <summary style={{ fontSize: 12, color: 'var(--muted)', cursor: 'pointer' }}>
+                Record details for KoboToolbox
+              </summary>
+              <dl className="ddl" style={{ marginTop: 8 }}>
+                <dt>Submission</dt><dd style={{ wordBreak: 'break-all' }}>{active.record_id}</dd>
+                {active.fields?.length ? (<><dt>Fields</dt><dd style={{ wordBreak: 'break-word' }}>
+                  {active.fields.map((f) => splitField(f)[1] ?? f).join(', ')}
+                </dd></>) : null}
+                <dt>Rule</dt><dd>{active.rule_id}</dd>
+              </dl>
+            </details>
 
             <div style={{ marginTop: 4, paddingTop: 16, borderTop: '1px solid var(--hair)' }}>
               <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.04em', color: 'var(--muted)', marginBottom: 8 }}>
