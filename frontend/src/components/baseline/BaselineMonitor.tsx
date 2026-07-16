@@ -209,44 +209,55 @@ export function BaselineMonitor() {
     return (m?.daily ?? []).filter((d) => d.date >= cutIso).reduce((s, d) => s + d.total, 0)
   }, [m])
 
-  /* per-enumerator high/critical flag counts (same filtered scope) */
+  /* Per-enumerator flag counts AND the distinct interviews those flags sit on
+     (same filtered scope). The two differ: one interview with three contradicting
+     answers raises three flags. Reporting flags as if they were interviews
+     overstates how much of someone's work is affected, so the table shows
+     interviews and keeps the raw flag count only for sorting. */
   const flagsByEnum = useMemo(() => {
-    const out: Record<string, { critical: number; high: number; medium: number }> = {}
+    const out: Record<string, {
+      critical: number; high: number; medium: number; records: Set<string>
+    }> = {}
     for (const a of anoms?.anomalies ?? []) {
       if (!a.enumerator) continue
-      const g = (out[a.enumerator] ??= { critical: 0, high: 0, medium: 0 })
+      const g = (out[a.enumerator] ??= { critical: 0, high: 0, medium: 0, records: new Set() })
       if (a.severity === 'critical') g.critical += 1
       else if (a.severity === 'high') g.high += 1
       else if (a.severity === 'medium') g.medium += 1
+      if ((a.severity === 'critical' || a.severity === 'high') && a.record_id) {
+        g.records.add(a.record_id)
+      }
     }
     return out
   }, [anoms])
 
   const enumerators = useMemo(() => {
     const rows = (m?.collectors ?? []).map((c) => {
-      const fl = flagsByEnum[c.code] ?? { critical: 0, high: 0, medium: 0 }
-      // Status reflects DATA-QUALITY FLAGS only. Valid-timing % is deliberately NOT
-      // part of it: a low percentage means the enumerator's device served an older
-      // form version that never recorded an end time — that is not their doing, and
-      // status must not blame them for it.
+      const fl = flagsByEnum[c.code] ?? { critical: 0, high: 0, medium: 0, records: new Set<string>() }
+      // Status reflects FLAGGED ANSWERS only. Recorded-length coverage is deliberately
+      // NOT part of it: a low figure means the device served an older form version
+      // that never saved an end time — not the enumerator's doing.
       //
-      // Thresholds are RATES, not counts. `high >= 5` marked everyone Urgent: an
-      // enumerator doing 45 interviews collects 5 high flags at a 11% fault rate,
-      // while one doing 6 never trips it at 66% — the old line ranked by workload,
-      // not by data quality. MIN_N stops 1-of-2 reading as a 50% rate.
+      // The measure is the SHARE OF THEIR INTERVIEWS that carry a flag, not a count.
+      // `high >= 5` marked everyone Urgent: 45 interviews reach 5 flags at an 11%
+      // rate while 6 interviews never trip it at 66% — that ranked workload, not
+      // data quality. MIN_N stops 1-of-2 reading as 50%.
       const MIN_N = 5
-      const highRate = c.n >= MIN_N ? fl.high / c.n : 0
+      const flagged = fl.records.size
+      const rate = c.n >= MIN_N ? flagged / c.n : 0
       const status: 'urgent' | 'review' | 'good' =
-        fl.critical >= 1 || highRate >= 0.25 ? 'urgent'
-          : fl.high >= 1 || fl.medium >= 1 ? 'review'
+        rate >= 0.25 ? 'urgent'
+          : flagged >= 1 ? 'review'
             : 'good'
-      return { ...c, flags: fl, status }
+      return { ...c, flags: fl, flagged, rate, status }
     })
     const q = enumSearch.trim().toLowerCase()
     const filtered = q ? rows.filter((r) => r.code.toLowerCase().includes(q)) : rows
     return filtered.sort((a, b) => enumSort === 'n'
       ? b.n - a.n
-      : (b.flags.critical * 10 + b.flags.high) - (a.flags.critical * 10 + a.flags.high) || b.n - a.n)
+      // Rank by the same share the status uses, else the top of the table and the
+      // Status beside it would disagree about who most needs attention.
+      : b.rate - a.rate || b.flagged - a.flagged || b.n - a.n)
   }, [m, flagsByEnum, enumSearch, enumSort])
 
   // Interviews with at least one HIGH or CRITICAL flag — not "any flag", which
@@ -264,11 +275,12 @@ export function BaselineMonitor() {
   const iqr = m?.duration.valid_iqr ?? [null, null]
 
   const STATUS_STYLE = {
-    // Plain words, not grading. "Review" told the reader nothing — it was the
-    // leftover bucket for anyone who was not spotless and not Urgent.
-    good: { label: 'Nothing to check', cls: 'tag-ok', icon: <CheckCircle2 size={12} /> },
-    review: { label: 'A few to check', cls: 'tag-warn', icon: <AlertTriangle size={12} /> },
-    urgent: { label: 'Many to check', cls: 'tag-crit', icon: <AlertTriangle size={12} /> },
+    // The label states the finding rather than grading the person: "Review" named
+    // no threshold and meant only "not clean, not urgent". These say what the
+    // number is, so the column explains itself without a tooltip.
+    good: { label: 'None flagged', cls: 'tag-ok', icon: <CheckCircle2 size={12} /> },
+    review: { label: 'Some flagged', cls: 'tag-warn', icon: <AlertTriangle size={12} /> },
+    urgent: { label: 'Many flagged', cls: 'tag-crit', icon: <AlertTriangle size={12} /> },
   } as const
   const POP_LABEL: Record<string, string> = { all: 'All populations', hijra: 'Hijra / Gender-diverse', fsw: 'Female Sex Worker' }
   const activeChips: { key: string; label: string; clear: () => void }[] = [
@@ -504,7 +516,7 @@ export function BaselineMonitor() {
             <div className="dsec">
               <div>
                 <h2 className="dsec-h">Enumerator performance</h2>
-                <p className="dsec-sub">How much each person has collected, and how many of their interviews have an answer worth checking. Click any row to see only that person’s work.</p>
+                <p className="dsec-sub">What each enumerator has collected, and what share of their interviews carry a flag to review. Click a row to filter everything below to that enumerator.</p>
               </div>
               <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                 <div style={{ position: 'relative' }}>
@@ -514,8 +526,8 @@ export function BaselineMonitor() {
                 </div>
                 <select aria-label="Sort enumerators" className="field" value={enumSort}
                   onChange={(e) => setEnumSort(e.target.value as 'n' | 'flags')}>
-                  <option value="flags">Most to check first</option>
-                  <option value="n">Most interviews first</option>
+                  <option value="flags">Highest flagged share</option>
+                  <option value="n">Most interviews</option>
                 </select>
               </div>
             </div>
@@ -525,11 +537,11 @@ export function BaselineMonitor() {
                   <tr>
                     {([
                       ['Enumerator', ''],
-                      ['Interviews done', 'How many interviews this person has collected, within the filters set above.'],
-                      ['Length recorded', 'For how many of their interviews do we know the length? Where the number is low, their phone was running an older version of the form that did not save an end time — so we cannot tell how long those interviews took. This is not the enumerator’s fault.'],
-                      ['Usual length', 'How long their interviews usually take (the middle value). Counts only interviews whose length we know.'],
-                      ['Questions to check', 'How many of their interviews have an answer worth checking — for example two answers that contradict each other, or an income that looks like it is missing a zero.'],
-                      ['Status', 'A quick read on whether this person’s interviews need attention. It looks at flagged answers only. “Length recorded” is never counted against them, because that is the form version, not their work.'],
+                      ['Interviews', 'Interviews collected, within the filters set above.'],
+                      ['Length recorded', 'Interviews whose length we can measure, out of their total. Where this is low, the device was running an older form version that never saved an end time — so those interviews have no measurable duration. It is a form-version issue, not the enumerator’s.'],
+                      ['Median length', 'Median duration, over the interviews whose length we can measure. Interviews left open in draft are excluded so they do not stretch the figure.'],
+                      ['Flagged interviews', 'Interviews carrying at least one high or critical flag — a contradiction between answers, an income missing a zero, an out-of-range age. Counted as interviews, not flags: one interview can raise several.'],
+                      ['Status', 'The share of an enumerator’s interviews that are flagged. Many = a quarter or more; Some = at least one; None = clean. A share, not a total, so a heavier workload alone never worsens it. Recorded-length coverage is never counted here.'],
                     ] as [string, string][]).map(([h, tip], i) => (
                       <th key={h} className={i ? 'num' : ''} title={tip || undefined}
                         style={tip ? { cursor: 'help', textDecoration: 'underline dotted', textUnderlineOffset: 3, textDecorationColor: 'var(--hair-2)' } : undefined}>{h}</th>
@@ -558,14 +570,21 @@ export function BaselineMonitor() {
                           <div style={{ fontSize: 12.5, color: 'var(--muted)' }}>{r.valid_timing_pct}%</div>
                         </td>
                         <td className="num">{r.median_min != null ? `${r.median_min}m` : '—'}</td>
-                        <td className="num" style={{ fontWeight: 700, color: r.flags.critical + r.flags.high > 0 ? 'var(--high)' : 'var(--muted)' }}>
-                          {r.flags.critical + r.flags.high || '—'}
+                        <td className="num">
+                          <div style={{ fontWeight: 700, color: r.flagged > 0 ? 'var(--high)' : 'var(--muted)' }}>
+                            {r.flagged ? `${r.flagged}/${r.n}` : '—'}
+                          </div>
+                          {r.flagged > 0 && (
+                            <div style={{ fontSize: 12.5, color: 'var(--muted)' }}>
+                              {Math.round(100 * r.rate)}%
+                            </div>
+                          )}
                         </td>
                         <td className="num">
                           <span className={`tagchip ${st.cls}`}
                             title={r.status === 'good'
-                              ? `None of ${r.code}’s ${r.n} interviews have an answer worth checking.`
-                              : `${r.flags.critical + r.flags.high} of ${r.code}’s ${r.n} interviews have an answer worth checking — about ${Math.round((100 * (r.flags.critical + r.flags.high)) / Math.max(r.n, 1))} in every 100. We compare people by share, not by total, so someone who simply does more interviews is never marked worse for it. How many interviews had their length recorded is never counted here — that depends on the version of the form their phone was running.`}>
+                              ? `None of ${r.code}’s ${r.n} interviews carry a flag.`
+                              : `${r.flagged} of ${r.code}’s ${r.n} interviews carry a flag (${Math.round(100 * r.rate)}%), raising ${r.flags.critical + r.flags.high} flag${r.flags.critical + r.flags.high === 1 ? '' : 's'} in total — one interview can raise several. Status is set on the share, not the total, so a heavier workload alone never worsens it. Recorded-length coverage is not counted here: a low figure means an older form version, not this enumerator.`}>
                             {st.icon}{st.label}
                           </span>
                         </td>
