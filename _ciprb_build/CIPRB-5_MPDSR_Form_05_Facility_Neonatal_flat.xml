@@ -1,0 +1,2235 @@
+<?xml version="1.0"?>
+<h:html xmlns="http://www.w3.org/2002/xforms" xmlns:h="http://www.w3.org/1999/xhtml" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:jr="http://openrosa.org/javarosa" xmlns:orx="http://openrosa.org/xforms" xmlns:odk="http://www.opendatakit.org/xforms">
+  <h:head>
+    <h:title>CIPRB 5 — MPDSR Form 05 (Facility Neonatal Death)</h:title>
+    <model odk:xforms-version="1.0.0">
+      <itext>
+        <translation lang="English" default="true()">
+          <text id="district-0">
+            <value>Sunamganj</value>
+          </text>
+          <text id="district-1">
+            <value>Sherpur</value>
+          </text>
+          <text id="district-2">
+            <value>Bhola</value>
+          </text>
+          <text id="district-3">
+            <value>Kurigram</value>
+          </text>
+          <text id="district-4">
+            <value>Gaibandha</value>
+          </text>
+          <text id="district-5">
+            <value>Khagrachari</value>
+          </text>
+          <text id="district-6">
+            <value>Noakhali</value>
+          </text>
+          <text id="district-7">
+            <value>Patuakhali</value>
+          </text>
+          <text id="district-8">
+            <value>Sirajganj</value>
+          </text>
+          <text id="district-9">
+            <value>Barguna</value>
+          </text>
+          <text id="district-10">
+            <value>Jamalpur</value>
+          </text>
+          <text id="district-11">
+            <value>Bagerhat</value>
+          </text>
+          <text id="district-12">
+            <value>Habiganj</value>
+          </text>
+          <text id="district-13">
+            <value>Moulavibazar</value>
+          </text>
+          <text id="district-14">
+            <value>Sylhet</value>
+          </text>
+          <text id="district-15">
+            <value>Bandarban</value>
+          </text>
+          <text id="district-16">
+            <value>Chandpur</value>
+          </text>
+          <text id="district-17">
+            <value>Rangpur</value>
+          </text>
+          <text id="district-18">
+            <value>Dhaka</value>
+          </text>
+          <text id="yes_no-0">
+            <value>Yes</value>
+          </text>
+          <text id="yes_no-1">
+            <value>No</value>
+          </text>
+          <text id="yes_no-2">
+            <value>Unknown</value>
+          </text>
+          <text id="recorded_status-0">
+            <value>Recorded</value>
+          </text>
+          <text id="recorded_status-1">
+            <value>Not recorded</value>
+          </text>
+          <text id="birth_place-0">
+            <value>Home</value>
+          </text>
+          <text id="birth_place-1">
+            <value>Community Clinic</value>
+          </text>
+          <text id="birth_place-2">
+            <value>Union Health &amp; Family Welfare Centre</value>
+          </text>
+          <text id="birth_place-3">
+            <value>Upazila Health Complex</value>
+          </text>
+          <text id="birth_place-4">
+            <value>Maternal Centre</value>
+          </text>
+          <text id="birth_place-5">
+            <value>District or Sadar hospital</value>
+          </text>
+          <text id="birth_place-6">
+            <value>Medical College hospital</value>
+          </text>
+          <text id="birth_place-7">
+            <value>Private clinic/hospital</value>
+          </text>
+          <text id="birth_place-8">
+            <value>NGO clinic</value>
+          </text>
+          <text id="birth_place-9">
+            <value>Chamber/health provider's home</value>
+          </text>
+          <text id="birth_place-10">
+            <value>Other (specify)</value>
+          </text>
+          <text id="death_type-0">
+            <value>The neonate was born in this hospital and died (if ticked here, go to question No. 5)</value>
+          </text>
+          <text id="death_type-1">
+            <value>The neonate was born outside the hospital and died after admission to the hospital</value>
+          </text>
+          <text id="admission_condition-0">
+            <value>Stable</value>
+          </text>
+          <text id="admission_condition-1">
+            <value>Unconscious</value>
+          </text>
+          <text id="admission_condition-2">
+            <value>Unstable</value>
+          </text>
+          <text id="admission_condition-3">
+            <value>Not recorded</value>
+          </text>
+          <text id="admission_diagnosis-0">
+            <value>Birth Asphyxia</value>
+          </text>
+          <text id="admission_diagnosis-1">
+            <value>Septicemia</value>
+          </text>
+          <text id="admission_diagnosis-2">
+            <value>Low birth weight</value>
+          </text>
+          <text id="admission_diagnosis-3">
+            <value>Severe Pneumonia</value>
+          </text>
+          <text id="admission_diagnosis-4">
+            <value>Meningitis</value>
+          </text>
+          <text id="admission_diagnosis-5">
+            <value>Birth trauma</value>
+          </text>
+          <text id="admission_diagnosis-6">
+            <value>Congenital anomalies</value>
+          </text>
+          <text id="admission_diagnosis-7">
+            <value>Not recorded</value>
+          </text>
+          <text id="admission_diagnosis-8">
+            <value>Others (specify)</value>
+          </text>
+          <text id="referral_source-0">
+            <value>Government institution</value>
+          </text>
+          <text id="referral_source-1">
+            <value>Private institution</value>
+          </text>
+          <text id="referral_source-2">
+            <value>Home</value>
+          </text>
+          <text id="referral_source-3">
+            <value>Not known</value>
+          </text>
+          <text id="referral_source-4">
+            <value>Other (specify)</value>
+          </text>
+          <text id="doctor_observed-0">
+            <value>Observed (record date &amp; time)</value>
+          </text>
+          <text id="doctor_observed-1">
+            <value>Did not come</value>
+          </text>
+          <text id="doctor_observed-2">
+            <value>Not recorded</value>
+          </text>
+          <text id="danger_signs-0">
+            <value>Body arching / stiffening</value>
+          </text>
+          <text id="danger_signs-1">
+            <value>Not feeding / refuses to feed</value>
+          </text>
+          <text id="danger_signs-2">
+            <value>Fast breathing</value>
+          </text>
+          <text id="danger_signs-3">
+            <value>Fast breathing with chest indrawing</value>
+          </text>
+          <text id="danger_signs-4">
+            <value>Cold hands and feet</value>
+          </text>
+          <text id="danger_signs-5">
+            <value>Fever</value>
+          </text>
+          <text id="danger_signs-6">
+            <value>No or reduced movement</value>
+          </text>
+          <text id="danger_signs-7">
+            <value>Jaundice</value>
+          </text>
+          <text id="danger_signs-8">
+            <value>Red / discharging umbilicus</value>
+          </text>
+          <text id="danger_signs-9">
+            <value>Skin pustules / boils</value>
+          </text>
+          <text id="danger_signs-10">
+            <value>Diarrhoea</value>
+          </text>
+          <text id="danger_signs-11">
+            <value>Don't know</value>
+          </text>
+          <text id="danger_signs-12">
+            <value>Other (specify)</value>
+          </text>
+          <text id="specialist_diagnosis-0">
+            <value>Birth Asphyxia P-21</value>
+          </text>
+          <text id="specialist_diagnosis-1">
+            <value>Septicemia P-36</value>
+          </text>
+          <text id="specialist_diagnosis-2">
+            <value>Low birth weight P-07</value>
+          </text>
+          <text id="specialist_diagnosis-3">
+            <value>Severe Pneumonia</value>
+          </text>
+          <text id="specialist_diagnosis-4">
+            <value>Meningitis GO</value>
+          </text>
+          <text id="specialist_diagnosis-5">
+            <value>Birth trauma P-10-15</value>
+          </text>
+          <text id="specialist_diagnosis-6">
+            <value>Congenital anomalies Q 00</value>
+          </text>
+          <text id="specialist_diagnosis-7">
+            <value>Others (specify)</value>
+          </text>
+          <text id="anomaly_site-0">
+            <value>Head</value>
+          </text>
+          <text id="anomaly_site-1">
+            <value>Mouth / palate</value>
+          </text>
+          <text id="anomaly_site-2">
+            <value>Lip</value>
+          </text>
+          <text id="anomaly_site-3">
+            <value>Hands</value>
+          </text>
+          <text id="anomaly_site-4">
+            <value>Chest</value>
+          </text>
+          <text id="anomaly_site-5">
+            <value>Anus / back passage</value>
+          </text>
+          <text id="anomaly_site-6">
+            <value>Sole of foot</value>
+          </text>
+          <text id="anomaly_site-7">
+            <value>Vaginal passage</value>
+          </text>
+          <text id="anomaly_site-8">
+            <value>Other (specify)</value>
+          </text>
+          <text id="place_of_death_facility-0">
+            <value>Emergency room</value>
+          </text>
+          <text id="place_of_death_facility-1">
+            <value>During transfer</value>
+          </text>
+          <text id="place_of_death_facility-2">
+            <value>Ward</value>
+          </text>
+          <text id="place_of_death_facility-3">
+            <value>Labour room</value>
+          </text>
+          <text id="place_of_death_facility-4">
+            <value>Operation room</value>
+          </text>
+          <text id="place_of_death_facility-5">
+            <value>Neonatal ward ( SCANU)</value>
+          </text>
+          <text id="place_of_death_facility-6">
+            <value>In some other place (specify)</value>
+          </text>
+          <text id="cod_cause-0">
+            <value>Birth Asphyxia (P-21)</value>
+          </text>
+          <text id="cod_cause-1">
+            <value>Birth trauma (P 10-15)</value>
+          </text>
+          <text id="cod_cause-2">
+            <value>Low birth weight (P 07)</value>
+          </text>
+          <text id="cod_cause-3">
+            <value>Congenital anomalies (Q OO)</value>
+          </text>
+          <text id="cod_cause-4">
+            <value>Meningitis (GOO)</value>
+          </text>
+          <text id="cod_cause-5">
+            <value>Septicemia (P 36)</value>
+          </text>
+          <text id="/data/grp_meta:label">
+            <value>Submission info</value>
+          </text>
+          <text id="/data/grp_meta/location:label">
+            <value>GPS location (required — step outside if no signal)</value>
+          </text>
+          <text id="/data/grp_meta/collection_date:label">
+            <value>Date</value>
+          </text>
+          <text id="/data/grp_meta/district:label">
+            <value>District</value>
+          </text>
+          <text id="/data/grp_meta/upazila:label">
+            <value>Upazila</value>
+          </text>
+          <text id="/data/grp_meta/union:label">
+            <value>Union / Pourashava</value>
+          </text>
+          <text id="/data/grp_meta/ward:label">
+            <value>Ward</value>
+          </text>
+          <text id="/data/grp_meta/village:label">
+            <value>Village / Mahalla</value>
+          </text>
+          <text id="/data/grp_meta/enumerator_name:label">
+            <value>Your name (person filling this form)</value>
+          </text>
+          <text id="/data/grp_meta/enumerator_designation:label">
+            <value>Designation</value>
+          </text>
+          <text id="/data/grp_meta/enumerator_institution:label">
+            <value>Institution</value>
+          </text>
+          <text id="/data/grp_meta/enumerator_mobile:label">
+            <value>Mobile number</value>
+          </text>
+          <text id="/data/grp_office:label">
+            <value>For office use</value>
+          </text>
+          <text id="/data/grp_office/office_submission_date:label">
+            <value>Date of form submission</value>
+          </text>
+          <text id="/data/grp_office/case_serial:label">
+            <value>Annual neonatal death serial number</value>
+          </text>
+          <text id="/data/grp_office/office_receiver:label">
+            <value>Name &amp; signature of form receiver</value>
+          </text>
+          <text id="/data/grp_facility:label">
+            <value>Facility information</value>
+          </text>
+          <text id="/data/grp_facility/facility_name:label">
+            <value>Name of facility</value>
+          </text>
+          <text id="/data/grp_facility/facility_code:label">
+            <value>Facility code</value>
+          </text>
+          <text id="/data/grp_identity:label">
+            <value>Mother &amp; neonate identity</value>
+          </text>
+          <text id="/data/grp_identity/mother_name:label">
+            <value>Mother's name</value>
+          </text>
+          <text id="/data/grp_identity/mother_age:label">
+            <value>Mother's age (years)</value>
+          </text>
+          <text id="/data/grp_identity/neonate_name:label">
+            <value>Neonate's name</value>
+          </text>
+          <text id="/data/grp_identity/age_death_note:label">
+            <value>Age of neonate at time of death (day/hour/minute)</value>
+          </text>
+          <text id="/data/grp_identity/age_death_days:label">
+            <value>Day</value>
+          </text>
+          <text id="/data/grp_identity/age_death_hours:label">
+            <value>Hour</value>
+          </text>
+          <text id="/data/grp_identity/age_death_minutes:label">
+            <value>Minute</value>
+          </text>
+          <text id="/data/grp_identity/hospital_reg_no:label">
+            <value>Mother / neonate hospital registration number</value>
+          </text>
+          <text id="/data/grp_identity/hospital_ward_no:label">
+            <value>Hospital ward number</value>
+          </text>
+          <text id="/data/grp_identity/hospital_bed_no:label">
+            <value>Hospital bed number</value>
+          </text>
+          <text id="/data/grp_mother_addr:label">
+            <value>Mother's address</value>
+          </text>
+          <text id="/data/grp_mother_addr/mother_district:label">
+            <value>District</value>
+          </text>
+          <text id="/data/grp_mother_addr/mother_upazila:label">
+            <value>Upazila</value>
+          </text>
+          <text id="/data/grp_mother_addr/mother_union:label">
+            <value>Union / Pourashava</value>
+          </text>
+          <text id="/data/grp_mother_addr/mother_ward:label">
+            <value>Ward</value>
+          </text>
+          <text id="/data/grp_mother_addr/mother_village:label">
+            <value>Village</value>
+          </text>
+          <text id="/data/grp_mother_addr/father_name:label">
+            <value>Father's name</value>
+          </text>
+          <text id="/data/grp_mother_addr/family_phone:label">
+            <value>Phone number</value>
+          </text>
+          <text id="/data/grp_q1:label">
+            <value>Q1. Place of birth</value>
+          </text>
+          <text id="/data/grp_q1/birth_place:label">
+            <value>1. Place of birth of the neonate?</value>
+          </text>
+          <text id="/data/grp_q1/birth_place_other:label">
+            <value>Other (specify)</value>
+          </text>
+          <text id="/data/grp_q2:label">
+            <value>Q2. Type of neonatal death</value>
+          </text>
+          <text id="/data/grp_q2/death_type:label">
+            <value>2. What type of neonatal death was it? (If applicable, tick.)</value>
+          </text>
+          <text id="/data/grp_q3:label">
+            <value>Q3. ER / Emergency arrival</value>
+          </text>
+          <text id="/data/grp_q3/er_arrival_recorded:label">
+            <value>3. Was the ER / emergency arrival recorded?</value>
+          </text>
+          <text id="/data/grp_q3/er_arrival_date:label">
+            <value>3. Date brought to ER / emergency department</value>
+          </text>
+          <text id="/data/grp_q3/er_arrival_time:label">
+            <value>Time</value>
+          </text>
+          <text id="/data/grp_q4:label">
+            <value>Q4. Inpatient admission</value>
+          </text>
+          <text id="/data/grp_q4/admission_recorded:label">
+            <value>4. Was the inpatient admission recorded?</value>
+          </text>
+          <text id="/data/grp_q4/admission_date:label">
+            <value>4. Date of inpatient admission</value>
+          </text>
+          <text id="/data/grp_q4/admission_time:label">
+            <value>Time</value>
+          </text>
+          <text id="/data/grp_q5:label">
+            <value>Q5. Date of death</value>
+          </text>
+          <text id="/data/grp_q5/death_datetime_recorded:label">
+            <value>5. Was the date / time of death recorded?</value>
+          </text>
+          <text id="/data/grp_q5/death_date:label">
+            <value>5. Date of death</value>
+          </text>
+          <text id="/data/grp_q5/death_time:label">
+            <value>Time</value>
+          </text>
+          <text id="/data/grp_q6:label">
+            <value>Q6. Condition at admission</value>
+          </text>
+          <text id="/data/grp_q6/admission_condition:label">
+            <value>6. Condition of the neonate at admission</value>
+          </text>
+          <text id="/data/grp_q7:label">
+            <value>Q7. Diagnosis at admission / after birth</value>
+          </text>
+          <text id="/data/grp_q7/admission_diagnosis:label">
+            <value>7. What disease was diagnosed at the admission of the neonate or after birth in the hospital (✓ tick)</value>
+          </text>
+          <text id="/data/grp_q7/admission_diagnosis_other:label">
+            <value>Others (specify)</value>
+          </text>
+          <text id="/data/grp_q8:label">
+            <value>Q8–Q9. Referral</value>
+          </text>
+          <text id="/data/grp_q8/referred_in:label">
+            <value>8. Was the neonate a referred patient? (✓ tick)</value>
+          </text>
+          <text id="/data/grp_q8/referral_source:label">
+            <value>9. If yes, from where was it referred? (✓ tick)</value>
+          </text>
+          <text id="/data/grp_q8/referral_source_other:label">
+            <value>Other (specify)</value>
+          </text>
+          <text id="/data/grp_q10:label">
+            <value>Q10. First observation by doctor / consultant</value>
+          </text>
+          <text id="/data/grp_q10/doctor_observed:label">
+            <value>10. When did a doctor / consultant first observe the neonate?</value>
+          </text>
+          <text id="/data/grp_q10/doctor_observe_date:label">
+            <value>10. Date</value>
+          </text>
+          <text id="/data/grp_q10/doctor_observe_time:label">
+            <value>Time (24h)</value>
+          </text>
+          <text id="/data/grp_q11:label">
+            <value>Q11. Danger signs</value>
+          </text>
+          <text id="/data/grp_q11/danger_signs:label">
+            <value>11. Did the neonate have any danger sign? (tick the correct box)</value>
+          </text>
+          <text id="/data/grp_q11/danger_signs_other:label">
+            <value>Other (specify)</value>
+          </text>
+          <text id="/data/grp_q12:label">
+            <value>Q12. Specialist inpatient diagnosis</value>
+          </text>
+          <text id="/data/grp_q12/specialist_diagnosis:label">
+            <value>12. What disease was diagnosed for the neonate by the specialist in the inpatient department of the hospital?</value>
+          </text>
+          <text id="/data/grp_q12/specialist_diagnosis_other:label">
+            <value>Others (specify)</value>
+          </text>
+          <text id="/data/grp_q13:label">
+            <value>Q13. Time to treatment after admission</value>
+          </text>
+          <text id="/data/grp_q13/treatment_start_date:label">
+            <value>13. How long after admission did hospital inpatient-department treatment start — Date</value>
+          </text>
+          <text id="/data/grp_q13/treatment_start_time:label">
+            <value>Time (24h)</value>
+          </text>
+          <text id="/data/grp_q14:label">
+            <value>Q14. Birth weight</value>
+          </text>
+          <text id="/data/grp_q14/birth_weight_grams:label">
+            <value>14. Weight of the child after birth (grams)</value>
+          </text>
+          <text id="/data/grp_q15:label">
+            <value>Q15–Q16. Congenital anomaly</value>
+          </text>
+          <text id="/data/grp_q15/congenital_anomaly:label">
+            <value>15. Did the neonate have any congenital anomaly?</value>
+          </text>
+          <text id="/data/grp_q15/anomaly_site:label">
+            <value>16. If yes, where was the congenital anomaly?</value>
+          </text>
+          <text id="/data/grp_q15/anomaly_site_other:label">
+            <value>Other (specify)</value>
+          </text>
+          <text id="/data/grp_q17:label">
+            <value>Q17. Place of death in facility</value>
+          </text>
+          <text id="/data/grp_q17/place_of_death_facility:label">
+            <value>17. In which department or place of the hospital did the neonate die?</value>
+          </text>
+          <text id="/data/grp_q17/place_of_death_other:label">
+            <value>Other place (specify)</value>
+          </text>
+          <text id="/data/grp_q18:label">
+            <value>Q18. Most probable cause of death (WHO Cause of death form, with separate ICD list)</value>
+          </text>
+          <text id="/data/grp_q18/cod_cause:label">
+            <value>18. Most probable cause of death: (you may tick more than one answer ✓) (WHO Cause of death form, with separate ICD list)</value>
+          </text>
+          <text id="/data/grp_q19:label">
+            <value>Q19. Write the probable cause of death</value>
+          </text>
+          <text id="/data/grp_q19/cause_name:label">
+            <value>Name of disease</value>
+          </text>
+          <text id="/data/grp_q19/icd10_code:label">
+            <value>ICD 10 code no.</value>
+          </text>
+          <text id="/data/grp_q20:label">
+            <value>Q20. Brief narrative of the death</value>
+          </text>
+          <text id="/data/grp_q20/death_narrative:label">
+            <value>20. Write briefly the description of the patient's death event.</value>
+          </text>
+          <text id="/data/grp_reviewer:label">
+            <value>Death reviewer</value>
+          </text>
+          <text id="/data/grp_reviewer/reviewer_name:label">
+            <value>Name of death reviewer</value>
+          </text>
+          <text id="/data/grp_reviewer/reviewer_designation:label">
+            <value>Designation</value>
+          </text>
+          <text id="/data/grp_reviewer/data_collection_date:label">
+            <value>Date of data collection</value>
+          </text>
+        </translation>
+        <translation lang="Bangla">
+          <text id="district-0">
+            <value>সুনামগঞ্জ</value>
+          </text>
+          <text id="district-1">
+            <value>শেরপুর</value>
+          </text>
+          <text id="district-2">
+            <value>ভোলা</value>
+          </text>
+          <text id="district-3">
+            <value>কুড়িগ্রাম</value>
+          </text>
+          <text id="district-4">
+            <value>গাইবান্ধা</value>
+          </text>
+          <text id="district-5">
+            <value>খাগড়াছড়ি</value>
+          </text>
+          <text id="district-6">
+            <value>নোয়াখালী</value>
+          </text>
+          <text id="district-7">
+            <value>পটুয়াখালী</value>
+          </text>
+          <text id="district-8">
+            <value>সিরাজগঞ্জ</value>
+          </text>
+          <text id="district-9">
+            <value>বরগুনা</value>
+          </text>
+          <text id="district-10">
+            <value>জামালপুর</value>
+          </text>
+          <text id="district-11">
+            <value>বাগেরহাট</value>
+          </text>
+          <text id="district-12">
+            <value>হবিগঞ্জ</value>
+          </text>
+          <text id="district-13">
+            <value>মৌলভীবাজার</value>
+          </text>
+          <text id="district-14">
+            <value>সিলেট</value>
+          </text>
+          <text id="district-15">
+            <value>বান্দরবান</value>
+          </text>
+          <text id="district-16">
+            <value>চাঁদপুর</value>
+          </text>
+          <text id="district-17">
+            <value>রংপুর</value>
+          </text>
+          <text id="district-18">
+            <value>ঢাকা</value>
+          </text>
+          <text id="yes_no-0">
+            <value>হ্যাঁ</value>
+          </text>
+          <text id="yes_no-1">
+            <value>না</value>
+          </text>
+          <text id="yes_no-2">
+            <value>অজানা</value>
+          </text>
+          <text id="recorded_status-0">
+            <value>রেকর্ড করা হয়েছে</value>
+          </text>
+          <text id="recorded_status-1">
+            <value>রেকর্ড করা হয়নি</value>
+          </text>
+          <text id="birth_place-0">
+            <value>বাড়ী</value>
+          </text>
+          <text id="birth_place-1">
+            <value>কমিউনিটি ক্লিনিক</value>
+          </text>
+          <text id="birth_place-2">
+            <value>ইউনিয়ন স্বাস্থ্য ও পরিবার কল্যাণ কেন্দ্র</value>
+          </text>
+          <text id="birth_place-3">
+            <value>উপজেলা স্বাস্থ্য কমপ্লেক্স</value>
+          </text>
+          <text id="birth_place-4">
+            <value>মাতৃমঙ্গল কেন্দ্র</value>
+          </text>
+          <text id="birth_place-5">
+            <value>জেলা অথবা সদর হাসপাতাল</value>
+          </text>
+          <text id="birth_place-6">
+            <value>মেডিকেল কলেজ হাসপাতাল</value>
+          </text>
+          <text id="birth_place-7">
+            <value>প্রাইভেট ক্লিনিক/হাসপাতাল</value>
+          </text>
+          <text id="birth_place-8">
+            <value>এনজিওক্লিনিক</value>
+          </text>
+          <text id="birth_place-9">
+            <value>চেম্বার/স্বাস্থ্য সেবাদানকারীর বাড়ী</value>
+          </text>
+          <text id="birth_place-10">
+            <value>অন্যান্য (উল্লেখ করুন)</value>
+          </text>
+          <text id="death_type-0">
+            <value>নবজাতক এই হাসপাতালে জন্মগ্রহণ করে এবং মারা যায় (এখানে টিক দিলে ৫ নং প্রশ্নে চলে যান)</value>
+          </text>
+          <text id="death_type-1">
+            <value>নবজাতক হাসপাতালের বাইরে জন্মগ্রহণ এবং হাসপাতালে ভতির পর মৃত্যুবরণ করে</value>
+          </text>
+          <text id="admission_condition-0">
+            <value>স্থিতিশীল (Stable)</value>
+          </text>
+          <text id="admission_condition-1">
+            <value>অচেতন (Unconscious)</value>
+          </text>
+          <text id="admission_condition-2">
+            <value>অস্থিতিশীল (Unstable)</value>
+          </text>
+          <text id="admission_condition-3">
+            <value>রেকর্ড করা হয়নি</value>
+          </text>
+          <text id="admission_diagnosis-0">
+            <value>শ্বাস কষ্ট (Birth Asphyxia)</value>
+          </text>
+          <text id="admission_diagnosis-1">
+            <value>সেপ্টিসেমিয়া (Septicemia)</value>
+          </text>
+          <text id="admission_diagnosis-2">
+            <value>কম ওজন জন্ম (Low birth weight)</value>
+          </text>
+          <text id="admission_diagnosis-3">
+            <value>মারাত্নক নিউমোনিয়া (Severe Pneumonia)</value>
+          </text>
+          <text id="admission_diagnosis-4">
+            <value>মেনিনজাইটিস (Meningitis)</value>
+          </text>
+          <text id="admission_diagnosis-5">
+            <value>জন্মকালীন আঘাত (Birth trauma)</value>
+          </text>
+          <text id="admission_diagnosis-6">
+            <value>জন্মগত ত্রুটি (Congenital anomalies)</value>
+          </text>
+          <text id="admission_diagnosis-7">
+            <value>রেকর্ড করা হয়নি</value>
+          </text>
+          <text id="admission_diagnosis-8">
+            <value>অন্যান্য Others (উল্লেখ করুন)</value>
+          </text>
+          <text id="referral_source-0">
+            <value>সরকারি প্রতিষ্ঠান</value>
+          </text>
+          <text id="referral_source-1">
+            <value>বেসরকারি প্রতিষ্ঠান</value>
+          </text>
+          <text id="referral_source-2">
+            <value>বাড়ি</value>
+          </text>
+          <text id="referral_source-3">
+            <value>জানা নেই</value>
+          </text>
+          <text id="referral_source-4">
+            <value>অন্যান্য (উল্লেখ করুন)</value>
+          </text>
+          <text id="doctor_observed-0">
+            <value>পর্যবেক্ষণ করা হয়েছে (তারিখ ও সময় উল্লেখ করুন)</value>
+          </text>
+          <text id="doctor_observed-1">
+            <value>অথবা আসে নাই</value>
+          </text>
+          <text id="doctor_observed-2">
+            <value>রেকর্ড করা হয়নি</value>
+          </text>
+          <text id="danger_signs-0">
+            <value>শরীর বেঁকে যাওয়া</value>
+          </text>
+          <text id="danger_signs-1">
+            <value>খেতে না পারা বা খেতে চায় না</value>
+          </text>
+          <text id="danger_signs-2">
+            <value>দ্রুত শ্বাস</value>
+          </text>
+          <text id="danger_signs-3">
+            <value>দ্রুত শ্বাস ও বুক দেবে যাওয়া</value>
+          </text>
+          <text id="danger_signs-4">
+            <value>হাত পা ঠান্ডা হয়ে যাওয়া</value>
+          </text>
+          <text id="danger_signs-5">
+            <value>জ্বর</value>
+          </text>
+          <text id="danger_signs-6">
+            <value>নড়াচড়া না করা বা কম নড়াচড়া করা</value>
+          </text>
+          <text id="danger_signs-7">
+            <value>জন্ডিস</value>
+          </text>
+          <text id="danger_signs-8">
+            <value>নাভিতে লালচে দাগ বা পুজ পরা</value>
+          </text>
+          <text id="danger_signs-9">
+            <value>চামড়ার মধ্যে ফোড়া ও পুজ</value>
+          </text>
+          <text id="danger_signs-10">
+            <value>ডায়রিয়া</value>
+          </text>
+          <text id="danger_signs-11">
+            <value>জানি না</value>
+          </text>
+          <text id="danger_signs-12">
+            <value>অন্যান্য (উল্লেখ করুন)</value>
+          </text>
+          <text id="specialist_diagnosis-0">
+            <value>শ্বাস কষ্ট (Birth Asphyxia) P-21</value>
+          </text>
+          <text id="specialist_diagnosis-1">
+            <value>সেপ্টিসেমিয়া (Septicemia) P-36</value>
+          </text>
+          <text id="specialist_diagnosis-2">
+            <value>কম ওজন জন্ম (Low birth weight) P-07</value>
+          </text>
+          <text id="specialist_diagnosis-3">
+            <value>মারাত্নক নিউমোনিয়া (Severe Pneumonia)</value>
+          </text>
+          <text id="specialist_diagnosis-4">
+            <value>মিনিনজাইটিস (Meningitis) GO</value>
+          </text>
+          <text id="specialist_diagnosis-5">
+            <value>জন্মকালীন আঘাত (Birth trauma) P-10-15</value>
+          </text>
+          <text id="specialist_diagnosis-6">
+            <value>জন্মগত ত্রুটি (Congenital anomalies) Q 00</value>
+          </text>
+          <text id="specialist_diagnosis-7">
+            <value>অন্যান্য Others (উল্লেখ করুন)</value>
+          </text>
+          <text id="anomaly_site-0">
+            <value>মাথা</value>
+          </text>
+          <text id="anomaly_site-1">
+            <value>মুখের তালু</value>
+          </text>
+          <text id="anomaly_site-2">
+            <value>ঠোঁট</value>
+          </text>
+          <text id="anomaly_site-3">
+            <value>হাতে</value>
+          </text>
+          <text id="anomaly_site-4">
+            <value>বুকে</value>
+          </text>
+          <text id="anomaly_site-5">
+            <value>পায়ু পথে</value>
+          </text>
+          <text id="anomaly_site-6">
+            <value>পায়ের পাতাতে</value>
+          </text>
+          <text id="anomaly_site-7">
+            <value>যোনী পথে</value>
+          </text>
+          <text id="anomaly_site-8">
+            <value>অন্যান্য (উল্লেখ করুন)</value>
+          </text>
+          <text id="place_of_death_facility-0">
+            <value>ইমারজেন্সি রুমে</value>
+          </text>
+          <text id="place_of_death_facility-1">
+            <value>স্থানান্তরের সময়</value>
+          </text>
+          <text id="place_of_death_facility-2">
+            <value>ওয়ার্ডে</value>
+          </text>
+          <text id="place_of_death_facility-3">
+            <value>লেবার রুমে</value>
+          </text>
+          <text id="place_of_death_facility-4">
+            <value>অপারেশান রুমে</value>
+          </text>
+          <text id="place_of_death_facility-5">
+            <value>নবজাতক ওয়ার্ডে ( SCANU)</value>
+          </text>
+          <text id="place_of_death_facility-6">
+            <value>অন্য কোন স্থানে উল্লেখ করুন</value>
+          </text>
+          <text id="cod_cause-0">
+            <value>Birth Asphyxia (P-21)</value>
+          </text>
+          <text id="cod_cause-1">
+            <value>Birth trauma (P 10-15)</value>
+          </text>
+          <text id="cod_cause-2">
+            <value>Low birth weight (P 07)</value>
+          </text>
+          <text id="cod_cause-3">
+            <value>Congenital anomalies (Q OO)</value>
+          </text>
+          <text id="cod_cause-4">
+            <value>Meningitis (GOO)</value>
+          </text>
+          <text id="cod_cause-5">
+            <value>Septicemia (P 36)</value>
+          </text>
+          <text id="/data/grp_meta:label">
+            <value>তথ্য প্রেরণ</value>
+          </text>
+          <text id="/data/grp_meta/location:label">
+            <value>জিপিএস অবস্থান (প্রয়োজনীয়)</value>
+          </text>
+          <text id="/data/grp_meta/collection_date:label">
+            <value>তারিখ</value>
+          </text>
+          <text id="/data/grp_meta/district:label">
+            <value>জেলা</value>
+          </text>
+          <text id="/data/grp_meta/upazila:label">
+            <value>উপজেলা</value>
+          </text>
+          <text id="/data/grp_meta/union:label">
+            <value>ইউনিয়ন / পৌরসভা</value>
+          </text>
+          <text id="/data/grp_meta/ward:label">
+            <value>ওয়ার্ড</value>
+          </text>
+          <text id="/data/grp_meta/village:label">
+            <value>গ্রাম / মহল্লা</value>
+          </text>
+          <text id="/data/grp_meta/enumerator_name:label">
+            <value>আপনার নাম (কে পূরণ করছেন)</value>
+          </text>
+          <text id="/data/grp_meta/enumerator_designation:label">
+            <value>পদবী</value>
+          </text>
+          <text id="/data/grp_meta/enumerator_institution:label">
+            <value>প্রতিষ্ঠান</value>
+          </text>
+          <text id="/data/grp_meta/enumerator_mobile:label">
+            <value>মোবাইল নম্বর</value>
+          </text>
+          <text id="/data/grp_office:label">
+            <value>অফিসের ব্যবহারের জন্য</value>
+          </text>
+          <text id="/data/grp_office/office_submission_date:label">
+            <value>ফর্ম জমাদানের তারিখ</value>
+          </text>
+          <text id="/data/grp_office/case_serial:label">
+            <value>নবজাতক মৃত্যুর বাৎসরিক ক্রমিক নং</value>
+          </text>
+          <text id="/data/grp_office/office_receiver:label">
+            <value>ফর্ম গ্রহণকারীর নাম ও স্বাক্ষর</value>
+          </text>
+          <text id="/data/grp_facility:label">
+            <value>প্রতিষ্ঠানের তথ্য</value>
+          </text>
+          <text id="/data/grp_facility/facility_name:label">
+            <value>ফ্যাসিলিটির নাম:</value>
+          </text>
+          <text id="/data/grp_facility/facility_code:label">
+            <value>ফ্যাসিলিটি কোড</value>
+          </text>
+          <text id="/data/grp_identity:label">
+            <value>মা ও নবজাতকের পরিচিতি</value>
+          </text>
+          <text id="/data/grp_identity/mother_name:label">
+            <value>মায়ের নাম:</value>
+          </text>
+          <text id="/data/grp_identity/mother_age:label">
+            <value>মায়ের বয়স: (বৎসর)</value>
+          </text>
+          <text id="/data/grp_identity/neonate_name:label">
+            <value>নবজাতকের নাম:</value>
+          </text>
+          <text id="/data/grp_identity/age_death_note:label">
+            <value>মৃত্যুর সময় নবজাতকের বয়স(দিন/ঘন্টা/মিনিট)</value>
+          </text>
+          <text id="/data/grp_identity/age_death_days:label">
+            <value>দিন</value>
+          </text>
+          <text id="/data/grp_identity/age_death_hours:label">
+            <value>ঘন্টা</value>
+          </text>
+          <text id="/data/grp_identity/age_death_minutes:label">
+            <value>মিনিট</value>
+          </text>
+          <text id="/data/grp_identity/hospital_reg_no:label">
+            <value>মা/ নবজাতকের হাসপাতালের রেজিস্ট্রেশনের নম্বর</value>
+          </text>
+          <text id="/data/grp_identity/hospital_ward_no:label">
+            <value>হাসপাতালের ওয়াড নম্বর</value>
+          </text>
+          <text id="/data/grp_identity/hospital_bed_no:label">
+            <value>হাসপাতালের বেড নম্বর</value>
+          </text>
+          <text id="/data/grp_mother_addr:label">
+            <value>মায়ের ঠিকানা:</value>
+          </text>
+          <text id="/data/grp_mother_addr/mother_district:label">
+            <value>জেলাঃ</value>
+          </text>
+          <text id="/data/grp_mother_addr/mother_upazila:label">
+            <value>উপজেলাঃ</value>
+          </text>
+          <text id="/data/grp_mother_addr/mother_union:label">
+            <value>ইউনিয়ন/পৌরসভাঃ</value>
+          </text>
+          <text id="/data/grp_mother_addr/mother_ward:label">
+            <value>ওয়াডঃ</value>
+          </text>
+          <text id="/data/grp_mother_addr/mother_village:label">
+            <value>গ্রামঃ</value>
+          </text>
+          <text id="/data/grp_mother_addr/father_name:label">
+            <value>পিতার নাম:</value>
+          </text>
+          <text id="/data/grp_mother_addr/family_phone:label">
+            <value>ফোন নংঃ</value>
+          </text>
+          <text id="/data/grp_q1:label">
+            <value>১. নবজাতকের জন্মের স্থান</value>
+          </text>
+          <text id="/data/grp_q1/birth_place:label">
+            <value>১। নবজাতকের জন্মের স্থান?</value>
+          </text>
+          <text id="/data/grp_q1/birth_place_other:label">
+            <value>অন্যান্য (উল্লেখ করুন)</value>
+          </text>
+          <text id="/data/grp_q2:label">
+            <value>২. নবজাতকের মৃত্যুর ধরন</value>
+          </text>
+          <text id="/data/grp_q2/death_type:label">
+            <value>২। নবজাতকের কোন ধরনের মৃত্যু হয়েছিল? (প্রযোজ্য হলে টিক চিহ্ন দিন):</value>
+          </text>
+          <text id="/data/grp_q3:label">
+            <value>৩। বহি: বিভাগ/ জরুরী বিভাগে আসা</value>
+          </text>
+          <text id="/data/grp_q3/er_arrival_recorded:label">
+            <value>৩। বহি: বিভাগ/ জরুরী বিভাগে আসার তথ্য রেকর্ড করা হয়েছিল?</value>
+          </text>
+          <text id="/data/grp_q3/er_arrival_date:label">
+            <value>৩। বহি: বিভাগ/ জরুরী বিভাগে নিয়ে আসার তারিখ:</value>
+          </text>
+          <text id="/data/grp_q3/er_arrival_time:label">
+            <value>সময়:</value>
+          </text>
+          <text id="/data/grp_q4:label">
+            <value>৪। অন্তর্বিভাগে ভর্তি</value>
+          </text>
+          <text id="/data/grp_q4/admission_recorded:label">
+            <value>৪। অন্তর্বিভাগে ভর্তির তথ্য রেকর্ড করা হয়েছিল?</value>
+          </text>
+          <text id="/data/grp_q4/admission_date:label">
+            <value>৪। অন্তর্বিভাগে ভর্তির তারিখ:</value>
+          </text>
+          <text id="/data/grp_q4/admission_time:label">
+            <value>সময়:</value>
+          </text>
+          <text id="/data/grp_q5:label">
+            <value>৫। মৃত্যুর তারিখ</value>
+          </text>
+          <text id="/data/grp_q5/death_datetime_recorded:label">
+            <value>৫। মৃত্যুর তারিখ / সময় রেকর্ড করা হয়েছিল?</value>
+          </text>
+          <text id="/data/grp_q5/death_date:label">
+            <value>৫। মৃত্যুর তারিখ</value>
+          </text>
+          <text id="/data/grp_q5/death_time:label">
+            <value>সময়:</value>
+          </text>
+          <text id="/data/grp_q6:label">
+            <value>৬। ভর্তির সময় নবজাতকের অবস্থা</value>
+          </text>
+          <text id="/data/grp_q6/admission_condition:label">
+            <value>৬। ভর্তির সময় নবজাতকের অবস্থা</value>
+          </text>
+          <text id="/data/grp_q7:label">
+            <value>৭. ভর্তির বা জন্মের পর রোগ নির্ণয়</value>
+          </text>
+          <text id="/data/grp_q7/admission_diagnosis:label">
+            <value>৭। নবজাতকের ভর্তির বা হাসপাতালে জন্মের পর কি রোগ নির্ণয় করা হয়েছিল (✓ টিক চিহ্ন দিন)</value>
+          </text>
+          <text id="/data/grp_q7/admission_diagnosis_other:label">
+            <value>অন্যান্য Others (উল্লেখ করুন)</value>
+          </text>
+          <text id="/data/grp_q8:label">
+            <value>৮–৯. রেফারেল</value>
+          </text>
+          <text id="/data/grp_q8/referred_in:label">
+            <value>৮। নবজাতক কি রেফারকৃত রোগী ছিল? (✓ টিক চিহ্ন দিন)</value>
+          </text>
+          <text id="/data/grp_q8/referral_source:label">
+            <value>৯। যদি হ্যাঁ হয় তাহলে কোথায় থেকে রেফার হয়েছিল? (✓ টিক চিহ্ন দিন)</value>
+          </text>
+          <text id="/data/grp_q8/referral_source_other:label">
+            <value>অন্যান্য (উল্লেখ করুন)</value>
+          </text>
+          <text id="/data/grp_q10:label">
+            <value>১০. ডাক্তার / কনসালটেন্ট কর্তৃক প্রথম পর্যবেক্ষণ</value>
+          </text>
+          <text id="/data/grp_q10/doctor_observed:label">
+            <value>১০। কখন ডাক্তার/কনসালটেন্ট প্রথম নবজাতককে পর্যবেক্ষণ করেছেন?</value>
+          </text>
+          <text id="/data/grp_q10/doctor_observe_date:label">
+            <value>তারিখ:</value>
+          </text>
+          <text id="/data/grp_q10/doctor_observe_time:label">
+            <value>সময় (২৪ঘন্টা):</value>
+          </text>
+          <text id="/data/grp_q11:label">
+            <value>১১. বিপদ চিহ্ন</value>
+          </text>
+          <text id="/data/grp_q11/danger_signs:label">
+            <value>১১। নবজাতকের কি কোন বিপদ চিহ্ন ছিল? (সঠিক বক্সে ঠিক দিন)</value>
+          </text>
+          <text id="/data/grp_q11/danger_signs_other:label">
+            <value>অন্যান্য (উল্লেখ করুন)</value>
+          </text>
+          <text id="/data/grp_q12:label">
+            <value>১২. বিশেষজ্ঞ কর্তৃক রোগ নির্ণয়</value>
+          </text>
+          <text id="/data/grp_q12/specialist_diagnosis:label">
+            <value>১২। হাসপাতালে অন্তর্বিভাগে বিশেষজ্ঞ কর্তৃক নবজাতকের কি রোগ নির্ণয় করা হয়েছিল?</value>
+          </text>
+          <text id="/data/grp_q12/specialist_diagnosis_other:label">
+            <value>অন্যান্য Others (উল্লেখ করুন)</value>
+          </text>
+          <text id="/data/grp_q13:label">
+            <value>১৩। ভর্তির কতক্ষন পর চিকিৎসা শুরু</value>
+          </text>
+          <text id="/data/grp_q13/treatment_start_date:label">
+            <value>১৩। ভর্তির কতক্ষন পর হাসপাতাল অন্তর্বিভাগে চিকিৎসা শুরু হয় তারিখ:</value>
+          </text>
+          <text id="/data/grp_q13/treatment_start_time:label">
+            <value>সময় (২৪ঘন্টা):</value>
+          </text>
+          <text id="/data/grp_q14:label">
+            <value>১৪। জন্মের পর শিশুর ওজন</value>
+          </text>
+          <text id="/data/grp_q14/birth_weight_grams:label">
+            <value>১৪। জন্মের পর শিশুর ওজন (গ্রাম)</value>
+          </text>
+          <text id="/data/grp_q15:label">
+            <value>১৫–১৬। জন্মগত ত্রুটি</value>
+          </text>
+          <text id="/data/grp_q15/congenital_anomaly:label">
+            <value>১৫। নবজাতকের কি কোন জন্মগত ত্রুটি ছিল?</value>
+          </text>
+          <text id="/data/grp_q15/anomaly_site:label">
+            <value>১৬। যদি হ্যাঁ হয় তাহলে কোথায় জন্মগত ত্রুটি ছিল</value>
+          </text>
+          <text id="/data/grp_q15/anomaly_site_other:label">
+            <value>অন্যান্য (উল্লেখ করুন)</value>
+          </text>
+          <text id="/data/grp_q17:label">
+            <value>১৭। হাসপাতালের কোন বিভাগে মৃত্যু</value>
+          </text>
+          <text id="/data/grp_q17/place_of_death_facility:label">
+            <value>১৭। হাসপাতালের কোন বিভাগে বা স্থানে নবজাতকের মৃত্যু হয়েছে?</value>
+          </text>
+          <text id="/data/grp_q17/place_of_death_other:label">
+            <value>অন্য কোন স্থানে উল্লেখ করুন</value>
+          </text>
+          <text id="/data/grp_q18:label">
+            <value>১৮। সবচেয়ে সম্ভাব্য মৃত্যুর কারণ (WHO Cause of death form, with separate ICD list)</value>
+          </text>
+          <text id="/data/grp_q18/cod_cause:label">
+            <value>১৮। সবচেয়ে সম্ভাব্য মৃত্যুর কারণ: (একাধিক উত্তর ✓ টিক চিহ্ন দিতে পারবেন) (WHO Cause of death form, with separate ICD list)</value>
+          </text>
+          <text id="/data/grp_q19:label">
+            <value>১৯। মৃত্যুর সম্ভাব্য কারণ লিখুন</value>
+          </text>
+          <text id="/data/grp_q19/cause_name:label">
+            <value>রোগের নামঃ</value>
+          </text>
+          <text id="/data/grp_q19/icd10_code:label">
+            <value>আইসিডি ১০ কোড নং</value>
+          </text>
+          <text id="/data/grp_q20:label">
+            <value>২০। রোগীর মৃত্যুর ঘটনার বিবরণ</value>
+          </text>
+          <text id="/data/grp_q20/death_narrative:label">
+            <value>২০। রোগীর মৃত্যুর ঘটনার বিবরণ লিখুন সংক্ষেপে</value>
+          </text>
+          <text id="/data/grp_reviewer:label">
+            <value>মৃত্যু পর্যালোচনাকারী</value>
+          </text>
+          <text id="/data/grp_reviewer/reviewer_name:label">
+            <value>মৃত্যু পর্যালোচনাকারীর নামঃ</value>
+          </text>
+          <text id="/data/grp_reviewer/reviewer_designation:label">
+            <value>পদবিঃ</value>
+          </text>
+          <text id="/data/grp_reviewer/data_collection_date:label">
+            <value>তথ্য সংগ্রহের তারিখ</value>
+          </text>
+        </translation>
+      </itext>
+      <instance>
+        <data id="ciprb_mpdsr_facility_neonatal_v1" version="20260620">
+          <grp_meta>
+            <organisation/>
+            <location/>
+            <collection_date/>
+            <district/>
+            <upazila/>
+            <union/>
+            <ward/>
+            <village/>
+            <enumerator_name/>
+            <enumerator_designation/>
+            <enumerator_institution/>
+            <enumerator_mobile/>
+          </grp_meta>
+          <grp_office>
+            <office_submission_date/>
+            <case_serial/>
+            <office_receiver/>
+          </grp_office>
+          <grp_facility>
+            <facility_name/>
+            <facility_code/>
+          </grp_facility>
+          <grp_identity>
+            <mother_name/>
+            <mother_age/>
+            <neonate_name/>
+            <age_death_note/>
+            <age_death_days/>
+            <age_death_hours/>
+            <age_death_minutes/>
+            <hospital_reg_no/>
+            <hospital_ward_no/>
+            <hospital_bed_no/>
+          </grp_identity>
+          <grp_mother_addr>
+            <mother_district/>
+            <mother_upazila/>
+            <mother_union/>
+            <mother_ward/>
+            <mother_village/>
+            <father_name/>
+            <family_phone/>
+          </grp_mother_addr>
+          <grp_q1>
+            <birth_place/>
+            <birth_place_other/>
+          </grp_q1>
+          <grp_q2>
+            <death_type/>
+          </grp_q2>
+          <grp_q3>
+            <er_arrival_recorded/>
+            <er_arrival_date/>
+            <er_arrival_time/>
+          </grp_q3>
+          <grp_q4>
+            <admission_recorded/>
+            <admission_date/>
+            <admission_time/>
+          </grp_q4>
+          <grp_q5>
+            <death_datetime_recorded/>
+            <death_date/>
+            <death_time/>
+          </grp_q5>
+          <grp_q6>
+            <admission_condition/>
+          </grp_q6>
+          <grp_q7>
+            <admission_diagnosis/>
+            <admission_diagnosis_other/>
+          </grp_q7>
+          <grp_q8>
+            <referred_in/>
+            <referral_source/>
+            <referral_source_other/>
+          </grp_q8>
+          <grp_q10>
+            <doctor_observed/>
+            <doctor_observe_date/>
+            <doctor_observe_time/>
+          </grp_q10>
+          <grp_q11>
+            <danger_signs/>
+            <danger_signs_other/>
+          </grp_q11>
+          <grp_q12>
+            <specialist_diagnosis/>
+            <specialist_diagnosis_other/>
+          </grp_q12>
+          <grp_q13>
+            <treatment_start_date/>
+            <treatment_start_time/>
+          </grp_q13>
+          <grp_q14>
+            <birth_weight_grams/>
+          </grp_q14>
+          <grp_q15>
+            <congenital_anomaly/>
+            <anomaly_site/>
+            <anomaly_site_other/>
+          </grp_q15>
+          <grp_q17>
+            <place_of_death_facility/>
+            <place_of_death_other/>
+          </grp_q17>
+          <grp_q18>
+            <cod_cause/>
+          </grp_q18>
+          <grp_q19>
+            <cause_name/>
+            <icd10_code/>
+          </grp_q19>
+          <grp_q20>
+            <death_narrative/>
+          </grp_q20>
+          <grp_reviewer>
+            <reviewer_name/>
+            <reviewer_designation/>
+            <data_collection_date/>
+          </grp_reviewer>
+          <meta>
+            <instanceID/>
+          </meta>
+        </data>
+      </instance>
+      <instance id="district">
+        <root>
+          <item>
+            <itextId>district-0</itextId>
+            <name>sunamganj</name>
+          </item>
+          <item>
+            <itextId>district-1</itextId>
+            <name>sherpur</name>
+          </item>
+          <item>
+            <itextId>district-2</itextId>
+            <name>bhola</name>
+          </item>
+          <item>
+            <itextId>district-3</itextId>
+            <name>kurigram</name>
+          </item>
+          <item>
+            <itextId>district-4</itextId>
+            <name>gaibandha</name>
+          </item>
+          <item>
+            <itextId>district-5</itextId>
+            <name>khagrachari</name>
+          </item>
+          <item>
+            <itextId>district-6</itextId>
+            <name>noakhali</name>
+          </item>
+          <item>
+            <itextId>district-7</itextId>
+            <name>patuakhali</name>
+          </item>
+          <item>
+            <itextId>district-8</itextId>
+            <name>sirajganj</name>
+          </item>
+          <item>
+            <itextId>district-9</itextId>
+            <name>barguna</name>
+          </item>
+          <item>
+            <itextId>district-10</itextId>
+            <name>jamalpur</name>
+          </item>
+          <item>
+            <itextId>district-11</itextId>
+            <name>bagerhat</name>
+          </item>
+          <item>
+            <itextId>district-12</itextId>
+            <name>habiganj</name>
+          </item>
+          <item>
+            <itextId>district-13</itextId>
+            <name>moulavibazar</name>
+          </item>
+          <item>
+            <itextId>district-14</itextId>
+            <name>sylhet</name>
+          </item>
+          <item>
+            <itextId>district-15</itextId>
+            <name>bandarban</name>
+          </item>
+          <item>
+            <itextId>district-16</itextId>
+            <name>chandpur</name>
+          </item>
+          <item>
+            <itextId>district-17</itextId>
+            <name>rangpur</name>
+          </item>
+          <item>
+            <itextId>district-18</itextId>
+            <name>dhaka</name>
+          </item>
+        </root>
+      </instance>
+      <instance id="yes_no">
+        <root>
+          <item>
+            <itextId>yes_no-0</itextId>
+            <name>yes</name>
+          </item>
+          <item>
+            <itextId>yes_no-1</itextId>
+            <name>no</name>
+          </item>
+          <item>
+            <itextId>yes_no-2</itextId>
+            <name>unknown</name>
+          </item>
+        </root>
+      </instance>
+      <instance id="recorded_status">
+        <root>
+          <item>
+            <itextId>recorded_status-0</itextId>
+            <name>recorded</name>
+          </item>
+          <item>
+            <itextId>recorded_status-1</itextId>
+            <name>not_recorded</name>
+          </item>
+        </root>
+      </instance>
+      <instance id="birth_place">
+        <root>
+          <item>
+            <itextId>birth_place-0</itextId>
+            <name>home</name>
+          </item>
+          <item>
+            <itextId>birth_place-1</itextId>
+            <name>community_clinic</name>
+          </item>
+          <item>
+            <itextId>birth_place-2</itextId>
+            <name>union_hfwc</name>
+          </item>
+          <item>
+            <itextId>birth_place-3</itextId>
+            <name>upazila_hc</name>
+          </item>
+          <item>
+            <itextId>birth_place-4</itextId>
+            <name>maternal_centre</name>
+          </item>
+          <item>
+            <itextId>birth_place-5</itextId>
+            <name>district_hospital</name>
+          </item>
+          <item>
+            <itextId>birth_place-6</itextId>
+            <name>medical_college</name>
+          </item>
+          <item>
+            <itextId>birth_place-7</itextId>
+            <name>private_clinic</name>
+          </item>
+          <item>
+            <itextId>birth_place-8</itextId>
+            <name>ngo_clinic</name>
+          </item>
+          <item>
+            <itextId>birth_place-9</itextId>
+            <name>provider_home</name>
+          </item>
+          <item>
+            <itextId>birth_place-10</itextId>
+            <name>other</name>
+          </item>
+        </root>
+      </instance>
+      <instance id="death_type">
+        <root>
+          <item>
+            <itextId>death_type-0</itextId>
+            <name>inborn</name>
+          </item>
+          <item>
+            <itextId>death_type-1</itextId>
+            <name>outborn</name>
+          </item>
+        </root>
+      </instance>
+      <instance id="admission_condition">
+        <root>
+          <item>
+            <itextId>admission_condition-0</itextId>
+            <name>stable</name>
+          </item>
+          <item>
+            <itextId>admission_condition-1</itextId>
+            <name>unconscious</name>
+          </item>
+          <item>
+            <itextId>admission_condition-2</itextId>
+            <name>unstable</name>
+          </item>
+          <item>
+            <itextId>admission_condition-3</itextId>
+            <name>not_recorded</name>
+          </item>
+        </root>
+      </instance>
+      <instance id="admission_diagnosis">
+        <root>
+          <item>
+            <itextId>admission_diagnosis-0</itextId>
+            <name>birth_asphyxia</name>
+          </item>
+          <item>
+            <itextId>admission_diagnosis-1</itextId>
+            <name>septicemia</name>
+          </item>
+          <item>
+            <itextId>admission_diagnosis-2</itextId>
+            <name>low_birth_weight</name>
+          </item>
+          <item>
+            <itextId>admission_diagnosis-3</itextId>
+            <name>severe_pneumonia</name>
+          </item>
+          <item>
+            <itextId>admission_diagnosis-4</itextId>
+            <name>meningitis</name>
+          </item>
+          <item>
+            <itextId>admission_diagnosis-5</itextId>
+            <name>birth_trauma</name>
+          </item>
+          <item>
+            <itextId>admission_diagnosis-6</itextId>
+            <name>congenital</name>
+          </item>
+          <item>
+            <itextId>admission_diagnosis-7</itextId>
+            <name>not_recorded</name>
+          </item>
+          <item>
+            <itextId>admission_diagnosis-8</itextId>
+            <name>other</name>
+          </item>
+        </root>
+      </instance>
+      <instance id="referral_source">
+        <root>
+          <item>
+            <itextId>referral_source-0</itextId>
+            <name>govt</name>
+          </item>
+          <item>
+            <itextId>referral_source-1</itextId>
+            <name>private</name>
+          </item>
+          <item>
+            <itextId>referral_source-2</itextId>
+            <name>home</name>
+          </item>
+          <item>
+            <itextId>referral_source-3</itextId>
+            <name>unknown</name>
+          </item>
+          <item>
+            <itextId>referral_source-4</itextId>
+            <name>other</name>
+          </item>
+        </root>
+      </instance>
+      <instance id="doctor_observed">
+        <root>
+          <item>
+            <itextId>doctor_observed-0</itextId>
+            <name>observed</name>
+          </item>
+          <item>
+            <itextId>doctor_observed-1</itextId>
+            <name>not_come</name>
+          </item>
+          <item>
+            <itextId>doctor_observed-2</itextId>
+            <name>not_recorded</name>
+          </item>
+        </root>
+      </instance>
+      <instance id="danger_signs">
+        <root>
+          <item>
+            <itextId>danger_signs-0</itextId>
+            <name>body_arching</name>
+          </item>
+          <item>
+            <itextId>danger_signs-1</itextId>
+            <name>not_feeding</name>
+          </item>
+          <item>
+            <itextId>danger_signs-2</itextId>
+            <name>fast_breathing</name>
+          </item>
+          <item>
+            <itextId>danger_signs-3</itextId>
+            <name>fast_breathing_chest_indraw</name>
+          </item>
+          <item>
+            <itextId>danger_signs-4</itextId>
+            <name>cold_extremities</name>
+          </item>
+          <item>
+            <itextId>danger_signs-5</itextId>
+            <name>fever</name>
+          </item>
+          <item>
+            <itextId>danger_signs-6</itextId>
+            <name>no_movement</name>
+          </item>
+          <item>
+            <itextId>danger_signs-7</itextId>
+            <name>jaundice</name>
+          </item>
+          <item>
+            <itextId>danger_signs-8</itextId>
+            <name>umbilical_infection</name>
+          </item>
+          <item>
+            <itextId>danger_signs-9</itextId>
+            <name>skin_pustules</name>
+          </item>
+          <item>
+            <itextId>danger_signs-10</itextId>
+            <name>diarrhoea</name>
+          </item>
+          <item>
+            <itextId>danger_signs-11</itextId>
+            <name>dont_know</name>
+          </item>
+          <item>
+            <itextId>danger_signs-12</itextId>
+            <name>other</name>
+          </item>
+        </root>
+      </instance>
+      <instance id="specialist_diagnosis">
+        <root>
+          <item>
+            <itextId>specialist_diagnosis-0</itextId>
+            <name>birth_asphyxia</name>
+          </item>
+          <item>
+            <itextId>specialist_diagnosis-1</itextId>
+            <name>septicemia</name>
+          </item>
+          <item>
+            <itextId>specialist_diagnosis-2</itextId>
+            <name>low_birth_weight</name>
+          </item>
+          <item>
+            <itextId>specialist_diagnosis-3</itextId>
+            <name>severe_pneumonia</name>
+          </item>
+          <item>
+            <itextId>specialist_diagnosis-4</itextId>
+            <name>meningitis</name>
+          </item>
+          <item>
+            <itextId>specialist_diagnosis-5</itextId>
+            <name>birth_trauma</name>
+          </item>
+          <item>
+            <itextId>specialist_diagnosis-6</itextId>
+            <name>congenital</name>
+          </item>
+          <item>
+            <itextId>specialist_diagnosis-7</itextId>
+            <name>other</name>
+          </item>
+        </root>
+      </instance>
+      <instance id="anomaly_site">
+        <root>
+          <item>
+            <itextId>anomaly_site-0</itextId>
+            <name>head</name>
+          </item>
+          <item>
+            <itextId>anomaly_site-1</itextId>
+            <name>mouth_palate</name>
+          </item>
+          <item>
+            <itextId>anomaly_site-2</itextId>
+            <name>lip</name>
+          </item>
+          <item>
+            <itextId>anomaly_site-3</itextId>
+            <name>hands</name>
+          </item>
+          <item>
+            <itextId>anomaly_site-4</itextId>
+            <name>chest</name>
+          </item>
+          <item>
+            <itextId>anomaly_site-5</itextId>
+            <name>anus</name>
+          </item>
+          <item>
+            <itextId>anomaly_site-6</itextId>
+            <name>foot_sole</name>
+          </item>
+          <item>
+            <itextId>anomaly_site-7</itextId>
+            <name>vaginal</name>
+          </item>
+          <item>
+            <itextId>anomaly_site-8</itextId>
+            <name>other</name>
+          </item>
+        </root>
+      </instance>
+      <instance id="place_of_death_facility">
+        <root>
+          <item>
+            <itextId>place_of_death_facility-0</itextId>
+            <name>emergency_room</name>
+          </item>
+          <item>
+            <itextId>place_of_death_facility-1</itextId>
+            <name>in_transit</name>
+          </item>
+          <item>
+            <itextId>place_of_death_facility-2</itextId>
+            <name>ward</name>
+          </item>
+          <item>
+            <itextId>place_of_death_facility-3</itextId>
+            <name>labour_room</name>
+          </item>
+          <item>
+            <itextId>place_of_death_facility-4</itextId>
+            <name>operation_theatre</name>
+          </item>
+          <item>
+            <itextId>place_of_death_facility-5</itextId>
+            <name>scanu</name>
+          </item>
+          <item>
+            <itextId>place_of_death_facility-6</itextId>
+            <name>other</name>
+          </item>
+        </root>
+      </instance>
+      <instance id="cod_cause">
+        <root>
+          <item>
+            <itextId>cod_cause-0</itextId>
+            <name>birth_asphyxia</name>
+          </item>
+          <item>
+            <itextId>cod_cause-1</itextId>
+            <name>birth_trauma</name>
+          </item>
+          <item>
+            <itextId>cod_cause-2</itextId>
+            <name>low_birth_weight</name>
+          </item>
+          <item>
+            <itextId>cod_cause-3</itextId>
+            <name>congenital</name>
+          </item>
+          <item>
+            <itextId>cod_cause-4</itextId>
+            <name>meningitis</name>
+          </item>
+          <item>
+            <itextId>cod_cause-5</itextId>
+            <name>septicemia</name>
+          </item>
+        </root>
+      </instance>
+      <bind nodeset="/data/grp_meta/organisation" type="string" calculate="'CIPRB'"/>
+      <bind nodeset="/data/grp_meta/location" type="geopoint" required="true()"/>
+      <bind nodeset="/data/grp_meta/collection_date" type="date" required="true()"/>
+      <bind nodeset="/data/grp_meta/district" type="string" required="true()"/>
+      <bind nodeset="/data/grp_meta/upazila" type="string" required="true()"/>
+      <bind nodeset="/data/grp_meta/union" type="string"/>
+      <bind nodeset="/data/grp_meta/ward" type="string"/>
+      <bind nodeset="/data/grp_meta/village" type="string"/>
+      <bind nodeset="/data/grp_meta/enumerator_name" type="string" required="true()"/>
+      <bind nodeset="/data/grp_meta/enumerator_designation" type="string"/>
+      <bind nodeset="/data/grp_meta/enumerator_institution" type="string"/>
+      <bind nodeset="/data/grp_meta/enumerator_mobile" type="string" constraint="regex(., &quot;^[0-9+ -]{6,20}$&quot;)" jr:constraintMsg="Enter a valid phone number."/>
+      <bind nodeset="/data/grp_office/office_submission_date" type="date"/>
+      <bind nodeset="/data/grp_office/case_serial" type="string"/>
+      <bind nodeset="/data/grp_office/office_receiver" type="string"/>
+      <bind nodeset="/data/grp_facility/facility_name" type="string" required="true()"/>
+      <bind nodeset="/data/grp_facility/facility_code" type="string" required="true()" constraint="regex(normalize-space(.), &quot;^[0-9]{9}$&quot;)" jr:constraintMsg="Enter the 9-digit facility code (digits only). / ৯ অঙ্কের ফ্যাসিলিটি কোড লিখুন।"/>
+      <bind nodeset="/data/grp_identity/mother_name" type="string" required="true()"/>
+      <bind nodeset="/data/grp_identity/mother_age" type="int" constraint=". &gt; 9 and . &lt; 60" jr:constraintMsg="10–59"/>
+      <bind nodeset="/data/grp_identity/neonate_name" type="string"/>
+      <bind nodeset="/data/grp_identity/age_death_note" readonly="true()" type="string"/>
+      <bind nodeset="/data/grp_identity/age_death_days" type="int" constraint=". &gt;= 0 and . &lt;= 28"/>
+      <bind nodeset="/data/grp_identity/age_death_hours" type="int" constraint=". &gt;= 0 and . &lt;= 23"/>
+      <bind nodeset="/data/grp_identity/age_death_minutes" type="int" constraint=". &gt;= 0 and . &lt;= 59"/>
+      <bind nodeset="/data/grp_identity/hospital_reg_no" type="string" required="true()" constraint="regex(normalize-space(.), &quot;^[0-9]{8,18}$&quot;)" jr:constraintMsg="Enter the numeric hospital registration number. / হাসপাতালের রেজিস্ট্রেশন নম্বর (অঙ্কে) লিখুন।"/>
+      <bind nodeset="/data/grp_identity/hospital_ward_no" type="string"/>
+      <bind nodeset="/data/grp_identity/hospital_bed_no" type="string"/>
+      <bind nodeset="/data/grp_mother_addr/mother_district" type="string"/>
+      <bind nodeset="/data/grp_mother_addr/mother_upazila" type="string"/>
+      <bind nodeset="/data/grp_mother_addr/mother_union" type="string"/>
+      <bind nodeset="/data/grp_mother_addr/mother_ward" type="string"/>
+      <bind nodeset="/data/grp_mother_addr/mother_village" type="string"/>
+      <bind nodeset="/data/grp_mother_addr/father_name" type="string"/>
+      <bind nodeset="/data/grp_mother_addr/family_phone" type="string" constraint="regex(., &quot;^[0-9+ -]{6,20}$&quot;) or .=&quot;&quot;" jr:constraintMsg="Enter a valid phone number."/>
+      <bind nodeset="/data/grp_q1/birth_place" type="string" required="true()"/>
+      <bind nodeset="/data/grp_q1/birth_place_other" type="string"/>
+      <bind nodeset="/data/grp_q2/death_type" type="string" required="true()"/>
+      <bind nodeset="/data/grp_q3/er_arrival_recorded" type="string"/>
+      <bind nodeset="/data/grp_q3/er_arrival_date" type="date"/>
+      <bind nodeset="/data/grp_q3/er_arrival_time" type="time"/>
+      <bind nodeset="/data/grp_q4/admission_recorded" type="string"/>
+      <bind nodeset="/data/grp_q4/admission_date" type="date"/>
+      <bind nodeset="/data/grp_q4/admission_time" type="time"/>
+      <bind nodeset="/data/grp_q5/death_datetime_recorded" type="string"/>
+      <bind nodeset="/data/grp_q5/death_date" type="date"/>
+      <bind nodeset="/data/grp_q5/death_time" type="time"/>
+      <bind nodeset="/data/grp_q6/admission_condition" type="string"/>
+      <bind nodeset="/data/grp_q7/admission_diagnosis" type="string"/>
+      <bind nodeset="/data/grp_q7/admission_diagnosis_other" type="string"/>
+      <bind nodeset="/data/grp_q8/referred_in" type="string"/>
+      <bind nodeset="/data/grp_q8/referral_source" type="string"/>
+      <bind nodeset="/data/grp_q8/referral_source_other" type="string"/>
+      <bind nodeset="/data/grp_q10/doctor_observed" type="string"/>
+      <bind nodeset="/data/grp_q10/doctor_observe_date" type="date"/>
+      <bind nodeset="/data/grp_q10/doctor_observe_time" type="time"/>
+      <bind nodeset="/data/grp_q11/danger_signs" type="string"/>
+      <bind nodeset="/data/grp_q11/danger_signs_other" type="string"/>
+      <bind nodeset="/data/grp_q12/specialist_diagnosis" type="string"/>
+      <bind nodeset="/data/grp_q12/specialist_diagnosis_other" type="string"/>
+      <bind nodeset="/data/grp_q13/treatment_start_date" type="date"/>
+      <bind nodeset="/data/grp_q13/treatment_start_time" type="time"/>
+      <bind nodeset="/data/grp_q14/birth_weight_grams" type="int" constraint=". &gt;= 200 and . &lt;= 7000" jr:constraintMsg="200–7000 grams"/>
+      <bind nodeset="/data/grp_q15/congenital_anomaly" type="string"/>
+      <bind nodeset="/data/grp_q15/anomaly_site" type="string"/>
+      <bind nodeset="/data/grp_q15/anomaly_site_other" type="string"/>
+      <bind nodeset="/data/grp_q17/place_of_death_facility" type="string"/>
+      <bind nodeset="/data/grp_q17/place_of_death_other" type="string"/>
+      <bind nodeset="/data/grp_q18/cod_cause" type="string"/>
+      <bind nodeset="/data/grp_q19/cause_name" type="string"/>
+      <bind nodeset="/data/grp_q19/icd10_code" type="string"/>
+      <bind nodeset="/data/grp_q20/death_narrative" type="string"/>
+      <bind nodeset="/data/grp_reviewer/reviewer_name" type="string"/>
+      <bind nodeset="/data/grp_reviewer/reviewer_designation" type="string"/>
+      <bind nodeset="/data/grp_reviewer/data_collection_date" type="date"/>
+      <bind nodeset="/data/meta/instanceID" type="string" readonly="true()" jr:preload="uid"/>
+    </model>
+  </h:head>
+  <h:body class="theme-grid">
+    <group ref="/data/grp_meta">
+      <label ref="jr:itext('/data/grp_meta:label')"/>
+      <input ref="/data/grp_meta/location">
+        <label ref="jr:itext('/data/grp_meta/location:label')"/>
+      </input>
+      <input ref="/data/grp_meta/collection_date">
+        <label ref="jr:itext('/data/grp_meta/collection_date:label')"/>
+      </input>
+      <select1 ref="/data/grp_meta/district">
+        <label ref="jr:itext('/data/grp_meta/district:label')"/>
+        <itemset nodeset="instance('district')/root/item">
+          <value ref="name"/>
+          <label ref="jr:itext(itextId)"/>
+        </itemset>
+      </select1>
+      <input ref="/data/grp_meta/upazila">
+        <label ref="jr:itext('/data/grp_meta/upazila:label')"/>
+      </input>
+      <input ref="/data/grp_meta/union">
+        <label ref="jr:itext('/data/grp_meta/union:label')"/>
+      </input>
+      <input ref="/data/grp_meta/ward">
+        <label ref="jr:itext('/data/grp_meta/ward:label')"/>
+      </input>
+      <input ref="/data/grp_meta/village">
+        <label ref="jr:itext('/data/grp_meta/village:label')"/>
+      </input>
+      <input ref="/data/grp_meta/enumerator_name">
+        <label ref="jr:itext('/data/grp_meta/enumerator_name:label')"/>
+      </input>
+      <input ref="/data/grp_meta/enumerator_designation">
+        <label ref="jr:itext('/data/grp_meta/enumerator_designation:label')"/>
+      </input>
+      <input ref="/data/grp_meta/enumerator_institution">
+        <label ref="jr:itext('/data/grp_meta/enumerator_institution:label')"/>
+      </input>
+      <input ref="/data/grp_meta/enumerator_mobile">
+        <label ref="jr:itext('/data/grp_meta/enumerator_mobile:label')"/>
+      </input>
+    </group>
+    <group ref="/data/grp_office">
+      <label ref="jr:itext('/data/grp_office:label')"/>
+      <input ref="/data/grp_office/office_submission_date">
+        <label ref="jr:itext('/data/grp_office/office_submission_date:label')"/>
+      </input>
+      <input ref="/data/grp_office/case_serial">
+        <label ref="jr:itext('/data/grp_office/case_serial:label')"/>
+        <hint>Annual serial number from the paper form.</hint>
+      </input>
+      <input ref="/data/grp_office/office_receiver">
+        <label ref="jr:itext('/data/grp_office/office_receiver:label')"/>
+      </input>
+    </group>
+    <group ref="/data/grp_facility">
+      <label ref="jr:itext('/data/grp_facility:label')"/>
+      <input ref="/data/grp_facility/facility_name">
+        <label ref="jr:itext('/data/grp_facility/facility_name:label')"/>
+      </input>
+      <input ref="/data/grp_facility/facility_code">
+        <label ref="jr:itext('/data/grp_facility/facility_code:label')"/>
+        <hint>The 9-digit facility code printed on the paper form.</hint>
+      </input>
+    </group>
+    <group ref="/data/grp_identity">
+      <label ref="jr:itext('/data/grp_identity:label')"/>
+      <input ref="/data/grp_identity/mother_name">
+        <label ref="jr:itext('/data/grp_identity/mother_name:label')"/>
+      </input>
+      <input ref="/data/grp_identity/mother_age">
+        <label ref="jr:itext('/data/grp_identity/mother_age:label')"/>
+      </input>
+      <input ref="/data/grp_identity/neonate_name">
+        <label ref="jr:itext('/data/grp_identity/neonate_name:label')"/>
+      </input>
+      <input ref="/data/grp_identity/age_death_note">
+        <label ref="jr:itext('/data/grp_identity/age_death_note:label')"/>
+      </input>
+      <input ref="/data/grp_identity/age_death_days">
+        <label ref="jr:itext('/data/grp_identity/age_death_days:label')"/>
+      </input>
+      <input ref="/data/grp_identity/age_death_hours">
+        <label ref="jr:itext('/data/grp_identity/age_death_hours:label')"/>
+      </input>
+      <input ref="/data/grp_identity/age_death_minutes">
+        <label ref="jr:itext('/data/grp_identity/age_death_minutes:label')"/>
+      </input>
+      <input ref="/data/grp_identity/hospital_reg_no">
+        <label ref="jr:itext('/data/grp_identity/hospital_reg_no:label')"/>
+        <hint>The ~16-digit hospital registration number from the paper form.</hint>
+      </input>
+      <input ref="/data/grp_identity/hospital_ward_no">
+        <label ref="jr:itext('/data/grp_identity/hospital_ward_no:label')"/>
+      </input>
+      <input ref="/data/grp_identity/hospital_bed_no">
+        <label ref="jr:itext('/data/grp_identity/hospital_bed_no:label')"/>
+      </input>
+    </group>
+    <group ref="/data/grp_mother_addr">
+      <label ref="jr:itext('/data/grp_mother_addr:label')"/>
+      <select1 ref="/data/grp_mother_addr/mother_district">
+        <label ref="jr:itext('/data/grp_mother_addr/mother_district:label')"/>
+        <itemset nodeset="instance('district')/root/item">
+          <value ref="name"/>
+          <label ref="jr:itext(itextId)"/>
+        </itemset>
+      </select1>
+      <input ref="/data/grp_mother_addr/mother_upazila">
+        <label ref="jr:itext('/data/grp_mother_addr/mother_upazila:label')"/>
+      </input>
+      <input ref="/data/grp_mother_addr/mother_union">
+        <label ref="jr:itext('/data/grp_mother_addr/mother_union:label')"/>
+      </input>
+      <input ref="/data/grp_mother_addr/mother_ward">
+        <label ref="jr:itext('/data/grp_mother_addr/mother_ward:label')"/>
+      </input>
+      <input ref="/data/grp_mother_addr/mother_village">
+        <label ref="jr:itext('/data/grp_mother_addr/mother_village:label')"/>
+      </input>
+      <input ref="/data/grp_mother_addr/father_name">
+        <label ref="jr:itext('/data/grp_mother_addr/father_name:label')"/>
+      </input>
+      <input ref="/data/grp_mother_addr/family_phone">
+        <label ref="jr:itext('/data/grp_mother_addr/family_phone:label')"/>
+      </input>
+    </group>
+    <group ref="/data/grp_q1">
+      <label ref="jr:itext('/data/grp_q1:label')"/>
+      <select1 ref="/data/grp_q1/birth_place">
+        <label ref="jr:itext('/data/grp_q1/birth_place:label')"/>
+        <itemset nodeset="instance('birth_place')/root/item">
+          <value ref="name"/>
+          <label ref="jr:itext(itextId)"/>
+        </itemset>
+      </select1>
+      <input ref="/data/grp_q1/birth_place_other">
+        <label ref="jr:itext('/data/grp_q1/birth_place_other:label')"/>
+      </input>
+    </group>
+    <group ref="/data/grp_q2">
+      <label ref="jr:itext('/data/grp_q2:label')"/>
+      <select1 ref="/data/grp_q2/death_type">
+        <label ref="jr:itext('/data/grp_q2/death_type:label')"/>
+        <itemset nodeset="instance('death_type')/root/item">
+          <value ref="name"/>
+          <label ref="jr:itext(itextId)"/>
+        </itemset>
+      </select1>
+    </group>
+    <group ref="/data/grp_q3">
+      <label ref="jr:itext('/data/grp_q3:label')"/>
+      <select1 ref="/data/grp_q3/er_arrival_recorded">
+        <label ref="jr:itext('/data/grp_q3/er_arrival_recorded:label')"/>
+        <itemset nodeset="instance('recorded_status')/root/item">
+          <value ref="name"/>
+          <label ref="jr:itext(itextId)"/>
+        </itemset>
+      </select1>
+      <input ref="/data/grp_q3/er_arrival_date">
+        <label ref="jr:itext('/data/grp_q3/er_arrival_date:label')"/>
+      </input>
+      <input ref="/data/grp_q3/er_arrival_time">
+        <label ref="jr:itext('/data/grp_q3/er_arrival_time:label')"/>
+      </input>
+    </group>
+    <group ref="/data/grp_q4">
+      <label ref="jr:itext('/data/grp_q4:label')"/>
+      <select1 ref="/data/grp_q4/admission_recorded">
+        <label ref="jr:itext('/data/grp_q4/admission_recorded:label')"/>
+        <itemset nodeset="instance('recorded_status')/root/item">
+          <value ref="name"/>
+          <label ref="jr:itext(itextId)"/>
+        </itemset>
+      </select1>
+      <input ref="/data/grp_q4/admission_date">
+        <label ref="jr:itext('/data/grp_q4/admission_date:label')"/>
+      </input>
+      <input ref="/data/grp_q4/admission_time">
+        <label ref="jr:itext('/data/grp_q4/admission_time:label')"/>
+      </input>
+    </group>
+    <group ref="/data/grp_q5">
+      <label ref="jr:itext('/data/grp_q5:label')"/>
+      <select1 ref="/data/grp_q5/death_datetime_recorded">
+        <label ref="jr:itext('/data/grp_q5/death_datetime_recorded:label')"/>
+        <itemset nodeset="instance('recorded_status')/root/item">
+          <value ref="name"/>
+          <label ref="jr:itext(itextId)"/>
+        </itemset>
+      </select1>
+      <input ref="/data/grp_q5/death_date">
+        <label ref="jr:itext('/data/grp_q5/death_date:label')"/>
+      </input>
+      <input ref="/data/grp_q5/death_time">
+        <label ref="jr:itext('/data/grp_q5/death_time:label')"/>
+      </input>
+    </group>
+    <group ref="/data/grp_q6">
+      <label ref="jr:itext('/data/grp_q6:label')"/>
+      <select1 ref="/data/grp_q6/admission_condition">
+        <label ref="jr:itext('/data/grp_q6/admission_condition:label')"/>
+        <itemset nodeset="instance('admission_condition')/root/item">
+          <value ref="name"/>
+          <label ref="jr:itext(itextId)"/>
+        </itemset>
+      </select1>
+    </group>
+    <group ref="/data/grp_q7">
+      <label ref="jr:itext('/data/grp_q7:label')"/>
+      <select ref="/data/grp_q7/admission_diagnosis">
+        <label ref="jr:itext('/data/grp_q7/admission_diagnosis:label')"/>
+        <itemset nodeset="instance('admission_diagnosis')/root/item">
+          <value ref="name"/>
+          <label ref="jr:itext(itextId)"/>
+        </itemset>
+      </select>
+      <input ref="/data/grp_q7/admission_diagnosis_other">
+        <label ref="jr:itext('/data/grp_q7/admission_diagnosis_other:label')"/>
+      </input>
+    </group>
+    <group ref="/data/grp_q8">
+      <label ref="jr:itext('/data/grp_q8:label')"/>
+      <select1 ref="/data/grp_q8/referred_in">
+        <label ref="jr:itext('/data/grp_q8/referred_in:label')"/>
+        <itemset nodeset="instance('yes_no')/root/item">
+          <value ref="name"/>
+          <label ref="jr:itext(itextId)"/>
+        </itemset>
+      </select1>
+      <select1 ref="/data/grp_q8/referral_source">
+        <label ref="jr:itext('/data/grp_q8/referral_source:label')"/>
+        <itemset nodeset="instance('referral_source')/root/item">
+          <value ref="name"/>
+          <label ref="jr:itext(itextId)"/>
+        </itemset>
+      </select1>
+      <input ref="/data/grp_q8/referral_source_other">
+        <label ref="jr:itext('/data/grp_q8/referral_source_other:label')"/>
+      </input>
+    </group>
+    <group ref="/data/grp_q10">
+      <label ref="jr:itext('/data/grp_q10:label')"/>
+      <select1 ref="/data/grp_q10/doctor_observed">
+        <label ref="jr:itext('/data/grp_q10/doctor_observed:label')"/>
+        <itemset nodeset="instance('doctor_observed')/root/item">
+          <value ref="name"/>
+          <label ref="jr:itext(itextId)"/>
+        </itemset>
+      </select1>
+      <input ref="/data/grp_q10/doctor_observe_date">
+        <label ref="jr:itext('/data/grp_q10/doctor_observe_date:label')"/>
+      </input>
+      <input ref="/data/grp_q10/doctor_observe_time">
+        <label ref="jr:itext('/data/grp_q10/doctor_observe_time:label')"/>
+      </input>
+    </group>
+    <group ref="/data/grp_q11">
+      <label ref="jr:itext('/data/grp_q11:label')"/>
+      <select ref="/data/grp_q11/danger_signs">
+        <label ref="jr:itext('/data/grp_q11/danger_signs:label')"/>
+        <itemset nodeset="instance('danger_signs')/root/item">
+          <value ref="name"/>
+          <label ref="jr:itext(itextId)"/>
+        </itemset>
+      </select>
+      <input ref="/data/grp_q11/danger_signs_other">
+        <label ref="jr:itext('/data/grp_q11/danger_signs_other:label')"/>
+      </input>
+    </group>
+    <group ref="/data/grp_q12">
+      <label ref="jr:itext('/data/grp_q12:label')"/>
+      <select ref="/data/grp_q12/specialist_diagnosis">
+        <label ref="jr:itext('/data/grp_q12/specialist_diagnosis:label')"/>
+        <itemset nodeset="instance('specialist_diagnosis')/root/item">
+          <value ref="name"/>
+          <label ref="jr:itext(itextId)"/>
+        </itemset>
+      </select>
+      <input ref="/data/grp_q12/specialist_diagnosis_other">
+        <label ref="jr:itext('/data/grp_q12/specialist_diagnosis_other:label')"/>
+      </input>
+    </group>
+    <group ref="/data/grp_q13">
+      <label ref="jr:itext('/data/grp_q13:label')"/>
+      <input ref="/data/grp_q13/treatment_start_date">
+        <label ref="jr:itext('/data/grp_q13/treatment_start_date:label')"/>
+      </input>
+      <input ref="/data/grp_q13/treatment_start_time">
+        <label ref="jr:itext('/data/grp_q13/treatment_start_time:label')"/>
+      </input>
+    </group>
+    <group ref="/data/grp_q14">
+      <label ref="jr:itext('/data/grp_q14:label')"/>
+      <input ref="/data/grp_q14/birth_weight_grams">
+        <label ref="jr:itext('/data/grp_q14/birth_weight_grams:label')"/>
+      </input>
+    </group>
+    <group ref="/data/grp_q15">
+      <label ref="jr:itext('/data/grp_q15:label')"/>
+      <select1 ref="/data/grp_q15/congenital_anomaly">
+        <label ref="jr:itext('/data/grp_q15/congenital_anomaly:label')"/>
+        <itemset nodeset="instance('yes_no')/root/item">
+          <value ref="name"/>
+          <label ref="jr:itext(itextId)"/>
+        </itemset>
+      </select1>
+      <select ref="/data/grp_q15/anomaly_site">
+        <label ref="jr:itext('/data/grp_q15/anomaly_site:label')"/>
+        <itemset nodeset="instance('anomaly_site')/root/item">
+          <value ref="name"/>
+          <label ref="jr:itext(itextId)"/>
+        </itemset>
+      </select>
+      <input ref="/data/grp_q15/anomaly_site_other">
+        <label ref="jr:itext('/data/grp_q15/anomaly_site_other:label')"/>
+      </input>
+    </group>
+    <group ref="/data/grp_q17">
+      <label ref="jr:itext('/data/grp_q17:label')"/>
+      <select1 ref="/data/grp_q17/place_of_death_facility">
+        <label ref="jr:itext('/data/grp_q17/place_of_death_facility:label')"/>
+        <itemset nodeset="instance('place_of_death_facility')/root/item">
+          <value ref="name"/>
+          <label ref="jr:itext(itextId)"/>
+        </itemset>
+      </select1>
+      <input ref="/data/grp_q17/place_of_death_other">
+        <label ref="jr:itext('/data/grp_q17/place_of_death_other:label')"/>
+      </input>
+    </group>
+    <group ref="/data/grp_q18">
+      <label ref="jr:itext('/data/grp_q18:label')"/>
+      <select ref="/data/grp_q18/cod_cause">
+        <label ref="jr:itext('/data/grp_q18/cod_cause:label')"/>
+        <itemset nodeset="instance('cod_cause')/root/item">
+          <value ref="name"/>
+          <label ref="jr:itext(itextId)"/>
+        </itemset>
+      </select>
+    </group>
+    <group ref="/data/grp_q19">
+      <label ref="jr:itext('/data/grp_q19:label')"/>
+      <input ref="/data/grp_q19/cause_name">
+        <label ref="jr:itext('/data/grp_q19/cause_name:label')"/>
+      </input>
+      <input ref="/data/grp_q19/icd10_code">
+        <label ref="jr:itext('/data/grp_q19/icd10_code:label')"/>
+        <hint>e.g. P-21</hint>
+      </input>
+    </group>
+    <group ref="/data/grp_q20">
+      <label ref="jr:itext('/data/grp_q20:label')"/>
+      <input ref="/data/grp_q20/death_narrative" appearance="multiline">
+        <label ref="jr:itext('/data/grp_q20/death_narrative:label')"/>
+      </input>
+    </group>
+    <group ref="/data/grp_reviewer">
+      <label ref="jr:itext('/data/grp_reviewer:label')"/>
+      <input ref="/data/grp_reviewer/reviewer_name">
+        <label ref="jr:itext('/data/grp_reviewer/reviewer_name:label')"/>
+      </input>
+      <input ref="/data/grp_reviewer/reviewer_designation">
+        <label ref="jr:itext('/data/grp_reviewer/reviewer_designation:label')"/>
+      </input>
+      <input ref="/data/grp_reviewer/data_collection_date">
+        <label ref="jr:itext('/data/grp_reviewer/data_collection_date:label')"/>
+      </input>
+    </group>
+  </h:body>
+</h:html>

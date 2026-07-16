@@ -1,0 +1,682 @@
+[
+ {
+  "idx": 406,
+  "name": "q7_14_b_perp",
+  "type": "select_multiple q7_14_perp",
+  "base": "select_multiple",
+  "appearance": null,
+  "label_en": "Perpetrator Code",
+  "label_bn": "অপরাধীর কোড",
+  "own_relevant": "${q7_14_b_ever}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q7_14_b_ever}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q7_14_b_ever": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "99": "Prefer not to say"
+    },
+    "label": "b. Threatened to share or publish your personal or explicit photos/videos with o"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 407,
+  "name": "q7_14_b_perp_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other (specify)",
+  "label_bn": "অন্যান্য (উল্লেখ করুন)",
+  "own_relevant": "selected(${q7_14_b_perp},'12')",
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "selected(${q7_14_b_perp},'12')"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q7_14_b_perp": {
+    "type": "select_multiple",
+    "choices": {
+     "1": "Client (new or regular)",
+     "2": "Husband/babu (intimate partner)",
+     "3": "Sardarni/landlady",
+     "4": "Broker/intermediary",
+     "5": "Family member/relative",
+     "6": "Colleague/acquaintance",
+     "7": "Stranger",
+     "8": "Police/law enforcement",
+     "9": "Local powerful individual/goon",
+     "10": "Health worker",
+     "11": "Religious leader",
+     "12": "Other (specify)",
+     "13": "Unknown online person/fake profile"
+    },
+    "label": "Perpetrator Code"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 409,
+  "name": "q7_14_c_12mo",
+  "type": "select_one q7_14_yn",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "In the past 12 months?",
+  "label_bn": "গত ১২ মাসে?",
+  "own_relevant": "${q7_14_c_ever}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q7_14_c_ever}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q7_14_c_ever": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "99": "Prefer not to say"
+    },
+    "label": "c. Actually shared or published your personal or explicit photos/videos without "
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 410,
+  "name": "q7_14_c_perp",
+  "type": "select_multiple q7_14_perp",
+  "base": "select_multiple",
+  "appearance": null,
+  "label_en": "Perpetrator Code",
+  "label_bn": "অপরাধীর কোড",
+  "own_relevant": "${q7_14_c_ever}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q7_14_c_ever}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q7_14_c_ever": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "99": "Prefer not to say"
+    },
+    "label": "c. Actually shared or published your personal or explicit photos/videos without "
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 411,
+  "name": "q7_14_c_perp_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other (specify)",
+  "label_bn": "অন্যান্য (উল্লেখ করুন)",
+  "own_relevant": "selected(${q7_14_c_perp},'12')",
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "selected(${q7_14_c_perp},'12')"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q7_14_c_perp": {
+    "type": "select_multiple",
+    "choices": {
+     "1": "Client (new or regular)",
+     "2": "Husband/babu (intimate partner)",
+     "3": "Sardarni/landlady",
+     "4": "Broker/intermediary",
+     "5": "Family member/relative",
+     "6": "Colleague/acquaintance",
+     "7": "Stranger",
+     "8": "Police/law enforcement",
+     "9": "Local powerful individual/goon",
+     "10": "Health worker",
+     "11": "Religious leader",
+     "12": "Other (specify)",
+     "13": "Unknown online person/fake profile"
+    },
+    "label": "Perpetrator Code"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 413,
+  "name": "q7_14_d_12mo",
+  "type": "select_one q7_14_yn",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "In the past 12 months?",
+  "label_bn": "গত ১২ মাসে?",
+  "own_relevant": "${q7_14_d_ever}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q7_14_d_ever}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q7_14_d_ever": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "99": "Prefer not to say"
+    },
+    "label": "d. Extorted money or free sexual services by threatening to share photos/videos"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 414,
+  "name": "q7_14_d_perp",
+  "type": "select_multiple q7_14_perp",
+  "base": "select_multiple",
+  "appearance": null,
+  "label_en": "Perpetrator Code",
+  "label_bn": "অপরাধীর কোড",
+  "own_relevant": "${q7_14_d_ever}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q7_14_d_ever}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q7_14_d_ever": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "99": "Prefer not to say"
+    },
+    "label": "d. Extorted money or free sexual services by threatening to share photos/videos"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 415,
+  "name": "q7_14_d_perp_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other (specify)",
+  "label_bn": "অন্যান্য (উল্লেখ করুন)",
+  "own_relevant": "selected(${q7_14_d_perp},'12')",
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "selected(${q7_14_d_perp},'12')"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q7_14_d_perp": {
+    "type": "select_multiple",
+    "choices": {
+     "1": "Client (new or regular)",
+     "2": "Husband/babu (intimate partner)",
+     "3": "Sardarni/landlady",
+     "4": "Broker/intermediary",
+     "5": "Family member/relative",
+     "6": "Colleague/acquaintance",
+     "7": "Stranger",
+     "8": "Police/law enforcement",
+     "9": "Local powerful individual/goon",
+     "10": "Health worker",
+     "11": "Religious leader",
+     "12": "Other (specify)",
+     "13": "Unknown online person/fake profile"
+    },
+    "label": "Perpetrator Code"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 417,
+  "name": "q7_14_e_12mo",
+  "type": "select_one q7_14_yn",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "In the past 12 months?",
+  "label_bn": "গত ১২ মাসে?",
+  "own_relevant": "${q7_14_e_ever}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q7_14_e_ever}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q7_14_e_ever": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "99": "Prefer not to say"
+    },
+    "label": "e. Repeatedly sent unwanted messages, harassed, or abused you via phone/messages"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 418,
+  "name": "q7_14_e_perp",
+  "type": "select_multiple q7_14_perp",
+  "base": "select_multiple",
+  "appearance": null,
+  "label_en": "Perpetrator Code",
+  "label_bn": "অপরাধীর কোড",
+  "own_relevant": "${q7_14_e_ever}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q7_14_e_ever}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q7_14_e_ever": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "99": "Prefer not to say"
+    },
+    "label": "e. Repeatedly sent unwanted messages, harassed, or abused you via phone/messages"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 419,
+  "name": "q7_14_e_perp_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other (specify)",
+  "label_bn": "অন্যান্য (উল্লেখ করুন)",
+  "own_relevant": "selected(${q7_14_e_perp},'12')",
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "selected(${q7_14_e_perp},'12')"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q7_14_e_perp": {
+    "type": "select_multiple",
+    "choices": {
+     "1": "Client (new or regular)",
+     "2": "Husband/babu (intimate partner)",
+     "3": "Sardarni/landlady",
+     "4": "Broker/intermediary",
+     "5": "Family member/relative",
+     "6": "Colleague/acquaintance",
+     "7": "Stranger",
+     "8": "Police/law enforcement",
+     "9": "Local powerful individual/goon",
+     "10": "Health worker",
+     "11": "Religious leader",
+     "12": "Other (specify)",
+     "13": "Unknown online person/fake profile"
+    },
+    "label": "Perpetrator Code"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 421,
+  "name": "q7_14_f_12mo",
+  "type": "select_one q7_14_yn",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "In the past 12 months?",
+  "label_bn": "গত ১২ মাসে?",
+  "own_relevant": "${q7_14_f_ever}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q7_14_f_ever}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q7_14_f_ever": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "99": "Prefer not to say"
+    },
+    "label": "f. Created a fake profile using your identity, photos, or occupational informati"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 422,
+  "name": "q7_14_f_perp",
+  "type": "select_multiple q7_14_perp",
+  "base": "select_multiple",
+  "appearance": null,
+  "label_en": "Perpetrator Code",
+  "label_bn": "অপরাধীর কোড",
+  "own_relevant": "${q7_14_f_ever}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q7_14_f_ever}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q7_14_f_ever": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "99": "Prefer not to say"
+    },
+    "label": "f. Created a fake profile using your identity, photos, or occupational informati"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 423,
+  "name": "q7_14_f_perp_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other (specify)",
+  "label_bn": "অন্যান্য (উল্লেখ করুন)",
+  "own_relevant": "selected(${q7_14_f_perp},'12')",
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "selected(${q7_14_f_perp},'12')"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q7_14_f_perp": {
+    "type": "select_multiple",
+    "choices": {
+     "1": "Client (new or regular)",
+     "2": "Husband/babu (intimate partner)",
+     "3": "Sardarni/landlady",
+     "4": "Broker/intermediary",
+     "5": "Family member/relative",
+     "6": "Colleague/acquaintance",
+     "7": "Stranger",
+     "8": "Police/law enforcement",
+     "9": "Local powerful individual/goon",
+     "10": "Health worker",
+     "11": "Religious leader",
+     "12": "Other (specify)",
+     "13": "Unknown online person/fake profile"
+    },
+    "label": "Perpetrator Code"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ }
+]

@@ -1,0 +1,722 @@
+[
+ {
+  "idx": 338,
+  "name": "q7_1_b_perp_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other (specify)",
+  "label_bn": "অন্যান্য (উল্লেখ করুন)",
+  "own_relevant": "selected(${q7_1_b_perp},'13')",
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "selected(${q7_1_b_perp},'13')"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q7_1_b_perp": {
+    "type": "select_multiple",
+    "choices": {
+     "1": "Family member/relative",
+     "2": "Intimate partner (parik/panthi/neheri/spouse)",
+     "3": "Client/paying partner",
+     "4": "Friend/acquaintance",
+     "5": "Stranger",
+     "6": "Employer/colleague",
+     "7": "Teacher",
+     "8": "Healthcare worker",
+     "9": "Police/law enforcement",
+     "10": "Local influential person/thug",
+     "11": "Guruma/senior community member",
+     "12": "Religious leader",
+     "13": "Other (specify)"
+    },
+    "label": "Who did this to you? (select all that apply)"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 339,
+  "name": "q7_1_c_perp_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other (specify)",
+  "label_bn": "অন্যান্য (উল্লেখ করুন)",
+  "own_relevant": "selected(${q7_1_c_perp},'13')",
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "selected(${q7_1_c_perp},'13')"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q7_1_c_perp": {
+    "type": "select_multiple",
+    "choices": {
+     "1": "Family member/relative",
+     "2": "Intimate partner (parik/panthi/neheri/spouse)",
+     "3": "Client/paying partner",
+     "4": "Friend/acquaintance",
+     "5": "Stranger",
+     "6": "Employer/colleague",
+     "7": "Teacher",
+     "8": "Healthcare worker",
+     "9": "Police/law enforcement",
+     "10": "Local influential person/thug",
+     "11": "Guruma/senior community member",
+     "12": "Religious leader",
+     "13": "Other (specify)"
+    },
+    "label": "Who did this to you? (select all that apply)"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 340,
+  "name": "q7_1_d_perp_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other (specify)",
+  "label_bn": "অন্যান্য (উল্লেখ করুন)",
+  "own_relevant": "selected(${q7_1_d_perp},'13')",
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "selected(${q7_1_d_perp},'13')"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q7_1_d_perp": {
+    "type": "select_multiple",
+    "choices": {
+     "1": "Family member/relative",
+     "2": "Intimate partner (parik/panthi/neheri/spouse)",
+     "3": "Client/paying partner",
+     "4": "Friend/acquaintance",
+     "5": "Stranger",
+     "6": "Employer/colleague",
+     "7": "Teacher",
+     "8": "Healthcare worker",
+     "9": "Police/law enforcement",
+     "10": "Local influential person/thug",
+     "11": "Guruma/senior community member",
+     "12": "Religious leader",
+     "13": "Other (specify)"
+    },
+    "label": "Who did this to you? (select all that apply)"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 341,
+  "name": "q7_1_e_perp_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other (specify)",
+  "label_bn": "অন্যান্য (উল্লেখ করুন)",
+  "own_relevant": "selected(${q7_1_e_perp},'13')",
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "selected(${q7_1_e_perp},'13')"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q7_1_e_perp": {
+    "type": "select_multiple",
+    "choices": {
+     "1": "Family member/relative",
+     "2": "Intimate partner (parik/panthi/neheri/spouse)",
+     "3": "Client/paying partner",
+     "4": "Friend/acquaintance",
+     "5": "Stranger",
+     "6": "Employer/colleague",
+     "7": "Teacher",
+     "8": "Healthcare worker",
+     "9": "Police/law enforcement",
+     "10": "Local influential person/thug",
+     "11": "Guruma/senior community member",
+     "12": "Religious leader",
+     "13": "Other (specify)"
+    },
+    "label": "Who did this to you? (select all that apply)"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 342,
+  "name": "q7_1_f_perp_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other (specify)",
+  "label_bn": "অন্যান্য (উল্লেখ করুন)",
+  "own_relevant": "selected(${q7_1_f_perp},'13')",
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "selected(${q7_1_f_perp},'13')"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q7_1_f_perp": {
+    "type": "select_multiple",
+    "choices": {
+     "1": "Family member/relative",
+     "2": "Intimate partner (parik/panthi/neheri/spouse)",
+     "3": "Client/paying partner",
+     "4": "Friend/acquaintance",
+     "5": "Stranger",
+     "6": "Employer/colleague",
+     "7": "Teacher",
+     "8": "Healthcare worker",
+     "9": "Police/law enforcement",
+     "10": "Local influential person/thug",
+     "11": "Guruma/senior community member",
+     "12": "Religious leader",
+     "13": "Other (specify)"
+    },
+    "label": "Who did this to you? (select all that apply)"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 343,
+  "name": "q7_1_g_perp_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other (specify)",
+  "label_bn": "অন্যান্য (উল্লেখ করুন)",
+  "own_relevant": "selected(${q7_1_g_perp},'13')",
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "selected(${q7_1_g_perp},'13')"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q7_1_g_perp": {
+    "type": "select_multiple",
+    "choices": {
+     "1": "Family member/relative",
+     "2": "Intimate partner (parik/panthi/neheri/spouse)",
+     "3": "Client/paying partner",
+     "4": "Friend/acquaintance",
+     "5": "Stranger",
+     "6": "Employer/colleague",
+     "7": "Teacher",
+     "8": "Healthcare worker",
+     "9": "Police/law enforcement",
+     "10": "Local influential person/thug",
+     "11": "Guruma/senior community member",
+     "12": "Religious leader",
+     "13": "Other (specify)"
+    },
+    "label": "Who did this to you? (select all that apply)"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 344,
+  "name": "q7_1_h_perp_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other (specify)",
+  "label_bn": "অন্যান্য (উল্লেখ করুন)",
+  "own_relevant": "selected(${q7_1_h_perp},'13')",
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "selected(${q7_1_h_perp},'13')"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q7_1_h_perp": {
+    "type": "select_multiple",
+    "choices": {
+     "1": "Family member/relative",
+     "2": "Intimate partner (parik/panthi/neheri/spouse)",
+     "3": "Client/paying partner",
+     "4": "Friend/acquaintance",
+     "5": "Stranger",
+     "6": "Employer/colleague",
+     "7": "Teacher",
+     "8": "Healthcare worker",
+     "9": "Police/law enforcement",
+     "10": "Local influential person/thug",
+     "11": "Guruma/senior community member",
+     "12": "Religious leader",
+     "13": "Other (specify)"
+    },
+    "label": "Who did this to you? (select all that apply)"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 345,
+  "name": "q7_1_i_perp_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other (specify)",
+  "label_bn": "অন্যান্য (উল্লেখ করুন)",
+  "own_relevant": "selected(${q7_1_i_perp},'13')",
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "selected(${q7_1_i_perp},'13')"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q7_1_i_perp": {
+    "type": "select_multiple",
+    "choices": {
+     "1": "Family member/relative",
+     "2": "Intimate partner (parik/panthi/neheri/spouse)",
+     "3": "Client/paying partner",
+     "4": "Friend/acquaintance",
+     "5": "Stranger",
+     "6": "Employer/colleague",
+     "7": "Teacher",
+     "8": "Healthcare worker",
+     "9": "Police/law enforcement",
+     "10": "Local influential person/thug",
+     "11": "Guruma/senior community member",
+     "12": "Religious leader",
+     "13": "Other (specify)"
+    },
+    "label": "Who did this to you? (select all that apply)"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 346,
+  "name": "q7_1_j_perp_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other (specify)",
+  "label_bn": "অন্যান্য (উল্লেখ করুন)",
+  "own_relevant": "selected(${q7_1_j_perp},'13')",
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "selected(${q7_1_j_perp},'13')"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q7_1_j_perp": {
+    "type": "select_multiple",
+    "choices": {
+     "1": "Family member/relative",
+     "2": "Intimate partner (parik/panthi/neheri/spouse)",
+     "3": "Client/paying partner",
+     "4": "Friend/acquaintance",
+     "5": "Stranger",
+     "6": "Employer/colleague",
+     "7": "Teacher",
+     "8": "Healthcare worker",
+     "9": "Police/law enforcement",
+     "10": "Local influential person/thug",
+     "11": "Guruma/senior community member",
+     "12": "Religious leader",
+     "13": "Other (specify)"
+    },
+    "label": "Who did this to you? (select all that apply)"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 347,
+  "name": "q7_1_k_perp_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other (specify)",
+  "label_bn": "অন্যান্য (উল্লেখ করুন)",
+  "own_relevant": "selected(${q7_1_k_perp},'13')",
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "selected(${q7_1_k_perp},'13')"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q7_1_k_perp": {
+    "type": "select_multiple",
+    "choices": {
+     "1": "Family member/relative",
+     "2": "Intimate partner (parik/panthi/neheri/spouse)",
+     "3": "Client/paying partner",
+     "4": "Friend/acquaintance",
+     "5": "Stranger",
+     "6": "Employer/colleague",
+     "7": "Teacher",
+     "8": "Healthcare worker",
+     "9": "Police/law enforcement",
+     "10": "Local influential person/thug",
+     "11": "Guruma/senior community member",
+     "12": "Religious leader",
+     "13": "Other (specify)"
+    },
+    "label": "Who did this to you? (select all that apply)"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 348,
+  "name": "module7_note_3",
+  "type": "note",
+  "base": "note",
+  "appearance": null,
+  "label_en": "Q7.2 ‡. Reproductive Coercion — Experienced by You. Has anyone ever done any of the following to you? For each 'Yes' answer I will ask further — whether it happened in the past 12 months and who did it. ‡  [Ask all respondents questions a–b. Ask questions c–e only if the respondent is capable of becoming pregnant; otherwise write N/A and proceed to Q7.3. For each row: Ever happened (1 = Yes, 2 = No); if 'Ever happened' = 1, Past 12 months (1 = Yes, 2 = No); Perpetrator — write all applicable codes from the Q7.1 box. Decline to answer = 99 is acceptable for any row.]",
+  "label_bn": "Q7.2 ‡. প্রজনন বিষয়ে জবরদস্তি—আপনার প্রতি করা হয়েছে। কেউ কি কখনো আপনার সঙ্গে নিচের কোনো আচরণ করেছে? প্রতিটি “হ্যাঁ” উত্তরের ক্ষেত্রে আমি আরও জিজ্ঞাসা করব—এটি গত ১২ মাসে ঘটেছে কি না এবং কে করেছে। ‡  [সব উত্তরদাতাকে a–b প্রশ্ন করুন। উত্তরদাতা গর্ভধারণে সক্ষম হলে কেবল c–e প্রশ্ন করুন; অন্যথায় প্রযোজ্য নয় (N/A) লিখে Q7.3-তে যান। প্রতিটি সারিতে: কখনো ঘটেছে (1 = হ্যাঁ, 2 = না); “কখনো ঘটেছে” = 1 হলে, গত ১২ মাসে (1 = হ্যাঁ, 2 = না); নির্যাতনকারী ব্যক্তি—Q7.1-এর বক্স থেকে প্রযোজ্য সব কোড লিখুন। যেকোনো সারিতে উত্তর দিতে অনিচ্ছুক = 99 গ্রহণযোগ্য।]",
+  "own_relevant": null,
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": true,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 350,
+  "name": "q7_2_a_12mo",
+  "type": "select_one q7_2_yn",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "In the past 12 months?",
+  "label_bn": "গত ১২ মাসে?",
+  "own_relevant": "${q7_2_a_ever}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q7_2_a_ever}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q7_2_a_ever": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "99": "Decline to answer"
+    },
+    "label": "a. Refused to use a condom or contraceptive despite your request, or prevented o"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 351,
+  "name": "q7_2_a_perp",
+  "type": "select_multiple q7_2_perp",
+  "base": "select_multiple",
+  "appearance": null,
+  "label_en": "Who did this to you? (select all that apply)",
+  "label_bn": "এটি কে করেছে? (প্রযোজ্য সব নির্বাচন করুন)",
+  "own_relevant": "${q7_2_a_ever}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q7_2_a_ever}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q7_2_a_ever": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "99": "Decline to answer"
+    },
+    "label": "a. Refused to use a condom or contraceptive despite your request, or prevented o"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 353,
+  "name": "q7_2_b_12mo",
+  "type": "select_one q7_2_yn",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "In the past 12 months?",
+  "label_bn": "গত ১২ মাসে?",
+  "own_relevant": "${q7_2_b_ever}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q7_2_b_ever}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q7_2_b_ever": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "99": "Decline to answer"
+    },
+    "label": "b. Removed or damaged a condom during sex without your consent, or removed, hidd"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ }
+]

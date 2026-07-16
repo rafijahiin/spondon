@@ -1,0 +1,643 @@
+[
+ {
+  "idx": 184,
+  "name": "q3_4",
+  "type": "select_multiple q3_4_opts",
+  "base": "select_multiple",
+  "appearance": null,
+  "label_en": "Q3.4 If someone needs a condom, where can they be obtained in your area? [Multiple answers possible; do not read list]",
+  "label_bn": "Q3.4 যদি কারো কনডমের প্রয়োজন হয়, তাহলে আপনার এলাকায় কোথা থেকে কনডম পাওয়া যেতে পারে? [একাধিক উত্তর হতে পারে; তালিকা পড়ে শোনাবেন না]",
+  "own_relevant": "${q3_1}!='2'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module3",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q3_1}!='2'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q3_1": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No"
+    },
+    "label": "Q3.1 Have you ever heard of HIV or AIDS?"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 185,
+  "name": "q3_4_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other (specify)",
+  "label_bn": "অন্যান্য (উল্লেখ করুন)",
+  "own_relevant": "selected(${q3_4},'07')",
+  "ancestor_gates": [
+   {
+    "group": "grp_module3",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "selected(${q3_4},'07')"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q3_4": {
+    "type": "select_multiple",
+    "choices": {
+     "01": "Pharmacy",
+     "02": "Government hospital/clinic",
+     "03": "NGO clinic/DIC",
+     "04": "Peer educator/outreach worker",
+     "05": "Shop",
+     "06": "Friend/partner",
+     "07": "Other (specify)",
+     "98": "Don't know"
+    },
+    "label": "Q3.4 If someone needs a condom, where can they be obtained in your area? [Multip"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 186,
+  "name": "q3_5",
+  "type": "select_one q3_5_opts",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "Q3.5 If you want to get an HIV test confidentially, do you know of any place where this test can be done?",
+  "label_bn": "Q3.5 আপনি যদি গোপনীয়ভাবে HIV পরীক্ষা করতে চান, তাহলে এমন কোনো জায়গার কথা কি জানেন যেখানে এই পরীক্ষা করানো যায়?",
+  "own_relevant": "${q3_1}!='2'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module3",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q3_1}!='2'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q3_1": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No"
+    },
+    "label": "Q3.1 Have you ever heard of HIV or AIDS?"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 187,
+  "name": "q3_6",
+  "type": "select_one q3_6_opts",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "Q3.6 Have you heard of PrEP — a medicine that, when taken regularly by an HIV-negative person, helps prevent HIV infection?",
+  "label_bn": "Q3.6 আপনি কি PrEP সম্পর্কে শুনেছেন — এটি এমন একটি ওষুধ যা HIV-নেগেটিভ ব্যক্তি নিয়মিত সেবন করলে HIV সংক্রমণ প্রতিরোধে সাহায্য করে?",
+  "own_relevant": "${q3_1}!='2'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module3",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q3_1}!='2'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q3_1": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No"
+    },
+    "label": "Q3.1 Have you ever heard of HIV or AIDS?"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 188,
+  "name": "q3_7",
+  "type": "select_one q3_7_opts",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "Q3.7 Have you heard of PEP — a medicine that, if taken within 72 hours of possible HIV exposure, can help prevent HIV?",
+  "label_bn": "Q3.7 আপনি কি PEP সম্পর্কে শুনেছেন — এটি এমন একটি ওষুধ যা সম্ভাব্য HIV সংস্পর্শের ৭২ ঘণ্টার মধ্যে গ্রহণ করলে HIV প্রতিরোধে সাহায্য করতে পারে?",
+  "own_relevant": "${q3_1}!='2'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module3",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q3_1}!='2'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q3_1": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No"
+    },
+    "label": "Q3.1 Have you ever heard of HIV or AIDS?"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 190,
+  "name": "q3_9",
+  "type": "select_multiple q3_9_opts",
+  "base": "select_multiple",
+  "appearance": null,
+  "label_en": "Q3.9 Which STIs have you heard of? (Multiple answers; do not read list.)",
+  "label_bn": "Q3.9 আপনি কোন কোন STI-এর নাম শুনেছেন? (একাধিক উত্তর হতে পারে; তালিকা পড়বেন না।)",
+  "own_relevant": "${q3_8}!='2'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module3",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q3_8}!='2'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q3_8": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No"
+    },
+    "label": "Q3.8 Apart from HIV, have you heard of any other infections that can be spread t"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 191,
+  "name": "q3_9_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other (specify)",
+  "label_bn": "অন্যান্য (উল্লেখ করুন)",
+  "own_relevant": "selected(${q3_9},'07')",
+  "ancestor_gates": [
+   {
+    "group": "grp_module3",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "selected(${q3_9},'07')"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q3_9": {
+    "type": "select_multiple",
+    "choices": {
+     "01": "Gonorrhoea",
+     "02": "Syphilis",
+     "03": "Chlamydia",
+     "04": "Herpes",
+     "05": "Hepatitis B",
+     "06": "Genital warts/HPV",
+     "07": "Other (specify)",
+     "98": "Cannot name any"
+    },
+    "label": "Q3.9 Which STIs have you heard of? (Multiple answers; do not read list.)"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 192,
+  "name": "q3_10",
+  "type": "select_multiple q3_10_opts",
+  "base": "select_multiple",
+  "appearance": null,
+  "label_en": "Q3.10 ‡ What signs or symptoms in a person's body might suggest they have an STI? (Multiple answers; do not read list.)",
+  "label_bn": "Q3.10 ‡ একজন ব্যক্তির শরীরে কী কী লক্ষণ বা উপসর্গ দেখা গেলে STI থাকতে পারে বলে মনে হয়? (একাধিক উত্তর হতে পারে; তালিকা পড়বেন না।)",
+  "own_relevant": "${q3_8}!='2'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module3",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q3_8}!='2'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q3_8": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No"
+    },
+    "label": "Q3.8 Apart from HIV, have you heard of any other infections that can be spread t"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 193,
+  "name": "q3_10_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other (specify)",
+  "label_bn": "অন্যান্য (উল্লেখ করুন)",
+  "own_relevant": "selected(${q3_10},'07')",
+  "ancestor_gates": [
+   {
+    "group": "grp_module3",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "selected(${q3_10},'07')"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q3_10": {
+    "type": "select_multiple",
+    "choices": {
+     "01": "Burning sensation during urination",
+     "02": "Discharge from genitals/anus",
+     "03": "Sores or lesions on genitals",
+     "04": "Itching",
+     "05": "Lower abdominal pain",
+     "06": "Many STIs may have no symptoms",
+     "07": "Other (specify)",
+     "98": "Don't know"
+    },
+    "label": "Q3.10 ‡ What signs or symptoms in a person's body might suggest they have an STI"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 195,
+  "name": "q3_11_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other (specify)",
+  "label_bn": "অন্যান্য (উল্লেখ করুন)",
+  "own_relevant": "selected(${q3_11},'11')",
+  "ancestor_gates": [
+   {
+    "group": "grp_module3",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "selected(${q3_11},'11')"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q3_11": {
+    "type": "select_multiple",
+    "choices": {
+     "01": "Peer educator/outreach worker",
+     "02": "NGO/CBO session or DIC",
+     "03": "Government health worker/health facility",
+     "04": "Doctor/pharmacy",
+     "05": "Friend/community member",
+     "06": "Guruma/senior community member",
+     "07": "Internet/social media",
+     "08": "TV/radio",
+     "09": "Leaflet/poster/billboard",
+     "10": "School/teacher",
+     "11": "Other (specify)",
+     "12": "Never received such information"
+    },
+    "label": "Q3.11 Where or from whom have you received information about sexual and reproduc"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 197,
+  "name": "grp_module4",
+  "type": "begin_group",
+  "base": "begin_group",
+  "appearance": null,
+  "label_en": "Module 4. Sexual and Reproductive Health and Rights (SRHR) Behaviours and Practices",
+  "label_bn": "মডিউল ৪. যৌন ও প্রজনন স্বাস্থ্য ও অধিকার সম্পর্কিত আচরণ ও চর্চা",
+  "own_relevant": "${_proceed}='1'",
+  "ancestor_gates": [],
+  "effective_gates": [
+   "${_proceed}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 200,
+  "name": "q4_2",
+  "type": "integer",
+  "base": "integer",
+  "appearance": null,
+  "label_en": "Q4.2 ‡ How old were you the first time you had sex? (Don't remember = 98, Decline to answer = 99)",
+  "label_bn": "Q4.2 ‡ প্রথমবার যৌনসম্পর্ক করার সময় আপনার বয়স কত ছিল? (মনে নেই = 98, উত্তর দিতে অনিচ্ছুক = 99)",
+  "own_relevant": "${q4_1}!='2' and ${q4_1}!='99'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module4",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q4_1}!='2' and ${q4_1}!='99'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q4_1": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "99": "Decline to answer"
+    },
+    "label": "Q4.1 ‡ Have you ever had sex?"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 201,
+  "name": "q4_3",
+  "type": "select_one q4_3_opts",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "Q4.3 In the past 12 months, did you have sex?",
+  "label_bn": "Q4.3 গত ১২ মাসে কি আপনি যৌনসম্পর্ক করেছেন?",
+  "own_relevant": "${q4_1}!='2' and ${q4_1}!='99'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module4",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q4_1}!='2' and ${q4_1}!='99'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q4_1": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "99": "Decline to answer"
+    },
+    "label": "Q4.1 ‡ Have you ever had sex?"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 202,
+  "name": "q4_4",
+  "type": "select_multiple q4_4_opts",
+  "base": "select_multiple",
+  "appearance": null,
+  "label_en": "Q4.4 ‡ In the past 12 months, what types of partners did you have sex with? (Read each; multiple answers possible)",
+  "label_bn": "Q4.4 ‡ গত ১২ মাসে আপনি কোন ধরনের সঙ্গীর সাথে যৌনসম্পর্ক করেছেন? (প্রতিটি পড়ে শোনান; একাধিক উত্তর হতে পারে)",
+  "own_relevant": "${q4_1}!='2' and ${q4_1}!='99' and ${q4_3}!='2'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module4",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q4_1}!='2' and ${q4_1}!='99' and ${q4_3}!='2'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q4_1": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "99": "Decline to answer"
+    },
+    "label": "Q4.1 ‡ Have you ever had sex?"
+   },
+   "q4_3": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No"
+    },
+    "label": "Q4.3 In the past 12 months, did you have sex?"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ }
+]

@@ -1,0 +1,666 @@
+[
+ {
+  "idx": 159,
+  "name": "q2_10",
+  "type": "select_multiple q2_10_opts",
+  "base": "select_multiple",
+  "appearance": null,
+  "label_en": "Q2.10 ‡ What kinds of needs and concerns do you share in this civic space? (Multiple answers possible.)",
+  "label_bn": "Q2.10 ‡ এই নাগরিক পরিসরে আপনি কী ধরনের প্রয়োজন ও উদ্বেগ শেয়ার করেন? (একাধিক উত্তর হতে পারে।)",
+  "own_relevant": "${q2_8}!='2' and ${q2_8}!='3'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module2",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q2_8}!='2' and ${q2_8}!='3'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q2_8": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "3": "No such space exists here"
+    },
+    "label": "Q2.8 Do you feel comfortable speaking about your needs and concerns in any civic"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 160,
+  "name": "q2_10_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other (specify)",
+  "label_bn": "অন্যান্য (উল্লেখ করুন)",
+  "own_relevant": "${q2_8}!='2' and ${q2_8}!='3' and selected(${q2_10},'10')",
+  "ancestor_gates": [
+   {
+    "group": "grp_module2",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q2_8}!='2' and ${q2_8}!='3' and selected(${q2_10},'10')"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q2_10": {
+    "type": "select_multiple",
+    "choices": {
+     "01": "Education rights & support",
+     "02": "Healthcare access",
+     "03": "Mental health support",
+     "04": "Legal rights",
+     "05": "Employment",
+     "06": "Inheritance law & rights",
+     "07": "Marriage law & rights",
+     "08": "Same-sex relationship rights",
+     "09": "Right to political participation",
+     "10": "Other (specify)"
+    },
+    "label": "Q2.10 ‡ What kinds of needs and concerns do you share in this civic space? (Mult"
+   },
+   "q2_8": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "3": "No such space exists here"
+    },
+    "label": "Q2.8 Do you feel comfortable speaking about your needs and concerns in any civic"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 163,
+  "name": "q2_12_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other (specify)",
+  "label_bn": "অন্যান্য (উল্লেখ করুন)",
+  "own_relevant": "selected(${q2_12},'7')",
+  "ancestor_gates": [
+   {
+    "group": "grp_module2",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "selected(${q2_12},'7')"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q2_12": {
+    "type": "select_multiple",
+    "choices": {
+     "1": "Constitutional commitment (Article 28)",
+     "2": "Hijra gender recognition (2013 gazette)",
+     "3": "Draft anti-discrimination law",
+     "4": "Draft Transgender and Hijra Act 2022",
+     "5": "BPC Section 377",
+     "6": "International conventions (ICCPR/ICESCR/CEDAW)",
+     "7": "Other (specify)",
+     "98": "Don't know any"
+    },
+    "label": "Q2.12 Do you know the name of any policy or law related to the legal rights and "
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 169,
+  "name": "q2_18",
+  "type": "select_multiple q2_18_opts",
+  "base": "select_multiple",
+  "appearance": null,
+  "label_en": "Q2.18 Which programmes? (Multiple answers possible.)",
+  "label_bn": "Q2.18 কোন কর্মসূচিগুলো? (একাধিক উত্তর হতে পারে।)",
+  "own_relevant": "${q2_17}!='2' and ${q2_17}!='98'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module2",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q2_17}!='2' and ${q2_17}!='98'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q2_17": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes, such programmes exist",
+     "2": "No, no such programmes",
+     "98": "Don't know"
+    },
+    "label": "Q2.17 Are you aware of any skills development or training programmes that could "
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 170,
+  "name": "q2_18_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other (specify)",
+  "label_bn": "অন্যান্য (উল্লেখ করুন)",
+  "own_relevant": "${q2_17}!='2' and ${q2_17}!='98' and selected(${q2_18},'4')",
+  "ancestor_gates": [
+   {
+    "group": "grp_module2",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q2_17}!='2' and ${q2_17}!='98' and selected(${q2_18},'4')"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q2_17": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes, such programmes exist",
+     "2": "No, no such programmes",
+     "98": "Don't know"
+    },
+    "label": "Q2.17 Are you aware of any skills development or training programmes that could "
+   },
+   "q2_18": {
+    "type": "select_multiple",
+    "choices": {
+     "1": "Government training programme",
+     "2": "NGO training programme",
+     "3": "Private sector training programme",
+     "4": "Other (specify)"
+    },
+    "label": "Q2.18 Which programmes? (Multiple answers possible.)"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 172,
+  "name": "q2_20",
+  "type": "select_multiple q2_20_opts",
+  "base": "select_multiple",
+  "appearance": null,
+  "label_en": "Q2.20 Where did you receive these services? (Multiple answers possible.)",
+  "label_bn": "Q2.20 আপনি কোথা থেকে এই সেবাগুলো পেয়েছেন? (একাধিক উত্তর হতে পারে।)",
+  "own_relevant": "${q2_19}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module2",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q2_19}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q2_19": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No"
+    },
+    "label": "Q2.19 In the past 12 months, did you access any legal service (legal advice, leg"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 173,
+  "name": "q2_20_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other (specify)",
+  "label_bn": "অন্যান্য (উল্লেখ করুন)",
+  "own_relevant": "${q2_19}='1' and selected(${q2_20},'6')",
+  "ancestor_gates": [
+   {
+    "group": "grp_module2",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q2_19}='1' and selected(${q2_20},'6')"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q2_19": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No"
+    },
+    "label": "Q2.19 In the past 12 months, did you access any legal service (legal advice, leg"
+   },
+   "q2_20": {
+    "type": "select_multiple",
+    "choices": {
+     "1": "District Legal Aid Committee",
+     "2": "NGO (Bandhu, Ain o Salish Kendra, BLAST, etc.)",
+     "3": "Panel lawyer",
+     "4": "Private lawyer",
+     "5": "Village court/salish",
+     "6": "Other (specify)"
+    },
+    "label": "Q2.20 Where did you receive these services? (Multiple answers possible.)"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 174,
+  "name": "q2_21",
+  "type": "select_multiple q2_21_opts",
+  "base": "select_multiple",
+  "appearance": null,
+  "label_en": "Q2.21 In the past 12 months, was there a time when you needed legal assistance but did not seek it? If yes, why? (Multiple answers; do not read list.)",
+  "label_bn": "Q2.21 গত ১২ মাসে এমন কোনো সময় কি ছিল যখন আপনার আইনগত সহায়তার প্রয়োজন ছিল, কিন্তু আপনি তা চাননি? যদি হ্যাঁ হয়, কেন? (একাধিক উত্তর হতে পারে; তালিকা পড়বেন না।)",
+  "own_relevant": null,
+  "ancestor_gates": [
+   {
+    "group": "grp_module2",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": true,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 175,
+  "name": "q2_21_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other (specify)",
+  "label_bn": "অন্যান্য (উল্লেখ করুন)",
+  "own_relevant": "selected(${q2_21},'09')",
+  "ancestor_gates": [
+   {
+    "group": "grp_module2",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "selected(${q2_21},'09')"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q2_21": {
+    "type": "select_multiple",
+    "choices": {
+     "00": "Did not need such assistance",
+     "01": "Did not know where to go",
+     "02": "Fear of social stigma",
+     "03": "Complicated process",
+     "04": "Fear of harassment",
+     "05": "Family non-cooperation",
+     "06": "Cost",
+     "07": "Felt I would not get adequate support",
+     "08": "Fear of rejection",
+     "09": "Other (specify)"
+    },
+    "label": "Q2.21 In the past 12 months, was there a time when you needed legal assistance b"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 177,
+  "name": "grp_module3",
+  "type": "begin_group",
+  "base": "begin_group",
+  "appearance": null,
+  "label_en": "Module 3. Knowledge Related to Sexual and Reproductive Health and Rights (SRHR)",
+  "label_bn": "মডিউল ৩. যৌন ও প্রজনন স্বাস্থ্য ও অধিকার (SRHR) সম্পর্কিত জ্ঞান",
+  "own_relevant": "${_proceed}='1'",
+  "ancestor_gates": [],
+  "effective_gates": [
+   "${_proceed}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 180,
+  "name": "q3_2",
+  "type": "select_multiple q3_2_opts",
+  "base": "select_multiple",
+  "appearance": null,
+  "label_en": "Q3.2 How can a person become infected with HIV? [Multiple answers possible; do not read list]",
+  "label_bn": "Q3.2 একজন ব্যক্তি কীভাবে HIV-এ আক্রান্ত হতে পারেন? [একাধিক উত্তর হতে পারে; তালিকা পড়ে শোনাবেন না]",
+  "own_relevant": "${q3_1}!='2'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module3",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q3_1}!='2'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q3_1": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No"
+    },
+    "label": "Q3.1 Have you ever heard of HIV or AIDS?"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 181,
+  "name": "q3_2_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other (specify)",
+  "label_bn": "অন্যান্য (উল্লেখ করুন)",
+  "own_relevant": "selected(${q3_2},'09')",
+  "ancestor_gates": [
+   {
+    "group": "grp_module3",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "selected(${q3_2},'09')"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q3_2": {
+    "type": "select_multiple",
+    "choices": {
+     "01": "Unprotected sex (anal/vaginal) with an HIV-positive person",
+     "02": "From an infected mother to child",
+     "03": "Through receiving infected blood",
+     "04": "Through sharing needles/syringes",
+     "05": "Through unsterilised equipment (ear/nose piercing, tattooing, shaving, etc.)",
+     "06": "Through mosquito bites",
+     "07": "Through sharing plates/utensils or food",
+     "08": "Through using or touching the same toilet",
+     "09": "Other (specify)",
+     "98": "Don't know"
+    },
+    "label": "Q3.2 How can a person become infected with HIV? [Multiple answers possible; do n"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 182,
+  "name": "q3_3",
+  "type": "select_multiple q3_3_opts",
+  "base": "select_multiple",
+  "appearance": null,
+  "label_en": "Q3.3 How can a person protect themselves from HIV? [Multiple answers possible; do not read list]",
+  "label_bn": "Q3.3 একজন ব্যক্তি কীভাবে নিজেকে HIV থেকে সুরক্ষিত রাখতে পারেন? [একাধিক উত্তর হতে পারে; তালিকা পড়ে শোনাবেন না]",
+  "own_relevant": "${q3_1}!='2'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module3",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q3_1}!='2'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q3_1": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No"
+    },
+    "label": "Q3.1 Have you ever heard of HIV or AIDS?"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 183,
+  "name": "q3_3_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other (specify)",
+  "label_bn": "অন্যান্য (উল্লেখ করুন)",
+  "own_relevant": "selected(${q3_3},'08')",
+  "ancestor_gates": [
+   {
+    "group": "grp_module3",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "selected(${q3_3},'08')"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q3_3": {
+    "type": "select_multiple",
+    "choices": {
+     "01": "Correct and consistent condom use during sex",
+     "02": "Using water-based lubricant with condoms",
+     "03": "Having one faithful HIV-negative partner",
+     "04": "Abstaining from sex",
+     "05": "Not sharing needles/syringes",
+     "06": "Testing blood before transfusion",
+     "07": "Taking HIV preventive medicine (PrEP/PEP)",
+     "08": "Other (specify)",
+     "98": "Don't know"
+    },
+    "label": "Q3.3 How can a person protect themselves from HIV? [Multiple answers possible; d"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ }
+]

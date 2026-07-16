@@ -1,0 +1,677 @@
+[
+ {
+  "idx": 369,
+  "name": "q7_2_a_perp",
+  "type": "select_multiple q7_2_perp",
+  "base": "select_multiple",
+  "appearance": null,
+  "label_en": "Perpetrator Code",
+  "label_bn": "অপরাধীর কোড",
+  "own_relevant": "${q7_2_a_ever}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q7_2_a_ever}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q7_2_a_ever": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "99": "Prefer not to say"
+    },
+    "label": "a. When you wanted to use a condom or contraceptive, someone refused or prevente"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 370,
+  "name": "q7_2_a_perp_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other (specify)",
+  "label_bn": "অন্যান্য (উল্লেখ করুন)",
+  "own_relevant": "selected(${q7_2_a_perp},'12')",
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "selected(${q7_2_a_perp},'12')"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q7_2_a_perp": {
+    "type": "select_multiple",
+    "choices": {
+     "1": "Client (new or regular)",
+     "2": "Husband/babu (intimate partner)",
+     "3": "Sardarni/landlady",
+     "4": "Broker/intermediary",
+     "5": "Family member/relative",
+     "6": "Colleague/acquaintance",
+     "7": "Stranger",
+     "8": "Police/law enforcement",
+     "9": "Local powerful individual/goon",
+     "10": "Health worker",
+     "11": "Religious leader",
+     "12": "Other (specify)"
+    },
+    "label": "Perpetrator Code"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 372,
+  "name": "q7_2_b_12mo",
+  "type": "select_one q7_2_yn",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "In the past 12 months?",
+  "label_bn": "গত ১২ মাসে?",
+  "own_relevant": "${q7_2_b_ever}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q7_2_b_ever}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q7_2_b_ever": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "99": "Prefer not to say"
+    },
+    "label": "b. Someone removed, damaged, or hid/destroyed your condom or contraception witho"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 373,
+  "name": "q7_2_b_perp",
+  "type": "select_multiple q7_2_perp",
+  "base": "select_multiple",
+  "appearance": null,
+  "label_en": "Perpetrator Code",
+  "label_bn": "অপরাধীর কোড",
+  "own_relevant": "${q7_2_b_ever}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q7_2_b_ever}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q7_2_b_ever": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "99": "Prefer not to say"
+    },
+    "label": "b. Someone removed, damaged, or hid/destroyed your condom or contraception witho"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 374,
+  "name": "q7_2_b_perp_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other (specify)",
+  "label_bn": "অন্যান্য (উল্লেখ করুন)",
+  "own_relevant": "selected(${q7_2_b_perp},'12')",
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "selected(${q7_2_b_perp},'12')"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q7_2_b_perp": {
+    "type": "select_multiple",
+    "choices": {
+     "1": "Client (new or regular)",
+     "2": "Husband/babu (intimate partner)",
+     "3": "Sardarni/landlady",
+     "4": "Broker/intermediary",
+     "5": "Family member/relative",
+     "6": "Colleague/acquaintance",
+     "7": "Stranger",
+     "8": "Police/law enforcement",
+     "9": "Local powerful individual/goon",
+     "10": "Health worker",
+     "11": "Religious leader",
+     "12": "Other (specify)"
+    },
+    "label": "Perpetrator Code"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 376,
+  "name": "q7_2_c_12mo",
+  "type": "select_one q7_2_yn",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "In the past 12 months?",
+  "label_bn": "গত ১২ মাসে?",
+  "own_relevant": "${q7_2_c_ever}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q7_2_c_ever}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q7_2_c_ever": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "99": "Prefer not to say"
+    },
+    "label": "c. Someone pressured or forced you to become pregnant when you did not want to"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 377,
+  "name": "q7_2_c_perp",
+  "type": "select_multiple q7_2_perp",
+  "base": "select_multiple",
+  "appearance": null,
+  "label_en": "Perpetrator Code",
+  "label_bn": "অপরাধীর কোড",
+  "own_relevant": "${q7_2_c_ever}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q7_2_c_ever}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q7_2_c_ever": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "99": "Prefer not to say"
+    },
+    "label": "c. Someone pressured or forced you to become pregnant when you did not want to"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 378,
+  "name": "q7_2_c_perp_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other (specify)",
+  "label_bn": "অন্যান্য (উল্লেখ করুন)",
+  "own_relevant": "selected(${q7_2_c_perp},'12')",
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "selected(${q7_2_c_perp},'12')"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q7_2_c_perp": {
+    "type": "select_multiple",
+    "choices": {
+     "1": "Client (new or regular)",
+     "2": "Husband/babu (intimate partner)",
+     "3": "Sardarni/landlady",
+     "4": "Broker/intermediary",
+     "5": "Family member/relative",
+     "6": "Colleague/acquaintance",
+     "7": "Stranger",
+     "8": "Police/law enforcement",
+     "9": "Local powerful individual/goon",
+     "10": "Health worker",
+     "11": "Religious leader",
+     "12": "Other (specify)"
+    },
+    "label": "Perpetrator Code"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 380,
+  "name": "q7_2_d_12mo",
+  "type": "select_one q7_2_yn",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "In the past 12 months?",
+  "label_bn": "গত ১২ মাসে?",
+  "own_relevant": "${q7_2_d_ever}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q7_2_d_ever}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q7_2_d_ever": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "99": "Prefer not to say"
+    },
+    "label": "d. When you wanted an abortion, someone pressured or forced you to continue the "
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 381,
+  "name": "q7_2_d_perp",
+  "type": "select_multiple q7_2_perp",
+  "base": "select_multiple",
+  "appearance": null,
+  "label_en": "Perpetrator Code",
+  "label_bn": "অপরাধীর কোড",
+  "own_relevant": "${q7_2_d_ever}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q7_2_d_ever}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q7_2_d_ever": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "99": "Prefer not to say"
+    },
+    "label": "d. When you wanted an abortion, someone pressured or forced you to continue the "
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 382,
+  "name": "q7_2_d_perp_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other (specify)",
+  "label_bn": "অন্যান্য (উল্লেখ করুন)",
+  "own_relevant": "selected(${q7_2_d_perp},'12')",
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "selected(${q7_2_d_perp},'12')"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q7_2_d_perp": {
+    "type": "select_multiple",
+    "choices": {
+     "1": "Client (new or regular)",
+     "2": "Husband/babu (intimate partner)",
+     "3": "Sardarni/landlady",
+     "4": "Broker/intermediary",
+     "5": "Family member/relative",
+     "6": "Colleague/acquaintance",
+     "7": "Stranger",
+     "8": "Police/law enforcement",
+     "9": "Local powerful individual/goon",
+     "10": "Health worker",
+     "11": "Religious leader",
+     "12": "Other (specify)"
+    },
+    "label": "Perpetrator Code"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 384,
+  "name": "q7_2_e_12mo",
+  "type": "select_one q7_2_yn",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "In the past 12 months?",
+  "label_bn": "গত ১২ মাসে?",
+  "own_relevant": "${q7_2_e_ever}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q7_2_e_ever}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q7_2_e_ever": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "99": "Prefer not to say"
+    },
+    "label": "e. When you wanted to keep the baby, someone pressured or forced you to have an "
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 385,
+  "name": "q7_2_e_perp",
+  "type": "select_multiple q7_2_perp",
+  "base": "select_multiple",
+  "appearance": null,
+  "label_en": "Perpetrator Code",
+  "label_bn": "অপরাধীর কোড",
+  "own_relevant": "${q7_2_e_ever}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q7_2_e_ever}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q7_2_e_ever": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "99": "Prefer not to say"
+    },
+    "label": "e. When you wanted to keep the baby, someone pressured or forced you to have an "
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 386,
+  "name": "q7_2_e_perp_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other (specify)",
+  "label_bn": "অন্যান্য (উল্লেখ করুন)",
+  "own_relevant": "selected(${q7_2_e_perp},'12')",
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "selected(${q7_2_e_perp},'12')"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q7_2_e_perp": {
+    "type": "select_multiple",
+    "choices": {
+     "1": "Client (new or regular)",
+     "2": "Husband/babu (intimate partner)",
+     "3": "Sardarni/landlady",
+     "4": "Broker/intermediary",
+     "5": "Family member/relative",
+     "6": "Colleague/acquaintance",
+     "7": "Stranger",
+     "8": "Police/law enforcement",
+     "9": "Local powerful individual/goon",
+     "10": "Health worker",
+     "11": "Religious leader",
+     "12": "Other (specify)"
+    },
+    "label": "Perpetrator Code"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ }
+]

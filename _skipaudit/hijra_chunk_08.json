@@ -1,0 +1,672 @@
+[
+ {
+  "idx": 264,
+  "name": "q6_2",
+  "type": "select_multiple q6_2_opts",
+  "base": "select_multiple",
+  "appearance": null,
+  "label_en": "Q6.2 What type of health facility did you visit? (Multiple answers possible)",
+  "label_bn": "Q6.2 আপনি কোন ধরনের স্বাস্থ্যকেন্দ্রে গিয়েছিলেন? (একাধিক উত্তর হতে পারে)",
+  "own_relevant": "${q6_1}!='2'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module6",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q6_1}!='2'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q6_1": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No"
+    },
+    "label": "Q6.1 In the past 12 months, did you visit any health facility to receive healthc"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 265,
+  "name": "q6_2_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other (specify)",
+  "label_bn": "অন্যান্য (উল্লেখ করুন)",
+  "own_relevant": "${q6_1}!='2' and selected(${q6_2},'6')",
+  "ancestor_gates": [
+   {
+    "group": "grp_module6",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q6_1}!='2' and selected(${q6_2},'6')"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q6_1": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No"
+    },
+    "label": "Q6.1 In the past 12 months, did you visit any health facility to receive healthc"
+   },
+   "q6_2": {
+    "type": "select_multiple",
+    "choices": {
+     "1": "Government hospital/upazila health complex/community clinic",
+     "2": "Private clinic/doctor",
+     "3": "NGO clinic/DIC",
+     "4": "Pharmacy/drug seller",
+     "5": "Kabiraj/traditional healer",
+     "6": "Other (specify)"
+    },
+    "label": "Q6.2 What type of health facility did you visit? (Multiple answers possible)"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 266,
+  "name": "q6_3",
+  "type": "select_one q6_3_opts",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "Q6.3 How or through whom did you learn about this health facility? (One answer)",
+  "label_bn": "Q6.3 আপনি কীভাবে বা কার মাধ্যমে এই স্বাস্থ্যকেন্দ্রের কথা জানতে পেরেছিলেন? (একটি উত্তর)",
+  "own_relevant": "${q6_1}!='2'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module6",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q6_1}!='2'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q6_1": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No"
+    },
+    "label": "Q6.1 In the past 12 months, did you visit any health facility to receive healthc"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 267,
+  "name": "q6_3_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other (specify)",
+  "label_bn": "অন্যান্য (উল্লেখ করুন)",
+  "own_relevant": "${q6_1}!='2' and ${q6_3}='7'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module6",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q6_1}!='2' and ${q6_3}='7'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q6_1": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No"
+    },
+    "label": "Q6.1 In the past 12 months, did you visit any health facility to receive healthc"
+   },
+   "q6_3": {
+    "type": "select_one",
+    "choices": {
+     "1": "Peer educator/outreach worker",
+     "2": "Friend/community member",
+     "3": "Guruma/senior community member",
+     "4": "NGO/CBO referral",
+     "5": "Found it myself",
+     "6": "Social media/internet",
+     "7": "Other (specify)"
+    },
+    "label": "Q6.3 How or through whom did you learn about this health facility? (One answer)"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 268,
+  "name": "q6_4",
+  "type": "select_multiple q6_4_opts",
+  "base": "select_multiple",
+  "appearance": null,
+  "label_en": "Q6.4 What type of services did you receive at the most recent visit? (Multiple answers possible)",
+  "label_bn": "Q6.4 সর্বশেষ ভিজিটে কী ধরনের সেবা পেয়েছেন? (একাধিক উত্তর হতে পারে)",
+  "own_relevant": "${q6_1}!='2'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module6",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q6_1}!='2'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q6_1": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No"
+    },
+    "label": "Q6.1 In the past 12 months, did you visit any health facility to receive healthc"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 269,
+  "name": "q6_4_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other (specify)",
+  "label_bn": "অন্যান্য (উল্লেখ করুন)",
+  "own_relevant": "${q6_1}!='2' and selected(${q6_4},'08')",
+  "ancestor_gates": [
+   {
+    "group": "grp_module6",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q6_1}!='2' and selected(${q6_4},'08')"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q6_1": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No"
+    },
+    "label": "Q6.1 In the past 12 months, did you visit any health facility to receive healthc"
+   },
+   "q6_4": {
+    "type": "select_multiple",
+    "choices": {
+     "01": "Treatment for general illness",
+     "02": "STI services",
+     "03": "HIV testing/counselling",
+     "04": "Condom/lubricant",
+     "05": "Family planning",
+     "06": "Mental health counselling",
+     "07": "GBV (gender-based violence) support",
+     "08": "Other (specify)"
+    },
+    "label": "Q6.4 What type of services did you receive at the most recent visit? (Multiple a"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 270,
+  "name": "q6_5",
+  "type": "select_one q6_5_opts",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "Q6.5 Overall, how satisfied were you with the services received?",
+  "label_bn": "Q6.5 প্রাপ্ত সেবার প্রতি আপনি সামগ্রিকভাবে কতটা সন্তুষ্ট ছিলেন?",
+  "own_relevant": "${q6_1}!='2'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module6",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q6_1}!='2'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q6_1": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No"
+    },
+    "label": "Q6.1 In the past 12 months, did you visit any health facility to receive healthc"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 271,
+  "name": "q6_6",
+  "type": "select_one q6_6_opts",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "Q6.6 Are supplies relevant to your community (condoms, lubricants, hygiene products) available at the health facility you attend?",
+  "label_bn": "Q6.6 আপনি যে স্বাস্থ্যকেন্দ্রে যান সেখানে কি আপনার কমিউনিটির প্রয়োজনীয় সামগ্রী (কনডম, লুব্রিকেন্ট, স্বাস্থ্যবিধি সামগ্রী) পাওয়া যায়?",
+  "own_relevant": "${q6_1}!='2'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module6",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q6_1}!='2'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q6_1": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No"
+    },
+    "label": "Q6.1 In the past 12 months, did you visit any health facility to receive healthc"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 272,
+  "name": "q6_7",
+  "type": "select_one q6_7_opts",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "Q6.7 Does the healthcare provider at the facility you use most know about your gender identity/sexual orientation? ‡",
+  "label_bn": "Q6.7 আপনি যে স্বাস্থ্যকেন্দ্রটি সবচেয়ে বেশি ব্যবহার করেন, সেখানে স্বাস্থ্যসেবা প্রদানকারী কি আপনার জেন্ডার পরিচয়/যৌন অভিমুখিতা সম্পর্কে জানেন? ‡",
+  "own_relevant": "${q6_1}!='2'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module6",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q6_1}!='2'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q6_1": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No"
+    },
+    "label": "Q6.1 In the past 12 months, did you visit any health facility to receive healthc"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 273,
+  "name": "module6_note_1",
+  "type": "note",
+  "base": "note",
+  "appearance": null,
+  "label_en": "Q6.8. In the past 12 months, did any of the following happen to you when seeking healthcare? ‡ [Read each item. 1 = Yes, 2 = No. Assure the respondent that their individual answers will not be shared with any service provider.]",
+  "label_bn": "Q6.8. গত ১২ মাসে, স্বাস্থ্যসেবা নিতে গিয়ে কি আপনার সাথে নিচের কোনো ঘটনা ঘটেছে? ‡ [প্রতিটি আইটেম পড়ে শোনান। 1 = হ্যাঁ, 2 = না। উত্তরদাতাকে আশ্বস্ত করুন যে তাদের ব্যক্তিগত উত্তর কোনো সেবা প্রদানকারীর সাথে শেয়ার করা হবে না।]",
+  "own_relevant": "${q6_1}!='2'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module6",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q6_1}!='2'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q6_1": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No"
+    },
+    "label": "Q6.1 In the past 12 months, did you visit any health facility to receive healthc"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 274,
+  "name": "grp_q6_8",
+  "type": "begin_group",
+  "base": "begin_group",
+  "appearance": "field-list",
+  "label_en": "Q6.8. In the past 12 months, did any of the following happen to you when seeking healthcare? ‡",
+  "label_bn": "Q6.8. গত ১২ মাসে, স্বাস্থ্যসেবা নিতে গিয়ে কি আপনার সাথে নিচের কোনো ঘটনা ঘটেছে? ‡",
+  "own_relevant": "${q6_1}!='2'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module6",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q6_1}!='2'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q6_1": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No"
+    },
+    "label": "Q6.1 In the past 12 months, did you visit any health facility to receive healthc"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 283,
+  "name": "q6_9",
+  "type": "select_multiple q6_9_opts",
+  "base": "select_multiple",
+  "appearance": null,
+  "label_en": "Q6.9 Ask only if Q6.1 = 2: In the past 12 months, why did you not go to any health facility? (Multiple answers; do not read list.) ‡",
+  "label_bn": "Q6.9 শুধু Q6.1 = 2 হলে জিজ্ঞাসা করুন: গত ১২ মাসে আপনি কেন কোনো স্বাস্থ্যসেবা কেন্দ্রে যাননি? (একাধিক উত্তর; তালিকাটি পড়ে শোনাবেন না।) ‡",
+  "own_relevant": "${q6_1}='2'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module6",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q6_1}='2'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": true,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q6_1": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No"
+    },
+    "label": "Q6.1 In the past 12 months, did you visit any health facility to receive healthc"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 284,
+  "name": "q6_9_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other (specify)",
+  "label_bn": "অন্যান্য (উল্লেখ করুন)",
+  "own_relevant": "${q6_1}='2' and selected(${q6_9},'09')",
+  "ancestor_gates": [
+   {
+    "group": "grp_module6",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q6_1}='2' and selected(${q6_9},'09')"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q6_1": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No"
+    },
+    "label": "Q6.1 In the past 12 months, did you visit any health facility to receive healthc"
+   },
+   "q6_9": {
+    "type": "select_multiple",
+    "choices": {
+     "01": "Was not ill",
+     "02": "Was ill but felt no need to go",
+     "03": "Not satisfied with their services",
+     "04": "Supplies/services needed by my community not available there",
+     "05": "Fear of rejection or bad treatment",
+     "06": "Fear of identity being disclosed",
+     "07": "Too expensive",
+     "08": "Too far",
+     "09": "Other (specify)"
+    },
+    "label": "Q6.9 Ask only if Q6.1 = 2: In the past 12 months, why did you not go to any heal"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 286,
+  "name": "q6_11",
+  "type": "select_multiple q6_11_opts",
+  "base": "select_multiple",
+  "appearance": null,
+  "label_en": "Q6.11 What were the main reasons? (Multiple answers; do not read list.)",
+  "label_bn": "Q6.11 এর প্রধান কারণগুলো কী ছিল? (একাধিক উত্তর; তালিকাটি পড়ে শোনাবেন না।)",
+  "own_relevant": "${q6_10}!='2'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module6",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q6_10}!='2'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q6_10": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No"
+    },
+    "label": "Q6.10 In the past 12 months, was there a time when you needed healthcare but del"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ }
+]

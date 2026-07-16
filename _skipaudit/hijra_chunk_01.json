@@ -1,0 +1,638 @@
+[
+ {
+  "idx": 65,
+  "name": "mB_head",
+  "type": "note",
+  "base": "note",
+  "appearance": null,
+  "label_en": "B. Household/Dera Composition and Economic Status",
+  "label_bn": "B. পরিবার/ডেরা গঠন ও অর্থনৈতিক অবস্থা",
+  "own_relevant": "${_proceed}='1'",
+  "ancestor_gates": [],
+  "effective_gates": [
+   "${_proceed}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 66,
+  "name": "grp_b",
+  "type": "begin_group",
+  "base": "begin_group",
+  "appearance": null,
+  "label_en": "B. Household / Dera and Economic Status",
+  "label_bn": "B. পরিবার/ডেরা ও অর্থনৈতিক অবস্থা",
+  "own_relevant": "${_proceed}='1'",
+  "ancestor_gates": [],
+  "effective_gates": [
+   "${_proceed}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 68,
+  "name": "b101_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other (specify)",
+  "label_bn": "অন্যান্য (উল্লেখ করুন)",
+  "own_relevant": "${b101_live_with}='6'",
+  "ancestor_gates": [
+   {
+    "group": "grp_b",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${b101_live_with}='6'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "b101_live_with": {
+    "type": "select_one",
+    "choices": {
+     "1": "Own family (parents/siblings/relatives)",
+     "2": "In a dera with a guruma",
+     "3": "With husband/partner (parik)",
+     "4": "With friends/roommate/mess/hostel",
+     "5": "Alone",
+     "6": "Other (specify)"
+    },
+    "label": "B101 ‡ Who do you currently live with?"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 69,
+  "name": "b102_hh_members",
+  "type": "integer",
+  "base": "integer",
+  "appearance": null,
+  "label_en": "B102 How many household members, including yourself, usually live and eat together?",
+  "label_bn": "B102 আপনিসহ আপনার পরিবারের কতজন সদস্য সাধারণত একসাথে থাকেন এবং খাবার খান?",
+  "own_relevant": "${b101_live_with}!='2'",
+  "ancestor_gates": [
+   {
+    "group": "grp_b",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${b101_live_with}!='2'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "b101_live_with": {
+    "type": "select_one",
+    "choices": {
+     "1": "Own family (parents/siblings/relatives)",
+     "2": "In a dera with a guruma",
+     "3": "With husband/partner (parik)",
+     "4": "With friends/roommate/mess/hostel",
+     "5": "Alone",
+     "6": "Other (specify)"
+    },
+    "label": "B101 ‡ Who do you currently live with?"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 70,
+  "name": "b103_dera_members",
+  "type": "integer",
+  "base": "integer",
+  "appearance": null,
+  "label_en": "B103 Ask only if living in a dera: How many people in total, including the guruma, live in the dera?",
+  "label_bn": "B103 শুধুমাত্র ডেরায় থাকলে জিজ্ঞাসা করুন: গুরুমাসহ ডেরায় মোট কতজন থাকেন?",
+  "own_relevant": "${b101_live_with}='2'",
+  "ancestor_gates": [
+   {
+    "group": "grp_b",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${b101_live_with}='2'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": true,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "b101_live_with": {
+    "type": "select_one",
+    "choices": {
+     "1": "Own family (parents/siblings/relatives)",
+     "2": "In a dera with a guruma",
+     "3": "With husband/partner (parik)",
+     "4": "With friends/roommate/mess/hostel",
+     "5": "Alone",
+     "6": "Other (specify)"
+    },
+    "label": "B101 ‡ Who do you currently live with?"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 71,
+  "name": "b104_share",
+  "type": "integer",
+  "base": "integer",
+  "appearance": null,
+  "label_en": "B104 Last month, how much money (taka) did you receive as your share?",
+  "label_bn": "B104 গত মাসে আপনার অংশ হিসেবে কত টাকা পেয়েছেন?",
+  "own_relevant": "${b101_live_with}='2'",
+  "ancestor_gates": [
+   {
+    "group": "grp_b",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${b101_live_with}='2'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "b101_live_with": {
+    "type": "select_one",
+    "choices": {
+     "1": "Own family (parents/siblings/relatives)",
+     "2": "In a dera with a guruma",
+     "3": "With husband/partner (parik)",
+     "4": "With friends/roommate/mess/hostel",
+     "5": "Alone",
+     "6": "Other (specify)"
+    },
+    "label": "B101 ‡ Who do you currently live with?"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 72,
+  "name": "b105_shared_exp",
+  "type": "integer",
+  "base": "integer",
+  "appearance": null,
+  "label_en": "B105 Last month, what was the total shared expenditure of all members (food, rent, essentials, utilities, guruma's share, etc.)?",
+  "label_bn": "B105 গত মাসে সব সদস্যের মোট যৌথ ব্যয় (খাদ্য, বাড়িভাড়া, নিত্যপ্রয়োজনীয় জিনিস, ইউটিলিটি বিল, গুরুমার অংশ ইত্যাদি) কত ছিল?",
+  "own_relevant": "${b101_live_with}='2'",
+  "ancestor_gates": [
+   {
+    "group": "grp_b",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${b101_live_with}='2'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "b101_live_with": {
+    "type": "select_one",
+    "choices": {
+     "1": "Own family (parents/siblings/relatives)",
+     "2": "In a dera with a guruma",
+     "3": "With husband/partner (parik)",
+     "4": "With friends/roommate/mess/hostel",
+     "5": "Alone",
+     "6": "Other (specify)"
+    },
+    "label": "B101 ‡ Who do you currently live with?"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 74,
+  "name": "b106_note",
+  "type": "note",
+  "base": "note",
+  "appearance": null,
+  "label_en": "B106 Total personal income (taka/month) = B104 − (B105 ÷ B103): ${b106_personal_income}",
+  "label_bn": "B106 মোট ব্যক্তিগত আয় (টাকা/মাস) = B104 − (B105 ÷ B103): ${b106_personal_income}",
+  "own_relevant": "${b101_live_with}='2'",
+  "ancestor_gates": [
+   {
+    "group": "grp_b",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${b101_live_with}='2'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "b101_live_with": {
+    "type": "select_one",
+    "choices": {
+     "1": "Own family (parents/siblings/relatives)",
+     "2": "In a dera with a guruma",
+     "3": "With husband/partner (parik)",
+     "4": "With friends/roommate/mess/hostel",
+     "5": "Alone",
+     "6": "Other (specify)"
+    },
+    "label": "B101 ‡ Who do you currently live with?"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 75,
+  "name": "b107_head",
+  "type": "note",
+  "base": "note",
+  "appearance": null,
+  "label_en": "B107 ‡ If not living in a dera: Over the past one month, how much money did your household earn from various sources? (Write 0 if none.) [Read each source neutrally; do not comment even if income comes from traditional occupation or sex work.]",
+  "label_bn": "B107 ‡ যদি ডেরায় না থাকেন: গত এক মাসে আপনার পরিবারের বিভিন্ন উৎস থেকে কত টাকা আয় হয়েছে? (না থাকলে 0 লিখুন)। [প্রতিটি উৎস নিরপেক্ষভাবে পড়ুন; ঐতিহ্যগত পেশা বা যৌনকর্ম থেকে আয় হলেও কোনো মন্তব্য করবেন না।]",
+  "own_relevant": "${b101_live_with}!='2'",
+  "ancestor_gates": [
+   {
+    "group": "grp_b",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${b101_live_with}!='2'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": true,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "b101_live_with": {
+    "type": "select_one",
+    "choices": {
+     "1": "Own family (parents/siblings/relatives)",
+     "2": "In a dera with a guruma",
+     "3": "With husband/partner (parik)",
+     "4": "With friends/roommate/mess/hostel",
+     "5": "Alone",
+     "6": "Other (specify)"
+    },
+    "label": "B101 ‡ Who do you currently live with?"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 76,
+  "name": "b107_employment",
+  "type": "integer",
+  "base": "integer",
+  "appearance": null,
+  "label_en": "• Employment/salary",
+  "label_bn": "• চাকরি/বেতন",
+  "own_relevant": "${b101_live_with}!='2'",
+  "ancestor_gates": [
+   {
+    "group": "grp_b",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${b101_live_with}!='2'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "b101_live_with": {
+    "type": "select_one",
+    "choices": {
+     "1": "Own family (parents/siblings/relatives)",
+     "2": "In a dera with a guruma",
+     "3": "With husband/partner (parik)",
+     "4": "With friends/roommate/mess/hostel",
+     "5": "Alone",
+     "6": "Other (specify)"
+    },
+    "label": "B101 ‡ Who do you currently live with?"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 77,
+  "name": "b107_business",
+  "type": "integer",
+  "base": "integer",
+  "appearance": null,
+  "label_en": "• Business",
+  "label_bn": "• ব্যবসা",
+  "own_relevant": "${b101_live_with}!='2'",
+  "ancestor_gates": [
+   {
+    "group": "grp_b",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${b101_live_with}!='2'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "b101_live_with": {
+    "type": "select_one",
+    "choices": {
+     "1": "Own family (parents/siblings/relatives)",
+     "2": "In a dera with a guruma",
+     "3": "With husband/partner (parik)",
+     "4": "With friends/roommate/mess/hostel",
+     "5": "Alone",
+     "6": "Other (specify)"
+    },
+    "label": "B101 ‡ Who do you currently live with?"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 78,
+  "name": "b107_remittance",
+  "type": "integer",
+  "base": "integer",
+  "appearance": null,
+  "label_en": "• Remittance",
+  "label_bn": "• প্রবাসী আয় (রেমিট্যান্স)",
+  "own_relevant": "${b101_live_with}!='2'",
+  "ancestor_gates": [
+   {
+    "group": "grp_b",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${b101_live_with}!='2'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "b101_live_with": {
+    "type": "select_one",
+    "choices": {
+     "1": "Own family (parents/siblings/relatives)",
+     "2": "In a dera with a guruma",
+     "3": "With husband/partner (parik)",
+     "4": "With friends/roommate/mess/hostel",
+     "5": "Alone",
+     "6": "Other (specify)"
+    },
+    "label": "B101 ‡ Who do you currently live with?"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 79,
+  "name": "b107_agriculture",
+  "type": "integer",
+  "base": "integer",
+  "appearance": null,
+  "label_en": "• Agriculture (annual income ÷ 12)",
+  "label_bn": "• কৃষি (বার্ষিক আয় ÷ 12)",
+  "own_relevant": "${b101_live_with}!='2'",
+  "ancestor_gates": [
+   {
+    "group": "grp_b",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${b101_live_with}!='2'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "b101_live_with": {
+    "type": "select_one",
+    "choices": {
+     "1": "Own family (parents/siblings/relatives)",
+     "2": "In a dera with a guruma",
+     "3": "With husband/partner (parik)",
+     "4": "With friends/roommate/mess/hostel",
+     "5": "Alone",
+     "6": "Other (specify)"
+    },
+    "label": "B101 ‡ Who do you currently live with?"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 80,
+  "name": "b107_rent",
+  "type": "integer",
+  "base": "integer",
+  "appearance": null,
+  "label_en": "• House/land rent",
+  "label_bn": "• বাড়ি/জমি ভাড়া",
+  "own_relevant": "${b101_live_with}!='2'",
+  "ancestor_gates": [
+   {
+    "group": "grp_b",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${b101_live_with}!='2'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "b101_live_with": {
+    "type": "select_one",
+    "choices": {
+     "1": "Own family (parents/siblings/relatives)",
+     "2": "In a dera with a guruma",
+     "3": "With husband/partner (parik)",
+     "4": "With friends/roommate/mess/hostel",
+     "5": "Alone",
+     "6": "Other (specify)"
+    },
+    "label": "B101 ‡ Who do you currently live with?"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ }
+]

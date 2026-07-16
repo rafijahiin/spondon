@@ -1,0 +1,608 @@
+[
+ {
+  "idx": 223,
+  "name": "q4_15_intro",
+  "type": "note",
+  "base": "note",
+  "appearance": null,
+  "label_en": "Q4.15 ‡  To what extent do the following people know about your gender identity/sexual orientation? [Read each row] Code: Fully aware = 1 / Partially aware = 2 / Not aware = 3 / Not applicable = 8",
+  "label_bn": "Q4.15 ‡ নিম্নোক্ত ব্যক্তিরা আপনার জেন্ডার পরিচয়/যৌন অভিমুখিতা সম্পর্কে কতটা জানেন? [প্রতিটি সারি পড়ে শোনান] কোড: সম্পূর্ণ জানেন = 1 আংশিক জানেন = 2 জানেন না = 3 প্রযোজ্য নয় = 8",
+  "own_relevant": null,
+  "ancestor_gates": [
+   {
+    "group": "grp_module4",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": true,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 233,
+  "name": "grp_m5",
+  "type": "begin_group",
+  "base": "begin_group",
+  "appearance": null,
+  "label_en": "Module 5. Health Outcomes",
+  "label_bn": "মডিউল ৫. স্বাস্থ্যগত ফলাফল (Health Outcomes)",
+  "own_relevant": "${_proceed}='1'",
+  "ancestor_gates": [],
+  "effective_gates": [
+   "${_proceed}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 236,
+  "name": "q5_3",
+  "type": "select_one q5_3_opts",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "Q5.3 Have you received treatment for this illness or condition?",
+  "label_bn": "Q5.3 এই রোগ বা সমস্যার জন্য কি আপনি চিকিৎসা গ্রহণ করেছেন?",
+  "own_relevant": "${q5_2}!='2'",
+  "ancestor_gates": [
+   {
+    "group": "grp_m5",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q5_2}!='2'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q5_2": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No"
+    },
+    "label": "Q5.2 Are you currently suffering from any long-term (chronic, 12 months or more)"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 237,
+  "name": "grp_q5_4",
+  "type": "begin_group",
+  "base": "begin_group",
+  "appearance": "field-list",
+  "label_en": "Q5.4 In the past 12 months, have you experienced any of the following problems? ‡ [Symptoms adapted from the HTC Risk Assessment Form.] Code: Yes = 1 / No = 2 / Decline to answer = 99",
+  "label_bn": "Q5.4 গত ১২ মাসে নিচের কোনো সমস্যার সম্মুখীন হয়েছেন কি? ‡ [উপসর্গসমূহ HTC Risk Assessment Form থেকে অভিযোজিত।] কোড: হ্যাঁ = 1 না = 2 উত্তর দিতে অনিচ্ছুক = 99",
+  "own_relevant": null,
+  "ancestor_gates": [
+   {
+    "group": "grp_m5",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": true,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 244,
+  "name": "q5_5",
+  "type": "select_one q5_5_opts",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "Q5.5 Did you seek treatment or advice for these symptoms?",
+  "label_bn": "Q5.5 এই উপসর্গগুলোর জন্য কি আপনি কোনো চিকিৎসা বা পরামর্শ নিয়েছিলেন?",
+  "own_relevant": "${q5_4_a}='1' or ${q5_4_b}='1' or ${q5_4_c}='1' or ${q5_4_d}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_m5",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q5_4_a}='1' or ${q5_4_b}='1' or ${q5_4_c}='1' or ${q5_4_d}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q5_4_a": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "99": "Decline to answer"
+    },
+    "label": "a. Burning sensation during urination"
+   },
+   "q5_4_b": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "99": "Decline to answer"
+    },
+    "label": "b. Abnormally frequent urination"
+   },
+   "q5_4_c": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "99": "Decline to answer"
+    },
+    "label": "c. Unusual discharge from genitals or anus"
+   },
+   "q5_4_d": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "99": "Decline to answer"
+    },
+    "label": "d. Sores/lesions on genitals or anus"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 245,
+  "name": "q5_6",
+  "type": "select_one q5_6_opts",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "Q5.6 Where did you first go for treatment or advice? (One answer)",
+  "label_bn": "Q5.6 প্রথমে কোথায় চিকিৎসা বা পরামর্শ নিতে গিয়েছিলেন? (একটি উত্তর)",
+  "own_relevant": "${q5_5}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_m5",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q5_5}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q5_5": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "8": "No symptoms (skip)"
+    },
+    "label": "Q5.5 Did you seek treatment or advice for these symptoms?"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 246,
+  "name": "q5_6_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other (specify)",
+  "label_bn": "অন্যান্য (উল্লেখ করুন)",
+  "own_relevant": "${q5_6}='7'",
+  "ancestor_gates": [
+   {
+    "group": "grp_m5",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q5_6}='7'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q5_6": {
+    "type": "select_one",
+    "choices": {
+     "1": "Government hospital/clinic",
+     "2": "NGO clinic/DIC",
+     "3": "Private doctor/clinic",
+     "4": "Pharmacy/drug seller",
+     "5": "Kabiraj/traditional healer",
+     "6": "Friend/peer",
+     "7": "Other (specify) __________"
+    },
+    "label": "Q5.6 Where did you first go for treatment or advice? (One answer)"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 247,
+  "name": "q5_7",
+  "type": "select_multiple q5_7_opts",
+  "base": "select_multiple",
+  "appearance": null,
+  "label_en": "Q5.7 Why did you not seek treatment or advice? (Multiple answers; do not read list)",
+  "label_bn": "Q5.7 কেন চিকিৎসা বা পরামর্শ নেননি? (একাধিক উত্তর; তালিকা পড়ে শোনাবেন না)",
+  "own_relevant": "${q5_5}='2'",
+  "ancestor_gates": [
+   {
+    "group": "grp_m5",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q5_5}='2'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q5_5": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "8": "No symptoms (skip)"
+    },
+    "label": "Q5.5 Did you seek treatment or advice for these symptoms?"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 248,
+  "name": "q5_7_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other (specify)",
+  "label_bn": "অন্যান্য (উল্লেখ করুন)",
+  "own_relevant": "selected(${q5_7},'07')",
+  "ancestor_gates": [
+   {
+    "group": "grp_m5",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "selected(${q5_7},'07')"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q5_7": {
+    "type": "select_multiple",
+    "choices": {
+     "01": "Symptom went away on its own",
+     "02": "Too expensive",
+     "03": "Health facility too far",
+     "04": "Shame/discomfort",
+     "05": "Fear of disrespect or identity being disclosed",
+     "06": "Did not know where to go",
+     "07": "Other (specify) __________"
+    },
+    "label": "Q5.7 Why did you not seek treatment or advice? (Multiple answers; do not read li"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 254,
+  "name": "q5_12",
+  "type": "select_one q5_12_opts",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "Q5.12 Do you know your current HIV status? [Do not ask the respondent to state their test result. If the respondent voluntarily discloses being HIV-positive, do not record it here. At the end of the interview, provide a referral card and information on treatment/ART services.] ‡",
+  "label_bn": "Q5.12 আপনি কি আপনার বর্তমান HIV অবস্থা (HIV status) জানেন? ‡ [উত্তরদাতাকে পরীক্ষার ফলাফল বলতে বলবেন না। যদি তিনি নিজে থেকে HIV পজিটিভ হওয়ার কথা জানান, তাহলে এখানে তা রেকর্ড করবেন না। সাক্ষাৎকার শেষে রেফারেল কার্ড এবং চিকিৎসা/ART সেবা সংক্রান্ত তথ্য প্রদান করুন।]",
+  "own_relevant": null,
+  "ancestor_gates": [
+   {
+    "group": "grp_m5",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": true,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 257,
+  "name": "q5_15",
+  "type": "select_one q5_15_opts",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "Q5.15 Did you complete the full course of treatment and medication?",
+  "label_bn": "Q5.15 আপনি কি সম্পূর্ণ চিকিৎসা নিয়েছেন এবং ওষুধের পুরো কোর্স শেষ করেছেন?",
+  "own_relevant": "${q5_14}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_m5",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q5_14}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q5_14": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "99": "Decline to answer"
+    },
+    "label": "Q5.14 In the past 12 months, has a doctor or health worker told you that you hav"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 259,
+  "name": "m5_note_1",
+  "type": "note",
+  "base": "note",
+  "appearance": null,
+  "label_en": "Q5.17: If A301 ≠ 2 → Module 6",
+  "label_bn": "Q5.17: যদি A301 ≠ 2 → মডিউল 6",
+  "own_relevant": "${a301}!='2'",
+  "ancestor_gates": [
+   {
+    "group": "grp_m5",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${a301}!='2'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": true,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "a301": {
+    "type": "select_one",
+    "choices": {
+     "1": "Male",
+     "2": "Female",
+     "3": "Intersex/Other",
+     "99": "Decline to answer"
+    },
+    "label": "A301 ‡ What sex was registered for you at birth?"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 260,
+  "name": "q5_17",
+  "type": "select_one q5_17_opts",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "Q5.17 Ask only if A301 = 2 (registered female at birth): Have you ever been pregnant?",
+  "label_bn": "Q5.17 শুধুমাত্র যদি A301 = 2 (জন্মের সময় নারী হিসেবে নিবন্ধিত) হয়: আপনি কি কখনো গর্ভধারণ করেছেন?",
+  "own_relevant": "${a301}='2'",
+  "ancestor_gates": [
+   {
+    "group": "grp_m5",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${a301}='2'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": true,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "a301": {
+    "type": "select_one",
+    "choices": {
+     "1": "Male",
+     "2": "Female",
+     "3": "Intersex/Other",
+     "99": "Decline to answer"
+    },
+    "label": "A301 ‡ What sex was registered for you at birth?"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 262,
+  "name": "grp_module6",
+  "type": "begin_group",
+  "base": "begin_group",
+  "appearance": null,
+  "label_en": "Module 6. Access to Services",
+  "label_bn": "মডিউল ৬. স্বাস্থ্যসেবা প্রাপ্তির সুযোগ (Access to Services)",
+  "own_relevant": "${_proceed}='1'",
+  "ancestor_gates": [],
+  "effective_gates": [
+   "${_proceed}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ }
+]

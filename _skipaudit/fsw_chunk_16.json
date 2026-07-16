@@ -1,0 +1,387 @@
+[
+ {
+  "idx": 510,
+  "name": "q9_9_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other (specify)",
+  "label_bn": "অন্যান্য (উল্লেখ করুন)",
+  "own_relevant": "${q9_9}='7'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module9",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q9_9}='7'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q9_9": {
+    "type": "select_one",
+    "choices": {
+     "1": "Satellite clinic",
+     "2": "Peer home visit",
+     "3": "Helpline",
+     "4": "Online",
+     "5": "Printed materials",
+     "6": "Community meetings",
+     "7": "Other"
+    },
+    "label": "Q9.9 Besides the centre, how else would you like to receive services/information"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 515,
+  "name": "q9_13_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other (specify)",
+  "label_bn": "অন্যান্য (উল্লেখ করুন)",
+  "own_relevant": "${q9_13}='9'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module9",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q9_13}='9'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q9_13": {
+    "type": "select_one",
+    "choices": {
+     "1": "Maintain confidentiality",
+     "2": "Treat clients respectfully",
+     "3": "Have own community staff",
+     "4": "Provide free services",
+     "5": "Convenient hours",
+     "6": "Discreet location",
+     "7": "Community involvement",
+     "8": "All services in one place",
+     "9": "Other"
+    },
+    "label": "Q9.13 What is the single most important thing for the centre to do to earn trust"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 517,
+  "name": "q9_14_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other (specify)",
+  "label_bn": "অন্যান্য (উল্লেখ করুন)",
+  "own_relevant": "${q9_14}='6'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module9",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q9_14}='6'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q9_14": {
+    "type": "select_one",
+    "choices": {
+     "1": "Sharing information",
+     "2": "Disrespectful treatment",
+     "3": "Charging fees",
+     "4": "Irregular opening",
+     "5": "Identifiable records",
+     "6": "Other"
+    },
+    "label": "Q9.14 What should the centre most avoid?"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 521,
+  "name": "q9_15_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other (specify)",
+  "label_bn": "অন্যান্য (উল্লেখ করুন)",
+  "own_relevant": "${q9_15}='7'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module9",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q9_15}='7'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q9_15": {
+    "type": "select_one",
+    "choices": {
+     "1": "Went directly on my own (no intermediary)",
+     "2": "Through referral by peer educator/outreach worker",
+     "3": "Through referral by NGO/DIC",
+     "4": "Through referral by health worker/another facility",
+     "5": "On friend/colleague's advice",
+     "6": "Through sardarni/landlady",
+     "7": "Other (specify)"
+    },
+    "label": "Q9.15 In the past 12 months, how did you first access the healthcare/SRHR servic"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 522,
+  "name": "q9_16",
+  "type": "select_one q9_16_opts",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "Q9.16 When accessing via referral, how was the process compared to going directly?",
+  "label_bn": "Q9.16 রেফারেলের মাধ্যমে যাওয়ার ক্ষেত্রে, সেবা নেওয়ার প্রক্রিয়া কেমন ছিল বলে মনে করেন?",
+  "own_relevant": "${q9_15}='2' or ${q9_15}='3' or ${q9_15}='4' or ${q9_15}='7'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module9",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q9_15}='2' or ${q9_15}='3' or ${q9_15}='4' or ${q9_15}='7'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q9_15": {
+    "type": "select_one",
+    "choices": {
+     "1": "Went directly on my own (no intermediary)",
+     "2": "Through referral by peer educator/outreach worker",
+     "3": "Through referral by NGO/DIC",
+     "4": "Through referral by health worker/another facility",
+     "5": "On friend/colleague's advice",
+     "6": "Through sardarni/landlady",
+     "7": "Other (specify)"
+    },
+    "label": "Q9.15 In the past 12 months, how did you first access the healthcare/SRHR servic"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 525,
+  "name": "q9_18_specify",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "(specify)",
+  "label_bn": "(উল্লেখ করুন)",
+  "own_relevant": "${q9_18}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module9",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q9_18}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q9_18": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes (specify)",
+     "2": "No"
+    },
+    "label": "Q9.18 In the past 12 months, were you ever referred by a peer educator, NGO, or "
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 527,
+  "name": "q9_19_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other (specify)",
+  "label_bn": "অন্যান্য (উল্লেখ করুন)",
+  "own_relevant": "${q9_19}='6'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module9",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q9_19}='6'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q9_19": {
+    "type": "select_one",
+    "choices": {
+     "1": "Peer educator/outreach worker",
+     "2": "NGO/DIC directly",
+     "3": "Sardarni/landlady",
+     "4": "Friend/colleague",
+     "5": "Government health centre directly",
+     "98": "Don't know",
+     "6": "Other (specify)"
+    },
+    "label": "Q9.19 If you needed a new service in the future, who or where would you contact "
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 536,
+  "name": "c3_partial",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Partially completed (indicate last question)",
+  "label_bn": "আংশিক শেষ (শেষ প্রশ্ন উল্লেখ করুন)",
+  "own_relevant": "${c3}='2'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module9",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${c3}='2'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "c3": {
+    "type": "select_one",
+    "choices": {
+     "1": "Fully completed",
+     "2": "Partially completed (indicate last question)",
+     "3": "Refused after starting",
+     "4": "Interrupted / rescheduled"
+    },
+    "label": "Interview outcome"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ }
+]

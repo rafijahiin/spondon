@@ -1,0 +1,2007 @@
+<?xml version="1.0"?>
+<h:html xmlns="http://www.w3.org/2002/xforms" xmlns:h="http://www.w3.org/1999/xhtml" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:jr="http://openrosa.org/javarosa" xmlns:orx="http://openrosa.org/xforms" xmlns:odk="http://www.opendatakit.org/xforms">
+  <h:head>
+    <h:title>CIPRB 1 — Fistula Question Bank</h:title>
+    <model odk:xforms-version="1.0.0">
+      <itext>
+        <translation lang="English" default="true()">
+          <text id="district-0">
+            <value>Sunamganj (1)</value>
+          </text>
+          <text id="district-1">
+            <value>Sherpur (7)</value>
+          </text>
+          <text id="district-2">
+            <value>Bhola (2)</value>
+          </text>
+          <text id="district-3">
+            <value>Kurigram (5)</value>
+          </text>
+          <text id="district-4">
+            <value>Gaibandha (4)</value>
+          </text>
+          <text id="district-5">
+            <value>Khagrachari (9)</value>
+          </text>
+          <text id="district-6">
+            <value>Noakhali (3)</value>
+          </text>
+          <text id="district-7">
+            <value>Patuakhali (8)</value>
+          </text>
+          <text id="district-8">
+            <value>Sirajganj (6)</value>
+          </text>
+          <text id="district-9">
+            <value>Barguna (11)</value>
+          </text>
+          <text id="district-10">
+            <value>Jamalpur (12)</value>
+          </text>
+          <text id="district-11">
+            <value>Bagerhat (13)</value>
+          </text>
+          <text id="district-12">
+            <value>Habiganj (14)</value>
+          </text>
+          <text id="district-13">
+            <value>Moulavibazar (15)</value>
+          </text>
+          <text id="district-14">
+            <value>Sylhet (16)</value>
+          </text>
+          <text id="district-15">
+            <value>Bandarban (17)</value>
+          </text>
+          <text id="district-16">
+            <value>Chandpur (19)</value>
+          </text>
+          <text id="district-17">
+            <value>Rangpur (18)</value>
+          </text>
+          <text id="district-18">
+            <value>Dhaka (10)</value>
+          </text>
+          <text id="yes_no-0">
+            <value>Yes</value>
+          </text>
+          <text id="yes_no-1">
+            <value>No</value>
+          </text>
+          <text id="yes_no-2">
+            <value>Unknown</value>
+          </text>
+          <text id="stage-0">
+            <value>Suspected (community identification)</value>
+          </text>
+          <text id="stage-1">
+            <value>Diagnosed (at Fistula Corner)</value>
+          </text>
+          <text id="stage-2">
+            <value>Referred for Surgical Management</value>
+          </text>
+          <text id="stage-3">
+            <value>Surgically Repaired</value>
+          </text>
+          <text id="stage-4">
+            <value>Rehabilitated &amp; Reintegrated</value>
+          </text>
+          <text id="education-0">
+            <value>No education</value>
+          </text>
+          <text id="education-1">
+            <value>Primary incomplete</value>
+          </text>
+          <text id="education-2">
+            <value>Primary</value>
+          </text>
+          <text id="education-3">
+            <value>Secondary</value>
+          </text>
+          <text id="education-4">
+            <value>Higher secondary</value>
+          </text>
+          <text id="education-5">
+            <value>Graduate / Masters</value>
+          </text>
+          <text id="marital_status-0">
+            <value>Married</value>
+          </text>
+          <text id="marital_status-1">
+            <value>Separated</value>
+          </text>
+          <text id="marital_status-2">
+            <value>Divorced</value>
+          </text>
+          <text id="marital_status-3">
+            <value>Widowed</value>
+          </text>
+          <text id="marital_status-4">
+            <value>Other</value>
+          </text>
+          <text id="mode_of_delivery-0">
+            <value>NVD (Normal Vaginal Delivery)</value>
+          </text>
+          <text id="mode_of_delivery-1">
+            <value>C-section</value>
+          </text>
+          <text id="mode_of_delivery-2">
+            <value>Assisted vaginal delivery</value>
+          </text>
+          <text id="place_of_delivery-0">
+            <value>Government facility</value>
+          </text>
+          <text id="place_of_delivery-1">
+            <value>Private facility</value>
+          </text>
+          <text id="place_of_delivery-2">
+            <value>Home</value>
+          </text>
+          <text id="delivery_conductor-0">
+            <value>Relatives</value>
+          </text>
+          <text id="delivery_conductor-1">
+            <value>TBA (traditional birth attendant)</value>
+          </text>
+          <text id="delivery_conductor-2">
+            <value>Nurse</value>
+          </text>
+          <text id="delivery_conductor-3">
+            <value>Midwife</value>
+          </text>
+          <text id="delivery_conductor-4">
+            <value>Doctor</value>
+          </text>
+          <text id="delivery_outcome-0">
+            <value>Livebirth</value>
+          </text>
+          <text id="delivery_outcome-1">
+            <value>Stillbirth</value>
+          </text>
+          <text id="reasons_no_facility-0">
+            <value>Traditional belief</value>
+          </text>
+          <text id="reasons_no_facility-1">
+            <value>Transport problem</value>
+          </text>
+          <text id="reasons_no_facility-2">
+            <value>Financial problem</value>
+          </text>
+          <text id="reasons_no_facility-3">
+            <value>No idea about hospital</value>
+          </text>
+          <text id="reasons_no_facility-4">
+            <value>No faith in hospital service</value>
+          </text>
+          <text id="reasons_no_facility-5">
+            <value>Other</value>
+          </text>
+          <text id="refer_outcome-0">
+            <value>Reached the facility</value>
+          </text>
+          <text id="refer_outcome-1">
+            <value>Did not reach</value>
+          </text>
+          <text id="refer_outcome-2">
+            <value>Pending follow-up</value>
+          </text>
+          <text id="refer_outcome-3">
+            <value>Refused</value>
+          </text>
+          <text id="fistula_type-0">
+            <value>Obstetric</value>
+          </text>
+          <text id="fistula_type-1">
+            <value>Iatrogenic</value>
+          </text>
+          <text id="fistula_type-2">
+            <value>Congenital</value>
+          </text>
+          <text id="fistula_type-3">
+            <value>Traumatic</value>
+          </text>
+          <text id="iatrogenic_cause-0">
+            <value>Hysterectomy</value>
+          </text>
+          <text id="iatrogenic_cause-1">
+            <value>C-section</value>
+          </text>
+          <text id="iatrogenic_cause-2">
+            <value>Laparoscopy</value>
+          </text>
+          <text id="genital_fistula_type-0">
+            <value>Vesico-vaginal fistula (VVF)</value>
+          </text>
+          <text id="genital_fistula_type-1">
+            <value>Recto-vaginal fistula (RVF)</value>
+          </text>
+          <text id="genital_fistula_type-2">
+            <value>Uretero-vaginal</value>
+          </text>
+          <text id="genital_fistula_type-3">
+            <value>Urethro-vaginal</value>
+          </text>
+          <text id="genital_fistula_type-4">
+            <value>Vesico-uterine</value>
+          </text>
+          <text id="genital_fistula_type-5">
+            <value>Vesico-cervical</value>
+          </text>
+          <text id="genital_fistula_type-6">
+            <value>Other</value>
+          </text>
+          <text id="operation_route-0">
+            <value>Vaginal</value>
+          </text>
+          <text id="operation_route-1">
+            <value>Abdominal</value>
+          </text>
+          <text id="operation_route-2">
+            <value>Abdomino-perineal</value>
+          </text>
+          <text id="operation_route-3">
+            <value>Laparoscopy</value>
+          </text>
+          <text id="surgery_outcome_v2-0">
+            <value>Successfully repaired and dry</value>
+          </text>
+          <text id="surgery_outcome_v2-1">
+            <value>Successfully repaired but not dry</value>
+          </text>
+          <text id="surgery_outcome_v2-2">
+            <value>Failed</value>
+          </text>
+          <text id="rehab_place-0">
+            <value>Individual support</value>
+          </text>
+          <text id="rehab_place-1">
+            <value>NGO</value>
+          </text>
+          <text id="rehab_place-2">
+            <value>Union Council</value>
+          </text>
+          <text id="rehab_place-3">
+            <value>Women Affairs Office</value>
+          </text>
+          <text id="rehab_place-4">
+            <value>UNO Office</value>
+          </text>
+          <text id="rehab_place-5">
+            <value>Social Welfare Department</value>
+          </text>
+          <text id="rehab_place-6">
+            <value>Other</value>
+          </text>
+          <text id="rehab_support_types-0">
+            <value>Cash</value>
+          </text>
+          <text id="rehab_support_types-1">
+            <value>Livestock</value>
+          </text>
+          <text id="rehab_support_types-2">
+            <value>Training</value>
+          </text>
+          <text id="rehab_support_types-3">
+            <value>Tree plant</value>
+          </text>
+          <text id="rehab_support_types-4">
+            <value>Sewing machine</value>
+          </text>
+          <text id="rehab_support_types-5">
+            <value>VGF card</value>
+          </text>
+          <text id="rehab_support_types-6">
+            <value>Disability card</value>
+          </text>
+          <text id="rehab_support_types-7">
+            <value>Psychosocial support</value>
+          </text>
+          <text id="rehab_support_types-8">
+            <value>Reintegration support</value>
+          </text>
+          <text id="/data/grp_meta:label">
+            <value>Submission info</value>
+          </text>
+          <text id="/data/grp_meta/location:label">
+            <value>GPS location (required — step outside if no signal)</value>
+          </text>
+          <text id="/data/grp_meta/collection_date:label">
+            <value>Date</value>
+          </text>
+          <text id="/data/grp_meta/district:label">
+            <value>District</value>
+          </text>
+          <text id="/data/grp_meta/upazila:label">
+            <value>Upazila</value>
+          </text>
+          <text id="/data/grp_meta/union:label">
+            <value>Union / Pourashava</value>
+          </text>
+          <text id="/data/grp_meta/ward:label">
+            <value>Ward</value>
+          </text>
+          <text id="/data/grp_meta/village:label">
+            <value>Village / Mahalla</value>
+          </text>
+          <text id="/data/grp_meta/enumerator_name:label">
+            <value>Your name (person filling this form)</value>
+          </text>
+          <text id="/data/grp_meta/enumerator_designation:label">
+            <value>Designation</value>
+          </text>
+          <text id="/data/grp_meta/enumerator_institution:label">
+            <value>Institution</value>
+          </text>
+          <text id="/data/grp_meta/enumerator_mobile:label">
+            <value>Mobile number</value>
+          </text>
+          <text id="/data/grp_meta/case_serial:label">
+            <value>Annual fistula serial number</value>
+          </text>
+          <text id="/data/stage:label">
+            <value>Are you registering a NEW patient, or updating an EXISTING one?</value>
+          </text>
+          <text id="/data/grp_patient:label">
+            <value>Patient identity</value>
+          </text>
+          <text id="/data/grp_patient/_dist_code_show:label">
+            <value> Your district code is <output value=" /data/_dist_code "/>. Type the Patient ID as <output value=" /data/_dist_code "/>-0001, <output value=" /data/_dist_code "/>-0002, … (4 digits after the dash). </value>
+          </text>
+          <text id="/data/grp_patient/patient_code:label">
+            <value>Patient ID (district code + serial, e.g. 1-0001)</value>
+          </text>
+          <text id="/data/grp_patient/_dup_warn:label">
+            <value> ⚠ This ID is already registered for <output value=" /data/grp_patient/_dup_name "/>. Do not re-register — record her later stages via the dropdown instead. </value>
+          </text>
+          <text id="/data/grp_patient/name:label">
+            <value>Name of woman</value>
+          </text>
+          <text id="/data/grp_patient/age:label">
+            <value>Age (years)</value>
+          </text>
+          <text id="/data/grp_patient/education:label">
+            <value>Education</value>
+          </text>
+          <text id="/data/grp_patient/husband:label">
+            <value>Husband's name</value>
+          </text>
+          <text id="/data/grp_patient/husband_profession:label">
+            <value>Husband's profession</value>
+          </text>
+          <text id="/data/grp_patient/profession_patient:label">
+            <value>Profession of patient</value>
+          </text>
+          <text id="/data/grp_patient/current_condition:label">
+            <value>Present condition of patient</value>
+          </text>
+          <text id="/data/grp_patient/contact_number:label">
+            <value>Contact number</value>
+          </text>
+          <text id="/data/grp_patient/marital_status:label">
+            <value>Marital status</value>
+          </text>
+          <text id="/data/grp_patient/age_at_marriage:label">
+            <value>Age at marriage</value>
+          </text>
+          <text id="/data/grp_patient/age_at_first_delivery:label">
+            <value>Age at first delivery</value>
+          </text>
+          <text id="/data/grp_patient/number_of_children:label">
+            <value>Number of children</value>
+          </text>
+          <text id="/data/grp_obs_history:label">
+            <value>Obstetric history</value>
+          </text>
+          <text id="/data/grp_obs_history/delivery_complication:label">
+            <value>Delivery complication</value>
+          </text>
+          <text id="/data/grp_obs_history/last_delivery_labour_duration:label">
+            <value>Duration of labour during last delivery</value>
+          </text>
+          <text id="/data/grp_obs_history/mode_of_last_delivery:label">
+            <value>Mode of last delivery</value>
+          </text>
+          <text id="/data/grp_obs_history/place_of_last_delivery:label">
+            <value>Place of last delivery</value>
+          </text>
+          <text id="/data/grp_obs_history/conducted_last_delivery:label">
+            <value>Who conducted the last delivery</value>
+          </text>
+          <text id="/data/grp_obs_history/delivery_outcome:label">
+            <value>Delivery outcome</value>
+          </text>
+          <text id="/data/grp_obs_history/reasons_no_institutional_delivery:label">
+            <value>Reasons for not availing institutional delivery</value>
+          </text>
+          <text id="/data/grp_obs_history/time_duration_fistula_occurrence:label">
+            <value>Time duration of fistula occurrence after delivery</value>
+          </text>
+          <text id="/data/grp_obs_history/duration_suffering:label">
+            <value>Duration of suffering from fistula (years / months)</value>
+          </text>
+          <text id="/data/grp_lookup:label">
+            <value>Select the registered patient</value>
+          </text>
+          <text id="/data/grp_lookup/patient_code_sel:label">
+            <value>Registered patient (ID — name)</value>
+          </text>
+          <text id="/data/grp_lookup/_show_name:label">
+            <value> Name: <output value=" /data/grp_lookup/_pull_name "/> </value>
+          </text>
+          <text id="/data/grp_lookup/_show_age:label">
+            <value> Age: <output value=" /data/grp_lookup/_pull_age "/> · Husband: <output value=" /data/grp_lookup/_pull_husband "/> </value>
+          </text>
+          <text id="/data/grp_lookup/_show_addr:label">
+            <value> Village: <output value=" /data/grp_lookup/_pull_village "/> · Suspected: <output value=" /data/grp_lookup/_pull_susp "/> </value>
+          </text>
+          <text id="/data/grp_lookup/_lookup_missing:label">
+            <value>⚠ No registered patient found for this ID. Register her at the Suspected stage first, then record this stage.</value>
+          </text>
+          <text id="/data/grp_suspected:label">
+            <value>Stage 1 · Suspected</value>
+          </text>
+          <text id="/data/grp_suspected/suspected_date:label">
+            <value>Date of suspected</value>
+          </text>
+          <text id="/data/grp_suspected/source_information:label">
+            <value>Source of patient's information</value>
+          </text>
+          <text id="/data/grp_diagnosed:label">
+            <value>Stage 2 · Diagnosed (Fistula Corner)</value>
+          </text>
+          <text id="/data/grp_diagnosed/diagnosed_date:label">
+            <value>Date of diagnosis</value>
+          </text>
+          <text id="/data/grp_diagnosed/diagnosed_place:label">
+            <value>Place of diagnosis</value>
+          </text>
+          <text id="/data/grp_diagnosed/diagnosed_by:label">
+            <value>Diagnosed by</value>
+          </text>
+          <text id="/data/grp_diagnosed/genital_fistula_type:label">
+            <value>Type of genital fistula (VVF / RVF / …)</value>
+          </text>
+          <text id="/data/grp_diagnosed/genital_fistula_type_other:label">
+            <value>Other — please specify the type</value>
+          </text>
+          <text id="/data/grp_referred:label">
+            <value>Stage 3 · Referred for Surgical Management</value>
+          </text>
+          <text id="/data/grp_referred/refer_date:label">
+            <value>Referral date</value>
+          </text>
+          <text id="/data/grp_referred/refer_place:label">
+            <value>Refer place (facility)</value>
+          </text>
+          <text id="/data/grp_referred/referred_by_person:label">
+            <value>Person who referred the woman to the facility</value>
+          </text>
+          <text id="/data/grp_referred/refer_outcome:label">
+            <value>Refer outcome</value>
+          </text>
+          <text id="/data/grp_repaired:label">
+            <value>Stage 4 · Surgically Repaired</value>
+          </text>
+          <text id="/data/grp_repaired/operation_date:label">
+            <value>Date of operation</value>
+          </text>
+          <text id="/data/grp_repaired/operation_place:label">
+            <value>Place of operation</value>
+          </text>
+          <text id="/data/grp_repaired/hospital_stay_days:label">
+            <value>Duration of hospital stay (days)</value>
+          </text>
+          <text id="/data/grp_repaired/times_of_operations:label">
+            <value>Times of operations</value>
+          </text>
+          <text id="/data/grp_repaired/fistula_type_v2:label">
+            <value>Type of fistula (cause)</value>
+          </text>
+          <text id="/data/grp_repaired/iatrogenic_cause:label">
+            <value>Cause of iatrogenic fistula</value>
+          </text>
+          <text id="/data/grp_repaired/operation_route:label">
+            <value>Route of operation</value>
+          </text>
+          <text id="/data/grp_repaired/surgery_outcome_v2:label">
+            <value>Outcome of surgery</value>
+          </text>
+          <text id="/data/grp_rehab:label">
+            <value>Stage 5 · Rehabilitated &amp; Reintegrated</value>
+          </text>
+          <text id="/data/grp_rehab/rehabilitation_received:label">
+            <value>Receive rehabilitation support? (Y/N)</value>
+          </text>
+          <text id="/data/grp_rehab/rehabilitation_date:label">
+            <value>Date of receiving support</value>
+          </text>
+          <text id="/data/grp_rehab/rehab_place:label">
+            <value>Place of receiving support</value>
+          </text>
+          <text id="/data/grp_rehab/rehab_support_types:label">
+            <value>Types of rehabilitation support received</value>
+          </text>
+          <text id="/data/grp_rehab/rehab_notes:label">
+            <value>Notes (optional)</value>
+          </text>
+        </translation>
+        <translation lang="Bangla">
+          <text id="district-0">
+            <value>সুনামগঞ্জ (1)</value>
+          </text>
+          <text id="district-1">
+            <value>শেরপুর (7)</value>
+          </text>
+          <text id="district-2">
+            <value>ভোলা (2)</value>
+          </text>
+          <text id="district-3">
+            <value>কুড়িগ্রাম (5)</value>
+          </text>
+          <text id="district-4">
+            <value>গাইবান্ধা (4)</value>
+          </text>
+          <text id="district-5">
+            <value>খাগড়াছড়ি (9)</value>
+          </text>
+          <text id="district-6">
+            <value>নোয়াখালী (3)</value>
+          </text>
+          <text id="district-7">
+            <value>পটুয়াখালী (8)</value>
+          </text>
+          <text id="district-8">
+            <value>সিরাজগঞ্জ (6)</value>
+          </text>
+          <text id="district-9">
+            <value>বরগুনা (11)</value>
+          </text>
+          <text id="district-10">
+            <value>জামালপুর (12)</value>
+          </text>
+          <text id="district-11">
+            <value>বাগেরহাট (13)</value>
+          </text>
+          <text id="district-12">
+            <value>হবিগঞ্জ (14)</value>
+          </text>
+          <text id="district-13">
+            <value>মৌলভীবাজার (15)</value>
+          </text>
+          <text id="district-14">
+            <value>সিলেট (16)</value>
+          </text>
+          <text id="district-15">
+            <value>বান্দরবান (17)</value>
+          </text>
+          <text id="district-16">
+            <value>চাঁদপুর (19)</value>
+          </text>
+          <text id="district-17">
+            <value>রংপুর (18)</value>
+          </text>
+          <text id="district-18">
+            <value>ঢাকা (10)</value>
+          </text>
+          <text id="yes_no-0">
+            <value>হ্যাঁ</value>
+          </text>
+          <text id="yes_no-1">
+            <value>না</value>
+          </text>
+          <text id="yes_no-2">
+            <value>অজানা</value>
+          </text>
+          <text id="stage-0">
+            <value>সন্দেহজনক (সম্প্রদায়ে শনাক্ত)</value>
+          </text>
+          <text id="stage-1">
+            <value>নির্ণীত (ফিস্টুলা কর্নারে)</value>
+          </text>
+          <text id="stage-2">
+            <value>অস্ত্রোপচারের জন্য প্রেরিত</value>
+          </text>
+          <text id="stage-3">
+            <value>অস্ত্রোপচার সম্পন্ন</value>
+          </text>
+          <text id="stage-4">
+            <value>পুনর্বাসিত ও পুনরায় সমাজে অন্তর্ভুক্ত</value>
+          </text>
+          <text id="education-0">
+            <value>কোন শিক্ষা নাই</value>
+          </text>
+          <text id="education-1">
+            <value>প্রাথমিক অসম্পূর্ণ</value>
+          </text>
+          <text id="education-2">
+            <value>প্রাথমিক</value>
+          </text>
+          <text id="education-3">
+            <value>মাধ্যমিক</value>
+          </text>
+          <text id="education-4">
+            <value>উচ্চ মাধ্যমিক</value>
+          </text>
+          <text id="education-5">
+            <value>স্নাতক / স্নাতকোত্তর</value>
+          </text>
+          <text id="marital_status-0">
+            <value>বিবাহিত</value>
+          </text>
+          <text id="marital_status-1">
+            <value>পৃথক</value>
+          </text>
+          <text id="marital_status-2">
+            <value>তালাকপ্রাপ্ত</value>
+          </text>
+          <text id="marital_status-3">
+            <value>বিধবা</value>
+          </text>
+          <text id="marital_status-4">
+            <value>অন্যান্য</value>
+          </text>
+          <text id="mode_of_delivery-0">
+            <value>এনভিডি (স্বাভাবিক প্রসব)</value>
+          </text>
+          <text id="mode_of_delivery-1">
+            <value>সিজারিয়ান</value>
+          </text>
+          <text id="mode_of_delivery-2">
+            <value>সহায়ক স্বাভাবিক প্রসব</value>
+          </text>
+          <text id="place_of_delivery-0">
+            <value>সরকারি প্রতিষ্ঠান</value>
+          </text>
+          <text id="place_of_delivery-1">
+            <value>বেসরকারি প্রতিষ্ঠান</value>
+          </text>
+          <text id="place_of_delivery-2">
+            <value>বাড়ি</value>
+          </text>
+          <text id="delivery_conductor-0">
+            <value>আত্মীয়</value>
+          </text>
+          <text id="delivery_conductor-1">
+            <value>টিবিএ</value>
+          </text>
+          <text id="delivery_conductor-2">
+            <value>নার্স</value>
+          </text>
+          <text id="delivery_conductor-3">
+            <value>মিডওয়াইফ</value>
+          </text>
+          <text id="delivery_conductor-4">
+            <value>ডাক্তার</value>
+          </text>
+          <text id="delivery_outcome-0">
+            <value>জীবিত জন্ম</value>
+          </text>
+          <text id="delivery_outcome-1">
+            <value>মৃত জন্ম</value>
+          </text>
+          <text id="reasons_no_facility-0">
+            <value>ঐতিহ্যবাহী বিশ্বাস</value>
+          </text>
+          <text id="reasons_no_facility-1">
+            <value>পরিবহন সমস্যা</value>
+          </text>
+          <text id="reasons_no_facility-2">
+            <value>আর্থিক সমস্যা</value>
+          </text>
+          <text id="reasons_no_facility-3">
+            <value>হাসপাতাল সম্পর্কে ধারণা নাই</value>
+          </text>
+          <text id="reasons_no_facility-4">
+            <value>হাসপাতাল সেবায় আস্থা নাই</value>
+          </text>
+          <text id="reasons_no_facility-5">
+            <value>অন্যান্য</value>
+          </text>
+          <text id="refer_outcome-0">
+            <value>প্রতিষ্ঠানে পৌঁছেছেন</value>
+          </text>
+          <text id="refer_outcome-1">
+            <value>পৌঁছাননি</value>
+          </text>
+          <text id="refer_outcome-2">
+            <value>অপেক্ষমান</value>
+          </text>
+          <text id="refer_outcome-3">
+            <value>অস্বীকার</value>
+          </text>
+          <text id="fistula_type-0">
+            <value>প্রসূতিজনিত</value>
+          </text>
+          <text id="fistula_type-1">
+            <value>চিকিৎসাজনিত</value>
+          </text>
+          <text id="fistula_type-2">
+            <value>জন্মগত</value>
+          </text>
+          <text id="fistula_type-3">
+            <value>আঘাতজনিত</value>
+          </text>
+          <text id="iatrogenic_cause-0">
+            <value>জরায়ু অপসারণ</value>
+          </text>
+          <text id="iatrogenic_cause-1">
+            <value>সিজারিয়ান</value>
+          </text>
+          <text id="iatrogenic_cause-2">
+            <value>ল্যাপারোস্কপি</value>
+          </text>
+          <text id="genital_fistula_type-0">
+            <value>ভেসিকো-ভ্যাজাইনাল ফিস্টুলা (VVF)</value>
+          </text>
+          <text id="genital_fistula_type-1">
+            <value>রেক্টো-ভ্যাজাইনাল ফিস্টুলা (RVF)</value>
+          </text>
+          <text id="genital_fistula_type-2">
+            <value>ইউরেটেরো-ভ্যাজাইনাল</value>
+          </text>
+          <text id="genital_fistula_type-3">
+            <value>ইউরেথ্রো-ভ্যাজাইনাল</value>
+          </text>
+          <text id="genital_fistula_type-4">
+            <value>ভেসিকো-ইউটেরাইন</value>
+          </text>
+          <text id="genital_fistula_type-5">
+            <value>ভেসিকো-সারভিকাল</value>
+          </text>
+          <text id="genital_fistula_type-6">
+            <value>অন্যান্য</value>
+          </text>
+          <text id="operation_route-0">
+            <value>যৌনাঙ্গপথ</value>
+          </text>
+          <text id="operation_route-1">
+            <value>উদর</value>
+          </text>
+          <text id="operation_route-2">
+            <value>উদর-পেরিনিয়াল</value>
+          </text>
+          <text id="operation_route-3">
+            <value>ল্যাপারোস্কপি</value>
+          </text>
+          <text id="surgery_outcome_v2-0">
+            <value>সফলভাবে নিরাময়, শুকনো</value>
+          </text>
+          <text id="surgery_outcome_v2-1">
+            <value>সফলভাবে নিরাময় কিন্তু শুকনো নয়</value>
+          </text>
+          <text id="surgery_outcome_v2-2">
+            <value>ব্যর্থ</value>
+          </text>
+          <text id="rehab_place-0">
+            <value>ব্যক্তিগত সহায়তা</value>
+          </text>
+          <text id="rehab_place-1">
+            <value>এনজিও</value>
+          </text>
+          <text id="rehab_place-2">
+            <value>ইউনিয়ন পরিষদ</value>
+          </text>
+          <text id="rehab_place-3">
+            <value>মহিলা বিষয়ক অধিদপ্তর</value>
+          </text>
+          <text id="rehab_place-4">
+            <value>উপজেলা নির্বাহী কর্মকর্তার কার্যালয়</value>
+          </text>
+          <text id="rehab_place-5">
+            <value>সমাজসেবা অধিদপ্তর</value>
+          </text>
+          <text id="rehab_place-6">
+            <value>অন্যান্য</value>
+          </text>
+          <text id="rehab_support_types-0">
+            <value>নগদ অর্থ</value>
+          </text>
+          <text id="rehab_support_types-1">
+            <value>পশুসম্পদ</value>
+          </text>
+          <text id="rehab_support_types-2">
+            <value>প্রশিক্ষণ</value>
+          </text>
+          <text id="rehab_support_types-3">
+            <value>বৃক্ষরোপণ</value>
+          </text>
+          <text id="rehab_support_types-4">
+            <value>সেলাই মেশিন</value>
+          </text>
+          <text id="rehab_support_types-5">
+            <value>ভিজিএফ কার্ড</value>
+          </text>
+          <text id="rehab_support_types-6">
+            <value>প্রতিবন্ধী কার্ড</value>
+          </text>
+          <text id="rehab_support_types-7">
+            <value>মনস্তাত্ত্বিক সহায়তা</value>
+          </text>
+          <text id="rehab_support_types-8">
+            <value>পুনঃসংহতি সহায়তা</value>
+          </text>
+          <text id="/data/grp_meta:label">
+            <value>তথ্য প্রেরণ</value>
+          </text>
+          <text id="/data/grp_meta/location:label">
+            <value>জিপিএস অবস্থান (প্রয়োজনীয়)</value>
+          </text>
+          <text id="/data/grp_meta/collection_date:label">
+            <value>তারিখ</value>
+          </text>
+          <text id="/data/grp_meta/district:label">
+            <value>জেলা</value>
+          </text>
+          <text id="/data/grp_meta/upazila:label">
+            <value>উপজেলা</value>
+          </text>
+          <text id="/data/grp_meta/union:label">
+            <value>ইউনিয়ন / পৌরসভা</value>
+          </text>
+          <text id="/data/grp_meta/ward:label">
+            <value>ওয়ার্ড</value>
+          </text>
+          <text id="/data/grp_meta/village:label">
+            <value>গ্রাম / মহল্লা</value>
+          </text>
+          <text id="/data/grp_meta/enumerator_name:label">
+            <value>আপনার নাম (কে পূরণ করছেন)</value>
+          </text>
+          <text id="/data/grp_meta/enumerator_designation:label">
+            <value>পদবী</value>
+          </text>
+          <text id="/data/grp_meta/enumerator_institution:label">
+            <value>প্রতিষ্ঠান</value>
+          </text>
+          <text id="/data/grp_meta/enumerator_mobile:label">
+            <value>মোবাইল নম্বর</value>
+          </text>
+          <text id="/data/grp_meta/case_serial:label">
+            <value>ফিস্টুলা বাৎসরিক ক্রমিক নং</value>
+          </text>
+          <text id="/data/stage:label">
+            <value>নতুন রোগী নিবন্ধন করছেন, না কি আগের রোগীর তথ্য হালনাগাদ করছেন?</value>
+          </text>
+          <text id="/data/grp_patient:label">
+            <value>রোগীর পরিচয়</value>
+          </text>
+          <text id="/data/grp_patient/_dist_code_show:label">
+            <value> আপনার জেলা কোড <output value=" /data/_dist_code "/>। রোগীর আইডি এভাবে লিখুন: <output value=" /data/_dist_code "/>-0001, <output value=" /data/_dist_code "/>-0002, … (ড্যাশের পরে ৪ অঙ্ক)। </value>
+          </text>
+          <text id="/data/grp_patient/patient_code:label">
+            <value>রোগীর আইডি (জেলা কোড + ক্রমিক, যেমন ১-০০০১)</value>
+          </text>
+          <text id="/data/grp_patient/_dup_warn:label">
+            <value> ⚠ এই আইডি ইতিমধ্যে <output value=" /data/grp_patient/_dup_name "/> নামে নিবন্ধিত। পুনঃনিবন্ধন করবেন না — পরবর্তী ধাপ ড্রপডাউন থেকে নির্বাচন করুন। </value>
+          </text>
+          <text id="/data/grp_patient/name:label">
+            <value>মহিলার নাম</value>
+          </text>
+          <text id="/data/grp_patient/age:label">
+            <value>বয়স (বছর)</value>
+          </text>
+          <text id="/data/grp_patient/education:label">
+            <value>শিক্ষা</value>
+          </text>
+          <text id="/data/grp_patient/husband:label">
+            <value>স্বামীর নাম</value>
+          </text>
+          <text id="/data/grp_patient/husband_profession:label">
+            <value>স্বামীর পেশা</value>
+          </text>
+          <text id="/data/grp_patient/profession_patient:label">
+            <value>রোগীর পেশা</value>
+          </text>
+          <text id="/data/grp_patient/current_condition:label">
+            <value>রোগীর বর্তমান অবস্থা</value>
+          </text>
+          <text id="/data/grp_patient/contact_number:label">
+            <value>যোগাযোগের নম্বর</value>
+          </text>
+          <text id="/data/grp_patient/marital_status:label">
+            <value>বৈবাহিক অবস্থা</value>
+          </text>
+          <text id="/data/grp_patient/age_at_marriage:label">
+            <value>বিবাহের সময় বয়স</value>
+          </text>
+          <text id="/data/grp_patient/age_at_first_delivery:label">
+            <value>প্রথম প্রসবের সময় বয়স</value>
+          </text>
+          <text id="/data/grp_patient/number_of_children:label">
+            <value>সন্তান সংখ্যা</value>
+          </text>
+          <text id="/data/grp_obs_history:label">
+            <value>প্রসূতি ইতিহাস</value>
+          </text>
+          <text id="/data/grp_obs_history/delivery_complication:label">
+            <value>প্রসব জটিলতা</value>
+          </text>
+          <text id="/data/grp_obs_history/last_delivery_labour_duration:label">
+            <value>শেষ প্রসবের সময় শ্রমকালের সময়কাল</value>
+          </text>
+          <text id="/data/grp_obs_history/mode_of_last_delivery:label">
+            <value>শেষ প্রসবের পদ্ধতি</value>
+          </text>
+          <text id="/data/grp_obs_history/place_of_last_delivery:label">
+            <value>শেষ প্রসবের স্থান</value>
+          </text>
+          <text id="/data/grp_obs_history/conducted_last_delivery:label">
+            <value>শেষ প্রসব কে পরিচালনা করেন</value>
+          </text>
+          <text id="/data/grp_obs_history/delivery_outcome:label">
+            <value>প্রসবের ফলাফল</value>
+          </text>
+          <text id="/data/grp_obs_history/reasons_no_institutional_delivery:label">
+            <value>প্রাতিষ্ঠানিক প্রসব না নেওয়ার কারণ</value>
+          </text>
+          <text id="/data/grp_obs_history/time_duration_fistula_occurrence:label">
+            <value>প্রসবের পর ফিস্টুলা সংঘটনের সময়কাল</value>
+          </text>
+          <text id="/data/grp_obs_history/duration_suffering:label">
+            <value>ফিস্টুলায় ভোগার সময়কাল (বছর / মাস)</value>
+          </text>
+          <text id="/data/grp_lookup:label">
+            <value>নিবন্ধিত রোগী নির্বাচন করুন</value>
+          </text>
+          <text id="/data/grp_lookup/patient_code_sel:label">
+            <value>নিবন্ধিত রোগী (আইডি — নাম)</value>
+          </text>
+          <text id="/data/grp_lookup/_show_name:label">
+            <value> নাম: <output value=" /data/grp_lookup/_pull_name "/> </value>
+          </text>
+          <text id="/data/grp_lookup/_show_age:label">
+            <value> বয়স: <output value=" /data/grp_lookup/_pull_age "/> · স্বামী: <output value=" /data/grp_lookup/_pull_husband "/> </value>
+          </text>
+          <text id="/data/grp_lookup/_show_addr:label">
+            <value> গ্রাম: <output value=" /data/grp_lookup/_pull_village "/> · সন্দেহ: <output value=" /data/grp_lookup/_pull_susp "/> </value>
+          </text>
+          <text id="/data/grp_lookup/_lookup_missing:label">
+            <value>⚠ এই আইডির জন্য কোনো নিবন্ধিত রোগী পাওয়া যায়নি। প্রথমে সন্দেহজনক ধাপে নিবন্ধন করুন।</value>
+          </text>
+          <text id="/data/grp_suspected:label">
+            <value>ধাপ ১ · সন্দেহজনক</value>
+          </text>
+          <text id="/data/grp_suspected/suspected_date:label">
+            <value>সন্দেহের তারিখ</value>
+          </text>
+          <text id="/data/grp_suspected/source_information:label">
+            <value>রোগীর তথ্যের উৎস</value>
+          </text>
+          <text id="/data/grp_diagnosed:label">
+            <value>ধাপ ২ · নির্ণীত (ফিস্টুলা কর্নার)</value>
+          </text>
+          <text id="/data/grp_diagnosed/diagnosed_date:label">
+            <value>নির্ণয়ের তারিখ</value>
+          </text>
+          <text id="/data/grp_diagnosed/diagnosed_place:label">
+            <value>নির্ণয়ের স্থান</value>
+          </text>
+          <text id="/data/grp_diagnosed/diagnosed_by:label">
+            <value>নির্ণয়কারী</value>
+          </text>
+          <text id="/data/grp_diagnosed/genital_fistula_type:label">
+            <value>যৌনাঙ্গের ফিস্টুলার ধরন (VVF / RVF / …)</value>
+          </text>
+          <text id="/data/grp_diagnosed/genital_fistula_type_other:label">
+            <value>অন্যান্য হলে ধরন উল্লেখ করুন</value>
+          </text>
+          <text id="/data/grp_referred:label">
+            <value>ধাপ ৩ · অস্ত্রোপচারের জন্য প্রেরিত</value>
+          </text>
+          <text id="/data/grp_referred/refer_date:label">
+            <value>প্রেরণের তারিখ</value>
+          </text>
+          <text id="/data/grp_referred/refer_place:label">
+            <value>প্রেরণের স্থান</value>
+          </text>
+          <text id="/data/grp_referred/referred_by_person:label">
+            <value>প্রেরণকারী ব্যক্তি</value>
+          </text>
+          <text id="/data/grp_referred/refer_outcome:label">
+            <value>প্রেরণের ফলাফল</value>
+          </text>
+          <text id="/data/grp_repaired:label">
+            <value>ধাপ ৪ · অস্ত্রোপচার সম্পন্ন</value>
+          </text>
+          <text id="/data/grp_repaired/operation_date:label">
+            <value>অস্ত্রোপচারের তারিখ</value>
+          </text>
+          <text id="/data/grp_repaired/operation_place:label">
+            <value>অস্ত্রোপচারের স্থান</value>
+          </text>
+          <text id="/data/grp_repaired/hospital_stay_days:label">
+            <value>হাসপাতালে অবস্থানের সময়কাল (দিন)</value>
+          </text>
+          <text id="/data/grp_repaired/times_of_operations:label">
+            <value>অস্ত্রোপচারের সংখ্যা</value>
+          </text>
+          <text id="/data/grp_repaired/fistula_type_v2:label">
+            <value>ফিস্টুলার ধরন (কারণ)</value>
+          </text>
+          <text id="/data/grp_repaired/iatrogenic_cause:label">
+            <value>চিকিৎসাজনিত ফিস্টুলার কারণ</value>
+          </text>
+          <text id="/data/grp_repaired/operation_route:label">
+            <value>অস্ত্রোপচারের পথ</value>
+          </text>
+          <text id="/data/grp_repaired/surgery_outcome_v2:label">
+            <value>অস্ত্রোপচারের ফলাফল</value>
+          </text>
+          <text id="/data/grp_rehab:label">
+            <value>ধাপ ৫ · পুনর্বাসিত ও পুনরায় সমাজে অন্তর্ভুক্ত</value>
+          </text>
+          <text id="/data/grp_rehab/rehabilitation_received:label">
+            <value>পুনর্বাসন সহায়তা পেয়েছেন? (হ্যাঁ/না)</value>
+          </text>
+          <text id="/data/grp_rehab/rehabilitation_date:label">
+            <value>সহায়তা প্রাপ্তির তারিখ</value>
+          </text>
+          <text id="/data/grp_rehab/rehab_place:label">
+            <value>সহায়তা প্রাপ্তির স্থান</value>
+          </text>
+          <text id="/data/grp_rehab/rehab_support_types:label">
+            <value>পুনর্বাসন সহায়তার ধরন</value>
+          </text>
+          <text id="/data/grp_rehab/rehab_notes:label">
+            <value>মন্তব্য (ঐচ্ছিক)</value>
+          </text>
+        </translation>
+      </itext>
+      <instance>
+        <data id="ciprb_fistula_questions_v1" version="20260620">
+          <grp_meta>
+            <organisation/>
+            <location/>
+            <collection_date/>
+            <district/>
+            <upazila/>
+            <union/>
+            <ward/>
+            <village/>
+            <enumerator_name/>
+            <enumerator_designation/>
+            <enumerator_institution/>
+            <enumerator_mobile/>
+            <case_serial/>
+          </grp_meta>
+          <stage/>
+          <_dist_code/>
+          <grp_patient>
+            <_dist_code_show/>
+            <patient_code/>
+            <_dup_name/>
+            <_dup_warn/>
+            <name/>
+            <age/>
+            <education/>
+            <husband/>
+            <husband_profession/>
+            <profession_patient/>
+            <current_condition/>
+            <contact_number/>
+            <marital_status/>
+            <age_at_marriage/>
+            <age_at_first_delivery/>
+            <number_of_children/>
+          </grp_patient>
+          <grp_obs_history>
+            <delivery_complication/>
+            <last_delivery_labour_duration/>
+            <mode_of_last_delivery/>
+            <place_of_last_delivery/>
+            <conducted_last_delivery/>
+            <delivery_outcome/>
+            <reasons_no_institutional_delivery/>
+            <time_duration_fistula_occurrence/>
+            <duration_suffering/>
+          </grp_obs_history>
+          <grp_lookup>
+            <patient_code_sel/>
+            <_pull_name/>
+            <_pull_age/>
+            <_pull_husband/>
+            <_pull_village/>
+            <_pull_susp/>
+            <_show_name/>
+            <_show_age/>
+            <_show_addr/>
+            <_lookup_missing/>
+          </grp_lookup>
+          <patient_code_final/>
+          <grp_suspected>
+            <suspected_date/>
+            <source_information/>
+          </grp_suspected>
+          <grp_diagnosed>
+            <diagnosed_date/>
+            <diagnosed_place/>
+            <diagnosed_by/>
+            <genital_fistula_type/>
+            <genital_fistula_type_other/>
+          </grp_diagnosed>
+          <grp_referred>
+            <refer_date/>
+            <refer_place/>
+            <referred_by_person/>
+            <refer_outcome/>
+          </grp_referred>
+          <grp_repaired>
+            <operation_date/>
+            <operation_place/>
+            <hospital_stay_days/>
+            <times_of_operations/>
+            <fistula_type_v2/>
+            <iatrogenic_cause/>
+            <operation_route/>
+            <surgery_outcome_v2/>
+          </grp_repaired>
+          <grp_rehab>
+            <rehabilitation_received/>
+            <rehabilitation_date/>
+            <rehab_place/>
+            <rehab_support_types/>
+            <rehab_notes/>
+          </grp_rehab>
+          <meta>
+            <instanceID/>
+          </meta>
+        </data>
+      </instance>
+      <instance id="fistula_clients" src="jr://file-csv/fistula_clients.csv"/>
+      <instance id="district">
+        <root>
+          <item>
+            <itextId>district-0</itextId>
+            <name>sunamganj</name>
+          </item>
+          <item>
+            <itextId>district-1</itextId>
+            <name>sherpur</name>
+          </item>
+          <item>
+            <itextId>district-2</itextId>
+            <name>bhola</name>
+          </item>
+          <item>
+            <itextId>district-3</itextId>
+            <name>kurigram</name>
+          </item>
+          <item>
+            <itextId>district-4</itextId>
+            <name>gaibandha</name>
+          </item>
+          <item>
+            <itextId>district-5</itextId>
+            <name>khagrachari</name>
+          </item>
+          <item>
+            <itextId>district-6</itextId>
+            <name>noakhali</name>
+          </item>
+          <item>
+            <itextId>district-7</itextId>
+            <name>patuakhali</name>
+          </item>
+          <item>
+            <itextId>district-8</itextId>
+            <name>sirajganj</name>
+          </item>
+          <item>
+            <itextId>district-9</itextId>
+            <name>barguna</name>
+          </item>
+          <item>
+            <itextId>district-10</itextId>
+            <name>jamalpur</name>
+          </item>
+          <item>
+            <itextId>district-11</itextId>
+            <name>bagerhat</name>
+          </item>
+          <item>
+            <itextId>district-12</itextId>
+            <name>habiganj</name>
+          </item>
+          <item>
+            <itextId>district-13</itextId>
+            <name>moulavibazar</name>
+          </item>
+          <item>
+            <itextId>district-14</itextId>
+            <name>sylhet</name>
+          </item>
+          <item>
+            <itextId>district-15</itextId>
+            <name>bandarban</name>
+          </item>
+          <item>
+            <itextId>district-16</itextId>
+            <name>chandpur</name>
+          </item>
+          <item>
+            <itextId>district-17</itextId>
+            <name>rangpur</name>
+          </item>
+          <item>
+            <itextId>district-18</itextId>
+            <name>dhaka</name>
+          </item>
+        </root>
+      </instance>
+      <instance id="yes_no">
+        <root>
+          <item>
+            <itextId>yes_no-0</itextId>
+            <name>yes</name>
+          </item>
+          <item>
+            <itextId>yes_no-1</itextId>
+            <name>no</name>
+          </item>
+          <item>
+            <itextId>yes_no-2</itextId>
+            <name>unknown</name>
+          </item>
+        </root>
+      </instance>
+      <instance id="stage">
+        <root>
+          <item>
+            <itextId>stage-0</itextId>
+            <name>suspected</name>
+          </item>
+          <item>
+            <itextId>stage-1</itextId>
+            <name>diagnosed</name>
+          </item>
+          <item>
+            <itextId>stage-2</itextId>
+            <name>referred</name>
+          </item>
+          <item>
+            <itextId>stage-3</itextId>
+            <name>repaired</name>
+          </item>
+          <item>
+            <itextId>stage-4</itextId>
+            <name>rehabilitated</name>
+          </item>
+        </root>
+      </instance>
+      <instance id="education">
+        <root>
+          <item>
+            <itextId>education-0</itextId>
+            <name>no_education</name>
+          </item>
+          <item>
+            <itextId>education-1</itextId>
+            <name>primary_incomplete</name>
+          </item>
+          <item>
+            <itextId>education-2</itextId>
+            <name>primary</name>
+          </item>
+          <item>
+            <itextId>education-3</itextId>
+            <name>secondary</name>
+          </item>
+          <item>
+            <itextId>education-4</itextId>
+            <name>higher_secondary</name>
+          </item>
+          <item>
+            <itextId>education-5</itextId>
+            <name>graduate</name>
+          </item>
+        </root>
+      </instance>
+      <instance id="marital_status">
+        <root>
+          <item>
+            <itextId>marital_status-0</itextId>
+            <name>married</name>
+          </item>
+          <item>
+            <itextId>marital_status-1</itextId>
+            <name>separated</name>
+          </item>
+          <item>
+            <itextId>marital_status-2</itextId>
+            <name>divorced</name>
+          </item>
+          <item>
+            <itextId>marital_status-3</itextId>
+            <name>widowed</name>
+          </item>
+          <item>
+            <itextId>marital_status-4</itextId>
+            <name>other</name>
+          </item>
+        </root>
+      </instance>
+      <instance id="mode_of_delivery">
+        <root>
+          <item>
+            <itextId>mode_of_delivery-0</itextId>
+            <name>nvd</name>
+          </item>
+          <item>
+            <itextId>mode_of_delivery-1</itextId>
+            <name>csection</name>
+          </item>
+          <item>
+            <itextId>mode_of_delivery-2</itextId>
+            <name>assisted_vaginal</name>
+          </item>
+        </root>
+      </instance>
+      <instance id="place_of_delivery">
+        <root>
+          <item>
+            <itextId>place_of_delivery-0</itextId>
+            <name>gov_facility</name>
+          </item>
+          <item>
+            <itextId>place_of_delivery-1</itextId>
+            <name>private_facility</name>
+          </item>
+          <item>
+            <itextId>place_of_delivery-2</itextId>
+            <name>home</name>
+          </item>
+        </root>
+      </instance>
+      <instance id="delivery_conductor">
+        <root>
+          <item>
+            <itextId>delivery_conductor-0</itextId>
+            <name>relatives</name>
+          </item>
+          <item>
+            <itextId>delivery_conductor-1</itextId>
+            <name>tba</name>
+          </item>
+          <item>
+            <itextId>delivery_conductor-2</itextId>
+            <name>nurse</name>
+          </item>
+          <item>
+            <itextId>delivery_conductor-3</itextId>
+            <name>midwife</name>
+          </item>
+          <item>
+            <itextId>delivery_conductor-4</itextId>
+            <name>doctor</name>
+          </item>
+        </root>
+      </instance>
+      <instance id="delivery_outcome">
+        <root>
+          <item>
+            <itextId>delivery_outcome-0</itextId>
+            <name>livebirth</name>
+          </item>
+          <item>
+            <itextId>delivery_outcome-1</itextId>
+            <name>stillbirth</name>
+          </item>
+        </root>
+      </instance>
+      <instance id="reasons_no_facility">
+        <root>
+          <item>
+            <itextId>reasons_no_facility-0</itextId>
+            <name>traditional</name>
+          </item>
+          <item>
+            <itextId>reasons_no_facility-1</itextId>
+            <name>transport</name>
+          </item>
+          <item>
+            <itextId>reasons_no_facility-2</itextId>
+            <name>financial</name>
+          </item>
+          <item>
+            <itextId>reasons_no_facility-3</itextId>
+            <name>no_idea</name>
+          </item>
+          <item>
+            <itextId>reasons_no_facility-4</itextId>
+            <name>no_faith</name>
+          </item>
+          <item>
+            <itextId>reasons_no_facility-5</itextId>
+            <name>other</name>
+          </item>
+        </root>
+      </instance>
+      <instance id="refer_outcome">
+        <root>
+          <item>
+            <itextId>refer_outcome-0</itextId>
+            <name>reached</name>
+          </item>
+          <item>
+            <itextId>refer_outcome-1</itextId>
+            <name>not_reached</name>
+          </item>
+          <item>
+            <itextId>refer_outcome-2</itextId>
+            <name>pending</name>
+          </item>
+          <item>
+            <itextId>refer_outcome-3</itextId>
+            <name>refused</name>
+          </item>
+        </root>
+      </instance>
+      <instance id="fistula_type">
+        <root>
+          <item>
+            <itextId>fistula_type-0</itextId>
+            <name>obstetric</name>
+          </item>
+          <item>
+            <itextId>fistula_type-1</itextId>
+            <name>iatrogenic</name>
+          </item>
+          <item>
+            <itextId>fistula_type-2</itextId>
+            <name>congenital</name>
+          </item>
+          <item>
+            <itextId>fistula_type-3</itextId>
+            <name>traumatic</name>
+          </item>
+        </root>
+      </instance>
+      <instance id="iatrogenic_cause">
+        <root>
+          <item>
+            <itextId>iatrogenic_cause-0</itextId>
+            <name>hysterectomy</name>
+          </item>
+          <item>
+            <itextId>iatrogenic_cause-1</itextId>
+            <name>csection</name>
+          </item>
+          <item>
+            <itextId>iatrogenic_cause-2</itextId>
+            <name>laparoscopy</name>
+          </item>
+        </root>
+      </instance>
+      <instance id="genital_fistula_type">
+        <root>
+          <item>
+            <itextId>genital_fistula_type-0</itextId>
+            <name>vvf</name>
+          </item>
+          <item>
+            <itextId>genital_fistula_type-1</itextId>
+            <name>rvf</name>
+          </item>
+          <item>
+            <itextId>genital_fistula_type-2</itextId>
+            <name>ureterovaginal</name>
+          </item>
+          <item>
+            <itextId>genital_fistula_type-3</itextId>
+            <name>urethrovaginal</name>
+          </item>
+          <item>
+            <itextId>genital_fistula_type-4</itextId>
+            <name>vesicouterine</name>
+          </item>
+          <item>
+            <itextId>genital_fistula_type-5</itextId>
+            <name>vesicocervical</name>
+          </item>
+          <item>
+            <itextId>genital_fistula_type-6</itextId>
+            <name>other</name>
+          </item>
+        </root>
+      </instance>
+      <instance id="operation_route">
+        <root>
+          <item>
+            <itextId>operation_route-0</itextId>
+            <name>vaginal</name>
+          </item>
+          <item>
+            <itextId>operation_route-1</itextId>
+            <name>abdominal</name>
+          </item>
+          <item>
+            <itextId>operation_route-2</itextId>
+            <name>abdomino_perineal</name>
+          </item>
+          <item>
+            <itextId>operation_route-3</itextId>
+            <name>laparoscopy</name>
+          </item>
+        </root>
+      </instance>
+      <instance id="surgery_outcome_v2">
+        <root>
+          <item>
+            <itextId>surgery_outcome_v2-0</itextId>
+            <name>success_dry</name>
+          </item>
+          <item>
+            <itextId>surgery_outcome_v2-1</itextId>
+            <name>success_not_dry</name>
+          </item>
+          <item>
+            <itextId>surgery_outcome_v2-2</itextId>
+            <name>failed</name>
+          </item>
+        </root>
+      </instance>
+      <instance id="rehab_place">
+        <root>
+          <item>
+            <itextId>rehab_place-0</itextId>
+            <name>individual</name>
+          </item>
+          <item>
+            <itextId>rehab_place-1</itextId>
+            <name>ngo</name>
+          </item>
+          <item>
+            <itextId>rehab_place-2</itextId>
+            <name>union_council</name>
+          </item>
+          <item>
+            <itextId>rehab_place-3</itextId>
+            <name>womens_affairs</name>
+          </item>
+          <item>
+            <itextId>rehab_place-4</itextId>
+            <name>uno</name>
+          </item>
+          <item>
+            <itextId>rehab_place-5</itextId>
+            <name>social_welfare</name>
+          </item>
+          <item>
+            <itextId>rehab_place-6</itextId>
+            <name>other</name>
+          </item>
+        </root>
+      </instance>
+      <instance id="rehab_support_types">
+        <root>
+          <item>
+            <itextId>rehab_support_types-0</itextId>
+            <name>cash</name>
+          </item>
+          <item>
+            <itextId>rehab_support_types-1</itextId>
+            <name>livestock</name>
+          </item>
+          <item>
+            <itextId>rehab_support_types-2</itextId>
+            <name>training</name>
+          </item>
+          <item>
+            <itextId>rehab_support_types-3</itextId>
+            <name>tree_plant</name>
+          </item>
+          <item>
+            <itextId>rehab_support_types-4</itextId>
+            <name>sewing</name>
+          </item>
+          <item>
+            <itextId>rehab_support_types-5</itextId>
+            <name>vgf_card</name>
+          </item>
+          <item>
+            <itextId>rehab_support_types-6</itextId>
+            <name>disability</name>
+          </item>
+          <item>
+            <itextId>rehab_support_types-7</itextId>
+            <name>psychosocial</name>
+          </item>
+          <item>
+            <itextId>rehab_support_types-8</itextId>
+            <name>reintegration</name>
+          </item>
+        </root>
+      </instance>
+      <bind nodeset="/data/grp_meta/organisation" type="string" calculate="'CIPRB'"/>
+      <bind nodeset="/data/grp_meta/location" type="geopoint" required="true()"/>
+      <bind nodeset="/data/grp_meta/collection_date" type="date" required="true()"/>
+      <bind nodeset="/data/grp_meta/district" type="string" required="true()"/>
+      <bind nodeset="/data/grp_meta/upazila" type="string" required="true()"/>
+      <bind nodeset="/data/grp_meta/union" type="string"/>
+      <bind nodeset="/data/grp_meta/ward" type="string"/>
+      <bind nodeset="/data/grp_meta/village" type="string"/>
+      <bind nodeset="/data/grp_meta/enumerator_name" type="string" required="true()"/>
+      <bind nodeset="/data/grp_meta/enumerator_designation" type="string"/>
+      <bind nodeset="/data/grp_meta/enumerator_institution" type="string"/>
+      <bind nodeset="/data/grp_meta/enumerator_mobile" type="string" constraint="regex(., &quot;^[0-9+ -]{6,20}$&quot;)" jr:constraintMsg="Enter a valid phone number."/>
+      <bind nodeset="/data/grp_meta/case_serial" type="string"/>
+      <bind nodeset="/data/stage" type="string" required="true()"/>
+      <bind nodeset="/data/_dist_code" type="string" calculate="if( /data/grp_meta/district ='sunamganj','1',if( /data/grp_meta/district ='bhola','2',if( /data/grp_meta/district ='noakhali','3',if( /data/grp_meta/district ='gaibandha','4',if( /data/grp_meta/district ='kurigram','5',if( /data/grp_meta/district ='sirajganj','6',if( /data/grp_meta/district ='sherpur','7',if( /data/grp_meta/district ='patuakhali','8',if( /data/grp_meta/district ='khagrachari','9',if( /data/grp_meta/district ='dhaka','10',if( /data/grp_meta/district ='barguna','11',if( /data/grp_meta/district ='jamalpur','12',if( /data/grp_meta/district ='bagerhat','13',if( /data/grp_meta/district ='habiganj','14',if( /data/grp_meta/district ='moulavibazar','15',if( /data/grp_meta/district ='sylhet','16',if( /data/grp_meta/district ='bandarban','17',if( /data/grp_meta/district ='rangpur','18',if( /data/grp_meta/district ='chandpur','19','')))))))))))))))))))"/>
+      <bind nodeset="/data/grp_patient" relevant=" /data/stage ='suspected'"/>
+      <bind nodeset="/data/grp_patient/_dist_code_show" readonly="true()" type="string" relevant=" /data/stage ='suspected'"/>
+      <bind nodeset="/data/grp_patient/patient_code" type="string" required="true()" relevant=" /data/stage ='suspected'" constraint="regex(normalize-space(.), concat('^',  /data/_dist_code , '-[0-9]{4}$')) and pulldata('fistula_clients','patient_name','id_no',translate(normalize-space( /data/grp_patient/patient_code ),'abcdefghijklmnopqrstuvwxyz','ABCDEFGHIJKLMNOPQRSTUVWXYZ'))=''" jr:constraintMsg="⚠ Invalid or duplicate ID. It must be &lt;district-code&gt;-&lt;4 digits&gt; (e.g. 1-0001, Dhaka = 10-0001) and not already registered. / ভুল বা ডুপ্লিকেট আইডি — জেলা কোড + ৪ অঙ্ক হতে হবে এবং আগে নিবন্ধিত থাকা যাবে না।"/>
+      <bind nodeset="/data/grp_patient/_dup_name" type="string" calculate="pulldata('fistula_clients','patient_name','id_no',translate(normalize-space( /data/grp_patient/patient_code ),'abcdefghijklmnopqrstuvwxyz','ABCDEFGHIJKLMNOPQRSTUVWXYZ'))"/>
+      <bind nodeset="/data/grp_patient/_dup_warn" readonly="true()" type="string" relevant=" /data/grp_patient/patient_code !='' and  /data/grp_patient/_dup_name !=''"/>
+      <bind nodeset="/data/grp_patient/name" type="string" required="true()"/>
+      <bind nodeset="/data/grp_patient/age" type="int" required="true()" constraint=". &gt;= 8 and . &lt;= 80"/>
+      <bind nodeset="/data/grp_patient/education" type="string"/>
+      <bind nodeset="/data/grp_patient/husband" type="string"/>
+      <bind nodeset="/data/grp_patient/husband_profession" type="string"/>
+      <bind nodeset="/data/grp_patient/profession_patient" type="string"/>
+      <bind nodeset="/data/grp_patient/current_condition" type="string"/>
+      <bind nodeset="/data/grp_patient/contact_number" type="string"/>
+      <bind nodeset="/data/grp_patient/marital_status" type="string"/>
+      <bind nodeset="/data/grp_patient/age_at_marriage" type="int"/>
+      <bind nodeset="/data/grp_patient/age_at_first_delivery" type="int"/>
+      <bind nodeset="/data/grp_patient/number_of_children" type="int"/>
+      <bind nodeset="/data/grp_obs_history" relevant=" /data/stage ='suspected'"/>
+      <bind nodeset="/data/grp_obs_history/delivery_complication" type="string"/>
+      <bind nodeset="/data/grp_obs_history/last_delivery_labour_duration" type="string"/>
+      <bind nodeset="/data/grp_obs_history/mode_of_last_delivery" type="string"/>
+      <bind nodeset="/data/grp_obs_history/place_of_last_delivery" type="string"/>
+      <bind nodeset="/data/grp_obs_history/conducted_last_delivery" type="string"/>
+      <bind nodeset="/data/grp_obs_history/delivery_outcome" type="string"/>
+      <bind nodeset="/data/grp_obs_history/reasons_no_institutional_delivery" type="string"/>
+      <bind nodeset="/data/grp_obs_history/time_duration_fistula_occurrence" type="string"/>
+      <bind nodeset="/data/grp_obs_history/duration_suffering" type="string"/>
+      <bind nodeset="/data/grp_lookup" relevant=" /data/stage ='diagnosed' or  /data/stage ='referred' or  /data/stage ='repaired' or  /data/stage ='rehabilitated'"/>
+      <bind nodeset="/data/grp_lookup/patient_code_sel" type="string" required="true()" relevant=" /data/stage ='diagnosed' or  /data/stage ='referred' or  /data/stage ='repaired' or  /data/stage ='rehabilitated'"/>
+      <bind nodeset="/data/grp_lookup/_pull_name" type="string" calculate="pulldata('fistula_clients','patient_name','id_no',translate(normalize-space( /data/grp_lookup/patient_code_sel ),'abcdefghijklmnopqrstuvwxyz','ABCDEFGHIJKLMNOPQRSTUVWXYZ'))"/>
+      <bind nodeset="/data/grp_lookup/_pull_age" type="string" calculate="pulldata('fistula_clients','age','id_no',translate(normalize-space( /data/grp_lookup/patient_code_sel ),'abcdefghijklmnopqrstuvwxyz','ABCDEFGHIJKLMNOPQRSTUVWXYZ'))"/>
+      <bind nodeset="/data/grp_lookup/_pull_husband" type="string" calculate="pulldata('fistula_clients','husband','id_no',translate(normalize-space( /data/grp_lookup/patient_code_sel ),'abcdefghijklmnopqrstuvwxyz','ABCDEFGHIJKLMNOPQRSTUVWXYZ'))"/>
+      <bind nodeset="/data/grp_lookup/_pull_village" type="string" calculate="pulldata('fistula_clients','village','id_no',translate(normalize-space( /data/grp_lookup/patient_code_sel ),'abcdefghijklmnopqrstuvwxyz','ABCDEFGHIJKLMNOPQRSTUVWXYZ'))"/>
+      <bind nodeset="/data/grp_lookup/_pull_susp" type="string" calculate="pulldata('fistula_clients','suspected_date','id_no',translate(normalize-space( /data/grp_lookup/patient_code_sel ),'abcdefghijklmnopqrstuvwxyz','ABCDEFGHIJKLMNOPQRSTUVWXYZ'))"/>
+      <bind nodeset="/data/grp_lookup/_show_name" readonly="true()" type="string" relevant=" /data/grp_lookup/_pull_name !=''"/>
+      <bind nodeset="/data/grp_lookup/_show_age" readonly="true()" type="string" relevant=" /data/grp_lookup/_pull_name !='' and ( /data/grp_lookup/_pull_age !='' or  /data/grp_lookup/_pull_husband !='')"/>
+      <bind nodeset="/data/grp_lookup/_show_addr" readonly="true()" type="string" relevant=" /data/grp_lookup/_pull_name !='' and ( /data/grp_lookup/_pull_village !='' or  /data/grp_lookup/_pull_susp !='')"/>
+      <bind nodeset="/data/grp_lookup/_lookup_missing" readonly="true()" type="string" relevant=" /data/grp_lookup/patient_code_sel !='' and  /data/grp_lookup/_pull_name =''"/>
+      <bind nodeset="/data/patient_code_final" type="string" calculate="if( /data/stage ='suspected',  /data/grp_patient/patient_code ,  /data/grp_lookup/patient_code_sel )"/>
+      <bind nodeset="/data/grp_suspected" relevant=" /data/stage ='suspected'"/>
+      <bind nodeset="/data/grp_suspected/suspected_date" type="date"/>
+      <bind nodeset="/data/grp_suspected/source_information" type="string"/>
+      <bind nodeset="/data/grp_diagnosed" relevant=" /data/stage ='diagnosed'"/>
+      <bind nodeset="/data/grp_diagnosed/diagnosed_date" type="date" required="true()"/>
+      <bind nodeset="/data/grp_diagnosed/diagnosed_place" type="string"/>
+      <bind nodeset="/data/grp_diagnosed/diagnosed_by" type="string"/>
+      <bind nodeset="/data/grp_diagnosed/genital_fistula_type" type="string" required="true()"/>
+      <bind nodeset="/data/grp_diagnosed/genital_fistula_type_other" type="string" required="true()" relevant=" /data/grp_diagnosed/genital_fistula_type ='other'"/>
+      <bind nodeset="/data/grp_referred" relevant=" /data/stage ='referred'"/>
+      <bind nodeset="/data/grp_referred/refer_date" type="date" required="true()"/>
+      <bind nodeset="/data/grp_referred/refer_place" type="string"/>
+      <bind nodeset="/data/grp_referred/referred_by_person" type="string"/>
+      <bind nodeset="/data/grp_referred/refer_outcome" type="string"/>
+      <bind nodeset="/data/grp_repaired" relevant=" /data/stage ='repaired'"/>
+      <bind nodeset="/data/grp_repaired/operation_date" type="date" required="true()"/>
+      <bind nodeset="/data/grp_repaired/operation_place" type="string"/>
+      <bind nodeset="/data/grp_repaired/hospital_stay_days" type="int"/>
+      <bind nodeset="/data/grp_repaired/times_of_operations" type="int"/>
+      <bind nodeset="/data/grp_repaired/fistula_type_v2" type="string"/>
+      <bind nodeset="/data/grp_repaired/iatrogenic_cause" type="string" relevant=" /data/grp_repaired/fistula_type_v2 ='iatrogenic'"/>
+      <bind nodeset="/data/grp_repaired/operation_route" type="string"/>
+      <bind nodeset="/data/grp_repaired/surgery_outcome_v2" type="string" required="true()"/>
+      <bind nodeset="/data/grp_rehab" relevant=" /data/stage ='rehabilitated'"/>
+      <bind nodeset="/data/grp_rehab/rehabilitation_received" type="string"/>
+      <bind nodeset="/data/grp_rehab/rehabilitation_date" type="date" relevant=" /data/grp_rehab/rehabilitation_received ='yes'"/>
+      <bind nodeset="/data/grp_rehab/rehab_place" type="string" relevant=" /data/grp_rehab/rehabilitation_received ='yes'"/>
+      <bind nodeset="/data/grp_rehab/rehab_support_types" type="string" relevant=" /data/grp_rehab/rehabilitation_received ='yes'"/>
+      <bind nodeset="/data/grp_rehab/rehab_notes" type="string" relevant=" /data/stage ='rehabilitated'"/>
+      <bind nodeset="/data/meta/instanceID" type="string" readonly="true()" jr:preload="uid"/>
+    </model>
+  </h:head>
+  <h:body class="theme-grid">
+    <group ref="/data/grp_meta">
+      <label ref="jr:itext('/data/grp_meta:label')"/>
+      <input ref="/data/grp_meta/location">
+        <label ref="jr:itext('/data/grp_meta/location:label')"/>
+      </input>
+      <input ref="/data/grp_meta/collection_date">
+        <label ref="jr:itext('/data/grp_meta/collection_date:label')"/>
+      </input>
+      <select1 ref="/data/grp_meta/district">
+        <label ref="jr:itext('/data/grp_meta/district:label')"/>
+        <itemset nodeset="instance('district')/root/item">
+          <value ref="name"/>
+          <label ref="jr:itext(itextId)"/>
+        </itemset>
+      </select1>
+      <input ref="/data/grp_meta/upazila">
+        <label ref="jr:itext('/data/grp_meta/upazila:label')"/>
+      </input>
+      <input ref="/data/grp_meta/union">
+        <label ref="jr:itext('/data/grp_meta/union:label')"/>
+      </input>
+      <input ref="/data/grp_meta/ward">
+        <label ref="jr:itext('/data/grp_meta/ward:label')"/>
+      </input>
+      <input ref="/data/grp_meta/village">
+        <label ref="jr:itext('/data/grp_meta/village:label')"/>
+      </input>
+      <input ref="/data/grp_meta/enumerator_name">
+        <label ref="jr:itext('/data/grp_meta/enumerator_name:label')"/>
+      </input>
+      <input ref="/data/grp_meta/enumerator_designation">
+        <label ref="jr:itext('/data/grp_meta/enumerator_designation:label')"/>
+      </input>
+      <input ref="/data/grp_meta/enumerator_institution">
+        <label ref="jr:itext('/data/grp_meta/enumerator_institution:label')"/>
+      </input>
+      <input ref="/data/grp_meta/enumerator_mobile">
+        <label ref="jr:itext('/data/grp_meta/enumerator_mobile:label')"/>
+      </input>
+      <input ref="/data/grp_meta/case_serial">
+        <label ref="jr:itext('/data/grp_meta/case_serial:label')"/>
+        <hint>The handwritten serial number from the paper form, if any.</hint>
+      </input>
+    </group>
+    <select1 ref="/data/stage">
+      <label ref="jr:itext('/data/stage:label')"/>
+      <hint>Pick "Suspected" to REGISTER a new woman. Pick any later stage (Diagnosed / Referred / Repaired / Rehabilitated) to UPDATE a woman already registered — you will choose her from a list.</hint>
+      <itemset nodeset="instance('stage')/root/item">
+        <value ref="name"/>
+        <label ref="jr:itext(itextId)"/>
+      </itemset>
+    </select1>
+    <group ref="/data/grp_patient">
+      <label ref="jr:itext('/data/grp_patient:label')"/>
+      <input ref="/data/grp_patient/_dist_code_show">
+        <label ref="jr:itext('/data/grp_patient/_dist_code_show:label')"/>
+      </input>
+      <input ref="/data/grp_patient/patient_code">
+        <label ref="jr:itext('/data/grp_patient/patient_code:label')"/>
+        <hint>Format: district number + 4-digit serial. Dhaka = 10-0001.</hint>
+      </input>
+      <input ref="/data/grp_patient/_dup_warn">
+        <label ref="jr:itext('/data/grp_patient/_dup_warn:label')"/>
+      </input>
+      <input ref="/data/grp_patient/name">
+        <label ref="jr:itext('/data/grp_patient/name:label')"/>
+      </input>
+      <input ref="/data/grp_patient/age">
+        <label ref="jr:itext('/data/grp_patient/age:label')"/>
+      </input>
+      <select1 ref="/data/grp_patient/education">
+        <label ref="jr:itext('/data/grp_patient/education:label')"/>
+        <itemset nodeset="instance('education')/root/item">
+          <value ref="name"/>
+          <label ref="jr:itext(itextId)"/>
+        </itemset>
+      </select1>
+      <input ref="/data/grp_patient/husband">
+        <label ref="jr:itext('/data/grp_patient/husband:label')"/>
+      </input>
+      <input ref="/data/grp_patient/husband_profession">
+        <label ref="jr:itext('/data/grp_patient/husband_profession:label')"/>
+      </input>
+      <input ref="/data/grp_patient/profession_patient">
+        <label ref="jr:itext('/data/grp_patient/profession_patient:label')"/>
+      </input>
+      <input ref="/data/grp_patient/current_condition">
+        <label ref="jr:itext('/data/grp_patient/current_condition:label')"/>
+      </input>
+      <input ref="/data/grp_patient/contact_number">
+        <label ref="jr:itext('/data/grp_patient/contact_number:label')"/>
+      </input>
+      <select1 ref="/data/grp_patient/marital_status">
+        <label ref="jr:itext('/data/grp_patient/marital_status:label')"/>
+        <itemset nodeset="instance('marital_status')/root/item">
+          <value ref="name"/>
+          <label ref="jr:itext(itextId)"/>
+        </itemset>
+      </select1>
+      <input ref="/data/grp_patient/age_at_marriage">
+        <label ref="jr:itext('/data/grp_patient/age_at_marriage:label')"/>
+      </input>
+      <input ref="/data/grp_patient/age_at_first_delivery">
+        <label ref="jr:itext('/data/grp_patient/age_at_first_delivery:label')"/>
+      </input>
+      <input ref="/data/grp_patient/number_of_children">
+        <label ref="jr:itext('/data/grp_patient/number_of_children:label')"/>
+      </input>
+    </group>
+    <group ref="/data/grp_obs_history">
+      <label ref="jr:itext('/data/grp_obs_history:label')"/>
+      <input ref="/data/grp_obs_history/delivery_complication">
+        <label ref="jr:itext('/data/grp_obs_history/delivery_complication:label')"/>
+      </input>
+      <input ref="/data/grp_obs_history/last_delivery_labour_duration">
+        <label ref="jr:itext('/data/grp_obs_history/last_delivery_labour_duration:label')"/>
+      </input>
+      <select1 ref="/data/grp_obs_history/mode_of_last_delivery">
+        <label ref="jr:itext('/data/grp_obs_history/mode_of_last_delivery:label')"/>
+        <itemset nodeset="instance('mode_of_delivery')/root/item">
+          <value ref="name"/>
+          <label ref="jr:itext(itextId)"/>
+        </itemset>
+      </select1>
+      <select1 ref="/data/grp_obs_history/place_of_last_delivery">
+        <label ref="jr:itext('/data/grp_obs_history/place_of_last_delivery:label')"/>
+        <itemset nodeset="instance('place_of_delivery')/root/item">
+          <value ref="name"/>
+          <label ref="jr:itext(itextId)"/>
+        </itemset>
+      </select1>
+      <select1 ref="/data/grp_obs_history/conducted_last_delivery">
+        <label ref="jr:itext('/data/grp_obs_history/conducted_last_delivery:label')"/>
+        <itemset nodeset="instance('delivery_conductor')/root/item">
+          <value ref="name"/>
+          <label ref="jr:itext(itextId)"/>
+        </itemset>
+      </select1>
+      <select1 ref="/data/grp_obs_history/delivery_outcome">
+        <label ref="jr:itext('/data/grp_obs_history/delivery_outcome:label')"/>
+        <itemset nodeset="instance('delivery_outcome')/root/item">
+          <value ref="name"/>
+          <label ref="jr:itext(itextId)"/>
+        </itemset>
+      </select1>
+      <select ref="/data/grp_obs_history/reasons_no_institutional_delivery">
+        <label ref="jr:itext('/data/grp_obs_history/reasons_no_institutional_delivery:label')"/>
+        <itemset nodeset="instance('reasons_no_facility')/root/item">
+          <value ref="name"/>
+          <label ref="jr:itext(itextId)"/>
+        </itemset>
+      </select>
+      <input ref="/data/grp_obs_history/time_duration_fistula_occurrence">
+        <label ref="jr:itext('/data/grp_obs_history/time_duration_fistula_occurrence:label')"/>
+      </input>
+      <input ref="/data/grp_obs_history/duration_suffering">
+        <label ref="jr:itext('/data/grp_obs_history/duration_suffering:label')"/>
+      </input>
+    </group>
+    <group ref="/data/grp_lookup">
+      <label ref="jr:itext('/data/grp_lookup:label')"/>
+      <select1 ref="/data/grp_lookup/patient_code_sel" appearance="autocomplete">
+        <label ref="jr:itext('/data/grp_lookup/patient_code_sel:label')"/>
+        <itemset nodeset="instance('fistula_clients')/root/item">
+          <value ref="name"/>
+          <label ref="label"/>
+        </itemset>
+      </select1>
+      <input ref="/data/grp_lookup/_show_name">
+        <label ref="jr:itext('/data/grp_lookup/_show_name:label')"/>
+      </input>
+      <input ref="/data/grp_lookup/_show_age">
+        <label ref="jr:itext('/data/grp_lookup/_show_age:label')"/>
+      </input>
+      <input ref="/data/grp_lookup/_show_addr">
+        <label ref="jr:itext('/data/grp_lookup/_show_addr:label')"/>
+      </input>
+      <input ref="/data/grp_lookup/_lookup_missing">
+        <label ref="jr:itext('/data/grp_lookup/_lookup_missing:label')"/>
+      </input>
+    </group>
+    <group ref="/data/grp_suspected">
+      <label ref="jr:itext('/data/grp_suspected:label')"/>
+      <input ref="/data/grp_suspected/suspected_date">
+        <label ref="jr:itext('/data/grp_suspected/suspected_date:label')"/>
+      </input>
+      <input ref="/data/grp_suspected/source_information">
+        <label ref="jr:itext('/data/grp_suspected/source_information:label')"/>
+      </input>
+    </group>
+    <group ref="/data/grp_diagnosed">
+      <label ref="jr:itext('/data/grp_diagnosed:label')"/>
+      <input ref="/data/grp_diagnosed/diagnosed_date">
+        <label ref="jr:itext('/data/grp_diagnosed/diagnosed_date:label')"/>
+      </input>
+      <input ref="/data/grp_diagnosed/diagnosed_place">
+        <label ref="jr:itext('/data/grp_diagnosed/diagnosed_place:label')"/>
+      </input>
+      <input ref="/data/grp_diagnosed/diagnosed_by">
+        <label ref="jr:itext('/data/grp_diagnosed/diagnosed_by:label')"/>
+      </input>
+      <select1 ref="/data/grp_diagnosed/genital_fistula_type">
+        <label ref="jr:itext('/data/grp_diagnosed/genital_fistula_type:label')"/>
+        <itemset nodeset="instance('genital_fistula_type')/root/item">
+          <value ref="name"/>
+          <label ref="jr:itext(itextId)"/>
+        </itemset>
+      </select1>
+      <input ref="/data/grp_diagnosed/genital_fistula_type_other">
+        <label ref="jr:itext('/data/grp_diagnosed/genital_fistula_type_other:label')"/>
+      </input>
+    </group>
+    <group ref="/data/grp_referred">
+      <label ref="jr:itext('/data/grp_referred:label')"/>
+      <input ref="/data/grp_referred/refer_date">
+        <label ref="jr:itext('/data/grp_referred/refer_date:label')"/>
+      </input>
+      <input ref="/data/grp_referred/refer_place">
+        <label ref="jr:itext('/data/grp_referred/refer_place:label')"/>
+      </input>
+      <input ref="/data/grp_referred/referred_by_person">
+        <label ref="jr:itext('/data/grp_referred/referred_by_person:label')"/>
+      </input>
+      <select1 ref="/data/grp_referred/refer_outcome">
+        <label ref="jr:itext('/data/grp_referred/refer_outcome:label')"/>
+        <itemset nodeset="instance('refer_outcome')/root/item">
+          <value ref="name"/>
+          <label ref="jr:itext(itextId)"/>
+        </itemset>
+      </select1>
+    </group>
+    <group ref="/data/grp_repaired">
+      <label ref="jr:itext('/data/grp_repaired:label')"/>
+      <input ref="/data/grp_repaired/operation_date">
+        <label ref="jr:itext('/data/grp_repaired/operation_date:label')"/>
+      </input>
+      <input ref="/data/grp_repaired/operation_place">
+        <label ref="jr:itext('/data/grp_repaired/operation_place:label')"/>
+      </input>
+      <input ref="/data/grp_repaired/hospital_stay_days">
+        <label ref="jr:itext('/data/grp_repaired/hospital_stay_days:label')"/>
+      </input>
+      <input ref="/data/grp_repaired/times_of_operations">
+        <label ref="jr:itext('/data/grp_repaired/times_of_operations:label')"/>
+      </input>
+      <select1 ref="/data/grp_repaired/fistula_type_v2">
+        <label ref="jr:itext('/data/grp_repaired/fistula_type_v2:label')"/>
+        <itemset nodeset="instance('fistula_type')/root/item">
+          <value ref="name"/>
+          <label ref="jr:itext(itextId)"/>
+        </itemset>
+      </select1>
+      <select1 ref="/data/grp_repaired/iatrogenic_cause">
+        <label ref="jr:itext('/data/grp_repaired/iatrogenic_cause:label')"/>
+        <itemset nodeset="instance('iatrogenic_cause')/root/item">
+          <value ref="name"/>
+          <label ref="jr:itext(itextId)"/>
+        </itemset>
+      </select1>
+      <select1 ref="/data/grp_repaired/operation_route">
+        <label ref="jr:itext('/data/grp_repaired/operation_route:label')"/>
+        <itemset nodeset="instance('operation_route')/root/item">
+          <value ref="name"/>
+          <label ref="jr:itext(itextId)"/>
+        </itemset>
+      </select1>
+      <select1 ref="/data/grp_repaired/surgery_outcome_v2">
+        <label ref="jr:itext('/data/grp_repaired/surgery_outcome_v2:label')"/>
+        <itemset nodeset="instance('surgery_outcome_v2')/root/item">
+          <value ref="name"/>
+          <label ref="jr:itext(itextId)"/>
+        </itemset>
+      </select1>
+    </group>
+    <group ref="/data/grp_rehab">
+      <label ref="jr:itext('/data/grp_rehab:label')"/>
+      <select1 ref="/data/grp_rehab/rehabilitation_received">
+        <label ref="jr:itext('/data/grp_rehab/rehabilitation_received:label')"/>
+        <itemset nodeset="instance('yes_no')/root/item">
+          <value ref="name"/>
+          <label ref="jr:itext(itextId)"/>
+        </itemset>
+      </select1>
+      <input ref="/data/grp_rehab/rehabilitation_date">
+        <label ref="jr:itext('/data/grp_rehab/rehabilitation_date:label')"/>
+      </input>
+      <select1 ref="/data/grp_rehab/rehab_place">
+        <label ref="jr:itext('/data/grp_rehab/rehab_place:label')"/>
+        <itemset nodeset="instance('rehab_place')/root/item">
+          <value ref="name"/>
+          <label ref="jr:itext(itextId)"/>
+        </itemset>
+      </select1>
+      <select ref="/data/grp_rehab/rehab_support_types">
+        <label ref="jr:itext('/data/grp_rehab/rehab_support_types:label')"/>
+        <itemset nodeset="instance('rehab_support_types')/root/item">
+          <value ref="name"/>
+          <label ref="jr:itext(itextId)"/>
+        </itemset>
+      </select>
+      <input ref="/data/grp_rehab/rehab_notes">
+        <label ref="jr:itext('/data/grp_rehab/rehab_notes:label')"/>
+      </input>
+    </group>
+  </h:body>
+</h:html>

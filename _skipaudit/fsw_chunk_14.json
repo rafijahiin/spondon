@@ -1,0 +1,652 @@
+[
+ {
+  "idx": 425,
+  "name": "q7_14_g_12mo",
+  "type": "select_one q7_14_yn",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "In the past 12 months?",
+  "label_bn": "গত ১২ মাসে?",
+  "own_relevant": "${q7_14_g_ever}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q7_14_g_ever}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q7_14_g_ever": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "99": "Prefer not to say"
+    },
+    "label": "g. Tracked your location without your consent or tried to control your movements"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 426,
+  "name": "q7_14_g_perp",
+  "type": "select_multiple q7_14_perp",
+  "base": "select_multiple",
+  "appearance": null,
+  "label_en": "Perpetrator Code",
+  "label_bn": "অপরাধীর কোড",
+  "own_relevant": "${q7_14_g_ever}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q7_14_g_ever}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q7_14_g_ever": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "99": "Prefer not to say"
+    },
+    "label": "g. Tracked your location without your consent or tried to control your movements"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 427,
+  "name": "q7_14_g_perp_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other (specify)",
+  "label_bn": "অন্যান্য (উল্লেখ করুন)",
+  "own_relevant": "selected(${q7_14_g_perp},'12')",
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "selected(${q7_14_g_perp},'12')"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q7_14_g_perp": {
+    "type": "select_multiple",
+    "choices": {
+     "1": "Client (new or regular)",
+     "2": "Husband/babu (intimate partner)",
+     "3": "Sardarni/landlady",
+     "4": "Broker/intermediary",
+     "5": "Family member/relative",
+     "6": "Colleague/acquaintance",
+     "7": "Stranger",
+     "8": "Police/law enforcement",
+     "9": "Local powerful individual/goon",
+     "10": "Health worker",
+     "11": "Religious leader",
+     "12": "Other (specify)",
+     "13": "Unknown online person/fake profile"
+    },
+    "label": "Perpetrator Code"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 429,
+  "name": "q7_14_h_12mo",
+  "type": "select_one q7_14_yn",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "In the past 12 months?",
+  "label_bn": "গত ১২ মাসে?",
+  "own_relevant": "${q7_14_h_ever}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q7_14_h_ever}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q7_14_h_ever": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "99": "Prefer not to say"
+    },
+    "label": "h. After booking via phone/app, did not show up or put you in a different/danger"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 430,
+  "name": "q7_14_h_perp",
+  "type": "select_multiple q7_14_perp",
+  "base": "select_multiple",
+  "appearance": null,
+  "label_en": "Perpetrator Code",
+  "label_bn": "অপরাধীর কোড",
+  "own_relevant": "${q7_14_h_ever}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q7_14_h_ever}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q7_14_h_ever": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "99": "Prefer not to say"
+    },
+    "label": "h. After booking via phone/app, did not show up or put you in a different/danger"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 431,
+  "name": "q7_14_h_perp_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other (specify)",
+  "label_bn": "অন্যান্য (উল্লেখ করুন)",
+  "own_relevant": "selected(${q7_14_h_perp},'12')",
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "selected(${q7_14_h_perp},'12')"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q7_14_h_perp": {
+    "type": "select_multiple",
+    "choices": {
+     "1": "Client (new or regular)",
+     "2": "Husband/babu (intimate partner)",
+     "3": "Sardarni/landlady",
+     "4": "Broker/intermediary",
+     "5": "Family member/relative",
+     "6": "Colleague/acquaintance",
+     "7": "Stranger",
+     "8": "Police/law enforcement",
+     "9": "Local powerful individual/goon",
+     "10": "Health worker",
+     "11": "Religious leader",
+     "12": "Other (specify)",
+     "13": "Unknown online person/fake profile"
+    },
+    "label": "Perpetrator Code"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 433,
+  "name": "q7_14_i_12mo",
+  "type": "select_one q7_14_yn",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "In the past 12 months?",
+  "label_bn": "গত ১২ মাসে?",
+  "own_relevant": "${q7_14_i_ever}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q7_14_i_ever}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q7_14_i_ever": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "99": "Prefer not to say"
+    },
+    "label": "i. Contacted you under a false identity online and deceived or harmed you"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 434,
+  "name": "q7_14_i_perp",
+  "type": "select_multiple q7_14_perp",
+  "base": "select_multiple",
+  "appearance": null,
+  "label_en": "Perpetrator Code",
+  "label_bn": "অপরাধীর কোড",
+  "own_relevant": "${q7_14_i_ever}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q7_14_i_ever}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q7_14_i_ever": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "99": "Prefer not to say"
+    },
+    "label": "i. Contacted you under a false identity online and deceived or harmed you"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 435,
+  "name": "q7_14_i_perp_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other (specify)",
+  "label_bn": "অন্যান্য (উল্লেখ করুন)",
+  "own_relevant": "selected(${q7_14_i_perp},'12')",
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "selected(${q7_14_i_perp},'12')"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q7_14_i_perp": {
+    "type": "select_multiple",
+    "choices": {
+     "1": "Client (new or regular)",
+     "2": "Husband/babu (intimate partner)",
+     "3": "Sardarni/landlady",
+     "4": "Broker/intermediary",
+     "5": "Family member/relative",
+     "6": "Colleague/acquaintance",
+     "7": "Stranger",
+     "8": "Police/law enforcement",
+     "9": "Local powerful individual/goon",
+     "10": "Health worker",
+     "11": "Religious leader",
+     "12": "Other (specify)",
+     "13": "Unknown online person/fake profile"
+    },
+    "label": "Perpetrator Code"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 440,
+  "name": "q7_18",
+  "type": "select_one q7_18_opts",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "Q7.18 If Q7.1 or Q7.2 shows any incident in past 12 months: For the most serious incident, did you seek help or report it to anyone outside your immediate circle?",
+  "label_bn": "Q7.18 যদি Q7.1 বা Q7.2-তে গত ১২ মাসে কোনো ঘটনা ঘটে থাকে: সবচেয়ে গুরুতর ঘটনার জন্য কি আপনি আপনার ঘনিষ্ঠ পরিসরের বাইরে কারও কাছে সাহায্য চেয়েছিলেন বা অভিযোগ করেছিলেন?",
+  "own_relevant": null,
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": true,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 441,
+  "name": "q7_19",
+  "type": "select_multiple q7_19_opts",
+  "base": "select_multiple",
+  "appearance": null,
+  "label_en": "Q7.19 Where did you report or seek help? (Multiple answers)",
+  "label_bn": "Q7.19 কোথায় অভিযোগ করেছেন বা সাহায্য চেয়েছেন? (একাধিক উত্তর)",
+  "own_relevant": "${q7_18}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q7_18}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q7_18": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "99": "Prefer not to say"
+    },
+    "label": "Q7.18 If Q7.1 or Q7.2 shows any incident in past 12 months: For the most serious"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 442,
+  "name": "q7_20",
+  "type": "select_multiple q7_20_opts",
+  "base": "select_multiple",
+  "appearance": null,
+  "label_en": "Q7.20 What type of assistance did you receive after reporting? (Multiple answers)",
+  "label_bn": "Q7.20 অভিযোগের পর কী ধরনের সহায়তা পেয়েছেন? (একাধিক উত্তর)",
+  "own_relevant": "${q7_18}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q7_18}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q7_18": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "99": "Prefer not to say"
+    },
+    "label": "Q7.18 If Q7.1 or Q7.2 shows any incident in past 12 months: For the most serious"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 443,
+  "name": "q7_21",
+  "type": "select_multiple q7_21_opts",
+  "base": "select_multiple",
+  "appearance": null,
+  "label_en": "Q7.21 ‡ Why did you not report or seek help? (Multiple; do not read list)",
+  "label_bn": "Q7.21 ‡ কেন অভিযোগ করেননি বা সাহায্য চাননি? (একাধিক উত্তর; তালিকা পড়বেন না)",
+  "own_relevant": "${q7_18}='2'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q7_18}='2'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q7_18": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "99": "Prefer not to say"
+    },
+    "label": "Q7.18 If Q7.1 or Q7.2 shows any incident in past 12 months: For the most serious"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 445,
+  "name": "q7_23",
+  "type": "select_multiple q7_23_opts",
+  "base": "select_multiple",
+  "appearance": null,
+  "label_en": "Q7.23 Where? (Multiple answers)",
+  "label_bn": "Q7.23 কোথায়? (একাধিক উত্তর)",
+  "own_relevant": "${q7_22}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q7_22}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q7_22": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "3": "No such mechanism exists for our community"
+    },
+    "label": "Q7.22 Do you know where a woman in your profession can report violence or seek h"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ }
+]

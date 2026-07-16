@@ -1,0 +1,379 @@
+[
+ {
+  "chunk": "hijra_chunk_00",
+  "form": "hijra",
+  "count": 14,
+  "names": [
+   "_dup_warn",
+   "interview_language_other",
+   "consent_no_end",
+   "grp_screen",
+   "s1_selection_other",
+   "s2_ineligible",
+   "s_ineligible_end",
+   "m1_head",
+   "grp_a1",
+   "grp_a2",
+   "a206_religion_other",
+   "a207_ethnicity_other",
+   "grp_a3",
+   "a302_other"
+  ]
+ },
+ {
+  "chunk": "hijra_chunk_01",
+  "form": "hijra",
+  "count": 14,
+  "names": [
+   "mB_head",
+   "grp_b",
+   "b101_other",
+   "b102_hh_members",
+   "b103_dera_members",
+   "b104_share",
+   "b105_shared_exp",
+   "b106_note",
+   "b107_head",
+   "b107_employment",
+   "b107_business",
+   "b107_remittance",
+   "b107_agriculture",
+   "b107_rent"
+  ]
+ },
+ {
+  "chunk": "hijra_chunk_02",
+  "form": "hijra",
+  "count": 14,
+  "names": [
+   "b107_badhai",
+   "b107_sexwork",
+   "b107_other",
+   "b107_total_note",
+   "b109_ready",
+   "b110_looked",
+   "b111_other",
+   "b112_other",
+   "grp_m1c",
+   "b301_other",
+   "b302_other",
+   "b303_other",
+   "b304_other",
+   "b305_other"
+  ]
+ },
+ {
+  "chunk": "hijra_chunk_03",
+  "form": "hijra",
+  "count": 14,
+  "names": [
+   "b306_other",
+   "b308_other",
+   "m1c_note_1",
+   "c101a",
+   "c102a",
+   "c103a",
+   "c104a",
+   "c105a",
+   "c106a",
+   "c107a",
+   "c108a",
+   "c109a",
+   "grp_module2",
+   "q2_9"
+  ]
+ },
+ {
+  "chunk": "hijra_chunk_04",
+  "form": "hijra",
+  "count": 14,
+  "names": [
+   "q2_10",
+   "q2_10_other",
+   "q2_12_other",
+   "q2_18",
+   "q2_18_other",
+   "q2_20",
+   "q2_20_other",
+   "q2_21",
+   "q2_21_other",
+   "grp_module3",
+   "q3_2",
+   "q3_2_other",
+   "q3_3",
+   "q3_3_other"
+  ]
+ },
+ {
+  "chunk": "hijra_chunk_05",
+  "form": "hijra",
+  "count": 14,
+  "names": [
+   "q3_4",
+   "q3_4_other",
+   "q3_5",
+   "q3_6",
+   "q3_7",
+   "q3_9",
+   "q3_9_other",
+   "q3_10",
+   "q3_10_other",
+   "q3_11_other",
+   "grp_module4",
+   "q4_2",
+   "q4_3",
+   "q4_4"
+  ]
+ },
+ {
+  "chunk": "hijra_chunk_06",
+  "form": "hijra",
+  "count": 14,
+  "names": [
+   "q4_5",
+   "q4_5_num",
+   "q4_6",
+   "q4_7_intro",
+   "grp_q4_7",
+   "q4_8",
+   "q4_8_other",
+   "q4_9",
+   "q4_9_other",
+   "q4_10",
+   "q4_11",
+   "q4_12",
+   "q4_13",
+   "q4_14"
+  ]
+ },
+ {
+  "chunk": "hijra_chunk_07",
+  "form": "hijra",
+  "count": 14,
+  "names": [
+   "q4_15_intro",
+   "grp_m5",
+   "q5_3",
+   "grp_q5_4",
+   "q5_5",
+   "q5_6",
+   "q5_6_other",
+   "q5_7",
+   "q5_7_other",
+   "q5_12",
+   "q5_15",
+   "m5_note_1",
+   "q5_17",
+   "grp_module6"
+  ]
+ },
+ {
+  "chunk": "hijra_chunk_08",
+  "form": "hijra",
+  "count": 14,
+  "names": [
+   "q6_2",
+   "q6_2_other",
+   "q6_3",
+   "q6_3_other",
+   "q6_4",
+   "q6_4_other",
+   "q6_5",
+   "q6_6",
+   "q6_7",
+   "module6_note_1",
+   "grp_q6_8",
+   "q6_9",
+   "q6_9_other",
+   "q6_11"
+  ]
+ },
+ {
+  "chunk": "hijra_chunk_09",
+  "form": "hijra",
+  "count": 14,
+  "names": [
+   "q6_11_other",
+   "q6_15_other",
+   "q6_16_other",
+   "grp_module7",
+   "module7_note_2",
+   "q7_1_a_12mo",
+   "q7_1_a_perp",
+   "q7_1_b_12mo",
+   "q7_1_b_perp",
+   "q7_1_c_12mo",
+   "q7_1_c_perp",
+   "q7_1_d_12mo",
+   "q7_1_d_perp",
+   "q7_1_e_12mo"
+  ]
+ },
+ {
+  "chunk": "hijra_chunk_10",
+  "form": "hijra",
+  "count": 14,
+  "names": [
+   "q7_1_e_perp",
+   "q7_1_f_12mo",
+   "q7_1_f_perp",
+   "q7_1_g_12mo",
+   "q7_1_g_perp",
+   "q7_1_h_12mo",
+   "q7_1_h_perp",
+   "q7_1_i_12mo",
+   "q7_1_i_perp",
+   "q7_1_j_12mo",
+   "q7_1_j_perp",
+   "q7_1_k_12mo",
+   "q7_1_k_perp",
+   "q7_1_a_perp_other"
+  ]
+ },
+ {
+  "chunk": "hijra_chunk_11",
+  "form": "hijra",
+  "count": 14,
+  "names": [
+   "q7_1_b_perp_other",
+   "q7_1_c_perp_other",
+   "q7_1_d_perp_other",
+   "q7_1_e_perp_other",
+   "q7_1_f_perp_other",
+   "q7_1_g_perp_other",
+   "q7_1_h_perp_other",
+   "q7_1_i_perp_other",
+   "q7_1_j_perp_other",
+   "q7_1_k_perp_other",
+   "module7_note_3",
+   "q7_2_a_12mo",
+   "q7_2_a_perp",
+   "q7_2_b_12mo"
+  ]
+ },
+ {
+  "chunk": "hijra_chunk_12",
+  "form": "hijra",
+  "count": 14,
+  "names": [
+   "q7_2_b_perp",
+   "q7_2_c_12mo",
+   "q7_2_c_perp",
+   "q7_2_d_12mo",
+   "q7_2_d_perp",
+   "q7_2_e_12mo",
+   "q7_2_e_perp",
+   "q7_2_a_perp_other",
+   "q7_2_b_perp_other",
+   "q7_2_c_perp_other",
+   "q7_2_d_perp_other",
+   "q7_2_e_perp_other",
+   "module7_note_4",
+   "q7_3_a_12mo"
+  ]
+ },
+ {
+  "chunk": "hijra_chunk_13",
+  "form": "hijra",
+  "count": 14,
+  "names": [
+   "q7_3_b_12mo",
+   "q7_3_c_12mo",
+   "q7_3_d_12mo",
+   "q7_3_e_12mo",
+   "q7_6",
+   "q7_6_other",
+   "q7_7",
+   "q7_8",
+   "q7_10",
+   "module7_note_6",
+   "q7_11_a_12mo",
+   "q7_11_a_perp",
+   "q7_11_b_12mo",
+   "q7_11_b_perp"
+  ]
+ },
+ {
+  "chunk": "hijra_chunk_14",
+  "form": "hijra",
+  "count": 14,
+  "names": [
+   "q7_11_c_12mo",
+   "q7_11_c_perp",
+   "q7_11_d_12mo",
+   "q7_11_d_perp",
+   "q7_11_e_12mo",
+   "q7_11_e_perp",
+   "q7_11_f_12mo",
+   "q7_11_f_perp",
+   "q7_11_g_12mo",
+   "q7_11_g_perp",
+   "q7_11_h_12mo",
+   "q7_11_h_perp",
+   "q7_11_a_perp_other",
+   "q7_11_b_perp_other"
+  ]
+ },
+ {
+  "chunk": "hijra_chunk_15",
+  "form": "hijra",
+  "count": 14,
+  "names": [
+   "q7_11_c_perp_other",
+   "q7_11_d_perp_other",
+   "q7_11_e_perp_other",
+   "q7_11_f_perp_other",
+   "q7_11_g_perp_other",
+   "q7_11_h_perp_other",
+   "q7_14",
+   "q7_15",
+   "q7_15_other",
+   "q7_16",
+   "q7_16_other",
+   "q7_17",
+   "q7_17_other",
+   "q7_19"
+  ]
+ },
+ {
+  "chunk": "hijra_chunk_16",
+  "form": "hijra",
+  "count": 14,
+  "names": [
+   "q7_19_other",
+   "grp_module8",
+   "grp_q8_2",
+   "grp_q8_3",
+   "module8_note_3",
+   "q8_5",
+   "q8_5_other",
+   "q8_7",
+   "q8_7_other",
+   "q8_8",
+   "q8_8_other",
+   "q8_9_other",
+   "grp_module9",
+   "q9_2"
+  ]
+ },
+ {
+  "chunk": "hijra_chunk_17",
+  "form": "hijra",
+  "count": 13,
+  "names": [
+   "q9_2_other",
+   "q9_3",
+   "q9_5",
+   "q9_5_other",
+   "q9_6_other",
+   "q9_7_other",
+   "q9_8_other",
+   "q9_11_other",
+   "q9_13_other",
+   "q9_14",
+   "q9_16_specify",
+   "q9_17_other",
+   "c3_last_q"
+  ]
+ }
+]

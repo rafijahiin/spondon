@@ -1,0 +1,633 @@
+[
+ {
+  "idx": 478,
+  "name": "q9_2_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other (specify)",
+  "label_bn": "অন্যান্য (উল্লেখ করুন)",
+  "own_relevant": "selected(${q9_2},'7')",
+  "ancestor_gates": [
+   {
+    "group": "grp_module9",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "selected(${q9_2},'7')"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q9_2": {
+    "type": "select_multiple",
+    "choices": {
+     "1": "Peer educator/outreach worker",
+     "2": "Friend/community member",
+     "3": "Guruma/senior community member",
+     "4": "Social media/internet",
+     "5": "Leaflet/billboard",
+     "6": "Health worker",
+     "7": "Other (specify)"
+    },
+    "label": "Q9.2 Where did you hear about it? (Multiple answers.)"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 479,
+  "name": "q9_3",
+  "type": "select_one q9_3_opts",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "Q9.3 Have you ever visited such a facility?",
+  "label_bn": "Q9.3 আপনি কি কখনো এ ধরনের কোনো কেন্দ্রে গেছেন?",
+  "own_relevant": "${q9_1}!='2'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module9",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q9_1}!='2'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q9_1": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No"
+    },
+    "label": "Q9.1 Before today, had you heard of any facility or drop-in service specifically"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 481,
+  "name": "q9_5",
+  "type": "select_multiple q9_5_opts",
+  "base": "select_multiple",
+  "appearance": null,
+  "label_en": "Q9.5 ‡ Which services would you most want to receive from the wellness centre? (Maximum five answers.)",
+  "label_bn": "Q9.5 ‡ ওয়েলনেস সেন্টার থেকে আপনি কোন সেবাগুলো সবচেয়ে বেশি পেতে চাইবেন? (সর্বোচ্চ পাঁচটি উত্তর।)",
+  "own_relevant": "${q9_4}!='4' and ${q9_4}!='5'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module9",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q9_4}!='4' and ${q9_4}!='5'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q9_4": {
+    "type": "select_one",
+    "choices": {
+     "1": "Definitely would use it",
+     "2": "Probably would use it",
+     "3": "Unsure",
+     "4": "Probably would not use it",
+     "5": "Definitely would not use it"
+    },
+    "label": "Q9.4 Read the designated description. If such a wellness centre opened in your a"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 482,
+  "name": "q9_5_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other (specify)",
+  "label_bn": "অন্যান্য (উল্লেখ করুন)",
+  "own_relevant": "selected(${q9_5},'12')",
+  "ancestor_gates": [
+   {
+    "group": "grp_module9",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "selected(${q9_5},'12')"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q9_5": {
+    "type": "select_multiple",
+    "choices": {
+     "01": "General health check-up",
+     "02": "STI testing and treatment",
+     "03": "HIV testing and counselling",
+     "04": "Free condoms and water-based lubricant",
+     "05": "Family planning services",
+     "06": "Mental health counselling",
+     "07": "GBV support and referral",
+     "08": "Legal assistance information/referral",
+     "09": "Peer support group/safe space",
+     "10": "Livelihood/skills information",
+     "11": "Hormone-related counselling/referral ‡",
+     "12": "Other (specify)"
+    },
+    "label": "Q9.5 ‡ Which services would you most want to receive from the wellness centre? ("
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 484,
+  "name": "q9_6_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other (specify)",
+  "label_bn": "অন্যান্য (উল্লেখ করুন)",
+  "own_relevant": "selected(${q9_6},'09')",
+  "ancestor_gates": [
+   {
+    "group": "grp_module9",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "selected(${q9_6},'09')"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q9_6": {
+    "type": "select_multiple",
+    "choices": {
+     "01": "Others seeing you enter the facility",
+     "02": "Confidentiality of my information",
+     "03": "Distance/travel",
+     "04": "Cost",
+     "05": "Staff behaviour",
+     "06": "Opening hours not convenient",
+     "07": "Fear of harassment by police or local persons near the facility",
+     "08": "No concerns",
+     "09": "Other (specify)"
+    },
+    "label": "Q9.6 ‡ What concerns might you have about using such a facility? (Multiple answe"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 486,
+  "name": "q9_7_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other (specify)",
+  "label_bn": "অন্যান্য (উল্লেখ করুন)",
+  "own_relevant": "selected(${q9_7},'7')",
+  "ancestor_gates": [
+   {
+    "group": "grp_module9",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "selected(${q9_7},'7')"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q9_7": {
+    "type": "select_multiple",
+    "choices": {
+     "1": "Staff from my own community",
+     "2": "Confidential location/entrance",
+     "3": "Strict confidentiality policy clearly communicated to service users",
+     "4": "Separate or flexible service hours",
+     "5": "Friendly waiting area",
+     "6": "All services in one place",
+     "7": "Other (specify)"
+    },
+    "label": "Q9.7 What features would make the facility comfortable and safe for you? (Multip"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 488,
+  "name": "q9_8_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other (specify)",
+  "label_bn": "অন্যান্য (উল্লেখ করুন)",
+  "own_relevant": "selected(${q9_8},'7')",
+  "ancestor_gates": [
+   {
+    "group": "grp_module9",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "selected(${q9_8},'7')"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q9_8": {
+    "type": "select_multiple",
+    "choices": {
+     "1": "Mobile health camp in my area",
+     "2": "Peer educator visit",
+     "3": "Telephone/helpline counselling",
+     "4": "Online/social media information",
+     "5": "Printed materials",
+     "6": "Community meeting/session",
+     "7": "Other (specify)"
+    },
+    "label": "Q9.8 Besides visiting the facility directly, in what other ways would you like t"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 492,
+  "name": "q9_11_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other (specify)",
+  "label_bn": "অন্যান্য (উল্লেখ করুন)",
+  "own_relevant": "selected(${q9_11},'9')",
+  "ancestor_gates": [
+   {
+    "group": "grp_module9",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "selected(${q9_11},'9')"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q9_11": {
+    "type": "select_multiple",
+    "choices": {
+     "1": "Peer educator",
+     "2": "Friend/community member",
+     "3": "Guruma/senior community member",
+     "4": "CBO/NGO worker",
+     "5": "Doctor/health worker",
+     "6": "Social media/online groups",
+     "7": "Television/radio",
+     "8": "Leaflet/BCC materials/billboard",
+     "9": "Other (specify)"
+    },
+    "label": "Q9.11 Which information sources do you trust most for health news? (Maximum thre"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 497,
+  "name": "q9_13_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other (specify)",
+  "label_bn": "অন্যান্য (উল্লেখ করুন)",
+  "own_relevant": "${q9_13}='7'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module9",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q9_13}='7'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q9_13": {
+    "type": "select_one",
+    "choices": {
+     "1": "Went directly (without any intermediary)",
+     "2": "Through peer educator/outreach worker referral",
+     "3": "Through NGO/CBO referral",
+     "4": "Through health worker/referral from another facility",
+     "5": "On advice of friend/community member",
+     "6": "Through guruma/senior community member",
+     "7": "Other (specify)"
+    },
+    "label": "Q9.13 In the past 12 months, how did you first access the healthcare/SRHR servic"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 498,
+  "name": "q9_14",
+  "type": "select_one q9_14_opts",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "Q9.14 For those who went through a referral, how did you find the process of accessing services?",
+  "label_bn": "Q9.14 রেফারেলের মাধ্যমে যাওয়ার ক্ষেত্রে, সেবা নেওয়ার প্রক্রিয়া কেমন ছিল বলে মনে করেন?",
+  "own_relevant": "${q9_13}!='1' and ${q9_13}!='5' and ${q9_13}!='6'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module9",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q9_13}!='1' and ${q9_13}!='5' and ${q9_13}!='6'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q9_13": {
+    "type": "select_one",
+    "choices": {
+     "1": "Went directly (without any intermediary)",
+     "2": "Through peer educator/outreach worker referral",
+     "3": "Through NGO/CBO referral",
+     "4": "Through health worker/referral from another facility",
+     "5": "On advice of friend/community member",
+     "6": "Through guruma/senior community member",
+     "7": "Other (specify)"
+    },
+    "label": "Q9.13 In the past 12 months, how did you first access the healthcare/SRHR servic"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 501,
+  "name": "q9_16_specify",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Yes (specify)",
+  "label_bn": "হ্যাঁ (উল্লেখ করুন)",
+  "own_relevant": "${q9_16}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module9",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q9_16}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q9_16": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes (specify)",
+     "2": "No"
+    },
+    "label": "Q9.16 In the past 12 months, were you ever referred by a peer educator, NGO, or "
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 503,
+  "name": "q9_17_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other (specify)",
+  "label_bn": "অন্যান্য (উল্লেখ করুন)",
+  "own_relevant": "${q9_17}='6'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module9",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q9_17}='6'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q9_17": {
+    "type": "select_one",
+    "choices": {
+     "1": "Peer educator/outreach worker",
+     "2": "NGO/CBO directly",
+     "3": "Guruma/senior community member",
+     "4": "Friend/community member",
+     "5": "Government health facility directly",
+     "98": "Don't know",
+     "6": "Other (specify)"
+    },
+    "label": "Q9.17 If you need a new service in the future, who/where do you think you would "
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 510,
+  "name": "c3_last_q",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Partially completed (note last question)",
+  "label_bn": "আংশিক সম্পন্ন (শেষ প্রশ্নটি উল্লেখ করুন)",
+  "own_relevant": "${c3}='2'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module9",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${c3}='2'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "c3": {
+    "type": "select_one",
+    "choices": {
+     "1": "Completed",
+     "2": "Partially completed (note last question)",
+     "3": "Refused to continue after starting",
+     "4": "Interrupted/rescheduled"
+    },
+    "label": "Interview outcome."
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ }
+]

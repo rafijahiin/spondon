@@ -1,0 +1,129 @@
+===== SURVEY =====
+begin_group            | grp_meta               | EN=Submission info
+                                                | BN=তথ্য প্রেরণ
+calculate              | organisation           | EN=None
+geopoint               | location               | EN=GPS location (required — step outside if no signal)
+                                                | BN=জিপিএস অবস্থান (প্রয়োজনীয়)
+date                   | collection_date        | EN=Date
+                                                | BN=তারিখ
+select_one district    | district               | EN=District
+                                                | BN=জেলা
+text                   | upazila                | EN=Upazila
+                                                | BN=উপজেলা
+text                   | union                  | EN=Union / Pourashava
+                                                | BN=ইউনিয়ন / পৌরসভা
+text                   | ward                   | EN=Ward
+                                                | BN=ওয়ার্ড
+text                   | village                | EN=Village / Mahalla
+                                                | BN=গ্রাম / মহল্লা
+text                   | enumerator_name        | EN=Your name (person filling this form)
+                                                | BN=আপনার নাম (কে পূরণ করছেন)
+text                   | enumerator_designation | EN=Designation
+                                                | BN=পদবী
+text                   | enumerator_institution | EN=Institution
+                                                | BN=প্রতিষ্ঠান
+text                   | enumerator_mobile      | EN=Mobile number
+                                                | BN=মোবাইল নম্বর
+end_group              | grp_meta               | EN=None
+note                   | _rp_title              | EN=MPDSR Action Plan 2026
+                                                | BN=এমপিডিএসআর অ্যাকশন প্ল্যান ২০২৬
+select_one ap_mode     | ap_mode                | EN=What do you want to do?
+                                                | BN=আপনি কী করতে চান?
+begin_group            | grp_new_plan           | EN=New action plan
+                                                | BN=নতুন অ্যাকশন প্ল্যান
+begin_group            | grp_sys_strengthen     | EN=MPDSR System Strengthening
+                                                | BN=এমপিডিএসআর সিস্টেম শক্তিশালীকরণ
+note                   | _sys_note              | EN=Note: first table needs to fill out based on the findings of the workshop (gaps and challenges are identified to improve the system)
+                                                | BN=নোট: প্রথম টেবিলটি কর্মশালার ফলাফলের ভিত্তিতে পূরণ করতে হবে (সিস্টেম উন্নত করতে ফাঁক ও চ্যালেঞ্জগুলো চিহ্নিত করা হয়)
+begin_repeat           | grp_sys_act            | EN=Activity
+                                                | BN=কার্যক্রম
+select_one rp_subcat   | sys_subcat             | EN=Category
+                                                | BN=বিভাগ
+text                   | sys_activity           | EN=Activities
+                                                | BN=কার্যক্রম
+text                   | sys_responsible        | EN=Responsible
+                                                | BN=দায়িত্বপ্রাপ্ত (ব্যক্তি / দপ্তর)
+date                   | sys_timeline           | EN=Timeline
+                                                | BN=সময়সীমা
+text                   | sys_indicator          | EN=Indicator
+                                                | BN=নির্দেশক
+text                   | sys_milestone          | EN=Milestone
+                                                | BN=মাইলফলক
+text                   | sys_considerations     | EN=Considerations
+                                                | BN=বিবেচ্য বিষয়
+select_one rp_status   | sys_status             | EN=Status of this action
+                                                | BN=এই পদক্ষেপের অবস্থা
+end_repeat             | grp_sys_act            | EN=None
+end_group              | grp_sys_strengthen     | EN=None
+begin_group            | grp_community_va       | EN=Common modifiable factors (Community verbal autopsy)
+                                                | BN=সাধারণ পরিবর্তনযোগ্য কারণ (কমিউনিটি ভার্বাল অটোপসি)
+begin_repeat           | grp_community_va_act   | EN=Action
+                                                | BN=পদক্ষেপ
+text                   | community_va_activity  | EN=Actions are taken
+                                                | BN=গৃহীত পদক্ষেপ
+text                   | community_va_responsible | EN=Responsible
+                                                | BN=দায়িত্বপ্রাপ্ত (ব্যক্তি / দপ্তর)
+date                   | community_va_timeline  | EN=Timeline
+                                                | BN=সময়সীমা
+text                   | community_va_milestone | EN=Milestone
+                                                | BN=মাইলফলক
+text                   | community_va_considerations | EN=Considerations
+                                                | BN=বিবেচ্য বিষয়
+select_one rp_status   | community_va_status    | EN=Status of this action
+                                                | BN=এই পদক্ষেপের অবস্থা
+end_repeat             | grp_community_va_act   | EN=None
+end_group              | grp_community_va       | EN=None
+begin_group            | grp_facility_dr        | EN=Common modifiable factors (Facility death review)
+                                                | BN=সাধারণ পরিবর্তনযোগ্য কারণ (ফ্যাসিলিটি ডেথ রিভিউ)
+begin_repeat           | grp_facility_dr_act    | EN=Action
+                                                | BN=পদক্ষেপ
+text                   | facility_dr_activity   | EN=Actions are taken
+                                                | BN=গৃহীত পদক্ষেপ
+text                   | facility_dr_responsible | EN=Responsible
+                                                | BN=দায়িত্বপ্রাপ্ত (ব্যক্তি / দপ্তর)
+date                   | facility_dr_timeline   | EN=Timeline
+                                                | BN=সময়সীমা
+text                   | facility_dr_milestone  | EN=Milestone
+                                                | BN=মাইলফলক
+text                   | facility_dr_considerations | EN=Considerations
+                                                | BN=বিবেচ্য বিষয়
+select_one rp_status   | facility_dr_status     | EN=Status of this action
+                                                | BN=এই পদক্ষেপের অবস্থা
+end_repeat             | grp_facility_dr_act    | EN=None
+end_group              | grp_facility_dr        | EN=None
+note                   | _cmf_note              | EN=Note: 2nd table needs to fill out based on the community verbal autopsy data and facility death review findings (causes and contributing factors behind the deaths including the delays), the action plan can be developed based on the findings of deaths from July to September 2025 deaths, a six months analysis and actions which can also be compared with the next six months causes and action plans
+                                                | BN=নোট: দ্বিতীয় টেবিলটি কমিউনিটি ভার্বাল অটোপসি ডেটা ও ফ্যাসিলিটি ডেথ রিভিউয়ের ফলাফলের ভিত্তিতে পূরণ করতে হবে (বিলম্বসহ মৃত্যুর কারণ ও অবদানকারী কারণসমূহ); জুলাই থেকে সেপ্টেম্বর ২০২৫ মৃত্যুর ফলাফলের ভিত্তিতে অ্যাকশন প্ল্যান তৈরি করা যেতে পারে — ছয় মাসের বিশ্লেষণ ও পদক্ষেপ, যা পরবর্তী ছয় মাসের কারণ ও অ্যাকশন প্ল্যানের সাথে তুলনাও করা যায়
+end_group              | grp_new_plan           | EN=None
+begin_group            | grp_update             | EN=Update an action
+                                                | BN=একটি পদক্ষেপ হালনাগাদ
+select_one_from_file mpdsr_actions.csv | ap_action_sel          | EN=Select the action by its ID (e.g. D-01)
+                                                | BN=আইডি দিয়ে পদক্ষেপটি বেছে নিন (যেমন D-01)
+calculate              | _ap_act                | EN=None
+calculate              | _ap_resp               | EN=None
+calculate              | _ap_time               | EN=None
+calculate              | _ap_dist               | EN=None
+calculate              | _ap_curstat            | EN=None
+note                   | _ap_show               | EN=Action ${ap_action_sel}: ${_ap_act}
+Responsible: ${_ap_resp} · Timeline: ${_ap_time} (${_ap_dist})
+Current status: ${_ap_curstat}
+                                                | BN=পদক্ষেপ ${ap_action_sel}: ${_ap_act}
+দায়িত্বপ্রাপ্ত: ${_ap_resp} · সময়সীমা: ${_ap_time} (${_ap_dist})
+note                   | _ap_nomatch            | EN=No action found for that ID — check the list, or it may not have synced yet.
+                                                | BN=এই আইডিতে কোনো পদক্ষেপ পাওয়া যায়নি — তালিকা দেখুন।
+select_one rp_status   | ap_new_status          | EN=Updated status
+                                                | BN=হালনাগাদ অবস্থা
+select_one ap_completion | ap_new_completion      | EN=Completion %
+                                                | BN=সম্পন্নের হার (%)
+date                   | ap_completion_date     | EN=Date completed (if 100%)
+                                                | BN=সম্পন্নের তারিখ (যদি ১০০%)
+text                   | ap_remarks             | EN=Remarks / progress note
+                                                | BN=মন্তব্য / অগ্রগতির নোট
+end_group              | grp_update             | EN=None
+
+===== CHOICES (rp_subcat) =====
+  community_death_review | EN=Community Death Review | BN=কমিউনিটি ডেথ রিভিউ
+  facility_death_review | EN=Facility Death Review | BN=ফ্যাসিলিটি ডেথ রিভিউ
+  assignment_causes | EN=Assignment causes of deaths | BN=মৃত্যুর কারণ নির্ধারণ
+  response_plan_dev | EN=Response plan development | BN=রেসপন্স প্ল্যান উন্নয়ন
+  implementation_response | EN=Implementation of response | BN=রেসপন্স বাস্তবায়ন
+  monitoring_evaluation | EN=Monitoring and evaluation | BN=পর্যবেক্ষণ ও মূল্যায়ন

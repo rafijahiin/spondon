@@ -1,0 +1,554 @@
+[
+ {
+  "idx": 8,
+  "name": "_dup_warn",
+  "type": "note",
+  "base": "note",
+  "appearance": null,
+  "label_en": "⚠ This serial is already recorded — do not enter the same respondent twice.",
+  "label_bn": "⚠ এই সিরিয়ালটি ইতিমধ্যে রেকর্ড করা হয়েছে — একই উত্তরদাতাকে দুবার লিখবেন না।",
+  "own_relevant": "${questionnaire_serial}!='' and ${_dup_serial}!=''",
+  "ancestor_gates": [],
+  "effective_gates": [
+   "${questionnaire_serial}!='' and ${_dup_serial}!=''"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_dup_serial": {
+    "type": "calculate",
+    "calculation": "pulldata('respondents_hijra','serial','serial',translate(normalize-space(${questionnaire_serial}),'abcdefghijklmnopqrstuvwxyz','ABCDEFGHIJKLMNOPQRSTUVWXYZ'))"
+   },
+   "questionnaire_serial": {
+    "type": "text",
+    "label": "Questionnaire Serial No."
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 18,
+  "name": "interview_language_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other (specify)",
+  "label_bn": "অন্যান্য (উল্লেখ করুন)",
+  "own_relevant": "${interview_language}='2'",
+  "ancestor_gates": [],
+  "effective_gates": [
+   "${interview_language}='2'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "interview_language": {
+    "type": "select_one",
+    "choices": {
+     "1": "Bengali",
+     "2": "Other (specify)"
+    },
+    "label": "Interview Language"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 25,
+  "name": "consent_no_end",
+  "type": "note",
+  "base": "note",
+  "appearance": null,
+  "label_en": "No consent — thank the respondent and end the interview.",
+  "label_bn": "সম্মতি নেই — উত্তরদাতাকে ধন্যবাদ জানিয়ে সাক্ষাৎকার শেষ করুন।",
+  "own_relevant": "${consent}='2'",
+  "ancestor_gates": [],
+  "effective_gates": [
+   "${consent}='2'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "consent": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No"
+    },
+    "label": "Consent given"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 26,
+  "name": "grp_screen",
+  "type": "begin_group",
+  "base": "begin_group",
+  "appearance": null,
+  "label_en": "Eligibility Screening",
+  "label_bn": "যোগ্যতা যাচাই",
+  "own_relevant": "${consent}='1'",
+  "ancestor_gates": [],
+  "effective_gates": [
+   "${consent}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "consent": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No"
+    },
+    "label": "Consent given"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 28,
+  "name": "s1_selection_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other (specify)",
+  "label_bn": "অন্যান্য (উল্লেখ করুন)",
+  "own_relevant": "${s1_selection}='4'",
+  "ancestor_gates": [
+   {
+    "group": "grp_screen",
+    "relevant": "${consent}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${consent}='1'",
+   "${s1_selection}='4'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "consent": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No"
+    },
+    "label": "Consent given"
+   },
+   "s1_selection": {
+    "type": "select_one",
+    "choices": {
+     "1": "Peer referral/respondent-driven",
+     "2": "CBO/DIC list",
+     "3": "Hotspot/fixed venue",
+     "4": "Other"
+    },
+    "label": "Interviewer: Record how the respondent was selected. (Do not read aloud)"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 30,
+  "name": "s2_ineligible",
+  "type": "note",
+  "base": "note",
+  "appearance": null,
+  "label_en": "Under 18 — end interview and mark as ineligible.",
+  "label_bn": "১৮ বছরের কম — সাক্ষাৎকার শেষ করুন এবং অযোগ্য হিসেবে চিহ্নিত করুন।",
+  "own_relevant": "${s2_age}!='' and ${s2_age}<18",
+  "ancestor_gates": [
+   {
+    "group": "grp_screen",
+    "relevant": "${consent}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${consent}='1'",
+   "${s2_age}!='' and ${s2_age}<18"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "consent": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No"
+    },
+    "label": "Consent given"
+   },
+   "s2_age": {
+    "type": "integer",
+    "label": "What is your current age (in completed years)?"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 33,
+  "name": "s_ineligible_end",
+  "type": "note",
+  "base": "note",
+  "appearance": null,
+  "label_en": "Respondent is not eligible — end the interview.",
+  "label_bn": "উত্তরদাতা যোগ্য নন — সাক্ষাৎকার শেষ করুন।",
+  "own_relevant": "(${s2_age}!='' and ${s2_age}<18) or ${s3_member}='2' or ${s4_residence}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_screen",
+    "relevant": "${consent}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${consent}='1'",
+   "(${s2_age}!='' and ${s2_age}<18) or ${s3_member}='2' or ${s4_residence}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "consent": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No"
+    },
+    "label": "Consent given"
+   },
+   "s2_age": {
+    "type": "integer",
+    "label": "What is your current age (in completed years)?"
+   },
+   "s3_member": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No"
+    },
+    "label": "Do you consider yourself a member of the hijra/gender-diverse community? (e.g., "
+   },
+   "s4_residence": {
+    "type": "select_one",
+    "choices": {
+     "1": "Less than 6 months",
+     "2": "6 months or more"
+    },
+    "label": "How long have you been living in this district?"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 36,
+  "name": "m1_head",
+  "type": "note",
+  "base": "note",
+  "appearance": null,
+  "label_en": "Module 1. Background and Socio-Demographic Information",
+  "label_bn": "মডিউল ১. পটভূমি ও সামাজিক-জনসংখ্যাতাত্ত্বিক তথ্য",
+  "own_relevant": "${_proceed}='1'",
+  "ancestor_gates": [],
+  "effective_gates": [
+   "${_proceed}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 37,
+  "name": "grp_a1",
+  "type": "begin_group",
+  "base": "begin_group",
+  "appearance": null,
+  "label_en": "A1. Respondent and Interview Identification Information",
+  "label_bn": "A1. উত্তরদাতা ও সাক্ষাৎকার সনাক্তকরণ তথ্য",
+  "own_relevant": "${_proceed}='1'",
+  "ancestor_gates": [],
+  "effective_gates": [
+   "${_proceed}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 40,
+  "name": "grp_a2",
+  "type": "begin_group",
+  "base": "begin_group",
+  "appearance": null,
+  "label_en": "A2. Respondent's Basic Information and Profile",
+  "label_bn": "A2. উত্তরদাতার মৌলিক তথ্য ও পরিচিতি",
+  "own_relevant": "${_proceed}='1'",
+  "ancestor_gates": [],
+  "effective_gates": [
+   "${_proceed}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 47,
+  "name": "a206_religion_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other religion (specify)",
+  "label_bn": "অন্যান্য ধর্ম (উল্লেখ করুন)",
+  "own_relevant": "${a206_religion}='5'",
+  "ancestor_gates": [
+   {
+    "group": "grp_a2",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${a206_religion}='5'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "a206_religion": {
+    "type": "select_one",
+    "choices": {
+     "1": "Islam",
+     "2": "Hinduism",
+     "3": "Christianity",
+     "4": "Buddhism",
+     "5": "Other (specify)",
+     "6": "No religion"
+    },
+    "label": "A206. Religion"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 49,
+  "name": "a207_ethnicity_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Ethnic minority (specify)",
+  "label_bn": "ক্ষুদ্র নৃগোষ্ঠী (উল্লেখ করুন)",
+  "own_relevant": "${a207_ethnicity}='2'",
+  "ancestor_gates": [
+   {
+    "group": "grp_a2",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${a207_ethnicity}='2'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "a207_ethnicity": {
+    "type": "select_one",
+    "choices": {
+     "1": "Bengali",
+     "2": "Ethnic minority (specify)"
+    },
+    "label": "A207. Ethnic identity"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 59,
+  "name": "grp_a3",
+  "type": "begin_group",
+  "base": "begin_group",
+  "appearance": null,
+  "label_en": "A3. Gender Identity and Sexual Orientation ‡",
+  "label_bn": "A3. জেন্ডার পরিচয় ও যৌন অভিমুখিতা ‡",
+  "own_relevant": "${_proceed}='1'",
+  "ancestor_gates": [],
+  "effective_gates": [
+   "${_proceed}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 63,
+  "name": "a302_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other (specify)",
+  "label_bn": "অন্যান্য (উল্লেখ করুন)",
+  "own_relevant": "${a302_gender}='7'",
+  "ancestor_gates": [
+   {
+    "group": "grp_a3",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${a302_gender}='7'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "a302_gender": {
+    "type": "select_one",
+    "choices": {
+     "1": "Male",
+     "2": "Female",
+     "3": "Hijra",
+     "4": "Transgender Woman",
+     "5": "Transgender Man",
+     "6": "Non-binary/Queer",
+     "7": "Other (specify)",
+     "99": "Decline to answer"
+    },
+    "label": "A302 ‡ How do you currently describe your gender identity? [One answer. Accept t"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ }
+]

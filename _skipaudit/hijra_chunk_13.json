@@ -1,0 +1,640 @@
+[
+ {
+  "idx": 373,
+  "name": "q7_3_b_12mo",
+  "type": "select_one q7_3_yn",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "In the past 12 months?",
+  "label_bn": "গত ১২ মাসে?",
+  "own_relevant": "${q7_3_b_ever}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q7_3_b_ever}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q7_3_b_ever": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "99": "Decline to answer"
+    },
+    "label": "b. Removed or damaged a condom during sex without your partner's consent, or rem"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 375,
+  "name": "q7_3_c_12mo",
+  "type": "select_one q7_3_yn",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "In the past 12 months?",
+  "label_bn": "গত ১২ মাসে?",
+  "own_relevant": "${q7_3_c_ever}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q7_3_c_ever}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q7_3_c_ever": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "99": "Decline to answer"
+    },
+    "label": "c. Pressured or forced a partner to become pregnant when they did not want to"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 377,
+  "name": "q7_3_d_12mo",
+  "type": "select_one q7_3_yn",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "In the past 12 months?",
+  "label_bn": "গত ১২ মাসে?",
+  "own_relevant": "${q7_3_d_ever}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q7_3_d_ever}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q7_3_d_ever": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "99": "Decline to answer"
+    },
+    "label": "d. Pressured or forced a partner to continue a pregnancy they wanted to end"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 379,
+  "name": "q7_3_e_12mo",
+  "type": "select_one q7_3_yn",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "In the past 12 months?",
+  "label_bn": "গত ১২ মাসে?",
+  "own_relevant": "${q7_3_e_ever}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q7_3_e_ever}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q7_3_e_ever": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "99": "Decline to answer"
+    },
+    "label": "e. Pressured or forced a partner to end a pregnancy they wanted to continue"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 382,
+  "name": "q7_6",
+  "type": "select_multiple q7_6_opts",
+  "base": "select_multiple",
+  "appearance": null,
+  "label_en": "Q7.6 ‡ Which platforms do you use? (Multiple answers; do not read list)",
+  "label_bn": "Q7.6 ‡ আপনি কোন কোন মাধ্যম ব্যবহার করেন? (একাধিক উত্তর; তালিকা পড়বেন না)",
+  "own_relevant": "${q7_5}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q7_5}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q7_5": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No"
+    },
+    "label": "Q7.5 ‡ In the past 12 months, did you ever use a mobile phone, WhatsApp, imo, Fa"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 383,
+  "name": "q7_6_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other (specify)",
+  "label_bn": "অন্যান্য (উল্লেখ করুন)",
+  "own_relevant": "${q7_5}='1' and selected(${q7_6},'07')",
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q7_5}='1' and selected(${q7_6},'07')"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q7_5": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No"
+    },
+    "label": "Q7.5 ‡ In the past 12 months, did you ever use a mobile phone, WhatsApp, imo, Fa"
+   },
+   "q7_6": {
+    "type": "select_multiple",
+    "choices": {
+     "01": "WhatsApp",
+     "02": "imo",
+     "03": "Facebook/Messenger",
+     "04": "Regular mobile call/SMS",
+     "05": "Dating/contact app",
+     "06": "TikTok/other video app",
+     "07": "Other (specify)"
+    },
+    "label": "Q7.6 ‡ Which platforms do you use? (Multiple answers; do not read list)"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 384,
+  "name": "q7_7",
+  "type": "select_one q7_7_opts",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "Q7.7 ‡ In the past 12 months, did you engage in sexual activity via video call (e.g., showing your body or displaying sexual activity on video call) without meeting in person?",
+  "label_bn": "Q7.7 ‡ গত ১২ মাসে আপনি কি ভিডিও কলের মাধ্যমে (সামনাসামনি সাক্ষাৎ ছাড়া) যৌন কার্যক্রম করেছেন (যেমন ভিডিও কলে শরীর দেখানো বা যৌন কার্যক্রম প্রদর্শন)?",
+  "own_relevant": "${q7_5}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q7_5}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q7_5": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No"
+    },
+    "label": "Q7.5 ‡ In the past 12 months, did you ever use a mobile phone, WhatsApp, imo, Fa"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 385,
+  "name": "q7_8",
+  "type": "select_one q7_8_opts",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "Q7.8 ‡ When on a video call, how aware or concerned are you about the risk that the partner/client may take screenshots or recordings without your permission?",
+  "label_bn": "Q7.8 ‡ ভিডিও কলের সময় সঙ্গী/ক্লায়েন্ট আপনার অনুমতি ছাড়া স্ক্রিনশট বা রেকর্ড করতে পারে—এই ঝুঁকি সম্পর্কে আপনি কতটা সচেতন বা চিন্তিত থাকেন?",
+  "own_relevant": "${q7_5}='1' and not(${q7_7}='2' or ${q7_7}='99')",
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q7_5}='1' and not(${q7_7}='2' or ${q7_7}='99')"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q7_5": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No"
+    },
+    "label": "Q7.5 ‡ In the past 12 months, did you ever use a mobile phone, WhatsApp, imo, Fa"
+   },
+   "q7_7": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "99": "Decline to answer"
+    },
+    "label": "Q7.7 ‡ In the past 12 months, did you engage in sexual activity via video call ("
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 387,
+  "name": "q7_10",
+  "type": "select_one q7_10_opts",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "Q7.10 ‡ Did you always share these photos or videos of your own free will?",
+  "label_bn": "Q7.10 ‡ এই ছবি বা ভিডিও আপনি কি সবসময় নিজের সম্মতিতে শেয়ার করেছেন?",
+  "own_relevant": "not(${q7_9}='2' or ${q7_9}='99')",
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "not(${q7_9}='2' or ${q7_9}='99')"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q7_9": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "99": "Decline to answer"
+    },
+    "label": "Q7.9 ‡ Is there or has there ever been personal or explicit photos or videos on "
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 388,
+  "name": "module7_note_6",
+  "type": "note",
+  "base": "note",
+  "appearance": null,
+  "label_en": "Q7.11 ‡. Has anyone ever done any of the following to you through phone, internet, or social media? For each 'Yes' answer I will ask further — whether it happened in the past 12 months and who did it.  [For each row: Ever happened (1 = Yes, 2 = No); if 'Ever happened' = 1, Past 12 months (1 = Yes, 2 = No); Perpetrator — write all applicable codes from the Q7.1 box; if needed use new code 14 = unknown online person/fake profile. Decline to answer = 99 is acceptable for any row.]",
+  "label_bn": "Q7.11 ‡. কেউ কি কখনও ফোন, ইন্টারনেট বা সামাজিক যোগাযোগমাধ্যমের মাধ্যমে আপনার সঙ্গে নিচের কোনো আচরণ করেছে? প্রতিটি “হ্যাঁ” উত্তরের ক্ষেত্রে আরও জিজ্ঞাসা করব—এটি গত ১২ মাসে ঘটেছে কি না এবং কে করেছে।  [প্রতিটি সারিতে: কখনো ঘটেছে (1 = হ্যাঁ, 2 = না); “কখনো ঘটেছে” = 1 হলে, গত ১২ মাসে (1 = হ্যাঁ, 2 = না); নির্যাতনকারী ব্যক্তি—Q7.1-এর বক্স থেকে প্রযোজ্য সব কোড লিখুন; প্রয়োজনে নতুন কোড 14 = অপরিচিত অনলাইন ব্যক্তি/ভুয়া প্রোফাইল ব্যবহার করুন। যেকোনো সারিতে উত্তর দিতে অনিচ্ছুক = 99 গ্রহণযোগ্য।]",
+  "own_relevant": null,
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": true,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 390,
+  "name": "q7_11_a_12mo",
+  "type": "select_one q7_11_yn",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "In the past 12 months?",
+  "label_bn": "গত ১২ মাসে?",
+  "own_relevant": "${q7_11_a_ever}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q7_11_a_ever}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q7_11_a_ever": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "99": "Decline to answer"
+    },
+    "label": "a. Had personal or explicit photos/videos taken without your permission"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 391,
+  "name": "q7_11_a_perp",
+  "type": "select_multiple q7_11_perp",
+  "base": "select_multiple",
+  "appearance": null,
+  "label_en": "Who did this to you? (select all that apply)",
+  "label_bn": "এটি কে করেছে? (প্রযোজ্য সব নির্বাচন করুন)",
+  "own_relevant": "${q7_11_a_ever}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q7_11_a_ever}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q7_11_a_ever": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "99": "Decline to answer"
+    },
+    "label": "a. Had personal or explicit photos/videos taken without your permission"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 393,
+  "name": "q7_11_b_12mo",
+  "type": "select_one q7_11_yn",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "In the past 12 months?",
+  "label_bn": "গত ১২ মাসে?",
+  "own_relevant": "${q7_11_b_ever}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q7_11_b_ever}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q7_11_b_ever": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "99": "Decline to answer"
+    },
+    "label": "b. Threatened with sharing or publishing your personal or explicit photos/videos"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 394,
+  "name": "q7_11_b_perp",
+  "type": "select_multiple q7_11_perp",
+  "base": "select_multiple",
+  "appearance": null,
+  "label_en": "Who did this to you? (select all that apply)",
+  "label_bn": "এটি কে করেছে? (প্রযোজ্য সব নির্বাচন করুন)",
+  "own_relevant": "${q7_11_b_ever}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q7_11_b_ever}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q7_11_b_ever": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "99": "Decline to answer"
+    },
+    "label": "b. Threatened with sharing or publishing your personal or explicit photos/videos"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ }
+]

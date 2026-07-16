@@ -1,0 +1,3194 @@
+<?xml version="1.0"?>
+<h:html xmlns="http://www.w3.org/2002/xforms" xmlns:h="http://www.w3.org/1999/xhtml" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:jr="http://openrosa.org/javarosa" xmlns:orx="http://openrosa.org/xforms" xmlns:odk="http://www.opendatakit.org/xforms">
+  <h:head>
+    <h:title>CIPRB 2 — MPDSR Form 01 (Community Maternal Death)</h:title>
+    <model odk:xforms-version="1.0.0">
+      <itext>
+        <translation lang="English" default="true()">
+          <text id="district-0">
+            <value>Sunamganj</value>
+          </text>
+          <text id="district-1">
+            <value>Sherpur</value>
+          </text>
+          <text id="district-2">
+            <value>Bhola</value>
+          </text>
+          <text id="district-3">
+            <value>Kurigram</value>
+          </text>
+          <text id="district-4">
+            <value>Gaibandha</value>
+          </text>
+          <text id="district-5">
+            <value>Khagrachari</value>
+          </text>
+          <text id="district-6">
+            <value>Noakhali</value>
+          </text>
+          <text id="district-7">
+            <value>Patuakhali</value>
+          </text>
+          <text id="district-8">
+            <value>Sirajganj</value>
+          </text>
+          <text id="district-9">
+            <value>Barguna</value>
+          </text>
+          <text id="district-10">
+            <value>Jamalpur</value>
+          </text>
+          <text id="district-11">
+            <value>Bagerhat</value>
+          </text>
+          <text id="district-12">
+            <value>Habiganj</value>
+          </text>
+          <text id="district-13">
+            <value>Moulavibazar</value>
+          </text>
+          <text id="district-14">
+            <value>Sylhet</value>
+          </text>
+          <text id="district-15">
+            <value>Bandarban</value>
+          </text>
+          <text id="district-16">
+            <value>Chandpur</value>
+          </text>
+          <text id="district-17">
+            <value>Rangpur</value>
+          </text>
+          <text id="district-18">
+            <value>Dhaka</value>
+          </text>
+          <text id="yes_no-0">
+            <value>Yes</value>
+          </text>
+          <text id="yes_no-1">
+            <value>No</value>
+          </text>
+          <text id="yes_no-2">
+            <value>Unknown</value>
+          </text>
+          <text id="relationship-0">
+            <value>Husband</value>
+          </text>
+          <text id="relationship-1">
+            <value>Father-in-law</value>
+          </text>
+          <text id="relationship-2">
+            <value>Mother</value>
+          </text>
+          <text id="relationship-3">
+            <value>Aunt / uncle</value>
+          </text>
+          <text id="relationship-4">
+            <value>Neighbour</value>
+          </text>
+          <text id="relationship-5">
+            <value>Mother-in-law</value>
+          </text>
+          <text id="relationship-6">
+            <value>Sister-in-law</value>
+          </text>
+          <text id="relationship-7">
+            <value>Father</value>
+          </text>
+          <text id="relationship-8">
+            <value>Elder brother / sister</value>
+          </text>
+          <text id="relationship-9">
+            <value>Other (specify)</value>
+          </text>
+          <text id="death_period-0">
+            <value>During pregnancy</value>
+          </text>
+          <text id="death_period-1">
+            <value>After abortion (within 28 weeks)</value>
+          </text>
+          <text id="death_period-2">
+            <value>During delivery</value>
+          </text>
+          <text id="death_period-3">
+            <value>Postpartum (within 42 days)</value>
+          </text>
+          <text id="death_place-0">
+            <value>Home</value>
+          </text>
+          <text id="death_place-1">
+            <value>Union Health &amp; Family Welfare Centre</value>
+          </text>
+          <text id="death_place-2">
+            <value>District / Sadar hospital</value>
+          </text>
+          <text id="death_place-3">
+            <value>Medical College hospital</value>
+          </text>
+          <text id="death_place-4">
+            <value>Private clinic / hospital</value>
+          </text>
+          <text id="death_place-5">
+            <value>On the way (in transit)</value>
+          </text>
+          <text id="death_place-6">
+            <value>Upazila Health Complex</value>
+          </text>
+          <text id="death_place-7">
+            <value>Maternal &amp; Child Welfare Centre</value>
+          </text>
+          <text id="death_place-8">
+            <value>NGO clinic</value>
+          </text>
+          <text id="death_place-9">
+            <value>Other (specify)</value>
+          </text>
+          <text id="education_level-0">
+            <value>None</value>
+          </text>
+          <text id="education_level-1">
+            <value>Up to class 5</value>
+          </text>
+          <text id="education_level-2">
+            <value>Up to class 10</value>
+          </text>
+          <text id="education_level-3">
+            <value>Up to class 12</value>
+          </text>
+          <text id="education_level-4">
+            <value>Graduate / degree</value>
+          </text>
+          <text id="ses-0">
+            <value>Extreme poor</value>
+          </text>
+          <text id="ses-1">
+            <value>Poor</value>
+          </text>
+          <text id="ses-2">
+            <value>Middle class</value>
+          </text>
+          <text id="ses-3">
+            <value>Rich</value>
+          </text>
+          <text id="prepreg_disease_type-0">
+            <value>High blood pressure</value>
+          </text>
+          <text id="prepreg_disease_type-1">
+            <value>Diabetes</value>
+          </text>
+          <text id="prepreg_disease_type-2">
+            <value>Heart disease</value>
+          </text>
+          <text id="prepreg_disease_type-3">
+            <value>Convulsion</value>
+          </text>
+          <text id="prepreg_disease_type-4">
+            <value>Anaemia</value>
+          </text>
+          <text id="prepreg_disease_type-5">
+            <value>Tuberculosis (TB)</value>
+          </text>
+          <text id="prepreg_disease_type-6">
+            <value>Asthma</value>
+          </text>
+          <text id="prepreg_disease_type-7">
+            <value>Jaundice</value>
+          </text>
+          <text id="prepreg_disease_type-8">
+            <value>Other (specify)</value>
+          </text>
+          <text id="last_pregnancy_outcome-0">
+            <value>Abortion</value>
+          </text>
+          <text id="last_pregnancy_outcome-1">
+            <value>Stillbirth</value>
+          </text>
+          <text id="last_pregnancy_outcome-2">
+            <value>Live birth</value>
+          </text>
+          <text id="last_pregnancy_outcome-3">
+            <value>Preterm delivery</value>
+          </text>
+          <text id="last_pregnancy_outcome-4">
+            <value>Caesarean section</value>
+          </text>
+          <text id="last_pregnancy_outcome-5">
+            <value>Other operative delivery</value>
+          </text>
+          <text id="complication_phase-0">
+            <value>Antepartum</value>
+          </text>
+          <text id="complication_phase-1">
+            <value>Intrapartum</value>
+          </text>
+          <text id="complication_phase-2">
+            <value>Postpartum</value>
+          </text>
+          <text id="complication_phase-3">
+            <value>Don't know</value>
+          </text>
+          <text id="anc_count-0">
+            <value>None (00)</value>
+          </text>
+          <text id="anc_count-1">
+            <value>1</value>
+          </text>
+          <text id="anc_count-2">
+            <value>2</value>
+          </text>
+          <text id="anc_count-3">
+            <value>3</value>
+          </text>
+          <text id="anc_count-4">
+            <value>4 or more</value>
+          </text>
+          <text id="anc_count-5">
+            <value>Unknown (99)</value>
+          </text>
+          <text id="facility_place-0">
+            <value>Home</value>
+          </text>
+          <text id="facility_place-1">
+            <value>Community Clinic</value>
+          </text>
+          <text id="facility_place-2">
+            <value>Union Health &amp; Family Welfare Centre</value>
+          </text>
+          <text id="facility_place-3">
+            <value>Upazila Health Complex</value>
+          </text>
+          <text id="facility_place-4">
+            <value>Maternal &amp; Child Welfare Centre</value>
+          </text>
+          <text id="facility_place-5">
+            <value>District / Sadar hospital</value>
+          </text>
+          <text id="facility_place-6">
+            <value>Medical College hospital</value>
+          </text>
+          <text id="facility_place-7">
+            <value>Private clinic / hospital</value>
+          </text>
+          <text id="facility_place-8">
+            <value>NGO clinic</value>
+          </text>
+          <text id="facility_place-9">
+            <value>Provider's chamber / home</value>
+          </text>
+          <text id="facility_place-10">
+            <value>Other (specify)</value>
+          </text>
+          <text id="provider_cadre-0">
+            <value>Doctor (MBBS)</value>
+          </text>
+          <text id="provider_cadre-1">
+            <value>Nurse</value>
+          </text>
+          <text id="provider_cadre-2">
+            <value>Family Welfare Visitor (FWV)</value>
+          </text>
+          <text id="provider_cadre-3">
+            <value>CSBA</value>
+          </text>
+          <text id="provider_cadre-4">
+            <value>Medical Assistant (MA)</value>
+          </text>
+          <text id="provider_cadre-5">
+            <value>Health Assistant (HA)</value>
+          </text>
+          <text id="provider_cadre-6">
+            <value>Family Welfare Assistant (FWA)</value>
+          </text>
+          <text id="provider_cadre-7">
+            <value>Dai (TBA)</value>
+          </text>
+          <text id="provider_cadre-8">
+            <value>Palli chikitsok (village doctor)</value>
+          </text>
+          <text id="provider_cadre-9">
+            <value>NGO worker</value>
+          </text>
+          <text id="provider_cadre-10">
+            <value>Midwife</value>
+          </text>
+          <text id="provider_cadre-11">
+            <value>Other (specify)</value>
+          </text>
+          <text id="birth_plan-0">
+            <value>Place of delivery planned</value>
+          </text>
+          <text id="birth_plan-1">
+            <value>Who will conduct delivery planned</value>
+          </text>
+          <text id="birth_plan-2">
+            <value>How to reach facility planned</value>
+          </text>
+          <text id="birth_plan-3">
+            <value>Where to go on complication decided</value>
+          </text>
+          <text id="birth_plan-4">
+            <value>Money saved for care / transport</value>
+          </text>
+          <text id="birth_plan-5">
+            <value>Caregiver for mother / home arranged</value>
+          </text>
+          <text id="birth_plan-6">
+            <value>Blood donor identified / group tested</value>
+          </text>
+          <text id="birth_plan-7">
+            <value>Newborn-care items ready</value>
+          </text>
+          <text id="delivery_mode-0">
+            <value>Vaginal — spontaneous</value>
+          </text>
+          <text id="delivery_mode-1">
+            <value>Instrumental vaginal (vacuum / forceps)</value>
+          </text>
+          <text id="delivery_mode-2">
+            <value>Caesarean section</value>
+          </text>
+          <text id="delivery_mode-3">
+            <value>Destructive operation</value>
+          </text>
+          <text id="delivery_outcome-0">
+            <value>Live birth</value>
+          </text>
+          <text id="delivery_outcome-1">
+            <value>Stillbirth</value>
+          </text>
+          <text id="delivery_outcome-2">
+            <value>Abortion</value>
+          </text>
+          <text id="delivery_outcome-3">
+            <value>Not delivered</value>
+          </text>
+          <text id="no_treatment_reason-0">
+            <value>Thought unnecessary</value>
+          </text>
+          <text id="no_treatment_reason-1">
+            <value>Was costly</value>
+          </text>
+          <text id="no_treatment_reason-2">
+            <value>Distance too far</value>
+          </text>
+          <text id="no_treatment_reason-3">
+            <value>No-one to accompany</value>
+          </text>
+          <text id="no_treatment_reason-4">
+            <value>Family disagreement</value>
+          </text>
+          <text id="no_treatment_reason-5">
+            <value>Did not know how to go</value>
+          </text>
+          <text id="no_treatment_reason-6">
+            <value>Did not know where to go</value>
+          </text>
+          <text id="no_treatment_reason-7">
+            <value>Natural disaster / bad weather / night</value>
+          </text>
+          <text id="no_treatment_reason-8">
+            <value>Did not understand care was needed</value>
+          </text>
+          <text id="no_treatment_reason-9">
+            <value>Lack of money</value>
+          </text>
+          <text id="no_treatment_reason-10">
+            <value>Lack of transport</value>
+          </text>
+          <text id="no_treatment_reason-11">
+            <value>Service quality not trusted</value>
+          </text>
+          <text id="no_treatment_reason-12">
+            <value>Good care available at home</value>
+          </text>
+          <text id="no_treatment_reason-13">
+            <value>Lack of time</value>
+          </text>
+          <text id="no_treatment_reason-14">
+            <value>Fear of seeking care</value>
+          </text>
+          <text id="no_treatment_reason-15">
+            <value>Other (specify)</value>
+          </text>
+          <text id="icd_cause-0">
+            <value>PPH (O72)</value>
+          </text>
+          <text id="icd_cause-1">
+            <value>APH (O46)</value>
+          </text>
+          <text id="icd_cause-2">
+            <value>Puerperal Sepsis (O85)</value>
+          </text>
+          <text id="icd_cause-3">
+            <value>Ectopic Pregnancy (O00)</value>
+          </text>
+          <text id="icd_cause-4">
+            <value>Eclampsia (O15)</value>
+          </text>
+          <text id="icd_cause-5">
+            <value>Haemorrhage in early pregnancy (O20)</value>
+          </text>
+          <text id="icd_cause-6">
+            <value>Death from sequel of direct obstetric cause (O97)</value>
+          </text>
+          <text id="icd_cause-7">
+            <value>Failed attempt abortion (O07)</value>
+          </text>
+          <text id="icd_cause-8">
+            <value>Obstructed labour — malposition / malpresentation (O64)</value>
+          </text>
+          <text id="icd_cause-9">
+            <value>Complication of anaesthesia during L&amp;D (O74)</value>
+          </text>
+          <text id="icd_cause-10">
+            <value>Placenta praevia (O44)</value>
+          </text>
+          <text id="icd_cause-11">
+            <value>Abruptio placentae (O45)</value>
+          </text>
+          <text id="icd_cause-12">
+            <value>Medical abortion (O04)</value>
+          </text>
+          <text id="icd_cause-13">
+            <value>Rupture uterus (O71)</value>
+          </text>
+          <text id="icd_cause-14">
+            <value>Complications of anaesthesia during pregnancy (O29)</value>
+          </text>
+          <text id="icd_cause-15">
+            <value>Obstetric embolism (O88)</value>
+          </text>
+          <text id="icd_cause-16">
+            <value>Malnutrition in pregnancy (O25)</value>
+          </text>
+          <text id="icd_cause-17">
+            <value>Other (specify code)</value>
+          </text>
+          <text id="/data/grp_meta:label">
+            <value>Submission info</value>
+          </text>
+          <text id="/data/grp_meta/location:label">
+            <value>GPS location (required — step outside if no signal)</value>
+          </text>
+          <text id="/data/grp_meta/collection_date:label">
+            <value>Date</value>
+          </text>
+          <text id="/data/grp_meta/district:label">
+            <value>District</value>
+          </text>
+          <text id="/data/grp_meta/upazila:label">
+            <value>Upazila</value>
+          </text>
+          <text id="/data/grp_meta/union:label">
+            <value>Union / Pourashava</value>
+          </text>
+          <text id="/data/grp_meta/ward:label">
+            <value>Ward</value>
+          </text>
+          <text id="/data/grp_meta/village:label">
+            <value>Village / Mahalla</value>
+          </text>
+          <text id="/data/grp_meta/enumerator_name:label">
+            <value>Your name (person filling this form)</value>
+          </text>
+          <text id="/data/grp_meta/enumerator_designation:label">
+            <value>Designation</value>
+          </text>
+          <text id="/data/grp_meta/enumerator_institution:label">
+            <value>Institution</value>
+          </text>
+          <text id="/data/grp_meta/enumerator_mobile:label">
+            <value>Mobile number</value>
+          </text>
+          <text id="/data/grp_meta/case_serial:label">
+            <value>Annual maternal death serial number</value>
+          </text>
+          <text id="/data/consent_note:label">
+            <value>CONSENT: How are you? My name is __ from the DGHS/DGFP. I would like to talk to you about the death and ask some questions as part of the Maternal &amp; Perinatal Death Surveillance and Response (MPDSR) work jointly conducted by DGHS and DGFP. Your answers will be kept confidential. The interview takes 30–45 minutes. You may refuse or stop at any time. Your name will not be used in any report.</value>
+          </text>
+          <text id="/data/consent_given:label">
+            <value>Consent given by respondent?</value>
+          </text>
+          <text id="/data/interview_date:label">
+            <value>Date of interview</value>
+          </text>
+          <text id="/data/grp_respondent:label">
+            <value>Respondent's information</value>
+          </text>
+          <text id="/data/grp_respondent/respondent_mobile:label">
+            <value>Respondent mobile number</value>
+          </text>
+          <text id="/data/grp_respondent/respondent_main_name:label">
+            <value>Main respondent — name</value>
+          </text>
+          <text id="/data/grp_respondent/respondent_main_rel:label">
+            <value>Main respondent — relationship with deceased</value>
+          </text>
+          <text id="/data/grp_respondent/respondent_main_present:label">
+            <value>Main respondent — present at time of death?</value>
+          </text>
+          <text id="/data/grp_respondent/respondent_alt1_name:label">
+            <value>Associate respondent 1 — name</value>
+          </text>
+          <text id="/data/grp_respondent/respondent_alt1_rel:label">
+            <value>Associate 1 — relationship</value>
+          </text>
+          <text id="/data/grp_respondent/respondent_alt1_present:label">
+            <value>Associate 1 — present at time of death?</value>
+          </text>
+          <text id="/data/grp_respondent/respondent_alt2_name:label">
+            <value>Associate respondent 2 — name</value>
+          </text>
+          <text id="/data/grp_respondent/respondent_alt2_rel:label">
+            <value>Associate 2 — relationship</value>
+          </text>
+          <text id="/data/grp_respondent/respondent_alt2_present:label">
+            <value>Associate 2 — present at time of death?</value>
+          </text>
+          <text id="/data/grp_identity:label">
+            <value>General information &amp; mother identity</value>
+          </text>
+          <text id="/data/grp_identity/clinic_name:label">
+            <value>Community Clinic name</value>
+          </text>
+          <text id="/data/grp_identity/clinic_code:label">
+            <value>Community Clinic code (must be filled)</value>
+          </text>
+          <text id="/data/grp_identity/deceased_name:label">
+            <value>Mother's name</value>
+          </text>
+          <text id="/data/grp_identity/mother_dhis2_code:label">
+            <value>Mother's online registration (DHIS-2) code (must be filled)</value>
+          </text>
+          <text id="/data/grp_identity/deceased_age:label">
+            <value>Mother's age (years)</value>
+          </text>
+          <text id="/data/grp_identity/mother_education:label">
+            <value>Mother's education</value>
+          </text>
+          <text id="/data/grp_identity/household_ses:label">
+            <value>Household socio-economic status</value>
+          </text>
+          <text id="/data/grp_identity/deceased_husband:label">
+            <value>Husband's name</value>
+          </text>
+          <text id="/data/grp_identity/husband_age:label">
+            <value>Husband's age (years)</value>
+          </text>
+          <text id="/data/grp_section1:label">
+            <value>Section 1: Primary information</value>
+          </text>
+          <text id="/data/grp_section1/death_date:label">
+            <value>1. Date of death</value>
+          </text>
+          <text id="/data/grp_section1/death_time:label">
+            <value>1a. Time of death (24-hour)</value>
+          </text>
+          <text id="/data/grp_section1/death_period:label">
+            <value>2. When did the death occur?</value>
+          </text>
+          <text id="/data/grp_section1/death_place:label">
+            <value>3. Where did the death occur?</value>
+          </text>
+          <text id="/data/grp_section1/death_place_other:label">
+            <value>Other place (specify)</value>
+          </text>
+          <text id="/data/grp_section1/gestation_month:label">
+            <value>4. Month of pregnancy at death</value>
+          </text>
+          <text id="/data/grp_section1/gestation_week:label">
+            <value>4a. Week of pregnancy at death</value>
+          </text>
+          <text id="/data/grp_section1/children_born:label">
+            <value>5. How many children has the mother delivered?</value>
+          </text>
+          <text id="/data/grp_section1/abortion_count:label">
+            <value>6. How many abortions / miscarriages has the mother had?</value>
+          </text>
+          <text id="/data/grp_section1/abortion_unknown:label">
+            <value>6a. Is the number of abortions not known?</value>
+          </text>
+          <text id="/data/grp_section2:label">
+            <value>Section 2: Maternal complications</value>
+          </text>
+          <text id="/data/grp_section2/prepreg_disease:label">
+            <value>7. Did the mother suffer any disease before pregnancy?</value>
+          </text>
+          <text id="/data/grp_section2/prepreg_disease_types:label">
+            <value>7a. If yes, which disease(s)?</value>
+          </text>
+          <text id="/data/grp_section2/prepreg_disease_other:label">
+            <value>Other disease (specify)</value>
+          </text>
+          <text id="/data/grp_section2/last_pregnancy_outcome:label">
+            <value>8. Outcome of the last pregnancy / delivery</value>
+          </text>
+          <text id="/data/grp_section2/q9_note:label">
+            <value>9. Which complications occurred during the current pregnancy? For each, tick the phase(s) — antepartum, intrapartum, postpartum, or don't know.</value>
+          </text>
+          <text id="/data/grp_section2/grp_q9:label">
+            <value>9. Complications (current pregnancy)</value>
+          </text>
+          <text id="/data/grp_section2/grp_q9/q9_header:label">
+            <value>Complication ▸ phase</value>
+          </text>
+          <text id="/data/grp_section2/grp_q9/comp_high_bp:label">
+            <value>1. High blood pressure</value>
+          </text>
+          <text id="/data/grp_section2/grp_q9/comp_diabetes:label">
+            <value>2. Diabetes</value>
+          </text>
+          <text id="/data/grp_section2/grp_q9/comp_abortion:label">
+            <value>3. Abortion</value>
+          </text>
+          <text id="/data/grp_section2/grp_q9/comp_haemorrhage:label">
+            <value>4. Haemorrhage</value>
+          </text>
+          <text id="/data/grp_section2/grp_q9/comp_high_fever:label">
+            <value>5. High fever</value>
+          </text>
+          <text id="/data/grp_section2/grp_q9/comp_oedema:label">
+            <value>6. Oedema (face, hands, feet)</value>
+          </text>
+          <text id="/data/grp_section2/grp_q9/comp_convulsion:label">
+            <value>7. Convulsion / eclampsia / fainting</value>
+          </text>
+          <text id="/data/grp_section2/grp_q9/comp_jaundice:label">
+            <value>8. Jaundice</value>
+          </text>
+          <text id="/data/grp_section2/grp_q9/comp_anaemia:label">
+            <value>9. Anaemia</value>
+          </text>
+          <text id="/data/grp_section2/grp_q9/comp_blurred_vision:label">
+            <value>10. Blurred vision</value>
+          </text>
+          <text id="/data/grp_section2/grp_q9/comp_prolonged_labour:label">
+            <value>11. Labour pain over 12 hours</value>
+          </text>
+          <text id="/data/grp_section2/grp_q9/comp_reduced_movement:label">
+            <value>12. Reduced / absent foetal movement</value>
+          </text>
+          <text id="/data/grp_section2/grp_q9/comp_uterine_rupture:label">
+            <value>13. Uterine rupture</value>
+          </text>
+          <text id="/data/grp_section2/grp_q9/comp_malpresentation:label">
+            <value>14. Part other than head presenting</value>
+          </text>
+          <text id="/data/grp_section2/grp_q9/comp_retained_placenta:label">
+            <value>15. Retained placenta</value>
+          </text>
+          <text id="/data/grp_section2/grp_q9/comp_foul_discharge:label">
+            <value>16. Foul-smelling discharge</value>
+          </text>
+          <text id="/data/grp_section2/grp_q9/comp_abdominal_pain:label">
+            <value>17. Severe lower-abdominal pain</value>
+          </text>
+          <text id="/data/grp_section2/grp_q9/comp_other:label">
+            <value>18. Other</value>
+          </text>
+          <text id="/data/grp_section2/grp_q9/comp_other_specify:label">
+            <value>Other complication (specify)</value>
+          </text>
+          <text id="/data/grp_section3:label">
+            <value>Section 3: Antenatal care (ANC)</value>
+          </text>
+          <text id="/data/grp_section3/anc_count:label">
+            <value>10. How many times did the mother receive ANC?</value>
+          </text>
+          <text id="/data/grp_section3/anc_place:label">
+            <value>11. Where was ANC received?</value>
+          </text>
+          <text id="/data/grp_section3/anc_place_other:label">
+            <value>Other place (specify)</value>
+          </text>
+          <text id="/data/grp_section3/anc_provider:label">
+            <value>12. Who provided ANC?</value>
+          </text>
+          <text id="/data/grp_section3/anc_provider_other:label">
+            <value>Other provider (specify)</value>
+          </text>
+          <text id="/data/grp_section3/birth_plan:label">
+            <value>13. What birth-plan preparations had been made?</value>
+          </text>
+          <text id="/data/grp_section4:label">
+            <value>Section 4: Delivery information</value>
+          </text>
+          <text id="/data/grp_section4/s4_note:label">
+            <value>If the mother died before delivery, skip Q14–16 and go to Q17.</value>
+          </text>
+          <text id="/data/grp_section4/delivery_place:label">
+            <value>14. Where was the delivery conducted?</value>
+          </text>
+          <text id="/data/grp_section4/delivery_place_other:label">
+            <value>Other place (specify)</value>
+          </text>
+          <text id="/data/grp_section4/delivery_conductor:label">
+            <value>15. Who conducted the delivery?</value>
+          </text>
+          <text id="/data/grp_section4/delivery_conductor_other:label">
+            <value>Other (specify)</value>
+          </text>
+          <text id="/data/grp_section4/delivery_mode:label">
+            <value>16. Mode of delivery</value>
+          </text>
+          <text id="/data/grp_section4/delivery_outcome:label">
+            <value>17. Outcome of the current pregnancy</value>
+          </text>
+          <text id="/data/grp_section5:label">
+            <value>Section 5: Care received before death</value>
+          </text>
+          <text id="/data/grp_section5/treatment_received:label">
+            <value>18. Did the mother receive any treatment before death?</value>
+          </text>
+          <text id="/data/grp_section5/treatment_place:label">
+            <value>19. If yes, where was treatment received?</value>
+          </text>
+          <text id="/data/grp_section5/treatment_place_other:label">
+            <value>Other place (specify)</value>
+          </text>
+          <text id="/data/grp_section5/treatment_provider:label">
+            <value>20. Who provided the treatment?</value>
+          </text>
+          <text id="/data/grp_section5/treatment_provider_other:label">
+            <value>Other (specify)</value>
+          </text>
+          <text id="/data/grp_section5/no_treatment_reasons:label">
+            <value>21. If no treatment was received, why not?</value>
+          </text>
+          <text id="/data/grp_section5/no_treatment_other:label">
+            <value>Other reason (specify)</value>
+          </text>
+          <text id="/data/grp_section6:label">
+            <value>Section 6: Postpartum period</value>
+          </text>
+          <text id="/data/grp_section6/s6_note:label">
+            <value>Section 6 applies only when the mother died in the postpartum period.</value>
+          </text>
+          <text id="/data/grp_section6/death_after_delivery_days:label">
+            <value>22. Days after delivery until death</value>
+          </text>
+          <text id="/data/grp_section6/death_after_delivery_hours:label">
+            <value>22a. Hours</value>
+          </text>
+          <text id="/data/grp_section6/death_after_delivery_minutes:label">
+            <value>22b. Minutes</value>
+          </text>
+          <text id="/data/grp_section6/pnc_count:label">
+            <value>23. How many PNC visits did the mother receive?</value>
+          </text>
+          <text id="/data/grp_section6/pnc_first_days:label">
+            <value>24. Days after delivery to first PNC</value>
+          </text>
+          <text id="/data/grp_section6/pnc_first_hours:label">
+            <value>24a. Hours</value>
+          </text>
+          <text id="/data/grp_section6/pnc_place:label">
+            <value>25. Where was PNC received?</value>
+          </text>
+          <text id="/data/grp_section6/pnc_place_other:label">
+            <value>Other place (specify)</value>
+          </text>
+          <text id="/data/grp_section6/pnc_provider:label">
+            <value>26. Who provided PNC?</value>
+          </text>
+          <text id="/data/grp_section6/pnc_provider_other:label">
+            <value>Other (specify)</value>
+          </text>
+          <text id="/data/grp_narrative:label">
+            <value>Narrative &amp; cause</value>
+          </text>
+          <text id="/data/grp_narrative/narrative_before_death:label">
+            <value>27. Describe what happened just before the death (events, complications, how treatment started, social factors).</value>
+          </text>
+          <text id="/data/grp_narrative/cause_opinion:label">
+            <value>28. In your opinion, what caused this maternal death?</value>
+          </text>
+          <text id="/data/grp_narrative/certificate_cause:label">
+            <value>29. If a death certificate was issued, the cause per the certificate</value>
+          </text>
+          <text id="/data/grp_icd:label">
+            <value>For consultant / doctor — ICD-10 cause coding</value>
+          </text>
+          <text id="/data/grp_icd/icd_ref_note:label">
+            <value>ICD-10 reference — PPH O72 · APH O46 · Puerperal Sepsis O85 · Ectopic O00 · Eclampsia O15 · Haemorrhage in early pregnancy O20 · Death from sequel of direct obstetric cause O97 · Failed attempt abortion O07 · Obstructed labour (malposition/malpresentation) O64 · Complication of anaesthesia during L&amp;D O74 · Placenta praevia O44 · Abruptio placentae O45 · Medical abortion O04 · Rupture uterus O71 · Complications of anaesthesia during pregnancy O29 · Obstetric embolism O88 · Malnutrition in pregnancy O25.</value>
+          </text>
+          <text id="/data/grp_icd/icd_cause:label">
+            <value>Cause (ICD-10)</value>
+          </text>
+          <text id="/data/grp_icd/icd_code:label">
+            <value>ICD-10 code</value>
+          </text>
+          <text id="/data/grp_icd/icd_disease_name:label">
+            <value>Name of disease</value>
+          </text>
+          <text id="/data/grp_icd/icd_diagnoser_name:label">
+            <value>Name of person coding</value>
+          </text>
+          <text id="/data/grp_icd/icd_diagnoser_designation:label">
+            <value>Designation</value>
+          </text>
+          <text id="/data/grp_icd/icd_diagnoser_institution:label">
+            <value>Institution</value>
+          </text>
+          <text id="/data/grp_icd/icd_date:label">
+            <value>Date</value>
+          </text>
+        </translation>
+        <translation lang="Bangla">
+          <text id="district-0">
+            <value>সুনামগঞ্জ</value>
+          </text>
+          <text id="district-1">
+            <value>শেরপুর</value>
+          </text>
+          <text id="district-2">
+            <value>ভোলা</value>
+          </text>
+          <text id="district-3">
+            <value>কুড়িগ্রাম</value>
+          </text>
+          <text id="district-4">
+            <value>গাইবান্ধা</value>
+          </text>
+          <text id="district-5">
+            <value>খাগড়াছড়ি</value>
+          </text>
+          <text id="district-6">
+            <value>নোয়াখালী</value>
+          </text>
+          <text id="district-7">
+            <value>পটুয়াখালী</value>
+          </text>
+          <text id="district-8">
+            <value>সিরাজগঞ্জ</value>
+          </text>
+          <text id="district-9">
+            <value>বরগুনা</value>
+          </text>
+          <text id="district-10">
+            <value>জামালপুর</value>
+          </text>
+          <text id="district-11">
+            <value>বাগেরহাট</value>
+          </text>
+          <text id="district-12">
+            <value>হবিগঞ্জ</value>
+          </text>
+          <text id="district-13">
+            <value>মৌলভীবাজার</value>
+          </text>
+          <text id="district-14">
+            <value>সিলেট</value>
+          </text>
+          <text id="district-15">
+            <value>বান্দরবান</value>
+          </text>
+          <text id="district-16">
+            <value>চাঁদপুর</value>
+          </text>
+          <text id="district-17">
+            <value>রংপুর</value>
+          </text>
+          <text id="district-18">
+            <value>ঢাকা</value>
+          </text>
+          <text id="yes_no-0">
+            <value>হ্যাঁ</value>
+          </text>
+          <text id="yes_no-1">
+            <value>না</value>
+          </text>
+          <text id="yes_no-2">
+            <value>অজানা</value>
+          </text>
+          <text id="relationship-0">
+            <value>স্বামী</value>
+          </text>
+          <text id="relationship-1">
+            <value>শ্বশুর</value>
+          </text>
+          <text id="relationship-2">
+            <value>মা</value>
+          </text>
+          <text id="relationship-3">
+            <value>খালা / খালু / চাচী / চাচা / মামী / মামা / ফুপু / ফুপা</value>
+          </text>
+          <text id="relationship-4">
+            <value>প্রতিবেশী</value>
+          </text>
+          <text id="relationship-5">
+            <value>শাশুড়ী</value>
+          </text>
+          <text id="relationship-6">
+            <value>শ্যালিকা</value>
+          </text>
+          <text id="relationship-7">
+            <value>বাবা</value>
+          </text>
+          <text id="relationship-8">
+            <value>বড় বোন / ভাই</value>
+          </text>
+          <text id="relationship-9">
+            <value>অন্যান্য</value>
+          </text>
+          <text id="death_period-0">
+            <value>গর্ভকালীন সময়</value>
+          </text>
+          <text id="death_period-1">
+            <value>গর্ভপাতের পরে (২৮ সপ্তাহের মধ্যে)</value>
+          </text>
+          <text id="death_period-2">
+            <value>প্রসবকালীন সময়</value>
+          </text>
+          <text id="death_period-3">
+            <value>প্রসবোত্তর সময় (৪২ দিনের মধ্যে)</value>
+          </text>
+          <text id="death_place-0">
+            <value>বাড়িতে</value>
+          </text>
+          <text id="death_place-1">
+            <value>ইউনিয়ন স্বাস্থ্য ও পরিবার কল্যাণ কেন্দ্র</value>
+          </text>
+          <text id="death_place-2">
+            <value>জেলা অথবা সদর হাসপাতাল</value>
+          </text>
+          <text id="death_place-3">
+            <value>মেডিকেল কলেজ হাসপাতাল</value>
+          </text>
+          <text id="death_place-4">
+            <value>প্রাইভেট ক্লিনিক / হাসপাতাল</value>
+          </text>
+          <text id="death_place-5">
+            <value>পথে</value>
+          </text>
+          <text id="death_place-6">
+            <value>উপজেলা স্বাস্থ্য কমপ্লেক্স</value>
+          </text>
+          <text id="death_place-7">
+            <value>মাতৃ মঙ্গল কেন্দ্র</value>
+          </text>
+          <text id="death_place-8">
+            <value>এনজিও ক্লিনিক</value>
+          </text>
+          <text id="death_place-9">
+            <value>অন্যান্য</value>
+          </text>
+          <text id="education_level-0">
+            <value>নাই</value>
+          </text>
+          <text id="education_level-1">
+            <value>৫ম শ্রেণী পর্যন্ত</value>
+          </text>
+          <text id="education_level-2">
+            <value>১০ম শ্রেণী পর্যন্ত</value>
+          </text>
+          <text id="education_level-3">
+            <value>দ্বাদশ শ্রেণী পর্যন্ত</value>
+          </text>
+          <text id="education_level-4">
+            <value>স্নাতক / ডিগ্রি</value>
+          </text>
+          <text id="ses-0">
+            <value>অতিগরীব</value>
+          </text>
+          <text id="ses-1">
+            <value>গরীব</value>
+          </text>
+          <text id="ses-2">
+            <value>মধ্যবিত্ত</value>
+          </text>
+          <text id="ses-3">
+            <value>ধনী</value>
+          </text>
+          <text id="prepreg_disease_type-0">
+            <value>উচ্চ রক্তচাপ</value>
+          </text>
+          <text id="prepreg_disease_type-1">
+            <value>ডায়াবেটিস</value>
+          </text>
+          <text id="prepreg_disease_type-2">
+            <value>হৃদরোগ</value>
+          </text>
+          <text id="prepreg_disease_type-3">
+            <value>খিচুনি</value>
+          </text>
+          <text id="prepreg_disease_type-4">
+            <value>রক্তস্বল্পতা</value>
+          </text>
+          <text id="prepreg_disease_type-5">
+            <value>যক্ষা</value>
+          </text>
+          <text id="prepreg_disease_type-6">
+            <value>হাঁপানি</value>
+          </text>
+          <text id="prepreg_disease_type-7">
+            <value>জন্ডিস</value>
+          </text>
+          <text id="prepreg_disease_type-8">
+            <value>অন্যান্য</value>
+          </text>
+          <text id="last_pregnancy_outcome-0">
+            <value>গর্ভপাত</value>
+          </text>
+          <text id="last_pregnancy_outcome-1">
+            <value>মৃতজন্ম</value>
+          </text>
+          <text id="last_pregnancy_outcome-2">
+            <value>জীবিতজন্ম</value>
+          </text>
+          <text id="last_pregnancy_outcome-3">
+            <value>নির্দিষ্ট সময়ের পূর্বে প্রসব</value>
+          </text>
+          <text id="last_pregnancy_outcome-4">
+            <value>সিজারিয়ান</value>
+          </text>
+          <text id="last_pregnancy_outcome-5">
+            <value>অন্যান্য অপারেশন পদ্ধতিতে প্রসব</value>
+          </text>
+          <text id="complication_phase-0">
+            <value>প্রসবপূর্ব</value>
+          </text>
+          <text id="complication_phase-1">
+            <value>প্রসবকালীন</value>
+          </text>
+          <text id="complication_phase-2">
+            <value>প্রসবোত্তর</value>
+          </text>
+          <text id="complication_phase-3">
+            <value>জানা নেই</value>
+          </text>
+          <text id="anc_count-0">
+            <value>নাই</value>
+          </text>
+          <text id="anc_count-1">
+            <value>১</value>
+          </text>
+          <text id="anc_count-2">
+            <value>২</value>
+          </text>
+          <text id="anc_count-3">
+            <value>৩</value>
+          </text>
+          <text id="anc_count-4">
+            <value>৪ বা তার বেশি</value>
+          </text>
+          <text id="anc_count-5">
+            <value>জানা নেই</value>
+          </text>
+          <text id="facility_place-0">
+            <value>বাড়ি</value>
+          </text>
+          <text id="facility_place-1">
+            <value>কমিউনিটি ক্লিনিক</value>
+          </text>
+          <text id="facility_place-2">
+            <value>ইউনিয়ন স্বাস্থ্য ও পরিবার কল্যাণ কেন্দ্র</value>
+          </text>
+          <text id="facility_place-3">
+            <value>উপজেলা স্বাস্থ্য কমপ্লেক্স</value>
+          </text>
+          <text id="facility_place-4">
+            <value>মাতৃ মঙ্গল কেন্দ্র</value>
+          </text>
+          <text id="facility_place-5">
+            <value>জেলা অথবা সদর হাসপাতাল</value>
+          </text>
+          <text id="facility_place-6">
+            <value>মেডিকেল কলেজ হাসপাতাল</value>
+          </text>
+          <text id="facility_place-7">
+            <value>প্রাইভেট ক্লিনিক / হাসপাতাল</value>
+          </text>
+          <text id="facility_place-8">
+            <value>এনজিও ক্লিনিক</value>
+          </text>
+          <text id="facility_place-9">
+            <value>চেম্বার / স্বাস্থ্য সেবা দানকারীর বাড়ী</value>
+          </text>
+          <text id="facility_place-10">
+            <value>অন্যান্য</value>
+          </text>
+          <text id="provider_cadre-0">
+            <value>ডাক্তার (MBBS)</value>
+          </text>
+          <text id="provider_cadre-1">
+            <value>নার্স</value>
+          </text>
+          <text id="provider_cadre-2">
+            <value>পরিবার পরিকল্পনা ভিজিটর (FWV)</value>
+          </text>
+          <text id="provider_cadre-3">
+            <value>সিএসবিএ (CSBA)</value>
+          </text>
+          <text id="provider_cadre-4">
+            <value>মেডিকেল অ্যাসিস্ট্যান্ট (MA)</value>
+          </text>
+          <text id="provider_cadre-5">
+            <value>স্বাস্থ্য সহকারী (HA)</value>
+          </text>
+          <text id="provider_cadre-6">
+            <value>পরিবার পরিকল্পনা সহকারী (FWA)</value>
+          </text>
+          <text id="provider_cadre-7">
+            <value>দাই</value>
+          </text>
+          <text id="provider_cadre-8">
+            <value>পল্লী চিকিৎসক</value>
+          </text>
+          <text id="provider_cadre-9">
+            <value>এনজিও কর্মী</value>
+          </text>
+          <text id="provider_cadre-10">
+            <value>মিড ওয়াইফ (Midwife)</value>
+          </text>
+          <text id="provider_cadre-11">
+            <value>অন্যান্য</value>
+          </text>
+          <text id="birth_plan-0">
+            <value>কোথায় প্রসব করবেন তা পরিকল্পনায় ছিল</value>
+          </text>
+          <text id="birth_plan-1">
+            <value>কার দ্বারা প্রসব তা পরিকল্পনায় ছিল</value>
+          </text>
+          <text id="birth_plan-2">
+            <value>কিভাবে কেন্দ্রে যাবেন তা পরিকল্পনায় ছিল</value>
+          </text>
+          <text id="birth_plan-3">
+            <value>জটিলতায় কোথায় যাবেন তা ঠিক ছিল</value>
+          </text>
+          <text id="birth_plan-4">
+            <value>চিকিৎসা / যাতায়াতের টাকা জমানো ছিল</value>
+          </text>
+          <text id="birth_plan-5">
+            <value>মায়ের পরিচর্যাকারী ঠিক করা ছিল</value>
+          </text>
+          <text id="birth_plan-6">
+            <value>রক্তদাতা নির্ধারণ / গ্রুপ পরীক্ষা ছিল</value>
+          </text>
+          <text id="birth_plan-7">
+            <value>নবজাতক পরিচর্যার সরঞ্জাম প্রস্তুত ছিল</value>
+          </text>
+          <text id="delivery_mode-0">
+            <value>স্বাভাবিক (স্পন্টেনিয়াস)</value>
+          </text>
+          <text id="delivery_mode-1">
+            <value>যন্ত্রসহযোগে (ভ্যাকুয়াম / ফরসেপ)</value>
+          </text>
+          <text id="delivery_mode-2">
+            <value>সিজারিয়ান</value>
+          </text>
+          <text id="delivery_mode-3">
+            <value>ডেস্ট্রাক্টিভ অপারেশন</value>
+          </text>
+          <text id="delivery_outcome-0">
+            <value>জীবিতজন্ম</value>
+          </text>
+          <text id="delivery_outcome-1">
+            <value>মৃতজন্ম</value>
+          </text>
+          <text id="delivery_outcome-2">
+            <value>গর্ভপাত</value>
+          </text>
+          <text id="delivery_outcome-3">
+            <value>প্রসব হয়নি</value>
+          </text>
+          <text id="no_treatment_reason-0">
+            <value>অপ্রয়োজনীয় মনে করেছিল</value>
+          </text>
+          <text id="no_treatment_reason-1">
+            <value>ব্যয়বহুল ছিল</value>
+          </text>
+          <text id="no_treatment_reason-2">
+            <value>দূরত্ব বেশি ছিল</value>
+          </text>
+          <text id="no_treatment_reason-3">
+            <value>নিয়ে যাওয়ার সঙ্গী ছিল না</value>
+          </text>
+          <text id="no_treatment_reason-4">
+            <value>পারিবারিক অসম্মতি ছিল</value>
+          </text>
+          <text id="no_treatment_reason-5">
+            <value>যাওয়ার উপায় জানা ছিল না</value>
+          </text>
+          <text id="no_treatment_reason-6">
+            <value>কোথায় যেতে হবে জানা ছিল না</value>
+          </text>
+          <text id="no_treatment_reason-7">
+            <value>প্রাকৃতিক দুর্যোগ / খারাপ আবহাওয়া / রাত্রি</value>
+          </text>
+          <text id="no_treatment_reason-8">
+            <value>চিকিৎসার প্রয়োজন বুঝতে পারেনি</value>
+          </text>
+          <text id="no_treatment_reason-9">
+            <value>অর্থের অভাব ছিল</value>
+          </text>
+          <text id="no_treatment_reason-10">
+            <value>যানবাহনের অভাব ছিল</value>
+          </text>
+          <text id="no_treatment_reason-11">
+            <value>সেবার মান নিয়ে আস্থা ছিল না</value>
+          </text>
+          <text id="no_treatment_reason-12">
+            <value>বাড়িতে ভাল সেবা পাওয়ায়</value>
+          </text>
+          <text id="no_treatment_reason-13">
+            <value>সময়ের অভাব ছিল</value>
+          </text>
+          <text id="no_treatment_reason-14">
+            <value>সেবাগ্রহণে ভয় পাওয়া</value>
+          </text>
+          <text id="no_treatment_reason-15">
+            <value>অন্যান্য</value>
+          </text>
+          <text id="icd_cause-0">
+            <value>পিপিএইচ (O72)</value>
+          </text>
+          <text id="icd_cause-1">
+            <value>এপিএইচ (O46)</value>
+          </text>
+          <text id="icd_cause-2">
+            <value>পিউয়েরপেরাল সেপসিস (O85)</value>
+          </text>
+          <text id="icd_cause-3">
+            <value>একটোপিক প্রেগন্যান্সি (O00)</value>
+          </text>
+          <text id="icd_cause-4">
+            <value>একলাম্পসিয়া (O15)</value>
+          </text>
+          <text id="icd_cause-5">
+            <value>গর্ভের প্রথম দিকে রক্তক্ষরণ (O20)</value>
+          </text>
+          <text id="icd_cause-6">
+            <value>প্রত্যক্ষ প্রসূতি কারণের সিকুয়েল (O97)</value>
+          </text>
+          <text id="icd_cause-7">
+            <value>ব্যর্থ গর্ভপাত প্রচেষ্টা (O07)</value>
+          </text>
+          <text id="icd_cause-8">
+            <value>বাধাগ্রস্ত প্রসব — ম্যালপজিশন / ম্যালপ্রেজেন্টেশন (O64)</value>
+          </text>
+          <text id="icd_cause-9">
+            <value>প্রসবকালীন অ্যানেস্থেসিয়া জটিলতা (O74)</value>
+          </text>
+          <text id="icd_cause-10">
+            <value>প্লাসেন্টা প্রিভিয়া (O44)</value>
+          </text>
+          <text id="icd_cause-11">
+            <value>অ্যাব্রাপশিও প্লাসেন্টা (O45)</value>
+          </text>
+          <text id="icd_cause-12">
+            <value>মেডিকেল গর্ভপাত (O04)</value>
+          </text>
+          <text id="icd_cause-13">
+            <value>জরায়ু ফেটে যাওয়া (O71)</value>
+          </text>
+          <text id="icd_cause-14">
+            <value>গর্ভকালীন অ্যানেস্থেসিয়া জটিলতা (O29)</value>
+          </text>
+          <text id="icd_cause-15">
+            <value>প্রসূতি এমবোলিজম (O88)</value>
+          </text>
+          <text id="icd_cause-16">
+            <value>গর্ভকালীন অপুষ্টি (O25)</value>
+          </text>
+          <text id="icd_cause-17">
+            <value>অন্যান্য</value>
+          </text>
+          <text id="/data/grp_meta:label">
+            <value>তথ্য প্রেরণ</value>
+          </text>
+          <text id="/data/grp_meta/location:label">
+            <value>জিপিএস অবস্থান (প্রয়োজনীয়)</value>
+          </text>
+          <text id="/data/grp_meta/collection_date:label">
+            <value>তারিখ</value>
+          </text>
+          <text id="/data/grp_meta/district:label">
+            <value>জেলা</value>
+          </text>
+          <text id="/data/grp_meta/upazila:label">
+            <value>উপজেলা</value>
+          </text>
+          <text id="/data/grp_meta/union:label">
+            <value>ইউনিয়ন / পৌরসভা</value>
+          </text>
+          <text id="/data/grp_meta/ward:label">
+            <value>ওয়ার্ড</value>
+          </text>
+          <text id="/data/grp_meta/village:label">
+            <value>গ্রাম / মহল্লা</value>
+          </text>
+          <text id="/data/grp_meta/enumerator_name:label">
+            <value>আপনার নাম (কে পূরণ করছেন)</value>
+          </text>
+          <text id="/data/grp_meta/enumerator_designation:label">
+            <value>পদবী</value>
+          </text>
+          <text id="/data/grp_meta/enumerator_institution:label">
+            <value>প্রতিষ্ঠান</value>
+          </text>
+          <text id="/data/grp_meta/enumerator_mobile:label">
+            <value>মোবাইল নম্বর</value>
+          </text>
+          <text id="/data/grp_meta/case_serial:label">
+            <value>মাতৃমৃত্যুর বাৎসরিক ক্রমিক নং</value>
+          </text>
+          <text id="/data/consent_note:label">
+            <value>সম্মতি: কেমন আছেন? আমার নাম __ আমি স্বাস্থ্য/পরিবার পরিকল্পনা অধিদপ্তরের একজন। মৃত্যু সম্পর্কে কিছু প্রশ্ন করব। সাক্ষাৎকার ৩০–৪৫ মিনিট লাগবে। সকল তথ্য গোপন রাখা হবে; আপনি যেকোনো সময়ে সাক্ষাৎকার বন্ধ করতে পারেন। আপনার নাম প্রতিবেদনে উল্লেখ হবে না।</value>
+          </text>
+          <text id="/data/consent_given:label">
+            <value>উত্তরদাতা সম্মতি দিয়েছেন?</value>
+          </text>
+          <text id="/data/interview_date:label">
+            <value>সাক্ষাৎকারের তারিখ</value>
+          </text>
+          <text id="/data/grp_respondent:label">
+            <value>উত্তরদাতার তথ্য</value>
+          </text>
+          <text id="/data/grp_respondent/respondent_mobile:label">
+            <value>উত্তরদাতার মোবাইল নম্বর</value>
+          </text>
+          <text id="/data/grp_respondent/respondent_main_name:label">
+            <value>মুখ্য উত্তরদাতা — নাম</value>
+          </text>
+          <text id="/data/grp_respondent/respondent_main_rel:label">
+            <value>মুখ্য উত্তরদাতা — মৃতের সাথে সম্পর্ক</value>
+          </text>
+          <text id="/data/grp_respondent/respondent_main_present:label">
+            <value>মুখ্য উত্তরদাতা — মৃত্যুর সময় উপস্থিত ছিলেন?</value>
+          </text>
+          <text id="/data/grp_respondent/respondent_alt1_name:label">
+            <value>সহযোগী উত্তরদাতা ১ — নাম</value>
+          </text>
+          <text id="/data/grp_respondent/respondent_alt1_rel:label">
+            <value>সহযোগী ১ — সম্পর্ক</value>
+          </text>
+          <text id="/data/grp_respondent/respondent_alt1_present:label">
+            <value>সহযোগী ১ — উপস্থিত ছিলেন?</value>
+          </text>
+          <text id="/data/grp_respondent/respondent_alt2_name:label">
+            <value>সহযোগী উত্তরদাতা ২ — নাম</value>
+          </text>
+          <text id="/data/grp_respondent/respondent_alt2_rel:label">
+            <value>সহযোগী ২ — সম্পর্ক</value>
+          </text>
+          <text id="/data/grp_respondent/respondent_alt2_present:label">
+            <value>সহযোগী ২ — উপস্থিত ছিলেন?</value>
+          </text>
+          <text id="/data/grp_identity:label">
+            <value>সাধারণ তথ্য ও মায়ের পরিচিতি</value>
+          </text>
+          <text id="/data/grp_identity/clinic_name:label">
+            <value>কমিউনিটি ক্লিনিকের নাম</value>
+          </text>
+          <text id="/data/grp_identity/clinic_code:label">
+            <value>কমিউনিটি ক্লিনিকের কোড (অবশ্যই পূরণ করতে হবে)</value>
+          </text>
+          <text id="/data/grp_identity/deceased_name:label">
+            <value>মায়ের নাম</value>
+          </text>
+          <text id="/data/grp_identity/mother_dhis2_code:label">
+            <value>মায়ের অনলাইন রেজিস্ট্রেশন (ডিএইচআইএস-২) কোড (অবশ্যই পূরণ করতে হবে)</value>
+          </text>
+          <text id="/data/grp_identity/deceased_age:label">
+            <value>মায়ের বয়স (বছর)</value>
+          </text>
+          <text id="/data/grp_identity/mother_education:label">
+            <value>মায়ের শিক্ষাগত যোগ্যতা</value>
+          </text>
+          <text id="/data/grp_identity/household_ses:label">
+            <value>খানার আর্থ-সামাজিক অবস্থা</value>
+          </text>
+          <text id="/data/grp_identity/deceased_husband:label">
+            <value>স্বামীর নাম</value>
+          </text>
+          <text id="/data/grp_identity/husband_age:label">
+            <value>স্বামীর বয়স (বছর)</value>
+          </text>
+          <text id="/data/grp_section1:label">
+            <value>সেকশন ১: প্রাথমিক তথ্য</value>
+          </text>
+          <text id="/data/grp_section1/death_date:label">
+            <value>১. মৃত্যুর তারিখ</value>
+          </text>
+          <text id="/data/grp_section1/death_time:label">
+            <value>১. মৃত্যুর সময় (২৪ ঘন্টা)</value>
+          </text>
+          <text id="/data/grp_section1/death_period:label">
+            <value>২. কোন সময় মৃত্যু ঘটেছিল?</value>
+          </text>
+          <text id="/data/grp_section1/death_place:label">
+            <value>৩. কোথায় মৃত্যু ঘটেছিল?</value>
+          </text>
+          <text id="/data/grp_section1/death_place_other:label">
+            <value>অন্যান্য স্থান (উল্লেখ করুন)</value>
+          </text>
+          <text id="/data/grp_section1/gestation_month:label">
+            <value>৪. গর্ভাবস্থার কোন মাসে মৃত্যু</value>
+          </text>
+          <text id="/data/grp_section1/gestation_week:label">
+            <value>৪. গর্ভাবস্থার কোন সপ্তাহে মৃত্যু</value>
+          </text>
+          <text id="/data/grp_section1/children_born:label">
+            <value>৫. মা কতটি সন্তানের জন্ম দিয়েছেন?</value>
+          </text>
+          <text id="/data/grp_section1/abortion_count:label">
+            <value>৬. মায়ের কতবার গর্ভপাত হয়েছে?</value>
+          </text>
+          <text id="/data/grp_section1/abortion_unknown:label">
+            <value>৬. গর্ভপাতের সংখ্যা জানা নেই?</value>
+          </text>
+          <text id="/data/grp_section2:label">
+            <value>সেকশন ২: মাতৃত্বকালীন জটিলতা</value>
+          </text>
+          <text id="/data/grp_section2/prepreg_disease:label">
+            <value>৭. গর্ভধারণের পূর্বে মা কোন রোগে আক্রান্ত ছিলেন কি?</value>
+          </text>
+          <text id="/data/grp_section2/prepreg_disease_types:label">
+            <value>৭. হ্যাঁ হলে কোন রোগ(সমূহ)?</value>
+          </text>
+          <text id="/data/grp_section2/prepreg_disease_other:label">
+            <value>অন্যান্য রোগ (উল্লেখ করুন)</value>
+          </text>
+          <text id="/data/grp_section2/last_pregnancy_outcome:label">
+            <value>৮. শেষ গর্ভ / প্রসবের ফলাফল?</value>
+          </text>
+          <text id="/data/grp_section2/q9_note:label">
+            <value>৯. বর্তমান গর্ভকালীন সময়ে কি কি জটিলতা ছিল? প্রতিটির জন্য পর্যায় চিহ্নিত করুন।</value>
+          </text>
+          <text id="/data/grp_section2/grp_q9:label">
+            <value>৯. জটিলতা (বর্তমান গর্ভকাল)</value>
+          </text>
+          <text id="/data/grp_section2/grp_q9/q9_header:label">
+            <value>জটিলতা ▸ পর্যায়</value>
+          </text>
+          <text id="/data/grp_section2/grp_q9/comp_high_bp:label">
+            <value>১. উচ্চ রক্তচাপ</value>
+          </text>
+          <text id="/data/grp_section2/grp_q9/comp_diabetes:label">
+            <value>২. ডায়াবেটিস</value>
+          </text>
+          <text id="/data/grp_section2/grp_q9/comp_abortion:label">
+            <value>৩. গর্ভপাত</value>
+          </text>
+          <text id="/data/grp_section2/grp_q9/comp_haemorrhage:label">
+            <value>৪. রক্তক্ষরণ</value>
+          </text>
+          <text id="/data/grp_section2/grp_q9/comp_high_fever:label">
+            <value>৫. প্রচন্ড জ্বর</value>
+          </text>
+          <text id="/data/grp_section2/grp_q9/comp_oedema:label">
+            <value>৬. মুখ, পা ও হাতে পানি আসা</value>
+          </text>
+          <text id="/data/grp_section2/grp_q9/comp_convulsion:label">
+            <value>৭. খিচুনি / একলামসিয়া / বেহুঁশ হওয়া</value>
+          </text>
+          <text id="/data/grp_section2/grp_q9/comp_jaundice:label">
+            <value>৮. জন্ডিস</value>
+          </text>
+          <text id="/data/grp_section2/grp_q9/comp_anaemia:label">
+            <value>৯. রক্তস্বল্পতা</value>
+          </text>
+          <text id="/data/grp_section2/grp_q9/comp_blurred_vision:label">
+            <value>১০. চোখে ঝাপসা দেখা</value>
+          </text>
+          <text id="/data/grp_section2/grp_q9/comp_prolonged_labour:label">
+            <value>১১. ১২ ঘন্টার বেশি প্রসববেদনা</value>
+          </text>
+          <text id="/data/grp_section2/grp_q9/comp_reduced_movement:label">
+            <value>১২. ভ্রূণের নড়াচড়া কম বা না হওয়া</value>
+          </text>
+          <text id="/data/grp_section2/grp_q9/comp_uterine_rupture:label">
+            <value>১৩. জরায়ু ছিঁড়ে যাওয়া</value>
+          </text>
+          <text id="/data/grp_section2/grp_q9/comp_malpresentation:label">
+            <value>১৪. মাথা ছাড়া অন্য অঙ্গ বের হওয়া</value>
+          </text>
+          <text id="/data/grp_section2/grp_q9/comp_retained_placenta:label">
+            <value>১৫. গর্ভফুল থেকে যাওয়া</value>
+          </text>
+          <text id="/data/grp_section2/grp_q9/comp_foul_discharge:label">
+            <value>১৬. দুর্গন্ধযুক্ত স্রাব</value>
+          </text>
+          <text id="/data/grp_section2/grp_q9/comp_abdominal_pain:label">
+            <value>১৭. তলপেটে তীব্র অস্বাভাবিক ব্যথা</value>
+          </text>
+          <text id="/data/grp_section2/grp_q9/comp_other:label">
+            <value>১৮. অন্যান্য</value>
+          </text>
+          <text id="/data/grp_section2/grp_q9/comp_other_specify:label">
+            <value>অন্যান্য জটিলতা (উল্লেখ করুন)</value>
+          </text>
+          <text id="/data/grp_section3:label">
+            <value>সেকশন ৩: প্রসব পূর্বসেবা</value>
+          </text>
+          <text id="/data/grp_section3/anc_count:label">
+            <value>১০. কতবার প্রসবপূর্ব সেবা গ্রহণ করেছেন?</value>
+          </text>
+          <text id="/data/grp_section3/anc_place:label">
+            <value>১১. প্রসবপূর্ব সেবা কোথা থেকে নেওয়া হয়েছে?</value>
+          </text>
+          <text id="/data/grp_section3/anc_place_other:label">
+            <value>অন্যান্য স্থান (উল্লেখ)</value>
+          </text>
+          <text id="/data/grp_section3/anc_provider:label">
+            <value>১২. প্রসবপূর্ব সেবা কে প্রদান করেছেন?</value>
+          </text>
+          <text id="/data/grp_section3/anc_provider_other:label">
+            <value>অন্যান্য (উল্লেখ)</value>
+          </text>
+          <text id="/data/grp_section3/birth_plan:label">
+            <value>১৩. প্রসব পরিকল্পনায় কী কী ছিল?</value>
+          </text>
+          <text id="/data/grp_section4:label">
+            <value>সেকশন ৪: প্রসবকালীন তথ্য</value>
+          </text>
+          <text id="/data/grp_section4/s4_note:label">
+            <value>মা প্রসবের পূর্বে মারা গেলে ১৪–১৬ বাদ দিয়ে ১৭ নং প্রশ্নে যান।</value>
+          </text>
+          <text id="/data/grp_section4/delivery_place:label">
+            <value>১৪. কোথায় প্রসব করা হয়েছিল?</value>
+          </text>
+          <text id="/data/grp_section4/delivery_place_other:label">
+            <value>অন্যান্য স্থান (উল্লেখ)</value>
+          </text>
+          <text id="/data/grp_section4/delivery_conductor:label">
+            <value>১৫. কার দ্বারা প্রসব সংঘটিত হয়েছিল?</value>
+          </text>
+          <text id="/data/grp_section4/delivery_conductor_other:label">
+            <value>অন্যান্য (উল্লেখ)</value>
+          </text>
+          <text id="/data/grp_section4/delivery_mode:label">
+            <value>১৬. কোন পদ্ধতিতে প্রসব হয়েছিল?</value>
+          </text>
+          <text id="/data/grp_section4/delivery_outcome:label">
+            <value>১৭. বর্তমান গর্ভের ফলাফল</value>
+          </text>
+          <text id="/data/grp_section5:label">
+            <value>সেকশন ৫: মৃত্যুর পূর্বে গ্রহণকৃত চিকিৎসা</value>
+          </text>
+          <text id="/data/grp_section5/treatment_received:label">
+            <value>১৮. মৃত্যুর পূর্বে মা কোন চিকিৎসা গ্রহণ করেছিলেন কি?</value>
+          </text>
+          <text id="/data/grp_section5/treatment_place:label">
+            <value>১৯. হ্যাঁ হলে চিকিৎসা গ্রহণের স্থান</value>
+          </text>
+          <text id="/data/grp_section5/treatment_place_other:label">
+            <value>অন্যান্য স্থান (উল্লেখ)</value>
+          </text>
+          <text id="/data/grp_section5/treatment_provider:label">
+            <value>২০. কে চিকিৎসাসেবা দিয়েছিলেন?</value>
+          </text>
+          <text id="/data/grp_section5/treatment_provider_other:label">
+            <value>অন্যান্য (উল্লেখ)</value>
+          </text>
+          <text id="/data/grp_section5/no_treatment_reasons:label">
+            <value>২১. চিকিৎসাসেবা গ্রহণ না করে থাকলে তার কারণ কি ছিল?</value>
+          </text>
+          <text id="/data/grp_section5/no_treatment_other:label">
+            <value>অন্যান্য কারণ (উল্লেখ)</value>
+          </text>
+          <text id="/data/grp_section6:label">
+            <value>সেকশন ৬: প্রসবোত্তরকাল</value>
+          </text>
+          <text id="/data/grp_section6/s6_note:label">
+            <value>মা প্রসবোত্তর সময়ে মারা গেলে এই সেকশন প্রযোজ্য।</value>
+          </text>
+          <text id="/data/grp_section6/death_after_delivery_days:label">
+            <value>২২. প্রসবের কত দিন পর মৃত্যু</value>
+          </text>
+          <text id="/data/grp_section6/death_after_delivery_hours:label">
+            <value>ঘন্টা</value>
+          </text>
+          <text id="/data/grp_section6/death_after_delivery_minutes:label">
+            <value>মিনিট</value>
+          </text>
+          <text id="/data/grp_section6/pnc_count:label">
+            <value>২৩. কতটি প্রসবোত্তর (পিএনসি) সেবা গ্রহণ করেছিলেন?</value>
+          </text>
+          <text id="/data/grp_section6/pnc_first_days:label">
+            <value>২৪. প্রথম পিএনসি প্রসবের কত দিন পর</value>
+          </text>
+          <text id="/data/grp_section6/pnc_first_hours:label">
+            <value>ঘন্টা</value>
+          </text>
+          <text id="/data/grp_section6/pnc_place:label">
+            <value>২৫. প্রসবোত্তর সেবা গ্রহণের স্থান</value>
+          </text>
+          <text id="/data/grp_section6/pnc_place_other:label">
+            <value>অন্যান্য স্থান (উল্লেখ)</value>
+          </text>
+          <text id="/data/grp_section6/pnc_provider:label">
+            <value>২৬. প্রসবোত্তর সেবাদানকারী?</value>
+          </text>
+          <text id="/data/grp_section6/pnc_provider_other:label">
+            <value>অন্যান্য (উল্লেখ)</value>
+          </text>
+          <text id="/data/grp_narrative:label">
+            <value>বিবরণ ও কারণ</value>
+          </text>
+          <text id="/data/grp_narrative/narrative_before_death:label">
+            <value>২৭. মৃত্যুর ঠিক পূর্বে যা ঘটেছিল তা লিখুন।</value>
+          </text>
+          <text id="/data/grp_narrative/cause_opinion:label">
+            <value>২৮. মাতৃমৃত্যুর কি কারণ হতে পারে বলে আপনি মনে করেন?</value>
+          </text>
+          <text id="/data/grp_narrative/certificate_cause:label">
+            <value>২৯. মৃত্যু সার্টিফিকেট প্রদান করা হলে সার্টিফিকেট অনুযায়ী কারণ</value>
+          </text>
+          <text id="/data/grp_icd:label">
+            <value>কনসালটেন্ট / ডাক্তার কর্তৃক — আইসিডি-১০ কারণ কোডিং</value>
+          </text>
+          <text id="/data/grp_icd/icd_ref_note:label">
+            <value>আইসিডি-১০ ছক অনুযায়ী কারণ নিরূপণ করুন।</value>
+          </text>
+          <text id="/data/grp_icd/icd_cause:label">
+            <value>রোগ / কারণ (আইসিডি-১০)</value>
+          </text>
+          <text id="/data/grp_icd/icd_code:label">
+            <value>আইসিডি কোড</value>
+          </text>
+          <text id="/data/grp_icd/icd_disease_name:label">
+            <value>রোগের নাম</value>
+          </text>
+          <text id="/data/grp_icd/icd_diagnoser_name:label">
+            <value>নিরূপণকারীর নাম</value>
+          </text>
+          <text id="/data/grp_icd/icd_diagnoser_designation:label">
+            <value>পদবী</value>
+          </text>
+          <text id="/data/grp_icd/icd_diagnoser_institution:label">
+            <value>প্রতিষ্ঠান</value>
+          </text>
+          <text id="/data/grp_icd/icd_date:label">
+            <value>তারিখ</value>
+          </text>
+        </translation>
+      </itext>
+      <instance>
+        <data id="ciprb_mpdsr_community_maternal_v1" version="20260620">
+          <grp_meta>
+            <organisation/>
+            <location/>
+            <collection_date/>
+            <district/>
+            <upazila/>
+            <union/>
+            <ward/>
+            <village/>
+            <enumerator_name/>
+            <enumerator_designation/>
+            <enumerator_institution/>
+            <enumerator_mobile/>
+            <case_serial/>
+          </grp_meta>
+          <consent_note/>
+          <consent_given/>
+          <interview_date/>
+          <grp_respondent>
+            <respondent_mobile/>
+            <respondent_main_name/>
+            <respondent_main_rel/>
+            <respondent_main_present/>
+            <respondent_alt1_name/>
+            <respondent_alt1_rel/>
+            <respondent_alt1_present/>
+            <respondent_alt2_name/>
+            <respondent_alt2_rel/>
+            <respondent_alt2_present/>
+          </grp_respondent>
+          <grp_identity>
+            <clinic_name/>
+            <clinic_code/>
+            <deceased_name/>
+            <mother_dhis2_code/>
+            <deceased_age/>
+            <mother_education/>
+            <household_ses/>
+            <deceased_husband/>
+            <husband_age/>
+          </grp_identity>
+          <grp_section1>
+            <death_date/>
+            <death_time/>
+            <death_period/>
+            <death_place/>
+            <death_place_other/>
+            <gestation_month/>
+            <gestation_week/>
+            <children_born/>
+            <abortion_count/>
+            <abortion_unknown/>
+          </grp_section1>
+          <grp_section2>
+            <prepreg_disease/>
+            <prepreg_disease_types/>
+            <prepreg_disease_other/>
+            <last_pregnancy_outcome/>
+            <q9_note/>
+            <grp_q9>
+              <q9_header/>
+              <comp_high_bp/>
+              <comp_diabetes/>
+              <comp_abortion/>
+              <comp_haemorrhage/>
+              <comp_high_fever/>
+              <comp_oedema/>
+              <comp_convulsion/>
+              <comp_jaundice/>
+              <comp_anaemia/>
+              <comp_blurred_vision/>
+              <comp_prolonged_labour/>
+              <comp_reduced_movement/>
+              <comp_uterine_rupture/>
+              <comp_malpresentation/>
+              <comp_retained_placenta/>
+              <comp_foul_discharge/>
+              <comp_abdominal_pain/>
+              <comp_other/>
+              <comp_other_specify/>
+            </grp_q9>
+          </grp_section2>
+          <grp_section3>
+            <anc_count/>
+            <anc_place/>
+            <anc_place_other/>
+            <anc_provider/>
+            <anc_provider_other/>
+            <birth_plan/>
+          </grp_section3>
+          <grp_section4>
+            <s4_note/>
+            <delivery_place/>
+            <delivery_place_other/>
+            <delivery_conductor/>
+            <delivery_conductor_other/>
+            <delivery_mode/>
+            <delivery_outcome/>
+          </grp_section4>
+          <grp_section5>
+            <treatment_received/>
+            <treatment_place/>
+            <treatment_place_other/>
+            <treatment_provider/>
+            <treatment_provider_other/>
+            <no_treatment_reasons/>
+            <no_treatment_other/>
+          </grp_section5>
+          <grp_section6>
+            <s6_note/>
+            <death_after_delivery_days/>
+            <death_after_delivery_hours/>
+            <death_after_delivery_minutes/>
+            <pnc_count/>
+            <pnc_first_days/>
+            <pnc_first_hours/>
+            <pnc_place/>
+            <pnc_place_other/>
+            <pnc_provider/>
+            <pnc_provider_other/>
+          </grp_section6>
+          <grp_narrative>
+            <narrative_before_death/>
+            <cause_opinion/>
+            <certificate_cause/>
+          </grp_narrative>
+          <grp_icd>
+            <icd_ref_note/>
+            <icd_cause/>
+            <icd_code/>
+            <icd_disease_name/>
+            <icd_diagnoser_name/>
+            <icd_diagnoser_designation/>
+            <icd_diagnoser_institution/>
+            <icd_date/>
+          </grp_icd>
+          <meta>
+            <instanceID/>
+          </meta>
+        </data>
+      </instance>
+      <instance id="district">
+        <root>
+          <item>
+            <itextId>district-0</itextId>
+            <name>sunamganj</name>
+          </item>
+          <item>
+            <itextId>district-1</itextId>
+            <name>sherpur</name>
+          </item>
+          <item>
+            <itextId>district-2</itextId>
+            <name>bhola</name>
+          </item>
+          <item>
+            <itextId>district-3</itextId>
+            <name>kurigram</name>
+          </item>
+          <item>
+            <itextId>district-4</itextId>
+            <name>gaibandha</name>
+          </item>
+          <item>
+            <itextId>district-5</itextId>
+            <name>khagrachari</name>
+          </item>
+          <item>
+            <itextId>district-6</itextId>
+            <name>noakhali</name>
+          </item>
+          <item>
+            <itextId>district-7</itextId>
+            <name>patuakhali</name>
+          </item>
+          <item>
+            <itextId>district-8</itextId>
+            <name>sirajganj</name>
+          </item>
+          <item>
+            <itextId>district-9</itextId>
+            <name>barguna</name>
+          </item>
+          <item>
+            <itextId>district-10</itextId>
+            <name>jamalpur</name>
+          </item>
+          <item>
+            <itextId>district-11</itextId>
+            <name>bagerhat</name>
+          </item>
+          <item>
+            <itextId>district-12</itextId>
+            <name>habiganj</name>
+          </item>
+          <item>
+            <itextId>district-13</itextId>
+            <name>moulavibazar</name>
+          </item>
+          <item>
+            <itextId>district-14</itextId>
+            <name>sylhet</name>
+          </item>
+          <item>
+            <itextId>district-15</itextId>
+            <name>bandarban</name>
+          </item>
+          <item>
+            <itextId>district-16</itextId>
+            <name>chandpur</name>
+          </item>
+          <item>
+            <itextId>district-17</itextId>
+            <name>rangpur</name>
+          </item>
+          <item>
+            <itextId>district-18</itextId>
+            <name>dhaka</name>
+          </item>
+        </root>
+      </instance>
+      <instance id="yes_no">
+        <root>
+          <item>
+            <itextId>yes_no-0</itextId>
+            <name>yes</name>
+          </item>
+          <item>
+            <itextId>yes_no-1</itextId>
+            <name>no</name>
+          </item>
+          <item>
+            <itextId>yes_no-2</itextId>
+            <name>unknown</name>
+          </item>
+        </root>
+      </instance>
+      <instance id="relationship">
+        <root>
+          <item>
+            <itextId>relationship-0</itextId>
+            <name>husband</name>
+          </item>
+          <item>
+            <itextId>relationship-1</itextId>
+            <name>father_inlaw</name>
+          </item>
+          <item>
+            <itextId>relationship-2</itextId>
+            <name>mother</name>
+          </item>
+          <item>
+            <itextId>relationship-3</itextId>
+            <name>aunt_uncle</name>
+          </item>
+          <item>
+            <itextId>relationship-4</itextId>
+            <name>neighbour</name>
+          </item>
+          <item>
+            <itextId>relationship-5</itextId>
+            <name>mother_inlaw</name>
+          </item>
+          <item>
+            <itextId>relationship-6</itextId>
+            <name>sister_inlaw</name>
+          </item>
+          <item>
+            <itextId>relationship-7</itextId>
+            <name>father</name>
+          </item>
+          <item>
+            <itextId>relationship-8</itextId>
+            <name>sibling</name>
+          </item>
+          <item>
+            <itextId>relationship-9</itextId>
+            <name>other</name>
+          </item>
+        </root>
+      </instance>
+      <instance id="death_period">
+        <root>
+          <item>
+            <itextId>death_period-0</itextId>
+            <name>pregnancy</name>
+          </item>
+          <item>
+            <itextId>death_period-1</itextId>
+            <name>post_abortion_28w</name>
+          </item>
+          <item>
+            <itextId>death_period-2</itextId>
+            <name>delivery</name>
+          </item>
+          <item>
+            <itextId>death_period-3</itextId>
+            <name>postpartum_42d</name>
+          </item>
+        </root>
+      </instance>
+      <instance id="death_place">
+        <root>
+          <item>
+            <itextId>death_place-0</itextId>
+            <name>home</name>
+          </item>
+          <item>
+            <itextId>death_place-1</itextId>
+            <name>union_hfwc</name>
+          </item>
+          <item>
+            <itextId>death_place-2</itextId>
+            <name>district_hospital</name>
+          </item>
+          <item>
+            <itextId>death_place-3</itextId>
+            <name>medical_college</name>
+          </item>
+          <item>
+            <itextId>death_place-4</itextId>
+            <name>private_clinic</name>
+          </item>
+          <item>
+            <itextId>death_place-5</itextId>
+            <name>in_transit</name>
+          </item>
+          <item>
+            <itextId>death_place-6</itextId>
+            <name>upazila_hc</name>
+          </item>
+          <item>
+            <itextId>death_place-7</itextId>
+            <name>maternal_centre</name>
+          </item>
+          <item>
+            <itextId>death_place-8</itextId>
+            <name>ngo_clinic</name>
+          </item>
+          <item>
+            <itextId>death_place-9</itextId>
+            <name>other</name>
+          </item>
+        </root>
+      </instance>
+      <instance id="education_level">
+        <root>
+          <item>
+            <itextId>education_level-0</itextId>
+            <name>none</name>
+          </item>
+          <item>
+            <itextId>education_level-1</itextId>
+            <name>class5</name>
+          </item>
+          <item>
+            <itextId>education_level-2</itextId>
+            <name>class10</name>
+          </item>
+          <item>
+            <itextId>education_level-3</itextId>
+            <name>class12</name>
+          </item>
+          <item>
+            <itextId>education_level-4</itextId>
+            <name>graduate</name>
+          </item>
+        </root>
+      </instance>
+      <instance id="ses">
+        <root>
+          <item>
+            <itextId>ses-0</itextId>
+            <name>extreme_poor</name>
+          </item>
+          <item>
+            <itextId>ses-1</itextId>
+            <name>poor</name>
+          </item>
+          <item>
+            <itextId>ses-2</itextId>
+            <name>middle</name>
+          </item>
+          <item>
+            <itextId>ses-3</itextId>
+            <name>rich</name>
+          </item>
+        </root>
+      </instance>
+      <instance id="prepreg_disease_type">
+        <root>
+          <item>
+            <itextId>prepreg_disease_type-0</itextId>
+            <name>high_bp</name>
+          </item>
+          <item>
+            <itextId>prepreg_disease_type-1</itextId>
+            <name>diabetes</name>
+          </item>
+          <item>
+            <itextId>prepreg_disease_type-2</itextId>
+            <name>heart_disease</name>
+          </item>
+          <item>
+            <itextId>prepreg_disease_type-3</itextId>
+            <name>convulsion</name>
+          </item>
+          <item>
+            <itextId>prepreg_disease_type-4</itextId>
+            <name>anaemia</name>
+          </item>
+          <item>
+            <itextId>prepreg_disease_type-5</itextId>
+            <name>tb</name>
+          </item>
+          <item>
+            <itextId>prepreg_disease_type-6</itextId>
+            <name>asthma</name>
+          </item>
+          <item>
+            <itextId>prepreg_disease_type-7</itextId>
+            <name>jaundice</name>
+          </item>
+          <item>
+            <itextId>prepreg_disease_type-8</itextId>
+            <name>other</name>
+          </item>
+        </root>
+      </instance>
+      <instance id="last_pregnancy_outcome">
+        <root>
+          <item>
+            <itextId>last_pregnancy_outcome-0</itextId>
+            <name>abortion</name>
+          </item>
+          <item>
+            <itextId>last_pregnancy_outcome-1</itextId>
+            <name>stillbirth</name>
+          </item>
+          <item>
+            <itextId>last_pregnancy_outcome-2</itextId>
+            <name>livebirth</name>
+          </item>
+          <item>
+            <itextId>last_pregnancy_outcome-3</itextId>
+            <name>preterm</name>
+          </item>
+          <item>
+            <itextId>last_pregnancy_outcome-4</itextId>
+            <name>csection</name>
+          </item>
+          <item>
+            <itextId>last_pregnancy_outcome-5</itextId>
+            <name>other_operative</name>
+          </item>
+        </root>
+      </instance>
+      <instance id="complication_phase">
+        <root>
+          <item>
+            <itextId>complication_phase-0</itextId>
+            <name>antepartum</name>
+          </item>
+          <item>
+            <itextId>complication_phase-1</itextId>
+            <name>intrapartum</name>
+          </item>
+          <item>
+            <itextId>complication_phase-2</itextId>
+            <name>postpartum</name>
+          </item>
+          <item>
+            <itextId>complication_phase-3</itextId>
+            <name>dont_know</name>
+          </item>
+        </root>
+      </instance>
+      <instance id="anc_count">
+        <root>
+          <item>
+            <itextId>anc_count-0</itextId>
+            <name>none</name>
+          </item>
+          <item>
+            <itextId>anc_count-1</itextId>
+            <name>1</name>
+          </item>
+          <item>
+            <itextId>anc_count-2</itextId>
+            <name>2</name>
+          </item>
+          <item>
+            <itextId>anc_count-3</itextId>
+            <name>3</name>
+          </item>
+          <item>
+            <itextId>anc_count-4</itextId>
+            <name>4_plus</name>
+          </item>
+          <item>
+            <itextId>anc_count-5</itextId>
+            <name>unknown</name>
+          </item>
+        </root>
+      </instance>
+      <instance id="facility_place">
+        <root>
+          <item>
+            <itextId>facility_place-0</itextId>
+            <name>home</name>
+          </item>
+          <item>
+            <itextId>facility_place-1</itextId>
+            <name>community_clinic</name>
+          </item>
+          <item>
+            <itextId>facility_place-2</itextId>
+            <name>union_hfwc</name>
+          </item>
+          <item>
+            <itextId>facility_place-3</itextId>
+            <name>upazila_hc</name>
+          </item>
+          <item>
+            <itextId>facility_place-4</itextId>
+            <name>maternal_centre</name>
+          </item>
+          <item>
+            <itextId>facility_place-5</itextId>
+            <name>district_hospital</name>
+          </item>
+          <item>
+            <itextId>facility_place-6</itextId>
+            <name>medical_college</name>
+          </item>
+          <item>
+            <itextId>facility_place-7</itextId>
+            <name>private_clinic</name>
+          </item>
+          <item>
+            <itextId>facility_place-8</itextId>
+            <name>ngo_clinic</name>
+          </item>
+          <item>
+            <itextId>facility_place-9</itextId>
+            <name>provider_home</name>
+          </item>
+          <item>
+            <itextId>facility_place-10</itextId>
+            <name>other</name>
+          </item>
+        </root>
+      </instance>
+      <instance id="provider_cadre">
+        <root>
+          <item>
+            <itextId>provider_cadre-0</itextId>
+            <name>doctor_mbbs</name>
+          </item>
+          <item>
+            <itextId>provider_cadre-1</itextId>
+            <name>nurse</name>
+          </item>
+          <item>
+            <itextId>provider_cadre-2</itextId>
+            <name>fwv</name>
+          </item>
+          <item>
+            <itextId>provider_cadre-3</itextId>
+            <name>csba</name>
+          </item>
+          <item>
+            <itextId>provider_cadre-4</itextId>
+            <name>ma</name>
+          </item>
+          <item>
+            <itextId>provider_cadre-5</itextId>
+            <name>ha</name>
+          </item>
+          <item>
+            <itextId>provider_cadre-6</itextId>
+            <name>fwa</name>
+          </item>
+          <item>
+            <itextId>provider_cadre-7</itextId>
+            <name>dai</name>
+          </item>
+          <item>
+            <itextId>provider_cadre-8</itextId>
+            <name>palli_chikitsok</name>
+          </item>
+          <item>
+            <itextId>provider_cadre-9</itextId>
+            <name>ngo_worker</name>
+          </item>
+          <item>
+            <itextId>provider_cadre-10</itextId>
+            <name>midwife</name>
+          </item>
+          <item>
+            <itextId>provider_cadre-11</itextId>
+            <name>other</name>
+          </item>
+        </root>
+      </instance>
+      <instance id="birth_plan">
+        <root>
+          <item>
+            <itextId>birth_plan-0</itextId>
+            <name>place_planned</name>
+          </item>
+          <item>
+            <itextId>birth_plan-1</itextId>
+            <name>attendant_planned</name>
+          </item>
+          <item>
+            <itextId>birth_plan-2</itextId>
+            <name>transport_planned</name>
+          </item>
+          <item>
+            <itextId>birth_plan-3</itextId>
+            <name>referral_planned</name>
+          </item>
+          <item>
+            <itextId>birth_plan-4</itextId>
+            <name>money_saved</name>
+          </item>
+          <item>
+            <itextId>birth_plan-5</itextId>
+            <name>caregiver_arranged</name>
+          </item>
+          <item>
+            <itextId>birth_plan-6</itextId>
+            <name>blood_donor</name>
+          </item>
+          <item>
+            <itextId>birth_plan-7</itextId>
+            <name>newborn_items</name>
+          </item>
+        </root>
+      </instance>
+      <instance id="delivery_mode">
+        <root>
+          <item>
+            <itextId>delivery_mode-0</itextId>
+            <name>vaginal_spontaneous</name>
+          </item>
+          <item>
+            <itextId>delivery_mode-1</itextId>
+            <name>instrumental_vaginal</name>
+          </item>
+          <item>
+            <itextId>delivery_mode-2</itextId>
+            <name>csection</name>
+          </item>
+          <item>
+            <itextId>delivery_mode-3</itextId>
+            <name>destructive</name>
+          </item>
+        </root>
+      </instance>
+      <instance id="delivery_outcome">
+        <root>
+          <item>
+            <itextId>delivery_outcome-0</itextId>
+            <name>livebirth</name>
+          </item>
+          <item>
+            <itextId>delivery_outcome-1</itextId>
+            <name>stillbirth</name>
+          </item>
+          <item>
+            <itextId>delivery_outcome-2</itextId>
+            <name>abortion</name>
+          </item>
+          <item>
+            <itextId>delivery_outcome-3</itextId>
+            <name>not_delivered</name>
+          </item>
+        </root>
+      </instance>
+      <instance id="no_treatment_reason">
+        <root>
+          <item>
+            <itextId>no_treatment_reason-0</itextId>
+            <name>unnecessary</name>
+          </item>
+          <item>
+            <itextId>no_treatment_reason-1</itextId>
+            <name>costly</name>
+          </item>
+          <item>
+            <itextId>no_treatment_reason-2</itextId>
+            <name>too_far</name>
+          </item>
+          <item>
+            <itextId>no_treatment_reason-3</itextId>
+            <name>no_escort</name>
+          </item>
+          <item>
+            <itextId>no_treatment_reason-4</itextId>
+            <name>family_refusal</name>
+          </item>
+          <item>
+            <itextId>no_treatment_reason-5</itextId>
+            <name>no_way_known</name>
+          </item>
+          <item>
+            <itextId>no_treatment_reason-6</itextId>
+            <name>dont_know_where</name>
+          </item>
+          <item>
+            <itextId>no_treatment_reason-7</itextId>
+            <name>disaster_night</name>
+          </item>
+          <item>
+            <itextId>no_treatment_reason-8</itextId>
+            <name>didnt_understand</name>
+          </item>
+          <item>
+            <itextId>no_treatment_reason-9</itextId>
+            <name>no_money</name>
+          </item>
+          <item>
+            <itextId>no_treatment_reason-10</itextId>
+            <name>no_transport</name>
+          </item>
+          <item>
+            <itextId>no_treatment_reason-11</itextId>
+            <name>poor_service</name>
+          </item>
+          <item>
+            <itextId>no_treatment_reason-12</itextId>
+            <name>good_care_home</name>
+          </item>
+          <item>
+            <itextId>no_treatment_reason-13</itextId>
+            <name>no_time</name>
+          </item>
+          <item>
+            <itextId>no_treatment_reason-14</itextId>
+            <name>fear_care</name>
+          </item>
+          <item>
+            <itextId>no_treatment_reason-15</itextId>
+            <name>other</name>
+          </item>
+        </root>
+      </instance>
+      <instance id="icd_cause">
+        <root>
+          <item>
+            <itextId>icd_cause-0</itextId>
+            <name>pph_o72</name>
+          </item>
+          <item>
+            <itextId>icd_cause-1</itextId>
+            <name>aph_o46</name>
+          </item>
+          <item>
+            <itextId>icd_cause-2</itextId>
+            <name>puerperal_sepsis_o85</name>
+          </item>
+          <item>
+            <itextId>icd_cause-3</itextId>
+            <name>ectopic_o00</name>
+          </item>
+          <item>
+            <itextId>icd_cause-4</itextId>
+            <name>eclampsia_o15</name>
+          </item>
+          <item>
+            <itextId>icd_cause-5</itextId>
+            <name>early_haemorrhage_o20</name>
+          </item>
+          <item>
+            <itextId>icd_cause-6</itextId>
+            <name>sequel_o97</name>
+          </item>
+          <item>
+            <itextId>icd_cause-7</itextId>
+            <name>failed_abortion_o07</name>
+          </item>
+          <item>
+            <itextId>icd_cause-8</itextId>
+            <name>obstructed_labour_o64</name>
+          </item>
+          <item>
+            <itextId>icd_cause-9</itextId>
+            <name>anaesthesia_ld_o74</name>
+          </item>
+          <item>
+            <itextId>icd_cause-10</itextId>
+            <name>placenta_previa_o44</name>
+          </item>
+          <item>
+            <itextId>icd_cause-11</itextId>
+            <name>abruptio_o45</name>
+          </item>
+          <item>
+            <itextId>icd_cause-12</itextId>
+            <name>medical_abortion_o04</name>
+          </item>
+          <item>
+            <itextId>icd_cause-13</itextId>
+            <name>rupture_uterus_o71</name>
+          </item>
+          <item>
+            <itextId>icd_cause-14</itextId>
+            <name>anaesthesia_preg_o29</name>
+          </item>
+          <item>
+            <itextId>icd_cause-15</itextId>
+            <name>embolism_o88</name>
+          </item>
+          <item>
+            <itextId>icd_cause-16</itextId>
+            <name>malnutrition_o25</name>
+          </item>
+          <item>
+            <itextId>icd_cause-17</itextId>
+            <name>other</name>
+          </item>
+        </root>
+      </instance>
+      <bind nodeset="/data/grp_meta/organisation" type="string" calculate="'CIPRB'"/>
+      <bind nodeset="/data/grp_meta/location" type="geopoint" required="true()"/>
+      <bind nodeset="/data/grp_meta/collection_date" type="date" required="true()"/>
+      <bind nodeset="/data/grp_meta/district" type="string" required="true()"/>
+      <bind nodeset="/data/grp_meta/upazila" type="string" required="true()"/>
+      <bind nodeset="/data/grp_meta/union" type="string"/>
+      <bind nodeset="/data/grp_meta/ward" type="string"/>
+      <bind nodeset="/data/grp_meta/village" type="string"/>
+      <bind nodeset="/data/grp_meta/enumerator_name" type="string" required="true()"/>
+      <bind nodeset="/data/grp_meta/enumerator_designation" type="string"/>
+      <bind nodeset="/data/grp_meta/enumerator_institution" type="string"/>
+      <bind nodeset="/data/grp_meta/enumerator_mobile" type="string" constraint="regex(., &quot;^[0-9+ -]{6,20}$&quot;)" jr:constraintMsg="Enter a valid phone number."/>
+      <bind nodeset="/data/grp_meta/case_serial" type="string"/>
+      <bind nodeset="/data/consent_note" readonly="true()" type="string"/>
+      <bind nodeset="/data/consent_given" type="string" required="true()"/>
+      <bind nodeset="/data/interview_date" type="date"/>
+      <bind nodeset="/data/grp_respondent/respondent_mobile" type="string" constraint="regex(., &quot;^[0-9+ -]{6,20}$&quot;) or .=&quot;&quot;" jr:constraintMsg="Enter a valid phone number."/>
+      <bind nodeset="/data/grp_respondent/respondent_main_name" type="string"/>
+      <bind nodeset="/data/grp_respondent/respondent_main_rel" type="string"/>
+      <bind nodeset="/data/grp_respondent/respondent_main_present" type="string"/>
+      <bind nodeset="/data/grp_respondent/respondent_alt1_name" type="string"/>
+      <bind nodeset="/data/grp_respondent/respondent_alt1_rel" type="string"/>
+      <bind nodeset="/data/grp_respondent/respondent_alt1_present" type="string"/>
+      <bind nodeset="/data/grp_respondent/respondent_alt2_name" type="string"/>
+      <bind nodeset="/data/grp_respondent/respondent_alt2_rel" type="string"/>
+      <bind nodeset="/data/grp_respondent/respondent_alt2_present" type="string"/>
+      <bind nodeset="/data/grp_identity" relevant=" /data/consent_given ='yes'"/>
+      <bind nodeset="/data/grp_identity/clinic_name" type="string"/>
+      <bind nodeset="/data/grp_identity/clinic_code" type="string" required="true()"/>
+      <bind nodeset="/data/grp_identity/deceased_name" type="string" required="true()"/>
+      <bind nodeset="/data/grp_identity/mother_dhis2_code" type="string" required="true()"/>
+      <bind nodeset="/data/grp_identity/deceased_age" type="int" required="true()" constraint=". &gt; 9 and . &lt; 60" jr:constraintMsg="10–59"/>
+      <bind nodeset="/data/grp_identity/mother_education" type="string"/>
+      <bind nodeset="/data/grp_identity/household_ses" type="string"/>
+      <bind nodeset="/data/grp_identity/deceased_husband" type="string"/>
+      <bind nodeset="/data/grp_identity/husband_age" type="int" constraint=". &gt; 0 and . &lt; 110"/>
+      <bind nodeset="/data/grp_section1" relevant=" /data/consent_given ='yes'"/>
+      <bind nodeset="/data/grp_section1/death_date" type="date" required="true()"/>
+      <bind nodeset="/data/grp_section1/death_time" type="time"/>
+      <bind nodeset="/data/grp_section1/death_period" type="string" required="true()"/>
+      <bind nodeset="/data/grp_section1/death_place" type="string" required="true()"/>
+      <bind nodeset="/data/grp_section1/death_place_other" type="string" relevant=" /data/grp_section1/death_place ='other'"/>
+      <bind nodeset="/data/grp_section1/gestation_month" type="int" constraint=". &gt;= 0 and . &lt;= 10"/>
+      <bind nodeset="/data/grp_section1/gestation_week" type="int" constraint=". &gt;= 0 and . &lt;= 45"/>
+      <bind nodeset="/data/grp_section1/children_born" type="int" constraint=". &gt;= 0 and . &lt;= 25"/>
+      <bind nodeset="/data/grp_section1/abortion_count" type="int" constraint=". &gt;= 0 and . &lt;= 25"/>
+      <bind nodeset="/data/grp_section1/abortion_unknown" type="string"/>
+      <bind nodeset="/data/grp_section2" relevant=" /data/consent_given ='yes'"/>
+      <bind nodeset="/data/grp_section2/prepreg_disease" type="string"/>
+      <bind nodeset="/data/grp_section2/prepreg_disease_types" type="string" relevant=" /data/grp_section2/prepreg_disease ='yes'"/>
+      <bind nodeset="/data/grp_section2/prepreg_disease_other" type="string" relevant="selected( /data/grp_section2/prepreg_disease_types , 'other')"/>
+      <bind nodeset="/data/grp_section2/last_pregnancy_outcome" type="string"/>
+      <bind nodeset="/data/grp_section2/q9_note" readonly="true()" type="string"/>
+      <bind nodeset="/data/grp_section2/grp_q9/q9_header" type="string"/>
+      <bind nodeset="/data/grp_section2/grp_q9/comp_high_bp" type="string"/>
+      <bind nodeset="/data/grp_section2/grp_q9/comp_diabetes" type="string"/>
+      <bind nodeset="/data/grp_section2/grp_q9/comp_abortion" type="string"/>
+      <bind nodeset="/data/grp_section2/grp_q9/comp_haemorrhage" type="string"/>
+      <bind nodeset="/data/grp_section2/grp_q9/comp_high_fever" type="string"/>
+      <bind nodeset="/data/grp_section2/grp_q9/comp_oedema" type="string"/>
+      <bind nodeset="/data/grp_section2/grp_q9/comp_convulsion" type="string"/>
+      <bind nodeset="/data/grp_section2/grp_q9/comp_jaundice" type="string"/>
+      <bind nodeset="/data/grp_section2/grp_q9/comp_anaemia" type="string"/>
+      <bind nodeset="/data/grp_section2/grp_q9/comp_blurred_vision" type="string"/>
+      <bind nodeset="/data/grp_section2/grp_q9/comp_prolonged_labour" type="string"/>
+      <bind nodeset="/data/grp_section2/grp_q9/comp_reduced_movement" type="string"/>
+      <bind nodeset="/data/grp_section2/grp_q9/comp_uterine_rupture" type="string"/>
+      <bind nodeset="/data/grp_section2/grp_q9/comp_malpresentation" type="string"/>
+      <bind nodeset="/data/grp_section2/grp_q9/comp_retained_placenta" type="string"/>
+      <bind nodeset="/data/grp_section2/grp_q9/comp_foul_discharge" type="string"/>
+      <bind nodeset="/data/grp_section2/grp_q9/comp_abdominal_pain" type="string"/>
+      <bind nodeset="/data/grp_section2/grp_q9/comp_other" type="string"/>
+      <bind nodeset="/data/grp_section2/grp_q9/comp_other_specify" type="string" relevant="selected( /data/grp_section2/grp_q9/comp_other , 'antepartum') or selected( /data/grp_section2/grp_q9/comp_other , 'intrapartum') or selected( /data/grp_section2/grp_q9/comp_other , 'postpartum') or selected( /data/grp_section2/grp_q9/comp_other , 'dont_know')"/>
+      <bind nodeset="/data/grp_section3" relevant=" /data/consent_given ='yes'"/>
+      <bind nodeset="/data/grp_section3/anc_count" type="string"/>
+      <bind nodeset="/data/grp_section3/anc_place" type="string" relevant=" /data/grp_section3/anc_count !='none' and  /data/grp_section3/anc_count !='unknown'"/>
+      <bind nodeset="/data/grp_section3/anc_place_other" type="string" relevant="selected( /data/grp_section3/anc_place , 'other')"/>
+      <bind nodeset="/data/grp_section3/anc_provider" type="string" relevant=" /data/grp_section3/anc_count !='none' and  /data/grp_section3/anc_count !='unknown'"/>
+      <bind nodeset="/data/grp_section3/anc_provider_other" type="string" relevant="selected( /data/grp_section3/anc_provider , 'other')"/>
+      <bind nodeset="/data/grp_section3/birth_plan" type="string"/>
+      <bind nodeset="/data/grp_section4" relevant=" /data/consent_given ='yes'"/>
+      <bind nodeset="/data/grp_section4/s4_note" readonly="true()" type="string"/>
+      <bind nodeset="/data/grp_section4/delivery_place" type="string" relevant=" /data/grp_section1/death_period ='delivery' or  /data/grp_section1/death_period ='postpartum_42d'"/>
+      <bind nodeset="/data/grp_section4/delivery_place_other" type="string" relevant=" /data/grp_section4/delivery_place ='other'"/>
+      <bind nodeset="/data/grp_section4/delivery_conductor" type="string" relevant=" /data/grp_section1/death_period ='delivery' or  /data/grp_section1/death_period ='postpartum_42d'"/>
+      <bind nodeset="/data/grp_section4/delivery_conductor_other" type="string" relevant=" /data/grp_section4/delivery_conductor ='other'"/>
+      <bind nodeset="/data/grp_section4/delivery_mode" type="string" relevant=" /data/grp_section1/death_period ='delivery' or  /data/grp_section1/death_period ='postpartum_42d'"/>
+      <bind nodeset="/data/grp_section4/delivery_outcome" type="string"/>
+      <bind nodeset="/data/grp_section5" relevant=" /data/consent_given ='yes'"/>
+      <bind nodeset="/data/grp_section5/treatment_received" type="string"/>
+      <bind nodeset="/data/grp_section5/treatment_place" type="string" relevant=" /data/grp_section5/treatment_received ='yes'"/>
+      <bind nodeset="/data/grp_section5/treatment_place_other" type="string" relevant="selected( /data/grp_section5/treatment_place , 'other')"/>
+      <bind nodeset="/data/grp_section5/treatment_provider" type="string" relevant=" /data/grp_section5/treatment_received ='yes'"/>
+      <bind nodeset="/data/grp_section5/treatment_provider_other" type="string" relevant="selected( /data/grp_section5/treatment_provider , 'other')"/>
+      <bind nodeset="/data/grp_section5/no_treatment_reasons" type="string" relevant=" /data/grp_section5/treatment_received ='no'"/>
+      <bind nodeset="/data/grp_section5/no_treatment_other" type="string" relevant="selected( /data/grp_section5/no_treatment_reasons , 'other')"/>
+      <bind nodeset="/data/grp_section6" relevant=" /data/consent_given ='yes' and  /data/grp_section1/death_period ='postpartum_42d'"/>
+      <bind nodeset="/data/grp_section6/s6_note" readonly="true()" type="string"/>
+      <bind nodeset="/data/grp_section6/death_after_delivery_days" type="int" constraint=". &gt;= 0 and . &lt;= 42"/>
+      <bind nodeset="/data/grp_section6/death_after_delivery_hours" type="int" constraint=". &gt;= 0 and . &lt;= 23"/>
+      <bind nodeset="/data/grp_section6/death_after_delivery_minutes" type="int" constraint=". &gt;= 0 and . &lt;= 59"/>
+      <bind nodeset="/data/grp_section6/pnc_count" type="int" constraint=". &gt;= 0 and . &lt;= 99"/>
+      <bind nodeset="/data/grp_section6/pnc_first_days" type="int" relevant=" /data/grp_section6/pnc_count  &gt; 0 and  /data/grp_section6/pnc_count  != 99"/>
+      <bind nodeset="/data/grp_section6/pnc_first_hours" type="int" relevant=" /data/grp_section6/pnc_count  &gt; 0 and  /data/grp_section6/pnc_count  != 99"/>
+      <bind nodeset="/data/grp_section6/pnc_place" type="string" relevant=" /data/grp_section6/pnc_count  &gt; 0 and  /data/grp_section6/pnc_count  != 99"/>
+      <bind nodeset="/data/grp_section6/pnc_place_other" type="string" relevant="selected( /data/grp_section6/pnc_place , 'other')"/>
+      <bind nodeset="/data/grp_section6/pnc_provider" type="string" relevant=" /data/grp_section6/pnc_count  &gt; 0 and  /data/grp_section6/pnc_count  != 99"/>
+      <bind nodeset="/data/grp_section6/pnc_provider_other" type="string" relevant="selected( /data/grp_section6/pnc_provider , 'other')"/>
+      <bind nodeset="/data/grp_narrative" relevant=" /data/consent_given ='yes'"/>
+      <bind nodeset="/data/grp_narrative/narrative_before_death" type="string"/>
+      <bind nodeset="/data/grp_narrative/cause_opinion" type="string"/>
+      <bind nodeset="/data/grp_narrative/certificate_cause" type="string"/>
+      <bind nodeset="/data/grp_icd/icd_ref_note" readonly="true()" type="string"/>
+      <bind nodeset="/data/grp_icd/icd_cause" type="string"/>
+      <bind nodeset="/data/grp_icd/icd_code" type="string"/>
+      <bind nodeset="/data/grp_icd/icd_disease_name" type="string"/>
+      <bind nodeset="/data/grp_icd/icd_diagnoser_name" type="string"/>
+      <bind nodeset="/data/grp_icd/icd_diagnoser_designation" type="string"/>
+      <bind nodeset="/data/grp_icd/icd_diagnoser_institution" type="string"/>
+      <bind nodeset="/data/grp_icd/icd_date" type="date"/>
+      <bind nodeset="/data/meta/instanceID" type="string" readonly="true()" jr:preload="uid"/>
+    </model>
+  </h:head>
+  <h:body class="theme-grid">
+    <group ref="/data/grp_meta">
+      <label ref="jr:itext('/data/grp_meta:label')"/>
+      <input ref="/data/grp_meta/location">
+        <label ref="jr:itext('/data/grp_meta/location:label')"/>
+      </input>
+      <input ref="/data/grp_meta/collection_date">
+        <label ref="jr:itext('/data/grp_meta/collection_date:label')"/>
+      </input>
+      <select1 ref="/data/grp_meta/district">
+        <label ref="jr:itext('/data/grp_meta/district:label')"/>
+        <itemset nodeset="instance('district')/root/item">
+          <value ref="name"/>
+          <label ref="jr:itext(itextId)"/>
+        </itemset>
+      </select1>
+      <input ref="/data/grp_meta/upazila">
+        <label ref="jr:itext('/data/grp_meta/upazila:label')"/>
+      </input>
+      <input ref="/data/grp_meta/union">
+        <label ref="jr:itext('/data/grp_meta/union:label')"/>
+      </input>
+      <input ref="/data/grp_meta/ward">
+        <label ref="jr:itext('/data/grp_meta/ward:label')"/>
+      </input>
+      <input ref="/data/grp_meta/village">
+        <label ref="jr:itext('/data/grp_meta/village:label')"/>
+      </input>
+      <input ref="/data/grp_meta/enumerator_name">
+        <label ref="jr:itext('/data/grp_meta/enumerator_name:label')"/>
+      </input>
+      <input ref="/data/grp_meta/enumerator_designation">
+        <label ref="jr:itext('/data/grp_meta/enumerator_designation:label')"/>
+      </input>
+      <input ref="/data/grp_meta/enumerator_institution">
+        <label ref="jr:itext('/data/grp_meta/enumerator_institution:label')"/>
+      </input>
+      <input ref="/data/grp_meta/enumerator_mobile">
+        <label ref="jr:itext('/data/grp_meta/enumerator_mobile:label')"/>
+      </input>
+      <input ref="/data/grp_meta/case_serial">
+        <label ref="jr:itext('/data/grp_meta/case_serial:label')"/>
+        <hint>The handwritten serial number from the paper form, if any.</hint>
+      </input>
+    </group>
+    <input ref="/data/consent_note">
+      <label ref="jr:itext('/data/consent_note:label')"/>
+    </input>
+    <select1 ref="/data/consent_given">
+      <label ref="jr:itext('/data/consent_given:label')"/>
+      <itemset nodeset="instance('yes_no')/root/item">
+        <value ref="name"/>
+        <label ref="jr:itext(itextId)"/>
+      </itemset>
+    </select1>
+    <input ref="/data/interview_date">
+      <label ref="jr:itext('/data/interview_date:label')"/>
+    </input>
+    <group ref="/data/grp_respondent">
+      <label ref="jr:itext('/data/grp_respondent:label')"/>
+      <input ref="/data/grp_respondent/respondent_mobile">
+        <label ref="jr:itext('/data/grp_respondent/respondent_mobile:label')"/>
+      </input>
+      <input ref="/data/grp_respondent/respondent_main_name">
+        <label ref="jr:itext('/data/grp_respondent/respondent_main_name:label')"/>
+      </input>
+      <select1 ref="/data/grp_respondent/respondent_main_rel">
+        <label ref="jr:itext('/data/grp_respondent/respondent_main_rel:label')"/>
+        <itemset nodeset="instance('relationship')/root/item">
+          <value ref="name"/>
+          <label ref="jr:itext(itextId)"/>
+        </itemset>
+      </select1>
+      <select1 ref="/data/grp_respondent/respondent_main_present">
+        <label ref="jr:itext('/data/grp_respondent/respondent_main_present:label')"/>
+        <itemset nodeset="instance('yes_no')/root/item">
+          <value ref="name"/>
+          <label ref="jr:itext(itextId)"/>
+        </itemset>
+      </select1>
+      <input ref="/data/grp_respondent/respondent_alt1_name">
+        <label ref="jr:itext('/data/grp_respondent/respondent_alt1_name:label')"/>
+      </input>
+      <select1 ref="/data/grp_respondent/respondent_alt1_rel">
+        <label ref="jr:itext('/data/grp_respondent/respondent_alt1_rel:label')"/>
+        <itemset nodeset="instance('relationship')/root/item">
+          <value ref="name"/>
+          <label ref="jr:itext(itextId)"/>
+        </itemset>
+      </select1>
+      <select1 ref="/data/grp_respondent/respondent_alt1_present">
+        <label ref="jr:itext('/data/grp_respondent/respondent_alt1_present:label')"/>
+        <itemset nodeset="instance('yes_no')/root/item">
+          <value ref="name"/>
+          <label ref="jr:itext(itextId)"/>
+        </itemset>
+      </select1>
+      <input ref="/data/grp_respondent/respondent_alt2_name">
+        <label ref="jr:itext('/data/grp_respondent/respondent_alt2_name:label')"/>
+      </input>
+      <select1 ref="/data/grp_respondent/respondent_alt2_rel">
+        <label ref="jr:itext('/data/grp_respondent/respondent_alt2_rel:label')"/>
+        <itemset nodeset="instance('relationship')/root/item">
+          <value ref="name"/>
+          <label ref="jr:itext(itextId)"/>
+        </itemset>
+      </select1>
+      <select1 ref="/data/grp_respondent/respondent_alt2_present">
+        <label ref="jr:itext('/data/grp_respondent/respondent_alt2_present:label')"/>
+        <itemset nodeset="instance('yes_no')/root/item">
+          <value ref="name"/>
+          <label ref="jr:itext(itextId)"/>
+        </itemset>
+      </select1>
+    </group>
+    <group ref="/data/grp_identity">
+      <label ref="jr:itext('/data/grp_identity:label')"/>
+      <input ref="/data/grp_identity/clinic_name">
+        <label ref="jr:itext('/data/grp_identity/clinic_name:label')"/>
+      </input>
+      <input ref="/data/grp_identity/clinic_code">
+        <label ref="jr:itext('/data/grp_identity/clinic_code:label')"/>
+        <hint>Numeric code printed on the paper form.</hint>
+      </input>
+      <input ref="/data/grp_identity/deceased_name">
+        <label ref="jr:itext('/data/grp_identity/deceased_name:label')"/>
+      </input>
+      <input ref="/data/grp_identity/mother_dhis2_code">
+        <label ref="jr:itext('/data/grp_identity/mother_dhis2_code:label')"/>
+        <hint>DHIS-2 registration number from the paper form.</hint>
+      </input>
+      <input ref="/data/grp_identity/deceased_age">
+        <label ref="jr:itext('/data/grp_identity/deceased_age:label')"/>
+      </input>
+      <select1 ref="/data/grp_identity/mother_education">
+        <label ref="jr:itext('/data/grp_identity/mother_education:label')"/>
+        <itemset nodeset="instance('education_level')/root/item">
+          <value ref="name"/>
+          <label ref="jr:itext(itextId)"/>
+        </itemset>
+      </select1>
+      <select1 ref="/data/grp_identity/household_ses">
+        <label ref="jr:itext('/data/grp_identity/household_ses:label')"/>
+        <itemset nodeset="instance('ses')/root/item">
+          <value ref="name"/>
+          <label ref="jr:itext(itextId)"/>
+        </itemset>
+      </select1>
+      <input ref="/data/grp_identity/deceased_husband">
+        <label ref="jr:itext('/data/grp_identity/deceased_husband:label')"/>
+      </input>
+      <input ref="/data/grp_identity/husband_age">
+        <label ref="jr:itext('/data/grp_identity/husband_age:label')"/>
+      </input>
+    </group>
+    <group ref="/data/grp_section1">
+      <label ref="jr:itext('/data/grp_section1:label')"/>
+      <input ref="/data/grp_section1/death_date">
+        <label ref="jr:itext('/data/grp_section1/death_date:label')"/>
+      </input>
+      <input ref="/data/grp_section1/death_time">
+        <label ref="jr:itext('/data/grp_section1/death_time:label')"/>
+      </input>
+      <select1 ref="/data/grp_section1/death_period">
+        <label ref="jr:itext('/data/grp_section1/death_period:label')"/>
+        <itemset nodeset="instance('death_period')/root/item">
+          <value ref="name"/>
+          <label ref="jr:itext(itextId)"/>
+        </itemset>
+      </select1>
+      <select1 ref="/data/grp_section1/death_place">
+        <label ref="jr:itext('/data/grp_section1/death_place:label')"/>
+        <itemset nodeset="instance('death_place')/root/item">
+          <value ref="name"/>
+          <label ref="jr:itext(itextId)"/>
+        </itemset>
+      </select1>
+      <input ref="/data/grp_section1/death_place_other">
+        <label ref="jr:itext('/data/grp_section1/death_place_other:label')"/>
+      </input>
+      <input ref="/data/grp_section1/gestation_month">
+        <label ref="jr:itext('/data/grp_section1/gestation_month:label')"/>
+      </input>
+      <input ref="/data/grp_section1/gestation_week">
+        <label ref="jr:itext('/data/grp_section1/gestation_week:label')"/>
+      </input>
+      <input ref="/data/grp_section1/children_born">
+        <label ref="jr:itext('/data/grp_section1/children_born:label')"/>
+      </input>
+      <input ref="/data/grp_section1/abortion_count">
+        <label ref="jr:itext('/data/grp_section1/abortion_count:label')"/>
+      </input>
+      <select1 ref="/data/grp_section1/abortion_unknown">
+        <label ref="jr:itext('/data/grp_section1/abortion_unknown:label')"/>
+        <itemset nodeset="instance('yes_no')/root/item">
+          <value ref="name"/>
+          <label ref="jr:itext(itextId)"/>
+        </itemset>
+      </select1>
+    </group>
+    <group ref="/data/grp_section2">
+      <label ref="jr:itext('/data/grp_section2:label')"/>
+      <select1 ref="/data/grp_section2/prepreg_disease">
+        <label ref="jr:itext('/data/grp_section2/prepreg_disease:label')"/>
+        <itemset nodeset="instance('yes_no')/root/item">
+          <value ref="name"/>
+          <label ref="jr:itext(itextId)"/>
+        </itemset>
+      </select1>
+      <select ref="/data/grp_section2/prepreg_disease_types">
+        <label ref="jr:itext('/data/grp_section2/prepreg_disease_types:label')"/>
+        <itemset nodeset="instance('prepreg_disease_type')/root/item">
+          <value ref="name"/>
+          <label ref="jr:itext(itextId)"/>
+        </itemset>
+      </select>
+      <input ref="/data/grp_section2/prepreg_disease_other">
+        <label ref="jr:itext('/data/grp_section2/prepreg_disease_other:label')"/>
+      </input>
+      <select1 ref="/data/grp_section2/last_pregnancy_outcome">
+        <label ref="jr:itext('/data/grp_section2/last_pregnancy_outcome:label')"/>
+        <itemset nodeset="instance('last_pregnancy_outcome')/root/item">
+          <value ref="name"/>
+          <label ref="jr:itext(itextId)"/>
+        </itemset>
+      </select1>
+      <input ref="/data/grp_section2/q9_note">
+        <label ref="jr:itext('/data/grp_section2/q9_note:label')"/>
+      </input>
+      <group appearance="field-list" ref="/data/grp_section2/grp_q9">
+        <label ref="jr:itext('/data/grp_section2/grp_q9:label')"/>
+        <select ref="/data/grp_section2/grp_q9/q9_header" appearance="label">
+          <label ref="jr:itext('/data/grp_section2/grp_q9/q9_header:label')"/>
+          <itemset nodeset="instance('complication_phase')/root/item">
+            <value ref="name"/>
+            <label ref="jr:itext(itextId)"/>
+          </itemset>
+        </select>
+        <select ref="/data/grp_section2/grp_q9/comp_high_bp" appearance="list-nolabel">
+          <label ref="jr:itext('/data/grp_section2/grp_q9/comp_high_bp:label')"/>
+          <itemset nodeset="instance('complication_phase')/root/item">
+            <value ref="name"/>
+            <label ref="jr:itext(itextId)"/>
+          </itemset>
+        </select>
+        <select ref="/data/grp_section2/grp_q9/comp_diabetes" appearance="list-nolabel">
+          <label ref="jr:itext('/data/grp_section2/grp_q9/comp_diabetes:label')"/>
+          <itemset nodeset="instance('complication_phase')/root/item">
+            <value ref="name"/>
+            <label ref="jr:itext(itextId)"/>
+          </itemset>
+        </select>
+        <select ref="/data/grp_section2/grp_q9/comp_abortion" appearance="list-nolabel">
+          <label ref="jr:itext('/data/grp_section2/grp_q9/comp_abortion:label')"/>
+          <itemset nodeset="instance('complication_phase')/root/item">
+            <value ref="name"/>
+            <label ref="jr:itext(itextId)"/>
+          </itemset>
+        </select>
+        <select ref="/data/grp_section2/grp_q9/comp_haemorrhage" appearance="list-nolabel">
+          <label ref="jr:itext('/data/grp_section2/grp_q9/comp_haemorrhage:label')"/>
+          <itemset nodeset="instance('complication_phase')/root/item">
+            <value ref="name"/>
+            <label ref="jr:itext(itextId)"/>
+          </itemset>
+        </select>
+        <select ref="/data/grp_section2/grp_q9/comp_high_fever" appearance="list-nolabel">
+          <label ref="jr:itext('/data/grp_section2/grp_q9/comp_high_fever:label')"/>
+          <itemset nodeset="instance('complication_phase')/root/item">
+            <value ref="name"/>
+            <label ref="jr:itext(itextId)"/>
+          </itemset>
+        </select>
+        <select ref="/data/grp_section2/grp_q9/comp_oedema" appearance="list-nolabel">
+          <label ref="jr:itext('/data/grp_section2/grp_q9/comp_oedema:label')"/>
+          <itemset nodeset="instance('complication_phase')/root/item">
+            <value ref="name"/>
+            <label ref="jr:itext(itextId)"/>
+          </itemset>
+        </select>
+        <select ref="/data/grp_section2/grp_q9/comp_convulsion" appearance="list-nolabel">
+          <label ref="jr:itext('/data/grp_section2/grp_q9/comp_convulsion:label')"/>
+          <itemset nodeset="instance('complication_phase')/root/item">
+            <value ref="name"/>
+            <label ref="jr:itext(itextId)"/>
+          </itemset>
+        </select>
+        <select ref="/data/grp_section2/grp_q9/comp_jaundice" appearance="list-nolabel">
+          <label ref="jr:itext('/data/grp_section2/grp_q9/comp_jaundice:label')"/>
+          <itemset nodeset="instance('complication_phase')/root/item">
+            <value ref="name"/>
+            <label ref="jr:itext(itextId)"/>
+          </itemset>
+        </select>
+        <select ref="/data/grp_section2/grp_q9/comp_anaemia" appearance="list-nolabel">
+          <label ref="jr:itext('/data/grp_section2/grp_q9/comp_anaemia:label')"/>
+          <itemset nodeset="instance('complication_phase')/root/item">
+            <value ref="name"/>
+            <label ref="jr:itext(itextId)"/>
+          </itemset>
+        </select>
+        <select ref="/data/grp_section2/grp_q9/comp_blurred_vision" appearance="list-nolabel">
+          <label ref="jr:itext('/data/grp_section2/grp_q9/comp_blurred_vision:label')"/>
+          <itemset nodeset="instance('complication_phase')/root/item">
+            <value ref="name"/>
+            <label ref="jr:itext(itextId)"/>
+          </itemset>
+        </select>
+        <select ref="/data/grp_section2/grp_q9/comp_prolonged_labour" appearance="list-nolabel">
+          <label ref="jr:itext('/data/grp_section2/grp_q9/comp_prolonged_labour:label')"/>
+          <itemset nodeset="instance('complication_phase')/root/item">
+            <value ref="name"/>
+            <label ref="jr:itext(itextId)"/>
+          </itemset>
+        </select>
+        <select ref="/data/grp_section2/grp_q9/comp_reduced_movement" appearance="list-nolabel">
+          <label ref="jr:itext('/data/grp_section2/grp_q9/comp_reduced_movement:label')"/>
+          <itemset nodeset="instance('complication_phase')/root/item">
+            <value ref="name"/>
+            <label ref="jr:itext(itextId)"/>
+          </itemset>
+        </select>
+        <select ref="/data/grp_section2/grp_q9/comp_uterine_rupture" appearance="list-nolabel">
+          <label ref="jr:itext('/data/grp_section2/grp_q9/comp_uterine_rupture:label')"/>
+          <itemset nodeset="instance('complication_phase')/root/item">
+            <value ref="name"/>
+            <label ref="jr:itext(itextId)"/>
+          </itemset>
+        </select>
+        <select ref="/data/grp_section2/grp_q9/comp_malpresentation" appearance="list-nolabel">
+          <label ref="jr:itext('/data/grp_section2/grp_q9/comp_malpresentation:label')"/>
+          <itemset nodeset="instance('complication_phase')/root/item">
+            <value ref="name"/>
+            <label ref="jr:itext(itextId)"/>
+          </itemset>
+        </select>
+        <select ref="/data/grp_section2/grp_q9/comp_retained_placenta" appearance="list-nolabel">
+          <label ref="jr:itext('/data/grp_section2/grp_q9/comp_retained_placenta:label')"/>
+          <itemset nodeset="instance('complication_phase')/root/item">
+            <value ref="name"/>
+            <label ref="jr:itext(itextId)"/>
+          </itemset>
+        </select>
+        <select ref="/data/grp_section2/grp_q9/comp_foul_discharge" appearance="list-nolabel">
+          <label ref="jr:itext('/data/grp_section2/grp_q9/comp_foul_discharge:label')"/>
+          <itemset nodeset="instance('complication_phase')/root/item">
+            <value ref="name"/>
+            <label ref="jr:itext(itextId)"/>
+          </itemset>
+        </select>
+        <select ref="/data/grp_section2/grp_q9/comp_abdominal_pain" appearance="list-nolabel">
+          <label ref="jr:itext('/data/grp_section2/grp_q9/comp_abdominal_pain:label')"/>
+          <itemset nodeset="instance('complication_phase')/root/item">
+            <value ref="name"/>
+            <label ref="jr:itext(itextId)"/>
+          </itemset>
+        </select>
+        <select ref="/data/grp_section2/grp_q9/comp_other" appearance="list-nolabel">
+          <label ref="jr:itext('/data/grp_section2/grp_q9/comp_other:label')"/>
+          <itemset nodeset="instance('complication_phase')/root/item">
+            <value ref="name"/>
+            <label ref="jr:itext(itextId)"/>
+          </itemset>
+        </select>
+        <input ref="/data/grp_section2/grp_q9/comp_other_specify">
+          <label ref="jr:itext('/data/grp_section2/grp_q9/comp_other_specify:label')"/>
+        </input>
+      </group>
+    </group>
+    <group ref="/data/grp_section3">
+      <label ref="jr:itext('/data/grp_section3:label')"/>
+      <select1 ref="/data/grp_section3/anc_count">
+        <label ref="jr:itext('/data/grp_section3/anc_count:label')"/>
+        <itemset nodeset="instance('anc_count')/root/item">
+          <value ref="name"/>
+          <label ref="jr:itext(itextId)"/>
+        </itemset>
+      </select1>
+      <select ref="/data/grp_section3/anc_place">
+        <label ref="jr:itext('/data/grp_section3/anc_place:label')"/>
+        <itemset nodeset="instance('facility_place')/root/item">
+          <value ref="name"/>
+          <label ref="jr:itext(itextId)"/>
+        </itemset>
+      </select>
+      <input ref="/data/grp_section3/anc_place_other">
+        <label ref="jr:itext('/data/grp_section3/anc_place_other:label')"/>
+      </input>
+      <select ref="/data/grp_section3/anc_provider">
+        <label ref="jr:itext('/data/grp_section3/anc_provider:label')"/>
+        <itemset nodeset="instance('provider_cadre')/root/item">
+          <value ref="name"/>
+          <label ref="jr:itext(itextId)"/>
+        </itemset>
+      </select>
+      <input ref="/data/grp_section3/anc_provider_other">
+        <label ref="jr:itext('/data/grp_section3/anc_provider_other:label')"/>
+      </input>
+      <select ref="/data/grp_section3/birth_plan">
+        <label ref="jr:itext('/data/grp_section3/birth_plan:label')"/>
+        <itemset nodeset="instance('birth_plan')/root/item">
+          <value ref="name"/>
+          <label ref="jr:itext(itextId)"/>
+        </itemset>
+      </select>
+    </group>
+    <group ref="/data/grp_section4">
+      <label ref="jr:itext('/data/grp_section4:label')"/>
+      <input ref="/data/grp_section4/s4_note">
+        <label ref="jr:itext('/data/grp_section4/s4_note:label')"/>
+      </input>
+      <select1 ref="/data/grp_section4/delivery_place">
+        <label ref="jr:itext('/data/grp_section4/delivery_place:label')"/>
+        <itemset nodeset="instance('facility_place')/root/item">
+          <value ref="name"/>
+          <label ref="jr:itext(itextId)"/>
+        </itemset>
+      </select1>
+      <input ref="/data/grp_section4/delivery_place_other">
+        <label ref="jr:itext('/data/grp_section4/delivery_place_other:label')"/>
+      </input>
+      <select1 ref="/data/grp_section4/delivery_conductor">
+        <label ref="jr:itext('/data/grp_section4/delivery_conductor:label')"/>
+        <itemset nodeset="instance('provider_cadre')/root/item">
+          <value ref="name"/>
+          <label ref="jr:itext(itextId)"/>
+        </itemset>
+      </select1>
+      <input ref="/data/grp_section4/delivery_conductor_other">
+        <label ref="jr:itext('/data/grp_section4/delivery_conductor_other:label')"/>
+      </input>
+      <select1 ref="/data/grp_section4/delivery_mode">
+        <label ref="jr:itext('/data/grp_section4/delivery_mode:label')"/>
+        <itemset nodeset="instance('delivery_mode')/root/item">
+          <value ref="name"/>
+          <label ref="jr:itext(itextId)"/>
+        </itemset>
+      </select1>
+      <select1 ref="/data/grp_section4/delivery_outcome">
+        <label ref="jr:itext('/data/grp_section4/delivery_outcome:label')"/>
+        <itemset nodeset="instance('delivery_outcome')/root/item">
+          <value ref="name"/>
+          <label ref="jr:itext(itextId)"/>
+        </itemset>
+      </select1>
+    </group>
+    <group ref="/data/grp_section5">
+      <label ref="jr:itext('/data/grp_section5:label')"/>
+      <select1 ref="/data/grp_section5/treatment_received">
+        <label ref="jr:itext('/data/grp_section5/treatment_received:label')"/>
+        <itemset nodeset="instance('yes_no')/root/item">
+          <value ref="name"/>
+          <label ref="jr:itext(itextId)"/>
+        </itemset>
+      </select1>
+      <select ref="/data/grp_section5/treatment_place">
+        <label ref="jr:itext('/data/grp_section5/treatment_place:label')"/>
+        <itemset nodeset="instance('facility_place')/root/item">
+          <value ref="name"/>
+          <label ref="jr:itext(itextId)"/>
+        </itemset>
+      </select>
+      <input ref="/data/grp_section5/treatment_place_other">
+        <label ref="jr:itext('/data/grp_section5/treatment_place_other:label')"/>
+      </input>
+      <select ref="/data/grp_section5/treatment_provider">
+        <label ref="jr:itext('/data/grp_section5/treatment_provider:label')"/>
+        <itemset nodeset="instance('provider_cadre')/root/item">
+          <value ref="name"/>
+          <label ref="jr:itext(itextId)"/>
+        </itemset>
+      </select>
+      <input ref="/data/grp_section5/treatment_provider_other">
+        <label ref="jr:itext('/data/grp_section5/treatment_provider_other:label')"/>
+      </input>
+      <select ref="/data/grp_section5/no_treatment_reasons">
+        <label ref="jr:itext('/data/grp_section5/no_treatment_reasons:label')"/>
+        <itemset nodeset="instance('no_treatment_reason')/root/item">
+          <value ref="name"/>
+          <label ref="jr:itext(itextId)"/>
+        </itemset>
+      </select>
+      <input ref="/data/grp_section5/no_treatment_other">
+        <label ref="jr:itext('/data/grp_section5/no_treatment_other:label')"/>
+      </input>
+    </group>
+    <group ref="/data/grp_section6">
+      <label ref="jr:itext('/data/grp_section6:label')"/>
+      <input ref="/data/grp_section6/s6_note">
+        <label ref="jr:itext('/data/grp_section6/s6_note:label')"/>
+      </input>
+      <input ref="/data/grp_section6/death_after_delivery_days">
+        <label ref="jr:itext('/data/grp_section6/death_after_delivery_days:label')"/>
+      </input>
+      <input ref="/data/grp_section6/death_after_delivery_hours">
+        <label ref="jr:itext('/data/grp_section6/death_after_delivery_hours:label')"/>
+      </input>
+      <input ref="/data/grp_section6/death_after_delivery_minutes">
+        <label ref="jr:itext('/data/grp_section6/death_after_delivery_minutes:label')"/>
+      </input>
+      <input ref="/data/grp_section6/pnc_count">
+        <label ref="jr:itext('/data/grp_section6/pnc_count:label')"/>
+        <hint>Enter 99 if not known.</hint>
+      </input>
+      <input ref="/data/grp_section6/pnc_first_days">
+        <label ref="jr:itext('/data/grp_section6/pnc_first_days:label')"/>
+      </input>
+      <input ref="/data/grp_section6/pnc_first_hours">
+        <label ref="jr:itext('/data/grp_section6/pnc_first_hours:label')"/>
+      </input>
+      <select ref="/data/grp_section6/pnc_place">
+        <label ref="jr:itext('/data/grp_section6/pnc_place:label')"/>
+        <itemset nodeset="instance('facility_place')/root/item">
+          <value ref="name"/>
+          <label ref="jr:itext(itextId)"/>
+        </itemset>
+      </select>
+      <input ref="/data/grp_section6/pnc_place_other">
+        <label ref="jr:itext('/data/grp_section6/pnc_place_other:label')"/>
+      </input>
+      <select ref="/data/grp_section6/pnc_provider">
+        <label ref="jr:itext('/data/grp_section6/pnc_provider:label')"/>
+        <itemset nodeset="instance('provider_cadre')/root/item">
+          <value ref="name"/>
+          <label ref="jr:itext(itextId)"/>
+        </itemset>
+      </select>
+      <input ref="/data/grp_section6/pnc_provider_other">
+        <label ref="jr:itext('/data/grp_section6/pnc_provider_other:label')"/>
+      </input>
+    </group>
+    <group ref="/data/grp_narrative">
+      <label ref="jr:itext('/data/grp_narrative:label')"/>
+      <input ref="/data/grp_narrative/narrative_before_death" appearance="multiline">
+        <label ref="jr:itext('/data/grp_narrative/narrative_before_death:label')"/>
+      </input>
+      <input ref="/data/grp_narrative/cause_opinion" appearance="multiline">
+        <label ref="jr:itext('/data/grp_narrative/cause_opinion:label')"/>
+      </input>
+      <input ref="/data/grp_narrative/certificate_cause" appearance="multiline">
+        <label ref="jr:itext('/data/grp_narrative/certificate_cause:label')"/>
+      </input>
+    </group>
+    <group ref="/data/grp_icd">
+      <label ref="jr:itext('/data/grp_icd:label')"/>
+      <input ref="/data/grp_icd/icd_ref_note">
+        <label ref="jr:itext('/data/grp_icd/icd_ref_note:label')"/>
+      </input>
+      <select1 ref="/data/grp_icd/icd_cause">
+        <label ref="jr:itext('/data/grp_icd/icd_cause:label')"/>
+        <itemset nodeset="instance('icd_cause')/root/item">
+          <value ref="name"/>
+          <label ref="jr:itext(itextId)"/>
+        </itemset>
+      </select1>
+      <input ref="/data/grp_icd/icd_code">
+        <label ref="jr:itext('/data/grp_icd/icd_code:label')"/>
+        <hint>e.g. O72</hint>
+      </input>
+      <input ref="/data/grp_icd/icd_disease_name">
+        <label ref="jr:itext('/data/grp_icd/icd_disease_name:label')"/>
+      </input>
+      <input ref="/data/grp_icd/icd_diagnoser_name">
+        <label ref="jr:itext('/data/grp_icd/icd_diagnoser_name:label')"/>
+      </input>
+      <input ref="/data/grp_icd/icd_diagnoser_designation">
+        <label ref="jr:itext('/data/grp_icd/icd_diagnoser_designation:label')"/>
+      </input>
+      <input ref="/data/grp_icd/icd_diagnoser_institution">
+        <label ref="jr:itext('/data/grp_icd/icd_diagnoser_institution:label')"/>
+      </input>
+      <input ref="/data/grp_icd/icd_date">
+        <label ref="jr:itext('/data/grp_icd/icd_date:label')"/>
+      </input>
+    </group>
+  </h:body>
+</h:html>

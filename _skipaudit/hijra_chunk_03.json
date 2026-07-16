@@ -1,0 +1,623 @@
+[
+ {
+  "idx": 106,
+  "name": "b306_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other (specify)",
+  "label_bn": "অন্যান্য (উল্লেখ করুন)",
+  "own_relevant": "${b306}='7'",
+  "ancestor_gates": [
+   {
+    "group": "grp_m1c",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${b306}='7'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "b306": {
+    "type": "select_one",
+    "choices": {
+     "1": "Piped/supplied water",
+     "2": "Hand tube well",
+     "3": "Deep tube well",
+     "4": "Shallow tube well",
+     "5": "Ring well/artesian well",
+     "6": "Pond/river/canal",
+     "7": "Other (specify)"
+    },
+    "label": "B306 What is the main source of drinking water for the household?"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 109,
+  "name": "b308_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other (specify)",
+  "label_bn": "অন্যান্য (উল্লেখ করুন)",
+  "own_relevant": "${b308}='6'",
+  "ancestor_gates": [
+   {
+    "group": "grp_m1c",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${b308}='6'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "b308": {
+    "type": "select_one",
+    "choices": {
+     "1": "Supplied/piped gas or LPG cylinder",
+     "2": "Kerosene",
+     "3": "Wood",
+     "4": "Dry leaves/rice husks/sawdust",
+     "5": "Electricity",
+     "6": "Other (specify)"
+    },
+    "label": "B308 What type of fuel is mainly used for cooking?"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 110,
+  "name": "m1c_note_1",
+  "type": "note",
+  "base": "note",
+  "appearance": null,
+  "label_en": "C101–C109. Food Insecurity Experience Scale (FIES) — Past 12 Months [Read each question verbatim. Ask the follow-up ('a') question only if the main question is answered 'Yes'; otherwise proceed directly to the next main question.]",
+  "label_bn": "C101–C109. খাদ্য অনিরাপত্তা অভিজ্ঞতা স্কেল (FIES) — গত ১২ মাস [প্রতিটি প্রশ্ন হুবহু পড়ে শোনান। মূল প্রশ্নের উত্তরে ‘হ্যাঁ’ হলে তবেই পরবর্তী (‘a’) প্রশ্নটি করুন; অন্যথায় সরাসরি পরবর্তী মূল প্রশ্নে যান।]",
+  "own_relevant": null,
+  "ancestor_gates": [
+   {
+    "group": "grp_m1c",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": true,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 112,
+  "name": "c101a",
+  "type": "select_one c101a_opts",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "C101a How many times did this happen?",
+  "label_bn": "C101a এটি কতবার ঘটেছে?",
+  "own_relevant": "${c101}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_m1c",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${c101}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "c101": {
+    "type": "select_one",
+    "choices": {
+     "0": "No",
+     "1": "Yes",
+     "98": "Don't know",
+     "99": "Decline to answer"
+    },
+    "label": "C101 In the past 12 months, were you ever worried that you would not have enough"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 114,
+  "name": "c102a",
+  "type": "select_one c102a_opts",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "C102a How many times did this happen?",
+  "label_bn": "C102a এটি কতবার ঘটেছে?",
+  "own_relevant": "${c102}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_m1c",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${c102}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "c102": {
+    "type": "select_one",
+    "choices": {
+     "0": "No",
+     "1": "Yes",
+     "98": "Don't know",
+     "99": "Decline to answer"
+    },
+    "label": "C102 In the past 12 months, was there a time when you were unable to eat healthy"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 116,
+  "name": "c103a",
+  "type": "select_one c103a_opts",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "C103a How many times did this happen?",
+  "label_bn": "C103a এটি কতবার ঘটেছে?",
+  "own_relevant": "${c103}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_m1c",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${c103}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "c103": {
+    "type": "select_one",
+    "choices": {
+     "0": "No",
+     "1": "Yes",
+     "98": "Don't know",
+     "99": "Decline to answer"
+    },
+    "label": "C103 In the past 12 months, was there a time when you ate only a small amount of"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 118,
+  "name": "c104a",
+  "type": "select_one c104a_opts",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "C104a How many times did this happen?",
+  "label_bn": "C104a এটি কতবার ঘটেছে?",
+  "own_relevant": "${c104}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_m1c",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${c104}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "c104": {
+    "type": "select_one",
+    "choices": {
+     "0": "No",
+     "1": "Yes",
+     "98": "Don't know",
+     "99": "Decline to answer"
+    },
+    "label": "C104 In the past 12 months, did you ever have to skip a meal due to lack of mone"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 120,
+  "name": "c105a",
+  "type": "select_one c105a_opts",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "C105a How many times did this happen?",
+  "label_bn": "C105a এটি কতবার ঘটেছে?",
+  "own_relevant": "${c105}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_m1c",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${c105}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "c105": {
+    "type": "select_one",
+    "choices": {
+     "0": "No",
+     "1": "Yes",
+     "98": "Don't know",
+     "99": "Decline to answer"
+    },
+    "label": "C105 In the past 12 months, was there a time when you ate less than you needed d"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 122,
+  "name": "c106a",
+  "type": "select_one c106a_opts",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "C106a How many times did this happen?",
+  "label_bn": "C106a এটি কতবার ঘটেছে?",
+  "own_relevant": "${c106}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_m1c",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${c106}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "c106": {
+    "type": "select_one",
+    "choices": {
+     "0": "No",
+     "1": "Yes",
+     "98": "Don't know",
+     "99": "Decline to answer"
+    },
+    "label": "C106 In the past 12 months, was there a time when your household ran out of food"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 124,
+  "name": "c107a",
+  "type": "select_one c107a_opts",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "C107a How many times did this happen?",
+  "label_bn": "C107a এটি কতবার ঘটেছে?",
+  "own_relevant": "${c107}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_m1c",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${c107}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "c107": {
+    "type": "select_one",
+    "choices": {
+     "0": "No",
+     "1": "Yes",
+     "98": "Don't know",
+     "99": "Decline to answer"
+    },
+    "label": "C107 In the past 12 months, was there a time when you went without eating even t"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 126,
+  "name": "c108a",
+  "type": "select_one c108a_opts",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "C108a How many times did this happen?",
+  "label_bn": "C108a এটি কতবার ঘটেছে?",
+  "own_relevant": "${c108}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_m1c",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${c108}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "c108": {
+    "type": "select_one",
+    "choices": {
+     "0": "No",
+     "1": "Yes",
+     "98": "Don't know",
+     "99": "Decline to answer"
+    },
+    "label": "C108 In the past 12 months, was there a time when you went to sleep hungry due t"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 128,
+  "name": "c109a",
+  "type": "select_one c109a_opts",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "C109a How many times did this happen?",
+  "label_bn": "C109a এটি কতবার ঘটেছে?",
+  "own_relevant": "${c109}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_m1c",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${c109}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "c109": {
+    "type": "select_one",
+    "choices": {
+     "0": "No",
+     "1": "Yes",
+     "98": "Don't know",
+     "99": "Decline to answer"
+    },
+    "label": "C109 In the past 12 months, was there a time when you went a whole day without e"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 131,
+  "name": "grp_module2",
+  "type": "begin_group",
+  "base": "begin_group",
+  "appearance": null,
+  "label_en": "Module 2. Structural Issues, Community-Level Challenges, and Rights",
+  "label_bn": "মডিউল ২. কাঠামোগত বিষয়সমূহ, কমিউনিটি পর্যায়ের চ্যালেঞ্জ এবং অধিকার",
+  "own_relevant": "${_proceed}='1'",
+  "ancestor_gates": [],
+  "effective_gates": [
+   "${_proceed}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 158,
+  "name": "q2_9",
+  "type": "select_one q2_9_opts",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "Q2.9 How comfortable do you feel speaking about your needs and concerns in this civic space?",
+  "label_bn": "Q2.9 এই নাগরিক পরিসরে আপনার প্রয়োজন ও উদ্বেগ নিয়ে কথা বলতে আপনি কতটা স্বাচ্ছন্দ্যবোধ করেন?",
+  "own_relevant": "${q2_8}!='2' and ${q2_8}!='3'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module2",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q2_8}!='2' and ${q2_8}!='3'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q2_8": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "3": "No such space exists here"
+    },
+    "label": "Q2.8 Do you feel comfortable speaking about your needs and concerns in any civic"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ }
+]

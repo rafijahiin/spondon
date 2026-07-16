@@ -305,7 +305,7 @@ def build_report(population='fsw', *, force=False):
     current_version = _current_version(records)
 
     engine, field_map = build_fsw_engine(
-        headers, current_version=current_version, gps_outlier_km=1.5,
+        headers, current_version=current_version,
         field_map=field_map,
         exclusive_options=_exclusive_label_map(schema, population),
         short_minutes=SHORT_MINUTES.get(population, 40),

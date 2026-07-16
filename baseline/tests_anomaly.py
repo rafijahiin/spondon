@@ -78,13 +78,15 @@ class AdapterRuleTests(TestCase):
         report, _ = _scan(records)
         return {a['rule_id'] for a in report['anomalies']}, report
 
-    def test_missing_end_flagged_not_zero_duration(self):
+    def test_missing_end_produces_no_timing_flag(self):
+        # A blank end time means the device served an old form version — that is the
+        # OLD_FORM_VERSION flag's job. It must not also become a timing fault, and
+        # above all must not be read as a zero-minute (short) interview.
         rec = _kobo()
         rec.pop('grp_admin/interview_end_actual')       # old-form: no in-form end
         rec['__version__'] = 'vOLD'
         ids, report = self._ids([rec])
-        self.assertIn('MISSING_INTERVIEW_END', ids)
-        # It is NOT turned into a short/zero-minute interview.
+        self.assertNotIn('MISSING_INTERVIEW_END', ids)
         self.assertNotIn('INTERVIEW_TOO_SHORT', ids)
         self.assertNotIn('END_BEFORE_START', ids)
 
@@ -300,13 +302,13 @@ class HijraAdapterTests(TestCase):
         report, _ = _scan(records, population='hijra')
         return {a['rule_id'] for a in report['anomalies']}
 
-    def test_hijra_missing_end_on_old_form(self):
+    def test_hijra_missing_end_on_old_form_reports_only_the_version(self):
         rec = _hijra_kobo()
         rec.pop('grp_admin/interview_end_actual')
         rec['__version__'] = 'vOLD'
         ids = self._ids([rec])
-        self.assertIn('MISSING_INTERVIEW_END', ids)
         self.assertIn('OLD_FORM_VERSION', ids)
+        self.assertNotIn('MISSING_INTERVIEW_END', ids)
 
     def test_hijra_age_mismatch(self):
         rec = _hijra_kobo(**{'grp_scr/s2_age': 27, 'grp_a2/a205_age': 40})
@@ -514,18 +516,27 @@ class SystematicPassRegressionTest(TestCase):
         rec = _hijra_kobo(**{'grp_admin/interview_end_actual': '2026-07-12T10:39:00'})
         self.assertIn('INTERVIEW_TOO_SHORT', self._ids([rec], population='hijra'))
 
-    def test_broken_income_does_not_also_flag_expenses(self):
-        # income=12 is already LIKELY_MISSING_ZERO_IN_INCOME; comparing 12 against
-        # 21000 of expenses produced a second HIGH flag with "ratio: 1750".
-        rec = _kobo(**{'grp_b1/b108': 12, 'grp_b1/b110_family': 21000, 'grp_b1/b109': '0'})
-        ids = self._ids([rec])
-        self.assertIn('LIKELY_MISSING_ZERO_IN_INCOME', ids)
-        self.assertNotIn('EXPENSES_EXCEED_INCOME_NO_OTHER_SOURCE', ids)
+    def test_short_interview_is_always_high(self):
+        # Any breach of the 40-minute line is HIGH — not scaled down to medium for
+        # a near-miss. A 39-minute interview is as incomplete as a 5-minute one.
+        for end in ('2026-07-12T10:39:00', '2026-07-12T10:05:00'):
+            report, _ = _scan([_kobo(**{'grp_admin/interview_end_actual': end})])
+            short = [a for a in report['anomalies'] if a['rule_id'] == 'INTERVIEW_TOO_SHORT']
+            self.assertEqual([a['severity'] for a in short], ['high'], end)
 
-    def test_real_expense_overrun_still_flagged(self):
-        # A usable income that is genuinely exceeded by expenses still flags.
+    def test_expense_overrun_retired(self):
+        # Spending more than you earn is ordinary here — borrowing, savings and debt
+        # are the norm, and the rule could not tell those from a data fault.
         rec = _kobo(**{'grp_b1/b108': 5000, 'grp_b1/b110_family': 21000, 'grp_b1/b109': '0'})
-        self.assertIn('EXPENSES_EXCEED_INCOME_NO_OTHER_SOURCE', self._ids([rec]))
+        self.assertNotIn('EXPENSES_EXCEED_INCOME_NO_OTHER_SOURCE', self._ids([rec]))
+
+    def test_gps_quality_rules_retired(self):
+        # Precision and distance-from-site describe the handset and the outreach,
+        # not the answers. INVALID_GPS/INCOMPLETE_GPS stay registered (see
+        # build_fsw_engine) — this fixture carries no coordinates to exercise them.
+        ids = self._ids([_kobo(**{'_geolocation_precision': 120, '_geolocation': [23.8, 90.4]})])
+        self.assertNotIn('LOW_GPS_PRECISION', ids)
+        self.assertNotIn('GPS_SITE_OUTLIER', ids)
 
     def test_child_location_when_all_children_present_is_not_flagged(self):
         # a215 "With her" / "lives with me" is a consistent answer, not a defect.
@@ -582,9 +593,7 @@ class RefusalCodeTest(TestCase):
     def test_refusal_code_does_not_drive_the_expense_comparison(self):
         rec = _kobo(**{'grp_b1/b108': 99, 'grp_b1/b110_family': 21000,
                        'grp_b1/b109': '0'})
-        ids = self._ids([rec])
-        self.assertNotIn('EXPENSES_EXCEED_INCOME_NO_OTHER_SOURCE', ids)
-        self.assertNotIn('LIKELY_MISSING_ZERO_IN_INCOME', ids)
+        self.assertNotIn('LIKELY_MISSING_ZERO_IN_INCOME', self._ids([rec]))
 
 
 class FlatFortyMinuteThresholdTest(TestCase):

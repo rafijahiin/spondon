@@ -1,0 +1,655 @@
+[
+ {
+  "idx": 273,
+  "name": "q6_2",
+  "type": "select_multiple q6_2_opts",
+  "base": "select_multiple",
+  "appearance": null,
+  "label_en": "Q6.2 What type of health facility did you visit? (Multiple answers)",
+  "label_bn": "Q6.2 আপনি কোন ধরনের স্বাস্থ্যসেবা প্রতিষ্ঠানে গিয়েছিলেন? (একাধিক উত্তর)",
+  "own_relevant": "${q6_1}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module6",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q6_1}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q6_1": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No"
+    },
+    "label": "Q6.1 In the past 12 months, did you visit any health facility for your own healt"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 274,
+  "name": "q6_2_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other (specify)",
+  "label_bn": "অন্যান্য (উল্লেখ করুন)",
+  "own_relevant": "selected(${q6_2},'6')",
+  "ancestor_gates": [
+   {
+    "group": "grp_module6",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "selected(${q6_2},'6')"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q6_2": {
+    "type": "select_multiple",
+    "choices": {
+     "1": "Government hospital / Upazila Health Complex / Community Clinic",
+     "2": "Private clinic/doctor",
+     "3": "NGO clinic/DIC (inside or near brothel)",
+     "4": "Pharmacy/drug seller",
+     "5": "Traditional healer / herbalist",
+     "6": "Other (specify) __________"
+    },
+    "label": "Q6.2 What type of health facility did you visit? (Multiple answers)"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 275,
+  "name": "q6_3",
+  "type": "select_multiple q6_3_opts",
+  "base": "select_multiple",
+  "appearance": null,
+  "label_en": "Q6.3 What services did you receive in the past 12 months? (Multiple answers)",
+  "label_bn": "Q6.3 গত ১২ মাসে আপনি কোন কোন সেবা গ্রহণ করেছেন? (একাধিক উত্তর)",
+  "own_relevant": "${q6_1}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module6",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q6_1}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q6_1": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No"
+    },
+    "label": "Q6.1 In the past 12 months, did you visit any health facility for your own healt"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 276,
+  "name": "q6_3_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other (specify)",
+  "label_bn": "অন্যান্য (উল্লেখ করুন)",
+  "own_relevant": "selected(${q6_3},'11')",
+  "ancestor_gates": [
+   {
+    "group": "grp_module6",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "selected(${q6_3},'11')"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q6_3": {
+    "type": "select_multiple",
+    "choices": {
+     "01": "Treatment for general illness",
+     "02": "STI-related services",
+     "03": "HIV testing/counselling",
+     "04": "Condoms/lubricant",
+     "05": "Family planning services",
+     "06": "ANC/delivery/postnatal care",
+     "07": "MR / post-abortion care",
+     "08": "Mental health counselling",
+     "09": "GBV-related support",
+     "10": "Child health services",
+     "11": "Other (specify) __________"
+    },
+    "label": "Q6.3 What services did you receive in the past 12 months? (Multiple answers)"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 277,
+  "name": "q6_4",
+  "type": "select_one q6_4_opts",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "Q6.4 Overall, how satisfied are you with the services you received?",
+  "label_bn": "Q6.4 আপনি যে সেবাগুলো পেয়েছেন, সেগুলো নিয়ে সামগ্রিকভাবে কতটা সন্তুষ্ট?",
+  "own_relevant": "${q6_1}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module6",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q6_1}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q6_1": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No"
+    },
+    "label": "Q6.1 In the past 12 months, did you visit any health facility for your own healt"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 278,
+  "name": "q6_5",
+  "type": "select_one q6_5_opts",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "Q6.5 Are the supplies needed for women in your profession (condoms, lubricant, hygiene items) available at the health facilities you use?",
+  "label_bn": "Q6.5 আপনি যে স্বাস্থ্যসেবা প্রতিষ্ঠানে যান, সেখানে কি আপনার পেশার নারীদের জন্য প্রয়োজনীয় সামগ্রী (কনডম, লুব্রিকেন্ট, পরিচ্ছন্নতা সামগ্রী) পাওয়া যায়?",
+  "own_relevant": "${q6_1}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module6",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q6_1}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q6_1": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No"
+    },
+    "label": "Q6.1 In the past 12 months, did you visit any health facility for your own healt"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 279,
+  "name": "q6_6",
+  "type": "select_one q6_6_opts",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "Q6.6 ‡ At the health facility you use most, is the service provider aware of your occupation?",
+  "label_bn": "Q6.6 ‡ আপনি যে স্বাস্থ্যসেবা প্রতিষ্ঠান সবচেয়ে বেশি ব্যবহার করেন, সেখানে সেবাদাতা কি আপনার পেশা সম্পর্কে জানেন?",
+  "own_relevant": "${q6_1}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module6",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q6_1}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q6_1": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No"
+    },
+    "label": "Q6.1 In the past 12 months, did you visit any health facility for your own healt"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 280,
+  "name": "q6_7",
+  "type": "select_one q6_7_opts",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "Q6.7 Does a health worker, NGO clinic, or peer educator provide services in your work area (brothel or street)?",
+  "label_bn": "Q6.7 কোনো স্বাস্থ্যকর্মী, এনজিও ক্লিনিক বা পিয়ার এডুকেটর কি আপনার কাজের এলাকায় (ব্রোথেল বা স্ট্রিটে) সেবা প্রদান করেন?",
+  "own_relevant": "${q6_1}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module6",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q6_1}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q6_1": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No"
+    },
+    "label": "Q6.1 In the past 12 months, did you visit any health facility for your own healt"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 281,
+  "name": "q6_8",
+  "type": "select_one q6_8_opts",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "Q6.8 In the past 6 months, how many times has a peer educator or outreach worker personally contacted you (for health education, condom supply, screening invitation, etc.)?",
+  "label_bn": "Q6.8 গত ৬ মাসে একজন পিয়ার এডুকেটর বা আউটরিচ কর্মী কতবার ব্যক্তিগতভাবে আপনার সঙ্গে যোগাযোগ করেছেন (স্বাস্থ্যশিক্ষা, কনডম সরবরাহ, স্ক্রিনিংয়ের আমন্ত্রণ ইত্যাদি বিষয়ে)?",
+  "own_relevant": "${q6_1}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module6",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q6_1}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q6_1": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No"
+    },
+    "label": "Q6.1 In the past 12 months, did you visit any health facility for your own healt"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 282,
+  "name": "q6_9",
+  "type": "select_one q6_9_opts",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "Q6.9 In the past 6 months, have you attended any group education session (yard meeting/group session) on SRHR, HIV, or GBV?",
+  "label_bn": "Q6.9 গত ৬ মাসে SRHR, HIV বা GBV বিষয়ে কোনো দলীয় শিক্ষা সেশনে (উঠান বৈঠক/গ্রুপ সেশন) অংশগ্রহণ করেছেন কি?",
+  "own_relevant": "${q6_1}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module6",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q6_1}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q6_1": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No"
+    },
+    "label": "Q6.1 In the past 12 months, did you visit any health facility for your own healt"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 283,
+  "name": "q6_9_num",
+  "type": "integer",
+  "base": "integer",
+  "appearance": null,
+  "label_en": "Yes — number of sessions:",
+  "label_bn": "হ্যাঁ — সেশনের সংখ্যা:",
+  "own_relevant": "${q6_1}='1' and ${q6_9}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module6",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q6_1}='1' and ${q6_9}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q6_1": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No"
+    },
+    "label": "Q6.1 In the past 12 months, did you visit any health facility for your own healt"
+   },
+   "q6_9": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes — number of sessions:",
+     "2": "No"
+    },
+    "label": "Q6.9 In the past 6 months, have you attended any group education session (yard m"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 284,
+  "name": "q6_10",
+  "type": "select_one q6_10_opts",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "Q6.10 In the past 6 months, was a mobile health camp held in your work area (brothel or street), and did you receive its services?",
+  "label_bn": "Q6.10 গত ৬ মাসে কি আপনার কাজের এলাকায় (ব্রোথেল বা স্ট্রিটে) কোনো মোবাইল স্বাস্থ্য ক্যাম্প অনুষ্ঠিত হয়েছিল কি, এবং আপনি কি এর সেবা গ্রহণ করেছেন?",
+  "own_relevant": "${q6_1}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module6",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q6_1}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q6_1": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No"
+    },
+    "label": "Q6.1 In the past 12 months, did you visit any health facility for your own healt"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 297,
+  "name": "q6_12",
+  "type": "select_multiple q6_12_opts",
+  "base": "select_multiple",
+  "appearance": null,
+  "label_en": "Q6.12 ‡ If Q6.1 = 2: Why did you not visit any health facility in the past 12 months? (Multiple; do not read list)",
+  "label_bn": "Q6.12 ‡ Q6.1 = 2 হলে: গত ১২ মাসে কোনো স্বাস্থ্যসেবা প্রতিষ্ঠানে কেন যাননি? (একাধিক উত্তর; তালিকা পড়বেন না)",
+  "own_relevant": "${q6_1}='2'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module6",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q6_1}='2'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": true,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q6_1": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No"
+    },
+    "label": "Q6.1 In the past 12 months, did you visit any health facility for your own healt"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 298,
+  "name": "q6_12_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other (specify)",
+  "label_bn": "অন্যান্য (উল্লেখ করুন)",
+  "own_relevant": "${q6_1}='2' and selected(${q6_12},'10')",
+  "ancestor_gates": [
+   {
+    "group": "grp_module6",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q6_1}='2' and selected(${q6_12},'10')"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q6_1": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No"
+    },
+    "label": "Q6.1 In the past 12 months, did you visit any health facility for your own healt"
+   },
+   "q6_12": {
+    "type": "select_multiple",
+    "choices": {
+     "01": "Was not sick",
+     "02": "Was sick but did not feel it was necessary",
+     "03": "Not satisfied with quality of care",
+     "04": "Services/supplies needed for our profession not available there",
+     "05": "Fear of refusal or poor treatment",
+     "06": "Fear of revealing my occupation",
+     "07": "Too expensive",
+     "08": "Too far away",
+     "09": "Could not leave work / feared income loss",
+     "10": "Other (specify) __________"
+    },
+    "label": "Q6.12 ‡ If Q6.1 = 2: Why did you not visit any health facility in the past 12 mo"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ }
+]

@@ -1,0 +1,4119 @@
+{
+ "grp_admin": {
+  "type": "end_group",
+  "label": ""
+ },
+ "organisation": {
+  "type": "calculate",
+  "label": "",
+  "calculation": "'CIPRB'"
+ },
+ "population": {
+  "type": "calculate",
+  "label": "",
+  "calculation": "'hijra'"
+ },
+ "survey_round": {
+  "type": "calculate",
+  "label": "",
+  "calculation": "'baseline'"
+ },
+ "questionnaire_serial": {
+  "type": "text",
+  "label": "Questionnaire Serial No."
+ },
+ "_dup_serial": {
+  "type": "calculate",
+  "label": "",
+  "calculation": "pulldata('respondents_hijra','serial','serial',translate(normalize-space(${questionnaire_serial}),'abcdefghijklmnopqrstuvwxyz','ABCDEFGHIJKLMNOPQRSTUVWXYZ'))"
+ },
+ "_dup_warn": {
+  "type": "note",
+  "label": "⚠ This serial is already recorded — do not enter the same respondent twice."
+ },
+ "cluster_site_code": {
+  "type": "text",
+  "label": "Cluster/Site Code"
+ },
+ "district": {
+  "type": "select_one",
+  "label": "District",
+  "choices": {
+   "sunamganj": "Sunamganj",
+   "habiganj": "Habiganj",
+   "manikganj": "Manikganj",
+   "narayanganj": "Narayanganj",
+   "chandpur": "Chandpur",
+   "noakhali": "Noakhali",
+   "chittagong": "Chittagong",
+   "bandarban": "Bandarban"
+  }
+ },
+ "district_code": {
+  "type": "calculate",
+  "label": "",
+  "calculation": "if(${district}='sunamganj','1',if(${district}='habiganj','2',if(${district}='manikganj','3',if(${district}='narayanganj','4',if(${district}='chandpur','5',if(${district}='noakhali','6',if(${district}='chittagong','7',if(${district}='bandarban','8',''))))))))"
+ },
+ "interviewer_name_code": {
+  "type": "text",
+  "label": "Name & Code of Interviewer"
+ },
+ "supervisor_name_code": {
+  "type": "text",
+  "label": "Name & Code of Supervisor"
+ },
+ "interview_date": {
+  "type": "date",
+  "label": "Interview Date (Day/Month/Year)"
+ },
+ "start_time": {
+  "type": "time",
+  "label": "Start Time"
+ },
+ "interview_attempts": {
+  "type": "integer",
+  "label": "Number of Interview Attempts"
+ },
+ "interview_language": {
+  "type": "select_one",
+  "label": "Interview Language",
+  "choices": {
+   "1": "Bengali",
+   "2": "Other (specify)"
+  }
+ },
+ "interview_language_other": {
+  "type": "text",
+  "label": "Other (specify)"
+ },
+ "interview_method": {
+  "type": "select_one",
+  "label": "Method",
+  "choices": {
+   "1": "Face-to-face interview",
+   "2": "CAPI Tablet"
+  }
+ },
+ "location": {
+  "type": "geopoint",
+  "label": "Geo-reference — Cluster/Site GPS (required; cluster level only)"
+ },
+ "consent_instr": {
+  "type": "note",
+  "label": "[Read aloud verbatim in Bengali. Hand the respondent an information sheet. Allow time for questions."
+ },
+ "consent_script": {
+  "type": "note",
+  "label": "\"Good morning/good afternoon. My name is ____________________. I am working on behalf of [name of da"
+ },
+ "consent": {
+  "type": "select_one",
+  "label": "Consent given",
+  "choices": {
+   "1": "Yes",
+   "2": "No"
+  }
+ },
+ "consent_no_end": {
+  "type": "note",
+  "label": "No consent — thank the respondent and end the interview."
+ },
+ "grp_screen": {
+  "type": "end_group",
+  "label": ""
+ },
+ "s1_selection": {
+  "type": "select_one",
+  "label": "Interviewer: Record how the respondent was selected. (Do not read aloud)",
+  "choices": {
+   "1": "Peer referral/respondent-driven",
+   "2": "CBO/DIC list",
+   "3": "Hotspot/fixed venue",
+   "4": "Other"
+  }
+ },
+ "s1_selection_other": {
+  "type": "text",
+  "label": "Other (specify)"
+ },
+ "s2_age": {
+  "type": "integer",
+  "label": "What is your current age (in completed years)?"
+ },
+ "s2_ineligible": {
+  "type": "note",
+  "label": "Under 18 — end interview and mark as ineligible."
+ },
+ "s3_member": {
+  "type": "select_one",
+  "label": "Do you consider yourself a member of the hijra/gender-diverse community? (e.g., hijra, transgender, ",
+  "choices": {
+   "1": "Yes",
+   "2": "No"
+  }
+ },
+ "s4_residence": {
+  "type": "select_one",
+  "label": "How long have you been living in this district?",
+  "choices": {
+   "1": "Less than 6 months",
+   "2": "6 months or more"
+  }
+ },
+ "s_ineligible_end": {
+  "type": "note",
+  "label": "Respondent is not eligible — end the interview."
+ },
+ "_proceed": {
+  "type": "calculate",
+  "label": "",
+  "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+ },
+ "m1_head": {
+  "type": "note",
+  "label": "Module 1. Background and Socio-Demographic Information"
+ },
+ "grp_a1": {
+  "type": "end_group",
+  "label": ""
+ },
+ "a102_respondent_type": {
+  "type": "select_one",
+  "label": "A102. Respondent Type Code ‡",
+  "choices": {
+   "1": "Hijra",
+   "2": "Transgender Woman",
+   "3": "Transgender Man",
+   "4": "Man who identifies as MSM",
+   "5": "Lesbian Woman",
+   "6": "Bisexual Person",
+   "7": "Intersex Person",
+   "8": "Queer/Non-binary/Other Gender-diverse Person"
+  }
+ },
+ "grp_a2": {
+  "type": "end_group",
+  "label": ""
+ },
+ "a201_district": {
+  "type": "select_one",
+  "label": "A201. District",
+  "choices": {
+   "sunamganj": "Sunamganj",
+   "habiganj": "Habiganj",
+   "manikganj": "Manikganj",
+   "narayanganj": "Narayanganj",
+   "chandpur": "Chandpur",
+   "noakhali": "Noakhali",
+   "chittagong": "Chittagong",
+   "bandarban": "Bandarban"
+  }
+ },
+ "a202_upazila": {
+  "type": "text",
+  "label": "A202. Upazila/Thana/City Corporation"
+ },
+ "a203_union": {
+  "type": "text",
+  "label": "A203. Union/Ward"
+ },
+ "a204_area": {
+  "type": "select_one",
+  "label": "A204. Area",
+  "choices": {
+   "1": "Urban",
+   "2": "Peri-urban",
+   "3": "Rural"
+  }
+ },
+ "a205_age": {
+  "type": "integer",
+  "label": "A205. Completed Age (in years)"
+ },
+ "a206_religion": {
+  "type": "select_one",
+  "label": "A206. Religion",
+  "choices": {
+   "1": "Islam",
+   "2": "Hinduism",
+   "3": "Christianity",
+   "4": "Buddhism",
+   "5": "Other (specify)",
+   "6": "No religion"
+  }
+ },
+ "a206_religion_other": {
+  "type": "text",
+  "label": "Other religion (specify)"
+ },
+ "a207_ethnicity": {
+  "type": "select_one",
+  "label": "A207. Ethnic identity",
+  "choices": {
+   "1": "Bengali",
+   "2": "Ethnic minority (specify)"
+  }
+ },
+ "a207_ethnicity_other": {
+  "type": "text",
+  "label": "Ethnic minority (specify)"
+ },
+ "a208_marital": {
+  "type": "select_one",
+  "label": "A208. Current marital/relationship status",
+  "choices": {
+   "1": "Never married, currently no partner",
+   "2": "Never married, has a regular partner",
+   "3": "Married (legal/social)",
+   "4": "Cohabiting without marriage",
+   "5": "Separated/abandoned",
+   "6": "Divorced",
+   "7": "Widowed",
+   "8": "Hijra relationship (Parik/Neheri)"
+  }
+ },
+ "a209_education": {
+  "type": "select_one",
+  "label": "A209. Highest educational qualification",
+  "choices": {
+   "00": "No formal education",
+   "01": "Grades 1–4 completed (write grade completed)",
+   "05": "Grades 5–7 completed",
+   "08": "Grades 8–9 completed",
+   "10": "SSC/Dakhil or equivalent",
+   "12": "HSC/Alim or equivalent",
+   "14": "Bachelor's degree",
+   "16": "Master's degree or above",
+   "19": "Vocational/Trade course",
+   "20": "Madrasa (ungraded)/Other"
+  }
+ },
+ "a210_student": {
+  "type": "select_one",
+  "label": "A210. Currently a student?",
+  "choices": {
+   "1": "Yes",
+   "2": "No"
+  }
+ },
+ "a211_mobile": {
+  "type": "select_one",
+  "label": "A211. Do you have your own mobile phone?",
+  "choices": {
+   "1": "Yes, smartphone",
+   "2": "Yes, basic phone",
+   "3": "No"
+  }
+ },
+ "a212_nid": {
+  "type": "select_one",
+  "label": "A212. Do you have a National Identity Card (NID)?",
+  "choices": {
+   "1": "Yes",
+   "2": "No"
+  }
+ },
+ "a213_nid_match": {
+  "type": "select_one",
+  "label": "A213. ‡ Does the sex listed on your NID match your current identity?",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "3": "No NID",
+   "99": "Decline to answer"
+  }
+ },
+ "a214_ancestral_district": {
+  "type": "text",
+  "label": "A214. District of ancestral home"
+ },
+ "a215_years_since_left": {
+  "type": "integer",
+  "label": "A215. How many years has it been since you left your ancestral home? (If still living there or with "
+ },
+ "grp_a3": {
+  "type": "end_group",
+  "label": ""
+ },
+ "a3_instr": {
+  "type": "note",
+  "label": "[Two-step method. Read each question and answer options using community-recognised Bengali terminolo"
+ },
+ "a301": {
+  "type": "select_one",
+  "label": "A301 ‡ What sex was registered for you at birth?",
+  "choices": {
+   "1": "Male",
+   "2": "Female",
+   "3": "Intersex/Other",
+   "99": "Decline to answer"
+  }
+ },
+ "a302_gender": {
+  "type": "select_one",
+  "label": "A302 ‡ How do you currently describe your gender identity? [One answer. Accept the respondent's own ",
+  "choices": {
+   "1": "Male",
+   "2": "Female",
+   "3": "Hijra",
+   "4": "Transgender Woman",
+   "5": "Transgender Man",
+   "6": "Non-binary/Queer",
+   "7": "Other (specify)",
+   "99": "Decline to answer"
+  }
+ },
+ "a302_other": {
+  "type": "text",
+  "label": "Other (specify)"
+ },
+ "mB_head": {
+  "type": "note",
+  "label": "B. Household/Dera Composition and Economic Status"
+ },
+ "grp_b": {
+  "type": "end_group",
+  "label": ""
+ },
+ "b101_live_with": {
+  "type": "select_one",
+  "label": "B101 ‡ Who do you currently live with?",
+  "choices": {
+   "1": "Own family (parents/siblings/relatives)",
+   "2": "In a dera with a guruma",
+   "3": "With husband/partner (parik)",
+   "4": "With friends/roommate/mess/hostel",
+   "5": "Alone",
+   "6": "Other (specify)"
+  }
+ },
+ "b101_other": {
+  "type": "text",
+  "label": "Other (specify)"
+ },
+ "b102_hh_members": {
+  "type": "integer",
+  "label": "B102 How many household members, including yourself, usually live and eat together?"
+ },
+ "b103_dera_members": {
+  "type": "integer",
+  "label": "B103 Ask only if living in a dera: How many people in total, including the guruma, live in the dera?"
+ },
+ "b104_share": {
+  "type": "integer",
+  "label": "B104 Last month, how much money (taka) did you receive as your share?"
+ },
+ "b105_shared_exp": {
+  "type": "integer",
+  "label": "B105 Last month, what was the total shared expenditure of all members (food, rent, essentials, utili"
+ },
+ "b106_personal_income": {
+  "type": "calculate",
+  "label": "",
+  "calculation": "if(${b103_dera_members}!='' and number(${b103_dera_members})>0, number(${b104_share}) - (number(${b105_shared_exp}) div number(${b103_dera_members})), '')"
+ },
+ "b106_note": {
+  "type": "note",
+  "label": "B106 Total personal income (taka/month) = B104 − (B105 ÷ B103): ${b106_personal_income}"
+ },
+ "b107_head": {
+  "type": "note",
+  "label": "B107 ‡ If not living in a dera: Over the past one month, how much money did your household earn from"
+ },
+ "b107_employment": {
+  "type": "integer",
+  "label": "• Employment/salary"
+ },
+ "b107_business": {
+  "type": "integer",
+  "label": "• Business"
+ },
+ "b107_remittance": {
+  "type": "integer",
+  "label": "• Remittance"
+ },
+ "b107_agriculture": {
+  "type": "integer",
+  "label": "• Agriculture (annual income ÷ 12)"
+ },
+ "b107_rent": {
+  "type": "integer",
+  "label": "• House/land rent"
+ },
+ "b107_badhai": {
+  "type": "integer",
+  "label": "• Badhai/dancing or community collection"
+ },
+ "b107_sexwork": {
+  "type": "integer",
+  "label": "• Sex work"
+ },
+ "b107_other": {
+  "type": "integer",
+  "label": "• Other (specify)"
+ },
+ "b107_total": {
+  "type": "calculate",
+  "label": "",
+  "calculation": "(if(${b107_employment}!='',number(${b107_employment}),0)) + (if(${b107_business}!='',number(${b107_business}),0)) + (if(${b107_remittance}!='',number(${b107_remittance}),0)) + (if(${b107_agriculture}!='',number(${b107_agriculture}),0)) + (if(${b107_rent}!='',number(${b107_rent}),0)) + (if(${b107_badhai}!='',number(${b107_badhai}),0)) + (if(${b107_sexwork}!='',number(${b107_sexwork}),0)) + (if(${b107_other}!='',number(${b107_other}),0))"
+ },
+ "b107_total_note": {
+  "type": "note",
+  "label": "B107 Total: ${b107_total}"
+ },
+ "b108_worked": {
+  "type": "select_one",
+  "label": "B108 In the past 7 days, did you work at least 1 hour to earn a living?",
+  "choices": {
+   "1": "Yes",
+   "2": "No"
+  }
+ },
+ "b109_ready": {
+  "type": "select_one",
+  "label": "B109 In the past 7 days, were you ready/available to work?",
+  "choices": {
+   "1": "Yes",
+   "2": "No"
+  }
+ },
+ "b110_looked": {
+  "type": "select_one",
+  "label": "B110 In the past 7 days, did you look for work?",
+  "choices": {
+   "1": "Yes",
+   "2": "No"
+  }
+ },
+ "b111_main_occupation": {
+  "type": "select_one",
+  "label": "B111 ‡ What is your main occupation — i.e., the work from which you earn the most?",
+  "choices": {
+   "01": "Government/NGO employment",
+   "02": "Non-agricultural day labour",
+   "03": "Agricultural worker",
+   "04": "Own business",
+   "05": "Badhai/blessing collection",
+   "06": "Dance performance collection",
+   "07": "Market tolling",
+   "08": "Sex work",
+   "09": "Beautician/parlour work",
+   "10": "Sewing/handicrafts",
+   "11": "NGO/CBO peer educator or worker",
+   "12": "Student",
+   "13": "Unemployed",
+   "14": "Unable to work due to illness/disability",
+   "15": "Other (specify)"
+  }
+ },
+ "b111_other": {
+  "type": "text",
+  "label": "Other (specify)"
+ },
+ "b112_secondary": {
+  "type": "select_multiple",
+  "label": "B112 Do you have any secondary/additional occupation? (Multiple answers possible)",
+  "choices": {
+   "01": "Government/NGO employment",
+   "02": "Non-agricultural day labour",
+   "03": "Agricultural worker",
+   "04": "Own business",
+   "05": "Badhai/blessing collection",
+   "06": "Dance performance collection",
+   "07": "Market tolling",
+   "08": "Sex work",
+   "09": "Beautician/parlour work",
+   "10": "Sewing/handicrafts",
+   "11": "NGO/CBO peer educator or worker",
+   "12": "Student",
+   "13": "Unemployed",
+   "14": "Unable to work due to illness/disability",
+   "15": "Other (specify)"
+  }
+ },
+ "b112_other": {
+  "type": "text",
+  "label": "Other (specify)"
+ },
+ "grp_m1c": {
+  "type": "end_group",
+  "label": ""
+ },
+ "b301": {
+  "type": "select_one",
+  "label": "B301 What is the ownership type of the dwelling you currently live in?",
+  "choices": {
+   "1": "Own",
+   "2": "Rented/leased",
+   "3": "Shelter/staying rent-free",
+   "4": "Dera owned or rented by guruma",
+   "5": "Other (specify)"
+  }
+ },
+ "b301_other": {
+  "type": "text",
+  "label": "Other (specify)"
+ },
+ "b302": {
+  "type": "select_one",
+  "label": "B302 What is the primary construction material of the floor? (Code from materials list)",
+  "choices": {
+   "1": "Earth",
+   "2": "Bamboo",
+   "3": "Thatch/grass",
+   "4": "Jute sticks",
+   "5": "Wood/timber",
+   "6": "CI sheet (tin)",
+   "7": "Brick/cement",
+   "8": "Tiles",
+   "9": "Open space",
+   "10": "Other (specify)"
+  }
+ },
+ "b302_other": {
+  "type": "text",
+  "label": "Other (specify)"
+ },
+ "b303": {
+  "type": "select_one",
+  "label": "B303 What is the primary construction material of the walls? (Code from materials list)",
+  "choices": {
+   "1": "Earth",
+   "2": "Bamboo",
+   "3": "Thatch/grass",
+   "4": "Jute sticks",
+   "5": "Wood/timber",
+   "6": "CI sheet (tin)",
+   "7": "Brick/cement",
+   "8": "Tiles",
+   "9": "Open space",
+   "10": "Other (specify)"
+  }
+ },
+ "b303_other": {
+  "type": "text",
+  "label": "Other (specify)"
+ },
+ "b304": {
+  "type": "select_one",
+  "label": "B304 What is the primary construction material of the roof? (Code from materials list)",
+  "choices": {
+   "1": "Earth",
+   "2": "Bamboo",
+   "3": "Thatch/grass",
+   "4": "Jute sticks",
+   "5": "Wood/timber",
+   "6": "CI sheet (tin)",
+   "7": "Brick/cement",
+   "8": "Tiles",
+   "9": "Open space",
+   "10": "Other (specify)"
+  }
+ },
+ "b304_other": {
+  "type": "text",
+  "label": "Other (specify)"
+ },
+ "b305": {
+  "type": "select_one",
+  "label": "B305 What type of toilet/latrine does the household use?",
+  "choices": {
+   "1": "Sanitary latrine with septic tank",
+   "2": "Ring slab (with water seal)",
+   "3": "Ring slab (without water seal)",
+   "4": "Ordinary pucca latrine",
+   "5": "Kacha (no septic tank)",
+   "6": "Bush/open area",
+   "7": "Other (specify)"
+  }
+ },
+ "b305_other": {
+  "type": "text",
+  "label": "Other (specify)"
+ },
+ "b306": {
+  "type": "select_one",
+  "label": "B306 What is the main source of drinking water for the household?",
+  "choices": {
+   "1": "Piped/supplied water",
+   "2": "Hand tube well",
+   "3": "Deep tube well",
+   "4": "Shallow tube well",
+   "5": "Ring well/artesian well",
+   "6": "Pond/river/canal",
+   "7": "Other (specify)"
+  }
+ },
+ "b306_other": {
+  "type": "text",
+  "label": "Other (specify)"
+ },
+ "b307": {
+  "type": "select_one",
+  "label": "B307 Does your dwelling have access to electricity?",
+  "choices": {
+   "1": "Yes",
+   "2": "No"
+  }
+ },
+ "b308": {
+  "type": "select_one",
+  "label": "B308 What type of fuel is mainly used for cooking?",
+  "choices": {
+   "1": "Supplied/piped gas or LPG cylinder",
+   "2": "Kerosene",
+   "3": "Wood",
+   "4": "Dry leaves/rice husks/sawdust",
+   "5": "Electricity",
+   "6": "Other (specify)"
+  }
+ },
+ "b308_other": {
+  "type": "text",
+  "label": "Other (specify)"
+ },
+ "m1c_note_1": {
+  "type": "note",
+  "label": "C101–C109. Food Insecurity Experience Scale (FIES) — Past 12 Months [Read each question verbatim. As"
+ },
+ "c101": {
+  "type": "select_one",
+  "label": "C101 In the past 12 months, were you ever worried that you would not have enough food due to lack of",
+  "choices": {
+   "0": "No",
+   "1": "Yes",
+   "98": "Don't know",
+   "99": "Decline to answer"
+  }
+ },
+ "c101a": {
+  "type": "select_one",
+  "label": "C101a How many times did this happen?",
+  "choices": {
+   "1": "Very rarely (1–2 times)",
+   "2": "Occasionally (3–10 times)",
+   "3": "Often (more than 10 times)",
+   "98": "Don't know",
+   "99": "Decline to answer"
+  }
+ },
+ "c102": {
+  "type": "select_one",
+  "label": "C102 In the past 12 months, was there a time when you were unable to eat healthy and nutritious food",
+  "choices": {
+   "0": "No",
+   "1": "Yes",
+   "98": "Don't know",
+   "99": "Decline to answer"
+  }
+ },
+ "c102a": {
+  "type": "select_one",
+  "label": "C102a How many times did this happen?",
+  "choices": {
+   "1": "Very rarely (1–2 times)",
+   "2": "Occasionally (3–10 times)",
+   "3": "Often (more than 10 times)",
+   "98": "Don't know",
+   "99": "Decline to answer"
+  }
+ },
+ "c103": {
+  "type": "select_one",
+  "label": "C103 In the past 12 months, was there a time when you ate only a small amount of food due to lack of",
+  "choices": {
+   "0": "No",
+   "1": "Yes",
+   "98": "Don't know",
+   "99": "Decline to answer"
+  }
+ },
+ "c103a": {
+  "type": "select_one",
+  "label": "C103a How many times did this happen?",
+  "choices": {
+   "1": "Very rarely (1–2 times)",
+   "2": "Occasionally (3–10 times)",
+   "3": "Often (more than 10 times)",
+   "98": "Don't know",
+   "99": "Decline to answer"
+  }
+ },
+ "c104": {
+  "type": "select_one",
+  "label": "C104 In the past 12 months, did you ever have to skip a meal due to lack of money or other resources",
+  "choices": {
+   "0": "No",
+   "1": "Yes",
+   "98": "Don't know",
+   "99": "Decline to answer"
+  }
+ },
+ "c104a": {
+  "type": "select_one",
+  "label": "C104a How many times did this happen?",
+  "choices": {
+   "1": "Very rarely (1–2 times)",
+   "2": "Occasionally (3–10 times)",
+   "3": "Often (more than 10 times)",
+   "98": "Don't know",
+   "99": "Decline to answer"
+  }
+ },
+ "c105": {
+  "type": "select_one",
+  "label": "C105 In the past 12 months, was there a time when you ate less than you needed due to lack of money ",
+  "choices": {
+   "0": "No",
+   "1": "Yes",
+   "98": "Don't know",
+   "99": "Decline to answer"
+  }
+ },
+ "c105a": {
+  "type": "select_one",
+  "label": "C105a How many times did this happen?",
+  "choices": {
+   "1": "Very rarely (1–2 times)",
+   "2": "Occasionally (3–10 times)",
+   "3": "Often (more than 10 times)",
+   "98": "Don't know",
+   "99": "Decline to answer"
+  }
+ },
+ "c106": {
+  "type": "select_one",
+  "label": "C106 In the past 12 months, was there a time when your household ran out of food and you could not b",
+  "choices": {
+   "0": "No",
+   "1": "Yes",
+   "98": "Don't know",
+   "99": "Decline to answer"
+  }
+ },
+ "c106a": {
+  "type": "select_one",
+  "label": "C106a How many times did this happen?",
+  "choices": {
+   "1": "Very rarely (1–2 times)",
+   "2": "Occasionally (3–10 times)",
+   "3": "Often (more than 10 times)",
+   "98": "Don't know",
+   "99": "Decline to answer"
+  }
+ },
+ "c107": {
+  "type": "select_one",
+  "label": "C107 In the past 12 months, was there a time when you went without eating even though you were hungr",
+  "choices": {
+   "0": "No",
+   "1": "Yes",
+   "98": "Don't know",
+   "99": "Decline to answer"
+  }
+ },
+ "c107a": {
+  "type": "select_one",
+  "label": "C107a How many times did this happen?",
+  "choices": {
+   "1": "Very rarely (1–2 times)",
+   "2": "Occasionally (3–10 times)",
+   "3": "Often (more than 10 times)",
+   "98": "Don't know",
+   "99": "Decline to answer"
+  }
+ },
+ "c108": {
+  "type": "select_one",
+  "label": "C108 In the past 12 months, was there a time when you went to sleep hungry due to lack of money or o",
+  "choices": {
+   "0": "No",
+   "1": "Yes",
+   "98": "Don't know",
+   "99": "Decline to answer"
+  }
+ },
+ "c108a": {
+  "type": "select_one",
+  "label": "C108a How many times did this happen?",
+  "choices": {
+   "1": "Very rarely (1–2 times)",
+   "2": "Occasionally (3–10 times)",
+   "3": "Often (more than 10 times)",
+   "98": "Don't know",
+   "99": "Decline to answer"
+  }
+ },
+ "c109": {
+  "type": "select_one",
+  "label": "C109 In the past 12 months, was there a time when you went a whole day without eating due to lack of",
+  "choices": {
+   "0": "No",
+   "1": "Yes",
+   "98": "Don't know",
+   "99": "Decline to answer"
+  }
+ },
+ "c109a": {
+  "type": "select_one",
+  "label": "C109a How many times did this happen?",
+  "choices": {
+   "1": "Very rarely (1–2 times)",
+   "2": "Occasionally (3–10 times)",
+   "3": "Often (more than 10 times)",
+   "98": "Don't know",
+   "99": "Decline to answer"
+  }
+ },
+ "m1c_note_2": {
+  "type": "note",
+  "label": "C109 skip: 1 -> C109a; otherwise -> Module 2"
+ },
+ "grp_module2": {
+  "type": "end_group",
+  "label": ""
+ },
+ "module2_note_1": {
+  "type": "note",
+  "label": "[Transition statement: \"Before talking about health, I would like to learn about the day-to-day circ"
+ },
+ "grp_q2_1": {
+  "type": "end_group",
+  "label": ""
+ },
+ "q2_1_hdr": {
+  "type": "select_one",
+  "label": "Experience",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "8": "N/A"
+  }
+ },
+ "q2_1_a": {
+  "type": "select_one",
+  "label": "a. Refused rental housing or threatened with eviction",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "8": "N/A"
+  }
+ },
+ "q2_1_b": {
+  "type": "select_one",
+  "label": "b. Refused service at a shop, market, restaurant, or hotel",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "8": "N/A"
+  }
+ },
+ "q2_1_c": {
+  "type": "select_one",
+  "label": "c. Prevented from using a public toilet, shared pond/bathing place, or other communal facility",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "8": "N/A"
+  }
+ },
+ "q2_1_d": {
+  "type": "select_one",
+  "label": "d. Harassed or obstructed on public transport",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "8": "N/A"
+  }
+ },
+ "q2_1_e": {
+  "type": "select_one",
+  "label": "e. Prevented from entering the home of someone outside the hijra/gender-diverse community",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "8": "N/A"
+  }
+ },
+ "q2_1_f": {
+  "type": "select_one",
+  "label": "f. Experienced problems at school/college (refused admission, assigned separate seating at the back,",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "8": "N/A"
+  }
+ },
+ "q2_1_g": {
+  "type": "select_one",
+  "label": "g. Faced discrimination at the workplace (wages, lack of cooperation, benefits, career advancement, ",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "8": "N/A"
+  }
+ },
+ "q2_1_h": {
+  "type": "select_one",
+  "label": "h. Received less pay than other workers for the same work",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "8": "N/A"
+  }
+ },
+ "q2_1_i": {
+  "type": "select_one",
+  "label": "i. Subjected to ridicule, verbal abuse, or harassment in public places (streets, markets, stations)",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "8": "N/A"
+  }
+ },
+ "q2_1_j": {
+  "type": "select_one",
+  "label": "j. Harassed or subjected to extortion demands by local influential persons/thugs",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "8": "N/A"
+  }
+ },
+ "q2_1_k": {
+  "type": "select_one",
+  "label": "k. Harassed, detained, or subjected to money demands by police in public places",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "8": "N/A"
+  }
+ },
+ "q2_1_l": {
+  "type": "select_one",
+  "label": "l. Denied a bank account, loan, or official documents because of your identity",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "8": "N/A"
+  }
+ },
+ "q2_1_m": {
+  "type": "select_one",
+  "label": "m. Deprived of inheritance or family property",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "8": "N/A"
+  }
+ },
+ "q2_1_n": {
+  "type": "select_one",
+  "label": "n. Pressured by family into an unwanted marriage",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "8": "N/A"
+  }
+ },
+ "q2_1_o": {
+  "type": "select_one",
+  "label": "o. Subjected to any form of pressure to change your identity (e.g., 'conversion' pressure, forced re",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "8": "N/A"
+  }
+ },
+ "q2_2": {
+  "type": "select_one",
+  "label": "Q2.2 Do you currently live with, or stay in contact with, your birth family?",
+  "choices": {
+   "1": "Living with family permanently",
+   "2": "Living elsewhere but visit/stay regularly",
+   "3": "Living elsewhere, occasional contact",
+   "4": "No contact"
+  }
+ },
+ "q2_3": {
+  "type": "select_one",
+  "label": "Q2.3 Can you participate in family events/gatherings (weddings, festivals, funerals/last rites)?",
+  "choices": {
+   "1": "Never",
+   "2": "In some cases",
+   "3": "In most cases",
+   "4": "In all cases"
+  }
+ },
+ "q2_4": {
+  "type": "select_one",
+  "label": "Q2.4 Can you participate in family decision-making (buying/selling assets, members' marriages, funer",
+  "choices": {
+   "1": "Never",
+   "2": "In some cases",
+   "3": "In most cases",
+   "4": "In all cases"
+  }
+ },
+ "q2_5": {
+  "type": "select_one",
+  "label": "Q2.5 Can you participate in community activities in the wider society (weddings, funerals and post-f",
+  "choices": {
+   "1": "Never",
+   "2": "In some cases",
+   "3": "In most cases",
+   "4": "In all cases"
+  }
+ },
+ "q2_6": {
+  "type": "select_one",
+  "label": "Q2.6 Can you participate in local government activities in the wider society (ward meetings, communi",
+  "choices": {
+   "1": "Never",
+   "2": "In some cases",
+   "3": "In most cases",
+   "4": "In all cases"
+  }
+ },
+ "q2_7": {
+  "type": "select_one",
+  "label": "Q2.7 Can you participate as a juror or witness in local arbitration (salish), or are you invited to ",
+  "choices": {
+   "1": "Never",
+   "2": "In some cases",
+   "3": "In most cases",
+   "4": "In all cases"
+  }
+ },
+ "q2_8": {
+  "type": "select_one",
+  "label": "Q2.8 Do you feel comfortable speaking about your needs and concerns in any civic space (forum, commi",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "3": "No such space exists here"
+  }
+ },
+ "q2_9": {
+  "type": "select_one",
+  "label": "Q2.9 How comfortable do you feel speaking about your needs and concerns in this civic space?",
+  "choices": {
+   "1": "Comfortable sharing some needs and concerns",
+   "2": "Comfortable sharing most needs and concerns",
+   "3": "Comfortable sharing all needs and concerns"
+  }
+ },
+ "q2_10": {
+  "type": "select_multiple",
+  "label": "Q2.10 ‡ What kinds of needs and concerns do you share in this civic space? (Multiple answers possibl",
+  "choices": {
+   "01": "Education rights & support",
+   "02": "Healthcare access",
+   "03": "Mental health support",
+   "04": "Legal rights",
+   "05": "Employment",
+   "06": "Inheritance law & rights",
+   "07": "Marriage law & rights",
+   "08": "Same-sex relationship rights",
+   "09": "Right to political participation",
+   "10": "Other (specify)"
+  }
+ },
+ "q2_10_other": {
+  "type": "text",
+  "label": "Other (specify)"
+ },
+ "q2_11": {
+  "type": "select_one",
+  "label": "Q2.11 Are you a member of, or involved with, any community organisation, CBO, or support group for y",
+  "choices": {
+   "1": "Yes, active member",
+   "2": "Yes, somewhat involved",
+   "3": "No"
+  }
+ },
+ "q2_12": {
+  "type": "select_multiple",
+  "label": "Q2.12 Do you know the name of any policy or law related to the legal rights and protection of the hi",
+  "choices": {
+   "1": "Constitutional commitment (Article 28)",
+   "2": "Hijra gender recognition (2013 gazette)",
+   "3": "Draft anti-discrimination law",
+   "4": "Draft Transgender and Hijra Act 2022",
+   "5": "BPC Section 377",
+   "6": "International conventions (ICCPR/ICESCR/CEDAW)",
+   "7": "Other (specify)",
+   "98": "Don't know any"
+  }
+ },
+ "q2_12_other": {
+  "type": "text",
+  "label": "Other (specify)"
+ },
+ "q2_13": {
+  "type": "select_multiple",
+  "label": "Q2.13 What types of employment benefits does the government provide for people in your community? (M",
+  "choices": {
+   "1": "Government directive on inclusion of hijra persons in public and private employment",
+   "2": "Corporate tax exemption for companies hiring transgender persons",
+   "3": "No such policy exists",
+   "98": "Don't know anything about this"
+  }
+ },
+ "q2_14": {
+  "type": "select_one",
+  "label": "Q2.14 Have you ever tried to access any employment benefit?",
+  "choices": {
+   "1": "Did not try to get any job",
+   "2": "Obtained government job under community quota",
+   "3": "Obtained government job not under community quota",
+   "4": "Obtained private sector job under community quota",
+   "5": "Obtained private sector job not under community quota",
+   "6": "Tried but did not get any job"
+  }
+ },
+ "q2_15": {
+  "type": "select_multiple",
+  "label": "Q2.15 What types of shelter/housing benefits does the government provide for people in your communit",
+  "choices": {
+   "1": "Government directive giving hijra persons priority in allocation of shelter benefits including Ashrayan Project",
+   "2": "No shelter benefits for our community",
+   "98": "Don't know anything about this"
+  }
+ },
+ "q2_16": {
+  "type": "select_one",
+  "label": "Q2.16 Have you ever tried to obtain shelter/housing through such a benefit?",
+  "choices": {
+   "1": "Yes",
+   "2": "No"
+  }
+ },
+ "q2_17": {
+  "type": "select_one",
+  "label": "Q2.17 Are you aware of any skills development or training programmes that could improve employment o",
+  "choices": {
+   "1": "Yes, such programmes exist",
+   "2": "No, no such programmes",
+   "98": "Don't know"
+  }
+ },
+ "q2_18": {
+  "type": "select_multiple",
+  "label": "Q2.18 Which programmes? (Multiple answers possible.)",
+  "choices": {
+   "1": "Government training programme",
+   "2": "NGO training programme",
+   "3": "Private sector training programme",
+   "4": "Other (specify)"
+  }
+ },
+ "q2_18_other": {
+  "type": "text",
+  "label": "Other (specify)"
+ },
+ "q2_19": {
+  "type": "select_one",
+  "label": "Q2.19 In the past 12 months, did you access any legal service (legal advice, legal aid, dispute reso",
+  "choices": {
+   "1": "Yes",
+   "2": "No"
+  }
+ },
+ "q2_20": {
+  "type": "select_multiple",
+  "label": "Q2.20 Where did you receive these services? (Multiple answers possible.)",
+  "choices": {
+   "1": "District Legal Aid Committee",
+   "2": "NGO (Bandhu, Ain o Salish Kendra, BLAST, etc.)",
+   "3": "Panel lawyer",
+   "4": "Private lawyer",
+   "5": "Village court/salish",
+   "6": "Other (specify)"
+  }
+ },
+ "q2_20_other": {
+  "type": "text",
+  "label": "Other (specify)"
+ },
+ "q2_21": {
+  "type": "select_multiple",
+  "label": "Q2.21 In the past 12 months, was there a time when you needed legal assistance but did not seek it? ",
+  "choices": {
+   "00": "Did not need such assistance",
+   "01": "Did not know where to go",
+   "02": "Fear of social stigma",
+   "03": "Complicated process",
+   "04": "Fear of harassment",
+   "05": "Family non-cooperation",
+   "06": "Cost",
+   "07": "Felt I would not get adequate support",
+   "08": "Fear of rejection",
+   "09": "Other (specify)"
+  }
+ },
+ "q2_21_other": {
+  "type": "text",
+  "label": "Other (specify)"
+ },
+ "grp_module3": {
+  "type": "end_group",
+  "label": ""
+ },
+ "module3_note_1": {
+  "type": "note",
+  "label": "[Transition script: \"Now I would like to learn about your knowledge on some health-related topics. T"
+ },
+ "q3_1": {
+  "type": "select_one",
+  "label": "Q3.1 Have you ever heard of HIV or AIDS?",
+  "choices": {
+   "1": "Yes",
+   "2": "No"
+  }
+ },
+ "q3_2": {
+  "type": "select_multiple",
+  "label": "Q3.2 How can a person become infected with HIV? [Multiple answers possible; do not read list]",
+  "choices": {
+   "01": "Unprotected sex (anal/vaginal) with an HIV-positive person",
+   "02": "From an infected mother to child",
+   "03": "Through receiving infected blood",
+   "04": "Through sharing needles/syringes",
+   "05": "Through unsterilised equipment (ear/nose piercing, tattooing, shaving, etc.)",
+   "06": "Through mosquito bites",
+   "07": "Through sharing plates/utensils or food",
+   "08": "Through using or touching the same toilet",
+   "09": "Other (specify)",
+   "98": "Don't know"
+  }
+ },
+ "q3_2_other": {
+  "type": "text",
+  "label": "Other (specify)"
+ },
+ "q3_3": {
+  "type": "select_multiple",
+  "label": "Q3.3 How can a person protect themselves from HIV? [Multiple answers possible; do not read list]",
+  "choices": {
+   "01": "Correct and consistent condom use during sex",
+   "02": "Using water-based lubricant with condoms",
+   "03": "Having one faithful HIV-negative partner",
+   "04": "Abstaining from sex",
+   "05": "Not sharing needles/syringes",
+   "06": "Testing blood before transfusion",
+   "07": "Taking HIV preventive medicine (PrEP/PEP)",
+   "08": "Other (specify)",
+   "98": "Don't know"
+  }
+ },
+ "q3_3_other": {
+  "type": "text",
+  "label": "Other (specify)"
+ },
+ "q3_4": {
+  "type": "select_multiple",
+  "label": "Q3.4 If someone needs a condom, where can they be obtained in your area? [Multiple answers possible;",
+  "choices": {
+   "01": "Pharmacy",
+   "02": "Government hospital/clinic",
+   "03": "NGO clinic/DIC",
+   "04": "Peer educator/outreach worker",
+   "05": "Shop",
+   "06": "Friend/partner",
+   "07": "Other (specify)",
+   "98": "Don't know"
+  }
+ },
+ "q3_4_other": {
+  "type": "text",
+  "label": "Other (specify)"
+ },
+ "q3_5": {
+  "type": "select_one",
+  "label": "Q3.5 If you want to get an HIV test confidentially, do you know of any place where this test can be ",
+  "choices": {
+   "1": "Yes",
+   "2": "No"
+  }
+ },
+ "q3_6": {
+  "type": "select_one",
+  "label": "Q3.6 Have you heard of PrEP — a medicine that, when taken regularly by an HIV-negative person, helps",
+  "choices": {
+   "1": "Yes",
+   "2": "No"
+  }
+ },
+ "q3_7": {
+  "type": "select_one",
+  "label": "Q3.7 Have you heard of PEP — a medicine that, if taken within 72 hours of possible HIV exposure, can",
+  "choices": {
+   "1": "Yes",
+   "2": "No"
+  }
+ },
+ "q3_8": {
+  "type": "select_one",
+  "label": "Q3.8 Apart from HIV, have you heard of any other infections that can be spread through sexual contac",
+  "choices": {
+   "1": "Yes",
+   "2": "No"
+  }
+ },
+ "q3_9": {
+  "type": "select_multiple",
+  "label": "Q3.9 Which STIs have you heard of? (Multiple answers; do not read list.)",
+  "choices": {
+   "01": "Gonorrhoea",
+   "02": "Syphilis",
+   "03": "Chlamydia",
+   "04": "Herpes",
+   "05": "Hepatitis B",
+   "06": "Genital warts/HPV",
+   "07": "Other (specify)",
+   "98": "Cannot name any"
+  }
+ },
+ "q3_9_other": {
+  "type": "text",
+  "label": "Other (specify)"
+ },
+ "q3_10": {
+  "type": "select_multiple",
+  "label": "Q3.10 ‡ What signs or symptoms in a person's body might suggest they have an STI? (Multiple answers;",
+  "choices": {
+   "01": "Burning sensation during urination",
+   "02": "Discharge from genitals/anus",
+   "03": "Sores or lesions on genitals",
+   "04": "Itching",
+   "05": "Lower abdominal pain",
+   "06": "Many STIs may have no symptoms",
+   "07": "Other (specify)",
+   "98": "Don't know"
+  }
+ },
+ "q3_10_other": {
+  "type": "text",
+  "label": "Other (specify)"
+ },
+ "q3_11": {
+  "type": "select_multiple",
+  "label": "Q3.11 Where or from whom have you received information about sexual and reproductive health? (Multip",
+  "choices": {
+   "01": "Peer educator/outreach worker",
+   "02": "NGO/CBO session or DIC",
+   "03": "Government health worker/health facility",
+   "04": "Doctor/pharmacy",
+   "05": "Friend/community member",
+   "06": "Guruma/senior community member",
+   "07": "Internet/social media",
+   "08": "TV/radio",
+   "09": "Leaflet/poster/billboard",
+   "10": "School/teacher",
+   "11": "Other (specify)",
+   "12": "Never received such information"
+  }
+ },
+ "q3_11_other": {
+  "type": "text",
+  "label": "Other (specify)"
+ },
+ "grp_module4": {
+  "type": "end_group",
+  "label": ""
+ },
+ "module4_note_1": {
+  "type": "note",
+  "label": "[Transition script: \"The following questions are about sexual relationships and sexual behaviour. I "
+ },
+ "q4_1": {
+  "type": "select_one",
+  "label": "Q4.1 ‡ Have you ever had sex?",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "99": "Decline to answer"
+  }
+ },
+ "q4_2": {
+  "type": "integer",
+  "label": "Q4.2 ‡ How old were you the first time you had sex? (Don't remember = 98, Decline to answer = 99)"
+ },
+ "q4_3": {
+  "type": "select_one",
+  "label": "Q4.3 In the past 12 months, did you have sex?",
+  "choices": {
+   "1": "Yes",
+   "2": "No"
+  }
+ },
+ "q4_4": {
+  "type": "select_multiple",
+  "label": "Q4.4 ‡ In the past 12 months, what types of partners did you have sex with? (Read each; multiple ans",
+  "choices": {
+   "1": "Regular partner/spouse (parik/panthi/neheri or equivalent)",
+   "2": "Casual (not regular, not paid) partner",
+   "3": "Those who gave you money or goods in exchange for sex",
+   "4": "Those to whom you gave money or goods in exchange for sex",
+   "99": "Decline to answer"
+  }
+ },
+ "q4_5": {
+  "type": "select_one",
+  "label": "Q4.5 In the past 12 months, with how many different individuals did you have sex in total? (enter Nu",
+  "choices": {
+   "num": "Number",
+   "98": "Don't know",
+   "99": "Decline to answer"
+  }
+ },
+ "q4_5_num": {
+  "type": "integer",
+  "label": "Number"
+ },
+ "q4_6": {
+  "type": "select_one",
+  "label": "Q4.6 Who was your most recent partner?",
+  "choices": {
+   "1": "Regular partner/spouse",
+   "2": "Casual partner",
+   "3": "Paying partner/client",
+   "4": "Person you paid",
+   "99": "Decline to answer"
+  }
+ },
+ "q4_7_intro": {
+  "type": "note",
+  "label": "Q4.7 ‡  Thinking about the past 12 months, describe condom use during sex with the different types o"
+ },
+ "grp_q4_7": {
+  "type": "end_group",
+  "label": ""
+ },
+ "q4_7_hdr": {
+  "type": "select_one",
+  "label": "Type of Partner",
+  "choices": {
+   "1": "Always",
+   "2": "Sometimes",
+   "3": "Never",
+   "8": "N/A"
+  }
+ },
+ "q4_7_a": {
+  "type": "select_one",
+  "label": "a. Regular partner/spouse",
+  "choices": {
+   "1": "Always",
+   "2": "Sometimes",
+   "3": "Never",
+   "8": "N/A"
+  }
+ },
+ "q4_7_b": {
+  "type": "select_one",
+  "label": "b. Casual partner",
+  "choices": {
+   "1": "Always",
+   "2": "Sometimes",
+   "3": "Never",
+   "8": "N/A"
+  }
+ },
+ "q4_7_c": {
+  "type": "select_one",
+  "label": "c. Paying partner/client",
+  "choices": {
+   "1": "Always",
+   "2": "Sometimes",
+   "3": "Never",
+   "8": "N/A"
+  }
+ },
+ "q4_7_d": {
+  "type": "select_one",
+  "label": "d. Person to whom you paid",
+  "choices": {
+   "1": "Always",
+   "2": "Sometimes",
+   "3": "Never",
+   "8": "N/A"
+  }
+ },
+ "q4_8": {
+  "type": "select_one",
+  "label": "Q4.8 ‡ When you use a condom, what type of lubricant do you usually use? [Do not correct answers dur",
+  "choices": {
+   "1": "Water-based lubricant (gel)",
+   "2": "Oil/cream/Vaseline",
+   "3": "Saliva",
+   "4": "Nothing",
+   "5": "Do not use condoms",
+   "6": "Other (specify)"
+  }
+ },
+ "q4_8_other": {
+  "type": "text",
+  "label": "Other (specify)"
+ },
+ "q4_9": {
+  "type": "select_multiple",
+  "label": "Q4.9 ‡ What were the main reasons for not using a condom? (Multiple answers; do not read list)",
+  "choices": {
+   "01": "Did not have a condom at the time",
+   "02": "Partner refused/objected",
+   "03": "Client paid more for sex without a condom",
+   "04": "Reduces pleasure",
+   "05": "Trusted the partner",
+   "06": "Was under the influence of alcohol/drugs",
+   "07": "Could not negotiate/feared violence",
+   "08": "Too expensive",
+   "09": "Other (specify)",
+   "10": "Always used a condom"
+  }
+ },
+ "q4_9_other": {
+  "type": "text",
+  "label": "Other (specify)"
+ },
+ "q4_10": {
+  "type": "select_one",
+  "label": "Q4.10 ‡ In the past 03 months, did you receive money, goods, or other benefits in exchange for sex?",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "99": "Decline to answer"
+  }
+ },
+ "q4_11": {
+  "type": "select_one",
+  "label": "Q4.11 In the past 03 months, did you give money, goods, or other benefits to someone in exchange for",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "99": "Decline to answer"
+  }
+ },
+ "q4_12": {
+  "type": "select_one",
+  "label": "Q4.12 In the past 3 months, how often did you use drugs during sex?",
+  "choices": {
+   "1": "Never",
+   "2": "Sometimes",
+   "3": "Often",
+   "8": "Not applicable (no sex in past 12 months)",
+   "99": "Decline to answer"
+  }
+ },
+ "q4_13": {
+  "type": "select_one",
+  "label": "Q4.13 Have you ever used drugs through injection for non-medical purposes?",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "99": "Decline to answer"
+  }
+ },
+ "q4_14": {
+  "type": "select_one",
+  "label": "Q4.14 When using drugs through injection, did you ever use a needle or syringe that someone else had",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "99": "Decline to answer"
+  }
+ },
+ "q4_15_intro": {
+  "type": "note",
+  "label": "Q4.15 ‡  To what extent do the following people know about your gender identity/sexual orientation? "
+ },
+ "grp_q4_15": {
+  "type": "end_group",
+  "label": ""
+ },
+ "q4_15_hdr": {
+  "type": "select_one",
+  "label": "Person/Group",
+  "choices": {
+   "1": "Fully aware",
+   "2": "Partially aware",
+   "3": "Not aware",
+   "8": "N/A"
+  }
+ },
+ "q4_15_a": {
+  "type": "select_one",
+  "label": "a. Your birth family",
+  "choices": {
+   "1": "Fully aware",
+   "2": "Partially aware",
+   "3": "Not aware",
+   "8": "N/A"
+  }
+ },
+ "q4_15_b": {
+  "type": "select_one",
+  "label": "b. Your close friends",
+  "choices": {
+   "1": "Fully aware",
+   "2": "Partially aware",
+   "3": "Not aware",
+   "8": "N/A"
+  }
+ },
+ "q4_15_c": {
+  "type": "select_one",
+  "label": "c. Healthcare providers you visit",
+  "choices": {
+   "1": "Fully aware",
+   "2": "Partially aware",
+   "3": "Not aware",
+   "8": "N/A"
+  }
+ },
+ "q4_15_d": {
+  "type": "select_one",
+  "label": "d. Your employer/colleagues",
+  "choices": {
+   "1": "Fully aware",
+   "2": "Partially aware",
+   "3": "Not aware",
+   "8": "N/A"
+  }
+ },
+ "q4_15_e": {
+  "type": "select_one",
+  "label": "e. Your neighbours/local community",
+  "choices": {
+   "1": "Fully aware",
+   "2": "Partially aware",
+   "3": "Not aware",
+   "8": "N/A"
+  }
+ },
+ "grp_m5": {
+  "type": "end_group",
+  "label": ""
+ },
+ "q5_1": {
+  "type": "select_one",
+  "label": "Q5.1 How would you rate your current physical health?",
+  "choices": {
+   "1": "Very good",
+   "2": "Good",
+   "3": "Fair",
+   "4": "Poor",
+   "5": "Very poor"
+  }
+ },
+ "q5_2": {
+  "type": "select_one",
+  "label": "Q5.2 Are you currently suffering from any long-term (chronic, 12 months or more) illness or health c",
+  "choices": {
+   "1": "Yes",
+   "2": "No"
+  }
+ },
+ "q5_3": {
+  "type": "select_one",
+  "label": "Q5.3 Have you received treatment for this illness or condition?",
+  "choices": {
+   "1": "Yes, treatment is ongoing",
+   "2": "Yes, but stopped treatment",
+   "3": "No"
+  }
+ },
+ "grp_q5_4": {
+  "type": "end_group",
+  "label": ""
+ },
+ "q5_4_hdr": {
+  "type": "select_one",
+  "label": "Symptom",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "99": "Decline to answer"
+  }
+ },
+ "q5_4_a": {
+  "type": "select_one",
+  "label": "a. Burning sensation during urination",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "99": "Decline to answer"
+  }
+ },
+ "q5_4_b": {
+  "type": "select_one",
+  "label": "b. Abnormally frequent urination",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "99": "Decline to answer"
+  }
+ },
+ "q5_4_c": {
+  "type": "select_one",
+  "label": "c. Unusual discharge from genitals or anus",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "99": "Decline to answer"
+  }
+ },
+ "q5_4_d": {
+  "type": "select_one",
+  "label": "d. Sores/lesions on genitals or anus",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "99": "Decline to answer"
+  }
+ },
+ "q5_5": {
+  "type": "select_one",
+  "label": "Q5.5 Did you seek treatment or advice for these symptoms?",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "8": "No symptoms (skip)"
+  }
+ },
+ "q5_6": {
+  "type": "select_one",
+  "label": "Q5.6 Where did you first go for treatment or advice? (One answer)",
+  "choices": {
+   "1": "Government hospital/clinic",
+   "2": "NGO clinic/DIC",
+   "3": "Private doctor/clinic",
+   "4": "Pharmacy/drug seller",
+   "5": "Kabiraj/traditional healer",
+   "6": "Friend/peer",
+   "7": "Other (specify) __________"
+  }
+ },
+ "q5_6_other": {
+  "type": "text",
+  "label": "Other (specify)"
+ },
+ "q5_7": {
+  "type": "select_multiple",
+  "label": "Q5.7 Why did you not seek treatment or advice? (Multiple answers; do not read list)",
+  "choices": {
+   "01": "Symptom went away on its own",
+   "02": "Too expensive",
+   "03": "Health facility too far",
+   "04": "Shame/discomfort",
+   "05": "Fear of disrespect or identity being disclosed",
+   "06": "Did not know where to go",
+   "07": "Other (specify) __________"
+  }
+ },
+ "q5_7_other": {
+  "type": "text",
+  "label": "Other (specify)"
+ },
+ "q5_8": {
+  "type": "select_one",
+  "label": "Q5.8 Have you ever been tested for HIV?",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "99": "Decline to answer"
+  }
+ },
+ "q5_9_count": {
+  "type": "integer",
+  "label": "How many times have you been tested for HIV and when was the most recent test? Total number of tests"
+ },
+ "q5_9": {
+  "type": "select_one",
+  "label": "Q5.9 Most recent test",
+  "choices": {
+   "1": "Most recent test within past 12 months",
+   "2": "1–2 years ago",
+   "3": "More than 2 years ago",
+   "98": "Don't remember"
+  }
+ },
+ "q5_10": {
+  "type": "select_one",
+  "label": "Q5.10 Did you receive your result at the time of the most recent test?",
+  "choices": {
+   "1": "Yes",
+   "2": "No"
+  }
+ },
+ "q5_11": {
+  "type": "select_one",
+  "label": "Q5.11 Did you receive pre- and/or post-test counselling at that test?",
+  "choices": {
+   "1": "Both pre- and post-test counselling",
+   "2": "Pre-test only",
+   "3": "Post-test only",
+   "4": "No counselling",
+   "98": "Don't remember"
+  }
+ },
+ "q5_12": {
+  "type": "select_one",
+  "label": "Q5.12 Do you know your current HIV status? [Do not ask the respondent to state their test result. If",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "99": "Decline to answer"
+  }
+ },
+ "q5_13": {
+  "type": "select_one",
+  "label": "Q5.13 Have you ever been tested for any other STI (sexually transmitted infection) besides HIV?",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "98": "Don't know"
+  }
+ },
+ "q5_14": {
+  "type": "select_one",
+  "label": "Q5.14 In the past 12 months, has a doctor or health worker told you that you have an STI?",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "99": "Decline to answer"
+  }
+ },
+ "q5_15": {
+  "type": "select_one",
+  "label": "Q5.15 Did you complete the full course of treatment and medication?",
+  "choices": {
+   "1": "Completed",
+   "2": "Started but did not finish",
+   "3": "Did not seek treatment"
+  }
+ },
+ "q5_16": {
+  "type": "select_one",
+  "label": "Q5.16 Have you received a Hepatitis B (Hepatitis B/C) vaccination?",
+  "choices": {
+   "1": "Yes, all doses completed",
+   "2": "Yes, partially received",
+   "3": "No",
+   "98": "Don't know"
+  }
+ },
+ "m5_note_1": {
+  "type": "note",
+  "label": "Q5.17: If A301 ≠ 2 → Module 6"
+ },
+ "q5_17": {
+  "type": "select_one",
+  "label": "Q5.17 Ask only if A301 = 2 (registered female at birth): Have you ever been pregnant?",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "99": "Decline to answer"
+  }
+ },
+ "grp_module6": {
+  "type": "end_group",
+  "label": ""
+ },
+ "q6_1": {
+  "type": "select_one",
+  "label": "Q6.1 In the past 12 months, did you visit any health facility to receive healthcare for yourself?",
+  "choices": {
+   "1": "Yes",
+   "2": "No"
+  }
+ },
+ "q6_2": {
+  "type": "select_multiple",
+  "label": "Q6.2 What type of health facility did you visit? (Multiple answers possible)",
+  "choices": {
+   "1": "Government hospital/upazila health complex/community clinic",
+   "2": "Private clinic/doctor",
+   "3": "NGO clinic/DIC",
+   "4": "Pharmacy/drug seller",
+   "5": "Kabiraj/traditional healer",
+   "6": "Other (specify)"
+  }
+ },
+ "q6_2_other": {
+  "type": "text",
+  "label": "Other (specify)"
+ },
+ "q6_3": {
+  "type": "select_one",
+  "label": "Q6.3 How or through whom did you learn about this health facility? (One answer)",
+  "choices": {
+   "1": "Peer educator/outreach worker",
+   "2": "Friend/community member",
+   "3": "Guruma/senior community member",
+   "4": "NGO/CBO referral",
+   "5": "Found it myself",
+   "6": "Social media/internet",
+   "7": "Other (specify)"
+  }
+ },
+ "q6_3_other": {
+  "type": "text",
+  "label": "Other (specify)"
+ },
+ "q6_4": {
+  "type": "select_multiple",
+  "label": "Q6.4 What type of services did you receive at the most recent visit? (Multiple answers possible)",
+  "choices": {
+   "01": "Treatment for general illness",
+   "02": "STI services",
+   "03": "HIV testing/counselling",
+   "04": "Condom/lubricant",
+   "05": "Family planning",
+   "06": "Mental health counselling",
+   "07": "GBV (gender-based violence) support",
+   "08": "Other (specify)"
+  }
+ },
+ "q6_4_other": {
+  "type": "text",
+  "label": "Other (specify)"
+ },
+ "q6_5": {
+  "type": "select_one",
+  "label": "Q6.5 Overall, how satisfied were you with the services received?",
+  "choices": {
+   "1": "Not at all satisfied",
+   "2": "Some of my needs were met",
+   "3": "Most of my needs were met",
+   "4": "All of my needs were met"
+  }
+ },
+ "q6_6": {
+  "type": "select_one",
+  "label": "Q6.6 Are supplies relevant to your community (condoms, lubricants, hygiene products) available at th",
+  "choices": {
+   "1": "No such supplies available",
+   "2": "Some supplies provided free",
+   "3": "Some supplies must be purchased",
+   "4": "Most supplies provided free",
+   "5": "Most supplies must be purchased",
+   "6": "All supplies provided free",
+   "7": "All supplies must be purchased"
+  }
+ },
+ "q6_7": {
+  "type": "select_one",
+  "label": "Q6.7 Does the healthcare provider at the facility you use most know about your gender identity/sexua",
+  "choices": {
+   "1": "Fully aware",
+   "2": "Partially aware",
+   "3": "Not aware",
+   "8": "Not applicable"
+  }
+ },
+ "module6_note_1": {
+  "type": "note",
+  "label": "Q6.8. In the past 12 months, did any of the following happen to you when seeking healthcare? ‡ [Read"
+ },
+ "grp_q6_8": {
+  "type": "end_group",
+  "label": ""
+ },
+ "q6_8_hdr": {
+  "type": "select_one",
+  "label": "Experience",
+  "choices": {
+   "1": "Yes",
+   "2": "No"
+  }
+ },
+ "q6_8_a": {
+  "type": "select_one",
+  "label": "a. Refused treatment or turned away",
+  "choices": {
+   "1": "Yes",
+   "2": "No"
+  }
+ },
+ "q6_8_b": {
+  "type": "select_one",
+  "label": "b. A health worker or staff member used disrespectful or mocking language",
+  "choices": {
+   "1": "Yes",
+   "2": "No"
+  }
+ },
+ "q6_8_c": {
+  "type": "select_one",
+  "label": "c. Staff gossiped about your information or shared it without your consent",
+  "choices": {
+   "1": "Yes",
+   "2": "No"
+  }
+ },
+ "q6_8_d": {
+  "type": "select_one",
+  "label": "d. Made to wait longer or served last because of your identity",
+  "choices": {
+   "1": "Yes",
+   "2": "No"
+  }
+ },
+ "q6_8_e": {
+  "type": "select_one",
+  "label": "e. Asked unnecessary or personal questions about your identity or body",
+  "choices": {
+   "1": "Yes",
+   "2": "No"
+  }
+ },
+ "q6_8_f": {
+  "type": "select_one",
+  "label": "f. Avoided a necessary test due to fear of staff behaviour",
+  "choices": {
+   "1": "Yes",
+   "2": "No"
+  }
+ },
+ "q6_9": {
+  "type": "select_multiple",
+  "label": "Q6.9 Ask only if Q6.1 = 2: In the past 12 months, why did you not go to any health facility? (Multip",
+  "choices": {
+   "01": "Was not ill",
+   "02": "Was ill but felt no need to go",
+   "03": "Not satisfied with their services",
+   "04": "Supplies/services needed by my community not available there",
+   "05": "Fear of rejection or bad treatment",
+   "06": "Fear of identity being disclosed",
+   "07": "Too expensive",
+   "08": "Too far",
+   "09": "Other (specify)"
+  }
+ },
+ "q6_9_other": {
+  "type": "text",
+  "label": "Other (specify)"
+ },
+ "q6_10": {
+  "type": "select_one",
+  "label": "Q6.10 In the past 12 months, was there a time when you needed healthcare but delayed going or avoide",
+  "choices": {
+   "1": "Yes",
+   "2": "No"
+  }
+ },
+ "q6_11": {
+  "type": "select_multiple",
+  "label": "Q6.11 What were the main reasons? (Multiple answers; do not read list.)",
+  "choices": {
+   "01": "Cost",
+   "02": "Distance/travel",
+   "03": "Could not take time off work",
+   "04": "Fear of disrespect or bad treatment",
+   "05": "Fear of identity being disclosed",
+   "06": "No hijra/gender-diverse-friendly health facility nearby",
+   "07": "Long waiting time",
+   "08": "Other (specify)"
+  }
+ },
+ "q6_11_other": {
+  "type": "text",
+  "label": "Other (specify)"
+ },
+ "q6_12": {
+  "type": "select_one",
+  "label": "Q6.12 How long does it take to reach the nearest health facility where you can comfortably receive s",
+  "choices": {
+   "1": "Less than 30 minutes",
+   "2": "30–60 minutes",
+   "3": "1–2 hours",
+   "4": "More than 2 hours",
+   "5": "No such facility exists"
+  }
+ },
+ "q6_13": {
+  "type": "select_one",
+  "label": "Q6.13 In your view, is the cost of healthcare here within your means?",
+  "choices": {
+   "1": "Not at all",
+   "2": "In some cases",
+   "3": "In most cases",
+   "4": "In all cases"
+  }
+ },
+ "grp_q6_14": {
+  "type": "end_group",
+  "label": ""
+ },
+ "q6_14_hdr": {
+  "type": "select_one",
+  "label": "Type of Service",
+  "choices": {
+   "1": "Yes, available",
+   "2": "No, not available",
+   "98": "Don't know"
+  }
+ },
+ "q6_14_a": {
+  "type": "select_one",
+  "label": "a. Hijra/gender-diverse-friendly general health facility",
+  "choices": {
+   "1": "Yes, available",
+   "2": "No, not available",
+   "98": "Don't know"
+  }
+ },
+ "q6_14_b": {
+  "type": "select_one",
+  "label": "b. Hijra/gender-diverse-friendly STI testing centre",
+  "choices": {
+   "1": "Yes, available",
+   "2": "No, not available",
+   "98": "Don't know"
+  }
+ },
+ "q6_14_c": {
+  "type": "select_one",
+  "label": "c. Mental health facility",
+  "choices": {
+   "1": "Yes, available",
+   "2": "No, not available",
+   "98": "Don't know"
+  }
+ },
+ "q6_15": {
+  "type": "select_one",
+  "label": "Q6.15 If all types of options were available, from where would you most prefer to receive sexual and",
+  "choices": {
+   "1": "Government health facility",
+   "2": "Private clinic",
+   "3": "NGO/community-operated facility",
+   "4": "Pharmacy",
+   "5": "At home/through outreach visit",
+   "6": "Other (specify)"
+  }
+ },
+ "q6_15_other": {
+  "type": "text",
+  "label": "Other (specify)"
+ },
+ "q6_16": {
+  "type": "select_multiple",
+  "label": "Q6.16 Which characteristics of a service provider are most important to you? (Maximum three answers.",
+  "choices": {
+   "1": "Member of my own community/peer",
+   "2": "Maintains confidentiality",
+   "3": "Treats with respect",
+   "4": "Has medical knowledge and skills",
+   "5": "Same gender as me",
+   "6": "Low cost/free of charge",
+   "7": "Speaks my language/uses respectful terms",
+   "8": "Other (specify)"
+  }
+ },
+ "q6_16_other": {
+  "type": "text",
+  "label": "Other (specify)"
+ },
+ "grp_module7": {
+  "type": "end_group",
+  "label": ""
+ },
+ "module7_note_1": {
+  "type": "note",
+  "label": "[Mandatory check before starting the module. Ensure complete privacy; no third party older than two "
+ },
+ "module7_note_2": {
+  "type": "note",
+  "label": "Q7.1 ‡. Has anyone ever done any of the following to you? For each 'Yes' answer I will ask further —"
+ },
+ "q7_1_a_ever": {
+  "type": "select_one",
+  "label": "Physical: a. Slapped, punched, kicked, dragged, or beaten",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "99": "Decline to answer"
+  }
+ },
+ "q7_1_a_12mo": {
+  "type": "select_one",
+  "label": "In the past 12 months?",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "99": "Decline to answer"
+  }
+ },
+ "q7_1_a_perp": {
+  "type": "select_multiple",
+  "label": "Who did this to you? (select all that apply)",
+  "choices": {
+   "1": "Family member/relative",
+   "2": "Intimate partner (parik/panthi/neheri/spouse)",
+   "3": "Client/paying partner",
+   "4": "Friend/acquaintance",
+   "5": "Stranger",
+   "6": "Employer/colleague",
+   "7": "Teacher",
+   "8": "Healthcare worker",
+   "9": "Police/law enforcement",
+   "10": "Local influential person/thug",
+   "11": "Guruma/senior community member",
+   "12": "Religious leader",
+   "13": "Other (specify)"
+  }
+ },
+ "q7_1_b_ever": {
+  "type": "select_one",
+  "label": "b. Hit with a stick or other object, choked, burned, or had something harmful thrown at you (e.g., h",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "99": "Decline to answer"
+  }
+ },
+ "q7_1_b_12mo": {
+  "type": "select_one",
+  "label": "In the past 12 months?",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "99": "Decline to answer"
+  }
+ },
+ "q7_1_b_perp": {
+  "type": "select_multiple",
+  "label": "Who did this to you? (select all that apply)",
+  "choices": {
+   "1": "Family member/relative",
+   "2": "Intimate partner (parik/panthi/neheri/spouse)",
+   "3": "Client/paying partner",
+   "4": "Friend/acquaintance",
+   "5": "Stranger",
+   "6": "Employer/colleague",
+   "7": "Teacher",
+   "8": "Healthcare worker",
+   "9": "Police/law enforcement",
+   "10": "Local influential person/thug",
+   "11": "Guruma/senior community member",
+   "12": "Religious leader",
+   "13": "Other (specify)"
+  }
+ },
+ "q7_1_c_ever": {
+  "type": "select_one",
+  "label": "c. Threatened with or attacked with a knife, gun, or other weapon",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "99": "Decline to answer"
+  }
+ },
+ "q7_1_c_12mo": {
+  "type": "select_one",
+  "label": "In the past 12 months?",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "99": "Decline to answer"
+  }
+ },
+ "q7_1_c_perp": {
+  "type": "select_multiple",
+  "label": "Who did this to you? (select all that apply)",
+  "choices": {
+   "1": "Family member/relative",
+   "2": "Intimate partner (parik/panthi/neheri/spouse)",
+   "3": "Client/paying partner",
+   "4": "Friend/acquaintance",
+   "5": "Stranger",
+   "6": "Employer/colleague",
+   "7": "Teacher",
+   "8": "Healthcare worker",
+   "9": "Police/law enforcement",
+   "10": "Local influential person/thug",
+   "11": "Guruma/senior community member",
+   "12": "Religious leader",
+   "13": "Other (specify)"
+  }
+ },
+ "q7_1_d_ever": {
+  "type": "select_one",
+  "label": "Psychological: d. Humiliated, demeaned, or ridiculed in front of others because of your identity",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "99": "Decline to answer"
+  }
+ },
+ "q7_1_d_12mo": {
+  "type": "select_one",
+  "label": "In the past 12 months?",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "99": "Decline to answer"
+  }
+ },
+ "q7_1_d_perp": {
+  "type": "select_multiple",
+  "label": "Who did this to you? (select all that apply)",
+  "choices": {
+   "1": "Family member/relative",
+   "2": "Intimate partner (parik/panthi/neheri/spouse)",
+   "3": "Client/paying partner",
+   "4": "Friend/acquaintance",
+   "5": "Stranger",
+   "6": "Employer/colleague",
+   "7": "Teacher",
+   "8": "Healthcare worker",
+   "9": "Police/law enforcement",
+   "10": "Local influential person/thug",
+   "11": "Guruma/senior community member",
+   "12": "Religious leader",
+   "13": "Other (specify)"
+  }
+ },
+ "q7_1_e_ever": {
+  "type": "select_one",
+  "label": "e. Threatened with harm, or threatened with 'outing'/blackmail (disclosing your identity to family, ",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "99": "Decline to answer"
+  }
+ },
+ "q7_1_e_12mo": {
+  "type": "select_one",
+  "label": "In the past 12 months?",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "99": "Decline to answer"
+  }
+ },
+ "q7_1_e_perp": {
+  "type": "select_multiple",
+  "label": "Who did this to you? (select all that apply)",
+  "choices": {
+   "1": "Family member/relative",
+   "2": "Intimate partner (parik/panthi/neheri/spouse)",
+   "3": "Client/paying partner",
+   "4": "Friend/acquaintance",
+   "5": "Stranger",
+   "6": "Employer/colleague",
+   "7": "Teacher",
+   "8": "Healthcare worker",
+   "9": "Police/law enforcement",
+   "10": "Local influential person/thug",
+   "11": "Guruma/senior community member",
+   "12": "Religious leader",
+   "13": "Other (specify)"
+  }
+ },
+ "q7_1_f_ever": {
+  "type": "select_one",
+  "label": "Sexual: f. Physically forced to have sex against your will",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "99": "Decline to answer"
+  }
+ },
+ "q7_1_f_12mo": {
+  "type": "select_one",
+  "label": "In the past 12 months?",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "99": "Decline to answer"
+  }
+ },
+ "q7_1_f_perp": {
+  "type": "select_multiple",
+  "label": "Who did this to you? (select all that apply)",
+  "choices": {
+   "1": "Family member/relative",
+   "2": "Intimate partner (parik/panthi/neheri/spouse)",
+   "3": "Client/paying partner",
+   "4": "Friend/acquaintance",
+   "5": "Stranger",
+   "6": "Employer/colleague",
+   "7": "Teacher",
+   "8": "Healthcare worker",
+   "9": "Police/law enforcement",
+   "10": "Local influential person/thug",
+   "11": "Guruma/senior community member",
+   "12": "Religious leader",
+   "13": "Other (specify)"
+  }
+ },
+ "q7_1_g_ever": {
+  "type": "select_one",
+  "label": "g. Attempted rape, or inappropriately touched without your consent",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "99": "Decline to answer"
+  }
+ },
+ "q7_1_g_12mo": {
+  "type": "select_one",
+  "label": "In the past 12 months?",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "99": "Decline to answer"
+  }
+ },
+ "q7_1_g_perp": {
+  "type": "select_multiple",
+  "label": "Who did this to you? (select all that apply)",
+  "choices": {
+   "1": "Family member/relative",
+   "2": "Intimate partner (parik/panthi/neheri/spouse)",
+   "3": "Client/paying partner",
+   "4": "Friend/acquaintance",
+   "5": "Stranger",
+   "6": "Employer/colleague",
+   "7": "Teacher",
+   "8": "Healthcare worker",
+   "9": "Police/law enforcement",
+   "10": "Local influential person/thug",
+   "11": "Guruma/senior community member",
+   "12": "Religious leader",
+   "13": "Other (specify)"
+  }
+ },
+ "q7_1_h_ever": {
+  "type": "select_one",
+  "label": "h. Pressured into sexual acts through threats, blackmail, or withholding money owed to you",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "99": "Decline to answer"
+  }
+ },
+ "q7_1_h_12mo": {
+  "type": "select_one",
+  "label": "In the past 12 months?",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "99": "Decline to answer"
+  }
+ },
+ "q7_1_h_perp": {
+  "type": "select_multiple",
+  "label": "Who did this to you? (select all that apply)",
+  "choices": {
+   "1": "Family member/relative",
+   "2": "Intimate partner (parik/panthi/neheri/spouse)",
+   "3": "Client/paying partner",
+   "4": "Friend/acquaintance",
+   "5": "Stranger",
+   "6": "Employer/colleague",
+   "7": "Teacher",
+   "8": "Healthcare worker",
+   "9": "Police/law enforcement",
+   "10": "Local influential person/thug",
+   "11": "Guruma/senior community member",
+   "12": "Religious leader",
+   "13": "Other (specify)"
+  }
+ },
+ "q7_1_i_ever": {
+  "type": "select_one",
+  "label": "Economic/Structural: i. Had your money, income, or belongings taken by force or extortion",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "99": "Decline to answer"
+  }
+ },
+ "q7_1_i_12mo": {
+  "type": "select_one",
+  "label": "In the past 12 months?",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "99": "Decline to answer"
+  }
+ },
+ "q7_1_i_perp": {
+  "type": "select_multiple",
+  "label": "Who did this to you? (select all that apply)",
+  "choices": {
+   "1": "Family member/relative",
+   "2": "Intimate partner (parik/panthi/neheri/spouse)",
+   "3": "Client/paying partner",
+   "4": "Friend/acquaintance",
+   "5": "Stranger",
+   "6": "Employer/colleague",
+   "7": "Teacher",
+   "8": "Healthcare worker",
+   "9": "Police/law enforcement",
+   "10": "Local influential person/thug",
+   "11": "Guruma/senior community member",
+   "12": "Religious leader",
+   "13": "Other (specify)"
+  }
+ },
+ "q7_1_j_ever": {
+  "type": "select_one",
+  "label": "j. Evicted or refused housing because of your identity",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "99": "Decline to answer"
+  }
+ },
+ "q7_1_j_12mo": {
+  "type": "select_one",
+  "label": "In the past 12 months?",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "99": "Decline to answer"
+  }
+ },
+ "q7_1_j_perp": {
+  "type": "select_multiple",
+  "label": "Who did this to you? (select all that apply)",
+  "choices": {
+   "1": "Family member/relative",
+   "2": "Intimate partner (parik/panthi/neheri/spouse)",
+   "3": "Client/paying partner",
+   "4": "Friend/acquaintance",
+   "5": "Stranger",
+   "6": "Employer/colleague",
+   "7": "Teacher",
+   "8": "Healthcare worker",
+   "9": "Police/law enforcement",
+   "10": "Local influential person/thug",
+   "11": "Guruma/senior community member",
+   "12": "Religious leader",
+   "13": "Other (specify)"
+  }
+ },
+ "q7_1_k_ever": {
+  "type": "select_one",
+  "label": "k. Dismissed or refused employment because of your identity",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "99": "Decline to answer"
+  }
+ },
+ "q7_1_k_12mo": {
+  "type": "select_one",
+  "label": "In the past 12 months?",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "99": "Decline to answer"
+  }
+ },
+ "q7_1_k_perp": {
+  "type": "select_multiple",
+  "label": "Who did this to you? (select all that apply)",
+  "choices": {
+   "1": "Family member/relative",
+   "2": "Intimate partner (parik/panthi/neheri/spouse)",
+   "3": "Client/paying partner",
+   "4": "Friend/acquaintance",
+   "5": "Stranger",
+   "6": "Employer/colleague",
+   "7": "Teacher",
+   "8": "Healthcare worker",
+   "9": "Police/law enforcement",
+   "10": "Local influential person/thug",
+   "11": "Guruma/senior community member",
+   "12": "Religious leader",
+   "13": "Other (specify)"
+  }
+ },
+ "q7_1_a_perp_other": {
+  "type": "text",
+  "label": "Other (specify)"
+ },
+ "q7_1_b_perp_other": {
+  "type": "text",
+  "label": "Other (specify)"
+ },
+ "q7_1_c_perp_other": {
+  "type": "text",
+  "label": "Other (specify)"
+ },
+ "q7_1_d_perp_other": {
+  "type": "text",
+  "label": "Other (specify)"
+ },
+ "q7_1_e_perp_other": {
+  "type": "text",
+  "label": "Other (specify)"
+ },
+ "q7_1_f_perp_other": {
+  "type": "text",
+  "label": "Other (specify)"
+ },
+ "q7_1_g_perp_other": {
+  "type": "text",
+  "label": "Other (specify)"
+ },
+ "q7_1_h_perp_other": {
+  "type": "text",
+  "label": "Other (specify)"
+ },
+ "q7_1_i_perp_other": {
+  "type": "text",
+  "label": "Other (specify)"
+ },
+ "q7_1_j_perp_other": {
+  "type": "text",
+  "label": "Other (specify)"
+ },
+ "q7_1_k_perp_other": {
+  "type": "text",
+  "label": "Other (specify)"
+ },
+ "module7_note_3": {
+  "type": "note",
+  "label": "Q7.2 ‡. Reproductive Coercion — Experienced by You. Has anyone ever done any of the following to you"
+ },
+ "q7_2_a_ever": {
+  "type": "select_one",
+  "label": "a. Refused to use a condom or contraceptive despite your request, or prevented or forbidden you from",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "99": "Decline to answer"
+  }
+ },
+ "q7_2_a_12mo": {
+  "type": "select_one",
+  "label": "In the past 12 months?",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "99": "Decline to answer"
+  }
+ },
+ "q7_2_a_perp": {
+  "type": "select_multiple",
+  "label": "Who did this to you? (select all that apply)",
+  "choices": {
+   "1": "Family member/relative",
+   "2": "Intimate partner (parik/panthi/neheri/spouse)",
+   "3": "Client/paying partner",
+   "4": "Friend/acquaintance",
+   "5": "Stranger",
+   "6": "Employer/colleague",
+   "7": "Teacher",
+   "8": "Healthcare worker",
+   "9": "Police/law enforcement",
+   "10": "Local influential person/thug",
+   "11": "Guruma/senior community member",
+   "12": "Religious leader",
+   "13": "Other (specify)"
+  }
+ },
+ "q7_2_b_ever": {
+  "type": "select_one",
+  "label": "b. Removed or damaged a condom during sex without your consent, or removed, hidden, or destroyed you",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "99": "Decline to answer"
+  }
+ },
+ "q7_2_b_12mo": {
+  "type": "select_one",
+  "label": "In the past 12 months?",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "99": "Decline to answer"
+  }
+ },
+ "q7_2_b_perp": {
+  "type": "select_multiple",
+  "label": "Who did this to you? (select all that apply)",
+  "choices": {
+   "1": "Family member/relative",
+   "2": "Intimate partner (parik/panthi/neheri/spouse)",
+   "3": "Client/paying partner",
+   "4": "Friend/acquaintance",
+   "5": "Stranger",
+   "6": "Employer/colleague",
+   "7": "Teacher",
+   "8": "Healthcare worker",
+   "9": "Police/law enforcement",
+   "10": "Local influential person/thug",
+   "11": "Guruma/senior community member",
+   "12": "Religious leader",
+   "13": "Other (specify)"
+  }
+ },
+ "q7_2_c_ever": {
+  "type": "select_one",
+  "label": "c. Pressured or forced you to become pregnant when you did not want to",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "99": "Decline to answer"
+  }
+ },
+ "q7_2_c_12mo": {
+  "type": "select_one",
+  "label": "In the past 12 months?",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "99": "Decline to answer"
+  }
+ },
+ "q7_2_c_perp": {
+  "type": "select_multiple",
+  "label": "Who did this to you? (select all that apply)",
+  "choices": {
+   "1": "Family member/relative",
+   "2": "Intimate partner (parik/panthi/neheri/spouse)",
+   "3": "Client/paying partner",
+   "4": "Friend/acquaintance",
+   "5": "Stranger",
+   "6": "Employer/colleague",
+   "7": "Teacher",
+   "8": "Healthcare worker",
+   "9": "Police/law enforcement",
+   "10": "Local influential person/thug",
+   "11": "Guruma/senior community member",
+   "12": "Religious leader",
+   "13": "Other (specify)"
+  }
+ },
+ "q7_2_d_ever": {
+  "type": "select_one",
+  "label": "d. Pressured or forced you to continue a pregnancy you wanted to end",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "99": "Decline to answer"
+  }
+ },
+ "q7_2_d_12mo": {
+  "type": "select_one",
+  "label": "In the past 12 months?",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "99": "Decline to answer"
+  }
+ },
+ "q7_2_d_perp": {
+  "type": "select_multiple",
+  "label": "Who did this to you? (select all that apply)",
+  "choices": {
+   "1": "Family member/relative",
+   "2": "Intimate partner (parik/panthi/neheri/spouse)",
+   "3": "Client/paying partner",
+   "4": "Friend/acquaintance",
+   "5": "Stranger",
+   "6": "Employer/colleague",
+   "7": "Teacher",
+   "8": "Healthcare worker",
+   "9": "Police/law enforcement",
+   "10": "Local influential person/thug",
+   "11": "Guruma/senior community member",
+   "12": "Religious leader",
+   "13": "Other (specify)"
+  }
+ },
+ "q7_2_e_ever": {
+  "type": "select_one",
+  "label": "e. Pressured or forced you to end a pregnancy you wanted to continue",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "99": "Decline to answer"
+  }
+ },
+ "q7_2_e_12mo": {
+  "type": "select_one",
+  "label": "In the past 12 months?",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "99": "Decline to answer"
+  }
+ },
+ "q7_2_e_perp": {
+  "type": "select_multiple",
+  "label": "Who did this to you? (select all that apply)",
+  "choices": {
+   "1": "Family member/relative",
+   "2": "Intimate partner (parik/panthi/neheri/spouse)",
+   "3": "Client/paying partner",
+   "4": "Friend/acquaintance",
+   "5": "Stranger",
+   "6": "Employer/colleague",
+   "7": "Teacher",
+   "8": "Healthcare worker",
+   "9": "Police/law enforcement",
+   "10": "Local influential person/thug",
+   "11": "Guruma/senior community member",
+   "12": "Religious leader",
+   "13": "Other (specify)"
+  }
+ },
+ "q7_2_a_perp_other": {
+  "type": "text",
+  "label": "Other (specify)"
+ },
+ "q7_2_b_perp_other": {
+  "type": "text",
+  "label": "Other (specify)"
+ },
+ "q7_2_c_perp_other": {
+  "type": "text",
+  "label": "Other (specify)"
+ },
+ "q7_2_d_perp_other": {
+  "type": "text",
+  "label": "Other (specify)"
+ },
+ "q7_2_e_perp_other": {
+  "type": "text",
+  "label": "Other (specify)"
+ },
+ "module7_note_4": {
+  "type": "note",
+  "label": "Q7.3 ‡. Reproductive Coercion — Your Behaviour Towards a Partner. Sometimes people also behave this "
+ },
+ "q7_3_a_ever": {
+  "type": "select_one",
+  "label": "a. Refused to use a condom or contraceptive despite your partner's request, or prevented or forbidde",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "99": "Decline to answer"
+  }
+ },
+ "q7_3_a_12mo": {
+  "type": "select_one",
+  "label": "In the past 12 months?",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "99": "Decline to answer"
+  }
+ },
+ "q7_3_b_ever": {
+  "type": "select_one",
+  "label": "b. Removed or damaged a condom during sex without your partner's consent, or removed, hidden, or des",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "99": "Decline to answer"
+  }
+ },
+ "q7_3_b_12mo": {
+  "type": "select_one",
+  "label": "In the past 12 months?",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "99": "Decline to answer"
+  }
+ },
+ "q7_3_c_ever": {
+  "type": "select_one",
+  "label": "c. Pressured or forced a partner to become pregnant when they did not want to",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "99": "Decline to answer"
+  }
+ },
+ "q7_3_c_12mo": {
+  "type": "select_one",
+  "label": "In the past 12 months?",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "99": "Decline to answer"
+  }
+ },
+ "q7_3_d_ever": {
+  "type": "select_one",
+  "label": "d. Pressured or forced a partner to continue a pregnancy they wanted to end",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "99": "Decline to answer"
+  }
+ },
+ "q7_3_d_12mo": {
+  "type": "select_one",
+  "label": "In the past 12 months?",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "99": "Decline to answer"
+  }
+ },
+ "q7_3_e_ever": {
+  "type": "select_one",
+  "label": "e. Pressured or forced a partner to end a pregnancy they wanted to continue",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "99": "Decline to answer"
+  }
+ },
+ "q7_3_e_12mo": {
+  "type": "select_one",
+  "label": "In the past 12 months?",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "99": "Decline to answer"
+  }
+ },
+ "module7_note_5": {
+  "type": "note",
+  "label": "Q7.4 ‡. Online/Mobile-Based Relationships and Technology-Facilitated Violence (TFGBV)  [Transition s"
+ },
+ "q7_5": {
+  "type": "select_one",
+  "label": "Q7.5 ‡ In the past 12 months, did you ever use a mobile phone, WhatsApp, imo, Facebook/Messenger, or",
+  "choices": {
+   "1": "Yes",
+   "2": "No"
+  }
+ },
+ "q7_6": {
+  "type": "select_multiple",
+  "label": "Q7.6 ‡ Which platforms do you use? (Multiple answers; do not read list)",
+  "choices": {
+   "01": "WhatsApp",
+   "02": "imo",
+   "03": "Facebook/Messenger",
+   "04": "Regular mobile call/SMS",
+   "05": "Dating/contact app",
+   "06": "TikTok/other video app",
+   "07": "Other (specify)"
+  }
+ },
+ "q7_6_other": {
+  "type": "text",
+  "label": "Other (specify)"
+ },
+ "q7_7": {
+  "type": "select_one",
+  "label": "Q7.7 ‡ In the past 12 months, did you engage in sexual activity via video call (e.g., showing your b",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "99": "Decline to answer"
+  }
+ },
+ "q7_8": {
+  "type": "select_one",
+  "label": "Q7.8 ‡ When on a video call, how aware or concerned are you about the risk that the partner/client m",
+  "choices": {
+   "1": "Always concerned",
+   "2": "Sometimes concerned",
+   "3": "Not concerned/don't mind",
+   "4": "Did not know this was possible"
+  }
+ },
+ "q7_9": {
+  "type": "select_one",
+  "label": "Q7.9 ‡ Is there or has there ever been personal or explicit photos or videos on your mobile phone th",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "99": "Decline to answer"
+  }
+ },
+ "q7_10": {
+  "type": "select_one",
+  "label": "Q7.10 ‡ Did you always share these photos or videos of your own free will?",
+  "choices": {
+   "1": "Always of my own free will",
+   "2": "In some cases under pressure/coercion",
+   "3": "In most cases under pressure/coercion",
+   "99": "Decline to answer"
+  }
+ },
+ "module7_note_6": {
+  "type": "note",
+  "label": "Q7.11 ‡. Has anyone ever done any of the following to you through phone, internet, or social media? "
+ },
+ "q7_11_a_ever": {
+  "type": "select_one",
+  "label": "a. Had personal or explicit photos/videos taken without your permission",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "99": "Decline to answer"
+  }
+ },
+ "q7_11_a_12mo": {
+  "type": "select_one",
+  "label": "In the past 12 months?",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "99": "Decline to answer"
+  }
+ },
+ "q7_11_a_perp": {
+  "type": "select_multiple",
+  "label": "Who did this to you? (select all that apply)",
+  "choices": {
+   "1": "Family member/relative",
+   "2": "Intimate partner (parik/panthi/neheri/spouse)",
+   "3": "Client/paying partner",
+   "4": "Friend/acquaintance",
+   "5": "Stranger",
+   "6": "Employer/colleague",
+   "7": "Teacher",
+   "8": "Healthcare worker",
+   "9": "Police/law enforcement",
+   "10": "Local influential person/thug",
+   "11": "Guruma/senior community member",
+   "12": "Religious leader",
+   "13": "Other (specify)",
+   "14": "unknown online person/fake profile"
+  }
+ },
+ "q7_11_b_ever": {
+  "type": "select_one",
+  "label": "b. Threatened with sharing or publishing your personal or explicit photos/videos (sextortion)",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "99": "Decline to answer"
+  }
+ },
+ "q7_11_b_12mo": {
+  "type": "select_one",
+  "label": "In the past 12 months?",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "99": "Decline to answer"
+  }
+ },
+ "q7_11_b_perp": {
+  "type": "select_multiple",
+  "label": "Who did this to you? (select all that apply)",
+  "choices": {
+   "1": "Family member/relative",
+   "2": "Intimate partner (parik/panthi/neheri/spouse)",
+   "3": "Client/paying partner",
+   "4": "Friend/acquaintance",
+   "5": "Stranger",
+   "6": "Employer/colleague",
+   "7": "Teacher",
+   "8": "Healthcare worker",
+   "9": "Police/law enforcement",
+   "10": "Local influential person/thug",
+   "11": "Guruma/senior community member",
+   "12": "Religious leader",
+   "13": "Other (specify)",
+   "14": "unknown online person/fake profile"
+  }
+ },
+ "q7_11_c_ever": {
+  "type": "select_one",
+  "label": "c. Personal or explicit photos/videos actually shared or published without your permission",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "99": "Decline to answer"
+  }
+ },
+ "q7_11_c_12mo": {
+  "type": "select_one",
+  "label": "In the past 12 months?",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "99": "Decline to answer"
+  }
+ },
+ "q7_11_c_perp": {
+  "type": "select_multiple",
+  "label": "Who did this to you? (select all that apply)",
+  "choices": {
+   "1": "Family member/relative",
+   "2": "Intimate partner (parik/panthi/neheri/spouse)",
+   "3": "Client/paying partner",
+   "4": "Friend/acquaintance",
+   "5": "Stranger",
+   "6": "Employer/colleague",
+   "7": "Teacher",
+   "8": "Healthcare worker",
+   "9": "Police/law enforcement",
+   "10": "Local influential person/thug",
+   "11": "Guruma/senior community member",
+   "12": "Religious leader",
+   "13": "Other (specify)",
+   "14": "unknown online person/fake profile"
+  }
+ },
+ "q7_11_d_ever": {
+  "type": "select_one",
+  "label": "d. Pressured for money or free sex under threat of publishing photos/videos",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "99": "Decline to answer"
+  }
+ },
+ "q7_11_d_12mo": {
+  "type": "select_one",
+  "label": "In the past 12 months?",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "99": "Decline to answer"
+  }
+ },
+ "q7_11_d_perp": {
+  "type": "select_multiple",
+  "label": "Who did this to you? (select all that apply)",
+  "choices": {
+   "1": "Family member/relative",
+   "2": "Intimate partner (parik/panthi/neheri/spouse)",
+   "3": "Client/paying partner",
+   "4": "Friend/acquaintance",
+   "5": "Stranger",
+   "6": "Employer/colleague",
+   "7": "Teacher",
+   "8": "Healthcare worker",
+   "9": "Police/law enforcement",
+   "10": "Local influential person/thug",
+   "11": "Guruma/senior community member",
+   "12": "Religious leader",
+   "13": "Other (specify)",
+   "14": "unknown online person/fake profile"
+  }
+ },
+ "q7_11_e_ever": {
+  "type": "select_one",
+  "label": "e. Repeatedly subjected to unwanted contact, harassment, or verbal abuse through phone/messages/soci",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "99": "Decline to answer"
+  }
+ },
+ "q7_11_e_12mo": {
+  "type": "select_one",
+  "label": "In the past 12 months?",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "99": "Decline to answer"
+  }
+ },
+ "q7_11_e_perp": {
+  "type": "select_multiple",
+  "label": "Who did this to you? (select all that apply)",
+  "choices": {
+   "1": "Family member/relative",
+   "2": "Intimate partner (parik/panthi/neheri/spouse)",
+   "3": "Client/paying partner",
+   "4": "Friend/acquaintance",
+   "5": "Stranger",
+   "6": "Employer/colleague",
+   "7": "Teacher",
+   "8": "Healthcare worker",
+   "9": "Police/law enforcement",
+   "10": "Local influential person/thug",
+   "11": "Guruma/senior community member",
+   "12": "Religious leader",
+   "13": "Other (specify)",
+   "14": "unknown online person/fake profile"
+  }
+ },
+ "q7_11_f_ever": {
+  "type": "select_one",
+  "label": "f. A fake profile created using your identity, photos, or information, or threatened with 'outing'",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "99": "Decline to answer"
+  }
+ },
+ "q7_11_f_12mo": {
+  "type": "select_one",
+  "label": "In the past 12 months?",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "99": "Decline to answer"
+  }
+ },
+ "q7_11_f_perp": {
+  "type": "select_multiple",
+  "label": "Who did this to you? (select all that apply)",
+  "choices": {
+   "1": "Family member/relative",
+   "2": "Intimate partner (parik/panthi/neheri/spouse)",
+   "3": "Client/paying partner",
+   "4": "Friend/acquaintance",
+   "5": "Stranger",
+   "6": "Employer/colleague",
+   "7": "Teacher",
+   "8": "Healthcare worker",
+   "9": "Police/law enforcement",
+   "10": "Local influential person/thug",
+   "11": "Guruma/senior community member",
+   "12": "Religious leader",
+   "13": "Other (specify)",
+   "14": "unknown online person/fake profile"
+  }
+ },
+ "q7_11_g_ever": {
+  "type": "select_one",
+  "label": "g. Your location tracked or followed without your permission",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "99": "Decline to answer"
+  }
+ },
+ "q7_11_g_12mo": {
+  "type": "select_one",
+  "label": "In the past 12 months?",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "99": "Decline to answer"
+  }
+ },
+ "q7_11_g_perp": {
+  "type": "select_multiple",
+  "label": "Who did this to you? (select all that apply)",
+  "choices": {
+   "1": "Family member/relative",
+   "2": "Intimate partner (parik/panthi/neheri/spouse)",
+   "3": "Client/paying partner",
+   "4": "Friend/acquaintance",
+   "5": "Stranger",
+   "6": "Employer/colleague",
+   "7": "Teacher",
+   "8": "Healthcare worker",
+   "9": "Police/law enforcement",
+   "10": "Local influential person/thug",
+   "11": "Guruma/senior community member",
+   "12": "Religious leader",
+   "13": "Other (specify)",
+   "14": "unknown online person/fake profile"
+  }
+ },
+ "q7_11_h_ever": {
+  "type": "select_one",
+  "label": "h. Met in person after online contact and placed in an unexpected or dangerous situation (e.g., call",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "99": "Decline to answer"
+  }
+ },
+ "q7_11_h_12mo": {
+  "type": "select_one",
+  "label": "In the past 12 months?",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "99": "Decline to answer"
+  }
+ },
+ "q7_11_h_perp": {
+  "type": "select_multiple",
+  "label": "Who did this to you? (select all that apply)",
+  "choices": {
+   "1": "Family member/relative",
+   "2": "Intimate partner (parik/panthi/neheri/spouse)",
+   "3": "Client/paying partner",
+   "4": "Friend/acquaintance",
+   "5": "Stranger",
+   "6": "Employer/colleague",
+   "7": "Teacher",
+   "8": "Healthcare worker",
+   "9": "Police/law enforcement",
+   "10": "Local influential person/thug",
+   "11": "Guruma/senior community member",
+   "12": "Religious leader",
+   "13": "Other (specify)",
+   "14": "unknown online person/fake profile"
+  }
+ },
+ "q7_11_a_perp_other": {
+  "type": "text",
+  "label": "Other (specify)"
+ },
+ "q7_11_b_perp_other": {
+  "type": "text",
+  "label": "Other (specify)"
+ },
+ "q7_11_c_perp_other": {
+  "type": "text",
+  "label": "Other (specify)"
+ },
+ "q7_11_d_perp_other": {
+  "type": "text",
+  "label": "Other (specify)"
+ },
+ "q7_11_e_perp_other": {
+  "type": "text",
+  "label": "Other (specify)"
+ },
+ "q7_11_f_perp_other": {
+  "type": "text",
+  "label": "Other (specify)"
+ },
+ "q7_11_g_perp_other": {
+  "type": "text",
+  "label": "Other (specify)"
+ },
+ "q7_11_h_perp_other": {
+  "type": "text",
+  "label": "Other (specify)"
+ },
+ "q7_12": {
+  "type": "select_one",
+  "label": "Q7.12 ‡ If any incident from Q7.11 happened in the past 12 months: For the most serious incident, di",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "99": "Decline to answer"
+  }
+ },
+ "q7_13": {
+  "type": "select_one",
+  "label": "Q7.13 ‡ Do you know where someone in your community can seek help if they are victims of online hara",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "3": "No such provision for our community/don't know"
+  }
+ },
+ "q7_14": {
+  "type": "select_one",
+  "label": "Q7.14 Ask if Q7.1 or Q7.2 has any 'Yes, past 12 months' answer; otherwise → Q7.18. Considering the m",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "99": "Decline to answer"
+  }
+ },
+ "q7_15": {
+  "type": "select_multiple",
+  "label": "Q7.15 Where did you report the incident or seek help? (Multiple answers.)",
+  "choices": {
+   "1": "One-Stop Crisis Centre",
+   "2": "Police station",
+   "3": "Community leader/salish",
+   "4": "Hotline (999 / 109 / Bandhu's Ain-Alap)",
+   "5": "NGO/CBO",
+   "6": "Health facility",
+   "7": "Guruma/senior community member",
+   "8": "Other (specify)"
+  }
+ },
+ "q7_15_other": {
+  "type": "text",
+  "label": "Other (specify)"
+ },
+ "q7_16": {
+  "type": "select_multiple",
+  "label": "Q7.16 What type of support did you receive after reporting the incident? (Multiple answers.)",
+  "choices": {
+   "1": "Medical care",
+   "2": "Legal assistance",
+   "3": "Counselling",
+   "4": "Shelter",
+   "5": "Case registered/action taken",
+   "6": "No support received",
+   "7": "Other (specify)"
+  }
+ },
+ "q7_16_other": {
+  "type": "text",
+  "label": "Other (specify)"
+ },
+ "q7_17": {
+  "type": "select_multiple",
+  "label": "Q7.17 ‡ What were the reasons for not reporting the incident or seeking help? (Multiple answers; do ",
+  "choices": {
+   "01": "Did not know where to report",
+   "02": "Fear of social stigma",
+   "03": "Complicated process",
+   "04": "Fear of harassment by authorities",
+   "05": "Family non-cooperation",
+   "06": "Felt I would not get adequate support",
+   "07": "Fear of rejection",
+   "08": "Fear of retaliation by perpetrator",
+   "09": "Fear of identity being disclosed",
+   "10": "Other (specify)"
+  }
+ },
+ "q7_17_other": {
+  "type": "text",
+  "label": "Other (specify)"
+ },
+ "q7_18": {
+  "type": "select_one",
+  "label": "Q7.18 Ask everyone: Do you know where to report a case of violence affecting someone in your communi",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "3": "No such provision for our community"
+  }
+ },
+ "q7_19": {
+  "type": "select_multiple",
+  "label": "Q7.19 Where? (Multiple answers; do not read list.)",
+  "choices": {
+   "1": "One-Stop Crisis Centre",
+   "2": "Police station",
+   "3": "Community leader",
+   "4": "Hotline (999 / 109 / Bandhu's Ain-Alap)",
+   "5": "NGO",
+   "6": "Other (specify)"
+  }
+ },
+ "q7_19_other": {
+  "type": "text",
+  "label": "Other (specify)"
+ },
+ "q7_20": {
+  "type": "select_one",
+  "label": "Q7.20 Do you know about the government's 24-hour emergency hotline 999?",
+  "choices": {
+   "1": "Yes",
+   "2": "No"
+  }
+ },
+ "q7_21": {
+  "type": "select_one",
+  "label": "Q7.21 In daily life, how safe do you feel moving around in your local area?",
+  "choices": {
+   "1": "Very safe",
+   "2": "Reasonably safe",
+   "3": "Somewhat unsafe",
+   "4": "Very unsafe"
+  }
+ },
+ "module7_note_7": {
+  "type": "note",
+  "label": "[At end of module: Thank the respondent for their trust. Offer a short break. Remind them that the r"
+ },
+ "grp_module8": {
+  "type": "end_group",
+  "label": ""
+ },
+ "module8_note_1": {
+  "type": "note",
+  "label": "[Transition statement: \"Now I would like to ask some questions about your feelings and mental well-b"
+ },
+ "q8_1": {
+  "type": "select_one",
+  "label": "Q8.1 In the past 6 months, did you experience any major stressful event (death of a close person, jo",
+  "choices": {
+   "1": "Yes",
+   "2": "No"
+  }
+ },
+ "grp_q8_2": {
+  "type": "end_group",
+  "label": ""
+ },
+ "q8_2_hdr": {
+  "type": "select_one",
+  "label": "Statement",
+  "choices": {
+   "1": "Strongly agree",
+   "2": "Agree",
+   "3": "Disagree",
+   "4": "Strongly disagree"
+  }
+ },
+ "q8_2_a": {
+  "type": "select_one",
+  "label": "a. I sometimes feel ashamed of my identity.",
+  "choices": {
+   "1": "Strongly agree",
+   "2": "Agree",
+   "3": "Disagree",
+   "4": "Strongly disagree"
+  }
+ },
+ "q8_2_b": {
+  "type": "select_one",
+  "label": "b. I feel my identity is a burden to my family.",
+  "choices": {
+   "1": "Strongly agree",
+   "2": "Agree",
+   "3": "Disagree",
+   "4": "Strongly disagree"
+  }
+ },
+ "q8_2_c": {
+  "type": "select_one",
+  "label": "c. I avoid going to services or social events so that people do not learn about my identity.",
+  "choices": {
+   "1": "Strongly agree",
+   "2": "Agree",
+   "3": "Disagree",
+   "4": "Strongly disagree"
+  }
+ },
+ "q8_2_d": {
+  "type": "select_one",
+  "label": "d. Overall, I am satisfied with myself.",
+  "choices": {
+   "1": "Strongly agree",
+   "2": "Agree",
+   "3": "Disagree",
+   "4": "Strongly disagree"
+  }
+ },
+ "q8_2_e": {
+  "type": "select_one",
+  "label": "e. I feel I have a number of good qualities.",
+  "choices": {
+   "1": "Strongly agree",
+   "2": "Agree",
+   "3": "Disagree",
+   "4": "Strongly disagree"
+  }
+ },
+ "q8_2_f": {
+  "type": "select_one",
+  "label": "f. I am optimistic about my future.",
+  "choices": {
+   "1": "Strongly agree",
+   "2": "Agree",
+   "3": "Disagree",
+   "4": "Strongly disagree"
+  }
+ },
+ "grp_q8_3": {
+  "type": "end_group",
+  "label": ""
+ },
+ "q8_3_hdr": {
+  "type": "select_one",
+  "label": "Over the past 2 weeks…",
+  "choices": {
+   "0": "Not at all",
+   "1": "Several days",
+   "2": "More than half the days",
+   "3": "Nearly every day"
+  }
+ },
+ "q8_3_1": {
+  "type": "select_one",
+  "label": "1. Little interest or pleasure in doing things",
+  "choices": {
+   "0": "Not at all",
+   "1": "Several days",
+   "2": "More than half the days",
+   "3": "Nearly every day"
+  }
+ },
+ "q8_3_2": {
+  "type": "select_one",
+  "label": "2. Feeling down, depressed, or hopeless",
+  "choices": {
+   "0": "Not at all",
+   "1": "Several days",
+   "2": "More than half the days",
+   "3": "Nearly every day"
+  }
+ },
+ "q8_3_3": {
+  "type": "select_one",
+  "label": "3. Trouble falling or staying asleep, or sleeping too much",
+  "choices": {
+   "0": "Not at all",
+   "1": "Several days",
+   "2": "More than half the days",
+   "3": "Nearly every day"
+  }
+ },
+ "q8_3_4": {
+  "type": "select_one",
+  "label": "4. Feeling tired or having little energy",
+  "choices": {
+   "0": "Not at all",
+   "1": "Several days",
+   "2": "More than half the days",
+   "3": "Nearly every day"
+  }
+ },
+ "q8_3_5": {
+  "type": "select_one",
+  "label": "5. Poor appetite or overeating",
+  "choices": {
+   "0": "Not at all",
+   "1": "Several days",
+   "2": "More than half the days",
+   "3": "Nearly every day"
+  }
+ },
+ "q8_3_6": {
+  "type": "select_one",
+  "label": "6. Feeling bad about yourself — feeling like a failure, or that you have let yourself or your family",
+  "choices": {
+   "0": "Not at all",
+   "1": "Several days",
+   "2": "More than half the days",
+   "3": "Nearly every day"
+  }
+ },
+ "q8_3_7": {
+  "type": "select_one",
+  "label": "7. Trouble concentrating on things, such as reading or watching television",
+  "choices": {
+   "0": "Not at all",
+   "1": "Several days",
+   "2": "More than half the days",
+   "3": "Nearly every day"
+  }
+ },
+ "q8_3_8": {
+  "type": "select_one",
+  "label": "8. Moving or speaking so slowly that other people could have noticed; or the opposite — being so fid",
+  "choices": {
+   "0": "Not at all",
+   "1": "Several days",
+   "2": "More than half the days",
+   "3": "Nearly every day"
+  }
+ },
+ "q8_3_9": {
+  "type": "select_one",
+  "label": "9. Thoughts that you would be better off dead, or of hurting yourself in some way",
+  "choices": {
+   "0": "Not at all",
+   "1": "Several days",
+   "2": "More than half the days",
+   "3": "Nearly every day"
+  }
+ },
+ "module8_note_3": {
+  "type": "note",
+  "label": "SAFETY PROTOCOL — Q8.3 Item 9: If Item 9 (q8_3_9) is scored 1–3, follow the mandatory safety-respons"
+ },
+ "module8_note_4": {
+  "type": "note",
+  "label": "Total PHQ-9 score: |___|___|     (For office use: 0–4 minimal; 5–9 mild; 10–14 moderate; 15–19 moder"
+ },
+ "q8_4": {
+  "type": "select_one",
+  "label": "Q8.4 In the past 12 months, did you have a mental health assessment or diagnosis by a doctor/psychol",
+  "choices": {
+   "1": "Yes",
+   "2": "Needed it but did not",
+   "3": "Did not need it"
+  }
+ },
+ "q8_5": {
+  "type": "select_multiple",
+  "label": "Q8.5 What problem/condition was diagnosed? (Multiple answers.)",
+  "choices": {
+   "00": "Prefer not to disclose",
+   "01": "Anxiety disorder",
+   "02": "Depression",
+   "03": "Bipolar disorder",
+   "04": "Post-traumatic stress disorder (PTSD)",
+   "05": "Substance use disorder",
+   "06": "Other (specify)"
+  }
+ },
+ "q8_5_other": {
+  "type": "text",
+  "label": "Other (specify)"
+ },
+ "q8_6": {
+  "type": "select_one",
+  "label": "Q8.6 Have you ever received treatment or counselling for a mental health concern?",
+  "choices": {
+   "1": "Yes",
+   "2": "No"
+  }
+ },
+ "q8_7": {
+  "type": "select_multiple",
+  "label": "Q8.7 What type of treatment did you receive? (Multiple answers.)",
+  "choices": {
+   "1": "Therapy/counselling",
+   "2": "Medication",
+   "3": "Hospitalisation",
+   "4": "Other (specify)"
+  }
+ },
+ "q8_7_other": {
+  "type": "text",
+  "label": "Other (specify)"
+ },
+ "q8_8": {
+  "type": "select_multiple",
+  "label": "Q8.8 Where did you receive these services? (Multiple answers.)",
+  "choices": {
+   "1": "Government hospital",
+   "2": "Private clinic/doctor",
+   "3": "NGO/CBO counsellor",
+   "4": "Friend/colleague",
+   "5": "Relatives",
+   "6": "Self-medicated/self-treated (without a trained provider)",
+   "7": "Telephone helpline",
+   "8": "Other (specify)"
+  }
+ },
+ "q8_8_other": {
+  "type": "text",
+  "label": "Other (specify)"
+ },
+ "q8_9": {
+  "type": "select_multiple",
+  "label": "Q8.9 When you feel stressed or low, how do you usually cope? (Multiple answers; do not read list.)",
+  "choices": {
+   "01": "Talk to a friend/colleague",
+   "02": "Talk to family",
+   "03": "Spend time with community/dera members",
+   "04": "Religious or spiritual practice",
+   "05": "Use online community/social media",
+   "06": "Use counselling/helpline",
+   "07": "Use alcohol or other substances",
+   "08": "Keep it to myself",
+   "09": "Other (specify)"
+  }
+ },
+ "q8_9_other": {
+  "type": "text",
+  "label": "Other (specify)"
+ },
+ "grp_module9": {
+  "type": "end_group",
+  "label": ""
+ },
+ "module9_note_1": {
+  "type": "note",
+  "label": "[Read the designated description verbatim before Q9.4: \"A wellness centre is a safe, inclusive, and "
+ },
+ "q9_1": {
+  "type": "select_one",
+  "label": "Q9.1 Before today, had you heard of any facility or drop-in service specifically friendly to your co",
+  "choices": {
+   "1": "Yes",
+   "2": "No"
+  }
+ },
+ "q9_2": {
+  "type": "select_multiple",
+  "label": "Q9.2 Where did you hear about it? (Multiple answers.)",
+  "choices": {
+   "1": "Peer educator/outreach worker",
+   "2": "Friend/community member",
+   "3": "Guruma/senior community member",
+   "4": "Social media/internet",
+   "5": "Leaflet/billboard",
+   "6": "Health worker",
+   "7": "Other (specify)"
+  }
+ },
+ "q9_2_other": {
+  "type": "text",
+  "label": "Other (specify)"
+ },
+ "q9_3": {
+  "type": "select_one",
+  "label": "Q9.3 Have you ever visited such a facility?",
+  "choices": {
+   "1": "Yes, within the past 12 months",
+   "2": "Yes, more than 12 months ago",
+   "3": "Never visited"
+  }
+ },
+ "q9_4": {
+  "type": "select_one",
+  "label": "Q9.4 Read the designated description. If such a wellness centre opened in your area, how likely woul",
+  "choices": {
+   "1": "Definitely would use it",
+   "2": "Probably would use it",
+   "3": "Unsure",
+   "4": "Probably would not use it",
+   "5": "Definitely would not use it"
+  }
+ },
+ "q9_5": {
+  "type": "select_multiple",
+  "label": "Q9.5 ‡ Which services would you most want to receive from the wellness centre? (Maximum five answers",
+  "choices": {
+   "01": "General health check-up",
+   "02": "STI testing and treatment",
+   "03": "HIV testing and counselling",
+   "04": "Free condoms and water-based lubricant",
+   "05": "Family planning services",
+   "06": "Mental health counselling",
+   "07": "GBV support and referral",
+   "08": "Legal assistance information/referral",
+   "09": "Peer support group/safe space",
+   "10": "Livelihood/skills information",
+   "11": "Hormone-related counselling/referral ‡",
+   "12": "Other (specify)"
+  }
+ },
+ "q9_5_other": {
+  "type": "text",
+  "label": "Other (specify)"
+ },
+ "q9_6": {
+  "type": "select_multiple",
+  "label": "Q9.6 ‡ What concerns might you have about using such a facility? (Multiple answers; do not read list",
+  "choices": {
+   "01": "Others seeing you enter the facility",
+   "02": "Confidentiality of my information",
+   "03": "Distance/travel",
+   "04": "Cost",
+   "05": "Staff behaviour",
+   "06": "Opening hours not convenient",
+   "07": "Fear of harassment by police or local persons near the facility",
+   "08": "No concerns",
+   "09": "Other (specify)"
+  }
+ },
+ "q9_6_other": {
+  "type": "text",
+  "label": "Other (specify)"
+ },
+ "q9_7": {
+  "type": "select_multiple",
+  "label": "Q9.7 What features would make the facility comfortable and safe for you? (Multiple answers.)",
+  "choices": {
+   "1": "Staff from my own community",
+   "2": "Confidential location/entrance",
+   "3": "Strict confidentiality policy clearly communicated to service users",
+   "4": "Separate or flexible service hours",
+   "5": "Friendly waiting area",
+   "6": "All services in one place",
+   "7": "Other (specify)"
+  }
+ },
+ "q9_7_other": {
+  "type": "text",
+  "label": "Other (specify)"
+ },
+ "q9_8": {
+  "type": "select_multiple",
+  "label": "Q9.8 Besides visiting the facility directly, in what other ways would you like to receive services o",
+  "choices": {
+   "1": "Mobile health camp in my area",
+   "2": "Peer educator visit",
+   "3": "Telephone/helpline counselling",
+   "4": "Online/social media information",
+   "5": "Printed materials",
+   "6": "Community meeting/session",
+   "7": "Other (specify)"
+  }
+ },
+ "q9_8_other": {
+  "type": "text",
+  "label": "Other (specify)"
+ },
+ "q9_9": {
+  "type": "select_multiple",
+  "label": "Q9.9 From whom would you most prefer to receive services at the facility? (Maximum two answers.)",
+  "choices": {
+   "1": "Peer/community member trained as a service provider",
+   "2": "Male doctor",
+   "3": "Female doctor",
+   "4": "Paramedic/medical assistant",
+   "5": "Counsellor",
+   "6": "No specific preference"
+  }
+ },
+ "q9_10": {
+  "type": "select_one",
+  "label": "Q9.10 Which day and time would be most convenient for you to visit the facility?",
+  "choices": {
+   "1": "Weekday daytime",
+   "2": "Weekday evening",
+   "3": "Friday/weekend daytime",
+   "4": "Friday/weekend evening",
+   "5": "Flexible/any time"
+  }
+ },
+ "q9_11": {
+  "type": "select_multiple",
+  "label": "Q9.11 Which information sources do you trust most for health news? (Maximum three answers.)",
+  "choices": {
+   "1": "Peer educator",
+   "2": "Friend/community member",
+   "3": "Guruma/senior community member",
+   "4": "CBO/NGO worker",
+   "5": "Doctor/health worker",
+   "6": "Social media/online groups",
+   "7": "Television/radio",
+   "8": "Leaflet/BCC materials/billboard",
+   "9": "Other (specify)"
+  }
+ },
+ "q9_11_other": {
+  "type": "text",
+  "label": "Other (specify)"
+ },
+ "q9_12": {
+  "type": "select_one",
+  "label": "Q9.12 If you find the facility helpful, would you be willing to tell other community members about i",
+  "choices": {
+   "1": "Yes",
+   "2": "No",
+   "3": "Unsure"
+  }
+ },
+ "module9_note_2": {
+  "type": "note",
+  "label": "9A. Referral Pathways and Service-Seeking Pattern"
+ },
+ "module9_note_3": {
+  "type": "note",
+  "label": "[The following questions apply to any healthcare/SRHR service taken in the past 12 months — ask with"
+ },
+ "q9_13": {
+  "type": "select_one",
+  "label": "Q9.13 In the past 12 months, how did you first access the healthcare/SRHR service you used most?",
+  "choices": {
+   "1": "Went directly (without any intermediary)",
+   "2": "Through peer educator/outreach worker referral",
+   "3": "Through NGO/CBO referral",
+   "4": "Through health worker/referral from another facility",
+   "5": "On advice of friend/community member",
+   "6": "Through guruma/senior community member",
+   "7": "Other (specify)"
+  }
+ },
+ "q9_13_other": {
+  "type": "text",
+  "label": "Other (specify)"
+ },
+ "q9_14": {
+  "type": "select_one",
+  "label": "Q9.14 For those who went through a referral, how did you find the process of accessing services?",
+  "choices": {
+   "1": "Easier and faster than going directly",
+   "2": "Could not notice any difference",
+   "3": "More difficult than going directly",
+   "8": "Not applicable"
+  }
+ },
+ "q9_15": {
+  "type": "select_one",
+  "label": "Q9.15 Do you feel that accessing services through a referral (e.g., through a peer educator or NGO) ",
+  "choices": {
+   "1": "Yes, better/more services",
+   "2": "No, same services",
+   "98": "Don't know/haven't compared"
+  }
+ },
+ "q9_16": {
+  "type": "select_one",
+  "label": "Q9.16 In the past 12 months, were you ever referred by a peer educator, NGO, or health worker to any",
+  "choices": {
+   "1": "Yes (specify)",
+   "2": "No"
+  }
+ },
+ "q9_16_specify": {
+  "type": "text",
+  "label": "Yes (specify)"
+ },
+ "q9_17": {
+  "type": "select_one",
+  "label": "Q9.17 If you need a new service in the future, who/where do you think you would contact first?",
+  "choices": {
+   "1": "Peer educator/outreach worker",
+   "2": "NGO/CBO directly",
+   "3": "Guruma/senior community member",
+   "4": "Friend/community member",
+   "5": "Government health facility directly",
+   "98": "Don't know",
+   "6": "Other (specify)"
+  }
+ },
+ "q9_17_other": {
+  "type": "text",
+  "label": "Other (specify)"
+ },
+ "module9_note_4": {
+  "type": "note",
+  "label": "Closing Section [Read aloud:] \"We have reached the final part of our interview. I sincerely thank yo"
+ },
+ "module9_note_5": {
+  "type": "note",
+  "label": "Referral Information (Printed on Card Given to Every Respondent)"
+ },
+ "module9_note_6": {
+  "type": "note",
+  "label": "R1. Contents of the referral card — to be finalised for each district before fieldwork begins. [Fold"
+ },
+ "c1": {
+  "type": "text",
+  "label": "Any other comments from the respondent (write verbatim)."
+ },
+ "c2": {
+  "type": "text",
+  "label": "Interviewer observations: privacy of interview, presence of others, respondent's comfort level, any "
+ },
+ "c3": {
+  "type": "select_one",
+  "label": "Interview outcome.",
+  "choices": {
+   "1": "Completed",
+   "2": "Partially completed (note last question)",
+   "3": "Refused to continue after starting",
+   "4": "Interrupted/rescheduled"
+  }
+ },
+ "c3_last_q": {
+  "type": "text",
+  "label": "Partially completed (note last question)"
+ },
+ "module9_collected_by": {
+  "type": "text",
+  "label": "Data collected by (name, code, signature):"
+ },
+ "module9_collected_date": {
+  "type": "date",
+  "label": "Date:"
+ },
+ "module9_verified_by": {
+  "type": "text",
+  "label": "Verified by supervisor (name, code, signature):"
+ },
+ "module9_verified_date": {
+  "type": "date",
+  "label": "Date:"
+ },
+ "module9_entry_by": {
+  "type": "text",
+  "label": "Data entry/verification by:"
+ },
+ "module9_entry_date": {
+  "type": "date",
+  "label": "Date:"
+ }
+}

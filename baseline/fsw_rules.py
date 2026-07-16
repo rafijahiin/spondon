@@ -270,17 +270,10 @@ def _simple_record_rules(field_map: FieldMap, current_version: str | None,
         start = as_datetime(record.get(field_map.interview_start)) if field_map.interview_start else None
         end = as_datetime(record.get(field_map.interview_end)) if field_map.interview_end else None
 
-        if start and not end:
-            yield Anomaly(
-                "MISSING_INTERVIEW_END",
-                Severity.MEDIUM,
-                "Interview start exists but usable interview end time is blank.",
-                fields=tuple(k for k in (field_map.interview_start, field_map.interview_end) if k),
-                action="Check form version and device refresh status; do not calculate duration from this record.",
-                category="timing",
-                **ctx,
-            )
-        elif start and end:
+        # A blank end time is NOT flagged: it means the device served an older form
+        # version that lacked interview_end_actual — the enumerator's fault it is not.
+        # Form version is already its own rule; this only duplicated it 115 times.
+        if start and end:
             minutes = (end - start).total_seconds() / 60
             if minutes < 0:
                 yield Anomaly(
@@ -294,16 +287,15 @@ def _simple_record_rules(field_map: FieldMap, current_version: str | None,
                     **ctx,
                 )
             # A SHORT interview is the only genuine timing issue: the questionnaire
-            # was not administered in full. The threshold is PER-INSTRUMENT
-            # (short_minutes) — the Hijra questionnaire runs ~50-60 min, the FSW one
-            # ~30-40, so one flat line flagged normal 39-minute FSW interviews.
+            # was not administered in full. CIPRB's rule is a flat 40 minutes on both
+            # instruments, and any breach is HIGH — do not re-split it per population.
             # LONG durations are NOT flagged — enumerators routinely leave the form
             # in draft and finish/submit later, so a long span is a workflow
             # artefact, not a long interview.
             elif minutes < short_minutes:
                 yield Anomaly(
                     "INTERVIEW_TOO_SHORT",
-                    Severity.HIGH if minutes < short_minutes / 2 else Severity.MEDIUM,
+                    Severity.HIGH,
                     f"Interview is shorter than {short_minutes} minutes — likely not "
                     "administered in full.",
                     observed=round(minutes, 1),
@@ -489,28 +481,13 @@ def _simple_record_rules(field_map: FieldMap, current_version: str | None,
                 category="income",
                 **ctx,
             )
-        # Only compare income vs expenses when the income figure is itself usable —
-        # not a refusal code (99), and not an amount already flagged as missing zeros
-        # (an income of 12 re-flagged the SAME record with a nonsense "ratio: 1750").
-        income_usable = _is_amount(income) and income >= 100
-        if income_usable and expenses is not None and expenses > income and no_other_income:
-            ratio = round(expenses / income, 2) if income > 0 else None
-            severity = Severity.HIGH if income > 0 and ratio and ratio >= 2 else Severity.MEDIUM
-            yield Anomaly(
-                "EXPENSES_EXCEED_INCOME_NO_OTHER_SOURCE",
-                severity,
-                "Reported expenses exceed sex-work income while no other income source is selected.",
-                observed={"income": income, "expenses": expenses, "ratio": ratio},
-                expected="Explanation such as borrowing, savings, debt, or another income source",
-                action="Verify; this may be genuine, so do not auto-correct.",
-                category="income",
-                **ctx,
-            )
+        # NB: EXPENSES_EXCEED_INCOME_NO_OTHER_SOURCE was REMOVED. Spending more than
+        # you earn is ordinary for this population — borrowing, savings and debt are
+        # the norm, not a data fault, and the rule had no way to tell them apart.
 
         # GPS
         lat = as_number(record.get(field_map.latitude)) if field_map.latitude else None
         lon = as_number(record.get(field_map.longitude)) if field_map.longitude else None
-        precision = as_number(record.get(field_map.gps_precision)) if field_map.gps_precision else None
 
         if (lat is None) != (lon is None):
             yield Anomaly(
@@ -532,17 +509,9 @@ def _simple_record_rules(field_map: FieldMap, current_version: str | None,
                     category="gps",
                     **ctx,
                 )
-        if precision is not None and precision > 50:
-            yield Anomaly(
-                "LOW_GPS_PRECISION",
-                Severity.MEDIUM,
-                "GPS precision is worse than 50 metres.",
-                observed=round(precision, 1),
-                expected="Preferably <= 20 metres; investigate > 50 metres",
-                action="Confirm the interview location if site assignment matters.",
-                category="gps",
-                **ctx,
-            )
+        # NB: LOW_GPS_PRECISION was REMOVED. Precision is a property of the handset
+        # and the sky above it, not of the answers — a 60 m fix still places the
+        # interview in the right district. Invalid/incomplete GPS is still flagged.
 
         # NB: WEAK_INTERVIEWER_OBSERVATION was REMOVED. A short or "N/A" interviewer
         # observation is not a fault in the respondent's data — the interview itself
@@ -805,7 +774,6 @@ def build_fsw_engine(
     headers: Sequence[str],
     *,
     current_version: str | None = None,
-    gps_outlier_km: float = 1.5,
     field_map: FieldMap | None = None,
     exclusive_options: Mapping[str, set] | None = None,
     short_minutes: int = 40,
@@ -828,7 +796,9 @@ def build_fsw_engine(
     # and consent to forms back-to-back and finish them from draft later, so a short
     # gap between two start stamps is the same workflow artefact as a long duration
     # — not evidence of anything.
-    engine.add_dataset_rule(_gps_outlier_rule(field_map, gps_outlier_km))
+    # _gps_outlier_rule (GPS_SITE_OUTLIER) is NOT registered: key populations are
+    # reached wherever they are, so "far from the median of the same site code" is a
+    # description of outreach, not a defect. Invalid GPS is still caught per-record.
     engine.add_dataset_rule(_exact_answer_duplicate_rule(field_map))
     # _repeated_observation_rule is NOT registered. Interviewer observations are not
     # survey data and a vague or repeated one is not a fault — together with the

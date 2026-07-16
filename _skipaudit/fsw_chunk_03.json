@@ -1,0 +1,647 @@
+[
+ {
+  "idx": 153,
+  "name": "q2_12_b_src",
+  "type": "select_multiple q2_12_src",
+  "base": "select_multiple",
+  "appearance": null,
+  "label_en": "Source Code",
+  "label_bn": "উৎস কোড",
+  "own_relevant": "${q2_12_b}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module2",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q2_12_b}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q2_12_b": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No"
+    },
+    "label": "b. How to access justice (filing complaints, seeking law enforcement help, obtai"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 154,
+  "name": "q2_12_b_src_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other source (specify)",
+  "label_bn": "অন্যান্য উৎস (উল্লেখ করুন)",
+  "own_relevant": "selected(${q2_12_b_src},'2') or selected(${q2_12_b_src},'5')",
+  "ancestor_gates": [
+   {
+    "group": "grp_module2",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "selected(${q2_12_b_src},'2') or selected(${q2_12_b_src},'5')"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q2_12_b_src": {
+    "type": "select_multiple",
+    "choices": {
+     "1": "PHD / Project-based NGO",
+     "2": "Other NGO/CBO or sex worker network (specify)",
+     "3": "Government programme",
+     "4": "Media (TV, radio, newspaper, internet, social media, etc.)",
+     "5": "Other (specify)"
+    },
+    "label": "Source Code"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 156,
+  "name": "q2_12_c_src",
+  "type": "select_multiple q2_12_src",
+  "base": "select_multiple",
+  "appearance": null,
+  "label_en": "Source Code",
+  "label_bn": "উৎস কোড",
+  "own_relevant": "${q2_12_c}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module2",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q2_12_c}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q2_12_c": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No"
+    },
+    "label": "c. How to access services (healthcare, children's education, social safety net p"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 157,
+  "name": "q2_12_c_src_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other source (specify)",
+  "label_bn": "অন্যান্য উৎস (উল্লেখ করুন)",
+  "own_relevant": "selected(${q2_12_c_src},'2') or selected(${q2_12_c_src},'5')",
+  "ancestor_gates": [
+   {
+    "group": "grp_module2",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "selected(${q2_12_c_src},'2') or selected(${q2_12_c_src},'5')"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q2_12_c_src": {
+    "type": "select_multiple",
+    "choices": {
+     "1": "PHD / Project-based NGO",
+     "2": "Other NGO/CBO or sex worker network (specify)",
+     "3": "Government programme",
+     "4": "Media (TV, radio, newspaper, internet, social media, etc.)",
+     "5": "Other (specify)"
+    },
+    "label": "Source Code"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 159,
+  "name": "q2_12_d_src",
+  "type": "select_multiple q2_12_src",
+  "base": "select_multiple",
+  "appearance": null,
+  "label_en": "Source Code",
+  "label_bn": "উৎস কোড",
+  "own_relevant": "${q2_12_d}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module2",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q2_12_d}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q2_12_d": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No"
+    },
+    "label": "d. How to advocate for your community's rights"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 160,
+  "name": "q2_12_d_src_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other source (specify)",
+  "label_bn": "অন্যান্য উৎস (উল্লেখ করুন)",
+  "own_relevant": "selected(${q2_12_d_src},'2') or selected(${q2_12_d_src},'5')",
+  "ancestor_gates": [
+   {
+    "group": "grp_module2",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "selected(${q2_12_d_src},'2') or selected(${q2_12_d_src},'5')"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q2_12_d_src": {
+    "type": "select_multiple",
+    "choices": {
+     "1": "PHD / Project-based NGO",
+     "2": "Other NGO/CBO or sex worker network (specify)",
+     "3": "Government programme",
+     "4": "Media (TV, radio, newspaper, internet, social media, etc.)",
+     "5": "Other (specify)"
+    },
+    "label": "Source Code"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 162,
+  "name": "q2_12_e_src",
+  "type": "select_multiple q2_12_src",
+  "base": "select_multiple",
+  "appearance": null,
+  "label_en": "Source Code",
+  "label_bn": "উৎস কোড",
+  "own_relevant": "${q2_12_e}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module2",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q2_12_e}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q2_12_e": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No"
+    },
+    "label": "e. Health/peer educator training (HIV, STI, condom use negotiation, etc.)"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 163,
+  "name": "q2_12_e_src_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other source (specify)",
+  "label_bn": "অন্যান্য উৎস (উল্লেখ করুন)",
+  "own_relevant": "selected(${q2_12_e_src},'2') or selected(${q2_12_e_src},'5')",
+  "ancestor_gates": [
+   {
+    "group": "grp_module2",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "selected(${q2_12_e_src},'2') or selected(${q2_12_e_src},'5')"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q2_12_e_src": {
+    "type": "select_multiple",
+    "choices": {
+     "1": "PHD / Project-based NGO",
+     "2": "Other NGO/CBO or sex worker network (specify)",
+     "3": "Government programme",
+     "4": "Media (TV, radio, newspaper, internet, social media, etc.)",
+     "5": "Other (specify)"
+    },
+    "label": "Source Code"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 165,
+  "name": "q2_13_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other (specify)",
+  "label_bn": "অন্যান্য (উল্লেখ করুন)",
+  "own_relevant": "selected(${q2_13},'6')",
+  "ancestor_gates": [
+   {
+    "group": "grp_module2",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "selected(${q2_13},'6')"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q2_13": {
+    "type": "select_multiple",
+    "choices": {
+     "1": "High Court ruling that evicting brothel residents without rehabilitation is illegal / adult brothel-based sex work is not illegal",
+     "2": "Constitutional rights to equality and protection (Articles 27/28/31)",
+     "3": "Women and Children Repression Prevention Act, 2000",
+     "4": "Domestic Violence (Prevention and Protection) Act, 2010",
+     "5": "Legal aid through District Legal Aid Committee",
+     "6": "Other (specify)",
+     "98": "Aware of none"
+    },
+    "label": "Q2.13 ‡ Are you aware of any laws, court rulings, or legal protections relating "
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 167,
+  "name": "q2_14_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other (specify)",
+  "label_bn": "অন্যান্য (উল্লেখ করুন)",
+  "own_relevant": "selected(${q2_14},'9')",
+  "ancestor_gates": [
+   {
+    "group": "grp_module2",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "selected(${q2_14},'9')"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q2_14": {
+    "type": "select_multiple",
+    "choices": {
+     "1": "VGD/Vulnerable Women Benefit (VWB)",
+     "2": "Widow/Abandoned Women Allowance",
+     "3": "Old Age Allowance",
+     "4": "Maternity Allowance",
+     "5": "Children's Education Stipend",
+     "6": "Ashrayan/Housing Programme",
+     "7": "HIV-related programmes",
+     "8": "Support for persons with disabilities",
+     "9": "Other (specify)",
+     "98": "Aware of none"
+    },
+    "label": "Q2.14 Are you aware of any government social safety net programmes that women in"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 169,
+  "name": "q2_15_specify",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Yes (specify)",
+  "label_bn": "হ্যাঁ (উল্লেখ করুন)",
+  "own_relevant": "${q2_15}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module2",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q2_15}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q2_15": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes (specify)",
+     "2": "Applied but not received",
+     "3": "Never applied"
+    },
+    "label": "Q2.15 In the past 12 months, have you or your family received any of these benef"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 170,
+  "name": "q2_16",
+  "type": "select_one q2_16_opts",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "Q2.16 Have your children's births been registered? [Brothel residents often face barriers to birth registration; if the respondent reports a problem, record it verbatim in the margin.]",
+  "label_bn": "Q2.16 আপনার সন্তানদের জন্মনিবন্ধন সম্পন্ন হয়েছে কি? [ব্রোথেলের বাসিন্দাদের সন্তানদের জন্মনিবন্ধনে প্রায়ই বাধা সৃষ্টি হয়; উত্তরদাতা কোনো সমস্যা উল্লেখ করলে তা হুবহু মার্জিনে লিখুন।]",
+  "own_relevant": null,
+  "ancestor_gates": [
+   {
+    "group": "grp_module2",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": true,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 172,
+  "name": "q2_18",
+  "type": "select_multiple q2_18_opts",
+  "base": "select_multiple",
+  "appearance": null,
+  "label_en": "Q2.18 What type of programme? (Multiple answers)",
+  "label_bn": "Q2.18 কোন ধরনের কর্মসূচি? (একাধিক উত্তর)",
+  "own_relevant": "${q2_17}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module2",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q2_17}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q2_17": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes, such programmes exist",
+     "2": "No, no such programmes exist",
+     "98": "Don't know"
+    },
+    "label": "Q2.17 Are you aware of any skills development or training programmes that could "
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 173,
+  "name": "q2_18_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other (specify)",
+  "label_bn": "অন্যান্য (উল্লেখ করুন)",
+  "own_relevant": "${q2_17}='1' and selected(${q2_18},'4')",
+  "ancestor_gates": [
+   {
+    "group": "grp_module2",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q2_17}='1' and selected(${q2_18},'4')"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q2_17": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes, such programmes exist",
+     "2": "No, no such programmes exist",
+     "98": "Don't know"
+    },
+    "label": "Q2.17 Are you aware of any skills development or training programmes that could "
+   },
+   "q2_18": {
+    "type": "select_multiple",
+    "choices": {
+     "1": "Government training programme",
+     "2": "NGO-run training programme",
+     "3": "Private sector training programme",
+     "4": "Other (specify)"
+    },
+    "label": "Q2.18 What type of programme? (Multiple answers)"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ }
+]

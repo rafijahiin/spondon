@@ -1,0 +1,763 @@
+[
+ {
+  "idx": 203,
+  "name": "q4_5",
+  "type": "select_one q4_5_opts",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "Q4.5 In the past 12 months, with how many different individuals did you have sex in total? (enter Number, Don't know = 98, Decline to answer = 99)",
+  "label_bn": "Q4.5 গত ১২ মাসে মোট কতজন ভিন্ন ব্যক্তির সাথে আপনার যৌনসম্পর্ক হয়েছে? (সংখ্যা লিখুন, জানি না = 98, উত্তর দিতে অনিচ্ছুক = 99)",
+  "own_relevant": "${q4_1}!='2' and ${q4_1}!='99' and ${q4_3}!='2'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module4",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q4_1}!='2' and ${q4_1}!='99' and ${q4_3}!='2'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q4_1": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "99": "Decline to answer"
+    },
+    "label": "Q4.1 ‡ Have you ever had sex?"
+   },
+   "q4_3": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No"
+    },
+    "label": "Q4.3 In the past 12 months, did you have sex?"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 204,
+  "name": "q4_5_num",
+  "type": "integer",
+  "base": "integer",
+  "appearance": null,
+  "label_en": "Number",
+  "label_bn": "সংখ্যা",
+  "own_relevant": "${q4_1}!='2' and ${q4_1}!='99' and ${q4_3}!='2' and ${q4_5}='num'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module4",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q4_1}!='2' and ${q4_1}!='99' and ${q4_3}!='2' and ${q4_5}='num'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q4_1": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "99": "Decline to answer"
+    },
+    "label": "Q4.1 ‡ Have you ever had sex?"
+   },
+   "q4_3": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No"
+    },
+    "label": "Q4.3 In the past 12 months, did you have sex?"
+   },
+   "q4_5": {
+    "type": "select_one",
+    "choices": {
+     "num": "Number",
+     "98": "Don't know",
+     "99": "Decline to answer"
+    },
+    "label": "Q4.5 In the past 12 months, with how many different individuals did you have sex"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 205,
+  "name": "q4_6",
+  "type": "select_one q4_6_opts",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "Q4.6 Who was your most recent partner?",
+  "label_bn": "Q4.6 সর্বশেষ সঙ্গীটি কে ছিলেন?",
+  "own_relevant": "${q4_1}!='2' and ${q4_1}!='99' and ${q4_3}!='2'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module4",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q4_1}!='2' and ${q4_1}!='99' and ${q4_3}!='2'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q4_1": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "99": "Decline to answer"
+    },
+    "label": "Q4.1 ‡ Have you ever had sex?"
+   },
+   "q4_3": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No"
+    },
+    "label": "Q4.3 In the past 12 months, did you have sex?"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 206,
+  "name": "q4_7_intro",
+  "type": "note",
+  "base": "note",
+  "appearance": null,
+  "label_en": "Q4.7 ‡  Thinking about the past 12 months, describe condom use during sex with the different types of partners listed below. [Ask only for partner types mentioned in Q4.4.] Code: Always = 1 / Sometimes = 2 / Never = 3 / Not applicable = 8",
+  "label_bn": "Q4.7 ‡ গত ১২ মাসের কথা চিন্তা করে বলুন, নিচের বিভিন্ন ধরনের সঙ্গীর সঙ্গে যৌন সম্পর্কের সময় কনডম ব্যবহার সম্পর্কে বলুন? [শুধুমাত্র Q4.4-এ উল্লেখিত সঙ্গীর ধরনগুলোর জন্য জিজ্ঞাসা করুন। কোড: প্রতি বার = 1 কখনো কখনো = 2 কখনোই নয় = 3 প্রযোজ্য নয় = 8",
+  "own_relevant": "${q4_1}!='2' and ${q4_1}!='99' and ${q4_3}!='2'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module4",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q4_1}!='2' and ${q4_1}!='99' and ${q4_3}!='2'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": true,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q4_1": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "99": "Decline to answer"
+    },
+    "label": "Q4.1 ‡ Have you ever had sex?"
+   },
+   "q4_3": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No"
+    },
+    "label": "Q4.3 In the past 12 months, did you have sex?"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 207,
+  "name": "grp_q4_7",
+  "type": "begin_group",
+  "base": "begin_group",
+  "appearance": "field-list",
+  "label_en": "Q4.7 ‡  Thinking about the past 12 months, describe condom use during sex with the different types of partners listed below.",
+  "label_bn": "Q4.7 ‡ গত ১২ মাসের কথা চিন্তা করে বলুন, নিচের বিভিন্ন ধরনের সঙ্গীর সঙ্গে যৌন সম্পর্কের সময় কনডম ব্যবহার সম্পর্কে বলুন?",
+  "own_relevant": "${q4_1}!='2' and ${q4_1}!='99' and ${q4_3}!='2'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module4",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q4_1}!='2' and ${q4_1}!='99' and ${q4_3}!='2'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q4_1": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "99": "Decline to answer"
+    },
+    "label": "Q4.1 ‡ Have you ever had sex?"
+   },
+   "q4_3": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No"
+    },
+    "label": "Q4.3 In the past 12 months, did you have sex?"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 214,
+  "name": "q4_8",
+  "type": "select_one q4_8_opts",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "Q4.8 ‡ When you use a condom, what type of lubricant do you usually use? [Do not correct answers during interview; information that oil-based lubricants can damage condoms will be provided in the leaflet at the end of the interview.]",
+  "label_bn": "Q4.8 ‡ আপনি যখন কনডম ব্যবহার করেন, তখন সাধারণত কোন ধরনের লুব্রিকেন্ট ব্যবহার করেন? [সাক্ষাৎকারের সময় উত্তর সংশোধন করবেন না; তেলভিত্তিক লুব্রিকেন্ট কনডমের ক্ষতি করতে পারে—এই তথ্য সাক্ষাৎকার শেষে লিফলেটে দেওয়া হবে।]",
+  "own_relevant": "${q4_1}!='2' and ${q4_1}!='99' and ${q4_3}!='2'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module4",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q4_1}!='2' and ${q4_1}!='99' and ${q4_3}!='2'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q4_1": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "99": "Decline to answer"
+    },
+    "label": "Q4.1 ‡ Have you ever had sex?"
+   },
+   "q4_3": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No"
+    },
+    "label": "Q4.3 In the past 12 months, did you have sex?"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 215,
+  "name": "q4_8_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other (specify)",
+  "label_bn": "অন্যান্য (উল্লেখ করুন)",
+  "own_relevant": "${q4_8}='6'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module4",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q4_8}='6'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q4_8": {
+    "type": "select_one",
+    "choices": {
+     "1": "Water-based lubricant (gel)",
+     "2": "Oil/cream/Vaseline",
+     "3": "Saliva",
+     "4": "Nothing",
+     "5": "Do not use condoms",
+     "6": "Other (specify)"
+    },
+    "label": "Q4.8 ‡ When you use a condom, what type of lubricant do you usually use? [Do not"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 216,
+  "name": "q4_9",
+  "type": "select_multiple q4_9_opts",
+  "base": "select_multiple",
+  "appearance": null,
+  "label_en": "Q4.9 ‡ What were the main reasons for not using a condom? (Multiple answers; do not read list)",
+  "label_bn": "Q4.9 ‡ কনডম ব্যবহার না করার প্রধান কারণগুলো কী ছিল? (একাধিক উত্তর; তালিকা পড়ে শোনাবেন না)",
+  "own_relevant": "${q4_1}!='2' and ${q4_1}!='99' and not(${q4_7_a}='1' and ${q4_7_b}='1' and ${q4_7_c}='1' and ${q4_7_d}='1') and ${q4_3}!='2'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module4",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q4_1}!='2' and ${q4_1}!='99' and not(${q4_7_a}='1' and ${q4_7_b}='1' and ${q4_7_c}='1' and ${q4_7_d}='1') and ${q4_3}!='2'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q4_1": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "99": "Decline to answer"
+    },
+    "label": "Q4.1 ‡ Have you ever had sex?"
+   },
+   "q4_3": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No"
+    },
+    "label": "Q4.3 In the past 12 months, did you have sex?"
+   },
+   "q4_7_a": {
+    "type": "select_one",
+    "choices": {
+     "1": "Always",
+     "2": "Sometimes",
+     "3": "Never",
+     "8": "N/A"
+    },
+    "label": "a. Regular partner/spouse"
+   },
+   "q4_7_b": {
+    "type": "select_one",
+    "choices": {
+     "1": "Always",
+     "2": "Sometimes",
+     "3": "Never",
+     "8": "N/A"
+    },
+    "label": "b. Casual partner"
+   },
+   "q4_7_c": {
+    "type": "select_one",
+    "choices": {
+     "1": "Always",
+     "2": "Sometimes",
+     "3": "Never",
+     "8": "N/A"
+    },
+    "label": "c. Paying partner/client"
+   },
+   "q4_7_d": {
+    "type": "select_one",
+    "choices": {
+     "1": "Always",
+     "2": "Sometimes",
+     "3": "Never",
+     "8": "N/A"
+    },
+    "label": "d. Person to whom you paid"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 217,
+  "name": "q4_9_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other (specify)",
+  "label_bn": "অন্যান্য (উল্লেখ করুন)",
+  "own_relevant": "selected(${q4_9},'09')",
+  "ancestor_gates": [
+   {
+    "group": "grp_module4",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "selected(${q4_9},'09')"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q4_9": {
+    "type": "select_multiple",
+    "choices": {
+     "01": "Did not have a condom at the time",
+     "02": "Partner refused/objected",
+     "03": "Client paid more for sex without a condom",
+     "04": "Reduces pleasure",
+     "05": "Trusted the partner",
+     "06": "Was under the influence of alcohol/drugs",
+     "07": "Could not negotiate/feared violence",
+     "08": "Too expensive",
+     "09": "Other (specify)",
+     "10": "Always used a condom"
+    },
+    "label": "Q4.9 ‡ What were the main reasons for not using a condom? (Multiple answers; do "
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 218,
+  "name": "q4_10",
+  "type": "select_one q4_10_opts",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "Q4.10 ‡ In the past 03 months, did you receive money, goods, or other benefits in exchange for sex?",
+  "label_bn": "Q4.10 ‡ গত 03 মাসে কি যৌনসম্পর্কের বিনিময়ে আপনি টাকা, পণ্য বা অন্য কোনো সুবিধা পেয়েছেন?",
+  "own_relevant": "${q4_1}!='2' and ${q4_1}!='99' and ${q4_3}!='2'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module4",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q4_1}!='2' and ${q4_1}!='99' and ${q4_3}!='2'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q4_1": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "99": "Decline to answer"
+    },
+    "label": "Q4.1 ‡ Have you ever had sex?"
+   },
+   "q4_3": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No"
+    },
+    "label": "Q4.3 In the past 12 months, did you have sex?"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 219,
+  "name": "q4_11",
+  "type": "select_one q4_11_opts",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "Q4.11 In the past 03 months, did you give money, goods, or other benefits to someone in exchange for sex?",
+  "label_bn": "Q4.11 গত 03 মাসে কি যৌনসম্পর্কের বিনিময়ে আপনি কাউকে টাকা, পণ্য বা অন্য কোনো সুবিধা দিয়েছেন?",
+  "own_relevant": "${q4_1}!='2' and ${q4_1}!='99' and ${q4_3}!='2'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module4",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q4_1}!='2' and ${q4_1}!='99' and ${q4_3}!='2'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q4_1": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "99": "Decline to answer"
+    },
+    "label": "Q4.1 ‡ Have you ever had sex?"
+   },
+   "q4_3": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No"
+    },
+    "label": "Q4.3 In the past 12 months, did you have sex?"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 220,
+  "name": "q4_12",
+  "type": "select_one q4_12_opts",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "Q4.12 In the past 3 months, how often did you use drugs during sex?",
+  "label_bn": "Q4.12 গত ৩ মাসে যৌনসম্পর্ক করার সময় কতবার আপনি মাদক গ্রহণ করেছিলেন?",
+  "own_relevant": "${q4_1}!='2' and ${q4_1}!='99'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module4",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q4_1}!='2' and ${q4_1}!='99'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q4_1": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "99": "Decline to answer"
+    },
+    "label": "Q4.1 ‡ Have you ever had sex?"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 221,
+  "name": "q4_13",
+  "type": "select_one q4_13_opts",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "Q4.13 Have you ever used drugs through injection for non-medical purposes?",
+  "label_bn": "Q4.13 চিকিৎসাবহির্ভূত উদ্দেশ্যে (non-medical purpose) আপনি কি কখনো ইনজেকশনের মাধ্যমে মাদক গ্রহণ করেছেন?",
+  "own_relevant": "${q4_1}!='2' and ${q4_1}!='99'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module4",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q4_1}!='2' and ${q4_1}!='99'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q4_1": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "99": "Decline to answer"
+    },
+    "label": "Q4.1 ‡ Have you ever had sex?"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 222,
+  "name": "q4_14",
+  "type": "select_one q4_14_opts",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "Q4.14 When using drugs through injection, did you ever use a needle or syringe that someone else had already used?",
+  "label_bn": "Q4.14 ইনজেকশনের মাধ্যমে মাদক গ্রহণের সময় কি কখনো অন্য কারো ব্যবহৃত সূঁচ বা সিরিঞ্জ ব্যবহার করেছেন?",
+  "own_relevant": "${q4_1}!='2' and ${q4_1}!='99'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module4",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q4_1}!='2' and ${q4_1}!='99'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s2_age}>=18 and ${s3_member}='1' and ${s4_residence}='2','1','0')"
+   },
+   "q4_1": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "99": "Decline to answer"
+    },
+    "label": "Q4.1 ‡ Have you ever had sex?"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ }
+]

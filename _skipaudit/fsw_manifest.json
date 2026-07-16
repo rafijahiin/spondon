@@ -1,0 +1,353 @@
+[
+ {
+  "chunk": "fsw_chunk_00",
+  "form": "fsw",
+  "count": 14,
+  "names": [
+   "_dup_warn",
+   "interview_language_other",
+   "consent_no_end",
+   "grp_screen",
+   "s1_age",
+   "s1_ineligible",
+   "s4_replacement_reason",
+   "s_ineligible_end",
+   "grp_fsw_a2",
+   "a204_other",
+   "a205_other",
+   "a214",
+   "a215",
+   "fsw_a2_note_1"
+  ]
+ },
+ {
+  "chunk": "fsw_chunk_01",
+  "form": "fsw",
+  "count": 14,
+  "names": [
+   "grp_fsw_mB",
+   "b102_other",
+   "b103_other",
+   "b107_other",
+   "b109_other",
+   "fsw_mB_note_2",
+   "b201_other",
+   "b205_other",
+   "b207_other",
+   "b209_other",
+   "b301_a_times",
+   "b301_b_times",
+   "b301_c_times",
+   "b301_d_times"
+  ]
+ },
+ {
+  "chunk": "fsw_chunk_02",
+  "form": "fsw",
+  "count": 14,
+  "names": [
+   "b301_e_times",
+   "b301_f_times",
+   "b301_g_times",
+   "b301_h_occ",
+   "b301_h_times",
+   "b301_i_times",
+   "grp_module2",
+   "q2_1_n_other",
+   "q2_9",
+   "q2_10",
+   "q2_10_other",
+   "module2_note_5",
+   "q2_12_a_src",
+   "q2_12_a_src_other"
+  ]
+ },
+ {
+  "chunk": "fsw_chunk_03",
+  "form": "fsw",
+  "count": 14,
+  "names": [
+   "q2_12_b_src",
+   "q2_12_b_src_other",
+   "q2_12_c_src",
+   "q2_12_c_src_other",
+   "q2_12_d_src",
+   "q2_12_d_src_other",
+   "q2_12_e_src",
+   "q2_12_e_src_other",
+   "q2_13_other",
+   "q2_14_other",
+   "q2_15_specify",
+   "q2_16",
+   "q2_18",
+   "q2_18_other"
+  ]
+ },
+ {
+  "chunk": "fsw_chunk_04",
+  "form": "fsw",
+  "count": 14,
+  "names": [
+   "q2_20",
+   "q2_20_other",
+   "q2_21_other",
+   "grp_module3",
+   "q3_2",
+   "q3_2_other",
+   "q3_3",
+   "q3_3_other",
+   "q3_5",
+   "q3_5_other",
+   "q3_6",
+   "q3_7",
+   "q3_9",
+   "q3_9_other"
+  ]
+ },
+ {
+  "chunk": "fsw_chunk_05",
+  "form": "fsw",
+  "count": 14,
+  "names": [
+   "q3_10",
+   "q3_10_other",
+   "q3_11",
+   "q3_13_other",
+   "grp_module4",
+   "q4_6",
+   "q4_8_other",
+   "q4_10_other",
+   "q4_13",
+   "q4_15",
+   "q4_15_other",
+   "q4_17",
+   "grp_module5",
+   "q5_3"
+  ]
+ },
+ {
+  "chunk": "fsw_chunk_06",
+  "form": "fsw",
+  "count": 14,
+  "names": [
+   "q5_5",
+   "q5_6",
+   "q5_6_other",
+   "q5_7",
+   "q5_7_other",
+   "q5_10",
+   "q5_11",
+   "q5_15",
+   "q5_16",
+   "q5_16_other",
+   "q5_18",
+   "q5_19",
+   "q5_20",
+   "grp_module6"
+  ]
+ },
+ {
+  "chunk": "fsw_chunk_07",
+  "form": "fsw",
+  "count": 14,
+  "names": [
+   "q6_2",
+   "q6_2_other",
+   "q6_3",
+   "q6_3_other",
+   "q6_4",
+   "q6_5",
+   "q6_6",
+   "q6_7",
+   "q6_8",
+   "q6_9",
+   "q6_9_num",
+   "q6_10",
+   "q6_12",
+   "q6_12_other"
+  ]
+ },
+ {
+  "chunk": "fsw_chunk_08",
+  "form": "fsw",
+  "count": 14,
+  "names": [
+   "q6_14",
+   "q6_14_other",
+   "q6_19_other",
+   "grp_module7",
+   "q7_1_intro",
+   "q7_1_i_12mo",
+   "q7_1_i_perp",
+   "q7_1_i_perp_other",
+   "q7_1_ii_12mo",
+   "q7_1_ii_perp",
+   "q7_1_ii_perp_other",
+   "q7_1_iii_12mo",
+   "q7_1_iii_perp",
+   "q7_1_iii_perp_other"
+  ]
+ },
+ {
+  "chunk": "fsw_chunk_09",
+  "form": "fsw",
+  "count": 14,
+  "names": [
+   "q7_1_iv_12mo",
+   "q7_1_iv_perp",
+   "q7_1_iv_perp_other",
+   "q7_1_v_12mo",
+   "q7_1_v_perp",
+   "q7_1_v_perp_other",
+   "q7_1_vi_12mo",
+   "q7_1_vi_perp",
+   "q7_1_vi_perp_other",
+   "q7_1_vii_12mo",
+   "q7_1_vii_perp",
+   "q7_1_vii_perp_other",
+   "q7_1_viii_12mo",
+   "q7_1_viii_perp"
+  ]
+ },
+ {
+  "chunk": "fsw_chunk_10",
+  "form": "fsw",
+  "count": 14,
+  "names": [
+   "q7_1_viii_perp_other",
+   "q7_1_ix_12mo",
+   "q7_1_ix_perp",
+   "q7_1_ix_perp_other",
+   "q7_1_x_12mo",
+   "q7_1_x_perp",
+   "q7_1_x_perp_other",
+   "q7_1_xi_12mo",
+   "q7_1_xi_perp",
+   "q7_1_xi_perp_other",
+   "q7_1_xii_12mo",
+   "q7_1_xii_perp",
+   "q7_1_xii_perp_other",
+   "q7_2_a_12mo"
+  ]
+ },
+ {
+  "chunk": "fsw_chunk_11",
+  "form": "fsw",
+  "count": 14,
+  "names": [
+   "q7_2_a_perp",
+   "q7_2_a_perp_other",
+   "q7_2_b_12mo",
+   "q7_2_b_perp",
+   "q7_2_b_perp_other",
+   "q7_2_c_12mo",
+   "q7_2_c_perp",
+   "q7_2_c_perp_other",
+   "q7_2_d_12mo",
+   "q7_2_d_perp",
+   "q7_2_d_perp_other",
+   "q7_2_e_12mo",
+   "q7_2_e_perp",
+   "q7_2_e_perp_other"
+  ]
+ },
+ {
+  "chunk": "fsw_chunk_12",
+  "form": "fsw",
+  "count": 14,
+  "names": [
+   "q7_5",
+   "q7_5_other",
+   "q7_6",
+   "q7_7",
+   "q7_8",
+   "q7_9",
+   "q7_10",
+   "q7_11",
+   "q7_13",
+   "q7_14_intro",
+   "q7_14_a_12mo",
+   "q7_14_a_perp",
+   "q7_14_a_perp_other",
+   "q7_14_b_12mo"
+  ]
+ },
+ {
+  "chunk": "fsw_chunk_13",
+  "form": "fsw",
+  "count": 14,
+  "names": [
+   "q7_14_b_perp",
+   "q7_14_b_perp_other",
+   "q7_14_c_12mo",
+   "q7_14_c_perp",
+   "q7_14_c_perp_other",
+   "q7_14_d_12mo",
+   "q7_14_d_perp",
+   "q7_14_d_perp_other",
+   "q7_14_e_12mo",
+   "q7_14_e_perp",
+   "q7_14_e_perp_other",
+   "q7_14_f_12mo",
+   "q7_14_f_perp",
+   "q7_14_f_perp_other"
+  ]
+ },
+ {
+  "chunk": "fsw_chunk_14",
+  "form": "fsw",
+  "count": 14,
+  "names": [
+   "q7_14_g_12mo",
+   "q7_14_g_perp",
+   "q7_14_g_perp_other",
+   "q7_14_h_12mo",
+   "q7_14_h_perp",
+   "q7_14_h_perp_other",
+   "q7_14_i_12mo",
+   "q7_14_i_perp",
+   "q7_14_i_perp_other",
+   "q7_18",
+   "q7_19",
+   "q7_20",
+   "q7_21",
+   "q7_23"
+  ]
+ },
+ {
+  "chunk": "fsw_chunk_15",
+  "form": "fsw",
+  "count": 14,
+  "names": [
+   "grp_module8",
+   "q8_4_other",
+   "q8_6",
+   "q8_6_other",
+   "q8_9_other",
+   "module8_note_7",
+   "grp_module9",
+   "q9_2",
+   "q9_2_other",
+   "q9_3",
+   "q9_5",
+   "q9_5_other",
+   "q9_6_other",
+   "q9_8_other"
+  ]
+ },
+ {
+  "chunk": "fsw_chunk_16",
+  "form": "fsw",
+  "count": 8,
+  "names": [
+   "q9_9_other",
+   "q9_13_other",
+   "q9_14_other",
+   "q9_15_other",
+   "q9_16",
+   "q9_18_specify",
+   "q9_19_other",
+   "c3_partial"
+  ]
+ }
+]

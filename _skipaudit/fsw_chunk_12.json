@@ -1,0 +1,647 @@
+[
+ {
+  "idx": 389,
+  "name": "q7_5",
+  "type": "select_multiple q7_5_opts",
+  "base": "select_multiple",
+  "appearance": null,
+  "label_en": "Q7.5 ‡ Which platforms do you use? (Multiple; do not read list)",
+  "label_bn": "Q7.5 ‡ আপনি কোন কোন মাধ্যম ব্যবহার করেন? (একাধিক উত্তর; তালিকা পড়বেন না)",
+  "own_relevant": "${q7_4}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q7_4}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q7_4": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No"
+    },
+    "label": "Q7.4 ‡ In the past 12 months, have you ever contacted clients or discussed/booke"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 390,
+  "name": "q7_5_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other (specify)",
+  "label_bn": "অন্যান্য (উল্লেখ করুন)",
+  "own_relevant": "selected(${q7_5},'07')",
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "selected(${q7_5},'07')"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q7_5": {
+    "type": "select_multiple",
+    "choices": {
+     "01": "WhatsApp",
+     "02": "imo",
+     "03": "Facebook/Messenger",
+     "04": "Regular mobile call/SMS",
+     "05": "TikTok/other video apps",
+     "06": "Dating/contact apps",
+     "07": "Other (specify)"
+    },
+    "label": "Q7.5 ‡ Which platforms do you use? (Multiple; do not read list)"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 391,
+  "name": "q7_6",
+  "type": "select_one q7_6_opts",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "Q7.6 ‡ Of all clients contacted via these platforms in the past 12 months, what proportion involved in-person (face-to-face) sexual services, and what proportion involved only video call/online sexual activity (no in-person meeting)?",
+  "label_bn": "Q7.6 ‡ গত ১২ মাসে এই মাধ্যমগুলোর সাহায্যে যোগাযোগ হওয়া মোট খদ্দেরের মধ্যে কত অংশের সঙ্গে সরাসরি (সামনাসামনি) সাক্ষাতে যৌনসেবা হয়েছে, এবং কত অংশের সঙ্গে শুধু ভিডিও কল/অনলাইন মাধ্যমে (সামনাসামনি সাক্ষাৎ ছাড়া) যৌন কার্যক্রম হয়েছে?",
+  "own_relevant": "${q7_4}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q7_4}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q7_4": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No"
+    },
+    "label": "Q7.4 ‡ In the past 12 months, have you ever contacted clients or discussed/booke"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 392,
+  "name": "q7_7",
+  "type": "select_one q7_7_opts",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "Q7.7 ‡ In the past 12 months, have you provided sexual services/activity via video call (without in-person contact) — e.g., showing your body or performing sexual acts on video call in exchange for money or other benefits?",
+  "label_bn": "Q7.7 ‡ গত ১২ মাসে আপনি কি ভিডিও কলের মাধ্যমে (সামনাসামনি সাক্ষাৎ ছাড়া) যৌন কার্যক্রম/সেবা প্রদান করেছেন (যেমন ভিডিও কলে শরীর দেখানো বা যৌন কার্যক্রম প্রদর্শন, যার বিনিময়ে টাকা বা সুবিধা পেয়েছেন)?",
+  "own_relevant": "${q7_4}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q7_4}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q7_4": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No"
+    },
+    "label": "Q7.4 ‡ In the past 12 months, have you ever contacted clients or discussed/booke"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 393,
+  "name": "q7_8",
+  "type": "select_one q7_8_opts",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "Q7.8 ‡ How aware or concerned are you that when providing services via video call, a client may take screenshots or record without your consent?",
+  "label_bn": "Q7.8 ‡ ভিডিও কলে সেবা দেওয়ার সময় খদ্দের আপনার অনুমতি ছাড়া স্ক্রিনশট বা রেকর্ড করতে পারে—এই ঝুঁকি সম্পর্কে আপনি কতটা সচেতন বা চিন্তিত থাকেন?",
+  "own_relevant": "${q7_4}='1' and not(selected(${q7_7},'2') or selected(${q7_7},'99'))",
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q7_4}='1' and not(selected(${q7_7},'2') or selected(${q7_7},'99'))"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q7_4": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No"
+    },
+    "label": "Q7.4 ‡ In the past 12 months, have you ever contacted clients or discussed/booke"
+   },
+   "q7_7": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "99": "Prefer not to say"
+    },
+    "label": "Q7.7 ‡ In the past 12 months, have you provided sexual services/activity via vid"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 394,
+  "name": "q7_9",
+  "type": "select_one q7_9_opts",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "Q7.9 ‡ In the past 12 months, have you suspected or confirmed that a client took screenshots, screen-recorded, or threatened to share footage without your consent during a video call?",
+  "label_bn": "Q7.9 ‡ গত ১২ মাসে কোনো খদ্দের কি ভিডিও কল চলাকালীন আপনার অনুমতি ছাড়া স্ক্রিনশট নিয়েছে, স্ক্রিন-রেকর্ড করেছে বা তা প্রকাশ/শেয়ার করার হুমকি দিয়েছে বলে আপনার সন্দেহ হয়েছে বা আপনি নিশ্চিত হয়েছেন?",
+  "own_relevant": "${q7_4}='1' and not(selected(${q7_7},'2') or selected(${q7_7},'99'))",
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q7_4}='1' and not(selected(${q7_7},'2') or selected(${q7_7},'99'))"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q7_4": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No"
+    },
+    "label": "Q7.4 ‡ In the past 12 months, have you ever contacted clients or discussed/booke"
+   },
+   "q7_7": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "99": "Prefer not to say"
+    },
+    "label": "Q7.7 ‡ In the past 12 months, have you provided sexual services/activity via vid"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 395,
+  "name": "q7_10",
+  "type": "select_one q7_10_opts",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "Q7.10 ‡ Before meeting a client contacted online/by phone, do you try to verify their identity or safety (e.g., through a mutual contact, photo/video call, sharing location)?",
+  "label_bn": "Q7.10 ‡ অনলাইন/ফোনের মাধ্যমে যোগাযোগ হওয়া খদ্দেরের সঙ্গে সাক্ষাৎ করার আগে আপনি কি তার পরিচয় বা নিরাপত্তা সম্পর্কে যাচাই করার চেষ্টা করেন (যেমন: পরিচিত কারও মাধ্যমে যাচাই, ছবি/ভিডিও কল, অবস্থান শেয়ার করা)?",
+  "own_relevant": "${q7_4}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q7_4}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q7_4": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No"
+    },
+    "label": "Q7.4 ‡ In the past 12 months, have you ever contacted clients or discussed/booke"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 396,
+  "name": "q7_11",
+  "type": "select_one q7_11_opts",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "Q7.11 ‡ Compared to clients met in person (at the brothel/known location), how consistent is condom use with clients contacted via online/phone?",
+  "label_bn": "Q7.11 ‡ অনলাইন/ফোনের মাধ্যমে পাওয়া খদ্দেরের সঙ্গে যৌন সম্পর্কের সময় কনডম ব্যবহার সরাসরি (ব্রোথেল/পরিচিত স্থানে) পাওয়া খদ্দেরের তুলনায় কেমন?",
+  "own_relevant": "${q7_4}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q7_4}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q7_4": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No"
+    },
+    "label": "Q7.4 ‡ In the past 12 months, have you ever contacted clients or discussed/booke"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 398,
+  "name": "q7_13",
+  "type": "select_one q7_13_opts",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "Q7.13 ‡ Were these photos/videos always shared with your own consent?",
+  "label_bn": "Q7.13 ‡ এই ছবি বা ভিডিও আপনি কি সবসময় নিজের সম্মতিতে শেয়ার করেছেন?",
+  "own_relevant": "not(selected(${q7_12},'2') or selected(${q7_12},'99'))",
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "not(selected(${q7_12},'2') or selected(${q7_12},'99'))"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q7_12": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "99": "Prefer not to say"
+    },
+    "label": "Q7.12 ‡ Do you have or have you ever had personal or explicit photos/videos on y"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 399,
+  "name": "q7_14_intro",
+  "type": "note",
+  "base": "note",
+  "appearance": null,
+  "label_en": "Q7.14 ‡ Has anyone ever done any of the following to you via phone, internet, or social media?\n[For each incident, ask: (1) Has it ever happened in your lifetime? (2) Has it happened in the past 12 months? (3) Who did it? Code: Yes = 1, No = 2, Prefer not to say = 99. Never record the name or identity of perpetrators.]",
+  "label_bn": "Q7.14 ‡ কেউ কি কখনও ফোন, ইন্টারনেট বা সামাজিক যোগাযোগমাধ্যমের মাধ্যমে আপনার সাথে নিচের কোনো আচরণ করেছে?\n[প্রতিটি ঘটনার ক্ষেত্রে জিজ্ঞাসা করুন: (১) জীবনে কখনও ঘটেছে কি না, (২) গত ১২ মাসে ঘটেছে কি না, এবং (৩) কে করেছে। কোড: হ্যাঁ = 1, না = 2, উত্তর দিতে অনিচ্ছুক = 99। কখনোই অপব্যবহারকারী ব্যক্তির নাম বা পরিচয় লিপিবদ্ধ করবেন না।]",
+  "own_relevant": null,
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": true,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 401,
+  "name": "q7_14_a_12mo",
+  "type": "select_one q7_14_yn",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "In the past 12 months?",
+  "label_bn": "গত ১২ মাসে?",
+  "own_relevant": "${q7_14_a_ever}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q7_14_a_ever}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q7_14_a_ever": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "99": "Prefer not to say"
+    },
+    "label": "a. Took personal or explicit photos/videos of you without your consent"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 402,
+  "name": "q7_14_a_perp",
+  "type": "select_multiple q7_14_perp",
+  "base": "select_multiple",
+  "appearance": null,
+  "label_en": "Perpetrator Code",
+  "label_bn": "অপরাধীর কোড",
+  "own_relevant": "${q7_14_a_ever}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q7_14_a_ever}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q7_14_a_ever": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "99": "Prefer not to say"
+    },
+    "label": "a. Took personal or explicit photos/videos of you without your consent"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 403,
+  "name": "q7_14_a_perp_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other (specify)",
+  "label_bn": "অন্যান্য (উল্লেখ করুন)",
+  "own_relevant": "selected(${q7_14_a_perp},'12')",
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "selected(${q7_14_a_perp},'12')"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q7_14_a_perp": {
+    "type": "select_multiple",
+    "choices": {
+     "1": "Client (new or regular)",
+     "2": "Husband/babu (intimate partner)",
+     "3": "Sardarni/landlady",
+     "4": "Broker/intermediary",
+     "5": "Family member/relative",
+     "6": "Colleague/acquaintance",
+     "7": "Stranger",
+     "8": "Police/law enforcement",
+     "9": "Local powerful individual/goon",
+     "10": "Health worker",
+     "11": "Religious leader",
+     "12": "Other (specify)",
+     "13": "Unknown online person/fake profile"
+    },
+    "label": "Perpetrator Code"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 405,
+  "name": "q7_14_b_12mo",
+  "type": "select_one q7_14_yn",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "In the past 12 months?",
+  "label_bn": "গত ১২ মাসে?",
+  "own_relevant": "${q7_14_b_ever}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module7",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q7_14_b_ever}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q7_14_b_ever": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "99": "Prefer not to say"
+    },
+    "label": "b. Threatened to share or publish your personal or explicit photos/videos with o"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ }
+]

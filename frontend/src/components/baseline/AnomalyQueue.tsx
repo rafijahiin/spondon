@@ -71,14 +71,12 @@ const RULE_LABEL: Record<string, string> = {
   MUTUALLY_EXCLUSIVE_MULTISELECT: 'Conflicting answers selected',
   SEX_WORK_YEARS_IMPOSSIBLE: 'Work-history duration impossible',
   SEX_WORK_START_AFTER_CURRENT_AGE: 'Work started after current age',
-  MISSING_INTERVIEW_END: 'Missing interview end time',
   OLD_FORM_VERSION: 'Old form version',
   INTERVIEW_TOO_SHORT: 'Interview under 40 minutes',
   END_BEFORE_START: 'End time before start time',
   OTHER_SELECTED_WITHOUT_SPECIFY: "'Other' without specify text",
   LIKELY_MISSING_ZERO_IN_INCOME: 'Income likely missing zeros',
   LIKELY_MISSING_ZERO_IN_EXPENSE: 'Expense likely missing zeros',
-  EXPENSES_EXCEED_INCOME_NO_OTHER_SOURCE: 'Expenses exceed stated income',
   CHILDREN_WITH_RESPONDENT_EXCEED_TOTAL: 'Child counts contradict',
   CHILD_DETAILS_WHEN_TOTAL_ZERO: 'Child details but zero children',
   OTHER_CHILD_LOCATION_MISSING: "Other children's location missing",
@@ -88,10 +86,8 @@ const RULE_LABEL: Record<string, string> = {
   CONSENT_NO_BUT_INTERVIEW_COMPLETED: 'Interview recorded without consent',
   DUPLICATE_SUBMISSION_ID: 'Duplicate submission ID',
   EXACT_DUPLICATE_ANSWER_PATTERN: 'Identical answer pattern',
-  GPS_SITE_OUTLIER: 'GPS far from site cluster — verify',
   INVALID_GPS: 'Invalid GPS coordinates',
   INCOMPLETE_GPS: 'Incomplete GPS coordinates',
-  LOW_GPS_PRECISION: 'Low GPS precision',
 }
 const humanRule = (id: string) =>
   RULE_LABEL[id] ?? id.toLowerCase().replace(/_/g, ' ').replace(/^\w/, (c) => c.toUpperCase())

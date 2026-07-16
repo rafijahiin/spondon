@@ -1,0 +1,674 @@
+[
+ {
+  "idx": 250,
+  "name": "q5_5",
+  "type": "select_one q5_5_opts",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "Q5.5 Did you seek treatment or consultation for these symptoms?",
+  "label_bn": "Q5.5 এসব উপসর্গের জন্য কি আপনি চিকিৎসা বা পরামর্শ নিয়েছিলেন?",
+  "own_relevant": "${q5_4_a}='1' or ${q5_4_b}='1' or ${q5_4_c}='1' or ${q5_4_d}='1' or ${q5_4_e}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module5",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q5_4_a}='1' or ${q5_4_b}='1' or ${q5_4_c}='1' or ${q5_4_d}='1' or ${q5_4_e}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q5_4_a": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "99": "Prefer not to say"
+    },
+    "label": "a. Burning sensation during urination"
+   },
+   "q5_4_b": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "99": "Prefer not to say"
+    },
+    "label": "b. Unusually frequent urination"
+   },
+   "q5_4_c": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "99": "Prefer not to say"
+    },
+    "label": "c. Unusual genital discharge"
+   },
+   "q5_4_d": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "99": "Prefer not to say"
+    },
+    "label": "d. Sores or ulcers on genitals"
+   },
+   "q5_4_e": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "99": "Prefer not to say"
+    },
+    "label": "e. Lower abdominal pain unrelated to menstruation"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 251,
+  "name": "q5_6",
+  "type": "select_one q5_6_opts",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "Q5.6 Where did you first seek treatment or consultation? (One answer)",
+  "label_bn": "Q5.6 প্রথমে কোথা থেকে চিকিৎসা বা পরামর্শ নিয়েছিলেন? (একটি উত্তর)",
+  "own_relevant": "${q5_5}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module5",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q5_5}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q5_5": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "8": "Had no symptoms"
+    },
+    "label": "Q5.5 Did you seek treatment or consultation for these symptoms?"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 252,
+  "name": "q5_6_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other (specify)",
+  "label_bn": "অন্যান্য (উল্লেখ করুন)",
+  "own_relevant": "${q5_6}='7'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module5",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q5_6}='7'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q5_6": {
+    "type": "select_one",
+    "choices": {
+     "1": "Government hospital/clinic",
+     "2": "NGO clinic/DIC/Wellness Centre (inside or near brothel)",
+     "3": "Private doctor/clinic",
+     "4": "Pharmacy/drug seller",
+     "5": "Traditional healer / herbalist",
+     "6": "Friend/colleague",
+     "7": "Other (specify)"
+    },
+    "label": "Q5.6 Where did you first seek treatment or consultation? (One answer)"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 253,
+  "name": "q5_7",
+  "type": "select_multiple q5_7_opts",
+  "base": "select_multiple",
+  "appearance": null,
+  "label_en": "Q5.7 Why did you not seek treatment? (Multiple; do not read list) ‡",
+  "label_bn": "Q5.7 কেন আপনি চিকিৎসা নেননি? (একাধিক উত্তর; তালিকা পড়বেন না) ‡",
+  "own_relevant": "${q5_5}='2'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module5",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q5_5}='2'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q5_5": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "8": "Had no symptoms"
+    },
+    "label": "Q5.5 Did you seek treatment or consultation for these symptoms?"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 254,
+  "name": "q5_7_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other (specify)",
+  "label_bn": "অন্যান্য (উল্লেখ করুন)",
+  "own_relevant": "selected(${q5_7},'08')",
+  "ancestor_gates": [
+   {
+    "group": "grp_module5",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "selected(${q5_7},'08')"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q5_7": {
+    "type": "select_multiple",
+    "choices": {
+     "01": "Symptoms resolved on their own",
+     "02": "Cost too high",
+     "03": "Health facility too far",
+     "04": "Could not leave work / feared loss of income",
+     "05": "Felt ashamed or embarrassed",
+     "06": "Feared disrespect or discrimination due to occupation",
+     "07": "Did not know where to go",
+     "08": "Other (specify)"
+    },
+    "label": "Q5.7 Why did you not seek treatment? (Multiple; do not read list) ‡"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 257,
+  "name": "q5_10",
+  "type": "select_one q5_10_opts",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "Q5.10 If yes, did you complete full treatment for that STI?",
+  "label_bn": "Q5.10 যদি হয়ে থাকে, ওই সমস্যার জন্য আপনি কি সম্পূর্ণ চিকিৎসা গ্রহণ করেছেন এবং চিকিৎসা শেষ করেছেন?",
+  "own_relevant": "${q5_9}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module5",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q5_9}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": true,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q5_9": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "99": "Prefer not to say"
+    },
+    "label": "Q5.9 In the past 12 months, has a doctor or health worker told you that you have"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 258,
+  "name": "q5_11",
+  "type": "select_one q5_11_opts",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "Q5.11 Have you ever been tested for Syphilis?",
+  "label_bn": "Q5.11 আপনি কি কখনও সিফিলিস (Syphilis) পরীক্ষা করিয়েছেন?",
+  "own_relevant": "${q5_9}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module5",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q5_9}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q5_9": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "99": "Prefer not to say"
+    },
+    "label": "Q5.9 In the past 12 months, has a doctor or health worker told you that you have"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 262,
+  "name": "q5_15",
+  "type": "select_one q5_15_opts",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "Q5.15 Did you go to the facility you were referred to?",
+  "label_bn": "Q5.15 আপনাকে যে প্রতিষ্ঠানে রেফার করা হয়েছিল, সেখানে কি আপনি গিয়েছিলেন?",
+  "own_relevant": "${q5_14}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module5",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q5_14}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": true,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q5_14": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No"
+    },
+    "label": "Q5.14 In the past 12 months, were you referred to another facility by a health w"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 263,
+  "name": "q5_16",
+  "type": "select_one q5_16_opts",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "Q5.16 If Q5.15 = 2 or 3: What was the main reason? (One answer; do not read list)",
+  "label_bn": "Q5.16 যদি Q5.15 = 2 বা 3: প্রধান কারণ কী ছিল? (একটি উত্তর; তালিকা পড়বেন না)",
+  "own_relevant": "${q5_14}='1' and (${q5_15}='2' or ${q5_15}='3')",
+  "ancestor_gates": [
+   {
+    "group": "grp_module5",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q5_14}='1' and (${q5_15}='2' or ${q5_15}='3')"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": true,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q5_14": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No"
+    },
+    "label": "Q5.14 In the past 12 months, were you referred to another facility by a health w"
+   },
+   "q5_15": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes, went and completed care",
+     "2": "Went but did not complete care",
+     "3": "Did not go"
+    },
+    "label": "Q5.15 Did you go to the facility you were referred to?"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 264,
+  "name": "q5_16_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other (specify)",
+  "label_bn": "অন্যান্য (উল্লেখ করুন)",
+  "own_relevant": "${q5_16}='07'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module5",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q5_16}='07'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q5_16": {
+    "type": "select_one",
+    "choices": {
+     "01": "Cost",
+     "02": "Distance / transportation problem",
+     "03": "Could not leave work / feared income loss",
+     "04": "Fear of poor treatment or confidentiality breach",
+     "05": "Did not feel it was necessary",
+     "06": "Facility did not provide service / too long to wait",
+     "07": "Other (specify)",
+     "8": "Not applicable"
+    },
+    "label": "Q5.16 If Q5.15 = 2 or 3: What was the main reason? (One answer; do not read list"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 266,
+  "name": "q5_18",
+  "type": "integer",
+  "base": "integer",
+  "appearance": null,
+  "label_en": "Q5.18 How many times have you given birth to a live child?",
+  "label_bn": "Q5.18 আপনি কতবার জীবিত সন্তান জন্ম দিয়েছেন?",
+  "own_relevant": "${q5_17}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module5",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q5_17}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q5_17": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "99": "Prefer not to say"
+    },
+    "label": "Q5.17 Have you ever been pregnant?"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 267,
+  "name": "q5_19",
+  "type": "select_one q5_19_opts",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "Q5.19 During your most recent pregnancy, did you receive antenatal care (ANC) from a trained provider?",
+  "label_bn": "Q5.19 আপনার সর্বশেষ গর্ভাবস্থায় কি কোনো প্রশিক্ষিত সেবাদাতার কাছ থেকে প্রসবপূর্ব সেবা (ANC) পেয়েছিলেন?",
+  "own_relevant": "${q5_17}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module5",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q5_17}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q5_17": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "99": "Prefer not to say"
+    },
+    "label": "Q5.17 Have you ever been pregnant?"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 268,
+  "name": "q5_20",
+  "type": "select_one q5_20_opts",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "Q5.20 Where was your most recent child born?",
+  "label_bn": "Q5.20 আপনার সর্বশেষ সন্তান কোথায় জন্মগ্রহণ করেছে?",
+  "own_relevant": "${q5_17}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_module5",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${q5_17}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "q5_17": {
+    "type": "select_one",
+    "choices": {
+     "1": "Yes",
+     "2": "No",
+     "99": "Prefer not to say"
+    },
+    "label": "Q5.17 Have you ever been pregnant?"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 271,
+  "name": "grp_module6",
+  "type": "begin_group",
+  "base": "begin_group",
+  "appearance": null,
+  "label_en": "MODULE 6: ACCESS TO SERVICES",
+  "label_bn": "মডিউল ৬. সেবাপ্রাপ্তির সুযোগ (Access to Services)",
+  "own_relevant": "${_proceed}='1'",
+  "ancestor_gates": [],
+  "effective_gates": [
+   "${_proceed}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ }
+]

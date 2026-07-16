@@ -1,0 +1,30 @@
+{
+ "hijra": {
+  "name": "Baseline Survey — Hijra / Gender-diverse Population (CIPRB)",
+  "active": true,
+  "links": {
+   "url": "https://ee.kobotoolbox.org/tzGBA7nj",
+   "single_url": "https://ee.kobotoolbox.org/single/tzGBA7nj",
+   "single_once_url": "https://ee.kobotoolbox.org/single/73f3fd13abc7c822737c5c73f7da455d",
+   "offline_url": "https://ee.kobotoolbox.org/x/tzGBA7nj",
+   "preview_url": "https://ee.kobotoolbox.org/preview/tzGBA7nj",
+   "iframe_url": "https://ee.kobotoolbox.org/i/tzGBA7nj",
+   "single_iframe_url": "https://ee.kobotoolbox.org/single/i/tzGBA7nj",
+   "single_once_iframe_url": "https://ee.kobotoolbox.org/single/i/73f3fd13abc7c822737c5c73f7da455d"
+  }
+ },
+ "fsw": {
+  "name": "Baseline Survey — Female Sex Workers (Brothel & Street) (CIPRB)",
+  "active": true,
+  "links": {
+   "url": "https://ee.kobotoolbox.org/83PhCEZ4",
+   "single_url": "https://ee.kobotoolbox.org/single/83PhCEZ4",
+   "single_once_url": "https://ee.kobotoolbox.org/single/c63d340196b8d178ddbdd99738c8726c",
+   "offline_url": "https://ee.kobotoolbox.org/x/83PhCEZ4",
+   "preview_url": "https://ee.kobotoolbox.org/preview/83PhCEZ4",
+   "iframe_url": "https://ee.kobotoolbox.org/i/83PhCEZ4",
+   "single_iframe_url": "https://ee.kobotoolbox.org/single/i/83PhCEZ4",
+   "single_once_iframe_url": "https://ee.kobotoolbox.org/single/i/c63d340196b8d178ddbdd99738c8726c"
+  }
+ }
+}

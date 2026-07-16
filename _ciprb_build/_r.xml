@@ -1,0 +1,841 @@
+<?xml version="1.0"?>
+<h:html xmlns="http://www.w3.org/2002/xforms" xmlns:h="http://www.w3.org/1999/xhtml" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:jr="http://openrosa.org/javarosa" xmlns:orx="http://openrosa.org/xforms" xmlns:odk="http://www.opendatakit.org/xforms">
+  <h:head>
+    <h:title>CIPRB 10 — MPDSR Response Plan</h:title>
+    <model odk:xforms-version="1.0.0">
+      <itext>
+        <translation lang="English" default="true()">
+          <text id="district-0">
+            <value>Sunamganj</value>
+          </text>
+          <text id="district-1">
+            <value>Sherpur</value>
+          </text>
+          <text id="district-2">
+            <value>Bhola</value>
+          </text>
+          <text id="district-3">
+            <value>Kurigram</value>
+          </text>
+          <text id="district-4">
+            <value>Gaibandha</value>
+          </text>
+          <text id="district-5">
+            <value>Khagrachari</value>
+          </text>
+          <text id="district-6">
+            <value>Noakhali</value>
+          </text>
+          <text id="district-7">
+            <value>Patuakhali</value>
+          </text>
+          <text id="district-8">
+            <value>Sirajganj</value>
+          </text>
+          <text id="district-9">
+            <value>Barguna</value>
+          </text>
+          <text id="district-10">
+            <value>Jamalpur</value>
+          </text>
+          <text id="district-11">
+            <value>Bagerhat</value>
+          </text>
+          <text id="district-12">
+            <value>Habiganj</value>
+          </text>
+          <text id="district-13">
+            <value>Moulavibazar</value>
+          </text>
+          <text id="district-14">
+            <value>Sylhet</value>
+          </text>
+          <text id="district-15">
+            <value>Bandarban</value>
+          </text>
+          <text id="district-16">
+            <value>Chandpur</value>
+          </text>
+          <text id="district-17">
+            <value>Rangpur</value>
+          </text>
+          <text id="district-18">
+            <value>Dhaka</value>
+          </text>
+          <text id="rp_subcat-0">
+            <value>Community Death Review</value>
+          </text>
+          <text id="rp_subcat-1">
+            <value>Facility Death Review</value>
+          </text>
+          <text id="rp_subcat-2">
+            <value>Assignment causes of deaths</value>
+          </text>
+          <text id="rp_subcat-3">
+            <value>Response plan development</value>
+          </text>
+          <text id="rp_subcat-4">
+            <value>Implementation of response</value>
+          </text>
+          <text id="rp_subcat-5">
+            <value>Monitoring and evaluation</value>
+          </text>
+          <text id="rp_status-0">
+            <value>Implemented</value>
+          </text>
+          <text id="rp_status-1">
+            <value>In progress</value>
+          </text>
+          <text id="rp_status-2">
+            <value>Pending / not started</value>
+          </text>
+          <text id="rp_status-3">
+            <value>Delayed</value>
+          </text>
+          <text id="rp_status-4">
+            <value>Dropped</value>
+          </text>
+          <text id="/data/grp_meta:label">
+            <value>Submission info</value>
+          </text>
+          <text id="/data/grp_meta/location:label">
+            <value>GPS location (required — step outside if no signal)</value>
+          </text>
+          <text id="/data/grp_meta/collection_date:label">
+            <value>Date</value>
+          </text>
+          <text id="/data/grp_meta/district:label">
+            <value>District</value>
+          </text>
+          <text id="/data/grp_meta/upazila:label">
+            <value>Upazila</value>
+          </text>
+          <text id="/data/grp_meta/union:label">
+            <value>Union / Pourashava</value>
+          </text>
+          <text id="/data/grp_meta/ward:label">
+            <value>Ward</value>
+          </text>
+          <text id="/data/grp_meta/village:label">
+            <value>Village / Mahalla</value>
+          </text>
+          <text id="/data/grp_meta/enumerator_name:label">
+            <value>Your name (person filling this form)</value>
+          </text>
+          <text id="/data/grp_meta/enumerator_designation:label">
+            <value>Designation</value>
+          </text>
+          <text id="/data/grp_meta/enumerator_institution:label">
+            <value>Institution</value>
+          </text>
+          <text id="/data/grp_meta/enumerator_mobile:label">
+            <value>Mobile number</value>
+          </text>
+          <text id="/data/_rp_title:label">
+            <value>MPDSR Action Plan 2026</value>
+          </text>
+          <text id="/data/grp_sys_strengthen:label">
+            <value>MPDSR System Strengthening</value>
+          </text>
+          <text id="/data/grp_sys_strengthen/_sys_note:label">
+            <value>Note: first table needs to fill out based on the findings of the workshop (gaps and challenges are identified to improve the system)</value>
+          </text>
+          <text id="/data/grp_sys_strengthen/grp_sys_act:label">
+            <value>Activity</value>
+          </text>
+          <text id="/data/grp_sys_strengthen/grp_sys_act/sys_subcategory:label">
+            <value>Category</value>
+          </text>
+          <text id="/data/grp_sys_strengthen/grp_sys_act/sys_activities:label">
+            <value>Activities</value>
+          </text>
+          <text id="/data/grp_sys_strengthen/grp_sys_act/sys_responsible:label">
+            <value>Responsible</value>
+          </text>
+          <text id="/data/grp_sys_strengthen/grp_sys_act/sys_timeline:label">
+            <value>Timeline</value>
+          </text>
+          <text id="/data/grp_sys_strengthen/grp_sys_act/sys_indicator:label">
+            <value>Indicator</value>
+          </text>
+          <text id="/data/grp_sys_strengthen/grp_sys_act/sys_milestone:label">
+            <value>Milestone</value>
+          </text>
+          <text id="/data/grp_sys_strengthen/grp_sys_act/sys_considerations:label">
+            <value>Considerations</value>
+          </text>
+          <text id="/data/grp_sys_strengthen/grp_sys_act/sys_status:label">
+            <value>Status of this action</value>
+          </text>
+          <text id="/data/grp_community_va:label">
+            <value>Common modifiable factors (Community verbal autopsy)</value>
+          </text>
+          <text id="/data/grp_community_va/grp_community_va_act:label">
+            <value>Action</value>
+          </text>
+          <text id="/data/grp_community_va/grp_community_va_act/community_va_actions:label">
+            <value>Actions are taken</value>
+          </text>
+          <text id="/data/grp_community_va/grp_community_va_act/community_va_responsible:label">
+            <value>Responsible</value>
+          </text>
+          <text id="/data/grp_community_va/grp_community_va_act/community_va_timeline:label">
+            <value>Timeline</value>
+          </text>
+          <text id="/data/grp_community_va/grp_community_va_act/community_va_milestone:label">
+            <value>Milestone</value>
+          </text>
+          <text id="/data/grp_community_va/grp_community_va_act/community_va_considerations:label">
+            <value>Considerations</value>
+          </text>
+          <text id="/data/grp_community_va/grp_community_va_act/community_va_status:label">
+            <value>Status of this action</value>
+          </text>
+          <text id="/data/grp_facility_dr:label">
+            <value>Common modifiable factors (Facility death review)</value>
+          </text>
+          <text id="/data/grp_facility_dr/grp_facility_dr_act:label">
+            <value>Action</value>
+          </text>
+          <text id="/data/grp_facility_dr/grp_facility_dr_act/facility_dr_actions:label">
+            <value>Actions are taken</value>
+          </text>
+          <text id="/data/grp_facility_dr/grp_facility_dr_act/facility_dr_responsible:label">
+            <value>Responsible</value>
+          </text>
+          <text id="/data/grp_facility_dr/grp_facility_dr_act/facility_dr_timeline:label">
+            <value>Timeline</value>
+          </text>
+          <text id="/data/grp_facility_dr/grp_facility_dr_act/facility_dr_milestone:label">
+            <value>Milestone</value>
+          </text>
+          <text id="/data/grp_facility_dr/grp_facility_dr_act/facility_dr_considerations:label">
+            <value>Considerations</value>
+          </text>
+          <text id="/data/grp_facility_dr/grp_facility_dr_act/facility_dr_status:label">
+            <value>Status of this action</value>
+          </text>
+          <text id="/data/_cmf_note:label">
+            <value>Note: 2nd table needs to fill out based on the community verbal autopsy data and facility death review findings (causes and contributing factors behind the deaths including the delays), the action plan can be developed based on the findings of deaths from July to September 2025 deaths, a six months analysis and actions which can also be compared with the next six months causes and action plans</value>
+          </text>
+        </translation>
+        <translation lang="Bangla">
+          <text id="district-0">
+            <value>সুনামগঞ্জ</value>
+          </text>
+          <text id="district-1">
+            <value>শেরপুর</value>
+          </text>
+          <text id="district-2">
+            <value>ভোলা</value>
+          </text>
+          <text id="district-3">
+            <value>কুড়িগ্রাম</value>
+          </text>
+          <text id="district-4">
+            <value>গাইবান্ধা</value>
+          </text>
+          <text id="district-5">
+            <value>খাগড়াছড়ি</value>
+          </text>
+          <text id="district-6">
+            <value>নোয়াখালী</value>
+          </text>
+          <text id="district-7">
+            <value>পটুয়াখালী</value>
+          </text>
+          <text id="district-8">
+            <value>সিরাজগঞ্জ</value>
+          </text>
+          <text id="district-9">
+            <value>বরগুনা</value>
+          </text>
+          <text id="district-10">
+            <value>জামালপুর</value>
+          </text>
+          <text id="district-11">
+            <value>বাগেরহাট</value>
+          </text>
+          <text id="district-12">
+            <value>হবিগঞ্জ</value>
+          </text>
+          <text id="district-13">
+            <value>মৌলভীবাজার</value>
+          </text>
+          <text id="district-14">
+            <value>সিলেট</value>
+          </text>
+          <text id="district-15">
+            <value>বান্দরবান</value>
+          </text>
+          <text id="district-16">
+            <value>চাঁদপুর</value>
+          </text>
+          <text id="district-17">
+            <value>রংপুর</value>
+          </text>
+          <text id="district-18">
+            <value>ঢাকা</value>
+          </text>
+          <text id="rp_subcat-0">
+            <value>কমিউনিটি ডেথ রিভিউ</value>
+          </text>
+          <text id="rp_subcat-1">
+            <value>ফ্যাসিলিটি ডেথ রিভিউ</value>
+          </text>
+          <text id="rp_subcat-2">
+            <value>মৃত্যুর কারণ নির্ধারণ</value>
+          </text>
+          <text id="rp_subcat-3">
+            <value>রেসপন্স প্ল্যান উন্নয়ন</value>
+          </text>
+          <text id="rp_subcat-4">
+            <value>রেসপন্স বাস্তবায়ন</value>
+          </text>
+          <text id="rp_subcat-5">
+            <value>পর্যবেক্ষণ ও মূল্যায়ন</value>
+          </text>
+          <text id="rp_status-0">
+            <value>বাস্তবায়িত</value>
+          </text>
+          <text id="rp_status-1">
+            <value>চলমান</value>
+          </text>
+          <text id="rp_status-2">
+            <value>অপেক্ষমাণ / শুরু হয়নি</value>
+          </text>
+          <text id="rp_status-3">
+            <value>বিলম্বিত</value>
+          </text>
+          <text id="rp_status-4">
+            <value>বাতিল</value>
+          </text>
+          <text id="/data/grp_meta:label">
+            <value>তথ্য প্রেরণ</value>
+          </text>
+          <text id="/data/grp_meta/location:label">
+            <value>জিপিএস অবস্থান (প্রয়োজনীয়)</value>
+          </text>
+          <text id="/data/grp_meta/collection_date:label">
+            <value>তারিখ</value>
+          </text>
+          <text id="/data/grp_meta/district:label">
+            <value>জেলা</value>
+          </text>
+          <text id="/data/grp_meta/upazila:label">
+            <value>উপজেলা</value>
+          </text>
+          <text id="/data/grp_meta/union:label">
+            <value>ইউনিয়ন / পৌরসভা</value>
+          </text>
+          <text id="/data/grp_meta/ward:label">
+            <value>ওয়ার্ড</value>
+          </text>
+          <text id="/data/grp_meta/village:label">
+            <value>গ্রাম / মহল্লা</value>
+          </text>
+          <text id="/data/grp_meta/enumerator_name:label">
+            <value>আপনার নাম (কে পূরণ করছেন)</value>
+          </text>
+          <text id="/data/grp_meta/enumerator_designation:label">
+            <value>পদবী</value>
+          </text>
+          <text id="/data/grp_meta/enumerator_institution:label">
+            <value>প্রতিষ্ঠান</value>
+          </text>
+          <text id="/data/grp_meta/enumerator_mobile:label">
+            <value>মোবাইল নম্বর</value>
+          </text>
+          <text id="/data/_rp_title:label">
+            <value>এমপিডিএসআর অ্যাকশন প্ল্যান ২০২৬</value>
+          </text>
+          <text id="/data/grp_sys_strengthen:label">
+            <value>এমপিডিএসআর সিস্টেম শক্তিশালীকরণ</value>
+          </text>
+          <text id="/data/grp_sys_strengthen/_sys_note:label">
+            <value>নোট: প্রথম টেবিলটি কর্মশালার ফলাফলের ভিত্তিতে পূরণ করতে হবে (সিস্টেম উন্নত করতে ফাঁক ও চ্যালেঞ্জগুলো চিহ্নিত করা হয়)</value>
+          </text>
+          <text id="/data/grp_sys_strengthen/grp_sys_act:label">
+            <value>কার্যক্রম</value>
+          </text>
+          <text id="/data/grp_sys_strengthen/grp_sys_act/sys_subcategory:label">
+            <value>বিভাগ</value>
+          </text>
+          <text id="/data/grp_sys_strengthen/grp_sys_act/sys_activities:label">
+            <value>কার্যক্রম</value>
+          </text>
+          <text id="/data/grp_sys_strengthen/grp_sys_act/sys_responsible:label">
+            <value>দায়িত্বপ্রাপ্ত (ব্যক্তি / দপ্তর)</value>
+          </text>
+          <text id="/data/grp_sys_strengthen/grp_sys_act/sys_timeline:label">
+            <value>সময়সীমা</value>
+          </text>
+          <text id="/data/grp_sys_strengthen/grp_sys_act/sys_indicator:label">
+            <value>নির্দেশক</value>
+          </text>
+          <text id="/data/grp_sys_strengthen/grp_sys_act/sys_milestone:label">
+            <value>মাইলফলক</value>
+          </text>
+          <text id="/data/grp_sys_strengthen/grp_sys_act/sys_considerations:label">
+            <value>বিবেচ্য বিষয়</value>
+          </text>
+          <text id="/data/grp_sys_strengthen/grp_sys_act/sys_status:label">
+            <value>এই পদক্ষেপের অবস্থা</value>
+          </text>
+          <text id="/data/grp_community_va:label">
+            <value>সাধারণ পরিবর্তনযোগ্য কারণ (কমিউনিটি ভার্বাল অটোপসি)</value>
+          </text>
+          <text id="/data/grp_community_va/grp_community_va_act:label">
+            <value>পদক্ষেপ</value>
+          </text>
+          <text id="/data/grp_community_va/grp_community_va_act/community_va_actions:label">
+            <value>গৃহীত পদক্ষেপ</value>
+          </text>
+          <text id="/data/grp_community_va/grp_community_va_act/community_va_responsible:label">
+            <value>দায়িত্বপ্রাপ্ত (ব্যক্তি / দপ্তর)</value>
+          </text>
+          <text id="/data/grp_community_va/grp_community_va_act/community_va_timeline:label">
+            <value>সময়সীমা</value>
+          </text>
+          <text id="/data/grp_community_va/grp_community_va_act/community_va_milestone:label">
+            <value>মাইলফলক</value>
+          </text>
+          <text id="/data/grp_community_va/grp_community_va_act/community_va_considerations:label">
+            <value>বিবেচ্য বিষয়</value>
+          </text>
+          <text id="/data/grp_community_va/grp_community_va_act/community_va_status:label">
+            <value>এই পদক্ষেপের অবস্থা</value>
+          </text>
+          <text id="/data/grp_facility_dr:label">
+            <value>সাধারণ পরিবর্তনযোগ্য কারণ (ফ্যাসিলিটি ডেথ রিভিউ)</value>
+          </text>
+          <text id="/data/grp_facility_dr/grp_facility_dr_act:label">
+            <value>পদক্ষেপ</value>
+          </text>
+          <text id="/data/grp_facility_dr/grp_facility_dr_act/facility_dr_actions:label">
+            <value>গৃহীত পদক্ষেপ</value>
+          </text>
+          <text id="/data/grp_facility_dr/grp_facility_dr_act/facility_dr_responsible:label">
+            <value>দায়িত্বপ্রাপ্ত (ব্যক্তি / দপ্তর)</value>
+          </text>
+          <text id="/data/grp_facility_dr/grp_facility_dr_act/facility_dr_timeline:label">
+            <value>সময়সীমা</value>
+          </text>
+          <text id="/data/grp_facility_dr/grp_facility_dr_act/facility_dr_milestone:label">
+            <value>মাইলফলক</value>
+          </text>
+          <text id="/data/grp_facility_dr/grp_facility_dr_act/facility_dr_considerations:label">
+            <value>বিবেচ্য বিষয়</value>
+          </text>
+          <text id="/data/grp_facility_dr/grp_facility_dr_act/facility_dr_status:label">
+            <value>এই পদক্ষেপের অবস্থা</value>
+          </text>
+          <text id="/data/_cmf_note:label">
+            <value>নোট: দ্বিতীয় টেবিলটি কমিউনিটি ভার্বাল অটোপসি ডেটা ও ফ্যাসিলিটি ডেথ রিভিউয়ের ফলাফলের ভিত্তিতে পূরণ করতে হবে (বিলম্বসহ মৃত্যুর কারণ ও অবদানকারী কারণসমূহ); জুলাই থেকে সেপ্টেম্বর ২০২৫ মৃত্যুর ফলাফলের ভিত্তিতে অ্যাকশন প্ল্যান তৈরি করা যেতে পারে — ছয় মাসের বিশ্লেষণ ও পদক্ষেপ, যা পরবর্তী ছয় মাসের কারণ ও অ্যাকশন প্ল্যানের সাথে তুলনাও করা যায়</value>
+          </text>
+        </translation>
+      </itext>
+      <instance>
+        <data id="ciprb_mpdsr_response_plan_v1" version="20260620">
+          <grp_meta>
+            <organisation/>
+            <location/>
+            <collection_date/>
+            <district/>
+            <upazila/>
+            <union/>
+            <ward/>
+            <village/>
+            <enumerator_name/>
+            <enumerator_designation/>
+            <enumerator_institution/>
+            <enumerator_mobile/>
+          </grp_meta>
+          <_rp_title/>
+          <grp_sys_strengthen>
+            <_sys_note/>
+            <grp_sys_act jr:template="">
+              <sys_subcategory/>
+              <sys_activities/>
+              <sys_responsible/>
+              <sys_timeline/>
+              <sys_indicator/>
+              <sys_milestone/>
+              <sys_considerations/>
+              <sys_status/>
+            </grp_sys_act>
+            <grp_sys_act>
+              <sys_subcategory/>
+              <sys_activities/>
+              <sys_responsible/>
+              <sys_timeline/>
+              <sys_indicator/>
+              <sys_milestone/>
+              <sys_considerations/>
+              <sys_status/>
+            </grp_sys_act>
+          </grp_sys_strengthen>
+          <grp_community_va>
+            <grp_community_va_act jr:template="">
+              <community_va_actions/>
+              <community_va_responsible/>
+              <community_va_timeline/>
+              <community_va_milestone/>
+              <community_va_considerations/>
+              <community_va_status/>
+            </grp_community_va_act>
+            <grp_community_va_act>
+              <community_va_actions/>
+              <community_va_responsible/>
+              <community_va_timeline/>
+              <community_va_milestone/>
+              <community_va_considerations/>
+              <community_va_status/>
+            </grp_community_va_act>
+          </grp_community_va>
+          <grp_facility_dr>
+            <grp_facility_dr_act jr:template="">
+              <facility_dr_actions/>
+              <facility_dr_responsible/>
+              <facility_dr_timeline/>
+              <facility_dr_milestone/>
+              <facility_dr_considerations/>
+              <facility_dr_status/>
+            </grp_facility_dr_act>
+            <grp_facility_dr_act>
+              <facility_dr_actions/>
+              <facility_dr_responsible/>
+              <facility_dr_timeline/>
+              <facility_dr_milestone/>
+              <facility_dr_considerations/>
+              <facility_dr_status/>
+            </grp_facility_dr_act>
+          </grp_facility_dr>
+          <_cmf_note/>
+          <meta>
+            <instanceID/>
+          </meta>
+        </data>
+      </instance>
+      <instance id="district">
+        <root>
+          <item>
+            <itextId>district-0</itextId>
+            <name>sunamganj</name>
+          </item>
+          <item>
+            <itextId>district-1</itextId>
+            <name>sherpur</name>
+          </item>
+          <item>
+            <itextId>district-2</itextId>
+            <name>bhola</name>
+          </item>
+          <item>
+            <itextId>district-3</itextId>
+            <name>kurigram</name>
+          </item>
+          <item>
+            <itextId>district-4</itextId>
+            <name>gaibandha</name>
+          </item>
+          <item>
+            <itextId>district-5</itextId>
+            <name>khagrachari</name>
+          </item>
+          <item>
+            <itextId>district-6</itextId>
+            <name>noakhali</name>
+          </item>
+          <item>
+            <itextId>district-7</itextId>
+            <name>patuakhali</name>
+          </item>
+          <item>
+            <itextId>district-8</itextId>
+            <name>sirajganj</name>
+          </item>
+          <item>
+            <itextId>district-9</itextId>
+            <name>barguna</name>
+          </item>
+          <item>
+            <itextId>district-10</itextId>
+            <name>jamalpur</name>
+          </item>
+          <item>
+            <itextId>district-11</itextId>
+            <name>bagerhat</name>
+          </item>
+          <item>
+            <itextId>district-12</itextId>
+            <name>habiganj</name>
+          </item>
+          <item>
+            <itextId>district-13</itextId>
+            <name>moulavibazar</name>
+          </item>
+          <item>
+            <itextId>district-14</itextId>
+            <name>sylhet</name>
+          </item>
+          <item>
+            <itextId>district-15</itextId>
+            <name>bandarban</name>
+          </item>
+          <item>
+            <itextId>district-16</itextId>
+            <name>chandpur</name>
+          </item>
+          <item>
+            <itextId>district-17</itextId>
+            <name>rangpur</name>
+          </item>
+          <item>
+            <itextId>district-18</itextId>
+            <name>dhaka</name>
+          </item>
+        </root>
+      </instance>
+      <instance id="rp_subcat">
+        <root>
+          <item>
+            <itextId>rp_subcat-0</itextId>
+            <name>community_death_review</name>
+          </item>
+          <item>
+            <itextId>rp_subcat-1</itextId>
+            <name>facility_death_review</name>
+          </item>
+          <item>
+            <itextId>rp_subcat-2</itextId>
+            <name>assignment_causes</name>
+          </item>
+          <item>
+            <itextId>rp_subcat-3</itextId>
+            <name>response_plan_dev</name>
+          </item>
+          <item>
+            <itextId>rp_subcat-4</itextId>
+            <name>implementation_response</name>
+          </item>
+          <item>
+            <itextId>rp_subcat-5</itextId>
+            <name>monitoring_evaluation</name>
+          </item>
+        </root>
+      </instance>
+      <instance id="rp_status">
+        <root>
+          <item>
+            <itextId>rp_status-0</itextId>
+            <name>implemented</name>
+          </item>
+          <item>
+            <itextId>rp_status-1</itextId>
+            <name>in_progress</name>
+          </item>
+          <item>
+            <itextId>rp_status-2</itextId>
+            <name>pending</name>
+          </item>
+          <item>
+            <itextId>rp_status-3</itextId>
+            <name>delayed</name>
+          </item>
+          <item>
+            <itextId>rp_status-4</itextId>
+            <name>dropped</name>
+          </item>
+        </root>
+      </instance>
+      <bind nodeset="/data/grp_meta/organisation" type="string" calculate="'CIPRB'"/>
+      <bind nodeset="/data/grp_meta/location" type="geopoint" required="true()"/>
+      <bind nodeset="/data/grp_meta/collection_date" type="date" required="true()"/>
+      <bind nodeset="/data/grp_meta/district" type="string" required="true()"/>
+      <bind nodeset="/data/grp_meta/upazila" type="string" required="true()"/>
+      <bind nodeset="/data/grp_meta/union" type="string"/>
+      <bind nodeset="/data/grp_meta/ward" type="string"/>
+      <bind nodeset="/data/grp_meta/village" type="string"/>
+      <bind nodeset="/data/grp_meta/enumerator_name" type="string" required="true()"/>
+      <bind nodeset="/data/grp_meta/enumerator_designation" type="string"/>
+      <bind nodeset="/data/grp_meta/enumerator_institution" type="string"/>
+      <bind nodeset="/data/grp_meta/enumerator_mobile" type="string" constraint="regex(., &quot;^[0-9+ -]{6,20}$&quot;)" jr:constraintMsg="Enter a valid phone number."/>
+      <bind nodeset="/data/_rp_title" readonly="true()" type="string"/>
+      <bind nodeset="/data/grp_sys_strengthen/_sys_note" readonly="true()" type="string"/>
+      <bind nodeset="/data/grp_sys_strengthen/grp_sys_act/sys_subcategory" type="string"/>
+      <bind nodeset="/data/grp_sys_strengthen/grp_sys_act/sys_activities" type="string"/>
+      <bind nodeset="/data/grp_sys_strengthen/grp_sys_act/sys_responsible" type="string"/>
+      <bind nodeset="/data/grp_sys_strengthen/grp_sys_act/sys_timeline" type="date"/>
+      <bind nodeset="/data/grp_sys_strengthen/grp_sys_act/sys_indicator" type="string"/>
+      <bind nodeset="/data/grp_sys_strengthen/grp_sys_act/sys_milestone" type="string"/>
+      <bind nodeset="/data/grp_sys_strengthen/grp_sys_act/sys_considerations" type="string"/>
+      <bind nodeset="/data/grp_sys_strengthen/grp_sys_act/sys_status" type="string"/>
+      <bind nodeset="/data/grp_community_va/grp_community_va_act/community_va_actions" type="string"/>
+      <bind nodeset="/data/grp_community_va/grp_community_va_act/community_va_responsible" type="string"/>
+      <bind nodeset="/data/grp_community_va/grp_community_va_act/community_va_timeline" type="date"/>
+      <bind nodeset="/data/grp_community_va/grp_community_va_act/community_va_milestone" type="string"/>
+      <bind nodeset="/data/grp_community_va/grp_community_va_act/community_va_considerations" type="string"/>
+      <bind nodeset="/data/grp_community_va/grp_community_va_act/community_va_status" type="string"/>
+      <bind nodeset="/data/grp_facility_dr/grp_facility_dr_act/facility_dr_actions" type="string"/>
+      <bind nodeset="/data/grp_facility_dr/grp_facility_dr_act/facility_dr_responsible" type="string"/>
+      <bind nodeset="/data/grp_facility_dr/grp_facility_dr_act/facility_dr_timeline" type="date"/>
+      <bind nodeset="/data/grp_facility_dr/grp_facility_dr_act/facility_dr_milestone" type="string"/>
+      <bind nodeset="/data/grp_facility_dr/grp_facility_dr_act/facility_dr_considerations" type="string"/>
+      <bind nodeset="/data/grp_facility_dr/grp_facility_dr_act/facility_dr_status" type="string"/>
+      <bind nodeset="/data/_cmf_note" readonly="true()" type="string"/>
+      <bind nodeset="/data/meta/instanceID" type="string" readonly="true()" jr:preload="uid"/>
+    </model>
+  </h:head>
+  <h:body class="theme-grid">
+    <group ref="/data/grp_meta">
+      <label ref="jr:itext('/data/grp_meta:label')"/>
+      <input ref="/data/grp_meta/location">
+        <label ref="jr:itext('/data/grp_meta/location:label')"/>
+      </input>
+      <input ref="/data/grp_meta/collection_date">
+        <label ref="jr:itext('/data/grp_meta/collection_date:label')"/>
+      </input>
+      <select1 ref="/data/grp_meta/district">
+        <label ref="jr:itext('/data/grp_meta/district:label')"/>
+        <itemset nodeset="instance('district')/root/item">
+          <value ref="name"/>
+          <label ref="jr:itext(itextId)"/>
+        </itemset>
+      </select1>
+      <input ref="/data/grp_meta/upazila">
+        <label ref="jr:itext('/data/grp_meta/upazila:label')"/>
+      </input>
+      <input ref="/data/grp_meta/union">
+        <label ref="jr:itext('/data/grp_meta/union:label')"/>
+      </input>
+      <input ref="/data/grp_meta/ward">
+        <label ref="jr:itext('/data/grp_meta/ward:label')"/>
+      </input>
+      <input ref="/data/grp_meta/village">
+        <label ref="jr:itext('/data/grp_meta/village:label')"/>
+      </input>
+      <input ref="/data/grp_meta/enumerator_name">
+        <label ref="jr:itext('/data/grp_meta/enumerator_name:label')"/>
+      </input>
+      <input ref="/data/grp_meta/enumerator_designation">
+        <label ref="jr:itext('/data/grp_meta/enumerator_designation:label')"/>
+      </input>
+      <input ref="/data/grp_meta/enumerator_institution">
+        <label ref="jr:itext('/data/grp_meta/enumerator_institution:label')"/>
+      </input>
+      <input ref="/data/grp_meta/enumerator_mobile">
+        <label ref="jr:itext('/data/grp_meta/enumerator_mobile:label')"/>
+      </input>
+    </group>
+    <input ref="/data/_rp_title">
+      <label ref="jr:itext('/data/_rp_title:label')"/>
+    </input>
+    <group ref="/data/grp_sys_strengthen">
+      <label ref="jr:itext('/data/grp_sys_strengthen:label')"/>
+      <input ref="/data/grp_sys_strengthen/_sys_note">
+        <label ref="jr:itext('/data/grp_sys_strengthen/_sys_note:label')"/>
+      </input>
+      <group ref="/data/grp_sys_strengthen/grp_sys_act">
+        <label ref="jr:itext('/data/grp_sys_strengthen/grp_sys_act:label')"/>
+        <repeat nodeset="/data/grp_sys_strengthen/grp_sys_act">
+          <select1 ref="/data/grp_sys_strengthen/grp_sys_act/sys_subcategory">
+            <label ref="jr:itext('/data/grp_sys_strengthen/grp_sys_act/sys_subcategory:label')"/>
+            <itemset nodeset="instance('rp_subcat')/root/item">
+              <value ref="name"/>
+              <label ref="jr:itext(itextId)"/>
+            </itemset>
+          </select1>
+          <input ref="/data/grp_sys_strengthen/grp_sys_act/sys_activities" appearance="multiline">
+            <label ref="jr:itext('/data/grp_sys_strengthen/grp_sys_act/sys_activities:label')"/>
+          </input>
+          <input ref="/data/grp_sys_strengthen/grp_sys_act/sys_responsible">
+            <label ref="jr:itext('/data/grp_sys_strengthen/grp_sys_act/sys_responsible:label')"/>
+          </input>
+          <input ref="/data/grp_sys_strengthen/grp_sys_act/sys_timeline">
+            <label ref="jr:itext('/data/grp_sys_strengthen/grp_sys_act/sys_timeline:label')"/>
+          </input>
+          <input ref="/data/grp_sys_strengthen/grp_sys_act/sys_indicator">
+            <label ref="jr:itext('/data/grp_sys_strengthen/grp_sys_act/sys_indicator:label')"/>
+          </input>
+          <input ref="/data/grp_sys_strengthen/grp_sys_act/sys_milestone">
+            <label ref="jr:itext('/data/grp_sys_strengthen/grp_sys_act/sys_milestone:label')"/>
+          </input>
+          <input ref="/data/grp_sys_strengthen/grp_sys_act/sys_considerations" appearance="multiline">
+            <label ref="jr:itext('/data/grp_sys_strengthen/grp_sys_act/sys_considerations:label')"/>
+          </input>
+          <select1 ref="/data/grp_sys_strengthen/grp_sys_act/sys_status">
+            <label ref="jr:itext('/data/grp_sys_strengthen/grp_sys_act/sys_status:label')"/>
+            <itemset nodeset="instance('rp_status')/root/item">
+              <value ref="name"/>
+              <label ref="jr:itext(itextId)"/>
+            </itemset>
+          </select1>
+        </repeat>
+      </group>
+    </group>
+    <group ref="/data/grp_community_va">
+      <label ref="jr:itext('/data/grp_community_va:label')"/>
+      <group ref="/data/grp_community_va/grp_community_va_act">
+        <label ref="jr:itext('/data/grp_community_va/grp_community_va_act:label')"/>
+        <repeat nodeset="/data/grp_community_va/grp_community_va_act">
+          <input ref="/data/grp_community_va/grp_community_va_act/community_va_actions" appearance="multiline">
+            <label ref="jr:itext('/data/grp_community_va/grp_community_va_act/community_va_actions:label')"/>
+          </input>
+          <input ref="/data/grp_community_va/grp_community_va_act/community_va_responsible">
+            <label ref="jr:itext('/data/grp_community_va/grp_community_va_act/community_va_responsible:label')"/>
+          </input>
+          <input ref="/data/grp_community_va/grp_community_va_act/community_va_timeline">
+            <label ref="jr:itext('/data/grp_community_va/grp_community_va_act/community_va_timeline:label')"/>
+          </input>
+          <input ref="/data/grp_community_va/grp_community_va_act/community_va_milestone">
+            <label ref="jr:itext('/data/grp_community_va/grp_community_va_act/community_va_milestone:label')"/>
+          </input>
+          <input ref="/data/grp_community_va/grp_community_va_act/community_va_considerations" appearance="multiline">
+            <label ref="jr:itext('/data/grp_community_va/grp_community_va_act/community_va_considerations:label')"/>
+          </input>
+          <select1 ref="/data/grp_community_va/grp_community_va_act/community_va_status">
+            <label ref="jr:itext('/data/grp_community_va/grp_community_va_act/community_va_status:label')"/>
+            <itemset nodeset="instance('rp_status')/root/item">
+              <value ref="name"/>
+              <label ref="jr:itext(itextId)"/>
+            </itemset>
+          </select1>
+        </repeat>
+      </group>
+    </group>
+    <group ref="/data/grp_facility_dr">
+      <label ref="jr:itext('/data/grp_facility_dr:label')"/>
+      <group ref="/data/grp_facility_dr/grp_facility_dr_act">
+        <label ref="jr:itext('/data/grp_facility_dr/grp_facility_dr_act:label')"/>
+        <repeat nodeset="/data/grp_facility_dr/grp_facility_dr_act">
+          <input ref="/data/grp_facility_dr/grp_facility_dr_act/facility_dr_actions" appearance="multiline">
+            <label ref="jr:itext('/data/grp_facility_dr/grp_facility_dr_act/facility_dr_actions:label')"/>
+          </input>
+          <input ref="/data/grp_facility_dr/grp_facility_dr_act/facility_dr_responsible">
+            <label ref="jr:itext('/data/grp_facility_dr/grp_facility_dr_act/facility_dr_responsible:label')"/>
+          </input>
+          <input ref="/data/grp_facility_dr/grp_facility_dr_act/facility_dr_timeline">
+            <label ref="jr:itext('/data/grp_facility_dr/grp_facility_dr_act/facility_dr_timeline:label')"/>
+          </input>
+          <input ref="/data/grp_facility_dr/grp_facility_dr_act/facility_dr_milestone">
+            <label ref="jr:itext('/data/grp_facility_dr/grp_facility_dr_act/facility_dr_milestone:label')"/>
+          </input>
+          <input ref="/data/grp_facility_dr/grp_facility_dr_act/facility_dr_considerations" appearance="multiline">
+            <label ref="jr:itext('/data/grp_facility_dr/grp_facility_dr_act/facility_dr_considerations:label')"/>
+          </input>
+          <select1 ref="/data/grp_facility_dr/grp_facility_dr_act/facility_dr_status">
+            <label ref="jr:itext('/data/grp_facility_dr/grp_facility_dr_act/facility_dr_status:label')"/>
+            <itemset nodeset="instance('rp_status')/root/item">
+              <value ref="name"/>
+              <label ref="jr:itext(itextId)"/>
+            </itemset>
+          </select1>
+        </repeat>
+      </group>
+    </group>
+    <input ref="/data/_cmf_note">
+      <label ref="jr:itext('/data/_cmf_note:label')"/>
+    </input>
+  </h:body>
+</h:html>

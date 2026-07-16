@@ -1,0 +1,640 @@
+[
+ {
+  "idx": 54,
+  "name": "grp_fsw_mB",
+  "type": "begin_group",
+  "base": "begin_group",
+  "appearance": null,
+  "label_en": "MODULE B: RESIDENCE, TYPE OF WORK, AND ECONOMIC SITUATION",
+  "label_bn": "B. বাসস্থান, কাজের ধরন এবং অর্থনীতি",
+  "own_relevant": "${_proceed}='1'",
+  "ancestor_gates": [],
+  "effective_gates": [
+   "${_proceed}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 58,
+  "name": "b102_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other (specify)",
+  "label_bn": "অন্যান্য (উল্লেখ করুন)",
+  "own_relevant": "selected(${b102},'7')",
+  "ancestor_gates": [
+   {
+    "group": "grp_fsw_mB",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "selected(${b102},'7')"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "b102": {
+    "type": "select_multiple",
+    "choices": {
+     "1": "Own room in brothel",
+     "2": "Elsewhere inside brothel",
+     "3": "Hotel/Guest house (outside)",
+     "4": "Client's home/other residence",
+     "5": "Street/open space",
+     "6": "Via phone/app, various locations",
+     "7": "Other (specify)"
+    },
+    "label": "B102 ‡ Where do you usually provide sexual services to clients? (Multiple answer"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 60,
+  "name": "b103_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other (specify)",
+  "label_bn": "অন্যান্য (উল্লেখ করুন)",
+  "own_relevant": "${b103}='6'",
+  "ancestor_gates": [
+   {
+    "group": "grp_fsw_mB",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${b103}='6'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "b103": {
+    "type": "select_one",
+    "choices": {
+     "1": "Alone in own/rented room",
+     "2": "With children",
+     "3": "Shared room with colleagues",
+     "4": "In sardarni's/landlady's household",
+     "5": "I live outside the work area",
+     "6": "Other (specify)"
+    },
+    "label": "B103 Inside your place of residence, who do you live with?"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 67,
+  "name": "b107_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other (specify)",
+  "label_bn": "অন্যান্য (উল্লেখ করুন)",
+  "own_relevant": "${b107}='7'",
+  "ancestor_gates": [
+   {
+    "group": "grp_fsw_mB",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${b107}='7'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "b107": {
+    "type": "select_one",
+    "choices": {
+     "1": "Own decision",
+     "2": "Through a friend/acquaintance",
+     "3": "Family member",
+     "4": "Husband/partner",
+     "5": "Broker/intermediary",
+     "6": "Brought by force/sold",
+     "7": "Other (specify)",
+     "99": "Prefer not to say"
+    },
+    "label": "B107 ‡ How or through whom did you first enter this profession?"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 70,
+  "name": "b109_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other (specify)",
+  "label_bn": "অন্যান্য (উল্লেখ করুন)",
+  "own_relevant": "selected(${b109},'6')",
+  "ancestor_gates": [
+   {
+    "group": "grp_fsw_mB",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "selected(${b109},'6')"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "b109": {
+    "type": "select_multiple",
+    "choices": {
+     "0": "None",
+     "1": "Small business/trade",
+     "2": "Domestic work/cleaning",
+     "3": "Tailoring/handicrafts",
+     "4": "NGO peer educator/staff",
+     "5": "Partner/babu support",
+     "6": "Other (specify)"
+    },
+    "label": "B109 Do you have any other sources of income? (Multiple answers possible)"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 71,
+  "name": "fsw_mB_note_2",
+  "type": "note",
+  "base": "note",
+  "appearance": null,
+  "label_en": "‡ B110. From last month's income, how much in total did you spend on the following? (Write 0 if none) — Room rent (landlady): BDT ____ Sardarni commission: BDT ____ Payment to broker: BDT ____ Fees/other: BDT ____ Debt repayment: BDT ____ Family/children: BDT ….",
+  "label_bn": "‡ B110. গত এক মাসের আয় থেকে আপনার মোট কত টাকা খরচ হয়েছে? (না থাকলে ০ লিখুন) — ঘর ভাড়া (বাড়িওয়ালি): BDT ____ সরদারনি কমিশন: BDT ____ দালালকে টাকা: BDT ____ চাঁদা/অন্যান্য: BDT ____ ঋণ পরিশোধ: BDT ____ পরিবার/সন্তানদের টাকা: …..",
+  "own_relevant": null,
+  "ancestor_gates": [
+   {
+    "group": "grp_fsw_mB",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": true,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 82,
+  "name": "b201_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other (specify)",
+  "label_bn": "অন্যান্য (উল্লেখ করুন)",
+  "own_relevant": "${b201}='5'",
+  "ancestor_gates": [
+   {
+    "group": "grp_fsw_mB",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${b201}='5'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "b201": {
+    "type": "select_one",
+    "choices": {
+     "1": "Own",
+     "2": "Rented from brothel/work area landlady or sardarni",
+     "3": "Rented outside work area",
+     "4": "Sheltered/no rent",
+     "5": "Other (specify)"
+    },
+    "label": "B201 Housing/dwelling ownership"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 87,
+  "name": "b205_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other (specify)",
+  "label_bn": "অন্যান্য (উল্লেখ করুন)",
+  "own_relevant": "${b205}='7'",
+  "ancestor_gates": [
+   {
+    "group": "grp_fsw_mB",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${b205}='7'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "b205": {
+    "type": "select_one",
+    "choices": {
+     "1": "Sanitary (with septic tank)",
+     "2": "Ring slab (water seal)",
+     "3": "Ring slab (no water seal)",
+     "4": "Pucca basic",
+     "5": "Kacha",
+     "6": "Open defecation",
+     "7": "Other (specify)"
+    },
+    "label": "B205 What type of latrine do you use?"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 90,
+  "name": "b207_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other (specify)",
+  "label_bn": "অন্যান্য (উল্লেখ করুন)",
+  "own_relevant": "${b207}='7'",
+  "ancestor_gates": [
+   {
+    "group": "grp_fsw_mB",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${b207}='7'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "b207": {
+    "type": "select_one",
+    "choices": {
+     "1": "Piped/supplied water",
+     "2": "Hand tubewell",
+     "3": "Deep tubewell",
+     "4": "Shallow tubewell",
+     "5": "Ring well",
+     "6": "Pond/river/canal",
+     "7": "Other (specify)"
+    },
+    "label": "B207 What is your usual source of water?"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 93,
+  "name": "b209_other",
+  "type": "text",
+  "base": "text",
+  "appearance": null,
+  "label_en": "Other (specify)",
+  "label_bn": "অন্যান্য (উল্লেখ করুন)",
+  "own_relevant": "${b209}='6'",
+  "ancestor_gates": [
+   {
+    "group": "grp_fsw_mB",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${b209}='6'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "b209": {
+    "type": "select_one",
+    "choices": {
+     "1": "Gas/LPG",
+     "2": "Kerosene",
+     "3": "Wood",
+     "4": "Dry leaves/husk/sawdust",
+     "5": "Electricity",
+     "6": "Other (specify)"
+    },
+    "label": "B209 What type of fuel is mainly used for cooking in your home?"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 96,
+  "name": "b301_a_times",
+  "type": "select_one b301_times",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "a. How many times?",
+  "label_bn": "ক. কতবার?",
+  "own_relevant": "${b301_a_occ}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_fsw_mB",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${b301_a_occ}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "b301_a_occ": {
+    "type": "select_one",
+    "choices": {
+     "0": "No",
+     "1": "Yes",
+     "98": "Don't know",
+     "99": "Refused"
+    },
+    "label": "a. Were you worried about not having enough food?"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 98,
+  "name": "b301_b_times",
+  "type": "select_one b301_times",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "b. How many times?",
+  "label_bn": "খ. কতবার?",
+  "own_relevant": "${b301_b_occ}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_fsw_mB",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${b301_b_occ}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "b301_b_occ": {
+    "type": "select_one",
+    "choices": {
+     "0": "No",
+     "1": "Yes",
+     "98": "Don't know",
+     "99": "Refused"
+    },
+    "label": "b. Were you unable to eat healthy or nutritious food due to lack of money or mea"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 100,
+  "name": "b301_c_times",
+  "type": "select_one b301_times",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "c. How many times?",
+  "label_bn": "গ. কতবার?",
+  "own_relevant": "${b301_c_occ}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_fsw_mB",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${b301_c_occ}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "b301_c_occ": {
+    "type": "select_one",
+    "choices": {
+     "0": "No",
+     "1": "Yes",
+     "98": "Don't know",
+     "99": "Refused"
+    },
+    "label": "c. Did you eat only a small amount or limited variety of food due to lack of foo"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ },
+ {
+  "idx": 102,
+  "name": "b301_d_times",
+  "type": "select_one b301_times",
+  "base": "select_one",
+  "appearance": null,
+  "label_en": "d. How many times?",
+  "label_bn": "ঘ. কতবার?",
+  "own_relevant": "${b301_d_occ}='1'",
+  "ancestor_gates": [
+   {
+    "group": "grp_fsw_mB",
+    "relevant": "${_proceed}='1'"
+   }
+  ],
+  "effective_gates": [
+   "${_proceed}='1'",
+   "${b301_d_occ}='1'"
+  ],
+  "constraint": null,
+  "calculation": null,
+  "label_implies_skip": false,
+  "referenced_fields": {
+   "_proceed": {
+    "type": "calculate",
+    "calculation": "if(${consent}='1' and ${s1_age}>=18 and ${s2_sexwork}='1' and ${s3_residence}='2','1','0')"
+   },
+   "b301_d_occ": {
+    "type": "select_one",
+    "choices": {
+     "0": "No",
+     "1": "Yes",
+     "98": "Don't know",
+     "99": "Refused"
+    },
+    "label": "d. Did you have to skip a meal due to lack of food?"
+   }
+  },
+  "mechanical": {
+   "value_issues": [],
+   "multi_eq": [],
+   "forward_ref": [],
+   "self_ref": false,
+   "unknown_ref": []
+  }
+ }
+]

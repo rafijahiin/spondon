@@ -1,0 +1,22 @@
+{
+ "hijra": {
+  "total_items": 251,
+  "with_own_relevant": 241,
+  "label_implies_only": 10,
+  "mech_value_issues": 0,
+  "mech_multi_eq": 0,
+  "mech_forward_ref": 0,
+  "mech_unknown_ref": 0,
+  "missing_candidates": 0
+ },
+ "fsw": {
+  "total_items": 232,
+  "with_own_relevant": 222,
+  "label_implies_only": 10,
+  "mech_value_issues": 0,
+  "mech_multi_eq": 0,
+  "mech_forward_ref": 0,
+  "mech_unknown_ref": 0,
+  "missing_candidates": 0
+ }
+}
