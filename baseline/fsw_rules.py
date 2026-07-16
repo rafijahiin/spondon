@@ -205,7 +205,8 @@ def _group_choice_columns(headers: Sequence[str]) -> dict[str, list[str]]:
     return groups
 
 
-def _simple_record_rules(field_map: FieldMap, current_version: str | None):
+def _simple_record_rules(field_map: FieldMap, current_version: str | None,
+                         short_minutes: int = 40):
     def rules(record: Mapping[str, Any], row: int) -> Iterable[Anomaly]:
         ctx = _ctx(record, row, field_map)
 
@@ -281,20 +282,21 @@ def _simple_record_rules(field_map: FieldMap, current_version: str | None):
                     category="timing",
                     **ctx,
                 )
-            # A SHORT interview is the only genuine timing issue: the ~50-minute
-            # questionnaire was not administered in full. Under 40 minutes is
-            # flagged (CIPRB's rushed threshold); under 20 is implausibly short.
+            # A SHORT interview is the only genuine timing issue: the questionnaire
+            # was not administered in full. The threshold is PER-INSTRUMENT
+            # (short_minutes) — the Hijra questionnaire runs ~50-60 min, the FSW one
+            # ~30-40, so one flat line flagged normal 39-minute FSW interviews.
             # LONG durations are NOT flagged — enumerators routinely leave the form
             # in draft and finish/submit later, so a long span is a workflow
             # artefact, not a long interview.
-            elif minutes < 40:
+            elif minutes < short_minutes:
                 yield Anomaly(
                     "INTERVIEW_TOO_SHORT",
-                    Severity.HIGH if minutes < 20 else Severity.MEDIUM,
-                    "Interview is shorter than 40 minutes — likely not administered "
-                    "in full.",
+                    Severity.HIGH if minutes < short_minutes / 2 else Severity.MEDIUM,
+                    f"Interview is shorter than {short_minutes} minutes — likely not "
+                    "administered in full.",
                     observed=round(minutes, 1),
-                    expected="At least ~40 minutes for the full questionnaire",
+                    expected=f"At least ~{short_minutes} minutes for this questionnaire",
                     action="Review the record for skipped modules or rushed administration.",
                     category="timing",
                     **ctx,
@@ -382,17 +384,11 @@ def _simple_record_rules(field_map: FieldMap, current_version: str | None):
             )
         if total is not None and with_respondent is not None:
             remaining = total - with_respondent
-            if remaining <= 0 and other_location and normalized_text(other_location) not in {"0", "na", "n/a", "o"}:
-                yield Anomaly(
-                    "OTHER_CHILD_LOCATION_NOT_NEEDED",
-                    Severity.MEDIUM,
-                    "A location for other children is entered although no other children remain.",
-                    observed=other_location,
-                    expected="Blank",
-                    action="Clear the unnecessary location or verify the child counts.",
-                    category="children",
-                    **ctx,
-                )
+            # NB: OTHER_CHILD_LOCATION_NOT_NEEDED was REMOVED. It fired when all
+            # children live with the respondent yet a215 carried text — but the text
+            # was answers like "With her" / "Shathe thake" ("lives with me"), i.e.
+            # the enumerator answering consistently. Filling a field you could have
+            # skipped is not a data defect, and it is not actionable.
             if remaining > 0 and normalized_text(other_location) in {"", "0", "o", "na", "n/a"}:
                 yield Anomaly(
                     "OTHER_CHILD_LOCATION_MISSING",
@@ -487,7 +483,11 @@ def _simple_record_rules(field_map: FieldMap, current_version: str | None):
                 category="income",
                 **ctx,
             )
-        if income is not None and expenses is not None and expenses > income and no_other_income:
+        # Only compare income vs expenses when the income figure is itself usable.
+        # An income of 12 (already flagged as missing zeros) makes this comparison
+        # meaningless — it re-flagged the SAME record with a nonsense "ratio: 1750".
+        income_usable = income is not None and income >= 100
+        if income_usable and expenses is not None and expenses > income and no_other_income:
             ratio = round(expenses / income, 2) if income > 0 else None
             severity = Severity.HIGH if income > 0 and ratio and ratio >= 2 else Severity.MEDIUM
             yield Anomaly(
@@ -815,6 +815,7 @@ def build_fsw_engine(
     gps_outlier_km: float = 1.5,
     field_map: FieldMap | None = None,
     exclusive_options: Mapping[str, set] | None = None,
+    short_minutes: int = 40,
 ) -> tuple[AnomalyEngine, FieldMap]:
     # Auto-resolve from headers, or accept an explicit map (recommended for
     # production: locks resolved keys so a wording change can't silently remap a
@@ -827,11 +828,15 @@ def build_fsw_engine(
         record_id_key=field_map.record_id,
         enumerator_key=field_map.enumerator,
     )
-    engine.add_record_rule(_simple_record_rules(field_map, current_version))
+    engine.add_record_rule(_simple_record_rules(field_map, current_version, short_minutes))
     engine.add_record_rule(_multi_select_rules(field_map, exclusive_options))
     engine.add_dataset_rule(_duplicate_id_rule(field_map))
     engine.add_dataset_rule(_burst_rule(field_map))
     engine.add_dataset_rule(_gps_outlier_rule(field_map, gps_outlier_km))
     engine.add_dataset_rule(_exact_answer_duplicate_rule(field_map))
-    engine.add_dataset_rule(_repeated_observation_rule(field_map))
+    # _repeated_observation_rule is NOT registered: on the real data it fired on
+    # exactly the same records as WEAK_INTERVIEWER_OBSERVATION (the observation is
+    # "N/A"), so one behaviour produced 530 low flags across two rules. The weak
+    # rule already records which interviews lack an observation; the repetition is
+    # an enumerator-coaching matter, not a second per-record defect.
     return engine, field_map

@@ -57,7 +57,10 @@ class _Sub:
 
 
 def _scan(records, population='fsw'):
-    from .anomaly import FIELD_MAP_BUILDERS, _decode_fields, _exclusive_label_map
+    """Mirror baseline.anomaly.build_report's engine wiring exactly, so a test can
+    never pass on settings the live report doesn't use."""
+    from .anomaly import (FIELD_MAP_BUILDERS, SHORT_MINUTES, _decode_fields,
+                          _exclusive_label_map)
     schema = load_schema().get(population, {})
     field_map = FIELD_MAP_BUILDERS[population](schema)
     decode = _decode_fields(field_map)
@@ -65,7 +68,8 @@ def _scan(records, population='fsw'):
     headers = sorted({k for r in shaped for k in r})
     engine, _ = build_fsw_engine(headers, current_version='vCURRENT',
                                  field_map=field_map,
-                                 exclusive_options=_exclusive_label_map(schema, population))
+                                 exclusive_options=_exclusive_label_map(schema, population),
+                                 short_minutes=SHORT_MINUTES.get(population, 40))
     return engine.scan(shaped), shaped
 
 
@@ -97,19 +101,25 @@ class AdapterRuleTests(TestCase):
         self.assertNotIn('INTERVIEW_EXTREMELY_LONG', ids)
         self.assertNotIn('INTERVIEW_LONG', ids)
 
-    def test_short_interview_under_40min_flagged(self):
-        # 25-minute interview (10:00 -> 10:25): under 40, so flagged.
-        rec = _kobo(**{'grp_admin/interview_end_actual': '2026-07-12T10:25:00'})
+    def test_fsw_39_minute_interview_is_not_short(self):
+        # The FSW questionnaire runs ~30-40 min, so 39 minutes is NORMAL. A flat
+        # 40-minute line flagged 89 of these as rushed — 30 seconds under.
+        rec = _kobo(**{'grp_admin/interview_end_actual': '2026-07-12T10:39:00'})
+        ids, _ = self._ids([rec])
+        self.assertNotIn('INTERVIEW_TOO_SHORT', ids)
+
+    def test_fsw_short_interview_flagged_below_its_own_threshold(self):
+        # 20 min on a ~30-40 min instrument: under the FSW threshold (25).
+        rec = _kobo(**{'grp_admin/interview_end_actual': '2026-07-12T10:20:00'})
         report, _ = _scan([rec])
         flags = [a for a in report['anomalies'] if a['rule_id'] == 'INTERVIEW_TOO_SHORT']
         self.assertEqual(len(flags), 1)
-        self.assertEqual(flags[0]['severity'], 'medium')     # 20–40 = medium
 
     def test_very_short_interview_is_high(self):
-        rec = _kobo(**{'grp_admin/interview_end_actual': '2026-07-12T10:12:00'})  # 12 min
+        rec = _kobo(**{'grp_admin/interview_end_actual': '2026-07-12T10:10:00'})  # 10 min
         report, _ = _scan([rec])
         flags = [a for a in report['anomalies'] if a['rule_id'] == 'INTERVIEW_TOO_SHORT']
-        self.assertEqual(flags[0]['severity'], 'high')
+        self.assertEqual(flags[0]['severity'], 'high')       # < half the threshold
 
     def test_q95_over_five_is_not_flagged(self):
         # RETIRED: the form now enforces max-5 via a constraint, and >5 on the old
@@ -489,3 +499,46 @@ class WorkHistoryYearsTest(TestCase):
 
     def test_start_after_current_age_still_flagged(self):
         self.assertIn('SEX_WORK_START_AFTER_CURRENT_AGE', self._ids(30, 40, '2'))
+
+
+class SystematicPassRegressionTest(TestCase):
+    """Rules retired/narrowed after auditing every flag against real data."""
+
+    def _ids(self, records, population='fsw'):
+        report, _ = _scan(records, population)
+        return {a['rule_id'] for a in report['anomalies']}
+
+    def test_hijra_keeps_the_40_minute_threshold(self):
+        # The Hijra instrument runs ~50-60 min, so 39 minutes IS short there —
+        # the per-instrument threshold must not leak across populations.
+        rec = _hijra_kobo(**{'grp_admin/interview_end_actual': '2026-07-12T10:39:00'})
+        self.assertIn('INTERVIEW_TOO_SHORT', self._ids([rec], population='hijra'))
+
+    def test_broken_income_does_not_also_flag_expenses(self):
+        # income=12 is already LIKELY_MISSING_ZERO_IN_INCOME; comparing 12 against
+        # 21000 of expenses produced a second HIGH flag with "ratio: 1750".
+        rec = _kobo(**{'grp_b1/b108': 12, 'grp_b1/b110_family': 21000, 'grp_b1/b109': '0'})
+        ids = self._ids([rec])
+        self.assertIn('LIKELY_MISSING_ZERO_IN_INCOME', ids)
+        self.assertNotIn('EXPENSES_EXCEED_INCOME_NO_OTHER_SOURCE', ids)
+
+    def test_real_expense_overrun_still_flagged(self):
+        # A usable income that is genuinely exceeded by expenses still flags.
+        rec = _kobo(**{'grp_b1/b108': 5000, 'grp_b1/b110_family': 21000, 'grp_b1/b109': '0'})
+        self.assertIn('EXPENSES_EXCEED_INCOME_NO_OTHER_SOURCE', self._ids([rec]))
+
+    def test_child_location_when_all_children_present_is_not_flagged(self):
+        # a215 "With her" / "lives with me" is a consistent answer, not a defect.
+        rec = _kobo(**{'grp_a2/a213': 2, 'grp_a2/a214': 2, 'grp_a2/a215': 'With her'})
+        self.assertNotIn('OTHER_CHILD_LOCATION_NOT_NEEDED', self._ids([rec]))
+
+    def test_missing_other_child_location_still_flagged(self):
+        # The valuable direction survives: children elsewhere but no location.
+        rec = _kobo(**{'grp_a2/a213': 3, 'grp_a2/a214': 1, 'grp_a2/a215': ''})
+        self.assertIn('OTHER_CHILD_LOCATION_MISSING', self._ids([rec]))
+
+    def test_repeated_observation_rule_retired(self):
+        recs = [_hijra_kobo(**{'_uuid': f'u{i}', 'grp_c/c2': 'N/A'}) for i in range(6)]
+        ids = self._ids(recs, population='hijra')
+        self.assertNotIn('REPEATED_ENUMERATOR_OBSERVATION', ids)
+        self.assertIn('WEAK_INTERVIEWER_OBSERVATION', ids)   # still recorded once per record

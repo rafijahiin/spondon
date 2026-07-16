@@ -104,6 +104,14 @@ def _exclusive_label_map(schema, population):
     return out
 
 
+# Minimum plausible interview length, PER INSTRUMENT. The two questionnaires are
+# not the same size: the Hijra interview is designed at ~50-60 minutes, the FSW
+# one at ~30-40 (see the validated source questionnaires). A single flat 40-minute
+# line flagged normal 39-minute FSW interviews as "rushed". Under half the
+# threshold is treated as implausibly short (HIGH), otherwise MEDIUM.
+SHORT_MINUTES = {'hijra': 40, 'fsw': 25}
+
+
 # Monthly expense is split across these category fields (FSW); the engine wants a
 # total. Hijra has no expense breakdown, so none of these match and it is skipped.
 _EXPENSE_FIELDS = ('b110_broker', 'b110_commission', 'b110_debt',
@@ -303,6 +311,7 @@ def build_report(population='fsw', *, force=False):
         headers, current_version=current_version, gps_outlier_km=1.5,
         field_map=field_map,
         exclusive_options=_exclusive_label_map(schema, population),
+        short_minutes=SHORT_MINUTES.get(population, 40),
     )
     report = engine.scan(records)
     report['population'] = population
