@@ -400,17 +400,12 @@ def _simple_record_rules(field_map: FieldMap, current_version: str | None,
                     category="children",
                     **ctx,
                 )
-        if with_respondent and re.search(r"\balone\b", living):
-            yield Anomaly(
-                "LIVES_ALONE_WITH_CHILD_PRESENT",
-                Severity.HIGH,
-                "Respondent reports living alone while also reporting a child living with her.",
-                observed={"children_with_respondent": with_respondent, "living_arrangement": living},
-                expected="Living arrangement should include child/children",
-                action="Verify B103 or the child-residence answer.",
-                category="children",
-                **ctx,
-            )
+        # NB: LIVES_ALONE_WITH_CHILD_PRESENT was REMOVED. B103's options mix two
+        # different dimensions — housing ("Alone in own/rented room", "Shared room
+        # with colleagues", "In sardarni's household") and companions ("With
+        # children") — so a woman renting her own room with her child correctly
+        # picks "Alone in own/rented room". That is the questionnaire's ambiguity,
+        # not the respondent's error, and it is not a data defect.
 
         # Work history
         start_age = as_int(record.get(field_map.sex_work_start_age)) if field_map.sex_work_start_age else None
@@ -538,23 +533,10 @@ def _simple_record_rules(field_map: FieldMap, current_version: str | None,
                 **ctx,
             )
 
-        # Weak observation
-        if field_map.observation:
-            observation = clean_text(record.get(field_map.observation))
-            weak = normalized_text(observation)
-            if weak in {"valo", "bhalo", "good", "ok", "okay", "motamuti", "fine"} or (
-                observation and len(observation) < 12
-            ):
-                yield Anomaly(
-                    "WEAK_INTERVIEWER_OBSERVATION",
-                    Severity.LOW,
-                    "Interviewer observation is too vague to document privacy, comfort, distress, or referral.",
-                    observed=observation,
-                    expected="A brief structured observation covering the required domains",
-                    action="Improve future observation notes; do not invent detail for existing interviews.",
-                    category="documentation",
-                    **ctx,
-                )
+        # NB: WEAK_INTERVIEWER_OBSERVATION was REMOVED. A short or "N/A" interviewer
+        # observation is not a fault in the respondent's data — the interview itself
+        # is unaffected, and there is nothing to correct after the fact. It produced
+        # 306 low flags that no reviewer could ever action.
 
     return rules
 
@@ -831,7 +813,10 @@ def build_fsw_engine(
     engine.add_record_rule(_simple_record_rules(field_map, current_version, short_minutes))
     engine.add_record_rule(_multi_select_rules(field_map, exclusive_options))
     engine.add_dataset_rule(_duplicate_id_rule(field_map))
-    engine.add_dataset_rule(_burst_rule(field_map))
+    # _burst_rule (INTERVIEWS_STARTED_TOO_CLOSE) is NOT registered: enumerators open
+    # and consent to forms back-to-back and finish them from draft later, so a short
+    # gap between two start stamps is the same workflow artefact as a long duration
+    # — not evidence of anything.
     engine.add_dataset_rule(_gps_outlier_rule(field_map, gps_outlier_km))
     engine.add_dataset_rule(_exact_answer_duplicate_rule(field_map))
     # _repeated_observation_rule is NOT registered: on the real data it fired on

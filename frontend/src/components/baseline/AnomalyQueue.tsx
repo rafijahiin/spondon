@@ -69,14 +69,12 @@ const PAGE_SIZE = 20
 /* Action-oriented labels; the technical rule ID appears only in the drawer. */
 const RULE_LABEL: Record<string, string> = {
   MUTUALLY_EXCLUSIVE_MULTISELECT: 'Conflicting answers selected',
-  LIVES_ALONE_WITH_CHILD_PRESENT: 'Child reported while living alone',
   SEX_WORK_YEARS_IMPOSSIBLE: 'Work-history duration impossible',
   SEX_WORK_START_AFTER_CURRENT_AGE: 'Work started after current age',
   MISSING_INTERVIEW_END: 'Missing interview end time',
   OLD_FORM_VERSION: 'Old form version',
   INTERVIEW_TOO_SHORT: 'Interview under 40 minutes',
   END_BEFORE_START: 'End time before start time',
-  Q95_MORE_THAN_FIVE_SERVICES: 'More than five services selected',
   OTHER_SELECTED_WITHOUT_SPECIFY: "'Other' without specify text",
   LIKELY_MISSING_ZERO_IN_INCOME: 'Income likely missing zeros',
   LIKELY_MISSING_ZERO_IN_EXPENSE: 'Expense likely missing zeros',
@@ -84,20 +82,16 @@ const RULE_LABEL: Record<string, string> = {
   CHILDREN_WITH_RESPONDENT_EXCEED_TOTAL: 'Child counts contradict',
   CHILD_DETAILS_WHEN_TOTAL_ZERO: 'Child details but zero children',
   OTHER_CHILD_LOCATION_MISSING: "Other children's location missing",
-  OTHER_CHILD_LOCATION_NOT_NEEDED: 'Unneeded child location entered',
   NEGATIVE_CHILD_COUNT: 'Negative child count',
   AGE_MISMATCH: 'Screening and demographic age differ',
   AGE_OUT_OF_RANGE: 'Age outside eligible range',
   CONSENT_NO_BUT_INTERVIEW_COMPLETED: 'Interview recorded without consent',
   DUPLICATE_SUBMISSION_ID: 'Duplicate submission ID',
   EXACT_DUPLICATE_ANSWER_PATTERN: 'Identical answer pattern',
-  INTERVIEWS_STARTED_TOO_CLOSE: 'Interviews started too close together',
   GPS_SITE_OUTLIER: 'GPS far from site cluster — verify',
   INVALID_GPS: 'Invalid GPS coordinates',
   INCOMPLETE_GPS: 'Incomplete GPS coordinates',
   LOW_GPS_PRECISION: 'Low GPS precision',
-  WEAK_INTERVIEWER_OBSERVATION: 'Vague interviewer observation',
-  REPEATED_ENUMERATOR_OBSERVATION: 'Same observation repeated',
 }
 const humanRule = (id: string) =>
   RULE_LABEL[id] ?? id.toLowerCase().replace(/_/g, ' ').replace(/^\w/, (c) => c.toUpperCase())

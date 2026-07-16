@@ -104,12 +104,9 @@ def _exclusive_label_map(schema, population):
     return out
 
 
-# Minimum plausible interview length, PER INSTRUMENT. The two questionnaires are
-# not the same size: the Hijra interview is designed at ~50-60 minutes, the FSW
-# one at ~30-40 (see the validated source questionnaires). A single flat 40-minute
-# line flagged normal 39-minute FSW interviews as "rushed". Under half the
-# threshold is treated as implausibly short (HIGH), otherwise MEDIUM.
-SHORT_MINUTES = {'hijra': 40, 'fsw': 25}
+# Minimum plausible interview length. CIPRB's rule: under 40 minutes is rushed —
+# one line for both instruments. Do not "helpfully" split this per population.
+SHORT_MINUTES = {'hijra': 40, 'fsw': 40}
 
 
 # Monthly expense is split across these category fields (FSW); the engine wants a

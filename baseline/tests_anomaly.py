@@ -101,19 +101,17 @@ class AdapterRuleTests(TestCase):
         self.assertNotIn('INTERVIEW_EXTREMELY_LONG', ids)
         self.assertNotIn('INTERVIEW_LONG', ids)
 
-    def test_fsw_39_minute_interview_is_not_short(self):
-        # The FSW questionnaire runs ~30-40 min, so 39 minutes is NORMAL. A flat
-        # 40-minute line flagged 89 of these as rushed — 30 seconds under.
+    def test_short_interview_under_40min_flagged(self):
+        # CIPRB's rule: under 40 minutes is rushed. ONE line for both instruments.
         rec = _kobo(**{'grp_admin/interview_end_actual': '2026-07-12T10:39:00'})
-        ids, _ = self._ids([rec])
-        self.assertNotIn('INTERVIEW_TOO_SHORT', ids)
-
-    def test_fsw_short_interview_flagged_below_its_own_threshold(self):
-        # 20 min on a ~30-40 min instrument: under the FSW threshold (25).
-        rec = _kobo(**{'grp_admin/interview_end_actual': '2026-07-12T10:20:00'})
         report, _ = _scan([rec])
         flags = [a for a in report['anomalies'] if a['rule_id'] == 'INTERVIEW_TOO_SHORT']
         self.assertEqual(len(flags), 1)
+
+    def test_forty_minute_interview_is_not_short(self):
+        rec = _kobo(**{'grp_admin/interview_end_actual': '2026-07-12T10:40:00'})
+        ids, _ = self._ids([rec])
+        self.assertNotIn('INTERVIEW_TOO_SHORT', ids)
 
     def test_very_short_interview_is_high(self):
         rec = _kobo(**{'grp_admin/interview_end_actual': '2026-07-12T10:10:00'})  # 10 min
@@ -134,10 +132,13 @@ class AdapterRuleTests(TestCase):
         ids, _ = self._ids([rec])
         self.assertIn('MUTUALLY_EXCLUSIVE_MULTISELECT', ids)
 
-    def test_child_living_contradiction(self):
-        rec = _kobo(**{'grp_a2/a213': 1, 'grp_a2/a214': 1, 'grp_b1/b103': '1'})  # b103=Alone
+    def test_lives_alone_with_child_retired(self):
+        # RETIRED: B103 mixes housing ("Alone in own/rented room") with companions
+        # ("With children"), so renting your own room with your child is a correct
+        # answer, not a contradiction.
+        rec = _kobo(**{'grp_a2/a213': 1, 'grp_a2/a214': 1, 'grp_b1/b103': '1'})
         ids, _ = self._ids([rec])
-        self.assertIn('LIVES_ALONE_WITH_CHILD_PRESENT', ids)
+        self.assertNotIn('LIVES_ALONE_WITH_CHILD_PRESENT', ids)
 
     def test_children_with_respondent_exceed_total(self):
         rec = _kobo(**{'grp_a2/a213': 1, 'grp_a2/a214': 3})
@@ -311,9 +312,10 @@ class HijraAdapterTests(TestCase):
         rec = _hijra_kobo(**{'grp_scr/s2_age': 27, 'grp_a2/a205_age': 40})
         self.assertIn('AGE_MISMATCH', self._ids([rec]))
 
-    def test_hijra_weak_observation(self):
+    def test_hijra_weak_observation_retired(self):
+        # RETIRED: a thin interviewer observation is not a fault in the data.
         rec = _hijra_kobo(**{'grp_c/c2': 'Valo'})
-        self.assertIn('WEAK_INTERVIEWER_OBSERVATION', self._ids([rec]))
+        self.assertNotIn('WEAK_INTERVIEWER_OBSERVATION', self._ids([rec]))
 
     def test_hijra_income_missing_zero(self):
         rec = _hijra_kobo(**{'grp_b1/b104_share': 10})
@@ -508,9 +510,7 @@ class SystematicPassRegressionTest(TestCase):
         report, _ = _scan(records, population)
         return {a['rule_id'] for a in report['anomalies']}
 
-    def test_hijra_keeps_the_40_minute_threshold(self):
-        # The Hijra instrument runs ~50-60 min, so 39 minutes IS short there —
-        # the per-instrument threshold must not leak across populations.
+    def test_hijra_uses_the_same_40_minute_threshold(self):
         rec = _hijra_kobo(**{'grp_admin/interview_end_actual': '2026-07-12T10:39:00'})
         self.assertIn('INTERVIEW_TOO_SHORT', self._ids([rec], population='hijra'))
 
@@ -537,8 +537,19 @@ class SystematicPassRegressionTest(TestCase):
         rec = _kobo(**{'grp_a2/a213': 3, 'grp_a2/a214': 1, 'grp_a2/a215': ''})
         self.assertIn('OTHER_CHILD_LOCATION_MISSING', self._ids([rec]))
 
-    def test_repeated_observation_rule_retired(self):
+    def test_observation_rules_retired(self):
+        # Neither the "vague observation" nor the "same observation repeated" rule
+        # fires: the interviewer's note is not respondent data and not a fault.
         recs = [_hijra_kobo(**{'_uuid': f'u{i}', 'grp_c/c2': 'N/A'}) for i in range(6)]
         ids = self._ids(recs, population='hijra')
         self.assertNotIn('REPEATED_ENUMERATOR_OBSERVATION', ids)
-        self.assertIn('WEAK_INTERVIEWER_OBSERVATION', ids)   # still recorded once per record
+        self.assertNotIn('WEAK_INTERVIEWER_OBSERVATION', ids)
+
+    def test_interviews_started_too_close_retired(self):
+        # Enumerators open/consent to forms back-to-back and finish from draft, so
+        # a short gap between start stamps proves nothing.
+        recs = [
+            _hijra_kobo(**{'_uuid': 'a', 'grp_admin/interview_start': '2026-07-12T10:00:00'}),
+            _hijra_kobo(**{'_uuid': 'b', 'grp_admin/interview_start': '2026-07-12T10:04:00'}),
+        ]
+        self.assertNotIn('INTERVIEWS_STARTED_TOO_CLOSE', self._ids(recs, population='hijra'))
