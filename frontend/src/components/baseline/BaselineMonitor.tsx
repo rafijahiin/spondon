@@ -229,8 +229,15 @@ export function BaselineMonitor() {
       // part of it: a low percentage means the enumerator's device served an older
       // form version that never recorded an end time — that is not their doing, and
       // status must not blame them for it.
+      //
+      // Thresholds are RATES, not counts. `high >= 5` marked everyone Urgent: an
+      // enumerator doing 45 interviews collects 5 high flags at a 11% fault rate,
+      // while one doing 6 never trips it at 66% — the old line ranked by workload,
+      // not by data quality. MIN_N stops 1-of-2 reading as a 50% rate.
+      const MIN_N = 5
+      const highRate = c.n >= MIN_N ? fl.high / c.n : 0
       const status: 'urgent' | 'review' | 'good' =
-        fl.critical >= 1 || fl.high >= 5 ? 'urgent'
+        fl.critical >= 1 || highRate >= 0.25 ? 'urgent'
           : fl.high >= 1 || fl.medium >= 1 ? 'review'
             : 'good'
       return { ...c, flags: fl, status }
@@ -556,7 +563,7 @@ export function BaselineMonitor() {
                           <span className={`tagchip ${st.cls}`}
                             title={r.status === 'good'
                               ? 'Good — no data-quality flags on this enumerator’s interviews'
-                              : `${st.label}: ${r.flags.critical + r.flags.high || r.flags.medium} data-quality flag${(r.flags.critical + r.flags.high || r.flags.medium) === 1 ? '' : 's'}. Valid-timing % is not counted here — a low figure means an older form version, not this enumerator.`}>
+                              : `${st.label}: ${r.flags.critical + r.flags.high || r.flags.medium} data-quality flag${(r.flags.critical + r.flags.high || r.flags.medium) === 1 ? '' : 's'} across ${r.n} interview${r.n === 1 ? '' : 's'} (${Math.round((100 * r.flags.high) / Math.max(r.n, 1))}% high). Urgent means any critical flag, or high flags on a quarter or more of their interviews — a rate, so a heavy workload alone never triggers it. Valid-timing % is not counted here: a low figure means an older form version, not this enumerator.`}>
                             {st.icon}{st.label}
                           </span>
                         </td>
