@@ -17,6 +17,7 @@ Conventions
 """
 from submissions.flatten import flatten_group_keys
 
+from .codes import is_non_answer
 from .populations import resolve_population
 
 from statistics import median
@@ -199,8 +200,10 @@ def compute_srhr(responses):
             else:
                 v = _s(raw, 'b101')
                 P('brothel_based').add(v in ('1', '2'), bool(v))
+                # 99 = "Prefer not to say" is a refusal code, not taka — it must
+                # never enter the published median. See baseline/codes.py.
                 inc = _int(raw, 'b108')
-                if inc:
+                if inc and not is_non_answer('fsw', 'b108', raw.get('b108')):
                     incomes.append(inc)
                 v = _s(raw, 'b112')
                 P('income_autonomy').add(v == '1', v in ('1', '2', '3'))

@@ -10,6 +10,7 @@ from collections import Counter, defaultdict
 
 from submissions.flatten import flatten_group_keys
 
+from .codes import is_non_answer
 from .populations import resolve_population
 from .schema import value_label
 
@@ -112,8 +113,11 @@ def compute_insights(responses):
         if v_rel is not None:
             religion[pop][value_label(pop, f_rel, v_rel)] += 1
 
-        inc = _to_int(_first(raw, _INCOME.get(pop, []))[1])
-        if inc is not None and inc >= 0:
+        # A refusal ("99 = Prefer not to say" on B108) is a CODE, not taka — banding
+        # it counted people who declined as earning under 5k. See baseline/codes.py.
+        f_inc, v_inc = _first(raw, _INCOME.get(pop, []))
+        inc = _to_int(v_inc)
+        if inc is not None and inc >= 0 and not is_non_answer(pop, f_inc, v_inc):
             b = _band(inc, INCOME_BANDS)
             if b:
                 income_band[pop][b] += 1
