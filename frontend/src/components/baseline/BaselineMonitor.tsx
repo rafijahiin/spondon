@@ -264,9 +264,11 @@ export function BaselineMonitor() {
   const iqr = m?.duration.valid_iqr ?? [null, null]
 
   const STATUS_STYLE = {
-    good: { label: 'Good', cls: 'tag-ok', icon: <CheckCircle2 size={12} /> },
-    review: { label: 'Review', cls: 'tag-warn', icon: <AlertTriangle size={12} /> },
-    urgent: { label: 'Urgent', cls: 'tag-crit', icon: <AlertTriangle size={12} /> },
+    // Plain words, not grading. "Review" told the reader nothing — it was the
+    // leftover bucket for anyone who was not spotless and not Urgent.
+    good: { label: 'Nothing to check', cls: 'tag-ok', icon: <CheckCircle2 size={12} /> },
+    review: { label: 'A few to check', cls: 'tag-warn', icon: <AlertTriangle size={12} /> },
+    urgent: { label: 'Many to check', cls: 'tag-crit', icon: <AlertTriangle size={12} /> },
   } as const
   const POP_LABEL: Record<string, string> = { all: 'All populations', hijra: 'Hijra / Gender-diverse', fsw: 'Female Sex Worker' }
   const activeChips: { key: string; label: string; clear: () => void }[] = [
@@ -502,7 +504,7 @@ export function BaselineMonitor() {
             <div className="dsec">
               <div>
                 <h2 className="dsec-h">Enumerator performance</h2>
-                <p className="dsec-sub">Workload, timing completeness and priority flags — click a row to filter everything to that enumerator.</p>
+                <p className="dsec-sub">How much each person has collected, and how many of their interviews have an answer worth checking. Click any row to see only that person’s work.</p>
               </div>
               <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                 <div style={{ position: 'relative' }}>
@@ -512,8 +514,8 @@ export function BaselineMonitor() {
                 </div>
                 <select aria-label="Sort enumerators" className="field" value={enumSort}
                   onChange={(e) => setEnumSort(e.target.value as 'n' | 'flags')}>
-                  <option value="flags">Sort: flags</option>
-                  <option value="n">Sort: interviews</option>
+                  <option value="flags">Most to check first</option>
+                  <option value="n">Most interviews first</option>
                 </select>
               </div>
             </div>
@@ -523,11 +525,11 @@ export function BaselineMonitor() {
                   <tr>
                     {([
                       ['Enumerator', ''],
-                      ['Interviews', 'Total interviews this enumerator has collected (within the current filters).'],
-                      ['Valid timing', 'Interviews with a usable start AND in-form end time, over their total. The rest were collected on an older form version that never recorded an end time, so their length is unknown.'],
-                      ['Median', 'Median interview length, over valid-timing interviews only, excluding extreme (form-left-open) durations.'],
-                      ['High / critical', 'Number of high- or critical-severity data-quality flags on this enumerator’s interviews.'],
-                      ['Status', 'Based on data-quality flags only. Urgent = a critical flag or 5+ high flags. Review = some flags. Good = none. Valid-timing % is NOT counted — a low figure means an older form version, not the enumerator.'],
+                      ['Interviews done', 'How many interviews this person has collected, within the filters set above.'],
+                      ['Length recorded', 'For how many of their interviews do we know the length? Where the number is low, their phone was running an older version of the form that did not save an end time — so we cannot tell how long those interviews took. This is not the enumerator’s fault.'],
+                      ['Usual length', 'How long their interviews usually take (the middle value). Counts only interviews whose length we know.'],
+                      ['Questions to check', 'How many of their interviews have an answer worth checking — for example two answers that contradict each other, or an income that looks like it is missing a zero.'],
+                      ['Status', 'A quick read on whether this person’s interviews need attention. It looks at flagged answers only. “Length recorded” is never counted against them, because that is the form version, not their work.'],
                     ] as [string, string][]).map(([h, tip], i) => (
                       <th key={h} className={i ? 'num' : ''} title={tip || undefined}
                         style={tip ? { cursor: 'help', textDecoration: 'underline dotted', textUnderlineOffset: 3, textDecorationColor: 'var(--hair-2)' } : undefined}>{h}</th>
@@ -562,8 +564,8 @@ export function BaselineMonitor() {
                         <td className="num">
                           <span className={`tagchip ${st.cls}`}
                             title={r.status === 'good'
-                              ? 'Good — no data-quality flags on this enumerator’s interviews'
-                              : `${st.label}: ${r.flags.critical + r.flags.high || r.flags.medium} data-quality flag${(r.flags.critical + r.flags.high || r.flags.medium) === 1 ? '' : 's'} across ${r.n} interview${r.n === 1 ? '' : 's'} (${Math.round((100 * r.flags.high) / Math.max(r.n, 1))}% high). Urgent means any critical flag, or high flags on a quarter or more of their interviews — a rate, so a heavy workload alone never triggers it. Valid-timing % is not counted here: a low figure means an older form version, not this enumerator.`}>
+                              ? `None of ${r.code}’s ${r.n} interviews have an answer worth checking.`
+                              : `${r.flags.critical + r.flags.high} of ${r.code}’s ${r.n} interviews have an answer worth checking — about ${Math.round((100 * (r.flags.critical + r.flags.high)) / Math.max(r.n, 1))} in every 100. We compare people by share, not by total, so someone who simply does more interviews is never marked worse for it. How many interviews had their length recorded is never counted here — that depends on the version of the form their phone was running.`}>
                             {st.icon}{st.label}
                           </span>
                         </td>
