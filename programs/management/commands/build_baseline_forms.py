@@ -94,6 +94,45 @@ def _require_all(survey):
     return out
 
 
+def _enforce_exclusive_choices(survey, population):
+    """Stop 'No concerns' being ticked alongside two concerns, in the FORM.
+
+    Enketo happily accepts an exclusive option together with the very options it
+    excludes, so the contradiction was only caught afterwards by the anomaly
+    console — 33 FSW interviews on Q9.6 alone, each needing a manual verdict for
+    a mis-tap the form should never have accepted.
+
+    The codes come from baseline.anomaly.EXCLUSIVE_CHOICE_CODES, the same map the
+    detection rule reads, so the form and the rule cannot drift apart. A question
+    that already carries a constraint keeps it, ANDed with this one (Q9.5 caps
+    the selection at five and must keep doing so).
+    """
+    from baseline.anomaly import EXCLUSIVE_CHOICE_CODES
+    codes_by_field = EXCLUSIVE_CHOICE_CODES.get(population, {})
+    out, seen = [], set()
+    for row in survey:
+        row = list(row)
+        name = row[1]
+        codes = codes_by_field.get(name)
+        if codes and (row[0] or '').startswith('select_multiple'):
+            seen.add(name)
+            picked = ' or '.join(f"selected(.,'{c}')" for c in codes)
+            rule = f'not(({picked}) and count-selected(.) > 1)'
+            row[7] = f'({row[7]}) and ({rule})' if row[7] else rule
+            msg = ('This answer cannot be combined with any other option. / '
+                   'এই উত্তরটি অন্য কোনো অপশনের সঙ্গে একসাথে নির্বাচন করা যাবে না।')
+            row[8] = f'{row[8]} {msg}' if row[8] else msg
+        out.append(row)
+    missing = set(codes_by_field) - seen
+    if missing:
+        # A silent miss would ship a form with no constraint while the console
+        # kept reporting the contradiction — fail loudly instead.
+        raise ValueError(
+            f'{population}: exclusive-choice fields not found as select_multiple '
+            f'in the survey: {sorted(missing)}')
+    return out
+
+
 import re as _re
 
 
@@ -1120,11 +1159,13 @@ class Command(BaseCommand):
             if only and f['id'] != only:
                 continue
             choices = f['choices']()
+            population = 'fsw' if 'fsw' in f['id'] else 'hijra'
             # Guarantee an inline text box after every standalone 'Other' option
             # (systemic fix), THEN mark inputs required.
             survey  = _require_all(_add_other_specify(f['survey'](), choices))
+            survey  = _enforce_exclusive_choices(survey, population)
             wb = _wb(f['id'], f['title'], survey, choices)
-            all_paths['fsw' if 'fsw' in f['id'] else 'hijra'] = _field_paths(survey)
+            all_paths[population] = _field_paths(survey)
             path = os.path.join(out, f['file'])
             wb.save(path)
             self.stdout.write(self.style.SUCCESS(
