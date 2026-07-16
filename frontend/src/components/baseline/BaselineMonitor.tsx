@@ -396,9 +396,7 @@ export function BaselineMonitor() {
                 sub={`${fmt(m.total)} of ${fmt(target)} target`} />
             ) : (
               <Kpi label="Active enumerators"
-                value={fmt(m.collectors.length)}
-                sub="collected during selected period"
-                sub2="Target not set — completion % returns once a target exists" />
+                value={fmt(m.collectors.length)} />
             )}
             <Kpi label="Valid timing coverage"
               valueColor={m.duration.valid_timing_pct >= 80 ? 'var(--ok)' : 'var(--warn)'}
