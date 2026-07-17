@@ -134,9 +134,15 @@ export function BaselineMonitor() {
     try {
       const [mon, an] = await Promise.all([
         api.get<Monitoring>('/baseline/responses/monitoring/', { params: rec }),
+        // `severity` is deliberately NOT sent. The server applies it to the whole
+        // report, and that one list feeds three consumers: the enumerator table's
+        // flag counts, the severity KPI cards, and the priority-rule list. Filtering
+        // it server-side made picking "medium" report every enumerator as "None
+        // flagged" and zeroed the other severity cards — the filter was silently
+        // rewriting the numbers instead of narrowing the queue. Severity is a QUEUE
+        // filter and is applied there, locally.
         api.get<AnomalyReport>('/baseline/fsw-anomalies/', {
-          params: { population: filters.population, ...rec,
-                    ...(filters.severity && { severity: filters.severity }) },
+          params: { population: filters.population, ...rec },
         }),
       ])
       setM(mon.data)
@@ -242,11 +248,15 @@ export function BaselineMonitor() {
       // `high >= 5` marked everyone Urgent: 45 interviews reach 5 flags at an 11%
       // rate while 6 interviews never trip it at 66% — that ranked workload, not
       // data quality. MIN_N stops 1-of-2 reading as 50%.
+      // The displayed share and the status GATE are separate. Forcing the rate to 0
+      // below MIN_N printed "2/3" beside "0%" — the cell contradicting the count next
+      // to it. The share is always the true one; MIN_N only withholds the Urgent
+      // verdict, because 1 flag in 2 interviews is not evidence of a 50% fault rate.
       const MIN_N = 5
       const flagged = fl.records.size
-      const rate = c.n >= MIN_N ? flagged / c.n : 0
+      const rate = c.n ? flagged / c.n : 0
       const status: 'urgent' | 'review' | 'good' =
-        rate >= 0.25 ? 'urgent'
+        c.n >= MIN_N && rate >= 0.25 ? 'urgent'
           : flagged >= 1 ? 'review'
             : 'good'
       return { ...c, flags: fl, flagged, rate, status }
@@ -541,7 +551,7 @@ export function BaselineMonitor() {
                       ['Length recorded', 'Interviews whose length we can measure, out of their total. Where this is low, the device was running an older form version that never saved an end time — so those interviews have no measurable duration. It is a form-version issue, not the enumerator’s.'],
                       ['Median length', 'Median duration, over the interviews whose length we can measure. Interviews left open in draft are excluded so they do not stretch the figure.'],
                       ['Flagged interviews', 'Interviews carrying at least one high or critical flag — a contradiction between answers, an income missing a zero, an out-of-range age. Counted as interviews, not flags: one interview can raise several.'],
-                      ['Status', 'The share of an enumerator’s interviews that are flagged. Many = a quarter or more; Some = at least one; None = clean. A share, not a total, so a heavier workload alone never worsens it. Recorded-length coverage is never counted here.'],
+                      ['Status', 'The share of an enumerator’s interviews that are flagged. Many = a quarter or more, once they have at least 5 interviews; Some = at least one flag; None = clean. A share, not a total, so a heavier workload alone never worsens it. Recorded-length coverage is never counted here.'],
                     ] as [string, string][]).map(([h, tip], i) => (
                       <th key={h} className={i ? 'num' : ''} title={tip || undefined}
                         style={tip ? { cursor: 'help', textDecoration: 'underline dotted', textUnderlineOffset: 3, textDecorationColor: 'var(--hair-2)' } : undefined}>{h}</th>

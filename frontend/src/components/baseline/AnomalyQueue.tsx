@@ -225,13 +225,16 @@ export function AnomalyQueue({ report, severity, onSeverity, onReviewSaved }: {
       .slice(0, 6)
   }, [anomalies])
 
-  /* C — queue rows after local filters */
+  /* C — queue rows after local filters. Severity narrows THIS list only: the KPI
+     cards, the priority rules and the enumerator table must keep counting every
+     severity, or the filter would rewrite the figures rather than filter the view. */
   const rows = useMemo(() => anomalies.filter((a) =>
+    (!severity || a.severity === severity) &&
     (!rule || a.rule_id === rule) &&
     (!reviewStatus || a.review_status === reviewStatus) &&
     (!q || (a.rule_id + ' ' + a.message + ' ' + (a.record_id || '') + ' ' + (a.enumerator || ''))
       .toLowerCase().includes(q.toLowerCase()))
-  ), [anomalies, rule, reviewStatus, q])
+  ), [anomalies, severity, rule, reviewStatus, q])
 
   const pages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE))
   const pageRows = rows.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
