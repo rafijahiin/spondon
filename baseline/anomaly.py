@@ -111,10 +111,13 @@ SHORT_MINUTES = {'hijra': 40, 'fsw': 40}
 
 
 # Monthly expense is split across these category fields (FSW); the engine wants a
-# total. Hijra has no expense breakdown, so none of these match and it is skipped.
+# total. These are the SIX the deployed FSW form actually asks (B110: rent,
+# sardarni commission, broker, fees, debt, family) — b110_food/other/children/
+# health were in this tuple but exist on NEITHER form, so they had never matched
+# anything. Hijra asks a single pre-totalled figure instead (b105_shared_exp),
+# pinned directly in its field map.
 _EXPENSE_FIELDS = ('b110_broker', 'b110_commission', 'b110_debt',
-                   'b110_family', 'b110_fees', 'b110_food', 'b110_rent',
-                   'b110_other', 'b110_children', 'b110_health')
+                   'b110_family', 'b110_fees', 'b110_rent')
 
 
 def _san(label):
@@ -249,9 +252,17 @@ def _hijra_field_map(schema):
         living_arrangement='b101_live_with',
         sex_work_start_age=None,
         sex_work_years=None,
+        # B104 is the TYPED gross share, which is where a missing zero can occur —
+        # the published indicators deliberately read B106/B107 instead, via
+        # baseline/income.py. Do not "fix" this to B106: a calculate cannot be
+        # mistyped, so pointing the rule at it would detect nothing.
         sex_work_income='b104_share',              # monthly money received
         other_income_none=None,
-        expenses_total='expenses_total',
+        # Was pinned to 'expenses_total' — a key _shape_record only builds from the
+        # FSW b110_* block, so it never existed on a Hijra record and the rule was
+        # silently dead while the console displayed the role as resolved. Hijra asks
+        # one pre-totalled figure (dera branch only, so ~42 records).
+        expenses_total='b105_shared_exp',
         latitude='latitude',
         longitude='longitude',
         gps_precision='gps_precision',
@@ -315,6 +326,23 @@ def _current_version(records):
     return max(dated, key=lambda v: (first_seen[v], counts[v]))
 
 
+def dead_pins(field_map, headers):
+    """Pinned roles whose column does not exist on the shaped record.
+
+    A FieldMap role can fail in two ways. An UNRESOLVED role (None) is visible —
+    the console prints null. A DEAD PIN is not: the role names a column that is
+    never built, every rule that reads it quietly skips, and `resolved_fields`
+    displays the name as though it were working. Hijra's expenses_total was pinned
+    to 'expenses_total', a key _shape_record only ever builds from the FSW b110_*
+    block, so the expense check did nothing for 370 interviews and looked healthy
+    while doing it. That is the most dangerous failure shape in the map, so it is
+    now surfaced in the report and asserted in the tests.
+    """
+    hs = set(headers)
+    return sorted(role for role, col in field_map.__dict__.items()
+                  if role != 'headers' and col and col not in hs)
+
+
 def build_report(population='fsw', *, force=False):
     """Scan every submission of `population` and return the engine report
     (cached 5 min). Adds `population`, `current_version`, and `resolved_fields`."""
@@ -345,6 +373,11 @@ def build_report(population='fsw', *, force=False):
     report['current_version'] = current_version
     report['resolved_fields'] = {k: v for k, v in field_map.__dict__.items()
                                  if k != 'headers'}
+    report['dead_pins'] = dead_pins(field_map, headers)
+    if report['dead_pins']:
+        logger.warning(
+            '%s: field-map roles pinned to columns that do not exist — every rule '
+            'reading them is silently dead: %s', population, report['dead_pins'])
     # Lightweight per-record index so the API can filter flags AND the scanned
     # denominator by the same record-scoped criteria (enumerator/site/date/version).
     report['records_index'] = [{
