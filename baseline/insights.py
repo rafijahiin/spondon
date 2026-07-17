@@ -22,7 +22,15 @@ _MARITAL = {'hijra': ['a208_marital'], 'fsw': ['a206']}
 _RELIGION = {'hijra': ['a206_religion'], 'fsw': ['a204']}
 _NID = {'hijra': ['a212_nid'], 'fsw': ['a209']}
 _MOBILE = {'hijra': ['a211_mobile'], 'fsw': ['a208']}
-_INCOME = {'hijra': ['b104_share'], 'fsw': ['b108']}
+# Income is NOT one question. Hijra asks it on two mutually exclusive branches
+# (B101 = who you live with) and they measure different things — B106 is PERSONAL
+# income after the dera's shared expenses, B107 is the HOUSEHOLD's earnings — so
+# they are banded as separate series, never pooled. The old map read B104: the
+# gross share before deductions, which the form does not call income, and which
+# only the dera branch is asked (42 of 370). FSW B108 is income FROM SEX WORK,
+# not total income — the chart title must say so.
+_INCOME = {'hijra': ['b106_personal_income'], 'fsw': ['b108']}
+_HH_INCOME = {'hijra': ['b107_total'], 'fsw': []}
 
 AGE_BANDS = [(0, 19, '≤19'), (20, 24, '20–24'), (25, 29, '25–29'),
              (30, 34, '30–34'), (35, 39, '35–39'), (40, 49, '40–49'),
@@ -71,6 +79,7 @@ def compute_insights(responses):
     marital = defaultdict(Counter)
     religion = defaultdict(Counter)
     income_band = defaultdict(Counter)
+    hh_income_band = defaultdict(Counter)
     ages = defaultdict(list)
     nid_yes = defaultdict(int)
     nid_total = defaultdict(int)
@@ -115,12 +124,17 @@ def compute_insights(responses):
 
         # A refusal ("99 = Prefer not to say" on B108) is a CODE, not taka — banding
         # it counted people who declined as earning under 5k. See baseline/codes.py.
-        f_inc, v_inc = _first(raw, _INCOME.get(pop, []))
-        inc = _to_int(v_inc)
-        if inc is not None and inc >= 0 and not is_non_answer(pop, f_inc, v_inc):
-            b = _band(inc, INCOME_BANDS)
+        def _band_income(fields, bucket):
+            f, v = _first(raw, fields)
+            n = _to_int(v)
+            if n is None or n < 0 or is_non_answer(pop, f, v):
+                return
+            b = _band(n, INCOME_BANDS)
             if b:
-                income_band[pop][b] += 1
+                bucket[pop][b] += 1
+
+        _band_income(_INCOME.get(pop, []), income_band)
+        _band_income(_HH_INCOME.get(pop, []), hh_income_band)
 
         f_nid, v_nid = _first(raw, _NID.get(pop, []))
         if v_nid is not None:
@@ -169,4 +183,14 @@ def compute_insights(responses):
         'marital': _dim(marital),
         'religion': _dim(religion),
         'income_band': _dim(income_band, income_order),
+        'hh_income_band': _dim(hh_income_band, income_order),
+        # Coverage, so a relevance-gated field can never again shrink a published
+        # denominator invisibly: B104 was answered by 42 of 370 Hijra and the chart
+        # said nothing about the missing 328.
+        'income_covered': {
+            pop: {'n': sum(income_band.get(pop, Counter()).values()),
+                  'hh_n': sum(hh_income_band.get(pop, Counter()).values()),
+                  'total': pop_counts.get(pop, 0)}
+            for pop in ('hijra', 'fsw')
+        },
     }

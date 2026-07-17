@@ -137,13 +137,26 @@ def compute_srhr(responses):
             return aggs.setdefault(key, Agg())
 
         incomes, phq_scores, phq_sui, fies_sev, know_hiv, know_sti = [], [], Agg(), Agg(), [], []
+        hh_incomes = []
 
         for raw in data:
             if pop == 'hijra':
                 P('employed').add(_s(raw, 'b108_worked') == '1', _s(raw, 'b108_worked') in ('1', '2'))
-                inc = _int(raw, 'b104_share')
+                # The Hijra instrument measures income on TWO mutually exclusive
+                # branches (B101 = who you live with), and they are different
+                # quantities that must never be pooled:
+                #   dera (B101='2')  -> B106 = B104 - (B105 / B103), PERSONAL income
+                #   otherwise        -> B107 total, the HOUSEHOLD's earnings
+                # This published tile used B104 — the gross share handed over before
+                # the dera's shared expenses are deducted, which the form itself does
+                # not call income — and B104 is gated to the dera branch, so a figure
+                # labelled "monthly income" for Hijra was 42 of 370 respondents.
+                inc = _int(raw, 'b106_personal_income')
                 if inc:
                     incomes.append(inc)
+                hh = _int(raw, 'b107_total')
+                if hh:
+                    hh_incomes.append(hh)
                 hit, seen = _grid_any(raw, [f'q2_1_{c}' for c in 'abcdefghijklmno'])
                 P('discr_any').add(hit, seen)
                 P('discr_police').add(_s(raw, 'q2_1_k') == '1', _s(raw, 'q2_1_k') in ('1', '2'))
@@ -296,6 +309,7 @@ def compute_srhr(responses):
         phq_prev = round(100 * sum(1 for s2 in phq_scores if s2 >= 10) / len(phq_scores)) if phq_scores else None
         phq_modsev = round(100 * sum(1 for s2 in phq_scores if s2 >= 15) / len(phq_scores)) if phq_scores else None
         med_inc = int(median(incomes)) if incomes else None
+        med_hh_inc = int(median(hh_incomes)) if hh_incomes else None
         k_hiv = round(sum(know_hiv) / len(know_hiv)) if know_hiv else None
         k_sti = round(sum(know_sti) / len(know_sti)) if know_sti else None
 
@@ -309,7 +323,13 @@ def compute_srhr(responses):
             modules = [
                 ('Livelihood & economic security', [
                     tile('employed', 'Worked in the past 7 days', 'B108'),
-                    {'label': 'Median monthly income', 'ref': 'B104', 'dir': 'neutral', 'value': med_inc, 'n': len(incomes), 'unit': '৳'},
+                    # Two tiles, not one average: the instrument asks a different
+                    # question of each branch, so pooling them would report a
+                    # personal figure and a household figure as one number.
+                    {'label': 'Median personal income — lives in a dera', 'ref': 'B106',
+                     'dir': 'neutral', 'value': med_inc, 'n': len(incomes), 'unit': '৳'},
+                    {'label': 'Median household income — does not live in a dera', 'ref': 'B107',
+                     'dir': 'neutral', 'value': med_hh_inc, 'n': len(hh_incomes), 'unit': '৳'},
                     {'label': 'Severe food insecurity (FIES 7+/9)', 'ref': 'C101–C109', 'dir': 'bad', 'value': fies_sev.pct(), 'n': fies_sev.d},
                 ]),
                 ('Discrimination, rights & legal access', [

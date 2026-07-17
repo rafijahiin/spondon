@@ -45,6 +45,8 @@ interface Insights {
   marital: PopDim
   religion: PopDim
   income_band: PopDim
+  hh_income_band: PopDim
+  income_covered: Record<Pop, { n: number; hh_n: number; total: number }>
 }
 
 const POP_LABEL: Record<string, string> = {
@@ -123,6 +125,19 @@ export default function BaselineEndline() {
   })
   const [lens, setLens] = useState<Lens>('all')
 
+  /** "Taka per month · 42 of 370 answered". A relevance-gated income question is
+   *  answered by one branch only, so the band's denominator is NOT the population.
+   *  Printing the coverage is what stops a gated field silently shrinking a
+   *  published figure the way B104 did. */
+  const incomeKicker = (key: 'n' | 'hh_n') => {
+    const cov = insights?.income_covered
+    if (!cov) return 'Taka per month (banded)'
+    const pops: Pop[] = key === 'hh_n' ? ['hijra'] : (lens === 'all' ? ['hijra', 'fsw'] : [lens])
+    const answered = pops.reduce((s, p) => s + (cov[p]?.[key] ?? 0), 0)
+    const total = pops.reduce((s, p) => s + (cov[p]?.total ?? 0), 0)
+    return `Taka per month · ${answered} of ${total} answered`
+  }
+
   // KPI figures for the selected lens.
   const lensKpi = useMemo(() => {
     if (!insights) return { n: 0, avg_age: null as number | null, nid_pct: null as number | null, mobile_pct: null as number | null }
@@ -198,7 +213,24 @@ export default function BaselineEndline() {
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, alignItems: 'flex-start' }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14, flex: '1 1 300px', minWidth: 280 }}>
                 <div><ColumnBreakdown title="Age distribution" kicker="Completed age (years)" data={toRecord(insights?.age_band, lens)} /></div>
-                <div><ColumnBreakdown title="Monthly income" kicker="Taka per month (banded)" data={toRecord(insights?.income_band, lens)} /></div>
+                {/* Income is not one question. FSW B108 asks earnings FROM SEX WORK;
+                    Hijra asks personal income (B106) of dera residents only and
+                    HOUSEHOLD earnings (B107) of everyone else. Each card names the
+                    quantity it shows and how many respondents answered it — the old
+                    single "Monthly income" card banded a Hijra gross share that only
+                    42 of 370 were ever asked, and said nothing about the other 328. */}
+                <div><ColumnBreakdown
+                  title={lens === 'fsw' ? 'Income from sex work'
+                    : lens === 'hijra' ? 'Personal income · lives in a dera'
+                      : 'Personal income'}
+                  kicker={incomeKicker('n')}
+                  data={toRecord(insights?.income_band, lens)} /></div>
+                {lens !== 'fsw' && (insights?.income_covered?.hijra?.hh_n ?? 0) > 0 && (
+                  <div><ColumnBreakdown
+                    title="Household income · does not live in a dera"
+                    kicker={incomeKicker('hh_n')}
+                    data={toRecord(insights?.hh_income_band, lens === 'all' ? 'hijra' : lens)} /></div>
+                )}
               </div>
               {/* Marital status has many categories — ranked horizontal bars read
                   far more clearly than a pie with a long legend. */}
