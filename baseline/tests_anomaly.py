@@ -56,16 +56,14 @@ class _Sub:
         self.longitude = None
 
 
-def _scan(records, population='fsw', current_version='vCURRENT'):
+def _scan(records, population='fsw'):
     """Mirror baseline.anomaly.build_report's engine wiring exactly, so a test can
     never pass on settings the live report doesn't use.
 
     Every argument build_report passes must be passed here too. When
     `is_non_answer` was added to the engine this harness kept omitting it, so the
     refusal-code tests silently ran against the engine's default (no codes at all)
-    — green tests, wrong wiring. `current_version` stays injectable because the
-    fixtures pin `__version__` deliberately; the derivation itself is covered by
-    tests_version.py.
+    — green tests, wrong wiring.
     """
     from .anomaly import (FIELD_MAP_BUILDERS, SHORT_MINUTES, _decode_fields,
                           _exclusive_label_map, non_answer_policy)
@@ -74,7 +72,7 @@ def _scan(records, population='fsw', current_version='vCURRENT'):
     decode = _decode_fields(field_map)
     shaped = [_shape_record(_Sub(r), schema, population, decode) for r in records]
     headers = sorted({k for r in shaped for k in r})
-    engine, _ = build_fsw_engine(headers, current_version=current_version,
+    engine, _ = build_fsw_engine(headers,
                                  field_map=field_map,
                                  exclusive_options=_exclusive_label_map(schema, population),
                                  short_minutes=SHORT_MINUTES.get(population, 40),
@@ -88,9 +86,9 @@ class AdapterRuleTests(TestCase):
         return {a['rule_id'] for a in report['anomalies']}, report
 
     def test_missing_end_produces_no_timing_flag(self):
-        # A blank end time means the device served an old form version — that is the
-        # OLD_FORM_VERSION flag's job. It must not also become a timing fault, and
-        # above all must not be read as a zero-minute (short) interview.
+        # A blank end time means the device served an older form version, which is
+        # not a fault in the answers and is not flagged at all. It must certainly
+        # never be read as a zero-minute (short) interview.
         rec = _kobo()
         rec.pop('grp_admin/interview_end_actual')       # old-form: no in-form end
         rec['__version__'] = 'vOLD'
@@ -311,12 +309,14 @@ class HijraAdapterTests(TestCase):
         report, _ = _scan(records, population='hijra')
         return {a['rule_id'] for a in report['anomalies']}
 
-    def test_hijra_missing_end_on_old_form_reports_only_the_version(self):
+    def test_hijra_missing_end_on_old_form_is_not_flagged(self):
         rec = _hijra_kobo()
         rec.pop('grp_admin/interview_end_actual')
         rec['__version__'] = 'vOLD'
         ids = self._ids([rec])
-        self.assertIn('OLD_FORM_VERSION', ids)
+        # An old form version is not an anomaly at all: it is OUR doing, every time
+        # we redeploy, and it says nothing about the answers.
+        self.assertNotIn('OLD_FORM_VERSION', ids)
         self.assertNotIn('MISSING_INTERVIEW_END', ids)
 
     def test_hijra_age_mismatch(self):

@@ -231,8 +231,8 @@ def _group_choice_columns(headers: Sequence[str]) -> dict[str, list[str]]:
     return groups
 
 
-def _simple_record_rules(field_map: FieldMap, current_version: str | None,
-                         short_minutes: int = 40, is_non_answer=_no_codes):
+def _simple_record_rules(field_map: FieldMap, short_minutes: int = 40,
+                         is_non_answer=_no_codes):
     def rules(record: Mapping[str, Any], row: int) -> Iterable[Anomaly]:
         ctx = _ctx(record, row, field_map)
 
@@ -265,21 +265,14 @@ def _simple_record_rules(field_map: FieldMap, current_version: str | None,
                         **ctx,
                     )
 
-        # Version
-        if current_version and field_map.version:
-            version = clean_text(record.get(field_map.version))
-            if version and version != current_version:
-                yield Anomaly(
-                    "OLD_FORM_VERSION",
-                    Severity.LOW,
-                    "The interview used an older form version.",
-                    fields=(field_map.version,),
-                    observed=version,
-                    expected=current_version,
-                    action="Confirm that the enumerator has refreshed/re-downloaded the current form.",
-                    category="form_version",
-                    **ctx,
-                )
+        # NB: OLD_FORM_VERSION was REMOVED. Which form version a device is running
+        # is not a fault in the ANSWERS, and it is not the enumerator's doing — it
+        # is ours, every time we redeploy. Three deploys in one day put 307 of 322
+        # FSW and 372 of 399 Hijra records "in breach" of a form that had not
+        # existed when they were collected, burying the real flags. The form version
+        # is still carried on every record and is filterable on the dashboard, which
+        # is where a "who still needs to re-download" question belongs — a roster, not
+        # an anomaly queue.
 
         # Timing
         start = as_datetime(record.get(field_map.interview_start)) if field_map.interview_start else None
@@ -806,7 +799,6 @@ def _repeated_observation_rule(field_map: FieldMap):
 def build_fsw_engine(
     headers: Sequence[str],
     *,
-    current_version: str | None = None,
     field_map: FieldMap | None = None,
     exclusive_options: Mapping[str, set] | None = None,
     short_minutes: int = 40,
@@ -823,8 +815,7 @@ def build_fsw_engine(
         record_id_key=field_map.record_id,
         enumerator_key=field_map.enumerator,
     )
-    engine.add_record_rule(_simple_record_rules(field_map, current_version, short_minutes,
-                                               is_non_answer))
+    engine.add_record_rule(_simple_record_rules(field_map, short_minutes, is_non_answer))
     engine.add_record_rule(_multi_select_rules(field_map, exclusive_options))
     engine.add_dataset_rule(_duplicate_id_rule(field_map))
     # _burst_rule (INTERVIEWS_STARTED_TOO_CLOSE) is NOT registered: enumerators open

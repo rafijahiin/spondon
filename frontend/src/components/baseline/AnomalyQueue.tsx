@@ -76,7 +76,6 @@ const RULE_LABEL: Record<string, string> = {
   MUTUALLY_EXCLUSIVE_MULTISELECT: 'Conflicting answers selected',
   SEX_WORK_YEARS_IMPOSSIBLE: 'Work-history duration impossible',
   SEX_WORK_START_AFTER_CURRENT_AGE: 'Work started after current age',
-  OLD_FORM_VERSION: 'Old form version',
   INTERVIEW_TOO_SHORT: 'Interview under 40 minutes',
   END_BEFORE_START: 'End time before start time',
   OTHER_SELECTED_WITHOUT_SPECIFY: "'Other' without specify text",
