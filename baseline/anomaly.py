@@ -63,6 +63,7 @@ EXCLUSIVE_CHOICE_CODES: dict[str, dict[str, list[str]]] = {
         'b109': ['0'],     # other income sources — "None"
         'q2_13': ['98'],   # laws/rulings awareness — "Aware of none"
         'q2_14': ['98'],   # social schemes awareness — "Aware of none"
+        'q2_21': ['00'],   # legal assistance — "No such need arose"
         'q3_13': ['11'],   # SRH info sources — "Never received such information"
         'q8_4': ['0'],     # stress events — "None of the above"
         'q9_6': ['10'],    # Wellness Centre concerns — "No concerns"

@@ -62,6 +62,30 @@ class Agg:
 _GRID_SKIP = ('', None, '8', '97', '98', '99')
 
 
+def _unmet_legal(raw):
+    """(unmet, usable) for Q2.21 "needed legal help but did not seek it — why?".
+
+    '00' ("No such need arose" / "Did not need such assistance") is exclusive: it
+    cannot be true alongside a reason for not seeking help. The rule used to be
+    "'00' not in the answer", which silently sided with the 00 whenever both were
+    ticked — 29 of 319 FSW named a barrier AND ticked 00, and every one of them was
+    published as having no unmet need, holding the FSW indicator at 40 where the
+    barriers say 69.
+
+    A contradiction is not a value to guess: those records leave the DENOMINATOR
+    and are flagged for review instead (MUTUALLY_EXCLUSIVE_MULTISELECT). The FSW
+    form now carries the same exclusive constraint Hijra always had, so new
+    submissions cannot contain one.
+    """
+    v = _s(raw, 'q2_21')
+    if not v:
+        return False, False
+    parts = v.split()
+    named_barrier = any(p != '00' for p in parts)
+    contradictory = '00' in parts and named_barrier
+    return named_barrier, not contradictory
+
+
 def _grid_any(raw, fields, yes='1', skip=_GRID_SKIP):
     """(any_yes, answered_any) over a Yes/No grid."""
     hit = seen = False
@@ -173,8 +197,7 @@ def compute_srhr(responses):
                 v = _s(raw, 'q2_12')
                 P('rights_aware').add(bool(v) and '98' not in (v or ''), bool(v))
                 P('legal_got').add(_s(raw, 'q2_19') == '1', _s(raw, 'q2_19') in ('1', '2'))
-                v = _s(raw, 'q2_21')
-                P('legal_unmet').add(bool(v) and '00' not in v.split(), bool(v))
+                P('legal_unmet').add(*_unmet_legal(raw))
                 # HIV-knowledge items differ by form: the Hijra Q3.1–3.7 block is
                 # all HIV, but the FSW form shifts — its Q3.1–3.3 are contraception
                 # / condom-access, and only Q3.4–3.7 are HIV. Score the real HIV
@@ -246,8 +269,7 @@ def compute_srhr(responses):
                 any_aware = any(v == '1' for v in aware_vals)
                 P('rights_aware').add(any_aware, seen_aw)
                 P('legal_got').add(_s(raw, 'q2_19') == '1', _s(raw, 'q2_19') in ('1', '2'))
-                v = _s(raw, 'q2_21')
-                P('legal_unmet').add(bool(v) and '00' not in v.split(), bool(v))
+                P('legal_unmet').add(*_unmet_legal(raw))
                 # HIV-knowledge items differ by form: the Hijra Q3.1–3.7 block is
                 # all HIV, but the FSW form shifts — its Q3.1–3.3 are contraception
                 # / condom-access, and only Q3.4–3.7 are HIV. Score the real HIV

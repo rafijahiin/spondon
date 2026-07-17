@@ -115,3 +115,26 @@ class PhantomZeroTest(TestCase):
 
     def test_fsw_is_unbranched(self):
         self.assertEqual(resolve_income('fsw', {'b108': 25000}), (25000, None))
+
+
+class UnmetLegalNeedTest(TestCase):
+    """Q2.21 '00' ("No such need arose") is exclusive: it cannot be true alongside
+    a reason for not seeking help. The indicator used to test "'00' not in the
+    answer", which silently sided with the 00 — 29 of 319 FSW named a barrier AND
+    ticked 00 and were all published as having no unmet need (40 vs 69)."""
+
+    def test_contradiction_leaves_the_denominator_rather_than_being_guessed(self):
+        from .srhr import _unmet_legal
+        # named a barrier AND said no need arose -> ambiguous, not a value to guess
+        self.assertEqual(_unmet_legal({'q2_21': '00 02'}), (True, False))
+
+    def test_clean_answers_score_normally(self):
+        from .srhr import _unmet_legal
+        self.assertEqual(_unmet_legal({'q2_21': '00'}), (False, True))      # no need
+        self.assertEqual(_unmet_legal({'q2_21': '02 05'}), (True, True))    # unmet
+        self.assertEqual(_unmet_legal({'q2_21': ''}), (False, False))       # unanswered
+
+    def test_fsw_q2_21_is_now_guarded_like_hijra_always_was(self):
+        from .anomaly import EXCLUSIVE_CHOICE_CODES
+        self.assertEqual(EXCLUSIVE_CHOICE_CODES['fsw'].get('q2_21'), ['00'],
+                         'the same question is enforced to different standards per form')
