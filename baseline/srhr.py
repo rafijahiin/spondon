@@ -104,6 +104,9 @@ FSW_GBV = [f'q7_1_{c}' for c in ('i', 'ii', 'iii', 'iv', 'v', 'vi', 'vii',
 FSW_PHYS = [f'q7_1_{c}' for c in ('i', 'ii', 'iii')]
 FSW_PSY = [f'q7_1_{c}' for c in ('iv', 'v')]
 FSW_SEX = [f'q7_1_{c}' for c in ('vi', 'vii', 'ix')]
+# Q7.2 = technology-facilitated violence. Q7.18 ("did you seek help") is asked
+# about Q7.1 OR Q7.2, so the help-seeking denominator spans both batteries.
+FSW_TFV = [f'q7_2_{c}' for c in ('a', 'b', 'c', 'd', 'e')]
 
 # Direction of each indicator: 'bad' = higher is a worse outcome (coloured as a
 # concern), 'neutral' = descriptive (no value judgement), else 'good'.
@@ -284,8 +287,17 @@ def compute_srhr(responses):
                 P('gbv_sex').add(h, s2)
                 h, s2 = _grid_any(raw, [f + '_ever' for f in FSW_PSY])
                 P('gbv_emot').add(h, s2)
+                # Q7.18 asks "did you seek help" about the most serious incident IN
+                # THE PAST 12 MONTHS. Its condition lived only in the label text —
+                # the deployed form carried relevant=None (now gated), so all 303
+                # FSW were asked it, including women reporting no incident at all.
+                # Counting every answer put non-victims in the denominator of
+                # "Sought help after GBV", deflating it. The denominator is the
+                # 12-month incident subset, not everyone who happened to answer.
+                inc_12mo, _ = _grid_any(
+                    raw, [f + '_12mo' for f in FSW_GBV + FSW_TFV])
                 v = _s(raw, 'q7_18')
-                P('gbv_help').add(v == '1', v in ('1', '2'))
+                P('gbv_help').add(inc_12mo and v == '1', inc_12mo and v in ('1', '2'))
 
             score, item9 = _phq(raw)
             if score is not None:
