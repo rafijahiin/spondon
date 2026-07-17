@@ -78,7 +78,6 @@ const RULE_LABEL: Record<string, string> = {
   SEX_WORK_START_AFTER_CURRENT_AGE: 'Work started after current age',
   INTERVIEW_TOO_SHORT: 'Interview under 40 minutes',
   END_BEFORE_START: 'End time before start time',
-  OTHER_SELECTED_WITHOUT_SPECIFY: "'Other' without specify text",
   LIKELY_MISSING_ZERO_IN_INCOME: 'Income under BDT 100 for a month',
   LIKELY_MISSING_ZERO_IN_EXPENSE: 'Expense under BDT 100 for a month',
   CHILDREN_WITH_RESPONDENT_EXCEED_TOTAL: 'Child counts contradict',

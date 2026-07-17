@@ -584,26 +584,17 @@ def _multi_select_rules(field_map: FieldMap, exclusive_options=None):
                         **ctx,
                     )
 
-            other_columns = [col for col in selected if _is_other_choice(col.rsplit("/", 1)[-1])]
-            if other_columns:
-                possible_specify = [
-                    header
-                    for header in field_map.headers
-                    if header != parent
-                    and normalized_text(header).startswith(normalized_text(parent))
-                    and "specify" in normalized_text(header)
-                    and "/" not in header
-                ]
-                if possible_specify and not any(clean_text(record.get(h)) for h in possible_specify):
-                    yield Anomaly(
-                        "OTHER_SELECTED_WITHOUT_SPECIFY",
-                        Severity.MEDIUM,
-                        "'Other' is selected but the specify field is blank.",
-                        fields=tuple(other_columns + possible_specify),
-                        action="Verify and complete the text if available.",
-                        category="select_multiple",
-                        **ctx,
-                    )
+        # NB: OTHER_SELECTED_WITHOUT_SPECIFY was REMOVED — it was structurally
+        # dead, not merely quiet. It resolved the specify field by looking for a
+        # header starting with the question's LABEL, but only select_multiple CHOICE
+        # columns are label-keyed; every other field keeps its xform name, and the
+        # convention is `<field>_other`, which contains no "specify" substring. Its
+        # lookup returned nothing for 0 of 30 FSW and 0 of 34 Hijra Other-bearing
+        # groups, so it had never produced a flag on 721 interviews while the console
+        # listed it as coverage. Rewiring it would buy nothing either: every Other
+        # choice on both forms has a companion text field that is required AND
+        # relevant-gated on that exact choice, so Enketo already blocks a blank
+        # specify at entry. Do NOT restore prefix-matching heuristics.
 
         # NB: the Q9.5 "more than five services" rule was RETIRED. The deployed
         # form had no count-selected(.) <= 5 constraint, so respondents could pick
