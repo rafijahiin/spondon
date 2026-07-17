@@ -11,6 +11,7 @@ from collections import Counter, defaultdict
 from submissions.flatten import flatten_group_keys
 
 from .codes import is_non_answer
+from .income import resolve_income
 from .populations import resolve_population
 from .schema import value_label
 
@@ -122,19 +123,20 @@ def compute_insights(responses):
         if v_rel is not None:
             religion[pop][value_label(pop, f_rel, v_rel)] += 1
 
-        # A refusal ("99 = Prefer not to say" on B108) is a CODE, not taka — banding
-        # it counted people who declined as earning under 5k. See baseline/codes.py.
-        def _band_income(fields, bucket):
-            f, v = _first(raw, fields)
-            n = _to_int(v)
-            if n is None or n < 0 or is_non_answer(pop, f, v):
-                return
-            b = _band(n, INCOME_BANDS)
+        # Which income question applies depends on the FORM's branch, not on which
+        # field happens to hold a value — see baseline/income.py. A refusal
+        # ("99 = Prefer not to say" on B108) is a CODE, not taka: banding it counted
+        # people who declined as earning under 5k. See baseline/codes.py.
+        personal, household = resolve_income(pop, raw)
+        for value, bucket, field in ((personal, income_band, _INCOME.get(pop, [''])[0]),
+                                     (household, hh_income_band, None)):
+            if value is None or value < 0:
+                continue
+            if field and is_non_answer(pop, field, value):
+                continue
+            b = _band(value, INCOME_BANDS)
             if b:
                 bucket[pop][b] += 1
-
-        _band_income(_INCOME.get(pop, []), income_band)
-        _band_income(_HH_INCOME.get(pop, []), hh_income_band)
 
         f_nid, v_nid = _first(raw, _NID.get(pop, []))
         if v_nid is not None:

@@ -12,6 +12,7 @@ without the chart saying so.
 """
 from django.test import TestCase
 
+from .income import resolve_income
 from .insights import compute_insights
 from .srhr import compute_srhr
 
@@ -82,3 +83,35 @@ class HijraIncomeBranchTest(TestCase):
         self.assertEqual(refs['B106']['n'], 1)
         self.assertEqual(refs['B107']['value'], 20000)
         self.assertEqual(refs['B107']['n'], 1)
+
+
+class PhantomZeroTest(TestCase):
+    """B107_total is a `calculate` with NO relevance gate, and its expression wraps
+    every source in if(x!='', x, 0). Kobo therefore submits b107_total = 0 for a
+    dera resident who is never shown the B107 block. Banding on "a value is
+    present" reported 49 of them as households earning under 5,000 taka."""
+
+    def test_dera_resident_is_not_a_zero_income_household(self):
+        raw = {'b101_live_with': '2', 'b106_personal_income': 10500, 'b107_total': 0}
+        personal, household = resolve_income('hijra', raw)
+        self.assertEqual(personal, 10500)
+        self.assertIsNone(household, 'the dera branch never answers B107')
+
+    def test_dera_zero_is_kept_out_of_the_published_band(self):
+        rows = [_Resp(_dera(**{'grp_b1/b107_total': 0}))]
+        self.assertEqual(_bands(rows, 'hh_income_band').get('<5k', 0), 0,
+                         'a dera resident was banded as a household under 5k')
+        self.assertEqual(compute_insights(rows)['income_covered']['hijra']['hh_n'], 0)
+
+    def test_a_genuine_zero_household_is_kept(self):
+        # The B107 sources are required on this branch, so all-zeros is an answer.
+        raw = {'b101_live_with': '1', 'b107_total': 0}
+        personal, household = resolve_income('hijra', raw)
+        self.assertIsNone(personal)
+        self.assertEqual(household, 0)
+
+    def test_unanswered_branch_yields_nothing(self):
+        self.assertEqual(resolve_income('hijra', {'b107_total': 0}), (None, None))
+
+    def test_fsw_is_unbranched(self):
+        self.assertEqual(resolve_income('fsw', {'b108': 25000}), (25000, None))

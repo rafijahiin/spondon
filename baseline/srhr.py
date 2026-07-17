@@ -17,6 +17,7 @@ Conventions
 """
 from submissions.flatten import flatten_group_keys
 
+from .income import resolve_income
 from .codes import is_non_answer
 from .populations import resolve_population
 
@@ -154,12 +155,15 @@ def compute_srhr(responses):
                 # the dera's shared expenses are deducted, which the form itself does
                 # not call income — and B104 is gated to the dera branch, so a figure
                 # labelled "monthly income" for Hijra was 42 of 370 respondents.
-                inc = _int(raw, 'b106_personal_income')
-                if inc:
-                    incomes.append(inc)
-                hh = _int(raw, 'b107_total')
-                if hh:
-                    hh_incomes.append(hh)
+                # Resolved from the B101 branch, not from "which field has a value":
+                # B107's calculate runs for everyone and sums blanks to 0, so a dera
+                # resident who is never shown the B107 block still submits 0 — that
+                # is "not asked", not "earned nothing". See baseline/income.py.
+                personal, household = resolve_income('hijra', raw)
+                if personal is not None:
+                    incomes.append(personal)
+                if household is not None:
+                    hh_incomes.append(household)
                 hit, seen = _grid_any(raw, [f'q2_1_{c}' for c in 'abcdefghijklmno'])
                 P('discr_any').add(hit, seen)
                 P('discr_police').add(_s(raw, 'q2_1_k') == '1', _s(raw, 'q2_1_k') in ('1', '2'))
