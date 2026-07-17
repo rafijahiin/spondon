@@ -94,13 +94,24 @@ def _require_all(survey):
     return out
 
 
-def _enforce_exclusive_choices(survey, population):
+def _enforce_exclusive_choices(survey, population, choices):
     """Stop 'No concerns' being ticked alongside two concerns, in the FORM.
 
     Enketo happily accepts an exclusive option together with the very options it
     excludes, so the contradiction was only caught afterwards by the anomaly
     console — 33 FSW interviews on Q9.6 alone, each needing a manual verdict for
     a mis-tap the form should never have accepted.
+
+    The constraint states exactly what the ENGINE states (fsw_rules
+    _multi_select_rules): an exclusive option may not be combined with a
+    NON-exclusive one. It used to say "exclusive and count-selected > 1", which is
+    the same thing only while a question has ONE exclusive code. Hijra q2_13 and
+    q2_15 carry two negatives each ("Don't know anything about this" AND "No such
+    policy exists"), and anomaly.py's map documents that hedging between the two is
+    deliberately NOT a conflict — yet the form banned it. q2_15 has three choices,
+    two of them exclusive, so every combination was rejected and a select_multiple
+    had silently become a select_one. 9 of 370 Hijra had already answered 98+2 and
+    2 had answered 98+3: real answers the form would have started refusing.
 
     The codes come from baseline.anomaly.EXCLUSIVE_CHOICE_CODES, the same map the
     detection rule reads, so the form and the rule cannot drift apart. A question
@@ -116,8 +127,16 @@ def _enforce_exclusive_choices(survey, population):
         codes = codes_by_field.get(name)
         if codes and (row[0] or '').startswith('select_multiple'):
             seen.add(name)
+            listname = (row[0] or '').split()[-1]
+            all_codes = [str(c[1]) for c in choices if c[0] == listname]
+            others = [c for c in all_codes if c not in codes]
+            if not others:
+                raise ValueError(
+                    f'{population}/{name}: every choice is configured exclusive — '
+                    f'the question could never be answered')
             picked = ' or '.join(f"selected(.,'{c}')" for c in codes)
-            rule = f'not(({picked}) and count-selected(.) > 1)'
+            rest = ' or '.join(f"selected(.,'{c}')" for c in others)
+            rule = f'not(({picked}) and ({rest}))'
             row[7] = f'({row[7]}) and ({rule})' if row[7] else rule
             msg = ('This answer cannot be combined with any other option. / '
                    'এই উত্তরটি অন্য কোনো অপশনের সঙ্গে একসাথে নির্বাচন করা যাবে না।')
@@ -1163,7 +1182,7 @@ class Command(BaseCommand):
             # Guarantee an inline text box after every standalone 'Other' option
             # (systemic fix), THEN mark inputs required.
             survey  = _require_all(_add_other_specify(f['survey'](), choices))
-            survey  = _enforce_exclusive_choices(survey, population)
+            survey  = _enforce_exclusive_choices(survey, population, choices)
             wb = _wb(f['id'], f['title'], survey, choices)
             all_paths[population] = _field_paths(survey)
             path = os.path.join(out, f['file'])
