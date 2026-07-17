@@ -113,6 +113,20 @@ const describeFields = (fields?: string[]): { question: string; choices: string[
   return { question: questions[0], choices }
 }
 
+/* What the engine's scalar `observed` actually IS, per rule. It was captioned
+   "Recorded answer" for every rule, so INTERVIEW_TOO_SHORT — the largest rule on
+   the board — read "Recorded answer: 23.4", presenting a computed duration as if
+   the respondent had said "23.4". The unit belongs beside the number, not two
+   paragraphs away in the message text. */
+const OBSERVED_CAPTION: Record<string, (v: string) => string> = {
+  INTERVIEW_TOO_SHORT: (v) => `Interview length: ${v} minutes`,
+  END_BEFORE_START: (v) => `Interview length: ${v} minutes`,
+  AGE_OUT_OF_RANGE: (v) => `Age recorded: ${v}`,
+  LIKELY_MISSING_ZERO_IN_INCOME: (v) => `Amount recorded: ৳${v}`,
+  LIKELY_MISSING_ZERO_IN_EXPENSE: (v) => `Amount recorded: ৳${v}`,
+  NEGATIVE_CHILD_COUNT: (v) => `Number recorded: ${v}`,
+}
+
 /* Anything the engine reports as a key/value shape — {current_age, start_age,
    duration_answer} on the work-history rule, {site, distance_km} on GPS — is the
    evidence itself. Show every value as a labelled row: dropping them left the
@@ -404,8 +418,10 @@ export function AnomalyQueue({ report, severity, onSeverity, onReviewSaved }: {
                   )}
                   {!sentence && scalar && (
                     <div style={{ fontSize: 14, color: 'var(--ink)' }}>
-                      <span style={{ color: 'var(--muted)' }}>Recorded answer: </span>
-                      <strong>{scalar}</strong>
+                      {OBSERVED_CAPTION[active.rule_id]
+                        ? <strong>{OBSERVED_CAPTION[active.rule_id](scalar)}</strong>
+                        : <><span style={{ color: 'var(--muted)' }}>Recorded answer: </span>
+                          <strong>{scalar}</strong></>}
                     </div>
                   )}
                   {!sentence && rows && (
