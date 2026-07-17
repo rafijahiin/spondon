@@ -276,13 +276,42 @@ def _submissions(population):
 
 
 def _current_version(records):
-    """The live form version = the most common __version__ among records that
-    carry the in-form end stamp (i.e. were taken on the current form)."""
-    from collections import Counter
-    versions = Counter(
-        r.get('__version__') for r in records
-        if r.get('interview_end_actual') and r.get('__version__'))
-    return versions.most_common(1)[0][0] if versions else None
+    """The live form version = the one INTRODUCED most recently, i.e. whose first
+    submission is the latest.
+
+    It used to be a majority vote, which inverts the rule the moment a new form is
+    deployed: the newest version starts with the fewest submissions, so the version
+    everyone should be leaving wins the vote and the enumerators who already updated
+    get flagged as 'old form version'. Live proof on 2026-07-17: two Hijra records
+    were already on the deployed form and both were flagged, while 283 on an older
+    form were treated as current. Telling the field team to re-download makes this
+    worse every day, because compliance looks like the anomaly.
+
+    Deploys are monotonic — a version cannot be introduced before the one it
+    replaced — so the newest first-seen submission identifies the live form without
+    an outbound call to Kobo. A straggler who submits on an old form today does not
+    move that version's FIRST-seen timestamp, so it cannot reclaim 'current'. When
+    nobody has submitted on a newly deployed form yet, the previous version stays
+    current and nobody is flagged — conservative, and it self-corrects on the first
+    submission from an updated device.
+    """
+    first_seen = {}
+    counts = {}
+    for r in records:
+        v = r.get('__version__')
+        if not v:
+            continue
+        counts[v] = counts.get(v, 0) + 1
+        t = str(r.get('_submission_time') or '')
+        if t and (v not in first_seen or t < first_seen[v]):
+            first_seen[v] = t
+    if not counts:
+        return None
+    dated = [v for v in counts if v in first_seen]
+    if not dated:
+        # No usable timestamps — fall back to the majority rather than nothing.
+        return max(counts, key=lambda v: counts[v])
+    return max(dated, key=lambda v: (first_seen[v], counts[v]))
 
 
 def build_report(population='fsw', *, force=False):
