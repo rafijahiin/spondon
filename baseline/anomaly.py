@@ -25,6 +25,7 @@ from django.core.cache import cache
 from submissions.flatten import flatten_group_keys
 from submissions.models import FormType, KoboSubmission
 
+from .codes import is_non_answer as codes_is_non_answer
 from .collectors import collector_name
 from .fsw_rules import FieldMap, build_fsw_engine
 from .populations import resolve_population
@@ -326,6 +327,19 @@ def _current_version(records):
     return max(dated, key=lambda v: (first_seen[v], counts[v]))
 
 
+def non_answer_policy(population):
+    """The engine's `is_non_answer(field, value)` hook, bound to this population.
+
+    baseline/codes.py is the single source of truth for which numeric questions
+    declare a code, and it is guarded against the live form labels by
+    test_non_answer_codes_match_the_live_forms. The engine used to keep a private,
+    field-blind REFUSAL_CODES = {98, 99} that contradicted it.
+    """
+    def is_non_answer(field, value):
+        return bool(field) and codes_is_non_answer(population, field, value)
+    return is_non_answer
+
+
 def dead_pins(field_map, headers):
     """Pinned roles whose column does not exist on the shaped record.
 
@@ -367,6 +381,7 @@ def build_report(population='fsw', *, force=False):
         field_map=field_map,
         exclusive_options=_exclusive_label_map(schema, population),
         short_minutes=SHORT_MINUTES.get(population, 40),
+        is_non_answer=non_answer_policy(population),
     )
     report = engine.scan(records)
     report['population'] = population

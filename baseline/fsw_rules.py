@@ -188,15 +188,30 @@ def _years_lower_bound(value: Any) -> int | None:
     return mapping.get(text)
 
 
-# The questionnaire's standard non-answer codes. B108 spells it out in the question
-# text itself — "(99 = Prefer not to say)" — so 99 in an amount field is a REFUSAL,
-# not taka. Treating it as money flagged people who simply declined to answer.
-REFUSAL_CODES = {98, 99}
+# Whether a value is a documented non-answer code is a property of the QUESTION,
+# not of the number. The engine used to hold its own field-blind table
+# (REFUSAL_CODES = {98, 99}) which contradicted baseline/codes.py — the project's
+# single source of truth, guarded against the live form labels by
+# test_non_answer_codes_match_the_live_forms:
+#
+#   * B108 declares 99 only, yet the engine also swallowed 98 — an income of 98
+#     (i.e. 9,800 typed without its zeros) could never be flagged.
+#   * The age fields declare NO code and their constraint permits 0–120, yet the
+#     rules hard-coded `age != 99`, exempting a 99-year-old from AGE_OUT_OF_RANGE.
+#   * expenses_total is a derived SUM — codes cannot survive addition, so it has no
+#     code space at all, yet 98/99 were dropped from it unconditionally.
+#
+# codes.py states the rule this broke: "Do NOT invent codes for fields that don't
+# declare them: a real answer of 98 would then vanish silently." The policy is
+# injected rather than imported so the engine stays decoupled from the adapter.
+def _no_codes(field, value) -> bool:
+    return False
 
 
-def _is_amount(value) -> bool:
-    """True when a money field holds an actual amount rather than a non-answer code."""
-    return value is not None and int(value) not in REFUSAL_CODES
+def _is_amount(value, field=None, is_non_answer=_no_codes) -> bool:
+    """True when a numeric field holds a real quantity rather than a documented
+    non-answer code for THAT question."""
+    return value is not None and not is_non_answer(field, value)
 
 
 def _is_other_choice(label: str) -> bool:
@@ -217,7 +232,7 @@ def _group_choice_columns(headers: Sequence[str]) -> dict[str, list[str]]:
 
 
 def _simple_record_rules(field_map: FieldMap, current_version: str | None,
-                         short_minutes: int = 40):
+                         short_minutes: int = 40, is_non_answer=_no_codes):
     def rules(record: Mapping[str, Any], row: int) -> Iterable[Anomaly]:
         ctx = _ctx(record, row, field_map)
 
@@ -309,19 +324,22 @@ def _simple_record_rules(field_map: FieldMap, current_version: str | None,
         age1 = as_int(record.get(field_map.age_screening)) if field_map.age_screening else None
         age2 = as_int(record.get(field_map.age_demographic)) if field_map.age_demographic else None
         for key, age in ((field_map.age_screening, age1), (field_map.age_demographic, age2)):
-            if age is not None and age != 99 and not (18 <= age <= 80):
+            if age is not None and not is_non_answer(key, age) and not (18 <= age <= 80):
                 yield Anomaly(
                     "AGE_OUT_OF_RANGE",
                     Severity.HIGH,
                     "Respondent age falls outside the expected eligible range.",
                     fields=(key,) if key else (),
                     observed=age,
-                    expected="18–80, or the designated refusal code",
+                    expected="18–80",
                     action="Verify against the source form or respondent.",
                     category="demographics",
                     **ctx,
                 )
-        if age1 is not None and age2 is not None and age1 != 99 and age2 != 99 and age1 != age2:
+        if (age1 is not None and age2 is not None
+                and not is_non_answer(field_map.age_screening, age1)
+                and not is_non_answer(field_map.age_demographic, age2)
+                and age1 != age2):
             yield Anomaly(
                 "AGE_MISMATCH",
                 Severity.HIGH,
@@ -334,7 +352,9 @@ def _simple_record_rules(field_map: FieldMap, current_version: str | None,
                 **ctx,
             )
 
-        current_age = age2 if age2 not in (None, 99) else age1
+        current_age = (age2 if age2 is not None
+                       and not is_non_answer(field_map.age_demographic, age2)
+                       else age1)
 
         # Children
         total = as_int(record.get(field_map.children_total)) if field_map.children_total else None
@@ -415,7 +435,10 @@ def _simple_record_rules(field_map: FieldMap, current_version: str | None,
         years_value = record.get(field_map.sex_work_years) if field_map.sex_work_years else None
         years_min = _years_lower_bound(years_value)
 
-        if current_age is not None and start_age is not None and start_age != 99:
+        # B104 does declare 99, so the old literal happened to be right — but only
+        # by luck. Ask the questionnaire, like every other numeric check now does.
+        if (current_age is not None and start_age is not None
+                and not is_non_answer(field_map.sex_work_start_age, start_age)):
             if start_age > current_age:
                 yield Anomaly(
                     "SEX_WORK_START_AFTER_CURRENT_AGE",
@@ -463,7 +486,7 @@ def _simple_record_rules(field_map: FieldMap, current_version: str | None,
         # about the cause as if both were the finding. The reviewer decides the
         # cause; the rule's job is to say the amount does not fit the answers around
         # it. B108 declares only one code (99), so 8 is not a code — see codes.py.
-        if _is_amount(income) and 0 < income < 100:
+        if _is_amount(income, field_map.sex_work_income, is_non_answer) and 0 < income < 100:
             yield Anomaly(
                 "LIKELY_MISSING_ZERO_IN_INCOME",
                 Severity.HIGH,
@@ -477,7 +500,7 @@ def _simple_record_rules(field_map: FieldMap, current_version: str | None,
                 category="income",
                 **ctx,
             )
-        if _is_amount(expenses) and 0 < expenses < 100:
+        if _is_amount(expenses, field_map.expenses_total, is_non_answer) and 0 < expenses < 100:
             yield Anomaly(
                 "LIKELY_MISSING_ZERO_IN_EXPENSE",
                 Severity.HIGH,
@@ -787,6 +810,7 @@ def build_fsw_engine(
     field_map: FieldMap | None = None,
     exclusive_options: Mapping[str, set] | None = None,
     short_minutes: int = 40,
+    is_non_answer=_no_codes,
 ) -> tuple[AnomalyEngine, FieldMap]:
     # Auto-resolve from headers, or accept an explicit map (recommended for
     # production: locks resolved keys so a wording change can't silently remap a
@@ -799,7 +823,8 @@ def build_fsw_engine(
         record_id_key=field_map.record_id,
         enumerator_key=field_map.enumerator,
     )
-    engine.add_record_rule(_simple_record_rules(field_map, current_version, short_minutes))
+    engine.add_record_rule(_simple_record_rules(field_map, current_version, short_minutes,
+                                               is_non_answer))
     engine.add_record_rule(_multi_select_rules(field_map, exclusive_options))
     engine.add_dataset_rule(_duplicate_id_rule(field_map))
     # _burst_rule (INTERVIEWS_STARTED_TOO_CLOSE) is NOT registered: enumerators open

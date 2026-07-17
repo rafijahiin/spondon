@@ -56,20 +56,29 @@ class _Sub:
         self.longitude = None
 
 
-def _scan(records, population='fsw'):
+def _scan(records, population='fsw', current_version='vCURRENT'):
     """Mirror baseline.anomaly.build_report's engine wiring exactly, so a test can
-    never pass on settings the live report doesn't use."""
+    never pass on settings the live report doesn't use.
+
+    Every argument build_report passes must be passed here too. When
+    `is_non_answer` was added to the engine this harness kept omitting it, so the
+    refusal-code tests silently ran against the engine's default (no codes at all)
+    — green tests, wrong wiring. `current_version` stays injectable because the
+    fixtures pin `__version__` deliberately; the derivation itself is covered by
+    tests_version.py.
+    """
     from .anomaly import (FIELD_MAP_BUILDERS, SHORT_MINUTES, _decode_fields,
-                          _exclusive_label_map)
+                          _exclusive_label_map, non_answer_policy)
     schema = load_schema().get(population, {})
     field_map = FIELD_MAP_BUILDERS[population](schema)
     decode = _decode_fields(field_map)
     shaped = [_shape_record(_Sub(r), schema, population, decode) for r in records]
     headers = sorted({k for r in shaped for k in r})
-    engine, _ = build_fsw_engine(headers, current_version='vCURRENT',
+    engine, _ = build_fsw_engine(headers, current_version=current_version,
                                  field_map=field_map,
                                  exclusive_options=_exclusive_label_map(schema, population),
-                                 short_minutes=SHORT_MINUTES.get(population, 40))
+                                 short_minutes=SHORT_MINUTES.get(population, 40),
+                                 is_non_answer=non_answer_policy(population))
     return engine.scan(shaped), shaped
 
 
@@ -579,9 +588,22 @@ class RefusalCodeTest(TestCase):
         rec = _kobo(**{'grp_b1/b108': 99})
         self.assertNotIn('LIKELY_MISSING_ZERO_IN_INCOME', self._ids([rec]))
 
-    def test_dont_know_code_98_is_not_missing_zeros(self):
+    def test_98_is_NOT_a_code_on_b108_and_is_flagged(self):
+        """This test used to assert the opposite, pinning a code the questionnaire
+        never declares. B108's label documents 99 and only 99; the engine's private
+        REFUSAL_CODES = {98, 99} invented the 98, so an income of 98 — i.e. 9,800
+        typed without its zeros — could never be flagged. tests_codes.py has always
+        asserted `assertFalse(is_non_answer('fsw', 'b108', 98))`: the two files
+        pinned contradictory meanings and neither could see the other."""
         rec = _kobo(**{'grp_b1/b108': 98})
-        self.assertNotIn('LIKELY_MISSING_ZERO_IN_INCOME', self._ids([rec]))
+        self.assertIn('LIKELY_MISSING_ZERO_IN_INCOME', self._ids([rec]))
+
+    def test_age_99_is_not_exempt_because_no_age_field_declares_a_code(self):
+        """The age rules hard-coded `age != 99`. No age question declares a refusal
+        code — their constraint permits 0–120 — so a 99-year-old respondent was
+        silently exempt from AGE_OUT_OF_RANGE."""
+        rec = _kobo(**{'grp_scr/s1_age': 99, 'grp_a2/a203': 99})
+        self.assertIn('AGE_OUT_OF_RANGE', self._ids([rec]))
 
     def test_genuinely_low_income_still_flagged(self):
         # Real FSW income runs 2,000-130,000 (median 25,000), so 80 taka/month is
