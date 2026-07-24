@@ -79,6 +79,39 @@ def _partner_programs_counts(partner, month_start, month_end):
     return this_month, pending
 
 
+def _partner_worker_names(partner, since):
+    """Distinct submitting accounts for one partner across the programs models
+    (and, for CIPRB, the surveillance models) in the window. APPROVED only, to
+    match the legacy count's semantics."""
+    from django.apps import apps
+    names = set()
+    triple = {'organisation', 'created_at', 'approval_status'}
+    models = [
+        m for m in apps.get_app_config('programs').get_models()
+        if triple <= {f.name for f in m._meta.get_fields()}
+        and 'submitted_by_kobo_user' in {f.name for f in m._meta.get_fields()}
+    ]
+    if partner == 'CIPRB':
+        for _al, _mn in (('fistula', 'CIPRBFistulaCase'), ('mpdsr', 'MPDSRCase'),
+                         ('mpdsr', 'MPDSRDeathNotification')):
+            try:
+                models.append(apps.get_model(_al, _mn))
+            except Exception:
+                pass
+    for model in models:
+        try:
+            names.update(
+                model.objects.filter(
+                    organisation=partner, approval_status='APPROVED',
+                    created_at__gte=since,
+                ).exclude(submitted_by_kobo_user='')
+                .values_list('submitted_by_kobo_user', flat=True)
+            )
+        except Exception:
+            pass
+    return names
+
+
 def _partner_manager_approved_count(partner):
     """Count records at MANAGER_APPROVED — Bandhu stage-1 (manager) is done but
     the UNFPA stage-2 sign-off is not, so they are STILL not counted by the
@@ -945,11 +978,17 @@ class PartnerKPIsView(APIView):
             # "awaiting UNFPA sign-off" bucket so a manager approval visibly moves
             # work forward instead of appearing to vanish. 0 for single-stage orgs.
             'pending_unfpa': _partner_manager_approved_count(partner),
-            'active_workers': (
-                approved
-                .filter(submitted_at__gte=thirty_days_ago)
-                .exclude(worker_name='')
-                .values('worker_name').distinct().count()
+            # Same fix the main KPIView needed: PHD/Bandhu/CIPRB field data lands
+            # in the programs models, not the legacy KoboSubmission table, so the
+            # legacy-only count showed "0 active workers" on both org pages while
+            # thousands of submissions flowed each month.
+            'active_workers': len(
+                set(
+                    approved
+                    .filter(submitted_at__gte=thirty_days_ago)
+                    .exclude(worker_name='')
+                    .values_list('worker_name', flat=True)
+                ) | _partner_worker_names(partner, thirty_days_ago)
             ),
             'fistula_cases': this_month.filter(form_type=FormType.FISTULA).count(),
             'mpdsr_cases': this_month.filter(form_type=FormType.MPDSR).count(),
