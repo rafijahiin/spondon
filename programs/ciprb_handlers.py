@@ -571,15 +571,33 @@ def _save_notification(payload, lat, lng, slip_variant: str):
         return HttpResponse(
             'Bad Request — district, death_date, mother_name required',
             status=400)
+    # The case serial is the number the programme identifies a case BY, so it
+    # belongs in the identity — it used to sit in `defaults` and be overwritten.
+    # Without it the key was (slip, district, date, mother's name), which merges
+    # two genuinely different deaths whenever they share a mother and a date:
+    #
+    #   Bhola 2026-05-15 'Sadia'   serial 1 = MATERNAL death, serial 3 = STILLBIRTH
+    #   Bhola 2026-06-01 'Suntana' serial 34 = STILLBIRTH,    serial 41 = NEONATAL
+    #
+    # A mother dying and her baby being stillborn are TWO surveillance events and
+    # must both be counted. Merging them dropped one death outright and left the
+    # survivor's death_kind decided by whichever slip arrived last. Two deaths
+    # were missing from the notification counts because of this.
+    #
+    # A blank serial falls back to the Kobo submission id, so a genuine retry
+    # still updates its own row while two different deaths never collide.
+    serial = _s(payload.get('case_serial'))
+    identity = serial or ('kobo:' + str(payload.get('_id') or ''))
+
     obj, created = MPDSRDeathNotification.objects.update_or_create(
         slip_variant=slip_variant,
         district=district, date_of_death=dod, deceased_name=name,
+        case_serial=identity,
         defaults=dict(
             organisation=ORG,
             upazila=_s(payload.get('upazila')),
             union=_s(payload.get('union')),
             village=_s(payload.get('village')),
-            case_serial=_s(payload.get('case_serial')),
             death_kind=_s(payload.get('death_kind')) or MPDSRDeathNotification.KIND_MATERNAL,
             deceased_age=_int(payload.get('mother_age')) or _int(payload.get('deceased_age')),
             place_of_death=_ns_place(payload),
