@@ -156,21 +156,60 @@ def mpdsr_aggregates(request):
             'fdn_md', 'fdn_nd', 'fdn_sb', 'fdr_md', 'fdr_nd', 'fdr_sb',
         )
     )
+    # MPDSRFacilityCount holds the per-facility aggregate counts ingested from
+    # Sayeed's Excel reporting sheet. When that import has not run the table is
+    # empty and .aggregate() returns a dict of Nones — a dict that is still
+    # TRUTHY. The frontend guards with `totals ? excelNumbers : liveCounts`
+    # ("falls back to live-only counts if the import hasn't run"), so an
+    # all-empty dict silently defeated its own fallback and the Notified-vs-
+    # Reviewed panel rendered zeros instead of the real Kobo numbers. Return
+    # None when there is nothing in the table so that fallback actually fires.
     facility_totals = facility_qs.aggregate(
         cdn_md=Sum('cdn_md'), cdn_nd=Sum('cdn_nd'), cdn_sb=Sum('cdn_sb'),
         fdn_md=Sum('fdn_md'), fdn_nd=Sum('fdn_nd'), fdn_sb=Sum('fdn_sb'),
         fdr_md=Sum('fdr_md'), fdr_nd=Sum('fdr_nd'), fdr_sb=Sum('fdr_sb'),
     )
+    if not any(v for v in facility_totals.values()):
+        facility_totals = None
 
     # Notification by level (Animesh: "separated by Community / Facility").
     # CDN = community death notification, FDN = facility death notification.
+    #
+    # Preferred source is the Excel ingest above, because it covers the whole
+    # programme rather than only what has come through Kobo. With that table
+    # empty this panel showed 0 across all six cells while 86 real notification
+    # slips sat in the database — so fall back to the live slips, counted the
+    # same way the `notifications` block does (facility place = facility level,
+    # home / in_transit / blank = community surveillance) and restricted to
+    # APPROVED rows, per the rule that indicators count approved records only.
     def _ft(k):
-        return int(facility_totals.get(k) or 0)
-    notification_by_level = {
-        'md': {'community': _ft('cdn_md'), 'facility': _ft('fdn_md')},
-        'nd': {'community': _ft('cdn_nd'), 'facility': _ft('fdn_nd')},
-        'sb': {'community': _ft('cdn_sb'), 'facility': _ft('fdn_sb')},
-    }
+        return int((facility_totals or {}).get(k) or 0)
+
+    if facility_totals:
+        notification_by_level = {
+            'md': {'community': _ft('cdn_md'), 'facility': _ft('fdn_md')},
+            'nd': {'community': _ft('cdn_nd'), 'facility': _ft('fdn_nd')},
+            'sb': {'community': _ft('cdn_sb'), 'facility': _ft('fdn_sb')},
+        }
+        notification_by_level_source = 'excel'
+    else:
+        _nq = apply_donor(
+            MPDSRDeathNotification.objects.filter(approval_status='APPROVED'))
+        _fac = MPDSRDeathNotification.PLACE_FACILITY
+
+        def _lvl(kind):
+            k = _nq.filter(death_kind=kind)
+            return {
+                'community': k.exclude(place_of_death=_fac).count(),
+                'facility': k.filter(place_of_death=_fac).count(),
+            }
+
+        notification_by_level = {
+            'md': _lvl(MPDSRDeathNotification.KIND_MATERNAL),
+            'nd': _lvl(MPDSRDeathNotification.KIND_NEONATAL),
+            'sb': _lvl(MPDSRDeathNotification.KIND_STILLBIRTH),
+        }
+        notification_by_level_source = 'kobo'
 
     action_plan_summaries = []
     for a in apply_donor(MPDSRActionPlanSummary.objects.all()):
@@ -408,8 +447,16 @@ def mpdsr_aggregates(request):
     return Response({
         'denominators': denominators,
         'facility_counts': facility_counts,
-        'facility_totals': {k: int(v or 0) for k, v in facility_totals.items()},
+        # None (not a dict of zeros) when the Excel ingest has not run — this
+        # coercion is what turned the empty aggregate into the truthy all-zero
+        # dict that defeated the frontend's fallback.
+        'facility_totals': ({k: int(v or 0) for k, v in facility_totals.items()}
+                            if facility_totals else None),
         'notification_by_level': notification_by_level,
+        # 'excel' = Sayeed's programme-wide ingest, 'kobo' = live notification
+        # slips. The dashboard should say which, so a partial figure is never
+        # read as the programme total.
+        'notification_by_level_source': notification_by_level_source,
         'action_plan_summaries': action_plan_summaries,
         'mpdsr_actions': mpdsr_actions,
         'totals': totals,
