@@ -354,8 +354,24 @@ class KPIView(APIView):
         except (NameError, Exception):
             pass
         active_workers = len(worker_set)
+        # CIPRB's live fistula/MPDSR data lands in the surveillance models, not
+        # the legacy KoboSubmission table — the legacy-only count showed both
+        # home tiles at 0 while 139 MPDSR cases and 112 fistula cases existed
+        # (77 of the MPDSR cases created THIS month). Same class as the
+        # active-workers fix directly above.
         fistula_count = this_month_qs.filter(form_type=FormType.FISTULA).count()
         mpdsr_count = this_month_qs.filter(form_type=FormType.MPDSR).count()
+        try:
+            from fistula.ciprb_models import CIPRBFistulaCase
+            from mpdsr.models import MPDSRCase
+            fistula_count += CIPRBFistulaCase.objects.filter(
+                approval_status='APPROVED',
+                created_at__gte=month_start, created_at__lt=month_end).count()
+            mpdsr_count += MPDSRCase.objects.filter(
+                approval_status='APPROVED',
+                created_at__gte=month_start, created_at__lt=month_end).count()
+        except Exception:
+            pass
 
         # GBV cases this month — an outcome metric senior decision-makers
         # track. Sourced from the programs GBVCase model (approved, this

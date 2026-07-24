@@ -59,13 +59,23 @@ def compute_F_Camp(org, period_start, period_end):
 
 
 def compute_Baseline(org, period_start, period_end):
-    """Baseline survey entries during the period."""
-    try:
-        from baseline.models import BaselineSurvey
-    except ImportError:
-        return 0
-    return BaselineSurvey.objects.filter(
-        submission__submitted_at__date__range=(period_start, period_end),
+    """Verified baseline interviews entered during the period.
+
+    This imported `BaselineSurvey` — a model that has not existed since the
+    baseline app was rebuilt around `BaselineResponse` — and the ImportError
+    fallback silently returned 0. The home page's flagship indicator therefore
+    read "Baseline assessment records entered: 0" against 684 verified
+    interviews for the whole collection period. A drifted import must fail
+    loudly, not report zero: the fallback is gone.
+
+    BaselineResponse rows exist only after CIPRB verification, so this counts
+    verified interviews — consistent with the approved-records-only rule.
+    De-duplicated re-submissions are excluded.
+    """
+    from baseline.models import BaselineResponse
+    return BaselineResponse.objects.filter(
+        created_at__date__range=(period_start, period_end),
+        is_duplicate=False,
     ).count()
 
 
