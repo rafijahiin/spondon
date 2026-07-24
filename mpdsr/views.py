@@ -46,12 +46,21 @@ class MPDSRCaseViewSet(OrgFilterMixin, ModelViewSet):
         # for audit, just don't surface in API responses.
         qs = qs.exclude(sub_form_type__in=['f3', 'f6'])
         # Reporting-period filter — CIPRB Dashboard reporting-period toggle
-        # passes ?from=YYYY-MM-DD&to=YYYY-MM-DD. Filters on date_of_death,
-        # which is the canonical event date for an MPDSR case.
+        # passes ?from=YYYY-MM-DD&to=YYYY-MM-DD.
+        #
+        # This filters on WHEN THE CASE ENTERED SURVEILLANCE (created_at), not on
+        # date_of_death. MPDSR reviews deaths retrospectively: fieldwork began in
+        # June 2026 and reviewed deaths back to January, so of 62 approved cases
+        # only 3 had a death date inside the contract window (21 May → 20 Nov) —
+        # the old date_of_death filter blanked every visualization on the CIPRB
+        # dashboard (cause-of-death, reporting rate, review pipeline) while the
+        # data sat in the database. A January death reviewed in July IS
+        # contract-period output; date_of_death remains on each case for the
+        # event-date views.
         if date_from:
-            qs = qs.filter(date_of_death__gte=date_from)
+            qs = qs.filter(created_at__date__gte=date_from)
         if date_to:
-            qs = qs.filter(date_of_death__lte=date_to)
+            qs = qs.filter(created_at__date__lte=date_to)
         return qs
 
     def get_serializer_class(self):

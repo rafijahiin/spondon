@@ -655,7 +655,7 @@
     "perDistrictEmpty": "Per-district reporting rate will populate once denominators are loaded.",
     "causeKicker": "MATERNAL CAUSES OF DEATH",
     "causeTitle": "Maternal cause-of-death distribution",
-    "causeSub": "Two donuts side-by-side, split by death location. Left: community deaths (MPDSR Form 1). Right: facility deaths (MPDSR Form 4). Use the tabs to filter by district group.",
+    "causeSub": "Two charts side-by-side, split by source form. Left: community deaths (MPDSR Form 1). Right: facility deaths (MPDSR Form 4). Use the tabs to filter by district group.",
     "causeCommunityTitle": "Causes of Maternal Deaths",
     "causeCommunitySub": "Community deaths · MPDSR Form 1",
     "causeFacilityTitle": "Distribution of Causes of Maternal Deaths",
