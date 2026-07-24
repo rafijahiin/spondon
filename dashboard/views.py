@@ -361,14 +361,18 @@ class KPIView(APIView):
         # active-workers fix directly above.
         fistula_count = this_month_qs.filter(form_type=FormType.FISTULA).count()
         mpdsr_count = this_month_qs.filter(form_type=FormType.MPDSR).count()
+        # submission__isnull keeps the two sources disjoint: a legacy MPDSR/fistula
+        # submission spawns a derived case row carrying that FK, and it is already
+        # counted above — summing both would count one death twice (the KPIView
+        # test caught exactly that). Webhook-born cases have no legacy submission.
         try:
             from fistula.ciprb_models import CIPRBFistulaCase
             from mpdsr.models import MPDSRCase
             fistula_count += CIPRBFistulaCase.objects.filter(
-                approval_status='APPROVED',
+                approval_status='APPROVED', submission__isnull=True,
                 created_at__gte=month_start, created_at__lt=month_end).count()
             mpdsr_count += MPDSRCase.objects.filter(
-                approval_status='APPROVED',
+                approval_status='APPROVED', submission__isnull=True,
                 created_at__gte=month_start, created_at__lt=month_end).count()
         except Exception:
             pass
