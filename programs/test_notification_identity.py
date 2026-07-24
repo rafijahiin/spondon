@@ -79,6 +79,24 @@ class NotificationIdentityTest(TestCase):
             _slip(_id='800004', case_serial='', village='Retried'), None, None)
         self.assertEqual(MPDSRDeathNotification.objects.count(), 2, 'retry duplicated')
 
+    def test_a_legacy_blank_serial_row_is_updated_not_duplicated(self):
+        """Rows written before case_serial joined the identity still hold ''.
+        Re-delivering that slip must UPDATE the existing row — matching only the
+        new 'kobo:<id>' key created a second row for the same death, which is
+        exactly what happened to the Ayrin and Moriom Begum notifications."""
+        handle_ciprb_notification_slip_01(_slip(_id='800007', case_serial=''), None, None)
+        legacy = MPDSRDeathNotification.objects.get()
+        legacy.case_serial = ''            # simulate the pre-fix row
+        legacy.approval_status = 'APPROVED'
+        legacy.save()
+
+        handle_ciprb_notification_slip_01(_slip(_id='800007', case_serial=''), None, None)
+        self.assertEqual(MPDSRDeathNotification.objects.count(), 1,
+                         'the legacy row was duplicated instead of updated')
+        legacy.refresh_from_db()
+        self.assertEqual(legacy.approval_status, 'APPROVED',
+                         'an update must not reset an approved record to pending')
+
     def test_new_notifications_are_held_for_approval(self):
         handle_ciprb_notification_slip_01(_slip(_id='800006'), None, None)
         self.assertEqual(MPDSRDeathNotification.objects.get().approval_status, 'PENDING')

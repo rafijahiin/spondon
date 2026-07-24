@@ -589,11 +589,24 @@ def _save_notification(payload, lat, lng, slip_variant: str):
     serial = _s(payload.get('case_serial'))
     identity = serial or ('kobo:' + str(payload.get('_id') or ''))
 
-    obj, created = MPDSRDeathNotification.objects.update_or_create(
-        slip_variant=slip_variant,
-        district=district, date_of_death=dod, deceased_name=name,
-        case_serial=identity,
-        defaults=dict(
+    base = dict(slip_variant=slip_variant, district=district,
+                date_of_death=dod, deceased_name=name)
+    qs = MPDSRDeathNotification.objects.filter(**base)
+    if serial:
+        obj = qs.filter(case_serial=serial).first()
+    else:
+        # No serial on the slip. Match our own 'kobo:' key, and ALSO a legacy row
+        # written before case_serial joined the identity — its serial is still ''.
+        # Without that second arm a re-delivery creates a second row for the one
+        # death instead of updating it.
+        obj = qs.filter(Q(case_serial=identity) | Q(case_serial='')).first()
+
+    created = obj is None
+    if created:
+        obj = MPDSRDeathNotification(**base)
+    obj.case_serial = identity
+
+    for _field, _value in dict(
             organisation=ORG,
             upazila=_s(payload.get('upazila')),
             union=_s(payload.get('union')),
@@ -609,13 +622,14 @@ def _save_notification(payload, lat, lng, slip_variant: str):
             raw_payload=payload,
             submitted_by_kobo_user=_s(payload.get('_submitted_by')),
             kobo_submission_id=str(payload.get('_id') or ''),
-        ),
-    )
+    ).items():
+        setattr(obj, _field, _value)
+
     # New notifications are held for CIPRB-manager approval; a re-submission
     # (update) keeps whatever status it already has — no re-pending.
     if created:
         obj.approval_status = 'PENDING'
-        obj.save(update_fields=['approval_status'])
+    obj.save()
     return HttpResponse('OK', status=200)
 
 
