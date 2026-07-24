@@ -18,6 +18,7 @@ import logging
 from datetime import datetime
 
 from django.db import transaction, IntegrityError
+from django.db.models import Q
 from django.http import HttpResponse
 from django.utils.dateparse import parse_date
 
@@ -265,6 +266,28 @@ _REVIEW_STATUS_MAP = {
 }
 
 
+def _mpdsr_hash(sub_form_type, district, serial):
+    """Globally-unique key for a case serial.
+
+    MPDSRCase.case_hash carries a UNIQUE constraint across the whole table, but
+    `case_serial` is a per-form, per-district counter — F-01/Gaibandha and
+    F-02/Sunamganj both have a case 21. The upsert looked the row up scoped to
+    (partner, sub_form_type, district, case_hash) and then stored the BARE
+    serial, so a serial already used by another form or district found no row
+    to update, tried to INSERT, and hit the global constraint:
+
+        IntegrityError: duplicate key value violates unique constraint
+        "mpdsr_mpdsrcase_case_hash_key"  DETAIL: Key (case_hash)=(21) already exists.
+
+    The webhook turned that into a 500, Kobo could not deliver, and the
+    submission stayed in Kobo — 90 of 152 death records never reached the
+    dashboard. Namespacing the stored value the way Social Autopsy already does
+    ('sa:' + slip) makes the key as unique as the constraint demands, and makes
+    it match the scope the lookup uses.
+    """
+    return f'{sub_form_type}:{district}:{serial}'[:30]
+
+
 def _save_mpdsr_case(payload, lat, lng, *, sub_form_type, death_type,
                      death_field_name='cause_of_death'):
     """Common upsert for any MPDSR review form."""
@@ -293,7 +316,12 @@ def _save_mpdsr_case(payload, lat, lng, *, sub_form_type, death_type,
         partner=ORG, sub_form_type=sub_form_type, district=district,
     )
     if serial:
-        qs = qs.filter(case_hash=serial)
+        # Match the namespaced key, and the bare serial too so rows written
+        # before this fix still upsert instead of spawning a duplicate. The
+        # queryset is already scoped to this partner/form/district, so the
+        # legacy alternative cannot pull in another district's case.
+        qs = qs.filter(Q(case_hash=_mpdsr_hash(sub_form_type, district, serial))
+                       | Q(case_hash=serial))
     elif sub_id:
         qs = qs.filter(case_hash='kobo:' + sub_id)
     else:
@@ -383,7 +411,7 @@ def _save_mpdsr_case(payload, lat, lng, *, sub_form_type, death_type,
                     _s(payload.get('death_narrative')),
                 ) if p)
         if serial:
-            case.case_hash = serial[:30]
+            case.case_hash = _mpdsr_hash(sub_form_type, district, serial)
         elif sub_id:
             case.case_hash = ('kobo:' + sub_id)[:30]
 
