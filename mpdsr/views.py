@@ -436,9 +436,10 @@ def mpdsr_aggregates(request):
     }
 
     # (2) Death notifications — slips 01 + 02 (MPDSRDeathNotification).
-    #     By death type (maternal/neonatal/stillbirth), by level (place of
-    #     death = community/home vs facility, with in_transit folded into
-    #     community per the field workflow), and by district.
+    #     By death type (maternal/neonatal/stillbirth), by LEVEL (= which slip
+    #     was filed: Slip 01 = community/CDN, Slip 02 = facility/FDN — NOT place
+    #     of death; see the split below and SEMANTICS.md "CDN/FDN"), and by
+    #     district.
     notif_qs = apply_donor(MPDSRDeathNotification.objects.filter(approval_status='APPROVED'))
     notif_by_kind = dict(_Counter(
         notif_qs.exclude(death_kind='').values_list('death_kind', flat=True)))
