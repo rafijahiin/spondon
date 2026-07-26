@@ -16,6 +16,7 @@ import { useTranslation } from 'react-i18next'
 import { Building2, MapPin, Users, Search, Stethoscope, Send, ArrowRight, Scissors, HeartHandshake } from 'lucide-react'
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts'
 import { api } from '@/api/client'
+import { DataUnavailable } from '@/components/ciprb/DataUnavailable'
 import { SourceChip } from '@/components/ui/SourceChip'
 
 // UNFPA branding — orange across the board.
@@ -75,14 +76,19 @@ export interface ReportingPeriod {
 function useFistulaAggregates(
   period?: ReportingPeriod,
   districts?: readonly string[] | null,
-): AggregateData {
+): { agg: AggregateData; aggError: boolean; retryAgg: () => void } {
   const [data, setData] = useState<AggregateData>(EMPTY)
+  // A rejected fetch used to fall through to EMPTY (all zeros), so a broken
+  // /fistula/aggregates/ looked identical to an empty programme. Track it.
+  const [aggError, setAggError] = useState(false)
+  const [reloadKey, setReloadKey] = useState(0)
   const periodFrom = period?.from
   const periodTo = period?.to
   const districtsKey = districts ? districts.join(',') : ''
 
   useEffect(() => {
     let cancelled = false
+    setAggError(false)
     const params: Record<string, string> = {}
     if (periodFrom) params.from = periodFrom
     if (periodTo) params.to = periodTo
@@ -108,7 +114,13 @@ function useFistulaAggregates(
       }>('/fistula/aggregates/', { params }),
     ]).then(([aggRes]) => {
       if (cancelled) return
-      const agg = aggRes.status === 'fulfilled' ? aggRes.value.data : null
+      if (aggRes.status !== 'fulfilled') {
+        // The endpoint failed — surface it as an error, do NOT overwrite the
+        // panel with a full set of zeros that reads like an empty programme.
+        setAggError(true)
+        return
+      }
+      const agg = aggRes.value.data
       const pipeline = (agg && agg.pipeline) || null
       const reach = (agg && agg.campaign_reach) || null
 
@@ -162,9 +174,9 @@ function useFistulaAggregates(
       })
     })
     return () => { cancelled = true }
-  }, [periodFrom, periodTo, districtsKey])
+  }, [periodFrom, periodTo, districtsKey, reloadKey])
 
-  return data
+  return { agg: data, aggError, retryAgg: () => setReloadKey(k => k + 1) }
 }
 
 // ─── Empty state ─────────────────────────────────────────────────────────────
@@ -344,7 +356,7 @@ export function FistulaVisualizations({
   // Fistula surfaces (campaign reach, patient funnel, diagnosis pie)
   // follow the same window the rest of the page is showing.
   // `districts` narrows to a donor's footprint (GAC / SIDA / All).
-  const agg = useFistulaAggregates(period, districts)
+  const { agg, aggError, retryAgg } = useFistulaAggregates(period, districts)
 
   // Conversion arrows removed after audit — Suspected (campaign outreach)
   // and Identified (clinic walk-ins) are PARALLEL intake cohorts, not a
@@ -373,6 +385,12 @@ export function FistulaVisualizations({
 
   // Anatomical fistula-type total — drives the VVF/RVF breakdown's empty state.
   const genitalTotal = GENITAL_TYPES.reduce((s, t) => s + (agg.genitalType[t.key] || 0), 0)
+
+  // The whole fistula section derives from the aggregate; if it failed to load,
+  // show one explicit unavailable card rather than a full screen of zeros.
+  if (aggError) {
+    return <DataUnavailable label="Fistula surveillance" onRetry={retryAgg} />
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 36 }}>

@@ -22,6 +22,7 @@ import {
 } from 'recharts'
 import { Info, Database, AlertTriangle } from 'lucide-react'
 import { api } from '@/api/client'
+import { DataUnavailable } from '@/components/ciprb/DataUnavailable'
 import { SourceChip } from '@/components/ui/SourceChip'
 import type { MPDSRCase } from '@/types/index'
 import { BarBreakdown, DonutBreakdown, Histogram, StatTile } from './IndicatorCharts'
@@ -138,8 +139,14 @@ interface AggregatesPayload {
 function useAggregates(
   period?: { from: string; to: string },
   districts?: readonly string[] | null,
-): AggregatesPayload | null {
+): { agg: AggregatesPayload | null; aggError: boolean; retryAgg: () => void } {
   const [data, setData] = useState<AggregatesPayload | null>(null)
+  // A failed aggregate fetch used to leave data null, and every panel then
+  // read `agg?.x ?? 0` — so a broken endpoint rendered zeros, and NotifyVsReview
+  // fell back to counting CASES as notifications. Track the error so the panels
+  // show an explicit unavailable state instead of fabricated numbers.
+  const [aggError, setAggError] = useState(false)
+  const [reloadKey, setReloadKey] = useState(0)
   const periodFrom = period?.from
   const periodTo = period?.to
   // Donor filter (GAC / SIDA / All) must reach the aggregate endpoint too,
@@ -150,16 +157,17 @@ function useAggregates(
   const districtsKey = districts ? districts.join(',') : ''
   useEffect(() => {
     let cancelled = false
+    setAggError(false)
     const params: Record<string, string> = {}
     if (periodFrom) params.from = periodFrom
     if (periodTo) params.to = periodTo
     if (districtsKey) params.districts = districtsKey
     api.get<AggregatesPayload>('/mpdsr/aggregates/', { params })
       .then(r => { if (!cancelled) setData(r.data) })
-      .catch(() => { /* leave null; visualisations fall back to live-only */ })
+      .catch(() => { if (!cancelled) setAggError(true) })
     return () => { cancelled = true }
-  }, [periodFrom, periodTo, districtsKey])
-  return data
+  }, [periodFrom, periodTo, districtsKey, reloadKey])
+  return { agg: data, aggError, retryAgg: () => setReloadKey(k => k + 1) }
 }
 
 // UNFPA branding — orange across the board.
@@ -1178,53 +1186,56 @@ export function MPDSRVisualizations({
   // NotifyVsReview and ReportingRatePerDistrict re-derive from `cases`
   // (already period- + donor-filtered by the parent) and the scoped
   // aggregates returned here.
-  const agg = useAggregates(period, districts)
-  // Response Plan tracker is re-enabled for Animesh's Wednesday review.
-  // Data source is still Sayeed's MPDSR Action Plan Excel — 7 of 8 rows
-  // carry placeholder executed = planned/2 values because no Kobo form
-  // exists yet for executed-activity counts. The tracker now shows a
-  // "DATA NOTE" caption banner explaining the state. Once the Kobo
-  // field-form lands, the placeholders will be replaced automatically.
+  const { agg, aggError, retryAgg } = useAggregates(period, districts)
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 36 }}>
-      <div>
-        <NotifyVsReview
-          cases={cases}
-          totals={agg?.facility_totals ?? null}
-          denominators={agg?.denominators ?? []}
-          reviewCounts={agg?.review_counts ?? null}
-          notificationByLevel={agg?.notification_by_level ?? null}
+      {/* CauseBreakdown and ReportingRatePerDistrict derive ONLY from `cases`
+          (already period/donor-filtered by the parent), so they stay correct
+          even when the aggregate endpoint is down. Everything else below is
+          aggregate-driven; if that fetch failed, show one explicit unavailable
+          card rather than a screen of fabricated zeros or a cases-as-notified
+          fallback. */}
+      {aggError ? (
+        <DataUnavailable
+          label="MPDSR notification, review, facility & indicator panels"
+          onRetry={retryAgg}
         />
-      </div>
+      ) : (
+        <>
+          <div>
+            <NotifyVsReview
+              cases={cases}
+              totals={agg?.facility_totals ?? null}
+              denominators={agg?.denominators ?? []}
+              reviewCounts={agg?.review_counts ?? null}
+              notificationByLevel={agg?.notification_by_level ?? null}
+            />
+          </div>
+          {agg?.facility && agg.facility.total > 0 && (
+            <div>
+              <FacilityDeepDive facility={agg.facility} />
+            </div>
+          )}
+          <div>
+            <NeonatalDeaths neonatal={agg?.neonatal ?? null} />
+          </div>
+          <div>
+            <DeathNotifications notifications={agg?.notifications ?? null} />
+          </div>
+          <div>
+            <SocialAutopsy socialAutopsy={agg?.social_autopsy ?? null} />
+          </div>
+          <div>
+            <MPDSRIndicators indicators={agg?.indicators ?? null} />
+          </div>
+        </>
+      )}
       <div>
         <ReportingRatePerDistrict cases={cases} denominators={agg?.denominators ?? []} />
       </div>
       <div>
         <CauseBreakdown cases={cases} donorActive={!!(districts && districts.length)} />
       </div>
-      {agg?.facility && agg.facility.total > 0 && (
-        <div>
-          <FacilityDeepDive facility={agg.facility} />
-        </div>
-      )}
-      {/* Phase 2 gap charts — neonatal deaths, death notifications, social
-          autopsy. Always render (they carry their own empty/zero state) so
-          the dashboard exposes the full set of MPDSR forms feeding the DB. */}
-      <div>
-        <NeonatalDeaths neonatal={agg?.neonatal ?? null} />
-      </div>
-      <div>
-        <DeathNotifications notifications={agg?.notifications ?? null} />
-      </div>
-      <div>
-        <SocialAutopsy socialAutopsy={agg?.social_autopsy ?? null} />
-      </div>
-      <div>
-        <MPDSRIndicators indicators={agg?.indicators ?? null} />
-      </div>
-      {/* The live CIPRB-10 action tracker is now the dashboard's headline
-          surface (ActionPlanTracker, rendered at the top of /ciprb), so it is
-          no longer duplicated inside this MPDSR section. */}
     </div>
   )
 }

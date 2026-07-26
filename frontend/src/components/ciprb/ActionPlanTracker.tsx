@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { AlertTriangle, ListChecks } from 'lucide-react'
 import { api } from '@/api/client'
 import { SourceChip } from '@/components/ui/SourceChip'
+import { DataUnavailable } from '@/components/ciprb/DataUnavailable'
 
 const CIPRB_ORANGE = '#F96000'
 
@@ -103,19 +104,24 @@ function StatusBreakdown({ rows, total }: { rows: StatusRow[]; total: number }) 
 export function ActionPlanTracker({ districts }: { districts?: readonly string[] | null }) {
   const [data, setData] = useState<ActionAggregates | null>(null)
   const [loading, setLoading] = useState(true)
+  // A fetch FAILURE must not read as "no actions yet". Track it separately so
+  // the render shows an explicit unavailable state instead of the empty copy.
+  const [error, setError] = useState(false)
+  const [reloadKey, setReloadKey] = useState(0)
   const districtsKey = districts && districts.length ? districts.join(',') : ''
 
   useEffect(() => {
     let cancelled = false
     setLoading(true)
+    setError(false)
     const params: Record<string, string> = {}
     if (districtsKey) params.districts = districtsKey
     api
       .get<ActionAggregates>('/mpdsr/action-aggregates/', { params })
       .then((res) => { if (!cancelled) { setData(res.data); setLoading(false) } })
-      .catch(() => { if (!cancelled) { setData(null); setLoading(false) } })
+      .catch(() => { if (!cancelled) { setError(true); setLoading(false) } })
     return () => { cancelled = true }
-  }, [districtsKey])
+  }, [districtsKey, reloadKey])
 
   const header = (
     <div style={{ marginBottom: 14, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
@@ -143,6 +149,15 @@ export function ActionPlanTracker({ districts }: { districts?: readonly string[]
         <div className="card" style={{ padding: '30px 22px', textAlign: 'center', fontSize: 13.5, color: 'var(--muted)' }}>
           Loading action plan…
         </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div>
+        {header}
+        <DataUnavailable label="The response-plan tracker" onRetry={() => setReloadKey((k) => k + 1)} />
       </div>
     )
   }

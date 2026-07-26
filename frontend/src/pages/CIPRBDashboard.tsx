@@ -31,6 +31,7 @@ import { ActionPlanTracker } from '@/components/ciprb/ActionPlanTracker'
 import { NearMissPanel } from '@/components/ciprb/NearMissPanel'
 import { FistulaIndicators } from '@/components/ciprb/FistulaIndicators'
 import { MPDSRDistrictMap } from '@/components/ciprb/MPDSRDistrictMap'
+import { DataUnavailable } from '@/components/ciprb/DataUnavailable'
 import type { MPDSRCase, AuditEntry } from '@/types/index'
 
 // UNFPA branding — every CIPRB page uses UNFPA orange. Partner identity
@@ -78,15 +79,20 @@ interface KPIs {
 function useFistulaKPIs(
   period: ReportingPeriodDef,
   districtFilter: readonly string[] | null,
-): { kpis: KPIs; loading: boolean } {
+): { kpis: KPIs; loading: boolean; error: boolean; retry: () => void } {
   const [kpis, setKpis] = useState<KPIs>({ suspected: 0, identified: 0, referred: 0, surgeryDone: 0, rehabilitated: 0, rehabPct: null })
   const [loading, setLoading] = useState(true)
+  // A fetch failure — or a 200 whose body is missing the `pipeline` key — must
+  // not render as an all-zero KPI band that looks like a real empty programme.
+  const [error, setError] = useState(false)
+  const [reloadKey, setReloadKey] = useState(0)
   const periodFrom = period.from
   const periodTo = period.to
   const districtsKey = districtFilter ? districtFilter.join(',') : ''
 
   useEffect(() => {
     let cancelled = false
+    setError(false)
     const params: Record<string, string> = { from: periodFrom, to: periodTo }
     if (districtsKey) params.districts = districtsKey
     // The At-a-glance KPI band reads ONLY the monotonic CIPRBFistulaCase
@@ -97,24 +103,30 @@ function useFistulaKPIs(
     api.get<{ pipeline?: Record<string, number> }>('/fistula/aggregates/', { params })
       .then((aggRes) => {
         if (cancelled) return
-        const pipeline = aggRes.data.pipeline || null
-
-        const suspected     = pipeline ? pipeline.suspected     : 0
-        const identified    = pipeline ? pipeline.diagnosed     : 0
-        const referred      = pipeline ? pipeline.referred      : 0
-        const surgeryDone   = pipeline ? pipeline.repaired      : 0
-        const rehabilitated = pipeline ? pipeline.rehabilitated : 0
+        const pipeline = aggRes.data.pipeline
+        // Absent key = malformed/partial response, NOT an empty programme (an
+        // empty registry still returns pipeline with zero stages). Treat as error.
+        if (pipeline == null) {
+          setError(true)
+          setLoading(false)
+          return
+        }
+        const suspected     = pipeline.suspected     ?? 0
+        const identified    = pipeline.diagnosed     ?? 0
+        const referred      = pipeline.referred      ?? 0
+        const surgeryDone   = pipeline.repaired      ?? 0
+        const rehabilitated = pipeline.rehabilitated ?? 0
         // Rehab % uses the previous stage (repaired) as denominator.
         const rehabPct = surgeryDone > 0 ? (rehabilitated / surgeryDone) * 100 : null
 
         setKpis({ suspected, identified, referred, surgeryDone, rehabilitated, rehabPct })
         setLoading(false)
       })
-      .catch(() => { if (!cancelled) setLoading(false) })
+      .catch(() => { if (!cancelled) { setError(true); setLoading(false) } })
     return () => { cancelled = true }
-  }, [periodFrom, periodTo, districtsKey])
+  }, [periodFrom, periodTo, districtsKey, reloadKey])
 
-  return { kpis, loading }
+  return { kpis, loading, error, retry: () => setReloadKey((k) => k + 1) }
 }
 
 function KPITile({
@@ -644,7 +656,7 @@ export default function CIPRBDashboard() {
   // receive a from/to range.
   const activePeriod = REPORTING_PERIODS.find((p) => p.key === 'contract')!
   const activeDonor = DONOR_FILTERS[donorKey]
-  const { kpis } = useFistulaKPIs(activePeriod, activeDonor.districts)
+  const { kpis, error: kpisError, retry: retryKpis } = useFistulaKPIs(activePeriod, activeDonor.districts)
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 40 }}>
@@ -849,6 +861,9 @@ export default function CIPRBDashboard() {
           </div>
           <SourceChip>CIPRB 1 — Fistula Question Bank</SourceChip>
         </div>
+        {kpisError ? (
+          <DataUnavailable label="The fistula at-a-glance figures" onRetry={retryKpis} />
+        ) : (
         <div style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
@@ -880,6 +895,7 @@ export default function CIPRBDashboard() {
             />
           )}
         </div>
+        )}
       </section>
 
       {/* ───────────────── Fistula visualizations (campaign / funnel / pie) ───────────────── */}
