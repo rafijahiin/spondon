@@ -272,10 +272,15 @@ def mpdsr_aggregates(request):
         'fistula_campaign_visits': apply_donor(FistulaCampaignVisit.objects.all()).count(),
     }
 
-    # Per-sub-form review counts — Animesh's 2026-06-02 spec splits the
-    # single "MD Review Rate" into three: Community MD Review (CDN via
-    # va_md), Facility MD Review (FDR via f4), and Social Autopsy (sa_md).
-    # Denominator for each is MD notified (f1 + f2 rows).
+    # Per-sub-form review counts (f1/f2/f4/f5/sa_md), donor-filtered.
+    #
+    # This block used to fabricate a key: `notified_md = f1 + f2` — the count of
+    # maternal COMMUNITY REVIEWS plus NEONATAL community reviews, labelled "MD
+    # notified". The frontend used it as the denominator of every review tile,
+    # so the panel read "0 of 86 notified" where 86 was neither notifications
+    # nor maternal. Notified counts come from the notification SLIPS
+    # (notification_by_level above); reviews come from the review forms here.
+    # The two must never be derived from each other.
     from django.db.models import Count
     md_donor_qs = apply_donor(mpdsr_qs)
     review_rows = (
@@ -283,8 +288,6 @@ def mpdsr_aggregates(request):
         .annotate(c=Count('id'))
     )
     review_counts = {r['sub_form_type']: r['c'] for r in review_rows}
-    notified_md = review_counts.get('f1', 0) + review_counts.get('f2', 0)
-    review_counts['notified_md'] = notified_md
 
     # ── CIPRB dashboard "major indicators" (11) — per-case breakdowns from
     #    the donor-filtered maternal cohort (Form 01 community + Form 04

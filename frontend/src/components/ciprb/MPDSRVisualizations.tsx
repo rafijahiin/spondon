@@ -206,10 +206,28 @@ function NotifyVsReview({
   const { t } = useTranslation()
   const live = useMemo(() => computeNotifyVsReview(cases), [cases])
 
-  // Prefer facility-level aggregate totals from Sayeed's Excel ingest when
-  // available — gives the real programme-wide numbers, not just live Kobo
-  // submissions. Falls back to live-only counts if the import hasn't run.
-  const d = totals ? {
+  // ONE rule for the whole panel: NOTIFIED comes from the notification slips
+  // (notificationByLevel — Excel ingest when present, live slips otherwise);
+  // REVIEWED comes from the review forms (reviewCounts: f1/f2/f4/f5/sa_md).
+  // The old wiring mixed four sources — the Excel fallback counted REVIEW CASES
+  // as "notified" (the bar chart plotted 63 maternal reviews as notifications),
+  // while the tiles read backend keys that no longer existed and rendered
+  // "0 of 86" where 86 was maternal + NEONATAL reviews mislabelled as MD
+  // notified. computeNotifyVsReview survives only as a last-resort fallback
+  // when the aggregates payload is missing entirely.
+  const lvl = notificationByLevel
+  const rcF1 = reviewCounts?.f1 ?? 0
+  const rcF2 = reviewCounts?.f2 ?? 0
+  const rcF4 = reviewCounts?.f4 ?? 0
+  const rcF5 = reviewCounts?.f5 ?? 0
+  const rcSA = reviewCounts?.sa_md ?? 0
+  const d = lvl ? {
+    notifiedMD: lvl.md.community + lvl.md.facility,
+    notifiedND: lvl.nd.community + lvl.nd.facility,
+    notifiedSB: lvl.sb.community + lvl.sb.facility,
+    reviewedMD: rcF1 + rcF4,
+    reviewedND: rcF2 + rcF5,
+  } : totals ? {
     notifiedMD: totals.fdn_md, reviewedMD: totals.fdr_md,
     notifiedND: totals.fdn_nd, reviewedND: totals.fdr_nd,
     notifiedSB: totals.fdn_sb,
@@ -334,49 +352,63 @@ function NotifyVsReview({
             MD tiles use MD-notified as the denominator; ND tiles use
             ND-notified. SA shares the MD denominator. */}
         {(() => {
-          const baseMD = (reviewCounts?.notified_md ?? 0) > 0
-            ? (reviewCounts!.notified_md as number)
-            : d.notifiedMD
-          const baseND = (reviewCounts?.notified_nd ?? 0) > 0
-            ? (reviewCounts!.notified_nd as number)
-            : d.notifiedND
-          const cmd = reviewCounts?.va_md ?? 0                              // Form 1
-          const cnd = reviewCounts?.va_nd ?? 0                              // Form 2
-          const fmd = reviewCounts?.f4 ?? d.reviewedMD                      // Form 4
-          const fnd = reviewCounts?.f5 ?? d.reviewedND                      // Form 5
-          const sa  = reviewCounts?.sa_md ?? 0                              // Social Autopsy
+          // Each tile compares a REVIEW FORM against the MATCHING notification
+          // slips: community MD reviews (F-01) against community MD slips,
+          // facility ND reviews (F-05) against facility ND slips, and so on.
+          // Social Autopsy is a re-review of maternal deaths, so its base is
+          // the maternal REVIEWS, not notifications.
+          //
+          // Reviews exceeding notifications is real, not an error: deaths get
+          // reviewed whose paper slips were never digitised. Show both numbers
+          // plainly — a capped "100%+" with the true counts beside it — rather
+          // than hiding the gap. The gap IS the finding: notification
+          // digitisation lags review work.
+          const bases = {
+            cmd: lvl?.md.community ?? 0, fmd: lvl?.md.facility ?? 0,
+            cnd: lvl?.nd.community ?? 0, fnd: lvl?.nd.facility ?? 0,
+            sa: rcF1 + rcF4,
+          }
           const pct = (n: number, base: number) => base > 0 ? (n / base) * 100 : null
-          const tile = (label: string, value: number, pctVal: number | null, base: number, color: string) => (
-            <div>
-              <div className="mono" style={{
-                fontSize: 9.5, color: 'var(--muted)',
-                letterSpacing: '0.08em', marginBottom: 4,
-                minHeight: 22, lineHeight: 1.2,
-              }}>
-                {label}
+          const tile = (label: string, value: number, base: number,
+                        color: string, baseWord: string) => {
+            const p = pct(value, base)
+            return (
+              <div>
+                <div className="mono" style={{
+                  fontSize: 9.5, color: 'var(--muted)',
+                  letterSpacing: '0.08em', marginBottom: 4,
+                  minHeight: 22, lineHeight: 1.2,
+                }}>
+                  {label}
+                </div>
+                <div style={{
+                  fontSize: 26, fontWeight: 800, color,
+                  fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em', lineHeight: 1,
+                }}>
+                  {p !== null ? (p > 100 ? '100%+' : `${p.toFixed(0)}%`) : '—'}
+                </div>
+                <div style={{ fontSize: 11.5, color: 'var(--ink-3)', marginTop: 4 }}>
+                  {value.toLocaleString()} reviewed · {base.toLocaleString()} {baseWord}
+                </div>
+                {p !== null && p > 100 && (
+                  <div style={{ fontSize: 10.5, color: 'var(--muted)', marginTop: 2 }}>
+                    {t('mpdsrViz.reviewExceedsNotified')}
+                  </div>
+                )}
               </div>
-              <div style={{
-                fontSize: 26, fontWeight: 800, color,
-                fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em', lineHeight: 1,
-              }}>
-                {pctVal !== null ? (pctVal > 100 ? '100%+' : `${pctVal.toFixed(0)}%`) : '—'}
-              </div>
-              <div style={{ fontSize: 11.5, color: 'var(--ink-3)', marginTop: 4 }}>
-                {value.toLocaleString()} of {base.toLocaleString()} notified
-              </div>
-            </div>
-          )
+            )
+          }
           return (
             <div style={{
               display: 'grid',
               gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))',
               gap: 18, marginBottom: 24,
             }}>
-              {tile(t('mpdsrViz.reviewCommunityMaternal'), cmd, pct(cmd, baseMD), baseMD, CIPRB_BLUE)}
-              {tile(t('mpdsrViz.reviewCommunityNeonatal'), cnd, pct(cnd, baseND), baseND, CIPRB_BLUE_LIGHT)}
-              {tile(t('mpdsrViz.reviewFacilityMaternal'),  fmd, pct(fmd, baseMD), baseMD, '#C44E00')}
-              {tile(t('mpdsrViz.reviewFacilityNeonatal'),  fnd, pct(fnd, baseND), baseND, '#E8881C')}
-              {tile(t('mpdsrViz.reviewSocialAutopsy'),     sa,  pct(sa,  baseMD), baseMD, CIPRB_BLUE)}
+              {tile(t('mpdsrViz.reviewCommunityMaternal'), rcF1, bases.cmd, CIPRB_BLUE, t('mpdsrViz.notifiedWord'))}
+              {tile(t('mpdsrViz.reviewCommunityNeonatal'), rcF2, bases.cnd, CIPRB_BLUE_LIGHT, t('mpdsrViz.notifiedWord'))}
+              {tile(t('mpdsrViz.reviewFacilityMaternal'),  rcF4, bases.fmd, '#C44E00', t('mpdsrViz.notifiedWord'))}
+              {tile(t('mpdsrViz.reviewFacilityNeonatal'),  rcF5, bases.fnd, '#E8881C', t('mpdsrViz.notifiedWord'))}
+              {tile(t('mpdsrViz.reviewSocialAutopsy'),     rcSA, bases.sa, CIPRB_BLUE, t('mpdsrViz.mdReviewsWord'))}
             </div>
           )
         })()}

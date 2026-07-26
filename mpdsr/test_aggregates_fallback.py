@@ -90,3 +90,35 @@ class AggregatesFallbackTest(TestCase):
         self.assertEqual(r.status_code, 200)
         self.assertEqual(
             r.json()['notification_by_level']['md']['community'], 1)
+
+
+class ReviewCountsShapeTest(TestCase):
+    """review_counts must never fabricate a 'notified' number from review forms.
+
+    The old block set notified_md = f1 + f2 — maternal community reviews plus
+    NEONATAL community reviews, labelled "MD notified" — and the dashboard used
+    it as every review tile's denominator ("0 of 86 notified"). Notified counts
+    come only from the notification slips."""
+
+    def setUp(self):
+        self.client = APIClient()
+        self.client.force_authenticate(User.objects.create_user(
+            email='rc@ciprb.org', password='p', full_name='RC',
+            organisation=Organisation.CIPRB, role=Role.ORG_LEAD))
+
+    def test_no_fabricated_notified_keys(self):
+        from mpdsr.models import MPDSRCase
+        MPDSRCase.objects.create(
+            partner='CIPRB', sub_form_type='f1', district='Bhola',
+            date_of_death='2026-06-01', death_type='maternal',
+            approval_status='APPROVED', case_hash='rc-1')
+        MPDSRCase.objects.create(
+            partner='CIPRB', sub_form_type='f2', district='Bhola',
+            date_of_death='2026-06-02', death_type='perinatal',
+            approval_status='APPROVED', case_hash='rc-2')
+        r = self.client.get('/api/mpdsr/aggregates/')
+        rc = r.json()['review_counts']
+        self.assertEqual(rc.get('f1'), 1)
+        self.assertEqual(rc.get('f2'), 1)
+        self.assertNotIn('notified_md', rc,
+                         'review forms must not masquerade as notifications')
