@@ -84,6 +84,18 @@ def start_recon_loop() -> None:
                     d = snap.data or {}
                     logger.info('recon-loop tick: stranded=%s crashes=%s',
                                 d.get('total_stranded'), d.get('total_crashes'))
+                    # On drift, log the per-form breakdown so the gap is
+                    # actionable straight from the logs (which form, how many)
+                    # without needing DB access.
+                    for r in d.get('forms', []):
+                        if r.get('stranded') or r.get('crashes') or r.get('error'):
+                            logger.warning(
+                                'recon-loop drift: %s stranded=%s crashes=%s '
+                                'kobo=%s app=%s hook_active=%s%s',
+                                r.get('slug'), r.get('stranded'), r.get('crashes'),
+                                r.get('kobo_count'), r.get('app_rows'),
+                                r.get('hook_active'),
+                                (' error=%s' % r['error']) if r.get('error') else '')
             except Exception:
                 logger.exception('recon-loop tick failed')
             time.sleep(interval_sec)
