@@ -631,6 +631,27 @@ class MPDSRAction(models.Model):
         })
 
 
+class CIPRBReconSnapshot(models.Model):
+    """The latest CIPRB Kobo-vs-app reconciliation result (mpdsr.reconcile).
+
+    Written by `manage.py reconcile_ciprb`, read by /api/mpdsr/reconciliation/ so
+    the dashboard health strip is a cheap read, not a live Kobo pull per request.
+    Only the newest row matters; older rows are history.
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    run_at = models.DateTimeField(db_index=True)
+    data = models.JSONField(default=dict)
+
+    class Meta:
+        ordering = ['-run_at']
+        verbose_name = 'CIPRB reconciliation snapshot'
+
+    def __str__(self):
+        return 'recon @ %s (%s)' % (
+            self.run_at.isoformat(),
+            'ok' if self.data.get('all_ok') else 'DRIFT')
+
+
 # ── CIPRB Phase 2 models (notification slips + Maternal Near Miss).
 from .ciprb_models import (  # noqa: F401,E402
     MPDSRDeathNotification,

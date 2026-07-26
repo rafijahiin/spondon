@@ -9,4 +9,5 @@ urlpatterns = router.urls + [
     path('aggregates/', views.mpdsr_aggregates, name='mpdsr-aggregates'),
     path('action-aggregates/', views.mpdsr_action_aggregates, name='mpdsr-action-aggregates'),
     path('mnm/aggregates/', views.mnm_aggregates, name='mnm-aggregates'),
+    path('reconciliation/', views.ciprb_reconciliation, name='ciprb-reconciliation'),
 ]

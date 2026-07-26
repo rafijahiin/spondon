@@ -637,3 +637,34 @@ def mnm_aggregates(request):
         'causes': dict(causes),
         'contributory_conditions': contributory,
     })
+
+
+@api_view(['GET'])
+@drf_permission_classes([IsAuthenticated, CanAccessMPDSR])
+def ciprb_reconciliation(request):
+    """Read-only health snapshot for the CIPRB dashboard strip.
+
+    Returns the latest stored CIPRBReconSnapshot (written by the
+    `reconcile_ciprb` management command / daemon): per CIPRB form, how many
+    Kobo submissions are missing from the app (`stranded`), handler crashes, and
+    webhook delivery health. This endpoint NEVER runs the reconciliation itself
+    (that replays payloads and must happen where the prod DB lives) — it only
+    reads what was stored, so it is cheap and side-effect free. No alerting.
+    """
+    from .reconcile import latest_snapshot
+
+    snap = latest_snapshot()
+    if snap is None:
+        # No snapshot yet — the strip renders an "unknown / not yet run" state
+        # rather than implying everything is healthy.
+        return Response({'available': False, 'forms': []})
+
+    data = snap.data or {}
+    return Response({
+        'available': True,
+        'run_at': snap.run_at.isoformat(),
+        'forms': data.get('forms', []),
+        'total_stranded': data.get('total_stranded', 0),
+        'total_crashes': data.get('total_crashes', 0),
+        'all_ok': data.get('all_ok', False),
+    })

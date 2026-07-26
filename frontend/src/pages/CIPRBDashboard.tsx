@@ -32,6 +32,7 @@ import { NearMissPanel } from '@/components/ciprb/NearMissPanel'
 import { FistulaIndicators } from '@/components/ciprb/FistulaIndicators'
 import { MPDSRDistrictMap } from '@/components/ciprb/MPDSRDistrictMap'
 import { DataUnavailable } from '@/components/ciprb/DataUnavailable'
+import { ReconciliationStrip } from '@/components/ciprb/ReconciliationStrip'
 import type { MPDSRCase, AuditEntry } from '@/types/index'
 
 // UNFPA branding — every CIPRB page uses UNFPA orange. Partner identity
@@ -843,6 +844,13 @@ export default function CIPRBDashboard() {
           border: '1px solid rgba(249,96,0,0.22)',
         }}>{t('ciprbExtras.jumpNearMiss')}</a>
       </div>
+
+      {/* ───────────────── Data-integrity health strip ─────────────────
+          Answers "is every KoboToolbox submission actually in the dashboard?"
+          straight from the stored server-side reconciliation snapshot. Slim
+          green line when healthy; prominent plain-language panel on drift.
+          No alerting — this strip is the whole surface. */}
+      <ReconciliationStrip />
 
       {/* ───────────────── MPDSR Response-Plan tracker (headline surface) ─────────────────
           The action plan is the dashboard's lead question — "are the agreed
