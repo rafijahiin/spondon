@@ -204,13 +204,20 @@ def mpdsr_aggregates(request):
     else:
         _nq = apply_donor(
             MPDSRDeathNotification.objects.filter(approval_status='APPROVED'))
-        _fac = MPDSRDeathNotification.PLACE_FACILITY
 
+        # CDN / FDN means WHICH SLIP WAS FILED: Slip 01 is the community death
+        # notification (CHW-filed), Slip 02 the facility one. The first version
+        # of this fallback classified by PLACE OF DEATH instead, which fabricated
+        # the whole split: a mother who died at a hospital but was notified by a
+        # CHW on Slip 01 is still a COMMUNITY notification, and Slip 02 does not
+        # even carry a place field. Against the real slips the place-based split
+        # showed stillbirths as 41 community / 2 facility when 41 of 43 sit on
+        # the FACILITY slip — exactly backwards. Rafi caught it on the panel.
         def _lvl(kind):
             k = _nq.filter(death_kind=kind)
             return {
-                'community': k.exclude(place_of_death=_fac).count(),
-                'facility': k.filter(place_of_death=_fac).count(),
+                'community': k.filter(slip_variant=MPDSRDeathNotification.SLIP_01).count(),
+                'facility': k.filter(slip_variant=MPDSRDeathNotification.SLIP_02).count(),
             }
 
         notification_by_level = {
@@ -288,6 +295,12 @@ def mpdsr_aggregates(request):
         .annotate(c=Count('id'))
     )
     review_counts = {r['sub_form_type']: r['c'] for r in review_rows}
+    # The Social Autopsy tile is titled "(Maternal Death)" but the SA form also
+    # re-reviews neonatal deaths (sa_death_type 2) — 3 of the 17 live autopsies
+    # are neonatal. Give the tile a maternal-only count so its number matches
+    # its own title and its MD-reviews denominator.
+    review_counts['sa_md_maternal'] = md_donor_qs.filter(
+        sub_form_type='sa_md', death_type=DeathType.MATERNAL).count()
 
     # ── CIPRB dashboard "major indicators" (11) — per-case breakdowns from
     #    the donor-filtered maternal cohort (Form 01 community + Form 04
@@ -429,12 +442,15 @@ def mpdsr_aggregates(request):
     notif_qs = apply_donor(MPDSRDeathNotification.objects.filter(approval_status='APPROVED'))
     notif_by_kind = dict(_Counter(
         notif_qs.exclude(death_kind='').values_list('death_kind', flat=True)))
-    # Level: a facility-place notification is facility-level; everything else
-    # (home / in_transit / blank) is community-level surveillance.
-    notif_community = notif_qs.exclude(
-        place_of_death=MPDSRDeathNotification.PLACE_FACILITY).count()
+    # Level = WHICH SLIP was filed (Slip 01 = community/CDN, Slip 02 =
+    # facility/FDN). Place of death is a separate attribute of the death, not
+    # of the notification: the place-based split this block used to make put a
+    # hospital death notified by a CHW under "facility" and all 41 Slip-02
+    # stillbirths under "community" (Slip 02 carries no place field at all).
+    notif_community = notif_qs.filter(
+        slip_variant=MPDSRDeathNotification.SLIP_01).count()
     notif_facility = notif_qs.filter(
-        place_of_death=MPDSRDeathNotification.PLACE_FACILITY).count()
+        slip_variant=MPDSRDeathNotification.SLIP_02).count()
     notif_by_district = dict(_Counter(
         notif_qs.exclude(district='').values_list('district', flat=True)))
     notifications = {

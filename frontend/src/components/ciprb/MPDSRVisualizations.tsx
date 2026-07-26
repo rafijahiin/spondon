@@ -61,6 +61,7 @@ interface DistrictDenominator {
 
 interface ReviewCounts {
   /** Community Maternal Death Reviewed (MPDSR Form 1 / verbal autopsy). */
+  sa_md_maternal?: number
   va_md?: number
   /** Community Neonatal Death Reviewed (MPDSR Form 2). */
   va_nd?: number
@@ -220,7 +221,9 @@ function NotifyVsReview({
   const rcF2 = reviewCounts?.f2 ?? 0
   const rcF4 = reviewCounts?.f4 ?? 0
   const rcF5 = reviewCounts?.f5 ?? 0
-  const rcSA = reviewCounts?.sa_md ?? 0
+  // Maternal autopsies only — the SA form also re-reviews neonatal deaths,
+  // and the tile is titled and denominated maternal.
+  const rcSA = reviewCounts?.sa_md_maternal ?? reviewCounts?.sa_md ?? 0
   const d = lvl ? {
     notifiedMD: lvl.md.community + lvl.md.facility,
     notifiedND: lvl.nd.community + lvl.nd.facility,

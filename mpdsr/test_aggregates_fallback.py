@@ -30,6 +30,7 @@ class AggregatesFallbackTest(TestCase):
 
     def _notif(self, kind, place, **over):
         kw = dict(district='Bhola', death_kind=kind, place_of_death=place,
+                  slip_variant='01',
                   date_of_death='2026-07-01',
                   approval_status='APPROVED', organisation='CIPRB')
         kw.update(over)
@@ -45,21 +46,27 @@ class AggregatesFallbackTest(TestCase):
         self.assertEqual(MPDSRFacilityCount.objects.count(), 0)
         self.assertIsNone(self._get()['facility_totals'])
 
-    def test_notification_by_level_uses_the_live_slips(self):
+    def test_notification_by_level_is_the_slip_variant_not_the_place(self):
+        """CDN/FDN = which slip was filed. The old place-of-death split put a
+        hospital death notified on the community slip under 'facility', and all
+        41 facility-slip stillbirths under 'community' (Slip 02 has no place
+        field) — exactly backwards, caught by Rafi on the live panel."""
         F = MPDSRDeathNotification.PLACE_FACILITY
-        self._notif(MPDSRDeathNotification.KIND_MATERNAL, F)
-        self._notif(MPDSRDeathNotification.KIND_MATERNAL, 'home')
-        self._notif(MPDSRDeathNotification.KIND_MATERNAL, 'home')
-        self._notif(MPDSRDeathNotification.KIND_NEONATAL, F)
-        self._notif(MPDSRDeathNotification.KIND_STILLBIRTH, 'in_transit')
+        # A CHW files Slip 01 for a mother who died AT A FACILITY: still CDN.
+        self._notif(MPDSRDeathNotification.KIND_MATERNAL, F, slip_variant='01')
+        self._notif(MPDSRDeathNotification.KIND_MATERNAL, 'home', slip_variant='01')
+        # Facility slip with NO place recorded (Slip 02 carries no place field).
+        self._notif(MPDSRDeathNotification.KIND_STILLBIRTH, '', slip_variant='02')
+        self._notif(MPDSRDeathNotification.KIND_NEONATAL, '', slip_variant='02')
 
         d = self._get()
         self.assertEqual(d['notification_by_level_source'], 'kobo')
         lvl = d['notification_by_level']
-        self.assertEqual(lvl['md'], {'community': 2, 'facility': 1})
+        self.assertEqual(lvl['md'], {'community': 2, 'facility': 0})
+        self.assertEqual(lvl['sb'], {'community': 0, 'facility': 1})
         self.assertEqual(lvl['nd'], {'community': 0, 'facility': 1})
-        # in_transit folds into community surveillance, per the field workflow.
-        self.assertEqual(lvl['sb'], {'community': 1, 'facility': 0})
+        self.assertEqual(d['notifications']['by_level'],
+                         {'community': 2, 'facility': 2})
 
     def test_only_approved_notifications_are_counted(self):
         self._notif(MPDSRDeathNotification.KIND_MATERNAL, 'home')
