@@ -22,6 +22,8 @@ MUST run where the real (prod) DB is reachable — on an empty/local DB every
 payload looks "stranded". The command wraps this so the replay is rolled back and
 only the snapshot persists.
 """
+import os
+
 import requests
 from django.db import transaction
 from django.utils import timezone
@@ -30,6 +32,22 @@ from programs.ciprb_replay import CIPRB_SLUG_TO_UID, _fetch
 from programs.webhook import FORM_HANDLERS, _flatten_group_keys, _geolocation
 
 KOBO_BASE = 'https://kf.kobotoolbox.org/api/v2'
+
+# Submissions made before the production go-live are practice/pilot data that
+# was deliberately flushed from the prod DB (full clean-slate wipe 2026-06-28,
+# per Rafi: "no data before the go live is needed"). The 8 preserved near-miss
+# pilot subs on the Kobo asset are exactly this. They are NOT missing data, so
+# the reconciliation must not count them as stranded.
+GO_LIVE_CUTOFF = os.environ.get('RECON_IGNORE_BEFORE', '2026-06-28')
+
+
+def _is_live(sub):
+    """True if this Kobo submission was made on/after the go-live cutoff."""
+    ts = str(sub.get('_submission_time') or '')
+    # ISO timestamps compare correctly as strings ('2026-06-27T…' < '2026-06-28').
+    # A submission with NO timestamp is treated as live — never silently ignore
+    # data we can't date.
+    return not ts or ts >= GO_LIVE_CUTOFF
 
 
 def _counter(slug):
@@ -95,7 +113,7 @@ def reconcile_ciprb(token, limit=None):
             results.append({'slug': slug, 'error': 'no handler/counter'})
             continue
 
-        subs = _fetch(uid, token, limit)
+        subs = [s for s in _fetch(uid, token, limit) if _is_live(s)]
         before = count_fn()
         crashes = []
         sp = transaction.savepoint()
