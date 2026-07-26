@@ -28,14 +28,6 @@ logger = logging.getLogger(__name__)
 _started = False
 _lock = threading.Lock()
 
-# Short-lived manage.py subcommands whose process also calls AppConfig.ready().
-# Skip them so the loop only ever runs under a long-lived server (gunicorn).
-_ONE_SHOT_COMMANDS = {
-    'migrate', 'makemigrations', 'seed_users', 'seed_centers', 'collectstatic',
-    'check', 'shell', 'test', 'createsuperuser', 'reconcile_ciprb',
-    'replay_ciprb', 'loaddata', 'dumpdata',
-}
-
 # Long delay past the boot/migrate window before the first run.
 _INITIAL_DELAY_SEC = 180
 
@@ -44,17 +36,31 @@ def _truthy(v) -> bool:
     return str(v or '').strip().lower() in ('1', 'true', 'yes', 'on')
 
 
+def _is_server_process() -> bool:
+    """True only when we are the long-lived web server (gunicorn).
+
+    ready() also runs inside every short-lived boot command (migrate, the
+    backfills, the seeds), each of which would otherwise start its own thread.
+    A reconciliation tick is heavy (a full Kobo pull + replay), so we use an
+    ALLOWLIST — start under gunicorn only — instead of trying to enumerate
+    every one-shot command. That guarantees exactly one loop under the
+    Dockerfile's `gunicorn --workers 1`.
+    """
+    prog = os.path.basename((sys.argv or [''])[0] or '').lower()
+    return 'gunicorn' in prog
+
+
 def start_recon_loop() -> None:
     """Start the periodic CIPRB reconciliation daemon once. No-op unless
-    ENABLE_RECON_LOOP is set. Safe to call repeatedly (idempotent)."""
+    ENABLE_RECON_LOOP is set and we are the gunicorn web process. Safe to call
+    repeatedly (idempotent)."""
     global _started
     if not _truthy(os.environ.get('ENABLE_RECON_LOOP')):
         return
     if not os.environ.get('KOBO_TOKEN'):
-        logger.info('recon-loop: KOBO_TOKEN unset — not starting.')
+        logger.info('recon-loop: KOBO_TOKEN unset - not starting.')
         return
-    argv = sys.argv or []
-    if len(argv) > 1 and argv[1] in _ONE_SHOT_COMMANDS:
+    if not _is_server_process():
         return
     with _lock:
         if _started:
