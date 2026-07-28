@@ -354,10 +354,24 @@ def _mother_list_survey():
         # fixes the old free-text IDs (02001 / 020007 / 020010) that never
         # matched on lookup and broke "registration".
         _sr('calculate', 'centre_district_code', calc=_bandhu_dist_code_calc()),
+        # The serial is BLOCKED, not merely warned, when the composed ID is
+        # already in bandhu_clients.csv. Until 2026-07 this was only the soft
+        # _dup_warn note below, which staff could scroll past: 56 IDs ended up
+        # shared by 142 people (Chattogram alone: 170 rows, 110 unique IDs).
+        # The lookup is inlined here rather than reusing ${_dup_name} because
+        # that calculate is evaluated after this field.
+        # RESIDUAL GAP: the CSV is a snapshot refreshed on client approval, so
+        # two registrations typed in the SAME sitting still cannot see each
+        # other. That needs the export cadence, not a constraint.
         _sr('text', 'ml_serial', 'Beneficiary serial (4 digits)',
             'সুবিধাভোগী ক্রমিক (৪ অঙ্ক)', required='yes',
-            constraint="regex(., '^[0-9]{4}$')",
-            cmsg='Enter exactly 4 digits, e.g. 0001. / ঠিক ৪ অঙ্ক দিন, যেমন 0001।',
+            constraint=("regex(., '^[0-9]{4}$') and "
+                        "pulldata('bandhu_clients','name','id_no',"
+                        "concat(${centre_district_code}, '-', .))=''"),
+            cmsg='Enter exactly 4 digits, e.g. 0001. If this number is refused, '
+                 'it is already used at your centre: try the next free number. / '
+                 'ঠিক ৪ অঙ্ক দিন, যেমন 0001। নম্বরটি গ্রহণ না হলে সেটি ইতিমধ্যে '
+                 'ব্যবহৃত: পরবর্তী খালি নম্বর দিন।',
             hint='Next free number at your centre (0001, 0002, …). The district '
                  'code is added automatically. / আপনার কেন্দ্রের পরবর্তী নম্বর; '
                  'জেলা কোড স্বয়ংক্রিয়ভাবে যুক্ত হবে।'),
@@ -387,7 +401,15 @@ def _mother_list_survey():
         _sr('integer', 'ml_children_u18', 'Number of children under 18', '১৮ বছরের নিচে সন্তান সংখ্যা',
             relevant="${ml_marital}!='1'"),
         _sr('select_one occupation', 'ml_occupation', 'Income source (occupation)', 'আয়ের উৎস (পেশা)'),
-        _sr('note', '_ml_avg', 'Average sex-work contacts (fill the applicable period):', ''),
+        # Wording fix 2026-07: the old hint "(fill the applicable period)" was
+        # read as "fill every period" — 1,233 of 2,028 records filled all four,
+        # so which figure is authoritative was ambiguous. The Bangla label was
+        # also empty, leaving Bangla users with no instruction at all.
+        _sr('note', '_ml_avg',
+            'Average sex-work contacts. Fill ONE row only, whichever period the '
+            'respondent answers in. Leave the other three blank.',
+            'গড় যৌনকর্ম যোগাযোগ। শুধুমাত্র একটি ঘর পূরণ করুন, উত্তরদাতা যে সময়সীমায় '
+            'উত্তর দেন। বাকি তিনটি খালি রাখুন।'),
         _sr('integer', 'ml_avg_day', 'Per day', 'দৈনিক'),
         _sr('integer', 'ml_avg_week', 'Per week', 'সপ্তাহে'),
         _sr('integer', 'ml_avg_month', 'Per month', 'মাসে'),
@@ -848,7 +870,24 @@ def _activity_ops_survey():
         _sr('integer', 'st_opening', 'Opening balance', 'প্রারম্ভিক মজুদ'),
         _sr('integer', 'st_received', 'Quantity received', 'গৃহীত পরিমাণ'),
         _sr('integer', 'st_distributed', 'Quantity distribution', 'বিতরণকৃত পরিমাণ'),
+        # Balance stays ENTERED (it is the physical count on the paper register,
+        # and a forced calculation would hide real discrepancies). What was
+        # missing is any feedback: 6 of 122 rows did not satisfy
+        # opening + received - distributed = balance. This shows the arithmetic
+        # result on screen while typing, and flags a gap, without blocking.
+        _sr('calculate', '_st_expected',
+            calc=("coalesce(${st_opening},0) + coalesce(${st_received},0) "
+                  "- coalesce(${st_distributed},0)")),
+        _sr('note', '_st_expected_show',
+            'Expected balance: ${_st_expected}  (opening + received − distributed)',
+            'প্রত্যাশিত স্থিতি: ${_st_expected}  (প্রারম্ভিক + গৃহীত − বিতরণকৃত)'),
         _sr('integer', 'st_balance', 'Stock balance', 'মজুদ স্থিতি'),
+        _sr('note', '_st_variance_warn',
+            '⚠ Entered balance does not match the expected balance. '
+            'Check the figures, or explain the difference in Comments below.',
+            '⚠ লিখিত স্থিতি প্রত্যাশিত স্থিতির সাথে মিলছে না। সংখ্যা যাচাই করুন, '
+            'অথবা নিচে মন্তব্যে পার্থক্যের কারণ লিখুন।',
+            relevant="${st_balance}!='' and ${st_balance}!=${_st_expected}"),
         _sr('text', 'st_comments', 'Comments', 'মন্তব্য'),
         _sr('end_group', 'grp_stock'),
     ]
