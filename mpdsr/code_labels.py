@@ -183,6 +183,15 @@ def decode(field, raw):
     return str(raw).replace('_', ' ').strip().capitalize() or UNKNOWN
 
 
+# Fields the dashboard renders in a fixed sequence rather than by size. The
+# aggregate must emit them in that sequence, because the chart preserves
+# insertion order and a Counter's order is arbitrary.
+_ORDER = {
+    'anc_visits_count': ['None', '1 visit', '2 visits', '3 visits',
+                         '4 or more', UNKNOWN],
+}
+
+
 def relabel(field, counts):
     """Decode and MERGE a {raw_value: n} breakdown into {label: n}.
 
@@ -191,7 +200,14 @@ def relabel(field, counts):
     """
     out = {}
     for raw, n in (counts or {}).items():
-        out[decode(field, raw)] = out.get(decode(field, raw), 0) + n
+        label = decode(field, raw)
+        out[label] = out.get(label, 0) + n
+    order = _ORDER.get(field)
+    if order:
+        ranked = {k: out[k] for k in order if k in out}
+        # Anything outside the canonical sequence still gets shown, after it.
+        ranked.update({k: v for k, v in out.items() if k not in ranked})
+        return ranked
     return out
 
 

@@ -563,9 +563,24 @@ export function FistulaVisualizations({
             <h3 style={{ margin: '6px 0 2px', fontSize: 18, fontWeight: 700, color: 'var(--ink)' }}>
               Surgical repair outcomes
             </h3>
-            <p style={{ fontSize: 12.5, color: 'var(--muted)', margin: 0 }}>
-              Of all surgically repaired patients, the clinical outcome breakdown. Project reporting focuses on the two successful categories.
-            </p>
+            {/* The caption used to claim "of all surgically repaired
+                patients" while counting only those with an outcome recorded
+                (27), against a funnel headline of 35 repaired. Two numbers on
+                one page with nothing to reconcile them. State the coverage. */}
+            {(() => {
+              const recorded = agg.outcomeDry + agg.outcomeNotDry + agg.outcomeFailed
+              const pending = Math.max(0, agg.repaired - recorded)
+              return (
+                <p style={{ fontSize: 12.5, color: 'var(--muted)', margin: 0 }}>
+                  Clinical outcome for the {recorded.toLocaleString()} repaired
+                  {' '}patients whose surgery outcome has been recorded
+                  {pending > 0
+                    ? `, out of ${agg.repaired.toLocaleString()} repaired in total. Outcome is not yet recorded for ${pending.toLocaleString()}.`
+                    : '.'}
+                  {' '}Project reporting focuses on the two successful categories.
+                </p>
+              )
+            })()}
             <div style={{ marginTop: 6 }}>
               <SourceChip>CIPRB 1 — Fistula Question Bank</SourceChip>
             </div>

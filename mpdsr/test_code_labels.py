@@ -102,3 +102,18 @@ class PostnatalCareBands(SimpleTestCase):
         self.assertEqual(out[UNKNOWN], 1, '99 is the not-known sentinel')
         self.assertEqual(out['Invalid entry'], 1, '24 PNC visits is impossible')
         self.assertEqual(sum(out.values()), 22, 'no record may be dropped')
+
+
+class CanonicalOrdering(SimpleTestCase):
+    def test_anc_visits_come_back_in_clinical_order(self):
+        # The chart preserves insertion order, and a Counter's order is
+        # arbitrary, so the live dashboard showed 1, 3, 4+, None, 2.
+        out = relabel('anc_visits_count',
+                      {'3': 14, '1': 7, '4_plus': 14, 'none': 5, '2': 9})
+        self.assertEqual(list(out.keys()),
+                         ['None', '1 visit', '2 visits', '3 visits', '4 or more'])
+
+    def test_unexpected_values_are_kept_after_the_canonical_run(self):
+        out = relabel('anc_visits_count', {'2': 1, 'wat': 3})
+        self.assertEqual(list(out.keys())[0], '2 visits')
+        self.assertIn(3, out.values(), 'an unmapped value must not be dropped')
