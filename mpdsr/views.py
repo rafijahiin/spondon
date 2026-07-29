@@ -10,6 +10,7 @@ from .models import (
     DeathType, MPDSRCase, ReviewStatus,
     MPDSRDistrictDenominator, MPDSRFacilityCount, MPDSRActionPlanSummary,
 )
+from .code_labels import band_pnc, band_time_of_death, relabel
 from .serializers import MPDSRCaseSerializer, MPDSRCaseUpdateSerializer
 
 
@@ -301,6 +302,14 @@ def mpdsr_aggregates(request):
     # its own title and its MD-reviews denominator.
     review_counts['sa_md_maternal'] = md_donor_qs.filter(
         sub_form_type='sa_md', death_type=DeathType.MATERNAL).count()
+    # Stillbirth reviews. None of the four structured review forms accepts a
+    # stillbirth (F-02 has no stillbirth field, F-05 records live-born neonates
+    # only), but the Social Autopsy form does — sa_death_type 3, মৃতজন্ম on the
+    # paper tool. Ingest used to fold that into 'perinatal' and the dashboard
+    # then had nowhere to put it, so 45 notified stillbirths looked unreviewed
+    # by definition. Count them properly.
+    review_counts['sb_reviewed'] = md_donor_qs.filter(
+        sub_form_type='sa_md', sa_death_kind='stillbirth').count()
 
     # ── CIPRB dashboard "major indicators" (11) — per-case breakdowns from
     #    the donor-filtered maternal cohort (Form 01 community + Form 04
@@ -335,18 +344,37 @@ def mpdsr_aggregates(request):
                     break
         return out
 
+    # Decode raw choice codes to readable labels HERE, at the aggregate, so
+    # every consumer (dashboard, monthly report, export) gets one clean
+    # vocabulary. Rendering these raw is what put 'doctor_mbbs', 'upazila_hc'
+    # and 'vaginal_spontaneous' in front of CIPRB and UNFPA, and what split one
+    # clinical fact across two slices ('normal' beside 'vaginal_spontaneous').
+    # See mpdsr/code_labels.py; mpdsr/test_code_labels.py stops it drifting
+    # from the deployed forms.
     indicators = {
-        'place_of_death':           _cnt('place_of_death'),            # 1
-        'time_of_death':            _cnt('time_of_death'),             # 2
+        'place_of_death':           relabel('place_of_death',
+                                            _cnt('place_of_death')),   # 1
+        # Stored as a clock time, not a phase of pregnancy: charting it raw
+        # produced 46 individual timestamps at 2% each.
+        'time_of_death':            band_time_of_death(
+                                        _cnt('time_of_death')),        # 2
         'gestational_weeks':        _band('gestational_weeks',
             [(0, 28), (28, 34), (34, 37), (37, 42), (42, 99)],
             ['<28', '28-33', '34-36', '37-41', '42+']),                # 3
-        'anc_visits_count':         _cnt('anc_visits_count'),          # 4
-        'pnc_received':             _cnt('pnc_received'),              # 5 (PNC)
-        'mode_of_delivery':         _cnt('mode_of_delivery'),          # 6
-        'delivery_outcome':         _cnt('delivery_outcome'),          # 7
-        'place_of_delivery':        _cnt('place_of_delivery'),         # 8
-        'person_assisted_delivery': _cnt('person_assisted_delivery'),  # 9
+        'anc_visits_count':         relabel('anc_visits_count',
+                                            _cnt('anc_visits_count')), # 4
+        # A VISIT COUNT, never a yes/no. The old yes/no tile is what reported
+        # "Received: 0 of 22" while its own breakdown showed 19 women with at
+        # least one visit.
+        'pnc_received':             band_pnc(_cnt('pnc_received')),    # 5 (PNC)
+        'mode_of_delivery':         relabel('mode_of_delivery',
+                                            _cnt('mode_of_delivery')), # 6
+        'delivery_outcome':         relabel('delivery_outcome',
+                                            _cnt('delivery_outcome')), # 7
+        'place_of_delivery':        relabel('place_of_delivery',
+                                            _cnt('place_of_delivery')),# 8
+        'person_assisted_delivery': relabel('person_assisted_delivery',
+                                            _cnt('person_assisted_delivery')),  # 9
         'maternal_age': _band('age_years',
             [(0, 20), (20, 25), (25, 30), (30, 35), (35, 40), (40, 45), (45, 99)],
             ['<20', '20-24', '25-29', '30-34', '35-39', '40-44', '45+']),  # 10
@@ -461,16 +489,32 @@ def mpdsr_aggregates(request):
         'by_district': notif_by_district,
     }
 
-    # (3) Social Autopsy (sa_md) — maternal-death re-review. Cause is mostly
-    #     free text so it doesn't bucket cleanly; place of death does. Surface
-    #     a count + place-of-death breakdown. Thin data → the frontend renders
-    #     a stat-tile + small donut that degrade to an empty state gracefully.
-    sa_qs = apply_donor(mpdsr_qs).filter(sub_form_type='sa_md')
+    # (3) Social Autopsy (sa_md). The paper form reviews maternal deaths,
+    #     neonatal deaths AND stillbirths (sa_death_type 1/2/3), so the whole
+    #     sa_md cohort is NOT "social autopsy of maternal deaths". This block
+    #     used to return that whole cohort while the tile above counted only
+    #     the maternal ones, which is why the same page showed 15 in one place
+    #     and 18 in another with nothing to explain the difference.
+    #     Report maternal as the headline (matching the tile and the section
+    #     title) and give the other kinds their own counts so none is hidden.
+    sa_all_qs = apply_donor(mpdsr_qs).filter(sub_form_type='sa_md')
+    sa_qs = sa_all_qs.filter(death_type=DeathType.MATERNAL)
     sa_place = dict(_Counter(
         sa_qs.exclude(place_of_death='').values_list('place_of_death', flat=True)))
     social_autopsy = {
         'total': sa_qs.count(),
-        'place_of_death': sa_place,
+        'place_of_death': relabel('place_of_death', sa_place),
+        # Every social autopsy, whatever it reviewed. maternal + neonatal +
+        # stillbirth + unclassified == all_kinds_total, by construction.
+        'all_kinds_total': sa_all_qs.count(),
+        'by_kind': {
+            'maternal': sa_qs.count(),
+            'neonatal': sa_all_qs.filter(sa_death_kind='neonatal').count(),
+            'stillbirth': sa_all_qs.filter(sa_death_kind='stillbirth').count(),
+            'unclassified': sa_all_qs.exclude(
+                death_type=DeathType.MATERNAL).exclude(
+                sa_death_kind__in=['neonatal', 'stillbirth']).count(),
+        },
     }
 
     return Response({

@@ -119,10 +119,32 @@ class AggregateCoherenceTest(TestCase):
         self.assertEqual(rc['sa_md_maternal'], 4)
         self.assertLessEqual(rc['sa_md_maternal'], rc['sa_md'])
 
-    def test_social_autopsy_total_equals_sa_md_reviews(self):
+    def test_social_autopsy_total_is_the_maternal_subset(self):
+        # The section is titled "Social autopsy of maternal deaths" and the
+        # dashboard tile counts maternal only, so this total must agree with
+        # BOTH. It used to return the whole sa_md cohort, which is why the same
+        # page showed 15 in the tile and 18 in the section.
         d = self._agg()
         self.assertEqual(d['social_autopsy']['total'],
+                         d['review_counts']['sa_md_maternal'])
+
+    def test_social_autopsy_all_kinds_is_the_whole_sa_cohort(self):
+        d = self._agg()
+        self.assertEqual(d['social_autopsy']['all_kinds_total'],
                          d['review_counts']['sa_md'])
+
+    def test_social_autopsy_by_kind_accounts_for_every_row(self):
+        # No social autopsy may fall out of the split — a stillbirth review
+        # that lands nowhere is the bug this whole block exists to prevent.
+        sa = self._agg()['social_autopsy']
+        self.assertEqual(sum(sa['by_kind'].values()), sa['all_kinds_total'])
+
+    def test_stillbirth_reviews_are_counted_and_bounded(self):
+        d = self._agg()
+        sb = d['review_counts']['sb_reviewed']
+        self.assertGreaterEqual(sb, 0)
+        self.assertLessEqual(sb, d['review_counts']['sa_md'],
+                             'stillbirth reviews are a subset of social autopsies')
 
     # ── cohorts ────────────────────────────────────────────────────────────────
     def test_facility_deep_dive_is_the_f4_maternal_subset(self):

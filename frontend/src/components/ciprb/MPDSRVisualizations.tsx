@@ -68,6 +68,10 @@ interface ReviewCounts {
   va_nd?: number
   /** Social Autopsy (Maternal Death). */
   sa_md?: number
+  /** Stillbirths reviewed. The Social Autopsy form is the ONLY route: no
+   *  structured review form accepts a stillbirth (F-02 has no stillbirth
+   *  field, F-05 records live-born neonates only). */
+  sb_reviewed?: number
   /** Facility Maternal Death Reviewed (MPDSR Form 4). */
   f4?: number
   /** Facility Neonatal Death Reviewed (MPDSR Form 5). */
@@ -232,6 +236,7 @@ function NotifyVsReview({
   // Maternal autopsies only — the SA form also re-reviews neonatal deaths,
   // and the tile is titled and denominated maternal.
   const rcSA = reviewCounts?.sa_md_maternal ?? reviewCounts?.sa_md ?? 0
+  const rcSB = reviewCounts?.sb_reviewed ?? 0
   const d = lvl ? {
     notifiedMD: lvl.md.community + lvl.md.facility,
     notifiedND: lvl.nd.community + lvl.nd.facility,
@@ -422,54 +427,27 @@ function NotifyVsReview({
               </div>
             )
           }
+          // Stillbirth gets a real tile, not a caption explaining why it has
+          // none. The Social Autopsy form is the only route to reviewing one
+          // (sa_death_type = 3, মৃতজন্ম on the paper tool); the four
+          // structured forms cannot receive a stillbirth at all. The count
+          // used to vanish because ingest folded stillbirth into 'perinatal'.
           const notifSB = (lvl?.sb.community ?? 0) + (lvl?.sb.facility ?? 0)
           return (
-            <>
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))',
-                gap: 18, marginBottom: notifSB > 0 ? 12 : 24,
-              }}>
-                {tile(t('mpdsrViz.reviewMaternalAll'), rcF1 + rcF4, bases.md, CIPRB_BLUE,
-                      t('mpdsrViz.notifiedWord'),
-                      t('mpdsrViz.maternalFormSplit', { f1: rcF1, f4: rcF4 }))}
-                {tile(t('mpdsrViz.reviewCommunityNeonatal'), rcF2, bases.cnd, CIPRB_BLUE_LIGHT, t('mpdsrViz.notifiedWord'))}
-                {tile(t('mpdsrViz.reviewFacilityNeonatal'),  rcF5, bases.fnd, '#E8881C', t('mpdsrViz.notifiedWord'))}
-                {tile(t('mpdsrViz.reviewSocialAutopsy'),     rcSA, bases.sa, CIPRB_BLUE, t('mpdsrViz.mdReviewsWord'))}
-              </div>
-              {/* Stillbirths are notified on both slips but no STRUCTURED
-                  review form accepts one: F-02 has no stillbirth field and
-                  F-05 records live-born neonates only. The Social Autopsy
-                  meeting form DOES cover stillbirth (sa_death_type = 3), so
-                  the pathway is not absent, only unstructured. Note also that
-                  ingest maps sa_death_type 1 → maternal and everything else,
-                  stillbirth included, → perinatal, and the SA tile filters to
-                  maternal only, so a stillbirth autopsy appears nowhere on
-                  this panel. Show the gap rather than omitting the outcome. */}
-              {notifSB > 0 && (
-                <div style={{
-                  display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap',
-                  padding: '10px 12px', marginBottom: 24,
-                  background: 'rgba(196,78,0,0.05)',
-                  border: '1px solid rgba(196,78,0,0.18)', borderRadius: 8,
-                }}>
-                  <span className="mono" style={{
-                    fontSize: 9.5, color: '#C44E00', letterSpacing: '0.08em',
-                  }}>
-                    {t('mpdsrViz.stillbirthNoReviewLabel')}
-                  </span>
-                  <span style={{
-                    fontSize: 12, color: 'var(--ink-3)', fontVariantNumeric: 'tabular-nums',
-                  }}>
-                    {t('mpdsrViz.stillbirthNoReviewBody', {
-                      n: notifSB,
-                      community: lvl?.sb.community ?? 0,
-                      facility: lvl?.sb.facility ?? 0,
-                    })}
-                  </span>
-                </div>
-              )}
-            </>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))',
+              gap: 18, marginBottom: 24,
+            }}>
+              {tile(t('mpdsrViz.reviewMaternalAll'), rcF1 + rcF4, bases.md, CIPRB_BLUE,
+                    t('mpdsrViz.notifiedWord'),
+                    t('mpdsrViz.maternalFormSplit', { f1: rcF1, f4: rcF4 }))}
+              {tile(t('mpdsrViz.reviewCommunityNeonatal'), rcF2, bases.cnd, CIPRB_BLUE_LIGHT, t('mpdsrViz.notifiedWord'))}
+              {tile(t('mpdsrViz.reviewFacilityNeonatal'),  rcF5, bases.fnd, '#E8881C', t('mpdsrViz.notifiedWord'))}
+              {tile(t('mpdsrViz.reviewStillbirth'), rcSB, notifSB, '#C44E00',
+                    t('mpdsrViz.notifiedWord'), t('mpdsrViz.stillbirthRoute'))}
+              {tile(t('mpdsrViz.reviewSocialAutopsy'),     rcSA, bases.sa, CIPRB_BLUE, t('mpdsrViz.mdReviewsWord'))}
+            </div>
           )
         })()}
 
@@ -1397,11 +1375,9 @@ const NOTIF_LEVEL_LABELS: Record<string, string> = {
   facility: 'Health facility',
 }
 
-const SA_PLACE_LABELS: Record<string, string> = {
-  facility: 'Health facility',
-  home: 'Home',
-  in_transit: 'In transit',
-}
+// Social-autopsy place of death is decoded server-side alongside every other
+// place field (mpdsr/code_labels.py), so the local map that used to live here
+// is gone. One vocabulary, one place to change it.
 
 /** Neonatal death surveillance — CIPRB 3 (community) + CIPRB 5 (facility).
  *  Cause-of-death breakdown + community-vs-facility split. */
@@ -1511,10 +1487,19 @@ function DeathNotifications({ notifications }: {
  *  place-of-death breakdown. Data is thin and cause is free-text, so this is
  *  a stat-tile-style count alongside a small place-of-death donut. */
 function SocialAutopsy({ socialAutopsy }: {
-  socialAutopsy: { total: number; place_of_death: Record<string, number> } | null
+  socialAutopsy: {
+    total: number
+    place_of_death: Record<string, number>
+    /** Whole sa_md cohort. `total` above is the MATERNAL subset, matching
+     *  this section's title and the review tile. The two used to disagree
+     *  (15 vs 18) because only the tile filtered to maternal. */
+    all_kinds_total?: number
+    by_kind?: { maternal: number; neonatal: number; stillbirth: number; unclassified: number }
+  } | null
 }) {
   const { t } = useTranslation()
   const data = socialAutopsy ?? { total: 0, place_of_death: {} }
+  const other = Math.max(0, (data.all_kinds_total ?? data.total) - data.total)
   const z = {} as Record<string, number>
   return (
     <div>
@@ -1552,12 +1537,22 @@ function SocialAutopsy({ socialAutopsy }: {
           <div style={{ fontSize: 12, color: 'var(--ink-3)', marginTop: 8 }}>
             {data.total === 0 ? t('mpdsrViz.saEmpty') : t('mpdsrViz.saCountSub')}
           </div>
+          {/* The form also reviews neonatal deaths and stillbirths. Say so,
+              rather than letting those rows vanish from a maternal section. */}
+          {other > 0 && (
+            <div style={{ fontSize: 11.5, color: 'var(--muted)', marginTop: 6 }}>
+              {t('mpdsrViz.saOtherKinds', {
+                other,
+                neonatal: data.by_kind?.neonatal ?? 0,
+                stillbirth: data.by_kind?.stillbirth ?? 0,
+              })}
+            </div>
+          )}
         </div>
         <DonutBreakdown
           title={t('mpdsrViz.saPlaceTitle')}
           kicker={t('mpdsrViz.saPlaceKicker')}
           data={data.place_of_death ?? z}
-          labels={SA_PLACE_LABELS}
         />
       </div>
     </div>
@@ -1565,16 +1560,12 @@ function SocialAutopsy({ socialAutopsy }: {
 }
 
 // ─── MPDSR 11 major indicators (CIPRB corrections doc) ───────────────────────
-const MPDSR_LABELS = {
-  place_of_death: { home: 'Home', facility: 'Health facility', in_transit: 'In transit', other: 'Other' },
-  time_of_death: { antepartum: 'Antepartum', intrapartum: 'Intrapartum', postpartum_42d: 'Postpartum (≤42d)', unknown: 'Unknown' },
-  anc: { none: 'None', '1': '1 visit', '2': '2 visits', '3': '3 visits', '4_plus': '4+ visits', unknown: 'Unknown' },
-  pnc: { yes: 'Received', no: 'Not received', unknown: 'Unknown' },
-  mode: { nvd: 'NVD', csection: 'C-section', assisted_vaginal: 'Assisted vaginal', undelivered: 'Undelivered' },
-  outcome: { livebirth: 'Live birth', stillbirth: 'Stillbirth', na: 'N/A (undelivered)' },
-  place_delivery: { home: 'Home', gov_facility: 'Govt facility', private_facility: 'Private facility', in_transit: 'In transit', na: 'N/A' },
-  person: { doctor: 'Doctor', nurse: 'Nurse', midwife: 'Midwife', tba: 'TBA', relatives: 'Relatives', self: 'Self', none: 'No-one' },
-} as const
+// The label map that used to live here was a hand-written guess at the form
+// vocabulary. It did not match what the verbatim CIPRB forms actually emit, so
+// unmapped values fell through and rendered as raw database codes
+// ('doctor_mbbs', 'upazila_hc', 'vaginal_spontaneous') on a dashboard read by
+// CIPRB and UNFPA. Decoding now happens once in mpdsr/code_labels.py, checked
+// against the deployed forms by mpdsr/test_code_labels.py.
 
 function MPDSRIndicators({ indicators }: { indicators: Record<string, Record<string, number>> | null }) {
   const ind = indicators ?? {}
@@ -1598,15 +1589,22 @@ function MPDSRIndicators({ indicators }: { indicators: Record<string, Record<str
         <SourceChip>CIPRB 2 + CIPRB 4</SourceChip>
       </div>
       <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
-        <DonutBreakdown title="1. Place of death"          data={ind.place_of_death ?? z} labels={MPDSR_LABELS.place_of_death} />
-        <DonutBreakdown title="2. Time of death"           data={ind.time_of_death ?? z} labels={MPDSR_LABELS.time_of_death} />
+        {/* Indicators 1, 2, 4, 6, 7, 8 and 9 arrive already decoded and merged
+            by mpdsr/code_labels.py, so no label map is applied here. Doing it
+            in the backend means the monthly report and any export get the same
+            vocabulary as the dashboard instead of each mapping its own. */}
+        <DonutBreakdown title="1. Place of death"          data={ind.place_of_death ?? z} />
+        <DonutBreakdown title="2. Time of death (24h)"     data={ind.time_of_death ?? z} />
         <Histogram      title="3. Gestational week at death" data={ind.gestational_weeks ?? z} />
-        <BarBreakdown   title="4. Antenatal care visits"   data={ind.anc_visits_count ?? z} labels={MPDSR_LABELS.anc} ordered />
-        <StatTile       title="5. Postnatal care"          data={ind.pnc_received ?? z} highlight="yes" labels={MPDSR_LABELS.pnc} />
-        <DonutBreakdown title="6. Mode of delivery"        data={ind.mode_of_delivery ?? z} labels={MPDSR_LABELS.mode} />
-        <StatTile       title="7. Delivery outcome"        data={ind.delivery_outcome ?? z} highlight="livebirth" labels={MPDSR_LABELS.outcome} />
-        <DonutBreakdown title="8. Place of delivery"       data={ind.place_of_delivery ?? z} labels={MPDSR_LABELS.place_delivery} />
-        <BarBreakdown   title="9. Person assisted delivery" data={ind.person_assisted_delivery ?? z} labels={MPDSR_LABELS.person} />
+        <BarBreakdown   title="4. Antenatal care visits"   data={ind.anc_visits_count ?? z} ordered />
+        {/* A visit COUNT, not a yes/no. The stat tile it used to use looked
+            for a 'yes' key that never existed, so it reported "Received: 0 of
+            22" while the breakdown below it showed 19 women with visits. */}
+        <BarBreakdown   title="5. Postnatal care visits"   data={ind.pnc_received ?? z} ordered />
+        <DonutBreakdown title="6. Mode of delivery"        data={ind.mode_of_delivery ?? z} />
+        <StatTile       title="7. Delivery outcome"        data={ind.delivery_outcome ?? z} highlight="Live birth" />
+        <DonutBreakdown title="8. Place of delivery"       data={ind.place_of_delivery ?? z} />
+        <BarBreakdown   title="9. Person assisted delivery" data={ind.person_assisted_delivery ?? z} />
         <Histogram      title="10. Maternal age distribution" data={ind.maternal_age ?? z} />
         <Histogram      title="11. Time of death after birth" data={ind.time_death_after_birth_hours ?? z} />
       </div>

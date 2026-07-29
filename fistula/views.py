@@ -168,6 +168,9 @@ from rest_framework.decorators import api_view, permission_classes as _drf_perms
 from rest_framework.permissions import IsAuthenticated
 from collections import Counter as _Counter
 import re as _re
+
+# Shared with the MPDSR indicators so both dashboards speak one vocabulary.
+from mpdsr.code_labels import relabel
 from .ciprb_models import CIPRBFistulaCase
 
 
@@ -298,9 +301,24 @@ def fistula_aggregates(request):
         'duration_suffering': _dur_band(
             qs.values_list('duration_suffering', flat=True)),                          # 12
         'delivery_outcome': _fis_count(qs, 'delivery_outcome'),                        # 13
-        'fistula_type_v2': _fis_count(qs, 'fistula_type_v2'),                          # 14
+        # 14 + 16 — decode and MERGE spelling variants. 'iterogenic' was
+        # rendering as its own slice beside the correctly spelled 'Iatrogenic',
+        # inventing a fistula type that does not exist.
+        'fistula_type_v2': relabel('fistula_type', _fis_count(qs, 'fistula_type_v2')),  # 14
         'iatrogenic_cause': _fis_count(
             qs.filter(fistula_type_v2='iatrogenic'), 'iatrogenic_cause'),              # 15
-        'genital_fistula_type': _fis_count(qs, 'genital_fistula_type'),               # 16
+        'genital_fistula_type': relabel(
+            'genital_fistula_type', _fis_count(qs, 'genital_fistula_type')),           # 16
         'surgery_outcome_v2': _fis_count(qs, 'surgery_outcome_v2'),                    # 17
+        # The outcome breakdown is captioned "of all surgically repaired
+        # patients" but only counts cases that HAVE an outcome recorded (27),
+        # while the funnel headline says 35 repaired. Ship the denominator so
+        # the gap reads as "outcome not yet recorded" instead of as a
+        # contradiction between two numbers on the same page.
+        'surgery_outcome_coverage': {
+            'recorded': sum(_fis_count(qs, 'surgery_outcome_v2').values()),
+            'repaired_total': pipeline['repaired'],
+            'pending': max(0, pipeline['repaired']
+                           - sum(_fis_count(qs, 'surgery_outcome_v2').values())),
+        },
     })

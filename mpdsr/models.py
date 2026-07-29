@@ -199,6 +199,13 @@ class MPDSRCase(models.Model):
     region = models.CharField(max_length=100, blank=True)
 
     sub_form_type = models.CharField(max_length=10, blank=True, db_index=True)
+    # The Social Autopsy form reviews maternal deaths, neonatal deaths AND
+    # stillbirths (sa_death_type 1/2/3, verbatim from the paper tool), but
+    # DeathType has only maternal and perinatal, so ingest was collapsing
+    # stillbirth into perinatal and the outcome disappeared from the dashboard
+    # entirely. This preserves what the reviewer actually recorded. Blank on
+    # every non-Social-Autopsy row.
+    sa_death_kind = models.CharField(max_length=12, blank=True, db_index=True)
     date_of_death = models.DateField()
     # Facility (Form 04) admission date — paired with date_of_death to derive
     # the admission→death interval (a care-timeliness signal). Nullable:

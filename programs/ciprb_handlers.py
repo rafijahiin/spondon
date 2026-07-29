@@ -485,7 +485,13 @@ def handle_ciprb_social_autopsy(payload, lat, lng):
     sub_id = str(payload.get('_id') or '')
     slip = _s(payload.get('slip_number'))
     # 1 = maternal, 2 = neonatal, 3 = stillbirth → MATERNAL vs PERINATAL.
-    death_type = DeathType.MATERNAL if _s(payload.get('sa_death_type')) == '1' else DeathType.PERINATAL
+    # DeathType has no stillbirth member, so 2 and 3 both land on PERINATAL.
+    # Keep the reviewer's actual answer in sa_death_kind, otherwise a reviewed
+    # stillbirth is indistinguishable from a reviewed neonatal death and shows
+    # up nowhere on the dashboard.
+    _sa_kind_raw = _s(payload.get('sa_death_type'))
+    sa_death_kind = {'1': 'maternal', '2': 'neonatal', '3': 'stillbirth'}.get(_sa_kind_raw, '')
+    death_type = DeathType.MATERNAL if _sa_kind_raw == '1' else DeathType.PERINATAL
 
     def _block(prefix, n):
         out = []
@@ -529,6 +535,7 @@ def handle_ciprb_social_autopsy(payload, lat, lng):
         case.date_of_death = meeting_date     # no death date on the paper; meeting date is the stamp
         case.committee_date = meeting_date
         case.death_type = death_type
+        case.sa_death_kind = sa_death_kind
         age = _int(payload.get('age_years'))
         if age:
             case.age_years = age
