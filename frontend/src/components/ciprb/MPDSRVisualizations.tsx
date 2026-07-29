@@ -363,25 +363,33 @@ function NotifyVsReview({
             MD tiles use MD-notified as the denominator; ND tiles use
             ND-notified. SA shares the MD denominator. */}
         {(() => {
-          // Each tile compares a REVIEW FORM against the MATCHING notification
-          // slips: community MD reviews (F-01) against community MD slips,
-          // facility ND reviews (F-05) against facility ND slips, and so on.
+          // MATERNAL is deliberately NOT split by level here. The notification
+          // side splits on WHICH SLIP WAS FILED; the review side splits on
+          // WHICH FORM WAS USED. Those are different questions wearing the
+          // same word. 13 of the 17 notified maternal deaths occurred in a
+          // facility but were notified by a CHW on the community slip, so a
+          // facility tile reads "3 reviewed · 0 notified" and cannot be read.
+          // Maternal coverage is therefore one figure: all maternal reviews
+          // (F-01 + F-04) against all maternal notifications (both slips).
+          // Neonatal keeps the split because it reconciles on both sides.
+          //
           // Social Autopsy is a re-review of maternal deaths, so its base is
           // the maternal REVIEWS, not notifications.
           //
-          // Reviews exceeding notifications is real, not an error: deaths get
-          // reviewed whose paper slips were never digitised. Show both numbers
-          // plainly — a capped "100%+" with the true counts beside it — rather
-          // than hiding the gap. The gap IS the finding: notification
-          // digitisation lags review work.
+          // Reviews exceeding notifications is real, not an error: maternal
+          // deaths are being reviewed for which no notification slip was ever
+          // filed. Show both numbers plainly, a capped "100%+" with the true
+          // counts beside it, rather than hiding the gap. The gap IS the
+          // finding.
+          const notifMD = (lvl?.md.community ?? 0) + (lvl?.md.facility ?? 0)
           const bases = {
-            cmd: lvl?.md.community ?? 0, fmd: lvl?.md.facility ?? 0,
+            md: notifMD,
             cnd: lvl?.nd.community ?? 0, fnd: lvl?.nd.facility ?? 0,
             sa: rcF1 + rcF4,
           }
           const pct = (n: number, base: number) => base > 0 ? (n / base) * 100 : null
           const tile = (label: string, value: number, base: number,
-                        color: string, baseWord: string) => {
+                        color: string, baseWord: string, note?: string) => {
             const p = pct(value, base)
             return (
               <div>
@@ -401,6 +409,11 @@ function NotifyVsReview({
                 <div style={{ fontSize: 11.5, color: 'var(--ink-3)', marginTop: 4 }}>
                   {value.toLocaleString()} reviewed · {base.toLocaleString()} {baseWord}
                 </div>
+                {note && (
+                  <div style={{ fontSize: 10.5, color: 'var(--muted)', marginTop: 2 }}>
+                    {note}
+                  </div>
+                )}
                 {p !== null && p > 100 && (
                   <div style={{ fontSize: 10.5, color: 'var(--muted)', marginTop: 2 }}>
                     {t('mpdsrViz.reviewExceedsNotified')}
@@ -409,18 +422,49 @@ function NotifyVsReview({
               </div>
             )
           }
+          const notifSB = (lvl?.sb.community ?? 0) + (lvl?.sb.facility ?? 0)
           return (
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))',
-              gap: 18, marginBottom: 24,
-            }}>
-              {tile(t('mpdsrViz.reviewCommunityMaternal'), rcF1, bases.cmd, CIPRB_BLUE, t('mpdsrViz.notifiedWord'))}
-              {tile(t('mpdsrViz.reviewCommunityNeonatal'), rcF2, bases.cnd, CIPRB_BLUE_LIGHT, t('mpdsrViz.notifiedWord'))}
-              {tile(t('mpdsrViz.reviewFacilityMaternal'),  rcF4, bases.fmd, '#C44E00', t('mpdsrViz.notifiedWord'))}
-              {tile(t('mpdsrViz.reviewFacilityNeonatal'),  rcF5, bases.fnd, '#E8881C', t('mpdsrViz.notifiedWord'))}
-              {tile(t('mpdsrViz.reviewSocialAutopsy'),     rcSA, bases.sa, CIPRB_BLUE, t('mpdsrViz.mdReviewsWord'))}
-            </div>
+            <>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))',
+                gap: 18, marginBottom: notifSB > 0 ? 12 : 24,
+              }}>
+                {tile(t('mpdsrViz.reviewMaternalAll'), rcF1 + rcF4, bases.md, CIPRB_BLUE,
+                      t('mpdsrViz.notifiedWord'),
+                      t('mpdsrViz.maternalFormSplit', { f1: rcF1, f4: rcF4 }))}
+                {tile(t('mpdsrViz.reviewCommunityNeonatal'), rcF2, bases.cnd, CIPRB_BLUE_LIGHT, t('mpdsrViz.notifiedWord'))}
+                {tile(t('mpdsrViz.reviewFacilityNeonatal'),  rcF5, bases.fnd, '#E8881C', t('mpdsrViz.notifiedWord'))}
+                {tile(t('mpdsrViz.reviewSocialAutopsy'),     rcSA, bases.sa, CIPRB_BLUE, t('mpdsrViz.mdReviewsWord'))}
+              </div>
+              {/* Stillbirths are notified on both slips but NO review form in
+                  the set can receive one: F-02 has no stillbirth field and
+                  F-05 records live-born neonates only. Show the gap rather
+                  than omitting the outcome entirely. */}
+              {notifSB > 0 && (
+                <div style={{
+                  display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap',
+                  padding: '10px 12px', marginBottom: 24,
+                  background: 'rgba(196,78,0,0.05)',
+                  border: '1px solid rgba(196,78,0,0.18)', borderRadius: 8,
+                }}>
+                  <span className="mono" style={{
+                    fontSize: 9.5, color: '#C44E00', letterSpacing: '0.08em',
+                  }}>
+                    {t('mpdsrViz.stillbirthNoReviewLabel')}
+                  </span>
+                  <span style={{
+                    fontSize: 12, color: 'var(--ink-3)', fontVariantNumeric: 'tabular-nums',
+                  }}>
+                    {t('mpdsrViz.stillbirthNoReviewBody', {
+                      n: notifSB,
+                      community: lvl?.sb.community ?? 0,
+                      facility: lvl?.sb.facility ?? 0,
+                    })}
+                  </span>
+                </div>
+              )}
+            </>
           )
         })()}
 
