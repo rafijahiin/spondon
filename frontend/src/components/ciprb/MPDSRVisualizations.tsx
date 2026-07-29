@@ -437,10 +437,15 @@ function NotifyVsReview({
                 {tile(t('mpdsrViz.reviewFacilityNeonatal'),  rcF5, bases.fnd, '#E8881C', t('mpdsrViz.notifiedWord'))}
                 {tile(t('mpdsrViz.reviewSocialAutopsy'),     rcSA, bases.sa, CIPRB_BLUE, t('mpdsrViz.mdReviewsWord'))}
               </div>
-              {/* Stillbirths are notified on both slips but NO review form in
-                  the set can receive one: F-02 has no stillbirth field and
-                  F-05 records live-born neonates only. Show the gap rather
-                  than omitting the outcome entirely. */}
+              {/* Stillbirths are notified on both slips but no STRUCTURED
+                  review form accepts one: F-02 has no stillbirth field and
+                  F-05 records live-born neonates only. The Social Autopsy
+                  meeting form DOES cover stillbirth (sa_death_type = 3), so
+                  the pathway is not absent, only unstructured. Note also that
+                  ingest maps sa_death_type 1 → maternal and everything else,
+                  stillbirth included, → perinatal, and the SA tile filters to
+                  maternal only, so a stillbirth autopsy appears nowhere on
+                  this panel. Show the gap rather than omitting the outcome. */}
               {notifSB > 0 && (
                 <div style={{
                   display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap',
