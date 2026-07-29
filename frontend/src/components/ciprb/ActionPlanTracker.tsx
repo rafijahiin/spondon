@@ -108,6 +108,9 @@ export function ActionPlanTracker({ districts }: { districts?: readonly string[]
   // the render shows an explicit unavailable state instead of the empty copy.
   const [error, setError] = useState(false)
   const [reloadKey, setReloadKey] = useState(0)
+  // Drives the drawer hint only, so it never reads "CLICK TO EXPAND" on an
+  // already-open list. Declared with the other hooks, above the early returns.
+  const [listOpen, setListOpen] = useState(false)
   const districtsKey = districts && districts.length ? districts.join(',') : ''
 
   useEffect(() => {
@@ -224,7 +227,8 @@ export function ActionPlanTracker({ districts }: { districts?: readonly string[]
           Near Miss far below the fold. The summary carries the counts that
           matter, so nobody has to open it to know whether to. Matches the raw
           MPDSR case register drawer on the same page. */}
-      <details className="card" style={{ padding: 0, overflow: 'hidden' }}>
+      <details className="card" style={{ padding: 0, overflow: 'hidden' }}
+               onToggle={(e) => setListOpen((e.currentTarget as HTMLDetailsElement).open)}>
         <summary style={{
           padding: '14px 18px', cursor: 'pointer', listStyle: 'none',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -244,7 +248,7 @@ export function ActionPlanTracker({ districts }: { districts?: readonly string[]
           <span className="mono" style={{
             fontSize: 11, color: 'var(--muted)', letterSpacing: '0.06em',
           }}>
-            CLICK TO EXPAND
+            {listOpen ? 'CLICK TO COLLAPSE' : 'CLICK TO EXPAND'}
           </span>
         </summary>
         <table className="tbl" style={{ borderTop: '1px solid var(--hair)' }}>
