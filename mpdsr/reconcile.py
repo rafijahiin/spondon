@@ -167,3 +167,78 @@ def run_and_store(token, limit=None):
             },
         )
     return snap
+
+
+# ── Per-submission gap audit ────────────────────────────────────────────────
+# reconcile_ciprb() answers "how many are missing" for LIVE submissions only.
+# It cannot answer the question CIPRB actually asks, which is "Kobo shows 56 and
+# the dashboard shows 49, name the 7". This does: it replays every submission
+# INDIVIDUALLY, ignores the go-live cutoff, and reports each one that the app
+# does not already hold, with its date and which side of go-live it falls on.
+#
+# Cost: one savepoint per submission rather than one per form. Fine for a
+# one-off audit, too slow for the daemon, which is why it is separate.
+
+def _sub_date(sub):
+    return str(sub.get('_submission_time') or '')[:10]
+
+
+def audit_ciprb_gap(token, slugs=None, limit=None):
+    """Name every Kobo submission that has no row in the app.
+
+    Returns per-form dicts with a `missing` list. Each entry carries the Kobo
+    submission id, its date, and `pre_go_live` so pilot data can be told apart
+    from genuine loss rather than assumed.
+
+    CAVEAT worth stating in any report built from this: each submission is
+    tested independently against the CURRENT app state, so if two Kobo
+    submissions both map to one absent row (a duplicate pair), both are listed.
+    The count is therefore an upper bound on distinct missing rows.
+    """
+    results = []
+    for slug, uid in CIPRB_SLUG_TO_UID.items():
+        if slugs and slug not in slugs:
+            continue
+        handler = FORM_HANDLERS.get(slug)
+        count_fn = _counter(slug)
+        if handler is None or count_fn is None:
+            results.append({'slug': slug, 'error': 'no handler/counter'})
+            continue
+
+        subs = _fetch(uid, token, limit)          # NO cutoff filter: that is the point
+        missing, crashes = [], []
+        for s in subs:
+            payload = _flatten_group_keys(s)
+            lat, lng = _geolocation(payload)
+            before = count_fn()
+            sp = transaction.savepoint()
+            try:
+                with transaction.atomic():
+                    handler(payload, lat, lng)
+                after = count_fn()
+            except Exception as exc:              # noqa: BLE001
+                after = before
+                crashes.append({'id': s.get('_id'), 'date': _sub_date(s),
+                                'error': str(exc)[:160]})
+            transaction.savepoint_rollback(sp)
+            if after > before:
+                missing.append({
+                    'id': s.get('_id'),
+                    'date': _sub_date(s),
+                    'pre_go_live': not _is_live(s),
+                    'district': payload.get('district') or payload.get('_district') or '',
+                })
+
+        pre = [m for m in missing if m['pre_go_live']]
+        results.append({
+            'slug': slug,
+            'uid': uid,
+            'kobo_count': len(subs),
+            'app_rows': count_fn(),
+            'missing_total': len(missing),
+            'missing_pre_go_live': len(pre),
+            'missing_live': len(missing) - len(pre),
+            'missing': missing,
+            'crashes': crashes,
+        })
+    return results
