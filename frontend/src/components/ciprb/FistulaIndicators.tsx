@@ -36,7 +36,9 @@ const L = {
   outcome: { livebirth: 'Livebirth', stillbirth: 'Stillbirth' },
   ftype: { obstetric: 'Obstetric', iatrogenic: 'Iatrogenic', congenital: 'Congenital', traumatic: 'Traumatic' },
   iatro: { hysterectomy: 'Hysterectomy', csection: 'C-section', laparoscopy: 'Laparoscopy' },
-  genital: { vvf: 'VVF', rvf: 'RVF', ureterovaginal: 'Uretero-vaginal', urethrovaginal: 'Urethro-vaginal', vesicouterine: 'Vesico-uterine', vesicocervical: 'Vesico-cervical' },
+  // traumatic + iatrogenic are not anatomical types, but both are recorded in
+  // this field in production. Label them rather than let them render raw.
+  genital: { vvf: 'VVF', rvf: 'RVF', ureterovaginal: 'Uretero-vaginal', urethrovaginal: 'Urethro-vaginal', vesicouterine: 'Vesico-uterine', vesicocervical: 'Vesico-cervical', traumatic: 'Traumatic', iatrogenic: 'Iatrogenic' },
   surgery: { success_dry: 'Repaired & dry', success_not_dry: 'Repaired, not dry', failed: 'Failed' },
 } as const
 

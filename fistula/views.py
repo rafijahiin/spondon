@@ -170,7 +170,7 @@ from collections import Counter as _Counter
 import re as _re
 
 # Shared with the MPDSR indicators so both dashboards speak one vocabulary.
-from mpdsr.code_labels import relabel
+from mpdsr.code_labels import canonicalise
 from .ciprb_models import CIPRBFistulaCase
 
 
@@ -301,13 +301,17 @@ def fistula_aggregates(request):
         'duration_suffering': _dur_band(
             qs.values_list('duration_suffering', flat=True)),                          # 12
         'delivery_outcome': _fis_count(qs, 'delivery_outcome'),                        # 13
-        # 14 + 16 — decode and MERGE spelling variants. 'iterogenic' was
-        # rendering as its own slice beside the correctly spelled 'Iatrogenic',
-        # inventing a fistula type that does not exist.
-        'fistula_type_v2': relabel('fistula_type', _fis_count(qs, 'fistula_type_v2')),  # 14
+        # 14 + 16 — MERGE spelling variants, but onto the canonical CODE, not
+        # an English label. 'iterogenic' was rendering as its own slice beside
+        # the correctly spelled 'Iatrogenic', inventing a fistula type that
+        # does not exist. Codes are kept because the Fistula Corner charts are
+        # keyed on them (PIE_COLORS['obstetric'], GENITAL_TYPES 'vvf'/'rvf');
+        # relabelling here emptied both of those charts.
+        'fistula_type_v2': canonicalise('fistula_type',
+                                        _fis_count(qs, 'fistula_type_v2')),            # 14
         'iatrogenic_cause': _fis_count(
             qs.filter(fistula_type_v2='iatrogenic'), 'iatrogenic_cause'),              # 15
-        'genital_fistula_type': relabel(
+        'genital_fistula_type': canonicalise(
             'genital_fistula_type', _fis_count(qs, 'genital_fistula_type')),           # 16
         'surgery_outcome_v2': _fis_count(qs, 'surgery_outcome_v2'),                    # 17
         # The outcome breakdown is captioned "of all surgically repaired

@@ -12,7 +12,8 @@ import unittest
 from django.test import SimpleTestCase
 
 from mpdsr.code_labels import (
-    _MAPS, _norm, UNKNOWN, band_pnc, band_time_of_death, decode, relabel,
+    _MAPS, _norm, UNKNOWN, band_pnc, band_time_of_death, canonicalise, decode,
+    relabel,
 )
 
 try:
@@ -64,11 +65,22 @@ class DuplicateVariantsMerge(SimpleTestCase):
         self.assertEqual(merged['Vaginal (spontaneous)'], 19)
         self.assertEqual(merged['Caesarean section'], 12)
 
-    def test_misspelled_fistula_type_merges(self):
-        merged = relabel('genital_fistula_type',
-                         {'iterogenic': 1, 'Iatrogenic': 1, 'VVF': 78})
-        self.assertEqual(merged['Iatrogenic'], 2)
-        self.assertEqual(merged['Vesico-vaginal (VVF)'], 78)
+    def test_misspelled_fistula_type_merges_onto_the_canonical_code(self):
+        # Fistula must keep CODES: the Fistula Corner charts look up
+        # PIE_COLORS['obstetric'] and GENITAL_TYPES 'vvf'/'rvf'. Returning
+        # English labels here emptied both charts on the live dashboard.
+        merged = canonicalise('genital_fistula_type',
+                              {'iterogenic': 1, 'Iatrogenic': 1, 'VVF': 78,
+                               'RVF': 10, 'TR': 4, 'UVF': 1})
+        self.assertEqual(merged['iatrogenic'], 2, 'the misspelling must merge')
+        self.assertEqual(merged['vvf'], 78)
+        self.assertEqual(merged['rvf'], 10)
+        self.assertEqual(merged['traumatic'], 4)
+        self.assertEqual(merged['urethrovaginal'], 1)
+
+    def test_fistula_cause_keeps_the_codes_the_pie_colours_need(self):
+        merged = canonicalise('fistula_type', {'obstetric': 23, 'iterogenic': 4})
+        self.assertEqual(sorted(merged), ['iatrogenic', 'obstetric'])
 
     def test_blank_and_sentinel_become_unknown(self):
         merged = relabel('place_of_death', {'': 2, '99': 1, 'home': 3})

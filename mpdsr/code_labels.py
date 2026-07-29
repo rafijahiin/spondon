@@ -183,6 +183,52 @@ def decode(field, raw):
     return str(raw).replace('_', ' ').strip().capitalize() or UNKNOWN
 
 
+# ── Canonical CODES (not labels) ───────────────────────────────────────────
+# The fistula charts are keyed on the raw form codes: PIE_COLORS maps
+# 'obstetric' to a colour and GENITAL_TYPES lists 'vvf'/'rvf' to fix the bar
+# order, and FistulaIndicators has its own label map on the same codes.
+# Relabelling those to English server-side emptied both Fistula Corner charts,
+# because every one of those lookups missed. So for fistula the merge has to
+# land on a canonical CODE and leave presentation to the frontend.
+_CANON = {
+    'fistula_type': {
+        'obstetric': 'obstetric', 'obstetric fistula': 'obstetric',
+        'iatrogenic': 'iatrogenic', 'iterogenic': 'iatrogenic',
+        'iatrogenic fistula': 'iatrogenic',
+        'congenital': 'congenital',
+        'traumatic': 'traumatic', 'tr': 'traumatic',
+    },
+    'genital_fistula_type': {
+        'vvf': 'vvf', 'vesicovaginal': 'vvf', 'vesico vaginal': 'vvf',
+        'rvf': 'rvf', 'rectovaginal': 'rvf', 'recto vaginal': 'rvf',
+        'uvf': 'urethrovaginal', 'urethrovaginal': 'urethrovaginal',
+        'urethro vaginal': 'urethrovaginal',
+        'ureterovaginal': 'ureterovaginal', 'uretero vaginal': 'ureterovaginal',
+        'vesicouterine': 'vesicouterine', 'vesico uterine': 'vesicouterine',
+        'vesicocervical': 'vesicocervical', 'vesico cervical': 'vesicocervical',
+        # Neither is an anatomical type. Both appear in this field in
+        # production; keep them visible under one spelling instead of two.
+        'tr': 'traumatic', 'traumatic': 'traumatic',
+        'iatrogenic': 'iatrogenic', 'iterogenic': 'iatrogenic',
+    },
+}
+
+
+def canonicalise(field, counts):
+    """Merge spelling variants onto one canonical CODE, preserving codes.
+
+    Same duplicate-killing job as relabel(), but the output stays machine
+    readable so code-keyed charts keep working.
+    """
+    mapping = _CANON.get(field, {})
+    out = {}
+    for raw, n in (counts or {}).items():
+        key = _norm(raw)
+        code = mapping.get(key, key.replace(' ', '_')) if key else 'unknown'
+        out[code] = out.get(code, 0) + n
+    return out
+
+
 # Fields the dashboard renders in a fixed sequence rather than by size. The
 # aggregate must emit them in that sequence, because the chart preserves
 # insertion order and a Counter's order is arbitrary.
