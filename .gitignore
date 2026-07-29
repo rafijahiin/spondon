@@ -44,3 +44,4 @@ mediafiles/
 secrets-to-scrub.txt
 _handoff_*.txt
 _kobo_backup/
+relative.sqlite3
