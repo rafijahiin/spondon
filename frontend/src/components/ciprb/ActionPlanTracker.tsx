@@ -219,9 +219,35 @@ export function ActionPlanTracker({ districts }: { districts?: readonly string[]
         </div>
       </div>
 
-      {/* Per-action table */}
-      <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-        <table className="tbl">
+      {/* Per-action table, collapsed by default. There are 55 actions today
+          and the list only grows, so leaving it open pushed Fistula, MPDSR and
+          Near Miss far below the fold. The summary carries the counts that
+          matter, so nobody has to open it to know whether to. Matches the raw
+          MPDSR case register drawer on the same page. */}
+      <details className="card" style={{ padding: 0, overflow: 'hidden' }}>
+        <summary style={{
+          padding: '14px 18px', cursor: 'pointer', listStyle: 'none',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          gap: 12, flexWrap: 'wrap',
+          fontWeight: 600, fontSize: 14, color: 'var(--ink)',
+        }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
+            Every action, district by district
+            <span style={{
+              fontSize: 11, color: 'var(--muted)', fontWeight: 500,
+              fontVariantNumeric: 'tabular-nums',
+            }}>
+              ({actions.length.toLocaleString()} tracked
+              {overdue > 0 ? `, ${overdue.toLocaleString()} overdue` : ''})
+            </span>
+          </span>
+          <span className="mono" style={{
+            fontSize: 11, color: 'var(--muted)', letterSpacing: '0.06em',
+          }}>
+            CLICK TO EXPAND
+          </span>
+        </summary>
+        <table className="tbl" style={{ borderTop: '1px solid var(--hair)' }}>
           <thead>
             <tr>
               <th>ID</th>
@@ -265,7 +291,7 @@ export function ActionPlanTracker({ districts }: { districts?: readonly string[]
             ))}
           </tbody>
         </table>
-      </div>
+      </details>
     </div>
   )
 }
