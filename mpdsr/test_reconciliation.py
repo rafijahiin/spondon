@@ -189,3 +189,49 @@ class PartnerReplayDetectsStranded(TestCase):
         res = self._run()
         self.assertEqual(res[0]['stranded'], 0)
         self.assertTrue(res[0]['ok'])
+
+
+class FetchFollowsPagination(TestCase):
+    """Kobo caps a page at 1,000. The reconciliation must see EVERY
+    submission, or the newest records of the big partner forms silently
+    escape the guard - which is exactly how 8 stranded Bandhu logbook
+    entries stayed invisible until the first partner-covered run."""
+
+    def test_fetch_walks_next_links(self):
+        from programs import ciprb_replay as CR
+        pages = {
+            'first': {'results': [{'_id': i} for i in range(1000)],
+                      'next': 'https://kf/next2'},
+            'https://kf/next2': {'results': [{'_id': 'tail'}], 'next': None},
+        }
+
+        class FakeResp:
+            def __init__(self, payload):
+                self._p = payload
+            def raise_for_status(self):
+                pass
+            def json(self):
+                return self._p
+
+        def fake_get(url, headers=None, timeout=None):
+            key = 'first' if '/assets/' in url else url
+            return FakeResp(pages[key])
+
+        with mock.patch.object(CR.requests, 'get', side_effect=fake_get):
+            out = CR._fetch('uidX', 'token')
+        self.assertEqual(len(out), 1001, 'the second page must be fetched')
+        self.assertEqual(out[-1]['_id'], 'tail')
+
+    def test_limit_still_caps_for_smoke_runs(self):
+        from programs import ciprb_replay as CR
+
+        class FakeResp:
+            def raise_for_status(self):
+                pass
+            def json(self):
+                return {'results': [{'_id': i} for i in range(50)], 'next': None}
+
+        with mock.patch.object(CR.requests, 'get',
+                               return_value=FakeResp()):
+            out = CR._fetch('uidX', 'token', limit=30)
+        self.assertEqual(len(out), 30)

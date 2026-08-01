@@ -40,10 +40,28 @@ CIPRB_SLUG_TO_UID = {
 
 
 def _fetch(uid, token, limit=None):
-    url = '%s/assets/%s/data/?limit=%d' % (KOBO_BASE, uid, limit or 3000)
-    r = requests.get(url, headers={'Authorization': 'Token ' + token}, timeout=180)
-    r.raise_for_status()
-    return r.json().get('results', [])
+    """All submissions for an asset, following pagination.
+
+    Kobo caps a page at 1,000 regardless of the limit asked for. The old
+    single-request version silently returned only the first page, which never
+    mattered for the CIPRB forms (all under 300) but capped the big partner
+    forms at exactly 1,000, so their newest submissions escaped the
+    reconciliation. `limit` now means "at most this many, total", for the
+    smoke-test path only.
+    """
+    out = []
+    url = '%s/assets/%s/data/?format=json&limit=%d' % (
+        KOBO_BASE, uid, min(limit, 1000) if limit else 1000)
+    headers = {'Authorization': 'Token ' + token}
+    while url:
+        r = requests.get(url, headers=headers, timeout=180)
+        r.raise_for_status()
+        j = r.json()
+        out.extend(j.get('results', []))
+        if limit and len(out) >= limit:
+            return out[:limit]
+        url = j.get('next')
+    return out
 
 
 def replay_ciprb(token, slugs=None, limit=None):
