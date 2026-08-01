@@ -98,49 +98,173 @@ def _hook_health(uid, token):
     }
 
 
+# ── PHD + Bandhu coverage ──────────────────────────────────────────────────
+# Their forms are NOT hand-registered like CIPRB's. Every partner form's Kobo
+# hook posts to /webhook/programs/form/<slug>/, so the registry is DISCOVERED
+# from the hooks themselves: any deployed asset whose active hook carries a
+# phd_/bandhu_ slug is reconciled automatically. A new partner form therefore
+# joins the guard the day its hook is wired, with no code change.
+#
+# The replay strategy is identical to CIPRB's and is safe for the same reason:
+# every partner handler is idempotent (service rows dedup on
+# kobo_submission_id via _already_exists; registrations get_or_create on the
+# client ID), so replaying an ingested submission creates zero rows and a
+# stranded one creates at least one.
+
+import re
+
+PARTNER_PREFIXES = ('phd_', 'bandhu_')
+_SLUG_RE = re.compile(r'/webhook/programs/form/([a-z0-9_]+)/?')
+
+# Every model a PHD or Bandhu handler can CREATE. The per-form counter sums
+# these, so a stranded submission that creates any of them is detected.
+# test_reconciliation scans the handler sources and fails if a handler gains a
+# model this list is missing, so it cannot rot silently.
+PARTNER_COUNTER_MODELS = [
+    'Client', 'ClinicVisit', 'CoordMeeting', 'GBVCase', 'GBVCornerRecord',
+    'GroupEducationSession', 'HIVSTITestResult', 'IECMaterial',
+    'IndividualCounselling', 'MobileHealthCamp', 'OutreachSession',
+    'PHDCounsellingReport', 'Referral', 'StockEntry', 'TrainingEvent',
+    'WellnessLogbookEntry',
+]
+
+
+def _partner_counter(org):
+    """Row count across every model the partner's handlers write, org-scoped
+    where the model carries an organisation field, total otherwise. The
+    unfiltered models are static while THIS form replays, so the before/after
+    delta stays exact."""
+    def count():
+        import programs.models as pm
+        total = 0
+        for name in PARTNER_COUNTER_MODELS:
+            model = getattr(pm, name, None)
+            if model is None:
+                continue
+            qs = model.objects.all()
+            fields = {f.name for f in model._meta.fields}
+            if 'organisation' in fields:
+                qs = qs.filter(organisation__iexact=org)
+            total += qs.count()
+        return total
+    return count
+
+
+def _slug_from_hooks(hooks):
+    for h in hooks:
+        m = _SLUG_RE.search(h.get('endpoint') or '')
+        if m:
+            return m.group(1)
+    return None
+
+
+def discover_partner_forms(token):
+    """[{slug, uid, name, org, hook}] for every deployed PHD/Bandhu form whose
+    active hook points at the programs webhook."""
+    headers = {'Authorization': 'Token ' + token}
+    assets, url = [], KOBO_BASE + '/assets/?format=json&limit=100'
+    while url:
+        j = requests.get(url, headers=headers, timeout=120).json()
+        assets += j.get('results', [])
+        url = j.get('next')
+
+    out = []
+    for a in assets:
+        if not a.get('has_deployment'):
+            continue
+        uid = a['uid']
+        try:
+            hooks = requests.get(
+                '%s/assets/%s/hooks/?format=json' % (KOBO_BASE, uid),
+                headers=headers, timeout=60).json().get('results', [])
+        except Exception:  # noqa: BLE001
+            continue
+        active = [h for h in hooks if h.get('active')]
+        slug = _slug_from_hooks(active)
+        if not slug or not slug.startswith(PARTNER_PREFIXES):
+            continue
+        out.append({
+            'slug': slug,
+            'uid': uid,
+            'name': a.get('name', ''),
+            'org': 'PHD' if slug.startswith('phd_') else 'Bandhu',
+            'hook': {
+                'hook_active': bool(active),
+                'hook_endpoint_ok': all(
+                    'web-production-091fa' in (h.get('endpoint') or '')
+                    for h in active) if active else None,
+                'failed_lifetime': sum(int(h.get('failed_count') or 0)
+                                       for h in active),
+                'pending': sum(int(h.get('pending_count') or 0)
+                               for h in active),
+            },
+        })
+    return out
+
+
+def _replay_form(slug, uid, handler, count_fn, token, limit):
+    """One form's replay inside a rolled-back savepoint. Shared by the CIPRB
+    registry and the discovered partner forms so the semantics cannot drift."""
+    subs = [s for s in _fetch(uid, token, limit) if _is_live(s)]
+    before = count_fn()
+    crashes = []
+    sp = transaction.savepoint()
+    for s in subs:
+        payload = _flatten_group_keys(s)
+        lat, lng = _geolocation(payload)
+        try:
+            with transaction.atomic():
+                handler(payload, lat, lng)
+        except Exception as exc:  # noqa: BLE001
+            crashes.append({'id': s.get('_id'), 'error': str(exc)[:160]})
+    after = count_fn()
+    transaction.savepoint_rollback(sp)   # discard everything the replay wrote
+
+    stranded = max(0, after - before)
+    return {
+        'slug': slug,
+        'uid': uid,
+        'kobo_count': len(subs),
+        'app_rows': before,
+        # Rows the handlers had to create = submissions missing from the app.
+        'stranded': stranded,
+        'crashes': len(crashes),
+        'crash_detail': crashes[:5],
+        'ok': stranded == 0 and not crashes,
+    }
+
+
 def reconcile_ciprb(token, limit=None):
-    """Compute the per-form reconciliation. Replays inside a savepoint that is
-    rolled back here, so this function does NOT persist the replayed rows — but it
-    must run inside an outer transaction the CALLER manages (so the savepoint has
-    a parent). Returns a list of per-form dicts.
+    """Compute the per-form reconciliation for CIPRB, PHD and Bandhu. Replays
+    inside savepoints that are rolled back here, so this function does NOT
+    persist the replayed rows — but it must run inside an outer transaction the
+    CALLER manages (so the savepoints have a parent). Returns a list of
+    per-form dicts. Baseline forms are deliberately NOT here: their pipeline is
+    verification-gated (BaselineResponse) and has its own console.
     """
-    counters = _counter
     results = []
     for slug, uid in CIPRB_SLUG_TO_UID.items():
         handler = FORM_HANDLERS.get(slug)
-        count_fn = counters(slug)
+        count_fn = _counter(slug)
         if handler is None or count_fn is None:
             results.append({'slug': slug, 'error': 'no handler/counter'})
             continue
-
-        subs = [s for s in _fetch(uid, token, limit) if _is_live(s)]
-        before = count_fn()
-        crashes = []
-        sp = transaction.savepoint()
-        for s in subs:
-            payload = _flatten_group_keys(s)
-            lat, lng = _geolocation(payload)
-            try:
-                with transaction.atomic():
-                    handler(payload, lat, lng)
-            except Exception as exc:  # noqa: BLE001
-                crashes.append({'id': s.get('_id'), 'error': str(exc)[:160]})
-        after = count_fn()
-        transaction.savepoint_rollback(sp)   # discard everything the replay wrote
-
-        stranded = max(0, after - before)
-        rec = {
-            'slug': slug,
-            'uid': uid,
-            'kobo_count': len(subs),
-            'app_rows': before,
-            # Rows the handlers had to create = submissions missing from the app.
-            'stranded': stranded,
-            'crashes': len(crashes),
-            'crash_detail': crashes[:5],
-            'ok': stranded == 0 and not crashes,
-        }
+        rec = _replay_form(slug, uid, handler, count_fn, token, limit)
+        rec['org'] = 'CIPRB'
         rec.update(_hook_health(uid, token))
+        results.append(rec)
+
+    for form in discover_partner_forms(token):
+        handler = FORM_HANDLERS.get(form['slug'])
+        if handler is None:
+            results.append({'slug': form['slug'], 'org': form['org'],
+                            'error': 'hook slug has no handler'})
+            continue
+        rec = _replay_form(form['slug'], form['uid'], handler,
+                           _partner_counter(form['org']), token, limit)
+        rec['org'] = form['org']
+        rec['name'] = form['name']
+        rec.update(form['hook'])
         results.append(rec)
     return results
 

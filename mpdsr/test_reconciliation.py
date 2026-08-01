@@ -94,3 +94,98 @@ class ReconciliationReadPathTest(TestCase):
         self.client.force_authenticate(phd)
         res = self.client.get(URL)
         self.assertEqual(res.status_code, 403)
+
+
+# ── Partner (PHD + Bandhu) coverage ─────────────────────────────────────────
+
+import re as _re
+from unittest import mock
+
+from django.db import transaction as _tx
+
+from mpdsr import reconcile as R
+
+
+class HookSlugParsing(TestCase):
+    def test_slug_is_read_from_the_programs_webhook_endpoint(self):
+        hooks = [{'endpoint': 'https://web-production-091fa.up.railway.app'
+                              '/webhook/programs/form/phd_registration_v1/'}]
+        self.assertEqual(R._slug_from_hooks(hooks), 'phd_registration_v1')
+
+    def test_non_programs_endpoints_yield_nothing(self):
+        self.assertIsNone(R._slug_from_hooks(
+            [{'endpoint': 'https://example.com/other/'}, {'endpoint': None}]))
+
+
+class PartnerCounterCoversEveryHandlerModel(TestCase):
+    """If a PHD/Bandhu handler learns to create a model that the partner
+    counter does not sum, a stranded submission creating only that model
+    would look healthy. Scan the handler sources so the list cannot rot."""
+
+    EXEMPT = {'Partner'}          # looked up, never created by a handler
+
+    def test_every_created_model_is_counted(self):
+        import inspect
+        import programs.phd_handlers as ph
+        import programs.bandhu_handlers as bh
+        pattern = _re.compile(
+            r'([A-Z]\w+)\.objects\.(?:get_or_create|update_or_create|create)\(')
+        created = set()
+        for modsrc in (inspect.getsource(ph), inspect.getsource(bh)):
+            created |= set(pattern.findall(modsrc))
+        missing = created - self.EXEMPT - set(R.PARTNER_COUNTER_MODELS)
+        self.assertEqual(missing, set(),
+                         'handler-created models missing from '
+                         'PARTNER_COUNTER_MODELS: %s' % sorted(missing))
+
+
+class PartnerReplayDetectsStranded(TestCase):
+    """End to end on the real handler: a PHD registration that exists in Kobo
+    but not in the app must count as stranded; once ingested it must not."""
+
+    def setUp(self):
+        from programs.models import ServiceCenter
+        ServiceCenter.objects.create(
+            code='R001', name='Test Wellness Center', organisation='PHD',
+            center_type='KP_CLINIC', district='Rajbari', is_active=True)
+        self.sub = {
+            '_id': 900901,
+            '_submission_time': '2026-07-15T10:00:00',
+            'id_no': '9-0001',
+            'name': 'Recon Fixture',
+        }
+        self.form = {'slug': 'phd_registration_v1', 'uid': 'uidPHD1',
+                     'name': 'PHD 1', 'org': 'PHD',
+                     'hook': {'hook_active': True, 'hook_endpoint_ok': True,
+                              'failed_lifetime': 0, 'pending': 0}}
+
+    def _run(self):
+        with mock.patch.object(R, 'discover_partner_forms',
+                               return_value=[self.form]), \
+             mock.patch.object(R, '_fetch', return_value=[self.sub]), \
+             mock.patch.dict('programs.ciprb_replay.CIPRB_SLUG_TO_UID',
+                             {}, clear=True):
+            with _tx.atomic():
+                return R.reconcile_ciprb('token')
+
+    def test_missing_submission_is_stranded_and_nothing_persists(self):
+        from programs.models import Client
+        res = self._run()
+        self.assertEqual(len(res), 1)
+        rec = res[0]
+        self.assertEqual(rec['org'], 'PHD')
+        self.assertEqual(rec['kobo_count'], 1)
+        self.assertEqual(rec['stranded'], 1)
+        self.assertFalse(rec['ok'])
+        self.assertEqual(rec['crashes'], 0, rec.get('crash_detail'))
+        self.assertEqual(
+            Client.objects.filter(organisation__iexact='PHD').count(), 0,
+            'the replay must roll back, never ingest')
+
+    def test_ingested_submission_reconciles_clean(self):
+        from programs.webhook import FORM_HANDLERS, _flatten_group_keys
+        FORM_HANDLERS['phd_registration_v1'](
+            _flatten_group_keys(self.sub), None, None)
+        res = self._run()
+        self.assertEqual(res[0]['stranded'], 0)
+        self.assertTrue(res[0]['ok'])

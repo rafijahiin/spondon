@@ -67,3 +67,4 @@ the form has no direct question, the value is computed from a documented rule.
   neonatal total.
 - The **40-minute baseline interview threshold** (a baseline, not CIPRB-dashboard,
   decision) remains pending Nuruzzaman's pilot timing — tracked separately.
+| Reconciliation scope | The daily replay covers CIPRB (static registry) plus every PHD and Bandhu form DISCOVERED from its Kobo webhook (`/webhook/programs/form/<slug>/`). Partner replay is safe because all partner handlers are idempotent (kobo_submission_id dedup / get_or_create on client ID). Baseline forms are deliberately excluded: their pipeline is verification-gated with its own console. | mpdsr/reconcile.py | `def discover_partner_forms` | CIPRB | confirmed |

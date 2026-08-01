@@ -19,7 +19,7 @@ from mpdsr.reconcile import run_and_store
 
 
 class Command(BaseCommand):
-    help = 'Reconcile CIPRB Kobo forms vs app rows; store a snapshot for /ciprb.'
+    help = ('Reconcile CIPRB + PHD + Bandhu Kobo forms vs app rows; store a snapshot for /ciprb. Partner forms are discovered from their webhooks.')
 
     def add_arguments(self, parser):
         parser.add_argument('--limit', type=int, default=None,
