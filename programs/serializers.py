@@ -66,8 +66,34 @@ class MPDSRCaseApprovalSerializer(serializers.ModelSerializer):
         ]
 
     def get_raw_payload(self, obj):
+        # Priority: the case's own stored Kobo answers (verbatim-form path),
+        # then the legacy linked submission, then a summary synthesised from
+        # the model fields — so the approver ALWAYS has something real to
+        # review. "No payload data" on a death review meant blind approval.
+        own = getattr(obj, 'raw_payload', None)
+        if own:
+            return own
         sub = getattr(obj, 'submission', None)
-        return getattr(sub, 'raw_data', None) or {}
+        legacy = getattr(sub, 'raw_data', None)
+        if legacy:
+            return legacy
+        summary = {
+            'form': obj.sub_form_label,
+            'death_type': obj.get_death_type_display(),
+            'date_of_death': str(obj.date_of_death or ''),
+            'district': obj.district,
+            'upazila': obj.upazila,
+            'union': obj.union,
+            'case_serial': getattr(obj, 'case_serial', ''),
+            'place_of_death': obj.get_place_of_death_display()
+                              if obj.place_of_death else '',
+            'cause_of_death': obj.cause_of_death,
+            'age_years': getattr(obj, 'age_years', None),
+            'admission_date': str(getattr(obj, 'admission_date', '') or ''),
+            'narrative_notes': obj.notes,
+            'action_plan': obj.action_plan,
+        }
+        return {k: v for k, v in summary.items() if v not in ('', None)}
 
 
 class MPDSRDeathNotificationApprovalSerializer(serializers.ModelSerializer):

@@ -438,6 +438,10 @@ def _save_mpdsr_case(payload, lat, lng, *, sub_form_type, death_type,
 
         case.latitude, case.longitude = lat, lng
         case.source = 'kobo'
+        # The full Kobo answers, so the approval card can show the reviewer
+        # WHAT they are approving. Without this every verbatim review rendered
+        # as "no payload data" and managers were signing blind.
+        case.raw_payload = payload
         case.save()
     return HttpResponse('OK', status=200)
 

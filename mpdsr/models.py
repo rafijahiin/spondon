@@ -29,15 +29,19 @@ class PlaceOfDeath(models.TextChoices):
 # plus the review types Animesh specified in the 2026-06-02 meeting:
 # Community MD Review (CDN) via verbal autopsy, Facility MD Review (FDR),
 # and Social Autopsy).
+# Labels follow the VERBATIM form suite live since 23 June 2026. The old map
+# predated it and called f1/f2 "notifications", so every community review sat
+# mislabelled in the approval queue (notifications are a separate model with
+# their own slips; these are the REVIEW forms).
 SUB_FORM_LABELS = {
-    'f1': 'F1 Community Notification',
-    'f2': 'F2 Facility Notification',
-    'f3': 'F3 Community Stillbirth Review',
-    'f4': 'F4 Facility Maternal Death Review',
-    'f5': 'F5 Facility Neonatal Death Review',
-    'f6': 'F6 Facility Stillbirth Review',
+    'f1': 'Form 01 · Community Maternal Death Review',
+    'f2': 'Form 02 · Community Neonatal Death Review',
+    'f3': 'F3 Community Stillbirth Review (legacy)',
+    'f4': 'Form 04 · Facility Maternal Death Review',
+    'f5': 'Form 05 · Facility Neonatal Death Review',
+    'f6': 'F6 Facility Stillbirth Review (legacy)',
     'va_md': 'Community Verbal Autopsy (Maternal)',
-    'sa_md': 'Social Autopsy (Maternal)',
+    'sa_md': 'Form 06 · Social Autopsy',
 }
 
 # Sub-forms that are always perinatal/neonatal regardless of death_type field
