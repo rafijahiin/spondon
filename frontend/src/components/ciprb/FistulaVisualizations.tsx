@@ -564,9 +564,12 @@ export function FistulaVisualizations({
             // one whole (the repaired patients whose outcome is recorded) —
             // unlike the removed diagnosed-vs-repaired pie, whose slices were
             // subset and superset.
+            // Orange family per Rafi (hue-consistent with the rest of the
+            // fistula section): deep orange = dry (best), light = not dry,
+            // coral = failed.
             const soData = [
-              { name: 'Successfully repaired & dry',     value: agg.outcomeDry,    color: '#1A7A5A' },
-              { name: 'Successfully repaired, not dry',  value: agg.outcomeNotDry, color: '#F96000' },
+              { name: 'Successfully repaired & dry',     value: agg.outcomeDry,    color: '#C44E00' },
+              { name: 'Successfully repaired, not dry',  value: agg.outcomeNotDry, color: '#FB904D' },
               { name: 'Failed',                          value: agg.outcomeFailed, color: '#ED5B7E' },
             ]
             const soTotal = soData.reduce((s, d) => s + d.value, 0)
