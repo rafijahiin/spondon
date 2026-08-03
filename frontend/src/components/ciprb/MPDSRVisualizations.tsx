@@ -751,7 +751,7 @@ function CauseBreakdown({ cases, donorActive = false }: { cases: MPDSRCase[]; do
             {t('mpdsrViz.causeSub')}
           </p>
         </div>
-        <SourceChip>CIPRB 2 + CIPRB 4</SourceChip>
+        <SourceChip>CIPRB 2 (Form 01) + CIPRB 4 (Form 04)</SourceChip>
       </div>
 
       {/* Group tabs — filter both donuts at once. */}
@@ -1087,112 +1087,6 @@ function ResponsePlanTracker({ summaries }: { summaries: ActionPlanSummary[] }) 
 
 // ─── Main export ─────────────────────────────────────────────────────────────
 
-// ─── Per-district Reporting Rate bar chart ───────────────────────────────────
-//
-// Animesh's spec: reporting rates calculated against Sayeed's 'Estimated
-// Maternal Deaths' denominator per district. Bhola example — estimated=75,
-// reported=35 → ~47% reporting rate. Shown as a horizontal bar chart so
-// districts are scannable by name.
-
-function ReportingRatePerDistrict({
-  cases, denominators,
-}: { cases: MPDSRCase[]; denominators: DistrictDenominator[] }) {
-  const { t } = useTranslation()
-  // Normalise district name like the cause-breakdown filter does.
-  const norm = (s: string) => (s ?? '').toLowerCase().replace(/[^a-z0-9]/g, '')
-  const reportedByDistrict: Record<string, number> = {}
-  for (const c of cases) {
-    if (c.death_type !== 'maternal') continue
-    const k = norm(c.district ?? '')
-    reportedByDistrict[k] = (reportedByDistrict[k] ?? 0) + 1
-  }
-
-  const rows = denominators
-    .filter(d => (d.project_deaths_md ?? 0) > 0)
-    .map(d => {
-      // Sayeed's Project-Deaths denominators arrive as estimates with
-      // fractional precision (10.336, 68.19312). Round for display — you
-      // can't have 0.336 of a maternal death — while keeping the precise
-      // value for the rate math underneath.
-      const estimatedRaw = d.project_deaths_md ?? 0
-      const estimatedDisplay = Math.round(estimatedRaw)
-      const reported = reportedByDistrict[norm(d.district)] ?? 0
-      const rate = estimatedRaw > 0 ? (reported / estimatedRaw) * 100 : 0
-      return { district: d.district, estimated: estimatedDisplay, reported, rate }
-    })
-    .sort((a, b) => b.rate - a.rate)
-
-  const colorFor = (pct: number) => {
-    if (pct >= 75) return '#58968A'
-    if (pct >= 40) return '#AE4300'
-    return '#F10F45'
-  }
-
-  return (
-    <div>
-      <div style={{
-        marginBottom: 14,
-        display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
-        gap: 8, flexWrap: 'wrap',
-      }}>
-        <div>
-          <div className="kicker">
-            <span className="dot" style={{ background: CIPRB_BLUE }} />
-            {t('mpdsrViz.perDistrictKicker')}
-          </div>
-          <h3 style={{ margin: '6px 0 2px', fontSize: 18, fontWeight: 700, color: 'var(--ink)' }}>
-            {t('mpdsrViz.perDistrictTitle')}
-          </h3>
-          <p style={{ fontSize: 12.5, color: 'var(--muted)', margin: 0 }}>
-            {t('mpdsrViz.perDistrictSub')}
-          </p>
-        </div>
-      </div>
-      <div className="card" style={{ padding: 20 }}>
-        {rows.length === 0 ? (
-          <div style={{ padding: '32px 0', textAlign: 'center', fontSize: 13, color: 'var(--muted)' }}>
-            {t('mpdsrViz.perDistrictEmpty')}
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {rows.map(r => (
-              <div key={r.district} style={{
-                display: 'grid',
-                gridTemplateColumns: '130px 1fr 110px',
-                alignItems: 'center', gap: 12,
-              }}>
-                <div style={{ fontSize: 13, color: 'var(--ink)', fontWeight: 500 }}>
-                  {r.district}
-                </div>
-                <div style={{
-                  height: 10, borderRadius: 999,
-                  background: 'var(--surface-3)', overflow: 'hidden',
-                }}>
-                  <div style={{
-                    width: `${Math.min(100, r.rate)}%`, height: '100%',
-                    background: colorFor(r.rate), borderRadius: 999,
-                    transition: 'width 400ms ease',
-                  }} />
-                </div>
-                <div style={{
-                  textAlign: 'right', fontSize: 12.5,
-                  fontVariantNumeric: 'tabular-nums', color: 'var(--ink-3)',
-                }}>
-                  <b style={{ color: colorFor(r.rate) }}>
-                    {r.rate > 100 ? '100%+' : `${r.rate.toFixed(0)}%`}
-                  </b>
-                  <span className="mute" style={{ marginLeft: 6, fontSize: 11 }}>
-                    {r.reported}/{r.estimated}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  )
-}
 
 export interface ReportingPeriod {
   from: string
@@ -1259,7 +1153,6 @@ export function MPDSRVisualizations({
         </>
       )}
       <div>
-        <ReportingRatePerDistrict cases={cases} denominators={agg?.denominators ?? []} />
       </div>
       <div>
         <CauseBreakdown cases={cases} donorActive={!!(districts && districts.length)} />
@@ -1587,7 +1480,7 @@ function MPDSRIndicators({ indicators }: { indicators: Record<string, Record<str
             The 11 dashboard indicators CIPRB specified, from MPDSR Form 01 (Community Maternal) + Form 04 (Facility Maternal).
           </p>
         </div>
-        <SourceChip>CIPRB 2 + CIPRB 4</SourceChip>
+        <SourceChip>CIPRB 2 (Form 01) + CIPRB 4 (Form 04)</SourceChip>
       </div>
       <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
         {/* Indicators 1, 2, 4, 6, 7, 8 and 9 arrive already decoded and merged
