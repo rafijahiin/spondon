@@ -1,5 +1,6 @@
 import { MapContainer, GeoJSON, CircleMarker, Popup, Tooltip, useMap } from 'react-leaflet'
 import { useEffect, useMemo, useState } from 'react'
+import L from 'leaflet'
 import type { PathOptions } from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { FitToData } from '@/components/maps/FitToData'
@@ -79,6 +80,15 @@ function km(a: [number, number], b: [number, number]) {
 export function FistulaCampaignMap({ rows }: { rows: CampaignUpazila[] }) {
   const [geo, setGeo] = useState<GeoJSON.FeatureCollection | null>(null)
 
+  // Leaflet's SVG renderer BLANKS (sets d='') any vector outside its clip
+  // region, which by default is the viewport plus 10%. After the container
+  // resizes and the map recentres, that region no longer covers everything on
+  // screen: the Gaibandha and Sirajganj dots were emptied to zero-size paths
+  // parked off-canvas, so the north-west looked like it had no activity while
+  // its district sat tinted. A padding of 2 viewports keeps every marker
+  // rendered at any size this panel takes.
+  const renderer = useMemo(() => L.svg({ padding: 2 }), [])
+
   useEffect(() => {
     let cancelled = false
     fetch(GEOJSON_URL)
@@ -131,6 +141,7 @@ export function FistulaCampaignMap({ rows }: { rows: CampaignUpazila[] }) {
           center={[23.8, 90.4]}
           zoom={7}
           scrollWheelZoom={false}
+          renderer={renderer}
           style={{ height: '100%', width: '100%', background: '#fff' }}
           attributionControl={false}
         >
