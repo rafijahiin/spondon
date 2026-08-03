@@ -27,7 +27,11 @@ export interface CampaignUpazila {
   date_to: string | null
 }
 
-type Lookup = { upazilas: Record<string, [number, number]>; districts: Record<string, [number, number]> }
+type Lookup = {
+  upazilas: Record<string, [number, number]>
+  districts: Record<string, [number, number]>
+  districtNames: Record<string, string>
+}
 const LOOK = CENTROIDS as unknown as Lookup
 
 /**
@@ -104,14 +108,15 @@ export function FistulaCampaignMap({ rows }: { rows: CampaignUpazila[] }) {
   // Districts with activity get a light tint: 6 upazilas on a 64-district map
   // are easy to miss, and the tint tells you WHERE to look before you find the
   // dots. The dots still carry the quantity.
-  const activeDistricts = useMemo(
-    () => new Set(placed.map((r) => r.dkey)), [placed])
+  // Match on the atlas's own district name, resolved through the same canon
+  // key the API groups on, so no fold logic is duplicated in TypeScript.
+  const activeNames = useMemo(
+    () => new Set(placed.map((r) => LOOK.districtNames[r.dkey]).filter(Boolean)),
+    [placed])
 
   const styleFor = (feature?: { properties?: Record<string, unknown> }): PathOptions => {
     const nm = String(feature?.properties?.shapeName ?? '')
-    const key = nm.toLowerCase().replace(/[^a-z0-9]/g, '')
-    const active = [...activeDistricts].some((d) => key.startsWith(String(d).slice(0, 4)))
-    return active
+    return activeNames.has(nm)
       ? { fillColor: '#FFE6D2', fillOpacity: 1, color: '#F7A76C', weight: 1.1 }
       : { fillColor: '#F3F5F9', fillOpacity: 1, color: '#D8DEE9', weight: 0.7 }
   }
@@ -142,9 +147,13 @@ export function FistulaCampaignMap({ rows }: { rows: CampaignUpazila[] }) {
                 dashArray: r.approx ? '3 3' : undefined,
               }}
             >
-              <Tooltip permanent direction="right" offset={[6, 0]} className="fp-dot-label">
+              {/* Hover only. Permanent labels would pile up as the campaign
+                  adds upazilas; the table beside the map already names every
+                  place, so the map stays clean. */}
+              <Tooltip direction="top" offset={[0, -3]} className="fp-dot-label">
                 <span style={{ fontSize: 11.5, fontWeight: 650 }}>
                   {r.upazila || r.district}
+                  {r.households ? ` · ${r.households.toLocaleString()} households` : ''}
                 </span>
               </Tooltip>
               <Popup>
