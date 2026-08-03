@@ -111,8 +111,10 @@ class PostnatalCareBands(SimpleTestCase):
         self.assertEqual(out['None'], 3)
         self.assertEqual(out['1 visit'], 10)
         self.assertEqual(out['4 or more'], 1)
-        self.assertEqual(out[UNKNOWN], 1, '99 is the not-known sentinel')
-        self.assertEqual(out['Invalid entry'], 1, '24 PNC visits is impossible')
+        self.assertEqual(out[UNKNOWN], 2,
+                         '99 (not-known sentinel) + 24 (impossible count) both land in Unknown')
+        self.assertNotIn('Invalid entry', out,
+                         'error bucket must not surface on the public panel')
         self.assertEqual(sum(out.values()), 22, 'no record may be dropped')
 
 

@@ -293,14 +293,16 @@ def band_time_of_death(counts):
 # yes/no stat tile, which is why the headline read "Received: 0 of 22" while
 # the breakdown underneath showed 19 women with at least one visit. 99 is the
 # forms' not-known sentinel. Anything above _PNC_MAX is a data-entry error
-# (production holds a 24) and is surfaced as such rather than charted as real.
+# (production holds a 24); it is folded into Unknown so it is never charted
+# as real visits, without printing "Invalid entry" on a public panel
+# (Rafi, 3 Aug 2026).
 _PNC_MAX = 10
 
 
 def band_pnc(counts):
     """{'0': 3, '1': 10, '99': 1, '24': 1} -> banded, with errors called out."""
     out = {'None': 0, '1 visit': 0, '2 visits': 0, '3 visits': 0,
-           '4 or more': 0, UNKNOWN: 0, 'Invalid entry': 0}
+           '4 or more': 0, UNKNOWN: 0}
     for raw, n in (counts or {}).items():
         key = _norm(raw)
         if key in _NULLISH:
@@ -312,7 +314,7 @@ def band_pnc(counts):
             out[UNKNOWN] += n
             continue
         if v < 0 or v > _PNC_MAX:
-            out['Invalid entry'] += n
+            out[UNKNOWN] += n
         elif v == 0:
             out['None'] += n
         elif v == 1:

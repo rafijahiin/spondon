@@ -1500,7 +1500,11 @@ function MPDSRIndicators({ indicators }: { indicators: Record<string, Record<str
         <DonutBreakdown title="8. Place of delivery"       data={ind.place_of_delivery ?? z} />
         <BarBreakdown   title="9. Person assisted delivery" data={ind.person_assisted_delivery ?? z} />
         <Histogram      title="10. Maternal age distribution" data={ind.maternal_age ?? z} />
-        <Histogram      title="11. Time of death after birth" data={ind.time_death_after_birth_hours ?? z} />
+        {/* No F-01/F-04 field feeds this yet, so it rendered as a
+            permanently all-zero chart; shown only once real data exists. */}
+        {Object.values(ind.time_death_after_birth_hours ?? {}).some((v) => v > 0) && (
+          <Histogram title="11. Time of death after birth" data={ind.time_death_after_birth_hours ?? z} />
+        )}
       </div>
     </div>
   )

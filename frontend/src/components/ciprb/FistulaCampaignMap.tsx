@@ -240,14 +240,56 @@ export function FistulaCampaignMap({ rows }: { rows: CampaignUpazila[] }) {
           </div>
         </div>
 
-        {missing.length > 0 && (
-          <p style={{ fontSize: 11.5, color: '#6b7280', margin: '8px 2px 0' }}>
-            {missing.map((m) => m.upazila).join(', ')}
-            {missing.length === 1 ? ' is' : ' are'} not in the national boundary
-            atlas (newer upazila) and {missing.length === 1 ? 'is' : 'are'} listed
-            in the table only.
-          </p>
-        )}
+        {/* Names and volumes in full — also the only place a boundary-less
+          upazila (Guimara) stays visible. */}
+      <div className="card" style={{ marginTop: 14, padding: 0, overflow: 'hidden' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+          <thead>
+            <tr>
+              {['UPAZILA', 'DAYS', 'HOUSEHOLDS', 'POPULATION', 'SUSPECTED'].map((c, i) => (
+                <th key={c} style={{
+                  textAlign: i === 0 ? 'left' : 'right',
+                  padding: i === 0 ? '10px 16px' : '10px 14px',
+                  fontSize: 10.5, letterSpacing: '.05em', color: 'var(--muted)',
+                  borderBottom: '1px solid var(--hair-2)', background: 'var(--surface-2, #f7f9fc)',
+                }}>{c}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.key}>
+                <td style={{ padding: '9px 16px', borderBottom: '1px solid var(--hair-2)' }}>
+                  <span style={{ fontWeight: 650 }}>{r.upazila}</span>
+                  <div style={{ fontSize: 11, color: 'var(--muted)', textTransform: 'capitalize' }}>
+                    {r.district}
+                    {r.spellings.length > 1
+                      ? ` · also written ${r.spellings.filter((x) => x !== r.upazila).join(', ')}`
+                      : ''}
+                  </div>
+                </td>
+                {[r.reports, r.households, r.population, r.suspected].map((v, i) => (
+                  <td key={i} style={{
+                    padding: '9px 14px', textAlign: 'right',
+                    fontVariantNumeric: 'tabular-nums',
+                    fontWeight: i === 1 ? 650 : 400,
+                    borderBottom: '1px solid var(--hair-2)',
+                  }}>{fmt(v)}</td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {missing.length > 0 && (
+        <p style={{ fontSize: 11.5, color: '#6b7280', margin: '8px 2px 0' }}>
+          {missing.map((m) => m.upazila).join(', ')}: upazila created in 2014
+          (from parts of Ramgarh, Matiranga and Mahalchhari), so the national
+          boundary file has no separate shape for it — its area sits inside
+          those parent upazilas on the map. Its figures are in the table above.
+        </p>
+      )}
       </div>
     </div>
   )
