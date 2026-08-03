@@ -570,27 +570,46 @@ export function FistulaVisualizations({
             </div>
           </div>
           {(() => {
-            const total = agg.outcomeDry + agg.outcomeNotDry + agg.outcomeFailed
-            const pct = (n: number) => total > 0 ? Math.round((n / total) * 100) : 0
-            const card = (label: string, n: number, color: string, emphasis: boolean) => (
-              <div className="card" style={{
-                padding: '16px 18px', flex: '1 1 200px',
-                opacity: emphasis ? 1 : 0.7,
-              }}>
-                <div className="mono" style={{ fontSize: 10, color: 'var(--muted)', letterSpacing: '0.08em', fontWeight: 700, marginBottom: 6 }}>
-                  {label}
-                </div>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-                  <span style={{ fontSize: 28, fontWeight: 800, color, fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>{n}</span>
-                  <span style={{ fontSize: 14, color: 'var(--ink-3)', fontVariantNumeric: 'tabular-nums' }}>{pct(n)}%</span>
-                </div>
-              </div>
-            )
+            // Solid pie (innerRadius 0 — no donuts, house rule). A pie is the
+            // right encoding HERE: the three outcomes are exclusive parts of
+            // one whole (the repaired patients whose outcome is recorded) —
+            // unlike the removed diagnosed-vs-repaired pie, whose slices were
+            // subset and superset.
+            const soData = [
+              { name: 'Successfully repaired & dry',     value: agg.outcomeDry,    color: '#1A7A5A' },
+              { name: 'Successfully repaired, not dry',  value: agg.outcomeNotDry, color: '#F96000' },
+              { name: 'Failed',                          value: agg.outcomeFailed, color: '#ED5B7E' },
+            ]
+            const soTotal = soData.reduce((s, d) => s + d.value, 0)
             return (
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
-                {card('SUCCESSFULLY REPAIRED & DRY', agg.outcomeDry, '#1A7A5A', true)}
-                {card('SUCCESSFULLY REPAIRED, NOT DRY', agg.outcomeNotDry, '#F96000', true)}
-                {card('FAILED', agg.outcomeFailed, 'var(--muted)', false)}
+              <div className="card" style={{ padding: 24 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 36, flexWrap: 'wrap' }}>
+                  <div style={{ width: 220, height: 220, flexShrink: 0 }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie data={soData.filter((d) => d.value > 0)} dataKey="value" nameKey="name"
+                          cx="50%" cy="50%" innerRadius={0} outerRadius={104} paddingAngle={1}
+                          stroke="#fff" strokeWidth={1}
+                          startAngle={90} endAngle={-270} animationDuration={800}>
+                          {soData.filter((d) => d.value > 0).map((d) => <Cell key={d.name} fill={d.color} />)}
+                        </Pie>
+                        <Tooltip
+                          wrapperStyle={{ zIndex: 50, outline: 'none' }}
+                          contentStyle={{ background: 'var(--surface)', border: '1px solid var(--hair)', borderRadius: 8, fontSize: 12, color: 'var(--ink)', boxShadow: '0 6px 20px rgba(0,0,0,0.18)' }}
+                          itemStyle={{ color: 'var(--ink)' }}
+                          labelStyle={{ color: 'var(--ink)' }}
+                          formatter={(value: number, name: string) =>
+                            [`${value} (${soTotal ? Math.round((value / soTotal) * 100) : 0}%)`, name]}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div style={{ flex: 1, minWidth: 220 }}>
+                    {/* Legend lists all three, including a zero Failed — its
+                        absence from the pie should read as "0", not "missing". */}
+                    <DiagnosisLegend data={soData} />
+                  </div>
+                </div>
               </div>
             )
           })()}
