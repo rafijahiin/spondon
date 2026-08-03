@@ -3,7 +3,6 @@ import { useEffect, useMemo, useState } from 'react'
 import L from 'leaflet'
 import type { PathOptions } from 'leaflet'
 import 'leaflet/dist/leaflet.css'
-import { FitToData } from '@/components/maps/FitToData'
 import CENTROIDS from '@/data/upazilaCentroids.json'
 
 const GEOJSON_URL = '/bangladesh-adm2.geojson'
@@ -41,6 +40,26 @@ const LOOK = CENTROIDS as unknown as Lookup
  * and every marker near the edge gets sliced into a sliver (Gaibandha rendered
  * as a 2px orange line). Re-measure whenever the box changes.
  */
+/**
+ * Frame the DATA, not the country. The campaign runs in 3 districts on a
+ * Gaibandha-to-Khagrachari diagonal; fitting the whole of Bangladesh (which is
+ * taller than it is wide) left the country ~310px across in a 577px box, so
+ * every dot had to be nearly district-sized to be visible at all. Fitting the
+ * markers zooms in on the part that has data and keeps the rest as context.
+ */
+function FitToDots({ points }: { points: [number, number][] }) {
+  const map = useMap()
+  useEffect(() => {
+    if (!points.length) return
+    if (points.length === 1) {
+      map.setView(points[0], 9)
+      return
+    }
+    map.fitBounds(L.latLngBounds(points), { padding: [46, 46], maxZoom: 9 })
+  }, [map, points])
+  return null
+}
+
 function InvalidateOnResize() {
   const map = useMap()
   useEffect(() => {
@@ -113,7 +132,7 @@ export function FistulaCampaignMap({ rows }: { rows: CampaignUpazila[] }) {
   const gpsOff = placed.filter((r) => r.drift != null && r.drift > 50).length
   const maxHh = Math.max(1, ...placed.map((r) => r.households || 0))
   // Area-proportional radius: encoding on the radius exaggerates big values.
-  const radius = (hh: number) => 4.5 + 9.5 * Math.sqrt((hh || 0) / maxHh)
+  const radius = (hh: number) => 5 + 11 * Math.sqrt((hh || 0) / maxHh)
 
   // Districts with activity get a light tint: 6 upazilas on a 64-district map
   // are easy to miss, and the tint tells you WHERE to look before you find the
@@ -192,7 +211,7 @@ export function FistulaCampaignMap({ rows }: { rows: CampaignUpazila[] }) {
               </Popup>
             </CircleMarker>
           ))}
-          <FitToData data={geo} />
+          <FitToDots points={placed.map((r) => r.at as [number, number])} />
           <InvalidateOnResize />
         </MapContainer>
         <div style={{
