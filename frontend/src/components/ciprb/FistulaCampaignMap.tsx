@@ -1,12 +1,10 @@
-import { MapContainer, GeoJSON, CircleMarker, Popup, Tooltip, useMap } from 'react-leaflet'
+import { MapContainer, GeoJSON, useMap } from 'react-leaflet'
 import { useEffect, useMemo, useState } from 'react'
 import L from 'leaflet'
 import type { PathOptions } from 'leaflet'
 import 'leaflet/dist/leaflet.css'
-import CENTROIDS from '@/data/upazilaCentroids.json'
 
-const GEOJSON_URL = '/bangladesh-adm2.geojson'
-const CIPRB_ORANGE = '#F96000'
+const ADM3_URL = '/bangladesh-adm3.geojson'
 
 export interface CampaignUpazila {
   key: string
@@ -27,251 +25,180 @@ export interface CampaignUpazila {
   date_to: string | null
 }
 
-type Lookup = {
-  upazilas: Record<string, [number, number]>
-  districts: Record<string, [number, number]>
-  districtNames: Record<string, string>
-}
-const LOOK = CENTROIDS as unknown as Lookup
+interface UpazilaProps { key?: string; dkey?: string; name?: string; district?: string }
+type UFeature = GeoJSON.Feature<GeoJSON.Geometry, UpazilaProps>
 
-/**
- * Leaflet fixes its SVG clip region to the container size it saw at init. This
- * map lives in a responsive 2-column grid, so the container grows AFTER init
- * and every marker near the edge gets sliced into a sliver (Gaibandha rendered
- * as a 2px orange line). Re-measure whenever the box changes.
- */
-/**
- * Frame the DATA, not the country. The campaign runs in 3 districts on a
- * Gaibandha-to-Khagrachari diagonal; fitting the whole of Bangladesh (which is
- * taller than it is wide) left the country ~310px across in a 577px box, so
- * every dot had to be nearly district-sized to be visible at all. Fitting the
- * markers zooms in on the part that has data and keeps the rest as context.
- */
-function FitToDots({ points }: { points: [number, number][] }) {
+// Sequential orange ramp, light to dark. Five steps: enough to rank a handful
+// of upazilas, few enough that neighbouring shades stay distinguishable.
+const RAMP = ['#FFE3CC', '#FDC9A0', '#FBA76C', '#F5813C', '#D95A00']
+
+function Fit({ bounds }: { bounds: L.LatLngBounds | null }) {
   const map = useMap()
   useEffect(() => {
-    if (!points.length) return
-    if (points.length === 1) {
-      map.setView(points[0], 9)
-      return
-    }
-    map.fitBounds(L.latLngBounds(points), { padding: [46, 46], maxZoom: 9 })
-  }, [map, points])
-  return null
-}
-
-function InvalidateOnResize() {
-  const map = useMap()
-  useEffect(() => {
-    const el = map.getContainer()
+    if (bounds && bounds.isValid()) map.fitBounds(bounds, { padding: [30, 30] })
+    // Leaflet blanks vectors that fall outside its clip region, so re-measure
+    // whenever the panel resizes or shapes silently disappear.
     const ro = new ResizeObserver(() => map.invalidateSize({ animate: false }))
-    ro.observe(el)
-    const t = setTimeout(() => map.invalidateSize({ animate: false }), 250)
-    return () => { ro.disconnect(); clearTimeout(t) }
-  }, [map])
+    ro.observe(map.getContainer())
+    return () => ro.disconnect()
+  }, [map, bounds])
   return null
 }
 
-// Great-circle distance in km — used only to flag GPS that disagrees with the
-// reported upazila, never to place a dot.
-function km(a: [number, number], b: [number, number]) {
-  const R = 6371
-  const dLat = ((b[0] - a[0]) * Math.PI) / 180
-  const dLng = ((b[1] - a[1]) * Math.PI) / 180
-  const la1 = (a[0] * Math.PI) / 180
-  const la2 = (b[0] * Math.PI) / 180
-  const h = Math.sin(dLat / 2) ** 2 + Math.cos(la1) * Math.cos(la2) * Math.sin(dLng / 2) ** 2
-  return 2 * R * Math.asin(Math.sqrt(h))
-}
-
 /**
- * Dot map of community campaign activity, as CIPRB asked for on 3 Aug 2026
- * ("kothay meeting hoise ... dot mapping").
+ * Where the community campaign ran, as an upazila choropleth.
  *
- * Dots are placed on the REPORTED UPAZILA, not the device GPS. The GPS on this
- * form cannot carry the map: 30 of 71 approved reports name a Gaibandha
- * upazila while carrying Khagrachari coordinates, and the whole set collapses
- * onto 6 distinct points, so a raw-GPS plot draws one blob in the wrong
- * district. The upazila/district the field team types is internally
- * consistent, so that is what we trust; where GPS disagrees by more than
- * 50 km we say so instead of hiding it.
+ * This replaces a dot map: six markers on a country-sized map carried neither
+ * a name nor a magnitude, so "which upazila did what" was unreadable. Shading
+ * the upazila itself fixes both, because the area is large enough to label and
+ * colour depth carries the volume.
+ *
+ * Areas are chosen by the REPORTED upazila, never by device GPS: 30 of the 71
+ * approved reports name a Gaibandha upazila while carrying Khagrachari
+ * coordinates. Every polygon already carries the same canonical key the API
+ * groups on, so no name matching happens in the browser.
  */
 export function FistulaCampaignMap({ rows }: { rows: CampaignUpazila[] }) {
   const [geo, setGeo] = useState<GeoJSON.FeatureCollection | null>(null)
-
-  // Leaflet's SVG renderer BLANKS (sets d='') any vector outside its clip
-  // region, which by default is the viewport plus 10%. After the container
-  // resizes and the map recentres, that region no longer covers everything on
-  // screen: the Gaibandha and Sirajganj dots were emptied to zero-size paths
-  // parked off-canvas, so the north-west looked like it had no activity while
-  // its district sat tinted. A padding of 2 viewports keeps every marker
-  // rendered at any size this panel takes.
-  const renderer = useMemo(() => L.svg({ padding: 2 }), [])
+  const [failed, setFailed] = useState(false)
 
   useEffect(() => {
     let cancelled = false
-    fetch(GEOJSON_URL)
+    fetch(ADM3_URL)
       .then((r) => r.json())
       .then((j) => { if (!cancelled) setGeo(j) })
-      .catch(() => { /* base layer optional; dots still render */ })
+      .catch(() => { if (!cancelled) setFailed(true) })
     return () => { cancelled = true }
   }, [])
 
-  const placed = useMemo(() => {
-    return rows.map((r) => {
-      const exact = LOOK.upazilas[r.key]
-      const fallback = LOOK.districts[r.dkey]
-      const at = exact || fallback || null
-      const drift = at && r.gps_lat != null && r.gps_lng != null
-        ? km(at, [r.gps_lat, r.gps_lng]) : null
-      return { ...r, at, approx: !exact && !!fallback, drift }
-    }).filter((r) => r.at)
+  const byKey = useMemo(() => {
+    const m = new Map<string, CampaignUpazila>()
+    rows.forEach((r) => m.set(r.key, r))
+    return m
   }, [rows])
 
-  const unplaced = rows.length - placed.length
-  const gpsOff = placed.filter((r) => r.drift != null && r.drift > 50).length
-  const maxHh = Math.max(1, ...placed.map((r) => r.households || 0))
-  // Area-proportional radius: encoding on the radius exaggerates big values.
-  const radius = (hh: number) => 5 + 11 * Math.sqrt((hh || 0) / maxHh)
+  const activeDistricts = useMemo(() => new Set(rows.map((r) => r.dkey)), [rows])
+  const maxHh = Math.max(1, ...rows.map((r) => r.households || 0))
+  const shade = (hh: number) =>
+    RAMP[Math.min(RAMP.length - 1, Math.floor(((hh || 0) / maxHh) * RAMP.length))]
 
-  // Districts with activity get a light tint: 6 upazilas on a 64-district map
-  // are easy to miss, and the tint tells you WHERE to look before you find the
-  // dots. The dots still carry the quantity.
-  // Match on the atlas's own district name, resolved through the same canon
-  // key the API groups on, so no fold logic is duplicated in TypeScript.
-  const activeNames = useMemo(
-    () => new Set(placed.map((r) => LOOK.districtNames[r.dkey]).filter(Boolean)),
-    [placed])
+  // Only the districts that ran the campaign are drawn. The other 61 add
+  // nothing and would shrink the working area to a thumbnail.
+  const shown = useMemo(() => {
+    if (!geo) return null
+    const features = (geo.features as UFeature[])
+      .filter((f) => activeDistricts.has(String(f.properties?.dkey ?? '')))
+    return { type: 'FeatureCollection', features } as GeoJSON.FeatureCollection
+  }, [geo, activeDistricts])
 
-  const styleFor = (feature?: { properties?: Record<string, unknown> }): PathOptions => {
-    const nm = String(feature?.properties?.shapeName ?? '')
-    return activeNames.has(nm)
-      ? { fillColor: '#FFE6D2', fillOpacity: 1, color: '#F7A76C', weight: 1.1 }
-      : { fillColor: '#F3F5F9', fillOpacity: 1, color: '#D8DEE9', weight: 0.7 }
+  const bounds = useMemo(() => {
+    if (!shown || !shown.features.length) return null
+    return L.geoJSON(shown as never).getBounds()
+  }, [shown])
+
+  const styleFor = (feature?: UFeature): PathOptions => {
+    const row = byKey.get(String(feature?.properties?.key ?? ''))
+    return row
+      ? { fillColor: shade(row.households), fillOpacity: 1, color: '#8A3B00', weight: 1.4 }
+      : { fillColor: '#F4F6FA', fillOpacity: 1, color: '#C9D2E0', weight: 0.8 }
   }
+
+  const shownKeys = useMemo(
+    () => new Set((shown?.features ?? []).map(
+      (f) => String((f.properties as UpazilaProps)?.key ?? ''))),
+    [shown])
+  const missing = rows.filter((r) => shown && !shownKeys.has(r.key))
 
   const fmt = (n: number) => (n || 0).toLocaleString()
 
   return (
     <div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(320px, 1.05fr) minmax(300px, 1fr)', gap: 16, alignItems: 'stretch' }}>
-      <div style={{ position: 'relative', height: 480, borderRadius: 12, overflow: 'hidden', border: '1px solid var(--hair-2)' }}>
-        <MapContainer
-          center={[23.8, 90.4]}
-          zoom={7}
-          scrollWheelZoom={false}
-          renderer={renderer}
-          style={{ height: '100%', width: '100%', background: '#fff' }}
-          attributionControl={false}
-        >
-          {geo ? <GeoJSON data={geo as never} style={styleFor as never} /> : null}
-          {placed.map((r) => (
-            <CircleMarker
-              key={r.key}
-              center={r.at as [number, number]}
-              radius={radius(r.households)}
-              pathOptions={{
-                color: '#fff', weight: 1.6,
-                fillColor: CIPRB_ORANGE,
-                fillOpacity: r.approx ? 0.38 : 0.66,
-                dashArray: r.approx ? '3 3' : undefined,
+      <div style={{
+        position: 'relative', height: 470, borderRadius: 12,
+        overflow: 'hidden', border: '1px solid var(--hair-2)', background: '#fff',
+      }}>
+        {shown ? (
+          <MapContainer
+            scrollWheelZoom={false}
+            style={{ height: '100%', width: '100%', background: '#fff' }}
+            attributionControl={false}
+          >
+            <GeoJSON
+              key={rows.map((r) => r.key + r.households).join('|')}
+              data={shown as never}
+              style={styleFor as never}
+              onEachFeature={(feature, layer) => {
+                const p = (feature as UFeature).properties
+                const row = byKey.get(String(p?.key ?? ''))
+                if (!row) {
+                  layer.bindTooltip(String(p?.name ?? ''), { sticky: true })
+                  return
+                }
+                // The name sits ON the shaded upazila, which is the whole point
+                // of this panel. Only upazilas WITH activity are labelled, so
+                // the map does not fill with text as coverage grows.
+                layer.bindTooltip(row.upazila, {
+                  permanent: true, direction: 'center', className: 'fp-area-label',
+                })
+                layer.bindPopup(
+                  '<div style="font-size:12.5px;line-height:1.6;min-width:190px">'
+                  + `<b style="font-size:13.5px">${row.upazila}</b>`
+                  + `<span style="color:#5a606a"> · ${row.district}</span><br/>`
+                  + (row.date_from ? `${row.date_from} to ${row.date_to}<br/>` : '')
+                  + `Activity days: <b>${row.reports}</b><br/>`
+                  + `Households visited: <b>${fmt(row.households)}</b><br/>`
+                  + `Population covered: <b>${fmt(row.population)}</b><br/>`
+                  + `Suspected found: <b>${row.suspected || 0}</b>`
+                  + (row.spellings.length > 1
+                    ? `<div style="margin-top:6px;color:#5a606a;font-size:11.5px">Recorded as: ${row.spellings.join(', ')}</div>`
+                    : '')
+                  + '</div>')
               }}
-            >
-              {/* Hover only. Permanent labels would pile up as the campaign
-                  adds upazilas; the table beside the map already names every
-                  place, so the map stays clean. */}
-              <Tooltip direction="top" offset={[0, -3]} className="fp-dot-label">
-                <span style={{ fontSize: 11.5, fontWeight: 650 }}>
-                  {r.upazila || r.district}
-                  {r.households ? ` · ${r.households.toLocaleString()} households` : ''}
-                </span>
-              </Tooltip>
-              <Popup>
-                <div style={{ fontSize: 12.5, lineHeight: 1.6, minWidth: 190 }}>
-                  <b style={{ fontSize: 13.5 }}>{r.upazila}</b>
-                  <span style={{ color: '#5a606a' }}> · {r.district}</span>
-                  <br />
-                  {r.date_from ? <>{r.date_from} to {r.date_to}<br /></> : null}
-                  Activity reports: <b>{r.reports}</b><br />
-                  Households visited: <b>{(r.households || 0).toLocaleString()}</b><br />
-                  Population covered: <b>{(r.population || 0).toLocaleString()}</b><br />
-                  Suspected found: <b>{r.suspected || 0}</b>
-                  {r.spellings.length > 1 ? (
-                    <div style={{ marginTop: 6, color: '#5a606a', fontSize: 11.5 }}>
-                      Recorded as: {r.spellings.join(', ')}
-                    </div>
-                  ) : null}
-                  {r.approx ? (
-                    <div style={{ marginTop: 6, color: '#B45309', fontSize: 11.5 }}>
-                      Shown at district centre: this upazila is not in the
-                      boundary atlas.
-                    </div>
-                  ) : null}
-                </div>
-              </Popup>
-            </CircleMarker>
-          ))}
-          <FitToDots points={placed.map((r) => r.at as [number, number])} />
-          <InvalidateOnResize />
-        </MapContainer>
+            />
+            <Fit bounds={bounds} />
+          </MapContainer>
+        ) : (
+          <div style={{
+            height: '100%', display: 'flex', alignItems: 'center',
+            justifyContent: 'center', fontSize: 13, color: 'var(--muted)',
+          }}>
+            {failed ? 'Upazila boundaries could not be loaded.' : 'Loading upazila boundaries…'}
+          </div>
+        )}
+
         <div style={{
           position: 'absolute', right: 12, bottom: 12, zIndex: 500,
-          background: 'rgba(255,255,255,.94)', border: '1px solid var(--hair-2)',
-          borderRadius: 9, padding: '8px 12px', fontSize: 11.5, color: 'var(--ink-2)',
+          background: 'rgba(255,255,255,.95)', border: '1px solid var(--hair-2)',
+          borderRadius: 9, padding: '9px 12px', fontSize: 11, color: 'var(--ink-2)',
         }}>
-          <span style={{
-            display: 'inline-block', width: 10, height: 10, borderRadius: '50%',
-            background: CIPRB_ORANGE, opacity: 0.66, marginRight: 6,
-          }} />
-          One dot = one upazila · size = households visited
+          <div style={{ fontWeight: 700, marginBottom: 5, letterSpacing: '.04em' }}>
+            HOUSEHOLDS VISITED
+          </div>
+          <div style={{ display: 'flex' }}>
+            {RAMP.map((c) => (
+              <span key={c} style={{
+                width: 30, height: 11, background: c,
+                border: '1px solid rgba(0,0,0,.06)',
+              }} />
+            ))}
+          </div>
+          <div style={{
+            display: 'flex', justifyContent: 'space-between', marginTop: 3,
+            fontVariantNumeric: 'tabular-nums',
+          }}>
+            <span>0</span><span>{fmt(maxHh)}</span>
+          </div>
+          <div style={{ marginTop: 6, color: 'var(--muted)' }}>
+            Grey = no campaign activity
+          </div>
         </div>
       </div>
-
-      {/* The map answers "where"; this answers "how much", and gives CIPRB the
-          upazila names to check against their own field plan. */}
-      <div className="card" style={{ padding: '4px 0 0', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-        <div className="mono" style={{ fontSize: 10, letterSpacing: '.08em', fontWeight: 700, color: 'var(--muted)', padding: '12px 16px 8px' }}>
-          WHERE THE CAMPAIGN RAN
-        </div>
-        <div style={{ overflowY: 'auto', flex: 1 }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-            <thead>
-              <tr>
-                <th style={{ textAlign: 'left', padding: '8px 16px', fontSize: 10.5, letterSpacing: '.05em', color: 'var(--muted)', borderBottom: '1px solid var(--hair-2)', background: 'var(--surface-2, #f7f9fc)' }}>UPAZILA</th>
-                <th style={{ textAlign: 'right', padding: '8px 10px', fontSize: 10.5, letterSpacing: '.05em', color: 'var(--muted)', borderBottom: '1px solid var(--hair-2)', background: 'var(--surface-2, #f7f9fc)' }}>DAYS</th>
-                <th style={{ textAlign: 'right', padding: '8px 10px', fontSize: 10.5, letterSpacing: '.05em', color: 'var(--muted)', borderBottom: '1px solid var(--hair-2)', background: 'var(--surface-2, #f7f9fc)' }}>HOUSEHOLDS</th>
-                <th style={{ textAlign: 'right', padding: '8px 16px', fontSize: 10.5, letterSpacing: '.05em', color: 'var(--muted)', borderBottom: '1px solid var(--hair-2)', background: 'var(--surface-2, #f7f9fc)' }}>POPULATION</th>
-              </tr>
-            </thead>
-            <tbody>
-              {placed.map((r) => (
-                <tr key={r.key}>
-                  <td style={{ padding: '9px 16px', borderBottom: '1px solid var(--hair-2)' }}>
-                    <span style={{ fontWeight: 650 }}>{r.upazila}</span>
-                    <div style={{ fontSize: 11, color: 'var(--muted)' }}>
-                      {r.district}
-                      {r.spellings.length > 1 ? ` · also written ${r.spellings.filter((s2) => s2 !== r.upazila).join(', ')}` : ''}
-                    </div>
-                  </td>
-                  <td style={{ padding: '9px 10px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', borderBottom: '1px solid var(--hair-2)' }}>{r.reports}</td>
-                  <td style={{ padding: '9px 10px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 650, borderBottom: '1px solid var(--hair-2)' }}>{fmt(r.households)}</td>
-                  <td style={{ padding: '9px 16px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', borderBottom: '1px solid var(--hair-2)' }}>{fmt(r.population)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-      </div>
-      {(gpsOff > 0 || unplaced > 0) && (
+      {missing.length > 0 && (
         <p style={{ fontSize: 11.5, color: 'var(--muted)', margin: '9px 2px 0' }}>
-          {gpsOff > 0 && (
-            <>Dots are placed on the reported upazila. {gpsOff}{' '}
-              {gpsOff === 1 ? 'upazila carries' : 'upazilas carry'} device GPS
-              more than 50 km from that upazila, which is a data-quality issue
-              to raise with the field team.{' '}</>
-          )}
-          {unplaced > 0 && <>{unplaced} could not be located and are not shown.</>}
+          {missing.map((m) => m.upazila).join(', ')}
+          {missing.length === 1 ? ' is' : ' are'} not in the national boundary
+          atlas (newer upazila), so {missing.length === 1 ? 'it is' : 'they are'}
+          {' '}in the table but not shaded on the map.
         </p>
       )}
     </div>
