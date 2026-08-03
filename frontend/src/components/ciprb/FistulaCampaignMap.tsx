@@ -81,15 +81,18 @@ export function FistulaCampaignMap({ rows }: { rows: CampaignUpazila[] }) {
   const gpsOff = placed.filter((r) => r.drift != null && r.drift > 50).length
   const maxHh = Math.max(1, ...placed.map((r) => r.households || 0))
   // Area-proportional radius: encoding on the radius exaggerates big values.
-  const radius = (hh: number) => 7 + 17 * Math.sqrt((hh || 0) / maxHh)
+  const radius = (hh: number) => 4.5 + 9.5 * Math.sqrt((hh || 0) / maxHh)
 
   const baseStyle: PathOptions = {
     fillColor: '#F3F5F9', fillOpacity: 1, color: '#D8DEE9', weight: 0.7,
   }
 
+  const fmt = (n: number) => (n || 0).toLocaleString()
+
   return (
     <div>
-      <div style={{ position: 'relative', height: 480, borderRadius: 12, overflow: 'hidden' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(320px, 1.05fr) minmax(300px, 1fr)', gap: 16, alignItems: 'stretch' }}>
+      <div style={{ position: 'relative', height: 480, borderRadius: 12, overflow: 'hidden', border: '1px solid var(--hair-2)' }}>
         <MapContainer
           center={[23.8, 90.4]}
           zoom={7}
@@ -154,6 +157,43 @@ export function FistulaCampaignMap({ rows }: { rows: CampaignUpazila[] }) {
           }} />
           One dot = one upazila · size = households visited
         </div>
+      </div>
+
+      {/* The map answers "where"; this answers "how much", and gives CIPRB the
+          upazila names to check against their own field plan. */}
+      <div className="card" style={{ padding: '4px 0 0', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        <div className="mono" style={{ fontSize: 10, letterSpacing: '.08em', fontWeight: 700, color: 'var(--muted)', padding: '12px 16px 8px' }}>
+          WHERE THE CAMPAIGN RAN
+        </div>
+        <div style={{ overflowY: 'auto', flex: 1 }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+            <thead>
+              <tr>
+                <th style={{ textAlign: 'left', padding: '8px 16px', fontSize: 10.5, letterSpacing: '.05em', color: 'var(--muted)', borderBottom: '1px solid var(--hair-2)', background: 'var(--surface-2, #f7f9fc)' }}>UPAZILA</th>
+                <th style={{ textAlign: 'right', padding: '8px 10px', fontSize: 10.5, letterSpacing: '.05em', color: 'var(--muted)', borderBottom: '1px solid var(--hair-2)', background: 'var(--surface-2, #f7f9fc)' }}>DAYS</th>
+                <th style={{ textAlign: 'right', padding: '8px 10px', fontSize: 10.5, letterSpacing: '.05em', color: 'var(--muted)', borderBottom: '1px solid var(--hair-2)', background: 'var(--surface-2, #f7f9fc)' }}>HOUSEHOLDS</th>
+                <th style={{ textAlign: 'right', padding: '8px 16px', fontSize: 10.5, letterSpacing: '.05em', color: 'var(--muted)', borderBottom: '1px solid var(--hair-2)', background: 'var(--surface-2, #f7f9fc)' }}>POPULATION</th>
+              </tr>
+            </thead>
+            <tbody>
+              {placed.map((r) => (
+                <tr key={r.key}>
+                  <td style={{ padding: '9px 16px', borderBottom: '1px solid var(--hair-2)' }}>
+                    <span style={{ fontWeight: 650 }}>{r.upazila}</span>
+                    <div style={{ fontSize: 11, color: 'var(--muted)' }}>
+                      {r.district}
+                      {r.spellings.length > 1 ? ` · also written ${r.spellings.filter((s2) => s2 !== r.upazila).join(', ')}` : ''}
+                    </div>
+                  </td>
+                  <td style={{ padding: '9px 10px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', borderBottom: '1px solid var(--hair-2)' }}>{r.reports}</td>
+                  <td style={{ padding: '9px 10px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 650, borderBottom: '1px solid var(--hair-2)' }}>{fmt(r.households)}</td>
+                  <td style={{ padding: '9px 16px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', borderBottom: '1px solid var(--hair-2)' }}>{fmt(r.population)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
       </div>
       {(gpsOff > 0 || unplaced > 0) && (
         <p style={{ fontSize: 11.5, color: 'var(--muted)', margin: '9px 2px 0' }}>

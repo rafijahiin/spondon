@@ -436,7 +436,7 @@
   "fistulaViz": {
     "reachKicker": "COMMUNITY-BASED FISTULA CASE IDENTIFICATION CAMPAIGN",
     "reachTitle": "Fistula Campaign",
-    "reachSub": "Cumulative metrics from the community-based fistula case identification campaign — districts and upazilas covered, suspected and diagnosed cases found.",
+    "reachSub": "Where the community campaign has actually run: activity days, households and population reached, by upazila.",
     "emptyReach": "No fistula cases recorded yet — reach metrics will fill as patients are registered at the Suspected stage in CIPRB 1 — Fistula Question Bank.",
     "emptyFunnel": "No fistula cases recorded yet — the patient pathway will fill as cases progress through CIPRB 1 — Fistula Question Bank.",
     "districts": "Districts",

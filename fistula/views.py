@@ -358,9 +358,11 @@ def fistula_aggregates(request):
     dates = [c for c in camp_qs.values_list('campaign_date', flat=True) if c]
     campaign = {
         'reports': camp_qs.count(),
-        'districts': camp_qs.exclude(district='').values('district').distinct().count(),
-        'upazilas': (camp_qs.exclude(upazila='')
-                            .values('district', 'upazila').distinct().count()),
+        # Counted on the CANONICAL name, so the tile and the map agree. Raw
+        # DISTINCT would say 8 upazilas while the map draws 6 dots, because
+        # `Sadullahpur`/`Sadullapur` and `guimara`/`Guimara` are each one place.
+        'districts': len({g['dkey'] for g in by_upazila if g['dkey']}),
+        'upazilas': len([g for g in by_upazila if g['upazila']]),
         'households': camp_sum['households'] or 0,
         'population': camp_sum['population'] or 0,
         'sessions': camp_sum['sessions'] or 0,
