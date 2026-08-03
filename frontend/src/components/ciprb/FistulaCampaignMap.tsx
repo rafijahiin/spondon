@@ -1,4 +1,4 @@
-import { MapContainer, GeoJSON, CircleMarker, Popup, Tooltip } from 'react-leaflet'
+import { MapContainer, GeoJSON, CircleMarker, Popup, Tooltip, useMap } from 'react-leaflet'
 import { useEffect, useMemo, useState } from 'react'
 import type { PathOptions } from 'leaflet'
 import 'leaflet/dist/leaflet.css'
@@ -29,6 +29,24 @@ export interface CampaignUpazila {
 
 type Lookup = { upazilas: Record<string, [number, number]>; districts: Record<string, [number, number]> }
 const LOOK = CENTROIDS as unknown as Lookup
+
+/**
+ * Leaflet fixes its SVG clip region to the container size it saw at init. This
+ * map lives in a responsive 2-column grid, so the container grows AFTER init
+ * and every marker near the edge gets sliced into a sliver (Gaibandha rendered
+ * as a 2px orange line). Re-measure whenever the box changes.
+ */
+function InvalidateOnResize() {
+  const map = useMap()
+  useEffect(() => {
+    const el = map.getContainer()
+    const ro = new ResizeObserver(() => map.invalidateSize({ animate: false }))
+    ro.observe(el)
+    const t = setTimeout(() => map.invalidateSize({ animate: false }), 250)
+    return () => { ro.disconnect(); clearTimeout(t) }
+  }, [map])
+  return null
+}
 
 // Great-circle distance in km — used only to flag GPS that disagrees with the
 // reported upazila, never to place a dot.
@@ -83,8 +101,19 @@ export function FistulaCampaignMap({ rows }: { rows: CampaignUpazila[] }) {
   // Area-proportional radius: encoding on the radius exaggerates big values.
   const radius = (hh: number) => 4.5 + 9.5 * Math.sqrt((hh || 0) / maxHh)
 
-  const baseStyle: PathOptions = {
-    fillColor: '#F3F5F9', fillOpacity: 1, color: '#D8DEE9', weight: 0.7,
+  // Districts with activity get a light tint: 6 upazilas on a 64-district map
+  // are easy to miss, and the tint tells you WHERE to look before you find the
+  // dots. The dots still carry the quantity.
+  const activeDistricts = useMemo(
+    () => new Set(placed.map((r) => r.dkey)), [placed])
+
+  const styleFor = (feature?: { properties?: Record<string, unknown> }): PathOptions => {
+    const nm = String(feature?.properties?.shapeName ?? '')
+    const key = nm.toLowerCase().replace(/[^a-z0-9]/g, '')
+    const active = [...activeDistricts].some((d) => key.startsWith(String(d).slice(0, 4)))
+    return active
+      ? { fillColor: '#FFE6D2', fillOpacity: 1, color: '#F7A76C', weight: 1.1 }
+      : { fillColor: '#F3F5F9', fillOpacity: 1, color: '#D8DEE9', weight: 0.7 }
   }
 
   const fmt = (n: number) => (n || 0).toLocaleString()
@@ -100,7 +129,7 @@ export function FistulaCampaignMap({ rows }: { rows: CampaignUpazila[] }) {
           style={{ height: '100%', width: '100%', background: '#fff' }}
           attributionControl={false}
         >
-          {geo ? <GeoJSON data={geo as never} style={() => baseStyle} /> : null}
+          {geo ? <GeoJSON data={geo as never} style={styleFor as never} /> : null}
           {placed.map((r) => (
             <CircleMarker
               key={r.key}
@@ -113,10 +142,9 @@ export function FistulaCampaignMap({ rows }: { rows: CampaignUpazila[] }) {
                 dashArray: r.approx ? '3 3' : undefined,
               }}
             >
-              <Tooltip direction="top" offset={[0, -4]}>
-                <span style={{ fontSize: 12 }}>
-                  <b>{r.upazila || r.district}</b>
-                  {r.households ? ` · ${r.households.toLocaleString()} households` : ''}
+              <Tooltip permanent direction="right" offset={[6, 0]} className="fp-dot-label">
+                <span style={{ fontSize: 11.5, fontWeight: 650 }}>
+                  {r.upazila || r.district}
                 </span>
               </Tooltip>
               <Popup>
@@ -145,6 +173,7 @@ export function FistulaCampaignMap({ rows }: { rows: CampaignUpazila[] }) {
             </CircleMarker>
           ))}
           <FitToData data={geo} />
+          <InvalidateOnResize />
         </MapContainer>
         <div style={{
           position: 'absolute', right: 12, bottom: 12, zIndex: 500,
