@@ -311,3 +311,75 @@ class CIPRBFistulaDailyCampaignWebhookTest(TestCase):
         self.assertEqual(r1.status_code, 201)
         self.assertEqual(r2.status_code, 200)   # deduped
         self.assertEqual(FistulaCampaign.objects.count(), 1)
+
+
+class CampaignVsCaseRegistryTest(TestCase):
+    """The 'Fistula Campaign' panel must report the CAMPAIGN FORM, never the
+    case registry wearing a campaign label (CIPRB meeting, 3 Aug 2026: the two
+    panels showed the same eight numbers and 57 carried two denominators)."""
+
+    def setUp(self):
+        from .models import CIPRBFistulaCase
+        self.client = APIClient()
+        self.user = make_user('ciprb@x.org', Organisation.CIPRB, Role.ORG_LEAD)
+        self.client.force_authenticate(user=self.user)
+        # Case registry: 3 cases across 3 districts / 3 upazilas.
+        for i, d in enumerate(['Dhaka', 'Rangpur', 'Bhola']):
+            CIPRBFistulaCase.objects.create(
+                case_serial='C%d' % i, district=d, upazila='U%d' % i,
+                current_stage='diagnosed', approval_status='APPROVED')
+        # Campaign form: 2 activity days, ONE district, with real reach.
+        for i in range(2):
+            FistulaCampaign.objects.create(
+                district='Kurigram', upazila='Nageshwari',
+                campaign_date=datetime.date(2026, 7, 1 + i),
+                households_visited=100 + i, population_covered=500 + i,
+                suspected_fistula_cases=2, approval_status='APPROVED',
+                latitude=25.8 + i / 100, longitude=89.6)
+
+    def _agg(self):
+        r = self.client.get('/api/fistula/aggregates/')
+        self.assertEqual(r.status_code, 200)
+        return r.json()
+
+    def test_campaign_block_reports_the_campaign_form_not_the_registry(self):
+        camp = self._agg()['campaign']
+        self.assertEqual(camp['reports'], 2)
+        self.assertEqual(camp['districts'], 1)      # NOT the registry's 3
+        self.assertEqual(camp['upazilas'], 1)
+        self.assertEqual(camp['households'], 201)
+        self.assertEqual(camp['population'], 1001)
+        self.assertEqual(camp['suspected'], 4)
+
+    def test_case_coverage_stays_separate_from_campaign_coverage(self):
+        agg = self._agg()
+        self.assertEqual(agg['campaign_reach']['districts'], 3)
+        self.assertEqual(agg['campaign']['districts'], 1)
+
+    def test_every_gps_row_becomes_a_dot(self):
+        pts = self._agg()['campaign']['points']
+        self.assertEqual(len(pts), 2)
+        self.assertEqual(pts[0]['district'], 'Kurigram')
+        self.assertEqual(pts[0]['households'], 100)
+        self.assertIn('lat', pts[0])
+        self.assertIn('lng', pts[0])
+
+    def test_rows_without_gps_are_skipped_but_still_counted(self):
+        FistulaCampaign.objects.create(
+            district='Kurigram', upazila='Nageshwari',
+            campaign_date=datetime.date(2026, 7, 9),
+            households_visited=50, approval_status='APPROVED')
+        camp = self._agg()['campaign']
+        self.assertEqual(camp['reports'], 3)          # counted
+        self.assertEqual(len(camp['points']), 2)      # not plotted
+        self.assertEqual(camp['households'], 251)
+
+    def test_pending_campaign_rows_are_excluded(self):
+        FistulaCampaign.objects.create(
+            district='Kurigram', upazila='Nageshwari',
+            campaign_date=datetime.date(2026, 7, 10),
+            households_visited=9999, approval_status='PENDING',
+            latitude=25.9, longitude=89.7)
+        camp = self._agg()['campaign']
+        self.assertEqual(camp['reports'], 2)
+        self.assertEqual(camp['households'], 201)

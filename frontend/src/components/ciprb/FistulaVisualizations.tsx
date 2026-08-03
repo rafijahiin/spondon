@@ -13,25 +13,46 @@
  */
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Building2, MapPin, Users, Search, Stethoscope, Send, ArrowRight, Scissors, HeartHandshake } from 'lucide-react'
+import { Building2, MapPin, Users, Search, Stethoscope, Send, ArrowRight, Scissors, HeartHandshake, ClipboardList, Home } from 'lucide-react'
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts'
 import { api } from '@/api/client'
 import { DataUnavailable } from '@/components/ciprb/DataUnavailable'
+import { FistulaCampaignMap } from '@/components/ciprb/FistulaCampaignMap'
+import type { CampaignPoint } from '@/components/ciprb/FistulaCampaignMap'
 import { SourceChip } from '@/components/ui/SourceChip'
 
 // UNFPA branding — orange across the board.
 const CIPRB_BLUE = '#F96000'
 const CIPRB_BLUE_SOFT = 'rgba(249,96,0,0.10)'
 
+// The community campaign as its OWN measure, from the daily CHW activity form
+// (ciprb_fistula_campaign_v1). Never mixed into the case funnel: a CHW day is
+// not a patient, and adding the two double-counts.
+export interface CampaignAgg {
+  reports: number
+  districts: number
+  upazilas: number
+  households: number
+  population: number
+  sessions: number
+  suspected: number
+  confirmed: number
+  referred: number
+  date_from: string | null
+  date_to: string | null
+  points: CampaignPoint[]
+}
+
 interface AggregateData {
   // Total registered CIPRB fistula cases — drives the empty state.
   total: number
-  // Campaign reach
+  // Case-registry coverage (NOT campaign activity — see `campaign`).
   campaigns: number
   districts: number
   upazilas: number
   households: number
   population: number
+  campaign: CampaignAgg | null
   campaignSuspected: number
   campaignDiagnosed: number
   // Funnel — CIPRB's 5-stage pipeline:
@@ -60,6 +81,7 @@ interface AggregateData {
 const EMPTY: AggregateData = {
   total: 0,
   campaigns: 0, districts: 0, upazilas: 0, households: 0, population: 0,
+  campaign: null,
   campaignSuspected: 0, campaignDiagnosed: 0,
   suspected: 0, identified: 0, referred: 0, repaired: 0, rehabilitated: 0,
   outcomeDry: 0, outcomeNotDry: 0, outcomeFailed: 0,
@@ -108,6 +130,7 @@ function useFistulaAggregates(
         total?: number
         pipeline?: Record<string, number>
         campaign_reach?: { districts: number; upazilas: number; patients: number }
+        campaign?: CampaignAgg
         genital_fistula_type?: Record<string, number>
         surgery_outcome_v2?: Record<string, number>
         fistula_type_v2?: Record<string, number>
@@ -123,6 +146,10 @@ function useFistulaAggregates(
       const agg = aggRes.value.data
       const pipeline = (agg && agg.pipeline) || null
       const reach = (agg && agg.campaign_reach) || null
+      // The REAL community campaign (daily CHW activity form). Kept apart
+      // from the case registry on purpose: different form, different
+      // denominator, its own source chip.
+      const camp = (agg && agg.campaign) || null
 
       // Surgical outcome (dry / not-dry / failed) — CIPRBFistulaCase.surgery_outcome_v2.
       const so = (agg && agg.surgery_outcome_v2) || {}
@@ -155,6 +182,7 @@ function useFistulaAggregates(
         // rather than showing seed numbers.
         households: 0,
         population: 0,
+        campaign: camp,
         campaignSuspected: pipeline ? pipeline.suspected : 0,
         campaignDiagnosed: pipeline ? pipeline.diagnosed : 0,
         // Funnel stages — always the monotonic CIPRBFistulaCase pipeline
@@ -378,11 +406,6 @@ export function FistulaVisualizations({
   // carries the three-slice structure Animesh asked for.
   const pieTotal = pieData.reduce((s, d) => s + d.value, 0)
 
-  // Share of suspected for the funnel-stage tiles. Null when there is no
-  // suspected base yet (avoids divide-by-zero / nonsense percentages).
-  const pctOfSuspected = (v: number): number | null =>
-    agg.suspected > 0 ? (v / agg.suspected) * 100 : null
-
   // Anatomical fistula-type total — drives the VVF/RVF breakdown's empty state.
   const genitalTotal = GENITAL_TYPES.reduce((s, t) => s + (agg.genitalType[t.key] || 0), 0)
 
@@ -409,36 +432,44 @@ export function FistulaVisualizations({
             {t('fistulaViz.reachSub')}
           </p>
           <div style={{ marginTop: 6 }}>
-            <SourceChip>CIPRB 1 — Fistula Question Bank</SourceChip>
+            <SourceChip>CIPRB — Fistula Campaign (Daily CHW Activity)</SourceChip>
           </div>
         </div>
-        {agg.total === 0 ? (
+        {/* This panel used to repeat the case funnel (suspected/diagnosed/
+            referred/repaired) read from the CASE registry under a "Campaign"
+            heading, so the same eight numbers appeared twice on one screen and
+            57 carried two different denominators. CIPRB flagged it on
+            3 Aug 2026. It now reports the ACTUAL campaign form: field activity
+            and where it happened. The patient funnel lives once, below. */}
+        {!agg.campaign || agg.campaign.reports === 0 ? (
           <EmptyState message={t('fistulaViz.emptyReach')} />
         ) : (
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-            gap: 12,
-          }}>
-            {/* Reach + funnel all read from the SAME real CIPRBFistulaCase
-                registry (campaign_reach + monotonic pipeline) so they can
-                never contradict each other (the old "suspected 0 but referred
-                19" bug came from mixing demo campaign counts with the case
-                pipeline). Households/population tiles were dropped — the
-                registry has no honest source for them. */}
-            <MetricTile icon={<Users      size={13} />} label="Patients registered" value={agg.campaigns} sub="Suspected-stage registrations" />
-            <MetricTile icon={<MapPin     size={13} />} label={t('fistulaViz.districts')}  value={agg.districts}  sub={t('fistulaViz.districtsSub')} />
-            <MetricTile icon={<Building2  size={13} />} label={t('fistulaViz.upazilas')}   value={agg.upazilas}   sub={t('fistulaViz.upazilasSub')} />
-            <MetricTile icon={<Search      size={13} />} label="Suspected" value={agg.suspected} sub="Suspected cases found" />
-            <MetricTile icon={<Stethoscope size={13} />} label="Diagnosed" value={agg.identified} sub="Confirmed at Fistula Corner"
-              pct={pctOfSuspected(agg.identified)} pctLabel="of suspected" />
-            <MetricTile icon={<Send         size={13} />} label="Referred for Surgical Management" value={agg.referred}      sub="Sent to tertiary facility"
-              pct={pctOfSuspected(agg.referred)} pctLabel="of suspected" />
-            <MetricTile icon={<Scissors     size={13} />} label="Surgically Repaired"             value={agg.repaired}      sub="Surgery outcome recorded"
-              pct={pctOfSuspected(agg.repaired)} pctLabel="of suspected" />
-            <MetricTile icon={<HeartHandshake size={13} />} label="Rehabilitated & Reintegrated"  value={agg.rehabilitated} sub="Rehabilitation support received"
-              pct={pctOfSuspected(agg.rehabilitated)} pctLabel="of suspected" />
-          </div>
+          <>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+              gap: 12,
+            }}>
+              <MetricTile icon={<ClipboardList size={13} />} label="Activity reports" value={agg.campaign.reports}
+                sub={agg.campaign.date_from && agg.campaign.date_to
+                  ? `${agg.campaign.date_from} to ${agg.campaign.date_to}`
+                  : 'CHW activity days'} />
+              <MetricTile icon={<MapPin size={13} />} label={t('fistulaViz.districts')} value={agg.campaign.districts} sub={t('fistulaViz.districtsSub')} />
+              <MetricTile icon={<Building2 size={13} />} label={t('fistulaViz.upazilas')} value={agg.campaign.upazilas} sub={t('fistulaViz.upazilasSub')} />
+              <MetricTile icon={<Home size={13} />} label="Households visited" value={agg.campaign.households} sub="Door-to-door reach" />
+              <MetricTile icon={<Users size={13} />} label="Population covered" value={agg.campaign.population} sub="People in visited households" />
+              <MetricTile icon={<Search size={13} />} label="Suspected found in campaign" value={agg.campaign.suspected}
+                sub="Reported by CHWs in the field" />
+            </div>
+            <div style={{ marginTop: 16 }}>
+              <FistulaCampaignMap points={agg.campaign.points} />
+            </div>
+            <p style={{ fontSize: 11.5, color: 'var(--muted)', margin: '10px 2px 0' }}>
+              Campaign tallies are the field team&rsquo;s own day counts and are
+              reported separately from the patient registry below, so no case is
+              counted twice.
+            </p>
+          </>
         )}
       </div>
 
@@ -497,60 +528,13 @@ export function FistulaVisualizations({
         )}
       </div>
 
-      {/* ─── 2a-bis. Diagnosed vs Surgically Repaired (pie) ─── */}
-      {(agg.identified + agg.repaired) > 0 && (() => {
-        const drData = [
-          { name: 'Diagnosed',           value: agg.identified, color: '#F96000' },
-          { name: 'Surgically Repaired', value: agg.repaired,   color: '#7A2E00' },
-        ]
-        const drTotal = drData.reduce((s, d) => s + d.value, 0)
-        return (
-          <div>
-            <div style={{ marginBottom: 14 }}>
-              <div className="kicker">
-                <span className="dot" style={{ background: CIPRB_BLUE }} />
-                CAMPAIGN OUTCOME
-              </div>
-              <h3 style={{ margin: '6px 0 2px', fontSize: 18, fontWeight: 700, color: 'var(--ink)' }}>
-                Diagnosed &amp; surgically repaired
-              </h3>
-              <p style={{ fontSize: 12.5, color: 'var(--muted)', margin: 0 }}>
-                Confirmed fistula diagnoses and how many have been surgically repaired.
-              </p>
-              <div style={{ marginTop: 6 }}>
-                <SourceChip>CIPRB 1 — Fistula Question Bank</SourceChip>
-              </div>
-            </div>
-            <div className="card" style={{ padding: 24 }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 36, flexWrap: 'wrap' }}>
-                <div style={{ width: 220, height: 220, flexShrink: 0 }}>
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie data={drData} dataKey="value" nameKey="name" cx="50%" cy="50%"
-                        innerRadius={0} outerRadius={104} paddingAngle={1}
-                        stroke="#fff" strokeWidth={1}
-                        startAngle={90} endAngle={-270} animationDuration={800}>
-                        {drData.map((d) => <Cell key={d.name} fill={d.color} />)}
-                      </Pie>
-                      <Tooltip
-                        wrapperStyle={{ zIndex: 50, outline: 'none' }}
-                        contentStyle={{ background: 'var(--surface)', border: '1px solid var(--hair)', borderRadius: 8, fontSize: 12, color: 'var(--ink)', boxShadow: '0 6px 20px rgba(0,0,0,0.18)' }}
-                        itemStyle={{ color: 'var(--ink)' }}
-                        labelStyle={{ color: 'var(--ink)' }}
-                        formatter={(value: number, name: string) =>
-                          [`${value} (${drTotal ? Math.round((value / drTotal) * 100) : 0}%)`, name]}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-                <div style={{ flex: 1, minWidth: 220 }}>
-                  <DiagnosisLegend data={drData} />
-                </div>
-              </div>
-            </div>
-          </div>
-        )
-      })()}
+      {/* ─── 2a-bis. REMOVED 2026-08-03 (CIPRB meeting): the "Diagnosed &
+          surgically repaired" pie drew Diagnosed (96) and Surgically
+          Repaired (42) as two slices of one circle, implying a whole of 138.
+          Repaired cases are a SUBSET of diagnosed, so a pie is not a valid
+          encoding for them. The relationship is already stated correctly by
+          the funnel above, where each stage's share uses the previous stage
+          as its denominator. ─── */}
 
       {/* ─── 2b. Surgical Outcome (Animesh's 3 categories) ─── */}
       {(agg.outcomeDry + agg.outcomeNotDry + agg.outcomeFailed) > 0 && (

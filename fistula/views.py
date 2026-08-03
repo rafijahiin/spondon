@@ -267,10 +267,10 @@ def fistula_aggregates(request):
             if tok:
                 reasons[tok] += 1
 
-    # ── Campaign-reach tiles, sourced from the real CIPRBFistulaCase registry
-    #    (NOT the demo-seeded FistulaCampaign / FistulaCornerCase). Districts /
-    #    upazilas / patients reflect actual registered cases; when the registry
-    #    is empty every count is 0 and the dashboard renders an empty state.
+    # ── Case-registry coverage. This is how far the REGISTERED CASES reach; it
+    #    is NOT campaign activity (see `campaign` below), and the two must never
+    #    be relabelled into each other — that mix-up put case-funnel numbers
+    #    under a "Fistula Campaign" heading (CIPRB meeting, 3 Aug 2026).
     campaign_reach = {
         'districts': qs.exclude(district='').values('district').distinct().count(),
         'upazilas': (qs.exclude(upazila='')
@@ -278,10 +278,63 @@ def fistula_aggregates(request):
         'patients': qs.count(),
     }
 
+    # ── The ACTUAL community campaign: the daily CHW activity report
+    #    (ciprb_fistula_campaign_v1 -> FistulaCampaign). Separate measure,
+    #    separate denominator, separate source chip. Its own suspected/confirmed
+    #    tallies are deliberately NOT merged into the case funnel (they are a
+    #    field day-count, not the patient registry — merging double-counts).
+    camp_qs = FistulaCampaign.objects.filter(approval_status='APPROVED')
+    if districts:
+        # Same ?districts= donor filter the case queryset above honours, so the
+        # two panels always describe the same geography.
+        camp_qs = camp_qs.filter(district__in=[
+            d for d in camp_qs.values_list('district', flat=True).distinct()
+            if d and d.lower() in wanted])
+    camp_sum = camp_qs.aggregate(
+        households=Sum('households_visited'),
+        population=Sum('population_covered'),
+        sessions=Sum('community_sessions'),
+        suspected=Sum('suspected_fistula_cases'),
+        confirmed=Sum('confirmed_fistula_cases'),
+        referred=Sum('cases_referred'),
+    )
+    # Dot map: one point per activity report that carries GPS (CIPRB asked for
+    # dot mapping of community-level activity, not a shaded district map).
+    points = [
+        {
+            'lat': float(c.latitude), 'lng': float(c.longitude),
+            'district': c.district, 'upazila': c.upazila,
+            'union': c.union, 'village': c.village,
+            'date': c.campaign_date.isoformat() if c.campaign_date else None,
+            'households': c.households_visited or 0,
+            'population': c.population_covered or 0,
+            'suspected': c.suspected_fistula_cases or 0,
+        }
+        for c in camp_qs.exclude(latitude=None).exclude(longitude=None)
+                        .order_by('campaign_date')
+    ]
+    dates = [c for c in camp_qs.values_list('campaign_date', flat=True) if c]
+    campaign = {
+        'reports': camp_qs.count(),
+        'districts': camp_qs.exclude(district='').values('district').distinct().count(),
+        'upazilas': (camp_qs.exclude(upazila='')
+                            .values('district', 'upazila').distinct().count()),
+        'households': camp_sum['households'] or 0,
+        'population': camp_sum['population'] or 0,
+        'sessions': camp_sum['sessions'] or 0,
+        'suspected': camp_sum['suspected'] or 0,
+        'confirmed': camp_sum['confirmed'] or 0,
+        'referred': camp_sum['referred'] or 0,
+        'date_from': min(dates).isoformat() if dates else None,
+        'date_to': max(dates).isoformat() if dates else None,
+        'points': points,
+    }
+
     return Response({
         'total': qs.count(),
         'pipeline': pipeline,
         'campaign_reach': campaign_reach,
+        'campaign': campaign,
         'age': _fis_band(ages, [(0,18),(18,25),(25,35),(35,45),(45,200)],
                          ['<18','18-24','25-34','35-44','45+']),                       # 1
         'education': _fis_count(qs, 'education'),                                       # 2
