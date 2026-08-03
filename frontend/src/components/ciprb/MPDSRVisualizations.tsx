@@ -90,6 +90,7 @@ interface LiveAction {
   section: string
   section_label: string
   sub_category: string
+  sub_category_label?: string
   activity: string
   responsible: string
   timeline: string | null

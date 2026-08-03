@@ -12,6 +12,7 @@ interface LiveAction {
   district: string
   section_label: string
   sub_category: string
+  sub_category_label?: string
   activity: string
   responsible: string
   timeline: string | null
@@ -268,6 +269,11 @@ export function ActionPlanTracker({ districts }: { districts?: readonly string[]
                 <td style={{ whiteSpace: 'nowrap' }}>{a.district}</td>
                 <td style={{ maxWidth: 320 }}>
                   {a.activity}
+                  {a.sub_category_label ? (
+                    <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--accent)' }}>
+                      {a.sub_category_label}
+                    </div>
+                  ) : null}
                   <div style={{ fontSize: 11, color: 'var(--muted)' }}>
                     {a.section_label}{a.timeline ? ` · due ${a.timeline}` : ''}{a.responsible ? ` · ${a.responsible}` : ''}
                   </div>

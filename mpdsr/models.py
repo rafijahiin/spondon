@@ -595,6 +595,32 @@ class MPDSRAction(models.Model):
             models.Index(fields=['timeline', 'status']),
         ]
 
+    # sub_category codes -> display label. Two vocabularies share the column,
+    # kept apart by `section`: the System-Strengthening sub-category (master
+    # Table 1's first column) and the common modifiable factor (Table 2's first
+    # column, added 2026-08). Anything not listed is a district's own 'other'
+    # wording and is shown as typed.
+    SUBCATEGORY_LABELS = {
+        'community_death_review': 'Community Death Review',
+        'facility_death_review': 'Facility Death Review',
+        'assignment_causes': 'Assignment causes of deaths',
+        'response_plan_dev': 'Response plan development',
+        'implementation_response': 'Implementation of response',
+        'monitoring_evaluation': 'Monitoring and evaluation',
+        'quality_of_care': 'Lack of quality maternal and newborn care service at facilities',
+        'pph_management': 'Management of Postpartum Haemorrhage (PPH)',
+        'multiparity_htn_preeclampsia': 'Multiparity, prolonged labour, HTN and pre-eclampsia',
+        'referral_linkages': 'Inadequate referral linkages',
+        'delayed_anc': 'Delayed ANC initiation',
+        'home_delivery_tba': 'Home delivery by TBA',
+        'death_reporting': 'Increase proper death reporting',
+    }
+
+    @property
+    def sub_category_label(self):
+        """Readable first-column value, whichever master table this came from."""
+        return self.SUBCATEGORY_LABELS.get(self.sub_category, self.sub_category)
+
     def __str__(self):
         return f'{self.action_id} — {self.activity[:50]}'
 

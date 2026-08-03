@@ -213,3 +213,75 @@ class MapIntegrityTest(TestCase):
         MPDSRAction.objects.create(action_id='RA-001', district='Rangpur',
                                    section='system_strengthening', activity='x')
         self.assertEqual(MPDSRAction.next_action_id('Rangpur'), 'RA-002')
+
+
+class ModifiableFactorTest(TestCase):
+    """Master Table 2's first column (common modifiable factor) must reach
+    MPDSRAction.sub_category for BOTH factor sections, and must not leak into
+    the System-Strengthening vocabulary."""
+
+    @staticmethod
+    def _plan(action_id, section, *, factor='', other='', subcat=''):
+        return handle_ciprb_mpdsr_action_plan({
+            'ap_mode': 'new_plan',
+            'district': 'dhaka',
+            'action_id': action_id,
+            'act_activity': 'Strengthen referral network and transport support',
+            'rp_section': section,
+            'act_subcat': subcat,
+            'act_factor': factor,
+            'act_factor_other': other,
+            'enumerator_name': 'Alice',
+            '_id': 'F' + action_id,
+            '_submitted_by': 'kobo',
+        }, None, None)
+
+    def test_community_va_factor_is_stored(self):
+        self._plan('DH-101', 'community_va', factor='referral_linkages')
+        act = MPDSRAction.objects.get(action_id='DH-101')
+        self.assertEqual(act.section, 'community_va')
+        self.assertEqual(act.sub_category, 'referral_linkages')
+        self.assertEqual(act.sub_category_label, 'Inadequate referral linkages')
+
+    def test_facility_dr_uses_the_same_factor_list(self):
+        self._plan('DH-102', 'facility_dr', factor='pph_management')
+        act = MPDSRAction.objects.get(action_id='DH-102')
+        self.assertEqual(act.sub_category, 'pph_management')
+        self.assertEqual(act.sub_category_label,
+                         'Management of Postpartum Haemorrhage (PPH)')
+
+    def test_other_stores_the_districts_own_wording(self):
+        self._plan('DH-103', 'community_va', factor='other',
+                   other='Delay in arranging transport at night')
+        act = MPDSRAction.objects.get(action_id='DH-103')
+        self.assertEqual(act.sub_category, 'Delay in arranging transport at night')
+        # Unknown code -> shown as typed, never blank.
+        self.assertEqual(act.sub_category_label,
+                         'Delay in arranging transport at night')
+
+    def test_other_wording_is_truncated_to_column_width(self):
+        self._plan('DH-104', 'facility_dr', factor='other', other='x' * 300)
+        act = MPDSRAction.objects.get(action_id='DH-104')
+        self.assertEqual(len(act.sub_category), 120)
+
+    def test_system_strengthening_still_uses_act_subcat(self):
+        # A stray act_factor on an SS action must be ignored, not overwrite.
+        self._plan('DH-105', 'system_strengthening',
+                   subcat='community_death_review', factor='pph_management')
+        act = MPDSRAction.objects.get(action_id='DH-105')
+        self.assertEqual(act.sub_category, 'community_death_review')
+
+    def test_factor_reaches_the_action_aggregates_api(self):
+        self._plan('DH-106', 'community_va', factor='home_delivery_tba')
+        MPDSRAction.objects.filter(action_id='DH-106').update(
+            approval_status='APPROVED')
+        user = User.objects.create_user(
+            email='factor@ciprb.org', password='p', full_name='Lead',
+            organisation=Organisation.CIPRB, role=Role.ORG_LEAD)
+        c = APIClient()
+        c.force_authenticate(user=user)
+        res = c.get(reverse('mpdsr-action-aggregates'))
+        self.assertEqual(res.status_code, 200)
+        row = next(a for a in res.json()['actions'] if a['action_id'] == 'DH-106')
+        self.assertEqual(row['sub_category'], 'home_delivery_tba')
+        self.assertEqual(row['sub_category_label'], 'Home delivery by TBA')

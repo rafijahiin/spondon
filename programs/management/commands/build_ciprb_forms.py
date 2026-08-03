@@ -3628,6 +3628,22 @@ def _response_plan_survey():
         'Sub-category (System Strengthening only)',
         'উপ-বিভাগ (শুধু সিস্টেম শক্তিশালীকরণ)',
         relevant="${rp_section}='system_strengthening'"))
+    # The modifiable-factor row of master Table 2. Both factor sections share one
+    # list: the master ships those rows BLANK (each district fills them from its
+    # own verbal-autopsy / death-review findings), so the codes below are the
+    # factors districts actually write, plus 'other' + free text so a district is
+    # never forced into a wrong bucket. Asked before the action so the action is
+    # always attached to the factor it answers.
+    rows.append(_sr('select_one rp_factor', 'act_factor',
+        'Which common modifiable factor is this action for?',
+        'এই পদক্ষেপটি কোন সাধারণ পরিবর্তনযোগ্য কারণের জন্য?',
+        required='yes',
+        relevant="${rp_section}='community_va' or ${rp_section}='facility_dr'"))
+    rows.append(_sr('text', 'act_factor_other',
+        'Write the modifiable factor', 'পরিবর্তনযোগ্য কারণটি লিখুন',
+        required='yes', app='multiline',
+        relevant="${act_factor}='other' and "
+                 "(${rp_section}='community_va' or ${rp_section}='facility_dr')"))
     rows.append(_sr('text', 'act_activity', 'Activity / action to be taken',
                     'কার্যক্রম / গৃহীত পদক্ষেপ', required='yes', app='multiline'))
     rows.append(_sr('text', 'act_responsible', 'Responsible',
@@ -3715,6 +3731,31 @@ def _response_plan_choices():
          'সাধারণ পরিবর্তনযোগ্য কারণ (ফ্যাসিলিটি ডেথ রিভিউ)'),
     ]:
         ch.append(_ch('rp_section', k, en, bn))
+    # rp_factor = the first column of master Table 2 (Common modifiable
+    # factors), shown for BOTH the community-verbal-autopsy and the
+    # facility-death-review sections. Wording follows the district action plans
+    # as written; 'other' keeps the list open because the master template leaves
+    # these rows blank for districts to fill.
+    for k, en, bn in [
+        ('quality_of_care',
+         'Lack of quality maternal and newborn care service at facilities',
+         'সুবিধাকেন্দ্রে মানসম্মত মাতৃ ও নবজাতক সেবার ঘাটতি'),
+        ('pph_management', 'Management of Postpartum Haemorrhage (PPH)',
+         'প্রসব-পরবর্তী রক্তক্ষরণ (পিপিএইচ) ব্যবস্থাপনা'),
+        ('multiparity_htn_preeclampsia',
+         'Multiparity, prolonged labour, HTN and pre-eclampsia',
+         'বহুপ্রসব, দীর্ঘায়িত প্রসববেদনা, উচ্চ রক্তচাপ ও প্রি-এক্লাম্পসিয়া'),
+        ('referral_linkages', 'Inadequate referral linkages',
+         'রেফারেল সংযোগের অপর্যাপ্ততা'),
+        ('delayed_anc', 'Delayed ANC initiation',
+         'বিলম্বে এএনসি শুরু'),
+        ('home_delivery_tba', 'Home delivery by TBA',
+         'দাই (টিবিএ) দ্বারা বাড়িতে প্রসব'),
+        ('death_reporting', 'Increase proper death reporting',
+         'সঠিক মৃত্যু রিপোর্টিং বাড়ানো'),
+        ('other', 'Other (write it below)', 'অন্যান্য (নিচে লিখুন)'),
+    ]:
+        ch.append(_ch('rp_factor', k, en, bn))
     for k, en, bn in [
         ('new_plan', 'Start a new action plan', 'নতুন অ্যাকশন প্ল্যান শুরু করুন'),
         ('update_action', 'Update an existing action', 'বিদ্যমান একটি পদক্ষেপ হালনাগাদ করুন'),

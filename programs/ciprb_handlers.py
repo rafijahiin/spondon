@@ -994,7 +994,18 @@ def handle_ciprb_mpdsr_action_plan(payload, lat, lng):
                 act.organisation = ORG
                 act.meeting_date = meeting_date
                 act.section = section
-                act.sub_category = _s(payload.get('act_subcat'))
+                # sub_category holds the master table's FIRST column, whichever
+                # table this action came from: the System-Strengthening
+                # sub-category, or (new) the common modifiable factor for the two
+                # factor tables. `section` disambiguates the vocabulary. 'other'
+                # stores the district's own wording instead of the code.
+                if section == ActionSection.SYSTEM_STRENGTHENING:
+                    act.sub_category = _s(payload.get('act_subcat'))
+                else:
+                    factor = _s(payload.get('act_factor'))
+                    if factor == 'other':
+                        factor = _s(payload.get('act_factor_other'))
+                    act.sub_category = factor[:120]
                 act.activity = activity
                 act.responsible = _s(payload.get('act_responsible'))
                 act.timeline = _date(payload.get('act_timeline'))

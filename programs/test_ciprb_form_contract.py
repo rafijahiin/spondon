@@ -102,9 +102,17 @@ CONTRACT = {
         'choices': {},
     },
     'ciprb_mpdsr_response_plan_v1': {
-        'required': ['ap_mode'],
+        # act_factor carries master Table 2's first column (the common
+        # modifiable factor) into MPDSRAction.sub_category; losing it would
+        # silently un-attribute every factor-table action.
+        'required': ['ap_mode', 'act_factor', 'act_factor_other'],
         # 'update_action' branch drives whether a submission mutates or creates.
-        'choices': {'ap_mode': ['update_action']},
+        'choices': {
+            'ap_mode': ['update_action'],
+            'rp_section': ['community_va', 'facility_dr'],
+            'act_factor': ['pph_management', 'referral_linkages',
+                           'home_delivery_tba', 'other'],
+        },
     },
 }
 
