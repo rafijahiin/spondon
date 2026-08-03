@@ -356,13 +356,14 @@ class CampaignVsCaseRegistryTest(TestCase):
         self.assertEqual(agg['campaign_reach']['districts'], 3)
         self.assertEqual(agg['campaign']['districts'], 1)
 
-    def test_every_gps_row_becomes_a_dot(self):
-        pts = self._agg()['campaign']['points']
-        self.assertEqual(len(pts), 2)
-        self.assertEqual(pts[0]['district'], 'Kurigram')
-        self.assertEqual(pts[0]['households'], 100)
-        self.assertIn('lat', pts[0])
-        self.assertIn('lng', pts[0])
+    def test_dots_are_grouped_per_upazila_not_per_row(self):
+        rows = self._agg()['campaign']['by_upazila']
+        self.assertEqual(len(rows), 1)          # 2 reports, ONE upazila
+        self.assertEqual(rows[0]['district'], 'Kurigram')
+        self.assertEqual(rows[0]['upazila'], 'Nageshwari')
+        self.assertEqual(rows[0]['reports'], 2)
+        self.assertEqual(rows[0]['households'], 201)
+        self.assertIn('key', rows[0])
 
     def test_rows_without_gps_are_skipped_but_still_counted(self):
         FistulaCampaign.objects.create(
@@ -371,8 +372,11 @@ class CampaignVsCaseRegistryTest(TestCase):
             households_visited=50, approval_status='APPROVED')
         camp = self._agg()['campaign']
         self.assertEqual(camp['reports'], 3)          # counted
-        self.assertEqual(len(camp['points']), 2)      # not plotted
         self.assertEqual(camp['households'], 251)
+        # placement is by upazila, so a GPS-less row still gets a dot
+        row = camp['by_upazila'][0]
+        self.assertEqual(row['reports'], 3)
+        self.assertEqual(row['gps_rows'], 2)          # only 2 carried GPS
 
     def test_pending_campaign_rows_are_excluded(self):
         FistulaCampaign.objects.create(
@@ -383,3 +387,56 @@ class CampaignVsCaseRegistryTest(TestCase):
         camp = self._agg()['campaign']
         self.assertEqual(camp['reports'], 2)
         self.assertEqual(camp['households'], 201)
+
+
+class UpazilaNameFoldingTest(TestCase):
+    """Field staff spell one upazila several ways in a single week. The map and
+    the table must show ONE row per real upazila (Rafi, 3 Aug 2026)."""
+
+    def setUp(self):
+        self.client = APIClient()
+        self.client.force_authenticate(
+            user=make_user('fold@x.org', Organisation.CIPRB, Role.ORG_LEAD))
+
+    def _add(self, district, upazila, households):
+        FistulaCampaign.objects.create(
+            district=district, upazila=upazila,
+            campaign_date=datetime.date(2026, 7, 1),
+            households_visited=households, approval_status='APPROVED')
+
+    def _rows(self):
+        r = self.client.get('/api/fistula/aggregates/')
+        self.assertEqual(r.status_code, 200)
+        return r.json()['campaign']['by_upazila']
+
+    def test_latin_spelling_variants_merge(self):
+        self._add('Gaibandha', 'Sadullahpur', 10)
+        self._add('Gaibandha', 'Sadullahpur', 4)
+        self._add('Gaibandha', 'Sadullapur', 5)
+        self._add('gaibandha', 'sadullahpur ', 1)
+        rows = self._rows()
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]['reports'], 4)
+        self.assertEqual(rows[0]['households'], 20)
+        # the majority spelling is displayed, variants stay visible
+        self.assertEqual(rows[0]['upazila'], 'Sadullahpur')
+        self.assertEqual(rows[0]['spellings'],
+                         ['Sadullahpur', 'Sadullapur', 'sadullahpur'])
+
+    def test_bengali_and_latin_merge(self):
+        self._add('Khagrachari', 'Ramgarh', 7)
+        self._add('খাগড়াছড়ি',
+                  'রামগড়', 3)
+        rows = self._rows()
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]['households'], 10)
+
+    def test_different_upazilas_stay_apart(self):
+        self._add('Gaibandha', 'Saghatta', 4)
+        self._add('Gaibandha', 'Sadullapur', 4)
+        self.assertEqual(len(self._rows()), 2)
+
+    def test_same_upazila_name_in_two_districts_stays_apart(self):
+        self._add('Khagrachari', 'Ramgarh', 4)
+        self._add('Sirajganj', 'Ramgarh', 4)
+        self.assertEqual(len(self._rows()), 2)

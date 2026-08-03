@@ -9,6 +9,7 @@ from accounts.permissions import (
     IsSupervisorOrManager,
     OrgFilterMixin,
 )
+from .geo_names import canon, canon_pair
 from .models import FistulaCampaign, FistulaCornerCase, FistulaCampaignVisit
 from .serializers import (
     FistulaCampaignSerializer,
@@ -298,21 +299,62 @@ def fistula_aggregates(request):
         confirmed=Sum('confirmed_fistula_cases'),
         referred=Sum('cases_referred'),
     )
-    # Dot map: one point per activity report that carries GPS (CIPRB asked for
-    # dot mapping of community-level activity, not a shaded district map).
-    points = [
-        {
-            'lat': float(c.latitude), 'lng': float(c.longitude),
-            'district': c.district, 'upazila': c.upazila,
-            'union': c.union, 'village': c.village,
-            'date': c.campaign_date.isoformat() if c.campaign_date else None,
-            'households': c.households_visited or 0,
-            'population': c.population_covered or 0,
-            'suspected': c.suspected_fistula_cases or 0,
-        }
-        for c in camp_qs.exclude(latitude=None).exclude(longitude=None)
-                        .order_by('campaign_date')
-    ]
+    # Dot map, placed by REPORTED UPAZILA, not by raw GPS. The device GPS is
+    # not trustworthy for this form: 30 of the 71 approved reports name a
+    # Gaibandha upazila but carry Khagrachari coordinates (23.11 N vs
+    # Gaibandha's real 25.3 N), and the whole set collapses onto 6 distinct
+    # coordinates, so a raw-GPS plot draws one blob in the wrong district.
+    # The district/upazila the field team types is internally consistent and
+    # is what we place on. `gps_lat/lng` is the mean of whatever GPS the group
+    # carried, kept only so the client can flag the disagreement.
+    #
+    # Grouping is on the CANONICAL name, not the raw string: one week of
+    # submissions carries `Sadullahpur` and `Sadullapur`, `guimara` and
+    # `Guimara`, and sometimes Bengali — raw grouping splits one upazila into
+    # several dots and several table rows. The most frequent raw spelling is
+    # what gets displayed; `spellings` keeps the variants visible so a genuine
+    # data-entry problem is never hidden by the merge.
+    by_upazila = []
+    groups = {}
+    for c in camp_qs:
+        district = (c.district or '').strip()
+        upazila = (c.upazila or '').strip()
+        key = canon_pair(district, upazila)
+        g = groups.setdefault(key, {
+            'key': key, 'dkey': canon(district),
+            'district': district, 'upazila': upazila, 'reports': 0,
+            'households': 0, 'population': 0, 'suspected': 0,
+            'confirmed': 0, 'referred': 0,
+            '_lat': [], '_lng': [], 'dates': [], '_names': _Counter(),
+            '_dnames': _Counter(),
+        })
+        g['_names'][upazila] += 1
+        g['_dnames'][district] += 1
+        g['reports'] += 1
+        g['households'] += c.households_visited or 0
+        g['population'] += c.population_covered or 0
+        g['suspected'] += c.suspected_fistula_cases or 0
+        g['confirmed'] += c.confirmed_fistula_cases or 0
+        g['referred'] += c.cases_referred or 0
+        if c.latitude is not None and c.longitude is not None:
+            g['_lat'].append(float(c.latitude))
+            g['_lng'].append(float(c.longitude))
+        if c.campaign_date:
+            g['dates'].append(c.campaign_date)
+    for g in groups.values():
+        lats, lngs, dates = g.pop('_lat'), g.pop('_lng'), g.pop('dates')
+        names, dnames = g.pop('_names'), g.pop('_dnames')
+        # Display the spelling the field team used most often.
+        g['upazila'] = names.most_common(1)[0][0] if names else ''
+        g['district'] = dnames.most_common(1)[0][0] if dnames else ''
+        g['spellings'] = sorted(n for n in names if n)
+        g['gps_lat'] = round(sum(lats) / len(lats), 6) if lats else None
+        g['gps_lng'] = round(sum(lngs) / len(lngs), 6) if lngs else None
+        g['gps_rows'] = len(lats)
+        g['date_from'] = min(dates).isoformat() if dates else None
+        g['date_to'] = max(dates).isoformat() if dates else None
+        by_upazila.append(g)
+    by_upazila.sort(key=lambda g: (-g['households'], g['district'], g['upazila']))
     dates = [c for c in camp_qs.values_list('campaign_date', flat=True) if c]
     campaign = {
         'reports': camp_qs.count(),
@@ -327,7 +369,7 @@ def fistula_aggregates(request):
         'referred': camp_sum['referred'] or 0,
         'date_from': min(dates).isoformat() if dates else None,
         'date_to': max(dates).isoformat() if dates else None,
-        'points': points,
+        'by_upazila': by_upazila,
     }
 
     return Response({

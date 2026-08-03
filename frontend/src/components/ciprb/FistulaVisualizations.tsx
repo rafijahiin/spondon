@@ -18,7 +18,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts'
 import { api } from '@/api/client'
 import { DataUnavailable } from '@/components/ciprb/DataUnavailable'
 import { FistulaCampaignMap } from '@/components/ciprb/FistulaCampaignMap'
-import type { CampaignPoint } from '@/components/ciprb/FistulaCampaignMap'
+import type { CampaignUpazila } from '@/components/ciprb/FistulaCampaignMap'
 import { SourceChip } from '@/components/ui/SourceChip'
 
 // UNFPA branding — orange across the board.
@@ -40,7 +40,7 @@ export interface CampaignAgg {
   referred: number
   date_from: string | null
   date_to: string | null
-  points: CampaignPoint[]
+  by_upazila: CampaignUpazila[]
 }
 
 interface AggregateData {
@@ -462,7 +462,7 @@ export function FistulaVisualizations({
                 sub="Reported by CHWs in the field" />
             </div>
             <div style={{ marginTop: 16 }}>
-              <FistulaCampaignMap points={agg.campaign.points} />
+              <FistulaCampaignMap rows={agg.campaign.by_upazila} />
             </div>
             <p style={{ fontSize: 11.5, color: 'var(--muted)', margin: '10px 2px 0' }}>
               Campaign tallies are the field team&rsquo;s own day counts and are
