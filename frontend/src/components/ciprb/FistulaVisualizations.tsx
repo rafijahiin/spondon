@@ -414,9 +414,9 @@ export function FistulaVisualizations({
       {/* ─── 2b + 3: the two pies share one row — each was a full-width card
           around a 220px circle, i.e. mostly empty space and a page of scroll
           (Rafi, 4 Aug 2026). They stack again below ~900px. ─── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(420px, 1fr))', gap: 18, alignItems: 'start' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(420px, 1fr))', gap: 18, alignItems: 'stretch' }}>
       {(agg.outcomeDry + agg.outcomeNotDry + agg.outcomeFailed) > 0 && (
-        <div>
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
           <div style={{ marginBottom: 14 }}>
             <div className="kicker">
               <span className="dot" style={{ background: CIPRB_BLUE }} />
@@ -463,13 +463,13 @@ export function FistulaVisualizations({
             ]
             const soTotal = soData.reduce((s, d) => s + d.value, 0)
             return (
-              <div className="card" style={{ padding: 24 }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 22, flexWrap: 'wrap' }}>
-                  <div style={{ width: 220, height: 220, flexShrink: 0 }}>
+              <div className="card" style={{ padding: 20, flex: 1, display: 'flex', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 22, flexWrap: 'wrap', width: '100%' }}>
+                  <div style={{ width: 170, height: 170, flexShrink: 0 }}>
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie data={soData.filter((d) => d.value > 0)} dataKey="value" nameKey="name"
-                          cx="50%" cy="50%" innerRadius={0} outerRadius={104} paddingAngle={1}
+                          cx="50%" cy="50%" innerRadius={0} outerRadius={80} paddingAngle={1}
                           stroke="#fff" strokeWidth={1}
                           startAngle={90} endAngle={-270} animationDuration={800}>
                           {soData.filter((d) => d.value > 0).map((d) => <Cell key={d.name} fill={d.color} />)}
@@ -498,7 +498,7 @@ export function FistulaVisualizations({
       )}
 
       {/* ─── 3. Diagnosis Pie ─── */}
-      <div>
+      <div style={{ display: 'flex', flexDirection: 'column' }}>
         <div style={{ marginBottom: 14 }}>
           <div className="kicker">
             <span className="dot" style={{ background: CIPRB_BLUE }} />
@@ -514,17 +514,17 @@ export function FistulaVisualizations({
             <SourceChip>CIPRB 1 — Fistula Question Bank</SourceChip>
           </div>
         </div>
-        <div className="card" style={{ padding: 24 }}>
+        <div className="card" style={{ padding: 20, flex: 1, display: 'flex', alignItems: 'center' }}>
           {pieTotal > 0 ? (
             <div style={{
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               gap: 36, flexWrap: 'wrap',
             }}>
-              <div style={{ width: 220, height: 220, flexShrink: 0 }}>
+              <div style={{ width: 170, height: 170, flexShrink: 0 }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%"
-                      innerRadius={0} outerRadius={104} paddingAngle={1}
+                      innerRadius={0} outerRadius={80} paddingAngle={1}
                       stroke="#fff" strokeWidth={1}
                       startAngle={90} endAngle={-270} animationDuration={800}>
                       {pieData.map((d) => <Cell key={d.name} fill={d.color} />)}
