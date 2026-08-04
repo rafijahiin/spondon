@@ -72,7 +72,7 @@ interface AggregateData {
   pieIatrogenic: number
   pieCongenital: number
   pieTraumatic: number
-  piePending: number     // diagnosed but fistula type not yet recorded — shown beside the pie
+  piePending: number     // repaired but type not recorded (operated pre-revision) — shown beside the pie
   // Anatomical fistula-type breakdown (genital_fistula_type): vvf / rvf /
   // ureterovaginal / … — classified at the Fistula Corner (diagnosis stage).
   genitalType: Record<string, number>
@@ -164,9 +164,11 @@ function useFistulaAggregates(
       const pieIatrogenic = ft.iatrogenic || 0
       const pieCongenital = ft.congenital || 0
       const pieTraumatic  = ft.traumatic  || 0
-      // "Awaiting" = cases that reached diagnosis but have no fistula type yet.
+      // fistula_type_v2 is captured on the REPAIR-stage submission (perfect
+      // overlap with surgery_outcome_v2), so the honest base is the operated
+      // patients; the gap is those repaired before the revised form existed.
       const pieClassified = pieObstetric + pieIatrogenic + pieCongenital + pieTraumatic
-      const piePending = Math.max(0, (pipeline ? pipeline.diagnosed : 0) - pieClassified)
+      const piePending = Math.max(0, (pipeline ? pipeline.repaired : 0) - pieClassified)
 
       setData({
         total: agg && typeof agg.total === 'number' ? agg.total : 0,
