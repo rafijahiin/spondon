@@ -409,7 +409,10 @@ export function FistulaVisualizations({
           the funnel above, where each stage's share uses the previous stage
           as its denominator. ─── */}
 
-      {/* ─── 2b. Surgical Outcome (Animesh's 3 categories) ─── */}
+      {/* ─── 2b + 3: the two pies share one row — each was a full-width card
+          around a 220px circle, i.e. mostly empty space and a page of scroll
+          (Rafi, 4 Aug 2026). They stack again below ~900px. ─── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(420px, 1fr))', gap: 18, alignItems: 'start' }}>
       {(agg.outcomeDry + agg.outcomeNotDry + agg.outcomeFailed) > 0 && (
         <div>
           <div style={{ marginBottom: 14 }}>
@@ -459,7 +462,7 @@ export function FistulaVisualizations({
             const soTotal = soData.reduce((s, d) => s + d.value, 0)
             return (
               <div className="card" style={{ padding: 24 }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 36, flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 22, flexWrap: 'wrap' }}>
                   <div style={{ width: 220, height: 220, flexShrink: 0 }}>
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
@@ -572,6 +575,7 @@ export function FistulaVisualizations({
         }}>
           {t('fistulaViz.pieCaption')}
         </p>
+      </div>
       </div>
 
     </div>

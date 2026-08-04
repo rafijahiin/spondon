@@ -167,7 +167,7 @@ export function MPDSRDistrictMap() {
       </div>
 
       <div className="card" style={{ padding: 16 }}>
-        <div style={{ position: 'relative', height: 520, borderRadius: 8, overflow: 'hidden' }}>
+        <div style={{ position: 'relative', height: 420, borderRadius: 8, overflow: 'hidden' }}>
           {geo ? (
             <MapContainer
               center={[23.685, 90.3563]}
