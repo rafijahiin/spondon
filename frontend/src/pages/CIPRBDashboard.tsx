@@ -130,7 +130,7 @@ function useFistulaKPIs(
 }
 
 function KPITile({
-  icon, label, sub, value, pct, pctLabel,
+  icon, label, sub, value, pct, pctLabel, pct2, pct2Label,
 }: {
   icon: React.ReactNode
   label: string
@@ -138,6 +138,8 @@ function KPITile({
   value: number | string
   pct?: number | null
   pctLabel?: string
+  pct2?: number | null
+  pct2Label?: string
 }) {
   return (
     <div
@@ -177,6 +179,15 @@ function KPITile({
             fontVariantNumeric: 'tabular-nums',
           }}>
             {Math.round(pct)}%{pctLabel ? ` ${pctLabel}` : ''}
+          </span>
+        )}
+        {pct2 != null && (
+          <span style={{
+            fontSize: 12, fontWeight: 700, color: CIPRB_BLUE,
+            border: `1px solid ${CIPRB_BLUE}55`, borderRadius: 999, padding: '1px 9px',
+            fontVariantNumeric: 'tabular-nums',
+          }}>
+            {Math.round(pct2)}%{pct2Label ? ` ${pct2Label}` : ''}
           </span>
         )}
       </div>
@@ -859,7 +870,8 @@ export default function CIPRBDashboard() {
           <KPITile icon={<Send size={14} />}        label={t('ciprb.kpiReferred')}    sub={t('ciprb.kpiReferredSub')}     value={kpis.referred}
             pct={kpis.identified > 0 ? (kpis.referred / kpis.identified) * 100 : null} pctLabel="of diagnosed" />
           <KPITile icon={<Scissors size={14} />}    label={t('ciprb.kpiSurgeryDone')} sub={t('ciprb.kpiSurgeryDoneSub')}  value={kpis.surgeryDone}
-            pct={kpis.referred > 0 ? (kpis.surgeryDone / kpis.referred) * 100 : null} pctLabel="of referred" />
+            pct={kpis.referred > 0 ? (kpis.surgeryDone / kpis.referred) * 100 : null} pctLabel="of referred"
+            pct2={kpis.identified > 0 ? (kpis.surgeryDone / kpis.identified) * 100 : null} pct2Label="of diagnosed" />
           {/* Rehabilitation % — Animesh's definition from the 2026-06-01
               meeting: rehabilitated = any of cash / training / psychosocial /
               reintegration / 5 other support types is Yes. Denominator =
@@ -870,6 +882,8 @@ export default function CIPRBDashboard() {
               label={t('ciprb.kpiRehab')}
               sub={`${kpis.rehabilitated} of ${kpis.surgeryDone} operated`}
               value={`${Math.round(kpis.rehabPct)}%`}
+              pct2={kpis.identified > 0 ? (kpis.rehabilitated / kpis.identified) * 100 : null}
+              pct2Label="of diagnosed"
             />
           ) : (
             <PendingKPITile
@@ -886,64 +900,9 @@ export default function CIPRBDashboard() {
           </p>
         )}
 
-        {/* ── Second layer: outcomes with DIAGNOSED as the denominator.
-            CIPRB (3 Aug 2026): "denominator: jara diagnosed hoilo" — of the
-            96 diagnosed patients, how far did each actually get? The
-            rehabilitated share is the headline, so its card leads with the
-            deep-orange emphasis. */}
-        {!kpisError && kpis.identified > 0 && (
-          <div style={{ marginTop: 22 }}>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap', marginBottom: 12 }}>
-              <div className="kicker" style={{ marginBottom: 0 }}>
-                <span className="dot" style={{ background: CIPRB_BLUE }} />
-                {t('ciprbExtras.diagOutKicker')}
-              </div>
-              <span style={{ fontSize: 12.5, color: 'var(--muted)' }}>
-                {t('ciprbExtras.diagOutSub', { n: kpis.identified })}
-              </span>
-            </div>
-            <div className="card" style={{ padding: '14px 20px', display: 'flex', flexWrap: 'wrap' }}>
-              {[
-                { label: t('ciprb.kpiReferred'), icon: <Send size={13} />, n: kpis.referred, hot: false },
-                { label: t('ciprb.kpiSurgeryDone'), icon: <Scissors size={13} />, n: kpis.surgeryDone, hot: false },
-                { label: t('ciprb.kpiRehab'), icon: <HeartHandshake size={13} />, n: kpis.rehabilitated, hot: true },
-              ].map((c, i) => {
-                const pct = Math.round((c.n / kpis.identified) * 100)
-                return (
-                  <div key={c.label} style={{
-                    flex: '1 1 220px', minWidth: 200,
-                    padding: '4px 20px',
-                    borderLeft: i > 0 ? '1px solid var(--hair-2)' : 'none',
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 7 }}>
-                      <span style={{ color: CIPRB_BLUE, display: 'inline-flex' }}>{c.icon}</span>
-                      <span className="mono" style={{ fontSize: 10, color: 'var(--muted)', letterSpacing: '0.07em', fontWeight: 700 }}>
-                        {c.label}
-                      </span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 9 }}>
-                      <span style={{
-                        fontSize: 26, fontWeight: 800, lineHeight: 1,
-                        color: c.hot ? CIPRB_BLUE : 'var(--ink)',
-                        fontVariantNumeric: 'tabular-nums',
-                      }}>{pct}%</span>
-                      <span style={{ fontSize: 12.5, color: 'var(--ink-2)', fontVariantNumeric: 'tabular-nums' }}>
-                        {c.n} {t('ciprbExtras.diagOutOf', { n: kpis.identified })}
-                      </span>
-                    </div>
-                    <div style={{ marginTop: 9, height: 5, borderRadius: 99, background: 'var(--hair-2)', overflow: 'hidden' }}>
-                      <div style={{
-                        width: `${pct}%`, height: '100%', borderRadius: 99,
-                        background: 'linear-gradient(90deg, #FB904D, #F96000)',
-                        transition: 'width 600ms cubic-bezier(0.22,1,0.36,1)',
-                      }} />
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        )}
+        {/* The diagnosed-denominator figures live as second pills on the
+            repaired and rehabilitated cards above — no separate strip
+            (Rafi, 4 Aug 2026). */}
       </section>
 
       {/* ───────────────── Fistula visualizations (campaign / funnel / pie) ───────────────── */}
