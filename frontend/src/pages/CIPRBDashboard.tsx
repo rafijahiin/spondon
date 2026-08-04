@@ -896,6 +896,74 @@ export default function CIPRBDashboard() {
           )}
         </div>
         )}
+        {!kpisError && kpis.suspected > 0 && (
+          <p style={{ fontSize: 11.5, color: 'var(--muted)', margin: '8px 4px 0', fontStyle: 'italic' }}>
+            {t('ciprbExtras.glanceDenoms')}
+          </p>
+        )}
+
+        {/* ── Second layer: outcomes with DIAGNOSED as the denominator.
+            CIPRB (3 Aug 2026): "denominator: jara diagnosed hoilo" — of the
+            96 diagnosed patients, how far did each actually get? The
+            rehabilitated share is the headline, so its card leads with the
+            deep-orange emphasis. */}
+        {!kpisError && kpis.identified > 0 && (
+          <div style={{ marginTop: 22 }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap', marginBottom: 12 }}>
+              <div className="kicker" style={{ marginBottom: 0 }}>
+                <span className="dot" style={{ background: CIPRB_BLUE }} />
+                {t('ciprbExtras.diagOutKicker')}
+              </div>
+              <span style={{ fontSize: 12.5, color: 'var(--muted)' }}>
+                {t('ciprbExtras.diagOutSub', { n: kpis.identified })}
+              </span>
+            </div>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))',
+              gap: 12,
+            }}>
+              {[
+                { label: t('ciprb.kpiReferred'), icon: <Send size={14} />, n: kpis.referred, hot: false },
+                { label: t('ciprb.kpiSurgeryDone'), icon: <Scissors size={14} />, n: kpis.surgeryDone, hot: false },
+                { label: t('ciprb.kpiRehab'), icon: <HeartHandshake size={14} />, n: kpis.rehabilitated, hot: true },
+              ].map((c) => {
+                const pct = Math.round((c.n / kpis.identified) * 100)
+                return (
+                  <div key={c.label} className="card" style={{
+                    padding: '16px 18px',
+                    border: c.hot ? `1.5px solid ${CIPRB_BLUE}55` : undefined,
+                    boxShadow: c.hot ? '0 4px 18px rgba(249,96,0,0.10)' : undefined,
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                      <span style={{ color: CIPRB_BLUE, display: 'inline-flex' }}>{c.icon}</span>
+                      <span className="mono" style={{ fontSize: 10, color: 'var(--muted)', letterSpacing: '0.08em', fontWeight: 700 }}>
+                        {c.label}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
+                      <span style={{
+                        fontSize: 34, fontWeight: 800, lineHeight: 1,
+                        color: c.hot ? CIPRB_BLUE : 'var(--ink)',
+                        fontVariantNumeric: 'tabular-nums',
+                      }}>{pct}%</span>
+                      <span style={{ fontSize: 13, color: 'var(--ink-2)', fontVariantNumeric: 'tabular-nums' }}>
+                        {c.n} {t('ciprbExtras.diagOutOf', { n: kpis.identified })}
+                      </span>
+                    </div>
+                    <div style={{ marginTop: 12, height: 8, borderRadius: 99, background: 'var(--hair-2)', overflow: 'hidden' }}>
+                      <div style={{
+                        width: `${pct}%`, height: '100%', borderRadius: 99,
+                        background: 'linear-gradient(90deg, #FB904D, #F96000)',
+                        transition: 'width 600ms cubic-bezier(0.22,1,0.36,1)',
+                      }} />
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
       </section>
 
       {/* ───────────────── Fistula visualizations (campaign / funnel / pie) ───────────────── */}

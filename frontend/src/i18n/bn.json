@@ -630,7 +630,11 @@
     "rawMpdsr": "Raw MPDSR কেস রেজিস্টার খুলুন",
     "clickToExpand": "ক্লিক করে খুলুন",
     "casesCount_one": "{{count}}টি কেস",
-    "casesCount_other": "{{count}}টি কেস"
+    "casesCount_other": "{{count}}টি কেস",
+    "glanceDenoms": "প্রতিটি ধাপের শতাংশে আগের ধাপটি denominator।",
+    "diagOutKicker": "ফিস্টুলা · রোগনির্ণীতদের ফলাফল",
+    "diagOutSub": "নির্ণীত {{n}} জন রোগীর মধ্যে কে কতদূর পৌঁছেছে?",
+    "diagOutOf": "{{n}} জন নির্ণীতের মধ্যে"
   },
   "partnerCard": {
     "sectionKicker": "বাস্তবায়নকারী পার্টনার",

@@ -13,7 +13,7 @@
  */
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Building2, MapPin, Users, Search, Stethoscope, Send, ArrowRight, Scissors, HeartHandshake, ClipboardList, Home } from 'lucide-react'
+import { Building2, MapPin, Users, Search, ClipboardList, Home } from 'lucide-react'
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts'
 import { api } from '@/api/client'
 import { DataUnavailable } from '@/components/ciprb/DataUnavailable'
@@ -209,6 +209,14 @@ function useFistulaAggregates(
 
 // ─── Empty state ─────────────────────────────────────────────────────────────
 
+const PIE_COLORS = {
+  obstetric:  '#F96000',  // UNFPA orange (primary)
+  iatrogenic: '#FB904D',  // UNFPA bright
+  congenital: '#FDB37D',  // UNFPA pale
+  traumatic:  '#C44E00',  // deeper accent
+  pending:    'var(--surface-3)',
+}
+
 function EmptyState({ message }: { message: string }) {
   return (
     <div className="card" style={{
@@ -263,80 +271,6 @@ function MetricTile({ icon, label, value, sub, pct, pctLabel }: {
 }
 
 // ─── Patient Funnel ──────────────────────────────────────────────────────────
-
-function FunnelStage({
-  icon, label, value, sub,
-}: { icon: React.ReactNode; label: string; value: number; sub: string }) {
-  return (
-    <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
-      <div style={{
-        display: 'inline-flex', alignItems: 'center', gap: 8,
-        fontSize: 11, color: 'var(--muted)',
-        textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 500,
-      }}>
-        <span style={{
-          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-          width: 24, height: 24, borderRadius: 6,
-          background: CIPRB_BLUE_SOFT, color: CIPRB_BLUE,
-        }}>{icon}</span>
-        {label}
-      </div>
-      <div style={{
-        fontSize: 36, fontWeight: 800, color: 'var(--ink)',
-        fontVariantNumeric: 'tabular-nums', lineHeight: 1, letterSpacing: '-0.02em',
-      }}>{value.toLocaleString()}</div>
-      <div style={{ fontSize: 12, color: 'var(--ink-3)' }}>{sub}</div>
-    </div>
-  )
-}
-
-function FunnelArrow({ conversionPct }: { conversionPct?: number }) {
-  // Decorative divider between funnel stages, with optional conversion %
-  // pill above. Animesh's spec (2026-06-02): each stage % uses the
-  // previous stage as denominator (Identified ÷ Suspected, Referred ÷
-  // Identified, Repaired ÷ Referred). Suspected→Identified is omitted
-  // here because those are parallel cohorts (campaign vs clinic walk-in),
-  // not sequential — that ratio is misleading.
-  return (
-    <div style={{
-      display: 'flex', flexDirection: 'column', alignItems: 'center',
-      justifyContent: 'center', flexShrink: 0, padding: '0 16px', gap: 8,
-    }}>
-      {conversionPct !== undefined && (
-        <div style={{
-          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 11, fontWeight: 700, color: CIPRB_BLUE,
-          background: 'rgba(249,96,0,0.10)', borderRadius: 12,
-          padding: '4px 10px', minWidth: 48, textAlign: 'center',
-          fontVariantNumeric: 'tabular-nums',
-          border: '1px solid rgba(249,96,0,0.20)',
-        }}>
-          {conversionPct}%
-        </div>
-      )}
-      <ArrowRight size={22} color={CIPRB_BLUE} aria-hidden />
-    </div>
-  )
-}
-
-// ─── Diagnosis Pie ───────────────────────────────────────────────────────────
-
-// Diagnosis pie — UNFPA orange tonal scale. Primary case (obstetric)
-// Four fistula-type slices per CIPRB Question Bank: Obstetric,
-// Iatrogenic, Congenital, Traumatic. All four render in the legend
-// even when a slice = 0 so the structure CIPRB asked for is visible.
-const PIE_COLORS = {
-  obstetric:  '#F96000',  // UNFPA orange (primary)
-  iatrogenic: '#FB904D',  // UNFPA bright
-  congenital: '#FDB37D',  // UNFPA pale
-  traumatic:  '#C44E00',  // deeper accent
-  pending:    'var(--surface-3)',
-}
-
-// Anatomical fistula type (genital_fistula_type) per the Fistula Question
-// Bank. VVF is the primary obstetric type and is emphasised; the rarer
-// types still render (even at 0) so the full structure CIPRB asked for is
-// visible. Order mirrors the form's choice list.
 
 function DiagnosisLegend({ data }: { data: { name: string; value: number; color: string }[] }) {
   const total = data.reduce((s, d) => s + d.value, 0)
@@ -462,60 +396,10 @@ export function FistulaVisualizations({
         )}
       </div>
 
-      {/* ─── 2. Patient Funnel ─── */}
-      <div>
-        <div style={{ marginBottom: 14 }}>
-          <div className="kicker">
-            <span className="dot" style={{ background: CIPRB_BLUE }} />
-            {t('fistulaViz.funnelKicker')}
-          </div>
-          <h3 style={{ margin: '6px 0 2px', fontSize: 18, fontWeight: 700, color: 'var(--ink)' }}>
-            {t('fistulaViz.funnelTitle')}
-          </h3>
-          <p style={{ fontSize: 12.5, color: 'var(--muted)', margin: 0 }}>
-            {t('fistulaViz.funnelSub')}
-          </p>
-          <div style={{ marginTop: 6 }}>
-            <SourceChip>CIPRB 1 — Fistula Question Bank</SourceChip>
-          </div>
-        </div>
-        {agg.total === 0 ? (
-          <EmptyState message={t('fistulaViz.emptyFunnel')} />
-        ) : (
-        <div className="card" style={{
-          padding: '24px 28px',
-          display: 'flex', alignItems: 'center', gap: 0, flexWrap: 'wrap',
-        }}>
-          <FunnelStage icon={<Search size={14} />}      label={t('fistulaViz.suspected')}  value={agg.suspected}  sub={t('fistulaViz.suspectedSub')} />
-          {/* Suspected → Diagnosed conversion (e.g. "60% of suspected are
-              diagnosed"). */}
-          <FunnelArrow conversionPct={
-            agg.suspected > 0 ? Math.round((agg.identified / agg.suspected) * 100) : undefined
-          } />
-          <FunnelStage icon={<Stethoscope size={14} />} label={t('fistulaViz.identified')} value={agg.identified} sub={t('fistulaViz.identifiedSub')} />
-          <FunnelArrow conversionPct={
-            agg.identified > 0 ? Math.round((agg.referred / agg.identified) * 100) : undefined
-          } />
-          <FunnelStage icon={<Send size={14} />}        label={t('fistulaViz.referred')}   value={agg.referred}   sub={t('fistulaViz.referredSub')} />
-          <FunnelArrow conversionPct={
-            agg.referred > 0 ? Math.round((agg.repaired / agg.referred) * 100) : undefined
-          } />
-          <FunnelStage icon={<Scissors size={14} />}    label={t('fistulaViz.repaired')}    value={agg.repaired}   sub={t('fistulaViz.repairedSub')} />
-          <FunnelArrow conversionPct={
-            agg.repaired > 0 ? Math.round((agg.rehabilitated / agg.repaired) * 100) : undefined
-          } />
-          <FunnelStage icon={<HeartHandshake size={14} />} label={t('fistulaViz.rehabilitated')} value={agg.rehabilitated} sub={t('fistulaViz.rehabilitatedSub')} />
-        </div>
-        )}
-        {agg.total > 0 && (
-          <p style={{
-            fontSize: 11.5, color: 'var(--muted)', margin: '8px 4px 0',
-            fontStyle: 'italic',
-          }}>
-            Each percentage uses the previous stage as the denominator — e.g. the share of suspected cases that go on to be diagnosed, referred, and repaired.
-          </p>
-        )}
-      </div>
+      {/* ─── 2. Patient funnel REMOVED 2026-08-04 (Rafi): it repeated the
+          At-a-glance band's five numbers and four percentages verbatim. The
+          band keeps the summary; the new diagnosed-denominator layer under it
+          carries the outcome story. ─── */}
 
       {/* ─── 2a-bis. REMOVED 2026-08-03 (CIPRB meeting): the "Diagnosed &
           surgically repaired" pie drew Diagnosed (96) and Surgically

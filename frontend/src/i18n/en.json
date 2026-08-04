@@ -665,6 +665,10 @@
     "rawMpdsr": "Open raw MPDSR case register",
     "clickToExpand": "CLICK TO EXPAND",
     "casesCount_one": "{{count}} case",
-    "casesCount_other": "{{count}} cases"
+    "casesCount_other": "{{count}} cases",
+    "glanceDenoms": "Stage percentages use the previous stage as the denominator — e.g. 59% of diagnosed patients were referred.",
+    "diagOutKicker": "FISTULA · OUTCOMES AMONG DIAGNOSED PATIENTS",
+    "diagOutSub": "Of the {{n}} diagnosed patients, how far did each get?",
+    "diagOutOf": "of {{n}} diagnosed"
   }
 }
