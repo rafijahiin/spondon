@@ -880,8 +880,10 @@ export default function CIPRBDashboard() {
             <KPITile
               icon={<HeartHandshake size={14} />}
               label={t('ciprb.kpiRehab')}
-              sub={`${kpis.rehabilitated} of ${kpis.surgeryDone} operated`}
-              value={`${Math.round(kpis.rehabPct)}%`}
+              sub={t('ciprb.kpiRehabSub')}
+              value={kpis.rehabilitated}
+              pct={kpis.rehabPct}
+              pctLabel="of repaired"
               pct2={kpis.identified > 0 ? (kpis.rehabilitated / kpis.identified) * 100 : null}
               pct2Label="of diagnosed"
             />
