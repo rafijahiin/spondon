@@ -416,36 +416,20 @@ export function FistulaVisualizations({
           (Rafi, 4 Aug 2026). They stack again below ~900px. ─── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(420px, 1fr))', gap: 18, alignItems: 'stretch' }}>
       {(agg.outcomeDry + agg.outcomeNotDry + agg.outcomeFailed) > 0 && (
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
-          <div style={{ marginBottom: 14 }}>
-            <div className="kicker">
-              <span className="dot" style={{ background: CIPRB_BLUE }} />
-              SURGICAL OUTCOME · REPAIRED CASES
+        <div className="card" style={{ padding: 20, display: 'flex', flexDirection: 'column' }}>
+          {/* Header lives INSIDE the card so the two boxes in this row align
+              exactly, whatever their text lengths (Rafi, 4 Aug 2026). */}
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', marginBottom: 6 }}>
+            <div>
+              <div className="kicker">
+                <span className="dot" style={{ background: CIPRB_BLUE }} />
+                SURGICAL OUTCOME · REPAIRED CASES
+              </div>
+              <h3 style={{ margin: '6px 0 0', fontSize: 17, fontWeight: 700, color: 'var(--ink)' }}>
+                Surgical repair outcomes
+              </h3>
             </div>
-            <h3 style={{ margin: '6px 0 2px', fontSize: 18, fontWeight: 700, color: 'var(--ink)' }}>
-              Surgical repair outcomes
-            </h3>
-            {/* The caption used to claim "of all surgically repaired
-                patients" while counting only those with an outcome recorded
-                (27), against a funnel headline of 35 repaired. Two numbers on
-                one page with nothing to reconcile them. State the coverage. */}
-            {(() => {
-              const recorded = agg.outcomeDry + agg.outcomeNotDry + agg.outcomeFailed
-              const pending = Math.max(0, agg.repaired - recorded)
-              return (
-                <p style={{ fontSize: 12.5, color: 'var(--muted)', margin: 0 }}>
-                  Clinical outcome for the {recorded.toLocaleString()} repaired
-                  {' '}patients whose surgery outcome has been recorded
-                  {pending > 0
-                    ? `, out of ${agg.repaired.toLocaleString()} repaired in total. Outcome is not yet recorded for ${pending.toLocaleString()}.`
-                    : '.'}
-                  {' '}Project reporting focuses on the two successful categories.
-                </p>
-              )
-            })()}
-            <div style={{ marginTop: 6 }}>
-              <SourceChip>CIPRB 1 — Fistula Question Bank</SourceChip>
-            </div>
+            <SourceChip>CIPRB 1 — Fistula Question Bank</SourceChip>
           </div>
           {(() => {
             // Solid pie (innerRadius 0 — no donuts, house rule). A pie is the
@@ -463,7 +447,7 @@ export function FistulaVisualizations({
             ]
             const soTotal = soData.reduce((s, d) => s + d.value, 0)
             return (
-              <div className="card" style={{ padding: 20, flex: 1, display: 'flex', alignItems: 'center' }}>
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 22, flexWrap: 'wrap', width: '100%' }}>
                   <div style={{ width: 170, height: 170, flexShrink: 0 }}>
                     <ResponsiveContainer width="100%" height="100%">
@@ -497,24 +481,21 @@ export function FistulaVisualizations({
         </div>
       )}
 
-      {/* ─── 3. Diagnosis Pie ─── */}
-      <div style={{ display: 'flex', flexDirection: 'column' }}>
-        <div style={{ marginBottom: 14 }}>
-          <div className="kicker">
-            <span className="dot" style={{ background: CIPRB_BLUE }} />
-            {t('fistulaViz.pieKicker')}
+      {/* ─── 3. Repaired-type pie ─── */}
+      <div className="card" style={{ padding: 20, display: 'flex', flexDirection: 'column' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', marginBottom: 6 }}>
+          <div>
+            <div className="kicker">
+              <span className="dot" style={{ background: CIPRB_BLUE }} />
+              {t('fistulaViz.pieKicker')}
+            </div>
+            <h3 style={{ margin: '6px 0 0', fontSize: 17, fontWeight: 700, color: 'var(--ink)' }}>
+              {t('fistulaViz.pieTitle')}
+            </h3>
           </div>
-          <h3 style={{ margin: '6px 0 2px', fontSize: 18, fontWeight: 700, color: 'var(--ink)' }}>
-            {t('fistulaViz.pieTitle')}
-          </h3>
-          <p style={{ fontSize: 12.5, color: 'var(--muted)', margin: 0 }}>
-            {t('fistulaViz.pieSub')}
-          </p>
-          <div style={{ marginTop: 6 }}>
-            <SourceChip>CIPRB 1 — Fistula Question Bank</SourceChip>
-          </div>
+          <SourceChip>CIPRB 1 — Fistula Question Bank</SourceChip>
         </div>
-        <div className="card" style={{ padding: 20, flex: 1, display: 'flex', alignItems: 'center' }}>
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
           {pieTotal > 0 ? (
             <div style={{
               display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -554,7 +535,7 @@ export function FistulaVisualizations({
                     marginTop: 4, padding: '8px 12px', borderRadius: 8,
                     background: 'var(--surface-2)', border: '1px dashed var(--hair)',
                     fontSize: 12, color: 'var(--ink-3)',
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10,
                   }}>
                     <span>{t('fistulaViz.awaiting')}</span>
                     <b style={{ fontVariantNumeric: 'tabular-nums' }}>{agg.piePending.toLocaleString()}</b>
@@ -571,12 +552,6 @@ export function FistulaVisualizations({
             </div>
           )}
         </div>
-        <p style={{
-          margin: '10px 2px 0', fontSize: 11.5, color: 'var(--muted)',
-          fontStyle: 'italic', lineHeight: 1.5,
-        }}>
-          {t('fistulaViz.pieCaption')}
-        </p>
       </div>
       </div>
 
