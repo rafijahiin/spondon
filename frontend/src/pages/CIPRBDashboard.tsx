@@ -441,12 +441,10 @@ function MPDSRSection({
           <span className="dot" style={{ background: CIPRB_BLUE }} />
           {t('mpdsr.eyebrow', { defaultValue: 'TRACKER · MPDSR' })}
         </div>
-        <h2 className="section-title" style={{ margin: '0 0 4px' }}>
-          {t('mpdsr.title', { defaultValue: 'MPDSR Tracker' })}
+        {/* One title, not three stacked restatements of "MPDSR". */}
+        <h2 className="section-title" style={{ margin: 0 }}>
+          {t('mpdsr.subtitle', { defaultValue: 'Maternal & Perinatal Death tracker' })}
         </h2>
-        <p className="section-sub">
-          {t('mpdsr.subtitle', { defaultValue: 'Maternal & Perinatal Death Surveillance' })}
-        </p>
 
         {/* Overdue-committee-reviews badge removed per Rafi, 4 Aug 2026 —
             the tracker page carries the operational chase list. */}

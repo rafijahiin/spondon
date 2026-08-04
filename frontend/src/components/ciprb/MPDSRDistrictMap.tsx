@@ -153,21 +153,24 @@ export function MPDSRDistrictMap() {
 
   return (
     <div>
-      <div style={{ marginBottom: 14 }}>
-        <div className="kicker">
-          <span className="dot" style={{ background: CIPRB_BLUE }} />
-          {t('mpdsrMap.kicker')}
-        </div>
-        <h3 style={{ margin: '6px 0 2px', fontSize: 18, fontWeight: 700, color: 'var(--ink)' }}>
-          {t('mpdsrMap.title')}
-        </h3>
-        <p style={{ fontSize: 12.5, color: 'var(--muted)', margin: 0 }}>
-          {t('mpdsrMap.sub')}
-        </p>
-      </div>
-
       <div className="card" style={{ padding: 16 }}>
-        <div style={{ position: 'relative', height: 420, borderRadius: 8, overflow: 'hidden' }}>
+        {/* Header inside the card, one line of copy — the panel was a screen
+            and a half tall for a static coverage picture (Rafi, 4 Aug 2026). */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', marginBottom: 10 }}>
+          <div>
+            <div className="kicker">
+              <span className="dot" style={{ background: CIPRB_BLUE }} />
+              {t('mpdsrMap.kicker')}
+            </div>
+            <h3 style={{ margin: '6px 0 0', fontSize: 17, fontWeight: 700, color: 'var(--ink)' }}>
+              {t('mpdsrMap.title')}
+            </h3>
+          </div>
+          <span style={{ fontSize: 12, color: 'var(--muted)', maxWidth: 380, textAlign: 'right' }}>
+            {t('mpdsrMap.sub')}
+          </span>
+        </div>
+        <div style={{ position: 'relative', height: 340, borderRadius: 8, overflow: 'hidden' }}>
           {geo ? (
             <MapContainer
               center={[23.685, 90.3563]}
