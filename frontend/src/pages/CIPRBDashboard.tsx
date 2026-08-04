@@ -437,24 +437,8 @@ function MPDSRSection({
           {t('mpdsr.subtitle', { defaultValue: 'Maternal & Perinatal Death Surveillance' })}
         </p>
 
-        {overdueCount > 0 && (
-          <div style={{ marginTop: 12 }}>
-            <span style={{
-              display: 'inline-flex', alignItems: 'center', gap: 6,
-              padding: '6px 12px', borderRadius: 999,
-              background: 'rgba(204,106,0,0.10)',
-              border: '1px solid rgba(204,106,0,0.32)',
-              color: '#AE4300',
-              fontSize: 12.5, fontWeight: 500,
-            }}>
-              <AlertTriangle size={13} />
-              {t('mpdsr.overdueBadge', {
-                count: overdueCount,
-                defaultValue: `${overdueCount} overdue committee review${overdueCount === 1 ? '' : 's'}`,
-              })}
-            </span>
-          </div>
-        )}
+        {/* Overdue-committee-reviews badge removed per Rafi, 4 Aug 2026 —
+            the tracker page carries the operational chase list. */}
       </div>
 
       {/* ─── Geographic coverage map (SIDA / GAC / CP highlight) ─── */}
@@ -918,40 +902,36 @@ export default function CIPRBDashboard() {
                 {t('ciprbExtras.diagOutSub', { n: kpis.identified })}
               </span>
             </div>
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))',
-              gap: 12,
-            }}>
+            <div className="card" style={{ padding: '14px 20px', display: 'flex', flexWrap: 'wrap' }}>
               {[
-                { label: t('ciprb.kpiReferred'), icon: <Send size={14} />, n: kpis.referred, hot: false },
-                { label: t('ciprb.kpiSurgeryDone'), icon: <Scissors size={14} />, n: kpis.surgeryDone, hot: false },
-                { label: t('ciprb.kpiRehab'), icon: <HeartHandshake size={14} />, n: kpis.rehabilitated, hot: true },
-              ].map((c) => {
+                { label: t('ciprb.kpiReferred'), icon: <Send size={13} />, n: kpis.referred, hot: false },
+                { label: t('ciprb.kpiSurgeryDone'), icon: <Scissors size={13} />, n: kpis.surgeryDone, hot: false },
+                { label: t('ciprb.kpiRehab'), icon: <HeartHandshake size={13} />, n: kpis.rehabilitated, hot: true },
+              ].map((c, i) => {
                 const pct = Math.round((c.n / kpis.identified) * 100)
                 return (
-                  <div key={c.label} className="card" style={{
-                    padding: '16px 18px',
-                    border: c.hot ? `1.5px solid ${CIPRB_BLUE}55` : undefined,
-                    boxShadow: c.hot ? '0 4px 18px rgba(249,96,0,0.10)' : undefined,
+                  <div key={c.label} style={{
+                    flex: '1 1 220px', minWidth: 200,
+                    padding: '4px 20px',
+                    borderLeft: i > 0 ? '1px solid var(--hair-2)' : 'none',
                   }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 7 }}>
                       <span style={{ color: CIPRB_BLUE, display: 'inline-flex' }}>{c.icon}</span>
-                      <span className="mono" style={{ fontSize: 10, color: 'var(--muted)', letterSpacing: '0.08em', fontWeight: 700 }}>
+                      <span className="mono" style={{ fontSize: 10, color: 'var(--muted)', letterSpacing: '0.07em', fontWeight: 700 }}>
                         {c.label}
                       </span>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 9 }}>
                       <span style={{
-                        fontSize: 34, fontWeight: 800, lineHeight: 1,
+                        fontSize: 26, fontWeight: 800, lineHeight: 1,
                         color: c.hot ? CIPRB_BLUE : 'var(--ink)',
                         fontVariantNumeric: 'tabular-nums',
                       }}>{pct}%</span>
-                      <span style={{ fontSize: 13, color: 'var(--ink-2)', fontVariantNumeric: 'tabular-nums' }}>
+                      <span style={{ fontSize: 12.5, color: 'var(--ink-2)', fontVariantNumeric: 'tabular-nums' }}>
                         {c.n} {t('ciprbExtras.diagOutOf', { n: kpis.identified })}
                       </span>
                     </div>
-                    <div style={{ marginTop: 12, height: 8, borderRadius: 99, background: 'var(--hair-2)', overflow: 'hidden' }}>
+                    <div style={{ marginTop: 9, height: 5, borderRadius: 99, background: 'var(--hair-2)', overflow: 'hidden' }}>
                       <div style={{
                         width: `${pct}%`, height: '100%', borderRadius: 99,
                         background: 'linear-gradient(90deg, #FB904D, #F96000)',
