@@ -354,40 +354,51 @@ def _mother_list_survey():
         # fixes the old free-text IDs (02001 / 020007 / 020010) that never
         # matched on lookup and broke "registration".
         _sr('calculate', 'centre_district_code', calc=_bandhu_dist_code_calc()),
-        # The serial is BLOCKED, not merely warned, when the composed ID is
-        # already in bandhu_clients.csv. Until 2026-07 this was only the soft
-        # _dup_warn note below, which staff could scroll past: 56 IDs ended up
-        # shared by 142 people (Chattogram alone: 170 rows, 110 unique IDs).
-        # The lookup is inlined here rather than reusing ${_dup_name} because
-        # that calculate is evaluated after this field.
-        # RESIDUAL GAP: the CSV is a snapshot refreshed on client approval, so
-        # two registrations typed in the SAME sitting still cannot see each
-        # other. That needs the export cadence, not a constraint.
-        _sr('text', 'ml_serial', 'Beneficiary serial (4 digits)',
-            'সুবিধাভোগী ক্রমিক (৪ অঙ্ক)', required='yes',
-            constraint=("regex(., '^[0-9]{4}$') and "
-                        "pulldata('bandhu_clients','name','id_no',"
-                        "concat(${centre_district_code}, '-', .))=''"),
-            cmsg='Enter exactly 4 digits, e.g. 0001. If this number is refused, '
-                 'it is already used at your centre: try the next free number. / '
-                 'ঠিক ৪ অঙ্ক দিন, যেমন 0001। নম্বরটি গ্রহণ না হলে সেটি ইতিমধ্যে '
-                 'ব্যবহৃত: পরবর্তী খালি নম্বর দিন।',
-            hint='Next free number at your centre (0001, 0002, …). The district '
-                 'code is added automatically. / আপনার কেন্দ্রের পরবর্তী নম্বর; '
-                 'জেলা কোড স্বয়ংক্রিয়ভাবে যুক্ত হবে।'),
-        _sr('calculate', 'ml_id_no',
-            calc="concat(${centre_district_code}, '-', ${ml_serial})"),
-        _sr('note', '_ml_id_show', '🆔 Beneficiary ID: ${ml_id_no}',
-            '🆔 সুবিধাভোগী আইডি: ${ml_id_no}', relevant="${ml_serial}!=''"),
-        # Duplicate-ID warning from the bandhu_clients.csv attachment.
+        # ── THE SERIAL IS NO LONGER TYPED (2026-08-06) ───────────────────────
+        # It used to be a hand-typed 4-digit field guarded by a constraint that
+        # refused a serial already in bandhu_clients.csv. That guard cannot work:
+        # the CSV is a SNAPSHOT that only reaches a phone when the device
+        # re-downloads the form, so two peer educators registering different
+        # people in the same sitting never see each other's brand-new number and
+        # neither is blocked. Of the 97 collisions cleaned up on 2026-08-06, 77
+        # were made on the SAME DAY as the record they collided with and 63
+        # involved two different enumerators; three more appeared while the
+        # clean-up was still running. No export cadence closes that race.
+        #
+        # Spondon now allocates the serial itself, in one place, under the
+        # client_id unique constraint (see handle_bandhu_mother_list), and
+        # writes the issued ID back onto the Kobo submission. The field worker
+        # never types an ID, so two of them can no longer choose the same one.
+        _sr('text', 'ml_existing_id', 'Existing Beneficiary ID (only if she is '
+            'already registered — leave blank for a new registration)',
+            'পুরোনো সুবিধাভোগী আইডি (আগে নিবন্ধিত হলে লিখুন — নতুন হলে ফাঁকা রাখুন)',
+            constraint="regex(., '^[0-9]{2}-[0-9]{4}$')",
+            cmsg='Format is 02-0007. Leave blank for a new registration. / '
+                 'ফরম্যাট 02-0007। নতুন নিবন্ধনে ফাঁকা রাখুন।',
+            hint='Leave this blank unless she already has a card. / '
+                 'তাঁর আগে থেকে কার্ড না থাকলে ফাঁকা রাখুন।'),
+        _sr('calculate', 'ml_id_no', calc='${ml_existing_id}'),
+        # Looked up only to confirm an EXISTING id belongs to the right person.
         _sr('calculate', '_dup_name',
             calc=("pulldata('bandhu_clients','name','id_no',"
-                  "translate(normalize-space(${ml_id_no}),"
+                  "translate(normalize-space(${ml_existing_id}),"
                   "'abcdefghijklmnopqrstuvwxyz','ABCDEFGHIJKLMNOPQRSTUVWXYZ'))")),
         _sr('note', '_dup_warn',
-            '⚠ This ID is already registered for ${_dup_name}. Use the existing ID in service forms.',
-            '⚠ এই আইডি ইতিমধ্যে ${_dup_name} এর জন্য নিবন্ধিত।',
-            relevant="${ml_id_no}!='' and ${_dup_name}!=''"),
+            '✓ ${ml_existing_id} is registered for ${_dup_name}. If that is not '
+            'her, clear this box and leave it blank.',
+            '✓ ${ml_existing_id} নিবন্ধিত আছে ${_dup_name} এর নামে। তিনি না হলে ঘরটি ফাঁকা করুন।',
+            relevant="${ml_existing_id}!='' and ${_dup_name}!=''"),
+        _sr('note', '_unknown_id_warn',
+            '⚠ ${ml_existing_id} is not in the beneficiary list. Leave the box '
+            'blank and a new ID will be issued automatically.',
+            '⚠ ${ml_existing_id} তালিকায় নেই। ঘরটি ফাঁকা রাখুন, নতুন আইডি স্বয়ংক্রিয়ভাবে দেওয়া হবে।',
+            relevant="${ml_existing_id}!='' and ${_dup_name}=''"),
+        _sr('note', '_ml_id_auto',
+            'ℹ A new Beneficiary ID will be issued automatically for this '
+            'centre once the form is sent. You do not need to enter one.',
+            'ℹ ফরমটি পাঠানোর পর এই কেন্দ্রের জন্য নতুন সুবিধাভোগী আইডি স্বয়ংক্রিয়ভাবে দেওয়া হবে। '
+            'আপনাকে কোনো নম্বর লিখতে হবে না।',
+            relevant="${ml_existing_id}=''"),
         _sr('text', 'ml_name', 'Name', 'নাম', required='yes'),
         _sr('text', 'ml_parent_name', "Father's / Mother's name", 'পিতা/মাতার নাম'),
         _sr('integer', 'ml_birth_year', 'Birth year', 'জন্ম সাল',
@@ -483,8 +494,11 @@ def _service_log_survey():
         _sr('text', 'ml_spot', 'Spot name', 'স্পটের নাম'),
         _sr('select_one education', 'ml_education', 'Education', 'শিক্ষা'),
         _sr('select_one marital', 'ml_marital', 'Marital status', 'বৈবাহিক অবস্থা'),
+        # A -1 typed here on 2026-08-06 made the webhook 500 (the DB has
+        # CHECK children_under_18 >= 0), which stranded the whole registration.
         _sr('integer', 'ml_children_u18', 'Number of children under 18',
-            '১৮ বছরের নিচে সন্তান সংখ্যা', relevant="${ml_marital}!='1'"),
+            '১৮ বছরের নিচে সন্তান সংখ্যা', relevant="${ml_marital}!='1'",
+            constraint='. >= 0 and . <= 20', cmsg='0–20'),
         _sr('select_one occupation', 'ml_occupation', 'Income source (occupation)',
             'আয়ের উৎস (পেশা)'),
         _sr('integer', 'ml_avg_day', 'Average sex-work contacts per day', 'দৈনিক গড় যোগাযোগ'),

@@ -577,6 +577,90 @@ def handle_bandhu_activity_ops(payload, lat, lng):
     return fn(payload, lat, lng)
 
 
+# ─── Beneficiary ID allocation ────────────────────────────────────────────────
+import os as _os
+
+_BANDHU_ML_ASSET_UID = _os.environ.get(
+    'KOBO_ASSET_UID_BANDHU_ML', 'ar4muzSPxzhqd9XxVvWXjx')
+
+# Until 2026-08-06 the 4-digit serial was typed by the peer educator and guarded
+# only by a constraint against bandhu_clients.csv. That CSV is a snapshot which
+# reaches a phone only when the device re-downloads the form, so two educators
+# registering different people in the same sitting could not see each other's
+# brand-new number and neither was blocked: 68 ids ended up shared by 165
+# people. Allocation now happens HERE, in one place, so the race cannot exist.
+
+def _next_free_serial(prefix, used):
+    """Lowest unused serial for a centre, ignoring the birth years that were
+    typed into the old 4-digit box (03-1980, 05-1988) — without that filter
+    every new id would jump into the 1900s."""
+    nums = sorted(int(c[len(prefix):]) for c in used
+                  if c[len(prefix):].isdigit())
+    dense = [n for n in nums if n <= max(60, len(nums) * 3)]
+    n = (dense[-1] if dense else 0) + 1
+    taken = set(nums)
+    while n in taken:
+        n += 1
+    return n
+
+
+def _allocate_client(dist_code, defaults, tries=40):
+    """Create the Client under the next free id for this centre.
+
+    No counter table and no explicit lock: read the current maximum, try to
+    insert, and let the client_id UNIQUE constraint arbitrate when another
+    worker claimed the same number in between. Retrying on IntegrityError is
+    sufficient because that constraint is the only source of truth.
+    """
+    from django.db import IntegrityError, transaction
+    prefix = '%s-' % dist_code
+    for _ in range(tries):
+        used = set(Client.objects.filter(
+            organisation=ORG, client_id__startswith=prefix
+        ).values_list('client_id', flat=True))
+        candidate = '%s%04d' % (prefix, _next_free_serial(prefix, used))
+        try:
+            with transaction.atomic():
+                return Client.objects.create(client_id=candidate, **defaults)
+        except IntegrityError:
+            continue
+    raise RuntimeError('could not allocate a beneficiary id for %s' % prefix)
+
+
+def _writeback_kobo_id(asset_uid, submission_id, client_id):
+    """Put the issued id back on the Kobo submission, in a daemon thread.
+
+    Best effort by design: the id is authoritative in Spondon and reaches the
+    field through bandhu_clients.csv either way, so a Kobo outage must never
+    turn a successful registration into a 500 (a stranded submission is far
+    worse than a register whose ID column fills in late).
+    """
+    import os
+    import threading
+
+    from django.conf import settings
+    token = (getattr(settings, 'KOBO_API_TOKEN', '')
+             or os.environ.get('KOBO_TOKEN', '')).strip()
+    if not (token and asset_uid and submission_id):
+        return
+
+    def _run():
+        try:
+            import requests
+            r = requests.patch(
+                'https://kf.kobotoolbox.org/api/v2/assets/%s/data/bulk/' % asset_uid,
+                headers={'Authorization': 'Token ' + token},
+                json={'payload': {'submission_ids': [str(submission_id)],
+                                  'data': {'grp_ml/ml_id_no': client_id}}},
+                timeout=30)
+            logger.info('Bandhu id write-back %s -> %s: %s',
+                        submission_id, client_id, r.status_code)
+        except Exception as exc:                        # noqa: BLE001
+            logger.warning('Bandhu id write-back %s failed: %s', submission_id, exc)
+
+    threading.Thread(target=_run, daemon=True, name='bandhu-id-writeback').start()
+
+
 # ─── Form 0: Mother List (registration → Client, auto-approved) ────────────────
 
 def handle_bandhu_mother_list(payload, lat, lng):
@@ -589,12 +673,16 @@ def handle_bandhu_mother_list(payload, lat, lng):
     center = _get_center(payload, ORG)
     if not center:
         return HttpResponse('center not found', status=400)
-    client_id = str(payload.get('ml_id_no', '')).strip().upper()
-    if not client_id:
-        return HttpResponse('Bad Request — ml_id_no required', status=400)
     kobo_id = str(payload.get('_id', ''))
+    # The re-delivery guard has to run BEFORE allocation. Kobo retries a
+    # webhook that failed, and without this a retry would burn a second serial
+    # on the same woman and register her twice.
     if kobo_id and Client.objects.filter(kobo_submission_id=kobo_id).exists():
         return HttpResponse('OK', status=200)
+    # ml_id_no is now filled only when the worker typed an EXISTING id; a new
+    # registration arrives with it blank and Spondon issues the number.
+    client_id = str(payload.get('ml_id_no', '')
+                    or payload.get('ml_existing_id', '')).strip().upper()
     # First registration wins — same rule as handle_phd_registration. A second
     # Mother List entry on the same ml_id_no is a DUPLICATE and must NOT
     # overwrite the existing client (that would silently replace one person's
@@ -622,6 +710,18 @@ def handle_bandhu_mother_list(payload, lat, lng):
         'submitted_by_kobo_user': _str(payload.get('_submitted_by')),
         'latitude': lat, 'longitude': lng, 'raw_payload': payload,
     }
+    if not client_id:
+        # New registration: the worker typed nothing, so Spondon issues the id.
+        dist = str(payload.get('centre_district_code', '')).strip()
+        if not dist:
+            return HttpResponse(
+                'Bad Request — centre_district_code required to issue an id',
+                status=400)
+        client = _allocate_client(dist, defaults)
+        logger.info('Bandhu Mother List issued %s to kobo=%s (%r)',
+                    client.client_id, kobo_id or '-', client.name)
+        _writeback_kobo_id(_BANDHU_ML_ASSET_UID, kobo_id, client.client_id)
+        return HttpResponse('Created %s' % client.client_id, status=201)
     client, created = Client.objects.get_or_create(
         client_id=client_id, defaults=defaults,
     )
