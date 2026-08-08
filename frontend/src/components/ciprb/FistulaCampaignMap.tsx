@@ -174,7 +174,12 @@ export function FistulaCampaignMap({ rows }: { rows: CampaignUpazila[] }) {
   }))
 
   return (
-    <div className="card" style={{ padding: 0, overflow: 'hidden', fontFamily: ATLAS_FONT }}>
+    <div className="card campaign-atlas" style={{ padding: 0, overflow: 'hidden', fontFamily: ATLAS_FONT }}>
+      {/* The atlas is deliberately light in BOTH themes: the choropleth ramp,
+          grey no-data fill and cartographic labels are designed for a white
+          ground, and a dark sea under a white card read as a broken panel.
+          Everything inside therefore uses fixed light colours, never theme
+          variables, and index.css re-whitens .leaflet-container in dark mode. */}
       <div style={{ background: '#ffffff', padding: 16, color: '#111827' }}>
         <div style={{ marginBottom: 8 }}>
           <div style={{ fontSize: 15, fontWeight: 700 }}>
@@ -253,8 +258,8 @@ export function FistulaCampaignMap({ rows }: { rows: CampaignUpazila[] }) {
                 <th key={c} style={{
                   textAlign: i === 0 ? 'left' : 'right',
                   padding: i === 0 ? '10px 16px' : '10px 14px',
-                  fontSize: 10.5, letterSpacing: '.05em', color: 'var(--muted)',
-                  borderBottom: '1px solid var(--hair-2)', background: 'var(--surface-2, #f7f9fc)',
+                  fontSize: 10.5, letterSpacing: '.05em', color: '#6b7280',
+                  borderBottom: '1px solid rgba(19,22,25,0.14)', background: '#f7f9fc',
                 }}>{c}</th>
               ))}
             </tr>
@@ -262,9 +267,9 @@ export function FistulaCampaignMap({ rows }: { rows: CampaignUpazila[] }) {
           <tbody>
             {rows.map((r) => (
               <tr key={r.key}>
-                <td style={{ padding: '9px 16px', borderBottom: '1px solid var(--hair-2)' }}>
+                <td style={{ padding: '9px 16px', borderBottom: '1px solid rgba(19,22,25,0.14)' }}>
                   <span style={{ fontWeight: 650 }}>{r.upazila}</span>
-                  <div style={{ fontSize: 11, color: 'var(--muted)', textTransform: 'capitalize' }}>
+                  <div style={{ fontSize: 11, color: '#6b7280', textTransform: 'capitalize' }}>
                     {r.district}
                     {r.spellings.length > 1
                       ? ` · also written ${r.spellings.filter((x) => x !== r.upazila).join(', ')}`
@@ -276,7 +281,7 @@ export function FistulaCampaignMap({ rows }: { rows: CampaignUpazila[] }) {
                     padding: '9px 14px', textAlign: 'right',
                     fontVariantNumeric: 'tabular-nums',
                     fontWeight: i === 1 ? 650 : 400,
-                    borderBottom: '1px solid var(--hair-2)',
+                    borderBottom: '1px solid rgba(19,22,25,0.14)',
                   }}>{fmt(v)}</td>
                 ))}
               </tr>

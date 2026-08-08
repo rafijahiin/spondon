@@ -1720,6 +1720,20 @@ html.dark .hero-card {
 /* Dark mode — Leaflet container background needs an explicit dark
    variant so the map tiles read against a matching frame. */
 html.dark .leaflet-container { background: var(--paper) !important; }
+/* The CIPRB campaign atlas stays light in both themes (see
+   FistulaCampaignMap.tsx) — re-whiten its map so the dark override above
+   cannot turn its sea black under the white card. */
+html.dark .campaign-atlas .leaflet-container { background: #ffffff !important; }
+html.dark .campaign-atlas .leaflet-tooltip-custom {
+  background: #ffffff !important;
+  color: #111827 !important;
+  border-color: #e5e7eb !important;
+}
+html.dark .campaign-atlas .leaflet-control-zoom a {
+  background: #ffffff !important;
+  color: #374151 !important;
+  border-bottom-color: #e5e7eb !important;
+}
 html.dark .leaflet-tile-pane { filter: brightness(0.85) contrast(1.05); }
 html.dark .leaflet-tooltip-custom {
   background: var(--surface) !important;
