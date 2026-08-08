@@ -99,8 +99,14 @@ def _pdf_on(browser, html, wait_ms, **pdf_kw) -> bytes:
     pg = browser.new_page()
     try:
         _load(pg, html, wait_ms)
-        opts = dict(format='A4', print_background=True,
+        opts = dict(print_background=True,
                     margin={'top': '0', 'bottom': '0', 'left': '0', 'right': '0'})
+        # Playwright gives `format` priority over width/height, so forcing A4
+        # here silently discarded a caller's custom page size — the 1080x1350
+        # one-pager came out as two clipped A4 pages. Default to A4 only when
+        # the caller asked for nothing else.
+        if 'width' not in pdf_kw and 'height' not in pdf_kw:
+            opts['format'] = pdf_kw.pop('format', 'A4')
         opts.update(pdf_kw)
         return pg.pdf(**opts)
     finally:
