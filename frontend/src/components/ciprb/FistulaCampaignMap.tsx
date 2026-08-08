@@ -135,19 +135,10 @@ export function FistulaCampaignMap({ rows }: { rows: CampaignUpazila[] }) {
     const active = activeDkeys.has(canonLatin(name))
     layer.on('mouseover', () => (layer as L.Path).setStyle({ weight: 1.4, color: '#8fa0ac' }))
     layer.on('mouseout', () => (layer as L.Path).setStyle({ weight: 0.6, color: HAIR }))
-    if (active) {
-      // A quiet uppercase label at the district centroid instead of a hover
-      // tooltip (one layer carries one tooltip; the upazila overlay already
-      // has the data tooltip). The map stops being anonymous shapes.
-      ;(layer as L.Path).bindTooltip(name, {
-        permanent: true, direction: 'center', className: 'atlas-label',
-        interactive: false,
-      })
-    } else {
-      ;(layer as L.Path).bindTooltip(
-        `<b>${name}</b><br/>No campaign activity`,
-        { direction: 'top', sticky: true, className: 'leaflet-tooltip-custom' })
-    }
+    // No permanent labels — hover carries the names (Rafi, 2026-08-09).
+    ;(layer as L.Path).bindTooltip(
+      `<b>${name}</b><br/>${active ? 'Campaign district · hover the shaded upazilas' : 'No campaign activity'}`,
+      { direction: 'top', sticky: true, className: 'leaflet-tooltip-custom' })
     layer.on('click', () => {
       const lyr = layer as unknown as { getBounds: () => L.LatLngBounds; _map?: L.Map }
       if (lyr._map && lyr.getBounds) lyr._map.fitBounds(lyr.getBounds().pad(0.25))
