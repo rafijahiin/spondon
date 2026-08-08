@@ -1,11 +1,11 @@
 """
-The shareable WEB report — a bilingual scrolling page, not a printed layout.
+The shareable WEB report — a scrolling page, not a printed layout.
 
 Served publicly at /r/<token>/, so it must be a single self-contained HTML
 string: inline CSS/JS, webfonts as the only external fetch, no framework.
-A language toggle (EN | বাং) swaps every labelled string; counters rise once
-on scroll into view; sections appear with a soft translate. Degrades to
-plain static text when JS is off, and respects prefers-reduced-motion.
+English only (Rafi, 2026-08-08). Counters rise once on scroll into view;
+sections appear with a soft translate. Degrades to plain static text when
+JS is off, and respects prefers-reduced-motion.
 """
 from __future__ import annotations
 
@@ -22,7 +22,6 @@ _FONT = ('<link rel="preconnect" href="https://fonts.googleapis.com">'
 _CSS = f"""
 * {{ margin:0; padding:0; box-sizing:border-box; }}
 body {{ font-family:{EN_FONT}; background:{PAPER}; color:{INK}; }}
-html[lang="bn"] body, html[lang="bn"] button {{ font-family:{BN_FONT}; }}
 .wrap {{ max-width:760px; margin:0 auto; padding:0 22px 70px; }}
 header {{ position:sticky; top:0; background:{PAPER}ee; backdrop-filter:blur(6px);
           border-bottom:1px solid {LINE}; z-index:5; }}
@@ -31,10 +30,6 @@ header {{ position:sticky; top:0; background:{PAPER}ee; backdrop-filter:blur(6px
 .brand {{ display:flex; gap:8px; align-items:center; font-weight:700;
           letter-spacing:3px; font-size:14px; }}
 .dot {{ width:10px; height:10px; border-radius:50%; background:{ORANGE}; }}
-.lng {{ display:flex; border:1px solid {LINE}; border-radius:20px; overflow:hidden; }}
-.lng button {{ border:0; background:none; padding:5px 14px; font-size:12.5px;
-               cursor:pointer; color:{MUTED}; }}
-.lng button.on {{ background:{INK}; color:#fff; }}
 .eyebrow {{ margin-top:46px; font-size:11px; letter-spacing:3px; color:{ORANGE_DEEP};
             text-transform:uppercase; }}
 h1 {{ font-size:clamp(34px,7vw,52px); line-height:1.1; margin-top:8px; }}
@@ -84,10 +79,11 @@ footer {{ margin-top:64px; border-top:1px solid {LINE}; padding-top:16px;
 """
 
 
-def _t(en, bn):
-    """A bilingual text node the toggle can swap."""
-    return (f'<span class="tt" data-en="{esc(en)}" data-bn="{esc(bn)}">'
-            f'{esc(en)}</span>')
+def _t(en, bn=None):
+    """Historically a bilingual node; the report is English-only now, but the
+    call sites keep their second argument so the strings stay paired in code
+    if the decision is ever reversed."""
+    return esc(en)
 
 
 def build_web_report(c: dict, paras: list[str], ai_summary: str,
@@ -184,11 +180,10 @@ def build_web_report(c: dict, paras: list[str], ai_summary: str,
 {_FONT}<style>{_CSS}</style></head><body>
 <header><div class="hin">
   <div class="brand"><span class="dot"></span>SIMPLE</div>
-  <div class="lng"><button id="bEn" class="on">EN</button><button id="bBn">বাং</button></div>
 </div></header>
 <div class="wrap">
   <div class="eyebrow">{_t("Monthly programme report", "মাসিক কর্মসূচি প্রতিবেদন")}</div>
-  <h1><span class="tt" data-en="{esc(c['period_label'])}" data-bn="{esc(c['period_label_bn'])}">{esc(c['period_label'])}</span></h1>
+  <h1>{esc(c['period_label'])}</h1>
   <div class="scope">{esc(c['org_label'])} · {_t("Reproductive & Child Health", "প্রজনন ও শিশু স্বাস্থ্য")}</div>
   <div class="hero">
     <div class="heroNum cnt" data-v="{hero['value']}">{fmt(hero['value'])}</div>
@@ -207,18 +202,6 @@ def build_web_report(c: dict, paras: list[str], ai_summary: str,
 </div>
 <script>
 (function () {{
-  var bn = false;
-  function apply() {{
-    document.documentElement.lang = bn ? 'bn' : 'en';
-    document.getElementById('bEn').className = bn ? '' : 'on';
-    document.getElementById('bBn').className = bn ? 'on' : '';
-    var ts = document.querySelectorAll('.tt');
-    for (var i = 0; i < ts.length; i++)
-      ts[i].textContent = ts[i].getAttribute(bn ? 'data-bn' : 'data-en');
-  }}
-  document.getElementById('bEn').onclick = function () {{ bn = false; apply(); }};
-  document.getElementById('bBn').onclick = function () {{ bn = true; apply(); }};
-
   var re = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var io = ('IntersectionObserver' in window) && !re
     ? new IntersectionObserver(function (es) {{

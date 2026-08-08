@@ -2,9 +2,7 @@
 The monthly POSTER — a true infographic, not the report shrunk.
 
 One key message, portrait 1080x1350 (the WhatsApp/Facebook share ratio the
-partners actually use), bilingual: Bangla carries the message because the
-audience is the field teams and partner staff; English runs underneath for
-the same graphic to work in a donor thread.
+partners actually use). English throughout (Rafi, 2026-08-08).
 
 Composition: brand strip → Bangla headline → the one hero number with its
 12-month shape → four bilingual chips → ONE bar block (the org's main story)
@@ -75,8 +73,7 @@ def build_poster_html(c: dict) -> str:
              f'opacity="0.85"/></svg>') if pts else ''
     chips = ''.join(
         f'<div class="chip"><b>{fmt(k["value"])}</b>'
-        f'<span><span class="bn">{esc(k["bn"])}</span>'
-        f'<span class="en">{esc(k["en"])}</span></span></div>'
+        f'<span><span style="font-size:16px;font-weight:600;display:block">{esc(k["en"])}</span></span></div>'
         for k in c['kpis'][:4])
 
     block = (c['blocks'][0] if c['blocks'] else None)
@@ -85,13 +82,12 @@ def build_poster_html(c: dict) -> str:
         rows = block['rows'][:6]
         top = max((r['value'] for r in rows), default=0) or 1
         brs = ''.join(
-            f'<div class="br"><span class="brl"><span class="bn">{esc(r["bn"])}</span>'
-            f'<span class="en">{esc(r["en"])}</span></span>'
+            f'<div class="br"><span class="brl"><span style="font-size:16px">{esc(r["en"])}</span></span>'
             f'<span class="brt"><i style="width:{round(r["value"]/top*100,1)}%"></i></span>'
             f'<span class="brv">{fmt(r["value"])}</span></div>'
             for r in rows)
-        story = (f'<div class="story"><h3><span class="bn">{esc(block["bn"])}</span>'
-                 f'<span class="en">{esc(block["en"])}</span></h3>{brs}</div>')
+        story = (f'<div class="story"><h3><span style="font-size:21px;font-weight:700">'
+                 f'{esc(block["en"])}</span></h3>{brs}</div>')
     elif c.get('partners'):
         brs = []
         for p in c['partners']:
@@ -99,14 +95,14 @@ def build_poster_html(c: dict) -> str:
             top = max(x['data']['hero']['value'] for x in c['partners']) or 1
             w = round(d['hero']['value'] / top * 100, 1)
             brs.append(
-                f'<div class="br"><span class="brl"><span class="bn">{esc(d["hero"]["bn"])}</span>'
-                f'<span class="en">{esc(d["org"])}</span></span>'
+                f'<div class="br"><span class="brl"><span style="font-size:16px;font-weight:600">'
+                f'{esc(d["org_label"])}</span></span>'
                 f'<span class="brt"><i style="width:{w}%;background:{p["accent"]}"></i></span>'
                 f'<span class="brv">{fmt(d["hero"]["value"])}</span></div>')
-        story = (f'<div class="story"><h3><span class="bn">তিন পার্টনারের ফলাফল</span>'
-                 f'<span class="en">By partner</span></h3>{"".join(brs)}</div>')
+        story = (f'<div class="story"><h3><span style="font-size:21px;font-weight:700">'
+                 f'By partner</span></h3>{"".join(brs)}</div>')
 
-    cov = (f'<div class="cov bn">{esc(c["geo"]["coverage"])}</div>'
+    cov = (f'<div class="cov">{esc(c["geo"]["coverage"])}</div>'
            if c['geo'].get('coverage') else '')
 
     return f"""<!doctype html><html><head><meta charset="utf-8">{FONT_LINK}
@@ -114,24 +110,23 @@ def build_poster_html(c: dict) -> str:
 <div class="poster">
   <div class="top">
     <div class="brand"><span class="dot"></span>SIMPLE</div>
-    <div class="mon"><div class="bn">{esc(c['period_label_bn'])}</div>
-      <small>{esc(c['period_label']).upper()} · {esc(c['org'] or 'ALL PARTNERS')}</small></div>
+    <div class="mon"><div style="font-size:26px;font-weight:600">{esc(c['period_label'])}</div>
+      <small>{esc(c['org'] or 'ALL PARTNERS')}</small></div>
   </div>
   <div class="head">
-    <div class="bn">{esc(hero['bn'])}</div>
-    <div class="en">{esc(hero['en'])}</div>
+    <div style="font-size:40px;font-weight:700;line-height:1.25">{esc(hero['en'])}</div>
   </div>
   <div class="heroRow">
     <div class="heroNum">{fmt(hero['value'])}</div>
     <div class="heroSide">{spark}
-      <div class="en" style="color:{FAINT};font-size:12px">12-month trend · ১২ মাসের ধারা</div>
+      <div class="en" style="color:{FAINT};font-size:12px">12-month trend</div>
     </div>
   </div>
   <div class="note">{esc(hero['note'])}</div>
   <div class="chips">{chips}</div>
   {story}{cov}
   <div class="foot">
-    <span class="l bn">সিম্পল — সমন্বিত ডিজিটাল এমঅ্যান্ডই সিস্টেম</span>
+    <span class="l">SIMPLE — Integrated Digital M&amp;E System</span>
     <span class="r">CIPRB · UNFPA BANGLADESH</span>
   </div>
 </div></body></html>"""

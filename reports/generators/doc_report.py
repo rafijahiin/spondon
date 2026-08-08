@@ -9,8 +9,7 @@ Three pages, each earning its place:
   3  geography, the indicator table (target / achieved / %) and the full
      narrative, with an explicit data-sources note.
 
-English throughout (the audience is UNFPA and partner management); the month
-appears once in Bangla as an accent. Rendered by Chromium print via
+English throughout (Rafi, 2026-08-08). Rendered by Chromium print via
 html_render.html_to_pdf.
 """
 from __future__ import annotations
@@ -107,7 +106,6 @@ def _cover(c, ai_summary):
   </div>
   <div class="rule"></div>
   <h1>{esc(c['period_label'])}</h1>
-  <div class="bnm">{esc(c['period_label_bn'])}</div>
   <div class="scope">{esc(c['org_label'])} &nbsp;·&nbsp; Reproductive &amp; Child Health</div>
   <div style="display:flex;align-items:flex-end;gap:8mm;margin-top:11mm">
     <div class="heroNum">{fmt(hero['value'])}</div>
