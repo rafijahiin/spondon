@@ -305,10 +305,11 @@ export function FistulaCampaignMap({ rows }: { rows: CampaignUpazila[] }) {
 
       {missing.length > 0 && (
         <p style={{ fontSize: 11.5, color: '#6b7280', margin: '8px 2px 0' }}>
-          {missing.map((m) => m.upazila).join(', ')}: upazila created in 2014
-          (from parts of Ramgarh, Matiranga and Mahalchhari), so the national
-          boundary file has no separate shape for it — its area sits inside
-          those parent upazilas on the map. Its figures are in the table above.
+          Not drawn: {missing.map((m) => `${m.upazila} (recorded under ${m.district})`).join(', ')}.
+          The national boundary file has no matching shape — either a newer
+          upazila (Guimara was created in 2014 from parts of Ramgarh, Matiranga
+          and Mahalchhari) or a district recorded incorrectly in the field.
+          The figures are in the table above either way.
         </p>
       )}
       </div>

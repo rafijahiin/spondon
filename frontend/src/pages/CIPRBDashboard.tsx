@@ -705,6 +705,7 @@ export default function CIPRBDashboard() {
             </div>
             <div className="card shimmer" style={{ padding: 10 }}>
               <PartnerOverlapMap
+                variant="atlas"
                 height={340}
                 partner="CIPRB"
                 subgroups={[

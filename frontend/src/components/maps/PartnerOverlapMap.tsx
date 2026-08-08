@@ -39,6 +39,11 @@ interface Subgroup {
 
 interface Props {
   className?: string
+  /** 'atlas' renders the light cartographic style used on the CIPRB page
+      (sea wash, warm paper land, visible hairlines, landmass shadow) so all
+      three maps there share one design. Default keeps the themed look used
+      on Home and the org dashboards. */
+  variant?: 'default' | 'atlas'
   height?: number | string
   /** When set, the map and legend show ONLY this partner's districts.
    *  Other partners' coverage is rendered as "No coverage" grey. */
@@ -55,6 +60,7 @@ interface Props {
 
 export function PartnerOverlapMap({
   className, height = 360, partner, subgroups, subgroupOverlapColor = '#8B3700',
+  variant = 'default',
 }: Props) {
   const navigate = useNavigate()
   const { t } = useTranslation()
@@ -78,6 +84,8 @@ export function PartnerOverlapMap({
     keys: new Set(s.districts.map(normaliseDistrict)),
   }))
 
+  const atlas = variant === 'atlas'
+  const stroke = atlas ? '#c3cdd4' : '#ffffff'
   const styleFeature = (feature?: GeoJSON.Feature): PathOptions => {
     const key = normaliseDistrict((feature?.properties?.shapeName as string) ?? '')
     const partners = coverage.get(key)
@@ -96,30 +104,30 @@ export function PartnerOverlapMap({
       const inPartner = partners?.includes(partner) || hits.length > 0
       if (!inPartner) {
         return {
-          fillColor: NO_COVERAGE,
-          fillOpacity: 0.5,
-          color: '#ffffff',
-          weight: 0.8,
+          fillColor: atlas ? '#eceae4' : NO_COVERAGE,
+          fillOpacity: atlas ? 1 : 0.5,
+          color: stroke,
+          weight: atlas ? 0.6 : 0.8,
         }
       }
       if (hits.length >= 2) {
-        return { fillColor: subgroupOverlapColor, fillOpacity: 0.9, color: '#ffffff', weight: 0.8 }
+        return { fillColor: subgroupOverlapColor, fillOpacity: 0.9, color: stroke, weight: 0.8 }
       }
       if (hits.length === 1) {
-        return { fillColor: hits[0].color, fillOpacity: 0.85, color: '#ffffff', weight: 0.8 }
+        return { fillColor: hits[0].color, fillOpacity: 0.85, color: stroke, weight: 0.8 }
       }
       return {
         fillColor: PARTNER_TINTS[partner],
         fillOpacity: 0.85,
-        color: '#ffffff',
+        color: stroke,
         weight: 0.8,
       }
     }
     return {
       fillColor: fillForPartners(partners),
-      fillOpacity: partners?.length ? 0.78 : 0.5,
-      color: '#ffffff',
-      weight: 0.8,
+      fillOpacity: partners?.length ? 0.78 : (atlas ? 1 : 0.5),
+      color: stroke,
+      weight: atlas ? 0.6 : 0.8,
     }
   }
 
@@ -184,7 +192,8 @@ export function PartnerOverlapMap({
   }
 
   return (
-    <div className={className} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+    <div className={(className ? className + ' ' : '') + (atlas ? 'campaign-atlas' : '')}
+         style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
       <MapContainer
         center={[23.7, 90.4]}
         zoom={6}
@@ -197,7 +206,8 @@ export function PartnerOverlapMap({
         // Background fills the area around the country shape.
         style={{
           height, width: '100%', borderRadius: 12,
-          background: 'var(--surface-2)',
+          background: atlas ? '#e7eef4' : 'var(--surface-2)',
+          border: atlas ? '1px solid #dbe3e9' : undefined,
         }}
       >
         {geoData && (

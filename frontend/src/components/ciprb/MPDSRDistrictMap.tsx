@@ -49,25 +49,28 @@ const CP_SET = new Set(CP.map(normalise))
 // Colour palette — UNFPA orange tonal scale. Three distinguishable shades
 // of orange so GAC / SIDA / CP coverage layers stay readable, plus a deep
 // shade for the GAC+SIDA overlap. No foreign hues.
+// Atlas language (matches FistulaCampaignMap, Rafi 2026-08-09: one page,
+// one cartographic style): warm paper land, soft sea, visible hairlines.
 const TINT = {
   both:     '#7A2E00',   // very deep orange — GAC + SIDA overlap (Sunamganj)
   gac:      '#F96000',   // UNFPA primary orange
   sida:     '#C44E00',   // UNFPA deep
   cp:       '#FDCFB3',   // UNFPA pale tint
-  none:     '#E5E7EB',   // neutral grey — districts with no MPDSR focus
-  stroke:   '#7A2E00',
+  none:     '#eceae4',   // warm paper — districts with no MPDSR focus
+  stroke:   '#c3cdd4',   // district hairlines
 }
+const SEA = '#e7eef4'
 
 function tintFor(name: string): { fill: string; opacity: number; group: string } {
   const key = normalise(name)
   const inGAC = GAC_SET.has(key)
   const inSIDA = SIDA_SET.has(key)
   const inCP = CP_SET.has(key)
-  if (inGAC && inSIDA) return { fill: TINT.both, opacity: 0.62, group: 'GAC + SIDA' }
-  if (inGAC)            return { fill: TINT.gac,  opacity: 0.55, group: 'GAC' }
-  if (inSIDA)           return { fill: TINT.sida, opacity: 0.55, group: 'SIDA' }
-  if (inCP)             return { fill: TINT.cp,   opacity: 0.45, group: 'CP' }
-  return { fill: TINT.none, opacity: 0.08, group: '' }
+  if (inGAC && inSIDA) return { fill: TINT.both, opacity: 0.85, group: 'GAC + SIDA' }
+  if (inGAC)            return { fill: TINT.gac,  opacity: 0.8,  group: 'GAC' }
+  if (inSIDA)           return { fill: TINT.sida, opacity: 0.8,  group: 'SIDA' }
+  if (inCP)             return { fill: TINT.cp,   opacity: 0.75, group: 'CP' }
+  return { fill: TINT.none, opacity: 1, group: '' }
 }
 
 interface DistrictFeatureProps {
@@ -127,7 +130,7 @@ export function MPDSRDistrictMap() {
       fillOpacity: opacity,
       color: TINT.stroke,
       weight: 0.6,
-      opacity: 0.4,
+      opacity: 1,
     }
   }
 
@@ -153,7 +156,9 @@ export function MPDSRDistrictMap() {
 
   return (
     <div>
-      <div className="card" style={{ padding: 16 }}>
+      <div className="card campaign-atlas" style={{ padding: 0, overflow: 'hidden' }}>
+      {/* Always-light atlas panel, same treatment as the campaign map. */}
+      <div style={{ background: '#ffffff', padding: 16, color: '#111827' }}>
         {/* Header inside the card, one line of copy — the panel was a screen
             and a half tall for a static coverage picture (Rafi, 4 Aug 2026). */}
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', marginBottom: 10 }}>
@@ -162,20 +167,21 @@ export function MPDSRDistrictMap() {
               <span className="dot" style={{ background: CIPRB_BLUE }} />
               {t('mpdsrMap.kicker')}
             </div>
-            <h3 style={{ margin: '6px 0 0', fontSize: 17, fontWeight: 700, color: 'var(--ink)' }}>
+            <h3 style={{ margin: '6px 0 0', fontSize: 17, fontWeight: 700, color: '#111827' }}>
               {t('mpdsrMap.title')}
             </h3>
           </div>
-          <span style={{ fontSize: 12, color: 'var(--muted)', maxWidth: 380, textAlign: 'right' }}>
+          <span style={{ fontSize: 12, color: '#6b7280', maxWidth: 380, textAlign: 'right' }}>
             {t('mpdsrMap.sub')}
           </span>
         </div>
-        <div style={{ position: 'relative', height: 340, borderRadius: 8, overflow: 'hidden' }}>
+        <div style={{ position: 'relative', height: 340, borderRadius: 8, overflow: 'hidden',
+                      background: SEA, border: '1px solid #dbe3e9' }}>
           {geo ? (
             <MapContainer
               center={[23.685, 90.3563]}
               zoom={7}
-              style={{ height: '100%', width: '100%', background: 'var(--surface-2)' }}
+              style={{ height: '100%', width: '100%', background: SEA }}
               scrollWheelZoom={false}
               attributionControl={false}
               zoomControl={true}
@@ -205,6 +211,7 @@ export function MPDSRDistrictMap() {
           <LegendSwatch color={TINT.none} label={t('mpdsrMap.legendNone')} sub="" />
         </div>
       </div>
+      </div>
     </div>
   )
 }
@@ -217,8 +224,8 @@ function LegendSwatch({ color, label, sub }: { color: string; label: string; sub
         background: color, border: '1px solid rgba(0,0,0,0.08)', flexShrink: 0,
       }} />
       <div style={{ display: 'flex', flexDirection: 'column' }}>
-        <span style={{ color: 'var(--ink-2)', fontWeight: 500 }}>{label}</span>
-        {sub && <span style={{ color: 'var(--muted)', fontSize: 11 }}>{sub}</span>}
+        <span style={{ color: '#2a2f35', fontWeight: 500 }}>{label}</span>
+        {sub && <span style={{ color: '#6b7280', fontSize: 11 }}>{sub}</span>}
       </div>
     </div>
   )
