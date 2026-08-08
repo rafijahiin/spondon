@@ -23,9 +23,12 @@ from datetime import date
 
 from django.core.files.base import ContentFile
 
-from .data import collect_programme_data
-from .html_render import (LazyBrowser, render_infographic_png, render_report_pdf,
-                          render_pptx, web_report_html)
+from .content import collect_content
+from .deck import build_native_deck
+from .doc_report import render_document_pdf
+from .html_render import LazyBrowser
+from .poster import render_poster_png
+from .webrep import build_web_report
 from ..ai_narrative import generate_narrative
 from ..models import NarrativeSource, PeriodType, Report, ReportFormat, ReportType
 
@@ -51,15 +54,22 @@ def _lead_sentences(text: str, n: int = 2) -> str:
     return ' '.join(re.split(r'(?<=[.!?])\s+', text)[:n]).strip()
 
 
-def _ai_context(prog_data: dict, period_lbl: str) -> dict:
-    return {
-        'organisation':     prog_data['organisation'],
+def _ai_context(content: dict, period_lbl: str) -> dict:
+    """Flatten the per-partner content envelope for the narrative model. The
+    hero drives the sufficiency gate, so CIPRB (182 death reviews, zero
+    'activities' under the old counting) finally clears it."""
+    ctx = {
+        'organisation':     content['org_label'],
         'period':           period_lbl,
-        'total_activities': prog_data['total_submissions'],
-        **prog_data['counts'],
-        'fistula_cases':    prog_data['fistula_cases'],
-        'mpdsr_cases':      prog_data['mpdsr_cases'],
+        'total_activities': content['hero']['value'],
+        'headline':         f"{content['hero']['value']} {content['hero']['en']}",
     }
+    for k in content['kpis']:
+        ctx[k['en'][:48]] = k['value']
+    for b in content['blocks']:
+        for r in b['rows']:
+            ctx[f"{b['en'][:28]} — {r['en'][:40]}"] = r['value']
+    return ctx
 
 
 def _pieces_for_scope(org: str) -> list[tuple]:
@@ -76,14 +86,14 @@ def _pieces_for_scope(org: str) -> list[tuple]:
     return base
 
 
-def _render(report_type, fmt, prog_data, paras, ai_summary, renderer) -> bytes:
+def _render(report_type, fmt, content, paras, ai_summary, meta_line, renderer) -> bytes:
     if fmt == ReportFormat.PNG:
-        return render_infographic_png(prog_data, ai_summary=ai_summary, renderer=renderer)
+        return render_poster_png(content, browser=renderer)
     if report_type == ReportType.WEB_REPORT:
-        return web_report_html(prog_data, narrative=paras, ai_summary=ai_summary).encode('utf-8')
+        return build_web_report(content, paras, ai_summary, meta_line).encode('utf-8')
     if fmt == ReportFormat.PPTX:
-        return render_pptx(prog_data, narrative=paras, ai_summary=ai_summary, renderer=renderer)
-    return render_report_pdf(prog_data, narrative=paras, ai_summary=ai_summary, renderer=renderer)
+        return build_native_deck(content, paras, meta_line)   # native — no browser
+    return render_document_pdf(content, paras, ai_summary, meta_line, browser=renderer)
 
 
 def generate_monthly_set(year: int, month: int, *, system_user=None,
@@ -104,11 +114,9 @@ def generate_monthly_set(year: int, month: int, *, system_user=None,
     work: list[dict] = []
     for org in SCOPES:
         try:
-            prog_data = collect_programme_data(ps, pe, org)
-            prog_data['organisation'] = org or 'All Partners'
-            prog_data['period_label'] = period_lbl
+            content = collect_content(org, ps, pe)
         except Exception as exc:                                  # noqa: BLE001
-            logger.exception('collect_programme_data failed for %s', org or 'all')
+            logger.exception('collect_content failed for %s', org or 'all')
             say(f'  FAIL  data · {org or "all"}: {exc}')
             failed += len(_pieces_for_scope(org))
             continue
@@ -116,7 +124,7 @@ def generate_monthly_set(year: int, month: int, *, system_user=None,
         narrative_text, meta = '', {'source': NarrativeSource.AI_DISABLED, 'model': ''}
         if include_narrative:
             try:
-                narrative_text, meta = generate_narrative(_ai_context(prog_data, period_lbl))
+                narrative_text, meta = generate_narrative(_ai_context(content, period_lbl))
             except Exception as exc:                              # noqa: BLE001
                 logger.warning('narrative failed for %s: %s', org or 'all', exc)
                 meta = {'source': NarrativeSource.AI_API_ERROR, 'model': ''}
@@ -135,9 +143,15 @@ def generate_monthly_set(year: int, month: int, *, system_user=None,
                     skipped += 1
                     continue
                 existing.delete()
+            src = meta.get('source', '')
+            drafted = ('Narrative drafted by AI' if src == NarrativeSource.AI
+                       else 'Narrative from template')
+            meta_line = (f'{drafted}, figures from approved submissions only · '
+                         f'Generated {date.today():%d %b %Y}')
             work.append(dict(
                 org=org, report_type=report_type, fmt=fmt, ext=ext, label=label,
-                prog_data=prog_data, paras=paras, ai_summary=ai_summary,
+                content=content, paras=paras, ai_summary=ai_summary,
+                meta_line=meta_line,
                 narrative_text=narrative_text, meta=meta, file_bytes=None,
             ))
 
@@ -147,8 +161,9 @@ def generate_monthly_set(year: int, month: int, *, system_user=None,
         try:
             for w in work:
                 try:
-                    w['file_bytes'] = _render(w['report_type'], w['fmt'], w['prog_data'],
-                                              w['paras'], w['ai_summary'], browser.get())
+                    w['file_bytes'] = _render(w['report_type'], w['fmt'], w['content'],
+                                              w['paras'], w['ai_summary'],
+                                              w['meta_line'], browser.get())
                 except Exception as exc:                          # noqa: BLE001
                     logger.exception('render failed for %s', w['label'])
                     say(f'  FAIL  {w["label"]}: {type(exc).__name__}: {exc}')

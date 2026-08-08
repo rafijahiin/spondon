@@ -106,6 +106,33 @@ def _generate_file(
     raise ValueError(f'Unknown format: {fmt}')
 
 
+def _generate_file_v2(report_type, fmt, content, paras, ai_summary, meta_line):
+    """Dispatch into the 2026-08 report family (content.py envelope).
+
+    The newsletter keeps its own legacy generator (a genuinely different,
+    email-styled format), so it never reaches this function."""
+    if report_type == ReportType.ONE_PAGER:
+        from .generators.poster import build_poster_html, render_poster_png
+        if fmt == ReportFormat.PDF:
+            from .generators.html_render import html_to_pdf
+            return (html_to_pdf(build_poster_html(content),
+                                width='285.8mm', height='357.2mm'),
+                    'application/pdf')
+        return render_poster_png(content), 'image/png'
+    if fmt == ReportFormat.PPTX:
+        from .generators.deck import build_native_deck
+        return (build_native_deck(content, paras, meta_line),
+                'application/vnd.openxmlformats-officedocument.presentationml.presentation')
+    if fmt == ReportFormat.DOCX:
+        from .generators.word import build_summary_docx
+        rows = [(k['en'], k['value']) for k in content.get('kpis', [])]
+        return (build_summary_docx(content['org_label'], rows, chr(10).join(paras)),
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+    from .generators.doc_report import render_document_pdf
+    return (render_document_pdf(content, paras, ai_summary, meta_line),
+            'application/pdf')
+
+
 class ReportViewSet(ModelViewSet):
     queryset = Report.objects.all()
     serializer_class = ReportSerializer
@@ -148,32 +175,46 @@ class ReportViewSet(ModelViewSet):
             f'{partner or "All Partners"} · {period_lbl}'
         )
 
-        # Collect data from programs models
-        prog_data = collect_programme_data(ps, pe, partner)
-        prog_data['organisation'] = partner or 'All Partners'
-        prog_data['period_label'] = period_lbl
-
-        # AI narrative
         narrative = ''
         narrative_meta: dict = {'source': NarrativeSource.AI_DISABLED, 'model': ''}
-        if d.get('include_narrative', True):
-            ai_context = {
-                'organisation':     prog_data['organisation'],
-                'period':           period_lbl,
-                'total_activities': prog_data['total_submissions'],
-                **prog_data['counts'],
-                'fistula_cases':    prog_data['fistula_cases'],
-                'mpdsr_cases':      prog_data['mpdsr_cases'],
-            }
-            if report_type == ReportType.NEWSLETTER:
-                narrative, narrative_meta = generate_newsletter_narrative(ai_context)
-            else:
-                narrative, narrative_meta = generate_narrative(ai_context)
 
-        file_bytes, content_type = _generate_file(
-            report_type, fmt, prog_data, narrative, title,
-            narrative_source=narrative_meta.get('source', NarrativeSource.TEMPLATE),
-        )
+        if report_type == ReportType.NEWSLETTER:
+            # The newsletter keeps its legacy email-styled generator.
+            prog_data = collect_programme_data(ps, pe, partner)
+            prog_data['organisation'] = partner or 'All Partners'
+            prog_data['period_label'] = period_lbl
+            if d.get('include_narrative', True):
+                ai_context = {
+                    'organisation':     prog_data['organisation'],
+                    'period':           period_lbl,
+                    'total_activities': prog_data['total_submissions'],
+                    **prog_data['counts'],
+                    'fistula_cases':    prog_data['fistula_cases'],
+                    'mpdsr_cases':      prog_data['mpdsr_cases'],
+                }
+                narrative, narrative_meta = generate_newsletter_narrative(ai_context)
+            file_bytes, content_type = _generate_file(
+                report_type, fmt, prog_data, narrative, title,
+                narrative_source=narrative_meta.get('source', NarrativeSource.TEMPLATE),
+            )
+        else:
+            from .generators.content import collect_content
+            from .generators.monthly import (_ai_context, _lead_sentences,
+                                             _split_paras)
+            content = collect_content(partner, ps, pe)
+            content['period_label'] = period_lbl
+            if d.get('include_narrative', True):
+                narrative, narrative_meta = generate_narrative(
+                    _ai_context(content, period_lbl))
+            paras = _split_paras(narrative)
+            src = narrative_meta.get('source', '')
+            drafted = ('Narrative drafted by AI' if src == NarrativeSource.AI
+                       else 'Narrative from template')
+            meta_line = (f'{drafted}, figures from approved submissions only · '
+                         f'Generated {date.today():%d %b %Y}')
+            file_bytes, content_type = _generate_file_v2(
+                report_type, fmt, content, paras,
+                _lead_sentences(narrative, 2), meta_line)
 
         ext      = {'pdf': 'pdf', 'docx': 'docx', 'pptx': 'pptx'}[fmt]
         filename = (
