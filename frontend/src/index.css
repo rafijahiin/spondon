@@ -1723,7 +1723,31 @@ html.dark .leaflet-container { background: var(--paper) !important; }
 /* The CIPRB campaign atlas stays light in both themes (see
    FistulaCampaignMap.tsx) — re-whiten its map so the dark override above
    cannot turn its sea black under the white card. */
-html.dark .campaign-atlas .leaflet-container { background: #ffffff !important; }
+html.dark .campaign-atlas .leaflet-container { background: #e7eef4 !important; }
+/* Lift the landmass off the sea and style the centroid labels. */
+.campaign-atlas .leaflet-overlay-pane svg {
+  filter: drop-shadow(0 3px 7px rgba(28, 44, 58, 0.22));
+}
+.campaign-atlas .atlas-label {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: #55636e !important;
+  font-family: 'Atkinson Hyperlegible', system-ui, sans-serif !important;
+  font-size: 9.5px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  text-shadow: 0 1px 2px #fff, 0 -1px 2px #fff, 1px 0 2px #fff, -1px 0 2px #fff;
+  pointer-events: none;
+}
+.campaign-atlas .atlas-label::before { display: none; }
+.campaign-atlas .leaflet-control-scale-line {
+  background: rgba(255,255,255,0.85) !important;
+  border-color: #94a3ad !important;
+  color: #55636e !important;
+  font-size: 9px !important;
+}
 html.dark .campaign-atlas .leaflet-tooltip-custom {
   background: #ffffff !important;
   color: #111827 !important;

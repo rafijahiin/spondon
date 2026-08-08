@@ -9,7 +9,7 @@
  * (30 of 71 reports carry coordinates from the wrong district).
  */
 import { useEffect, useMemo, useState } from 'react'
-import { MapContainer, GeoJSON, useMap } from 'react-leaflet'
+import { MapContainer, GeoJSON, ScaleControl, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import type { Layer, PathOptions } from 'leaflet'
 import 'leaflet/dist/leaflet.css'
@@ -21,7 +21,9 @@ const ATLAS_FONT = "'Atkinson Hyperlegible', system-ui, -apple-system, Segoe UI,
 // Sequential oranges (ColorBrewer), light → dark, same family as the CIPRB
 // dashboard. Atlas uses Reds/Blues for MPDSR; the campaign gets its own hue.
 const RAMP = ['#feedde', '#fdbe85', '#fd8d3c', '#e6550d', '#a63603']
-const NO_DATA = '#e5e7eb'
+const NO_DATA = '#eceae4'          // warm paper, land without activity
+const SEA = '#e7eef4'              // soft cool wash so the landmass reads as land
+const HAIR = '#c3cdd4'             // district hairlines (was invisible white)
 
 export interface CampaignUpazila {
   key: string
@@ -122,18 +124,30 @@ export function FistulaCampaignMap({ rows }: { rows: CampaignUpazila[] }) {
     const active = activeDkeys.has(
       canonLatin((feature?.properties?.shapeName as string) ?? ''))
     return {
-      fillColor: active ? '#fff7f0' : NO_DATA,
-      fillOpacity: 0.92,
-      color: '#ffffff', weight: 0.7,
+      fillColor: active ? '#fdf1e3' : NO_DATA,
+      fillOpacity: 1,
+      color: HAIR, weight: 0.6,
     }
   }
 
   const baseEach = (feature: GeoJSON.Feature, layer: Layer) => {
     const name = (feature.properties?.shapeName as string) ?? ''
     const active = activeDkeys.has(canonLatin(name))
-    ;(layer as L.Path).bindTooltip(
-      `<b>${name}</b><br/>${active ? 'Campaign district — hover the shaded upazilas' : 'No campaign activity'}`,
-      { direction: 'top', sticky: true, className: 'leaflet-tooltip-custom' })
+    layer.on('mouseover', () => (layer as L.Path).setStyle({ weight: 1.4, color: '#8fa0ac' }))
+    layer.on('mouseout', () => (layer as L.Path).setStyle({ weight: 0.6, color: HAIR }))
+    if (active) {
+      // A quiet uppercase label at the district centroid instead of a hover
+      // tooltip (one layer carries one tooltip; the upazila overlay already
+      // has the data tooltip). The map stops being anonymous shapes.
+      ;(layer as L.Path).bindTooltip(name, {
+        permanent: true, direction: 'center', className: 'atlas-label',
+        interactive: false,
+      })
+    } else {
+      ;(layer as L.Path).bindTooltip(
+        `<b>${name}</b><br/>No campaign activity`,
+        { direction: 'top', sticky: true, className: 'leaflet-tooltip-custom' })
+    }
     layer.on('click', () => {
       const lyr = layer as unknown as { getBounds: () => L.LatLngBounds; _map?: L.Map }
       if (lyr._map && lyr.getBounds) lyr._map.fitBounds(lyr.getBounds().pad(0.25))
@@ -152,6 +166,8 @@ export function FistulaCampaignMap({ rows }: { rows: CampaignUpazila[] }) {
   const overlayEach = (feature: GeoJSON.Feature, layer: Layer) => {
     const row = byKey.get(String((feature.properties as UProps)?.key ?? ''))
     if (!row) return
+    layer.on('mouseover', () => (layer as L.Path).setStyle({ weight: 2.2, color: '#5c2500' }))
+    layer.on('mouseout', () => (layer as L.Path).setStyle({ weight: 1.1, color: '#7a3300' }))
     ;(layer as L.Path).bindTooltip(
       `<b>${row.upazila}</b> · ${row.district}<br/>`
       + `Days: <b>${row.reports}</b> · Households: <b>${fmt(row.households)}</b><br/>`
@@ -193,7 +209,8 @@ export function FistulaCampaignMap({ rows }: { rows: CampaignUpazila[] }) {
         {/* Map and table side by side: the country is taller than wide, so a
             full-width map wasted its right half — the table earns it. */}
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(340px, 1.15fr) minmax(300px, 1fr)', gap: 14, alignItems: 'stretch' }}>
-        <div style={{ position: 'relative', height: 460, borderRadius: 8, overflow: 'hidden', background: '#ffffff' }}>
+        <div style={{ position: 'relative', height: 460, borderRadius: 8, overflow: 'hidden',
+                      background: SEA, border: '1px solid #dbe3e9' }}>
           {geoError ? (
             <div style={{ display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center', color: '#6b7280', fontSize: 13 }}>
               Map unavailable — could not load boundaries.
@@ -203,8 +220,9 @@ export function FistulaCampaignMap({ rows }: { rows: CampaignUpazila[] }) {
               center={[23.7, 90.4]} zoom={6} minZoom={6} maxZoom={11}
               zoomControl={true} scrollWheelZoom={false} doubleClickZoom={true}
               dragging={true} attributionControl={false}
-              style={{ height: '100%', width: '100%', background: '#ffffff' }}
+              style={{ height: '100%', width: '100%', background: SEA }}
             >
+              <ScaleControl position="bottomright" imperial={false} />
               {adm2 && (
                 <>
                   <FitCountry data={adm2} />
