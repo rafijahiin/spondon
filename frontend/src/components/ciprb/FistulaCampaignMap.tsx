@@ -250,7 +250,10 @@ export function FistulaCampaignMap({ rows }: { rows: CampaignUpazila[] }) {
 
         {/* Names and volumes in full — also the only place a boundary-less
           upazila (Guimara) stays visible. */}
-      <div className="card" style={{ padding: 0, overflow: 'auto', maxHeight: 460 }}>
+      {/* Plain div, NOT className="card": the card class flips dark with the
+          theme, which put this table's fixed dark ink on a dark background. */}
+      <div style={{ padding: 0, overflow: 'auto', maxHeight: 460, background: '#ffffff',
+                    border: '1px solid #e5e7eb', borderRadius: 8 }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
           <thead>
             <tr>
