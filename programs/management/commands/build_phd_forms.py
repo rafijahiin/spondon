@@ -142,11 +142,15 @@ def _centre_choices():
 # names stay consistent. Tuple = (value slug, display name, centre/location).
 PHD_MEDICAL_ASSISTANTS = [
     ('Nilufar_Yesmin',       'Nilufar Yesmin',       'Daulatdia'),
-    ('AL_Mondna_Mim',        'AL Mondna Mim',        'Daulatdia'),
+    # Spelling corrected 2026-08-09 (Rafi): was 'AL Mondna Mim'. Historical
+    # rows were renormalised to the new slug in the same change.
+    ('Al_Modina_Mim',        'Al-Modina Mim',        'Daulatdia'),
     ('Mst_Munzira_Khatun',   'Mst. Munzira Khatun',  'Faridpur'),
     ('Sharmin_Akter_Asa',    'Sharmin Akter Asa',    'Tangail'),
     ('Mansura_Khatun',       'Mansura Khatun',        'Jeshore'),
-    ('Shipra_Roy',           'Shipra Roy',            'Baniashanta'),
+    # Shipra Roy left; Arpita Biswas Puja holds the Baniashanta post from
+    # 2026-08. Shipra's historical submissions stay under her own name.
+    ('Arpita_Biswas_Puja',   'Arpita Biswas Puja',    'Baniashanta'),
     ('Mahaboba_Sharin_Moni', 'Mahaboba Sharin Moni',  'Jamalpur'),
     ('Sathi_Khatun',         'Sathi Khatun',          'Moymonsing'),
     ('Khukumoni_Adhikary',   'Khukumoni Adhikary',    'Pouthokhilae'),
