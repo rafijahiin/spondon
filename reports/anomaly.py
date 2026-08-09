@@ -2,10 +2,6 @@
 Anomaly detection for monthly submission counts using z-score method.
 Requires scipy + numpy (already in requirements.txt).
 """
-import numpy as np
-from scipy import stats
-
-
 def detect_anomalies(monthly_counts: list[int], threshold: float = 2.0) -> list[dict]:
     """
     Given a list of monthly counts, return indices where the count is
@@ -16,6 +12,12 @@ def detect_anomalies(monthly_counts: list[int], threshold: float = 2.0) -> list[
     """
     if len(monthly_counts) < 3:
         return []
+
+    # numpy+scipy stay lazy: this module is imported by reports/views.py at
+    # boot, and a resident numpy costs every gunicorn worker ~45 MB of RAM
+    # (87% of the Railway bill is memory-minutes).
+    import numpy as np
+    from scipy import stats
 
     arr = np.array(monthly_counts, dtype=float)
     z_scores = np.abs(stats.zscore(arr))

@@ -2,9 +2,6 @@
 Simple linear-trend forecasting for monthly submission counts.
 Uses numpy least-squares fit over the last N months to project future months.
 """
-import numpy as np
-
-
 def linear_forecast(monthly_counts: list[int], periods_ahead: int = 3) -> list[float]:
     """
     Given a list of monthly counts (oldest first), return `periods_ahead` forecasted values.
@@ -13,6 +10,10 @@ def linear_forecast(monthly_counts: list[int], periods_ahead: int = 3) -> list[f
     n = len(monthly_counts)
     if n < 2:
         return [0.0] * periods_ahead
+
+    # Lazy: tracker/views.py imports this module at boot; keeping numpy out
+    # of the boot path keeps it out of the worker's resident memory.
+    import numpy as np
 
     x = np.arange(n, dtype=float)
     y = np.array(monthly_counts, dtype=float)
