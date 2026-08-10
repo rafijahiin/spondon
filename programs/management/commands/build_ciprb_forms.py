@@ -358,7 +358,10 @@ def _fistula_survey():
             'নিবন্ধিত রোগী (আইডি — নাম)',
             required='yes',
             relevant=LATER,
-            app='autocomplete'),
+            app='autocomplete',
+            # Only the selected district's patients — an unfiltered list showed
+            # every district's women to every worker (Rafi, 2026-08-10).
+            cf='district_slug=${district}'),
         _sr('calculate', '_pull_name',    calc=PULL.format(col='patient_name')),
         _sr('calculate', '_pull_age',     calc=PULL.format(col='age')),
         _sr('calculate', '_pull_husband', calc=PULL.format(col='husband')),

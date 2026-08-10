@@ -89,7 +89,7 @@ def build_csv() -> tuple[bytes, int]:
     # woman's name (pulldata can't reuse `name` — that column now holds the id).
     writer.writerow([
         'name', 'label', 'id_no', 'patient_name', 'district',
-        'age', 'husband', 'village', 'suspected_date',
+        'district_slug', 'age', 'husband', 'village', 'suspected_date',
     ])
 
     count = 0
@@ -107,6 +107,9 @@ def build_csv() -> tuple[bytes, int]:
             idn,
             c.name,
             c.district,
+            # Matches the form's `district` choice value so the dropdown's
+            # choice_filter shows only the worker's own district's patients.
+            (c.district or '').strip().lower().replace(' ', '_'),
             c.age or '',
             c.husband,
             c.village,
