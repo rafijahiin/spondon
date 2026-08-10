@@ -125,8 +125,7 @@ def _allocate_fistula_case(payload, district, name, tries=40):
     """
     from django.db import IntegrityError, transaction as _tx
 
-    from programs.management.commands.build_ciprb_forms import (
-        FISTULA_DISTRICT_CODE)
+    from fistula.ciprb_models import FISTULA_DISTRICT_CODE
 
     slug = _s(payload.get('district')).lower().replace(' ', '_')
     dist_num = FISTULA_DISTRICT_CODE.get(slug)

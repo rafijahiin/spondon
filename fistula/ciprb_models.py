@@ -19,6 +19,25 @@ from django.conf import settings
 from .encryption import EncryptedCharField  # Fernet at rest for patient PII
 
 
+# District slug → numeric code for the fistula patient-ID prefix
+# (<code>-NNNN, e.g. bhola → 2-0001). Canonical home is HERE, not the
+# XLSForm build command: the webhook allocates IDs from this map in
+# production, where the build command cannot be imported (its module-level
+# openpyxl import is a local-only build dependency — 2026-08-10 500).
+# The spec names 10 base districts (codes 1-10); the remaining CIPRB
+# districts get 11-19 in slug order so every option yields a deterministic
+# prefix. Slug keys MUST match the form's `district` choice values
+# (lower-cased, spaces→'_').
+FISTULA_DISTRICT_CODE = {
+    'sunamganj': 1, 'bhola': 2, 'noakhali': 3, 'gaibandha': 4,
+    'kurigram': 5, 'sirajganj': 6, 'sherpur': 7, 'patuakhali': 8,
+    'khagrachari': 9, 'dhaka': 10,
+    'barguna': 11, 'jamalpur': 12, 'bagerhat': 13, 'habiganj': 14,
+    'moulavibazar': 15, 'sylhet': 16, 'bandarban': 17, 'rangpur': 18,
+    'chandpur': 19,
+}
+
+
 class CIPRBFistulaCase(models.Model):
     # ── Stage choices (drive the dashboard pipeline counts).
     STAGE_SUSPECTED     = 'suspected'

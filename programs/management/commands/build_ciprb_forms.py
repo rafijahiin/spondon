@@ -184,19 +184,9 @@ def _office_use_block(serial_en, serial_bn):
 # ║                      Rehabilitated & Reintegrated                        ║
 # ╚══════════════════════════════════════════════════════════════════════════╝
 
-# District slug → numeric code for the fistula patient-ID prefix. The spec
-# names 10 base districts (codes 1–10); the remaining CIPRB districts get
-# 11–18 in slug order so every option yields a deterministic prefix. The
-# slug keys MUST match the `district` choice values (lower-cased, spaces→'_').
-FISTULA_DISTRICT_CODE = {
-    'sunamganj': 1, 'bhola': 2, 'noakhali': 3, 'gaibandha': 4,
-    'kurigram': 5, 'sirajganj': 6, 'sherpur': 7, 'patuakhali': 8,
-    'khagrachari': 9, 'dhaka': 10,
-    # extras (no spec code) — kept deterministic so their IDs still validate:
-    'barguna': 11, 'jamalpur': 12, 'bagerhat': 13, 'habiganj': 14,
-    'moulavibazar': 15, 'sylhet': 16, 'bandarban': 17, 'rangpur': 18,
-    'chandpur': 19,
-}
+# Canonical district→code map lives on the model side so the production
+# webhook can import it without dragging in openpyxl (build-only dep).
+from fistula.ciprb_models import FISTULA_DISTRICT_CODE  # noqa: F401
 
 
 def _fistula_dist_code_calc():
