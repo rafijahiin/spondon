@@ -95,7 +95,12 @@ def build_csv() -> tuple[bytes, int]:
     count = 0
     for c in qs.iterator():
         idn = _norm_id(c.patient_code)
-        label = f'{idn} — {c.name} ({c.district})'
+        # Paper serial leads the label: with server-issued IDs the worker's own
+        # register serial is the number she actually knows, so she searches by
+        # it ("54 | Shahida ...") and the ID rides along as the stored value.
+        serial = (c.case_serial or '').strip()
+        parts = [p for p in (serial, c.name, c.village, idn) if p]
+        label = ' | '.join(parts)
         writer.writerow([
             idn,
             label,

@@ -264,61 +264,24 @@ def _fistula_survey():
                  'already registered — you will choose her from a list.'),
     ]
 
-    # ── Derive the numeric district code from the selected district slug.
-    #    Used to build the required ID prefix (e.g. district 1 → '1-0001').
-    rows += [
-        _sr('calculate', '_dist_code', calc=_fistula_dist_code_calc()),
-    ]
-
-    # XPath 1.0 trim+upper — Kobo/Enketo cannot evaluate upper-case() (XPath 2.0).
-    NORM_PC = ("translate(normalize-space(${patient_code}),"
-               "'abcdefghijklmnopqrstuvwxyz',"
-               "'ABCDEFGHIJKLMNOPQRSTUVWXYZ')")
-
     # ── Patient identity (captured ONCE, at the Suspected stage only).
     #    Later stages identify the woman via the grp_lookup dropdown below.
     rows += [
         _sr('begin_group', 'grp_patient', 'Patient identity', 'রোগীর পরিচয়',
             relevant="${stage}='suspected'"),
 
-        # Show the district code the worker must use. Without this the ID-format
-        # rule is invisible and she literally cannot type a valid ID (the top
-        # UAT blocker). _dist_code is computed above from the chosen district;
-        # this note only READS it (no constraint — it can never block submit).
-        _sr('note', '_dist_code_show',
-            'Your district code is ${_dist_code}. Type the Patient ID as '
-            '${_dist_code}-0001, ${_dist_code}-0002, … (4 digits after the dash).',
-            'আপনার জেলা কোড ${_dist_code}। রোগীর আইডি এভাবে লিখুন: '
-            '${_dist_code}-0001, ${_dist_code}-0002, … (ড্যাশের পরে ৪ অঙ্ক)।',
+        # The Patient ID is no longer typed. The 2026-08-08 Bhola incident
+        # (2-0028 registered twice, 12 minutes apart) proved the pulldata
+        # duplicate check only sees the CSV copy cached on the device, so the
+        # server now ISSUES the ID on submission — same design as the Bandhu
+        # Mother List. This note manages expectations at registration.
+        _sr('note', '_auto_id_note',
+            'The Patient ID is assigned AUTOMATICALLY after you submit — you '
+            'do not type it. She will appear in the update list (with her ID) '
+            'once the form is re-downloaded.',
+            'রোগীর আইডি জমা দেওয়ার পর স্বয়ংক্রিয়ভাবে তৈরি হবে — আপনাকে লিখতে হবে না। '
+            'ফর্মটি নতুন করে ডাউনলোড করলে তালিকায় রোগীকে (আইডিসহ) পাওয়া যাবে।',
             relevant="${stage}='suspected'"),
-
-        # The unique registry ID — typed at registration. Two hard rules:
-        #   (1) regex anchors the FULL prefix (^<code>-<4 digits>$), so a
-        #       Sunamganj (1-) ID can never be accepted as a Dhaka (10-) ID;
-        #   (2) pulldata(...)='' blocks re-registering an existing ID.
-        _sr('text', 'patient_code',
-            'Patient ID (district code + serial, e.g. 1-0001)',
-            'রোগীর আইডি (জেলা কোড + ক্রমিক, যেমন ১-০০০১)',
-            required='yes',
-            relevant="${stage}='suspected'",
-            constraint=("regex(normalize-space(.), "
-                        "concat('^', ${_dist_code}, '-[0-9]{4}$')) and "
-                        "pulldata('fistula_clients','patient_name','id_no'," + NORM_PC
-                        + ")=''"),
-            cmsg='⚠ Invalid or duplicate ID. It must be <district-code>-<4 digits> '
-                 '(e.g. 1-0001, Dhaka = 10-0001) and not already registered. / '
-                 'ভুল বা ডুপ্লিকেট আইডি — জেলা কোড + ৪ অঙ্ক হতে হবে এবং আগে নিবন্ধিত থাকা যাবে না।',
-            hint='Format: district number + 4-digit serial. Dhaka = 10-0001.'),
-
-        # Duplicate-ID soft warning — shows who already holds this ID.
-        _sr('calculate', '_dup_name',
-            calc=("pulldata('fistula_clients','patient_name','id_no'," + NORM_PC + ")")),
-        _sr('note', '_dup_warn',
-            '⚠ This ID is already registered for ${_dup_name}. '
-            'Do not re-register — record her later stages via the dropdown instead.',
-            '⚠ এই আইডি ইতিমধ্যে ${_dup_name} নামে নিবন্ধিত। '
-            'পুনঃনিবন্ধন করবেন না — পরবর্তী ধাপ ড্রপডাউন থেকে নির্বাচন করুন।',
-            relevant="${patient_code}!='' and ${_dup_name}!=''"),
 
         _sr('text', 'name', 'Name of woman', 'মহিলার নাম', required='yes'),
         _sr('integer', 'age', 'Age (years)', 'বয়স (বছর)',
@@ -398,7 +361,8 @@ def _fistula_survey():
             'Select the registered patient', 'নিবন্ধিত রোগী নির্বাচন করুন',
             relevant=LATER),
         # Dropdown sourced from the attached CSV — the stored value is id_no,
-        # the label shows "1-0001 — Rahima (Sunamganj)".
+        # the label shows "54 | Rahima | Nurabad | 1-0001" (paper serial first:
+        # that is the number the worker knows from her own register).
         _sr('select_one_from_file fistula_clients.csv', 'patient_code_sel',
             'Registered patient (ID — name)',
             'নিবন্ধিত রোগী (আইডি — নাম)',
@@ -429,11 +393,13 @@ def _fistula_survey():
         _sr('end_group', 'grp_lookup'),
     ]
 
-    # ── Unify the two ID sources so the handler always reads one key:
-    #    free-text patient_code at registration, dropdown patient_code_sel after.
+    # ── The handler's single ID key. Registration sends it EMPTY (the server
+    #    issues the ID); later stages carry the dropdown pick. The field is kept
+    #    (rather than dropped) so old and new form versions share one payload
+    #    shape and the id write-back has a stable column to land in.
     rows += [
         _sr('calculate', 'patient_code_final', calc=(
-            "if(${stage}='suspected', ${patient_code}, ${patient_code_sel})")),
+            "if(${stage}='suspected', '', ${patient_code_sel})")),
     ]
 
     # ── STAGE 1 · Suspected.

@@ -627,7 +627,8 @@ def _allocate_client(dist_code, defaults, tries=40):
     raise RuntimeError('could not allocate a beneficiary id for %s' % prefix)
 
 
-def _writeback_kobo_id(asset_uid, submission_id, client_id):
+def _writeback_kobo_id(asset_uid, submission_id, client_id,
+                       field_path='grp_ml/ml_id_no'):
     """Put the issued id back on the Kobo submission, in a daemon thread.
 
     Best effort by design: the id is authoritative in Spondon and reaches the
@@ -651,7 +652,7 @@ def _writeback_kobo_id(asset_uid, submission_id, client_id):
                 'https://kf.kobotoolbox.org/api/v2/assets/%s/data/bulk/' % asset_uid,
                 headers={'Authorization': 'Token ' + token},
                 json={'payload': {'submission_ids': [str(submission_id)],
-                                  'data': {'grp_ml/ml_id_no': client_id}}},
+                                  'data': {field_path: client_id}}},
                 timeout=30)
             logger.info('Bandhu id write-back %s -> %s: %s',
                         submission_id, client_id, r.status_code)

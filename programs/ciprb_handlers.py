@@ -105,6 +105,54 @@ def _district(payload):
     return raw.replace('_', ' ').title()
 
 
+# ─── Fistula patient-ID issuance ─────────────────────────────────────────────
+import os as _os
+
+from programs.bandhu_handlers import _writeback_kobo_id
+
+_FISTULA_ASSET_UID = _os.environ.get(
+    'KOBO_ASSET_UID_FISTULA_QB', 'aH86Euq2AeJ8S9VYdry4PC')
+
+
+def _allocate_fistula_case(payload, district, name, tries=40):
+    """Create the case under the next free <district-code>-NNNN patient_code.
+
+    Same arbitration as Bandhu's _allocate_client: no counter table, no lock —
+    read the used serials, try to insert, and let the patient_code UNIQUE
+    constraint settle a race by retrying. Returns None for an unknown district
+    slug (the form's select_one makes that near-impossible, but a hand-crafted
+    payload must not 500).
+    """
+    from django.db import IntegrityError, transaction as _tx
+
+    from programs.management.commands.build_ciprb_forms import (
+        FISTULA_DISTRICT_CODE)
+
+    slug = _s(payload.get('district')).lower().replace(' ', '_')
+    dist_num = FISTULA_DISTRICT_CODE.get(slug)
+    if dist_num is None:
+        return None
+    prefix = f'{dist_num}-'
+
+    for _ in range(tries):
+        used = (CIPRBFistulaCase.objects
+                .filter(patient_code__startswith=prefix)
+                .values_list('patient_code', flat=True))
+        nums = [int(c[len(prefix):]) for c in used
+                if c[len(prefix):].isdigit()]
+        candidate = f'{prefix}{(max(nums) if nums else 0) + 1:04d}'
+        try:
+            with _tx.atomic():
+                return CIPRBFistulaCase.objects.create(
+                    patient_code=candidate, organisation=ORG,
+                    district=district, name=name,
+                    approval_status='PENDING',
+                )
+        except IntegrityError:
+            continue
+    raise RuntimeError(f'could not allocate a fistula patient id for {prefix}')
+
+
 # ╔══════════════════════════════════════════════════════════════════════════╗
 # ║   Form 1 — CIPRB Fistula Question Bank                                  ║
 # ║   The form is staged: each submission carries data for ONE stage.        ║
@@ -119,8 +167,10 @@ def handle_ciprb_fistula(payload, lat, lng):
     if stage not in dict(CIPRBFistulaCase.STAGE_CHOICES):
         return HttpResponse(f'Bad Request — unknown stage {stage!r}', status=400)
 
-    # The form unifies the free-text (suspected) and dropdown (later) ID into
-    # patient_code_final; fall back to the raw fields for resilience.
+    # One unified ID key: later stages carry the dropdown pick; a registration
+    # from the current form version arrives EMPTY (the server issues the ID
+    # below). Old form versions still in the field send a typed code — honoured
+    # unchanged, so the changeover needs no flag day.
     code = _norm_id(payload.get('patient_code_final')
                     or payload.get('patient_code')
                     or payload.get('patient_code_sel'))
@@ -129,11 +179,33 @@ def handle_ciprb_fistula(payload, lat, lng):
     is_suspected = stage == CIPRBFistulaCase.STAGE_SUSPECTED
 
     if is_suspected:
-        # Registration: code + name + district all required.
-        if not (code and name and district):
+        if not (name and district):
             return HttpResponse(
-                'Bad Request — patient_code, name and district required at '
-                'the suspected stage', status=400)
+                'Bad Request — name and district required at the suspected '
+                'stage', status=400)
+        if not code:
+            # Server-side ID issuance (same design as the Bandhu Mother List:
+            # the client-side pulldata duplicate check only sees the CSV copy
+            # cached on the device, which let 2-0028 be registered twice on
+            # 2026-08-08). Guard against webhook re-delivery FIRST, so a retry
+            # of the same Kobo submission reuses its case instead of burning a
+            # fresh ID.
+            kobo_id = str(payload.get('_id', ''))
+            existing = (CIPRBFistulaCase.objects
+                        .filter(kobo_submission_id=kobo_id).first()
+                        if kobo_id else None)
+            if existing is not None:
+                code = existing.patient_code
+            else:
+                case = _allocate_fistula_case(payload, district, name)
+                if case is None:
+                    return HttpResponse(
+                        'Bad Request — unknown district '
+                        f'{payload.get("district")!r}', status=400)
+                code = case.patient_code
+                _writeback_kobo_id(
+                    _FISTULA_ASSET_UID, kobo_id, code,
+                    field_path='patient_code_final')
     else:
         # Later stages: identity comes from the registered row; only the code
         # (picked from the dropdown) is required.
