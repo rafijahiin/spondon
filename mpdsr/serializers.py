@@ -14,7 +14,7 @@ class MPDSRCaseSerializer(serializers.ModelSerializer):
     class Meta:
         model = MPDSRCase
         fields = [
-            'id', 'case_hash', 'partner',
+            'id', 'case_hash', 'system_ref', 'partner',
             'sub_form_type', 'sub_form_label',
             'district', 'upazila', 'union', 'region',
             'date_of_death', 'death_type', 'death_type_display',
@@ -26,7 +26,7 @@ class MPDSRCaseSerializer(serializers.ModelSerializer):
             'created_at', 'updated_at',
         ]
         read_only_fields = [
-            'id', 'case_hash', 'partner',
+            'id', 'case_hash', 'system_ref', 'partner',
             'sub_form_type', 'district', 'upazila', 'union', 'region',
             'date_of_death', 'death_type', 'cause_of_death', 'place_of_death',
             'facility_name', 'age_years', 'audit_trail', 'latitude', 'longitude',

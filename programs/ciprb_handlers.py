@@ -514,6 +514,11 @@ def _save_mpdsr_case(payload, lat, lng, *, sub_form_type, death_type,
         # as "no payload data" and managers were signing blind.
         case.raw_payload = payload
         case.save()
+
+    # System ref, outside the atomic block (its IntegrityError retry would
+    # poison a wrapping transaction).
+    from programs.refs import MPDSR_FORM_CODE, allocate_system_ref
+    allocate_system_ref(case, MPDSR_FORM_CODE.get(sub_form_type, 'MP'))
     return HttpResponse('OK', status=200)
 
 
@@ -622,6 +627,9 @@ def handle_ciprb_social_autopsy(payload, lat, lng):
         case.submitted_by_kobo_user = _s(payload.get('_submitted_by'))
         case.kobo_submission_id = sub_id or case.kobo_submission_id
         case.save()
+
+    from programs.refs import MPDSR_FORM_CODE, allocate_system_ref
+    allocate_system_ref(case, MPDSR_FORM_CODE.get(case.sub_form_type, 'SA'))
     return HttpResponse('OK', status=200)
 
 
@@ -712,6 +720,9 @@ def _save_notification(payload, lat, lng, slip_variant: str):
     if created:
         obj.approval_status = 'PENDING'
     obj.save()
+
+    from programs.refs import SLIP_FORM_CODE, allocate_system_ref
+    allocate_system_ref(obj, SLIP_FORM_CODE.get(slip_variant, 'NS'))
     return HttpResponse('OK', status=200)
 
 
@@ -850,6 +861,9 @@ def handle_ciprb_near_miss(payload, lat, lng):
         case.latitude, case.longitude = lat, lng
         case.raw_payload = payload
         case.save()
+
+    from programs.refs import NEAR_MISS_FORM_CODE, allocate_system_ref
+    allocate_system_ref(case, NEAR_MISS_FORM_CODE)
     return HttpResponse('OK', status=200)
 
 

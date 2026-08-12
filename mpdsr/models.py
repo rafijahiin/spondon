@@ -299,6 +299,11 @@ class MPDSRCase(models.Model):
     kobo_submission_id = models.CharField(max_length=100, blank=True, default='')
     submitted_by_kobo_user = models.CharField(max_length=100, blank=True, default='')
     organisation = models.CharField(max_length=20, default='CIPRB', db_index=True)
+    # Server-issued system reference (<FORM>-<DIST>-<NNNN>, e.g. NS1-BH-0042)
+    # — allocated by programs.refs on ingestion; the hand-written paper
+    # serial stays separate as the bridge to the paper register.
+    system_ref = models.CharField(max_length=24, blank=True, null=True,
+                                  unique=True, db_index=True)
     center = models.ForeignKey(
         'programs.ServiceCenter', on_delete=models.SET_NULL,
         null=True, blank=True, related_name='+')
