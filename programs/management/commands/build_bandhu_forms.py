@@ -71,11 +71,22 @@ def _id_lookup(idfield):
     nm = '_%s_name' % idfield
     norm = ("translate(normalize-space(${%s}),"
             "'abcdefghijklmnopqrstuvwxyz','ABCDEFGHIJKLMNOPQRSTUVWXYZ')" % idfield)
+    tg = '_%s_tg' % idfield
+    sp = '_%s_spot' % idfield
     return [
         _sr('calculate', nm, calc="pulldata('bandhu_clients','name','id_no',%s)" % norm),
+        # TG code + cruising spot auto-populate from the Mother List whenever a
+        # registered ID is entered (Ashis, 2026-08-11) — read-only, no typing.
+        _sr('calculate', tg, calc="pulldata('bandhu_clients','tg','id_no',%s)" % norm),
+        _sr('calculate', sp, calc="pulldata('bandhu_clients','spot','id_no',%s)" % norm),
         _sr('note', '_%s_ok' % idfield,
             '👤 Client: ${%s}' % nm, '👤 ক্লায়েন্ট: ${%s}' % nm,
             relevant="${%s}!='' and ${%s}!=''" % (idfield, nm)),
+        _sr('note', '_%s_tgspot' % idfield,
+            '🏷 TG: ${%s} · Spot: ${%s}' % (tg, sp),
+            '🏷 টিজি: ${%s} · স্পট: ${%s}' % (tg, sp),
+            relevant=("${%s}!='' and (${%s}!='' or ${%s}!='')"
+                      % (nm, tg, sp))),
         _sr('note', '_%s_warn' % idfield,
             '⚠ This ID is not in the Mother List — register the client first, or check the ID.',
             '⚠ এই আইডি মাদার লিস্টে নেই — আগে ক্লায়েন্ট নিবন্ধন করুন বা আইডি যাচাই করুন।',
