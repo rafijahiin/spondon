@@ -995,7 +995,8 @@ def _pending_for_model(queryset, model_type: str, org_filter_org=None,
                       else 'manager'),
             'manager_approved_at': (obj.manager_approved_at.isoformat()
                                     if getattr(obj, 'manager_approved_at', None) else None),
-            'submitted_by': obj.submitted_by_kobo_user or '–',
+            # getattr: browser-entered models (StockEntry) have no Kobo user.
+            'submitted_by': getattr(obj, 'submitted_by_kobo_user', '') or '–',
             'center_name': (getattr(obj, 'center', None).name
                             if getattr(obj, 'center', None)
                             else getattr(obj, 'district', '') or '–'),
@@ -1011,7 +1012,7 @@ def _pending_for_model(queryset, model_type: str, org_filter_org=None,
             'narrative': _build_narrative(obj, model_type),
             'latitude': float(getattr(obj, 'latitude', None)) if getattr(obj, 'latitude', None) else None,
             'longitude': float(getattr(obj, 'longitude', None)) if getattr(obj, 'longitude', None) else None,
-            'kobo_submission_id': obj.kobo_submission_id or '',
+            'kobo_submission_id': getattr(obj, 'kobo_submission_id', '') or '',
         })
     return results, full_count, counts_by_org
 
@@ -1096,6 +1097,11 @@ _APPROVAL_MODELS = [
     ('coord_meeting',        lambda: CoordMeeting.objects),
     ('mobile_camp',          lambda: MobileHealthCamp.objects),
     ('nil_report',           lambda: NilReport.objects),
+    # Monthly commodity stock (browser-entered). Was counted by the
+    # dashboard's pending banner but absent from this registry, so 51 PHD
+    # entries sat unapprovable and SL5a-e (condoms/kits, APPROVED-only)
+    # stayed at zero while the data existed (found 2026-08-14).
+    ('stock_entry',          lambda: StockEntry.objects),
     ('counselling_report',   lambda: PHDCounsellingReport.objects),
     ('fistula_case',         lambda: CIPRBFistulaCase.objects),
     ('fistula_campaign',     lambda: FistulaCampaign.objects),
@@ -1113,6 +1119,7 @@ _MODEL_TO_SLUG = {qs_fn().model: mt for mt, qs_fn in _APPROVAL_MODELS}
 
 # Fix endpoint slugs for DRF router (plural URLs)
 _ENDPOINT_OVERRIDES = {
+    'stock_entry': 'stock-entries',
     'client_reg': 'clients',
     'clinic_visit': 'clinic-visits',
     'hiv_sti_result': 'hiv-sti-results',

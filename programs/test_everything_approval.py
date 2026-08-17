@@ -125,3 +125,43 @@ class BandhuClientApproveButtonTest(TestCase):
         self.assertEqual(r.status_code, 200, r.content)
         self.reg.refresh_from_db()
         self.assertEqual(self.reg.approval_status, Client.REJECTED)
+
+
+class StockEntryApprovalTest(TestCase):
+    """StockEntry was counted by the dashboard's pending banner but missing
+    from _APPROVAL_MODELS, so 51 PHD stock entries sat unapprovable and the
+    SL5a-e commodity indicators (APPROVED-only) read zero while the data
+    existed (found 2026-08-14). It must surface in the queue and approve."""
+    def setUp(self):
+        cache.clear()
+        self.center = _center('PHD', 'PHD-001')
+        self.mgr = User.objects.create_user(
+            email='pmgr@x.org', password='Str0ng-Passw0rd-2026', full_name='P Mgr',
+            organisation='PHD', role='manager',
+        )
+        from programs.models import StockEntry
+        self.entry = StockEntry.objects.create(
+            organisation='PHD', center=self.center,
+            item_name='Condom (piece)', item_category=StockEntry.CONDOM,
+            reporting_month='2026-07-01', quantity_issued=500,
+            approval_status='PENDING',
+        )
+
+    def _client(self):
+        c = APIClient()
+        c.force_authenticate(self.mgr)
+        return c
+
+    def test_stock_entry_surfaces_in_queue(self):
+        r = self._client().get('/api/programs/pending-approvals/')
+        self.assertEqual(r.status_code, 200)
+        self.assertIn('stock_entry', str(r.content))
+
+    def test_stock_entry_approves(self):
+        r = self._client().post('/api/programs/pending-approvals/', {
+            'id': str(self.entry.id), 'model_type': 'stock_entry',
+            'action': 'approve', 'reason': '',
+        }, format='json')
+        self.assertEqual(r.status_code, 200, r.content)
+        self.entry.refresh_from_db()
+        self.assertEqual(self.entry.approval_status, 'APPROVED')
