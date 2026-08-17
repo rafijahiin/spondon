@@ -30,6 +30,7 @@ from accounts.permissions import (
 )
 
 from .models import (
+    GBVCornerRecord,
     ServiceCenter, Client,
     ClinicVisit, HIVSTITestResult, ADRRecord, AutoclaveLog, AntenatalCard,
     HTCCounselling, IndividualCounselling, MHScreening,
@@ -1102,6 +1103,11 @@ _APPROVAL_MODELS = [
     # entries sat unapprovable and SL5a-e (condoms/kits, APPROVED-only)
     # stayed at zero while the data existed (found 2026-08-14).
     ('stock_entry',          lambda: StockEntry.objects),
+    # Same latent trap as stock_entry, sealed preemptively 2026-08-14:
+    # both default to PENDING and are created by webhook handlers, so
+    # the first field submission would have been counted-but-invisible.
+    ('iec_material',         lambda: IECMaterial.objects),
+    ('gbv_corner_record',    lambda: GBVCornerRecord.objects),
     ('counselling_report',   lambda: PHDCounsellingReport.objects),
     ('fistula_case',         lambda: CIPRBFistulaCase.objects),
     ('fistula_campaign',     lambda: FistulaCampaign.objects),
@@ -1120,6 +1126,7 @@ _MODEL_TO_SLUG = {qs_fn().model: mt for mt, qs_fn in _APPROVAL_MODELS}
 # Fix endpoint slugs for DRF router (plural URLs)
 _ENDPOINT_OVERRIDES = {
     'stock_entry': 'stock-entries',
+    'iec_material': 'iec-materials',
     'client_reg': 'clients',
     'clinic_visit': 'clinic-visits',
     'hiv_sti_result': 'hiv-sti-results',

@@ -165,3 +165,46 @@ class StockEntryApprovalTest(TestCase):
         self.assertEqual(r.status_code, 200, r.content)
         self.entry.refresh_from_db()
         self.assertEqual(self.entry.approval_status, 'APPROVED')
+
+
+class PreemptiveQueueCoverageTest(TestCase):
+    """IECMaterial and GBVCornerRecord share StockEntry's failure shape
+    (PENDING default + webhook-created + banner-counted): sealed before any
+    field data could go invisible. Surfacing + approval must work for both."""
+    def setUp(self):
+        cache.clear()
+        self.center = _center('PHD', 'PHD-001')
+        self.mgr = User.objects.create_user(
+            email='pmgr2@x.org', password='Str0ng-Passw0rd-2026', full_name='P Mgr',
+            organisation='PHD', role='manager',
+        )
+
+    def _client(self):
+        c = APIClient()
+        c.force_authenticate(self.mgr)
+        return c
+
+    def test_iec_and_gbv_corner_surface_and_approve(self):
+        from partners.models import Partner
+        from programs.models import IECMaterial, GBVCornerRecord
+        partner = Partner.objects.filter(code='PHD').first()
+        iec = IECMaterial.objects.create(
+            partner=partner, organisation='PHD', center=self.center,
+            material_type=IECMaterial.DIGITAL, quantity=40,
+            date_distributed='2026-08-01', district='Rajbari',
+        )
+        gbv = GBVCornerRecord.objects.create(
+            organisation='PHD', center=self.center,
+            date_of_establishment='2026-08-01',
+        )
+        body = str(self._client().get('/api/programs/pending-approvals/').content)
+        self.assertIn('iec_material', body)
+        self.assertIn('gbv_corner_record', body)
+        for pk, mt, obj in ((iec.id, 'iec_material', iec),
+                            (gbv.id, 'gbv_corner_record', gbv)):
+            r = self._client().post('/api/programs/pending-approvals/', {
+                'id': str(pk), 'model_type': mt, 'action': 'approve', 'reason': '',
+            }, format='json')
+            self.assertEqual(r.status_code, 200, r.content)
+            obj.refresh_from_db()
+            self.assertEqual(obj.approval_status, 'APPROVED')
