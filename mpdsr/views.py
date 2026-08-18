@@ -458,10 +458,78 @@ def mpdsr_aggregates(request):
         'community': neo_qs.filter(sub_form_type='f2').count(),
         'facility': neo_qs.filter(sub_form_type='f5').count(),
     }
+    # ── RCH review additions (confirmed by Dr. Tanjina, 17 Aug 2026) ────────
+    # B7: period of maternal death (Form 01 Q2 `death_period`). Not a
+    # normalised column — read from the raw payload (flat key or group path).
+    _DEATH_PERIOD = [
+        ('pregnancy', 'During pregnancy'),
+        ('post_abortion_28w', 'After abortion'),
+        ('delivery', 'During delivery'),
+        ('postpartum_42d', 'After delivery'),
+    ]
+    _DP_MAP = dict(_DEATH_PERIOD)
+
+    def _payload_leaf(rp, leaf):
+        if not isinstance(rp, dict):
+            return ''
+        v = rp.get(leaf)
+        if v in (None, ''):
+            for k, kv in rp.items():
+                if str(k).split('/')[-1] == leaf:
+                    v = kv
+                    break
+        return str(v or '').strip()
+
+    death_period = {lbl: 0 for _, lbl in _DEATH_PERIOD}
+    death_period['Unknown'] = 0
+    for rp in ind_qs.values_list('raw_payload', flat=True):
+        death_period[_DP_MAP.get(_payload_leaf(rp, 'death_period'),
+                                 'Unknown')] += 1
+    indicators['death_period'] = death_period
+
+    # B5: how many MPDSR review records each district has contributed.
+    records_by_district = dict(sorted(
+        _Counter(apply_donor(mpdsr_qs).exclude(district='')
+                 .values_list('district', flat=True)).items(),
+        key=lambda kv: -kv[1]))
+
+    # B9: newborn danger signs (Form 05 Q11, select_multiple — codes are
+    # space-separated in the payload). Codes per the verbatim form.
+    _DANGER = {
+        'body_arching': 'Body arching / stiffening',
+        'not_feeding': 'Not feeding / refuses to feed',
+        'fast_breathing': 'Fast breathing',
+        'fast_breathing_chest_indraw': 'Fast breathing with chest indrawing',
+        'cold_extremities': 'Cold hands and feet',
+        'fever': 'Fever',
+        'no_movement': 'No or reduced movement',
+        'jaundice': 'Jaundice',
+        'umbilical_infection': 'Red / discharging umbilicus',
+        'skin_pustules': 'Skin pustules / boils',
+        'diarrhoea': 'Diarrhoea',
+        'dont_know': "Don't know",
+        'other': 'Other',
+    }
+    f5_qs = neo_qs.filter(sub_form_type='f5')
+    danger_signs = {lbl: 0 for lbl in _DANGER.values()}
+    for rp in f5_qs.values_list('raw_payload', flat=True):
+        for code in _payload_leaf(rp, 'danger_signs').split():
+            if code in _DANGER:
+                danger_signs[_DANGER[code]] += 1
+    danger_signs = {k: v for k, v in danger_signs.items() if v}
+
+    # B10: place of neonatal death (Form 05 Q1) — normalised column, shared
+    # relabel vocabulary.
+    neo_place = relabel('place_of_death', dict(_Counter(
+        f5_qs.exclude(place_of_death='')
+        .values_list('place_of_death', flat=True))))
+
     neonatal = {
         'total': neo_qs.count(),
         'cause_of_death': neo_cause,
         'by_level': neo_level,
+        'danger_signs': danger_signs,
+        'place_of_death': neo_place,
     }
 
     # (2) Death notifications — slips 01 + 02 (MPDSRDeathNotification).
@@ -536,6 +604,7 @@ def mpdsr_aggregates(request):
         'totals': totals,
         'review_counts': review_counts,
         'indicators': indicators,
+        'records_by_district': records_by_district,
         'facility': facility,
         'neonatal': neonatal,
         'notifications': notifications,

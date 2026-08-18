@@ -112,6 +112,8 @@ interface AggregatesPayload {
   review_counts?: ReviewCounts
   // CIPRB Phase 3 — the 11 MPDSR major indicators (per-case breakdowns).
   indicators?: Record<string, Record<string, number>>
+  // RCH review (17 Aug 2026): MPDSR review records per district.
+  records_by_district?: Record<string, number>
   // Facility (Form 04) deep-dive — admission→death interval + review
   // committee progress. Only the facility form carries these.
   facility?: {
@@ -1148,7 +1150,7 @@ export function MPDSRVisualizations({
             <SocialAutopsy socialAutopsy={agg?.social_autopsy ?? null} />
           </div>
           <div>
-            <MPDSRIndicators indicators={agg?.indicators ?? null} />
+            <MPDSRIndicators indicators={agg?.indicators ?? null} recordsByDistrict={agg?.records_by_district ?? null} />
           </div>
         </>
       )}
@@ -1276,10 +1278,10 @@ const NOTIF_LEVEL_LABELS: Record<string, string> = {
 /** Neonatal death surveillance — CIPRB 3 (community) + CIPRB 5 (facility).
  *  Cause-of-death breakdown + community-vs-facility split. */
 function NeonatalDeaths({ neonatal }: {
-  neonatal: { total: number; cause_of_death: Record<string, number>; by_level: { community: number; facility: number } } | null
+  neonatal: { total: number; cause_of_death: Record<string, number>; by_level: { community: number; facility: number }; danger_signs?: Record<string, number>; place_of_death?: Record<string, number> } | null
 }) {
   const { t } = useTranslation()
-  const data = neonatal ?? { total: 0, cause_of_death: {}, by_level: { community: 0, facility: 0 } }
+  const data = neonatal ?? { total: 0, cause_of_death: {}, by_level: { community: 0, facility: 0 }, danger_signs: {}, place_of_death: {} }
   const z = {} as Record<string, number>
   return (
     <div>
@@ -1315,6 +1317,9 @@ function NeonatalDeaths({ neonatal }: {
           data={data.by_level ?? z}
           labels={NEO_LEVEL_LABELS}
         />
+        {/* RCH review additions (17 Aug 2026): Form 05 Q11 + Q1. */}
+        <BarBreakdown title="Newborn danger signs (Form 05)" data={data.danger_signs ?? z} />
+        <BarBreakdown title="Place of neonatal death (Form 05)" data={data.place_of_death ?? z} />
       </div>
     </div>
   )
@@ -1461,7 +1466,10 @@ function SocialAutopsy({ socialAutopsy }: {
 // CIPRB and UNFPA. Decoding now happens once in mpdsr/code_labels.py, checked
 // against the deployed forms by mpdsr/test_code_labels.py.
 
-function MPDSRIndicators({ indicators }: { indicators: Record<string, Record<string, number>> | null }) {
+function MPDSRIndicators({ indicators, recordsByDistrict }: {
+  indicators: Record<string, Record<string, number>> | null
+  recordsByDistrict?: Record<string, number> | null
+}) {
   const ind = indicators ?? {}
   const z = {} as Record<string, number>
   return (
@@ -1488,7 +1496,9 @@ function MPDSRIndicators({ indicators }: { indicators: Record<string, Record<str
             in the backend means the monthly report and any export get the same
             vocabulary as the dashboard instead of each mapping its own. */}
         <DonutBreakdown title="1. Place of death"          data={ind.place_of_death ?? z} />
-        <DonutBreakdown title="2. Time of death (24h)"     data={ind.time_of_death ?? z} />
+        {/* 24h clock donut removed; Annual Report Figure-6 periods instead
+            (RCH review, confirmed 17 Aug 2026). */}
+        <Histogram      title="2. Time of maternal death"  data={ind.death_period ?? z} />
         <Histogram      title="3. Gestational week at death" data={ind.gestational_weeks ?? z} />
         <BarBreakdown   title="4. Antenatal care visits"   data={ind.anc_visits_count ?? z} ordered />
         {/* A visit COUNT, not a yes/no. The stat tile it used to use looked
@@ -1497,7 +1507,7 @@ function MPDSRIndicators({ indicators }: { indicators: Record<string, Record<str
         <BarBreakdown   title="5. Postnatal care visits"   data={ind.pnc_received ?? z} ordered />
         <DonutBreakdown title="6. Mode of delivery"        data={ind.mode_of_delivery ?? z} />
         <StatTile       title="7. Delivery outcome"        data={ind.delivery_outcome ?? z} highlight="Live birth" />
-        <DonutBreakdown title="8. Place of delivery"       data={ind.place_of_delivery ?? z} />
+        <BarBreakdown   title="8. Place of delivery"       data={ind.place_of_delivery ?? z} />
         <BarBreakdown   title="9. Person assisted delivery" data={ind.person_assisted_delivery ?? z} />
         <Histogram      title="10. Maternal age distribution" data={ind.maternal_age ?? z} />
         {/* No F-01/F-04 field feeds this yet, so it rendered as a
@@ -1505,6 +1515,7 @@ function MPDSRIndicators({ indicators }: { indicators: Record<string, Record<str
         {Object.values(ind.time_death_after_birth_hours ?? {}).some((v) => v > 0) && (
           <Histogram title="11. Time of death after birth" data={ind.time_death_after_birth_hours ?? z} />
         )}
+        <BarBreakdown   title="12. Review records by district" data={recordsByDistrict ?? z} />
       </div>
     </div>
   )

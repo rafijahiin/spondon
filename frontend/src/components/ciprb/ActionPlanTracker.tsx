@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { AlertTriangle, ListChecks } from 'lucide-react'
+import { ListChecks } from 'lucide-react'
 import { api } from '@/api/client'
 import { SourceChip } from '@/components/ui/SourceChip'
 import { DataUnavailable } from '@/components/ciprb/DataUnavailable'
@@ -134,9 +134,9 @@ export function ActionPlanTracker({ districts }: { districts?: readonly string[]
           <span className="dot" style={{ background: CIPRB_ORANGE }} />
           MPDSR RESPONSE PLAN · IMPLEMENTATION TRACKER
         </div>
-        <h2 className="section-title" style={{ margin: '8px 0 2px', display: 'flex', alignItems: 'center', gap: 10 }}>
+        <h2 className="section-title" style={{ margin: '8px 0 2px', display: 'flex', alignItems: 'center', gap: 10, fontWeight: 800 }}>
           <ListChecks size={22} style={{ color: CIPRB_ORANGE, flexShrink: 0 }} />
-          Are the agreed actions getting done?
+          MPDSR Response Plan · Implementation Tracker
         </h2>
         <p className="section-sub" style={{ margin: 0 }}>
           Every action a district committee agrees in CIPRB-10 is tracked by its own ID; completion advances as they update it.
@@ -178,7 +178,7 @@ export function ActionPlanTracker({ districts }: { districts?: readonly string[]
     )
   }
 
-  const { overall_pct, total, overdue, by_status, by_district, by_section, actions } = data
+  const { overall_pct, total, by_status, by_district, by_section, actions } = data
 
   return (
     <div>
@@ -188,7 +188,7 @@ export function ActionPlanTracker({ districts }: { districts?: readonly string[]
       <div className="card" style={{ padding: '18px 24px', marginBottom: 14, display: 'grid', gridTemplateColumns: 'auto 1fr auto', gap: 22, alignItems: 'center', borderLeft: `5px solid ${compColor(overall_pct)}` }}>
         <div>
           <div className="mono" style={{ fontSize: 10, color: 'var(--muted)', letterSpacing: '0.08em', fontWeight: 700, marginBottom: 4 }}>
-            CUMULATIVE COMPLETION
+            CUMULATIVE COMPLETION OF RESPONSE PLAN
           </div>
           <div style={{ fontSize: 46, fontWeight: 800, color: compColor(overall_pct), fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em', lineHeight: 1 }}>
             {overall_pct}%
@@ -198,12 +198,6 @@ export function ActionPlanTracker({ districts }: { districts?: readonly string[]
           <div>
             <div style={{ fontSize: 26, fontWeight: 800, color: 'var(--ink)', fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>{total}</div>
             <div style={{ fontSize: 12, color: 'var(--muted)' }}>actions tracked</div>
-          </div>
-          <div>
-            <div style={{ fontSize: 26, fontWeight: 800, color: overdue > 0 ? '#ED5B7E' : 'var(--ink)', fontVariantNumeric: 'tabular-nums', lineHeight: 1, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-              {overdue > 0 && <AlertTriangle size={20} />}{overdue}
-            </div>
-            <div style={{ fontSize: 12, color: 'var(--muted)' }}>overdue</div>
           </div>
         </div>
         <div style={{ minWidth: 220, maxWidth: 340, paddingLeft: 22, borderLeft: '1px solid var(--hair)' }}>
@@ -243,7 +237,7 @@ export function ActionPlanTracker({ districts }: { districts?: readonly string[]
               fontVariantNumeric: 'tabular-nums',
             }}>
               ({actions.length.toLocaleString()} tracked
-              {overdue > 0 ? `, ${overdue.toLocaleString()} overdue` : ''})
+              )
             </span>
           </span>
           <span className="mono" style={{

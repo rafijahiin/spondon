@@ -501,8 +501,9 @@ DISTRICT_ACTION_CODE = {
 
 class ActionSection(models.TextChoices):
     SYSTEM_STRENGTHENING = 'system_strengthening', 'MPDSR System Strengthening'
-    COMMUNITY_VA = 'community_va', 'Common modifiable factors (Community VA)'
-    FACILITY_DR = 'facility_dr', 'Common modifiable factors (Facility DR)'
+    # Display renamed per RCH review (Tanjina, 17 Aug 2026) — codes unchanged.
+    COMMUNITY_VA = 'community_va', 'Common Modifiable Factor (Community)'
+    FACILITY_DR = 'facility_dr', 'Common Modifiable Factor (Facility)'
 
 
 class ActionStatus(models.TextChoices):
