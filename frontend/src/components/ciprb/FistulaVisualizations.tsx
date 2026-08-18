@@ -41,6 +41,119 @@ export interface CampaignAgg {
   date_from: string | null
   date_to: string | null
   by_upazila: CampaignUpazila[]
+  // Q1/Q2 paper archive (RCH request, 17 Aug 2026) — fixed figures.
+  archive_rows?: ArchiveRow[]
+}
+
+interface ArchiveRow {
+  quarter: 'Q1' | 'Q2'
+  district: string
+  upazila: string
+  start: string | null
+  end: string | null
+  chw: number | null
+  unions: number | null
+  awareness: number | null
+  courtyard: number | null
+  households: number | null
+  population: number | null
+  suspected: number | null
+}
+
+/** Q1 + Q2 merged campaign table — CIPRB's paper-era compilation, colour-coded
+ *  (quarter chips + population heat). Fixed archive figures, not live records. */
+function CampaignArchiveTable({ rows }: { rows: ArchiveRow[] }) {
+  if (!rows.length) return null
+  const maxPop = Math.max(1, ...rows.map((r) => r.population ?? 0))
+  const heat = (v: number | null) => {
+    const t = (v ?? 0) / maxPop
+    return `rgba(232, 86, 43, ${0.06 + t * 0.34})`
+  }
+  const qChip = (q: string) => (
+    <span style={{
+      fontSize: 10.5, fontWeight: 700, borderRadius: 6, padding: '2px 8px',
+      background: q === 'Q1' ? '#EDF1F5' : '#FDEDE5',
+      color: q === 'Q1' ? '#33475C' : '#C43F17',
+    }}>{q}</span>
+  )
+  const fmtN = (v: number | null) => (v === null ? '–' : v.toLocaleString())
+  const totals = {
+    chw: rows.reduce((a, r) => a + (r.chw ?? 0), 0),
+    awareness: rows.reduce((a, r) => a + (r.awareness ?? 0), 0),
+    courtyard: rows.reduce((a, r) => a + (r.courtyard ?? 0), 0),
+    households: rows.reduce((a, r) => a + (r.households ?? 0), 0),
+    population: rows.reduce((a, r) => a + (r.population ?? 0), 0),
+    suspected: rows.reduce((a, r) => a + (r.suspected ?? 0), 0),
+  }
+  const th = (label: string, right = true) => (
+    <th key={label} style={{
+      textAlign: right ? 'right' : 'left', padding: '10px 12px', fontSize: 10.5,
+      letterSpacing: '.05em', color: '#6b7280', whiteSpace: 'nowrap',
+      borderBottom: '1px solid rgba(19,22,25,0.14)', background: '#f7f9fc',
+    }}>{label}</th>
+  )
+  const td = (v: string, opts: { right?: boolean; bg?: string; bold?: boolean } = {}) => (
+    <td style={{
+      padding: '8px 12px', textAlign: opts.right === false ? 'left' : 'right',
+      fontVariantNumeric: 'tabular-nums', fontWeight: opts.bold ? 700 : 400,
+      background: opts.bg, borderBottom: '1px solid rgba(19,22,25,0.10)',
+      whiteSpace: 'nowrap',
+    }}>{v}</td>
+  )
+  return (
+    <div className="card campaign-atlas" style={{ padding: 0, overflow: 'hidden', marginTop: 16 }}>
+      <div style={{ background: '#ffffff', padding: 16, color: '#111827' }}>
+        <div style={{ fontSize: 15, fontWeight: 700 }}>
+          Fistula Campaign · Quarter 1 + Quarter 2, merged
+        </div>
+        <div style={{ fontSize: 11.5, color: '#6b7280', marginBottom: 10 }}>
+          Campaign archive (paper records, Feb to May 2026, compiled by CIPRB RCH) ·
+          fixed figures, not live submissions · population column shaded by size ·
+          blank cells were blank in the source file
+        </div>
+        <div style={{ overflow: 'auto', border: '1px solid #e5e7eb', borderRadius: 8 }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5, color: '#111827' }}>
+            <thead><tr>
+              {th('DISTRICT', false)}{th('UPAZILA', false)}{th('QUARTER')}
+              {th('DATES')}{th('CHW')}{th('UNIONS')}{th('AWARENESS')}
+              {th('COURTYARD')}{th('HOUSEHOLDS')}{th('POPULATION')}{th('SUSPECTED')}
+            </tr></thead>
+            <tbody>
+              {rows.map((r, i) => (
+                <tr key={i}>
+                  {td(r.district, { right: false, bold: true })}
+                  {td(r.upazila, { right: false })}
+                  <td style={{ padding: '8px 12px', textAlign: 'right',
+                               borderBottom: '1px solid rgba(19,22,25,0.10)' }}>{qChip(r.quarter)}</td>
+                  {td(r.start && r.end ? `${r.start.slice(5)} to ${r.end.slice(5)}` : '–')}
+                  {td(fmtN(r.chw))}
+                  {td(fmtN(r.unions))}
+                  {td(fmtN(r.awareness))}
+                  {td(fmtN(r.courtyard))}
+                  {td(fmtN(r.households))}
+                  {td(fmtN(r.population), { bg: heat(r.population), bold: true })}
+                  {td(fmtN(r.suspected))}
+                </tr>
+              ))}
+              <tr>
+                {td('TOTAL', { right: false, bold: true })}
+                {td(`${rows.length} campaigns`, { right: false })}
+                {td('')}
+                {td('')}
+                {td(totals.chw.toLocaleString(), { bold: true })}
+                {td('')}
+                {td(totals.awareness.toLocaleString(), { bold: true })}
+                {td(totals.courtyard.toLocaleString(), { bold: true })}
+                {td(totals.households.toLocaleString(), { bold: true })}
+                {td(totals.population.toLocaleString(), { bg: heat(maxPop), bold: true })}
+                {td(totals.suspected.toLocaleString(), { bold: true })}
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 interface AggregateData {
@@ -389,6 +502,7 @@ export function FistulaVisualizations({
             <div style={{ marginTop: 16 }}>
               <FistulaCampaignMap rows={agg.campaign.by_upazila} />
             </div>
+            <CampaignArchiveTable rows={agg.campaign.archive_rows ?? []} />
             <p style={{ fontSize: 11.5, color: 'var(--muted)', margin: '10px 2px 0' }}>
               Campaign tallies are the field team&rsquo;s own day counts and are
               reported separately from the patient registry below, so no case is

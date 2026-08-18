@@ -313,6 +313,7 @@ class CIPRBFistulaDailyCampaignWebhookTest(TestCase):
         self.assertEqual(FistulaCampaign.objects.count(), 1)
 
 
+@override_settings(FISTULA_CAMPAIGN_ARCHIVE=False)  # archive overlay tested separately
 class CampaignVsCaseRegistryTest(TestCase):
     """The 'Fistula Campaign' panel must report the CAMPAIGN FORM, never the
     case registry wearing a campaign label (CIPRB meeting, 3 Aug 2026: the two
@@ -389,6 +390,7 @@ class CampaignVsCaseRegistryTest(TestCase):
         self.assertEqual(camp['households'], 201)
 
 
+@override_settings(FISTULA_CAMPAIGN_ARCHIVE=False)  # archive overlay tested separately
 class UpazilaNameFoldingTest(TestCase):
     """Field staff spell one upazila several ways in a single week. The map and
     the table must show ONE row per real upazila (Rafi, 3 Aug 2026)."""
@@ -440,3 +442,36 @@ class UpazilaNameFoldingTest(TestCase):
         self._add('Khagrachari', 'Ramgarh', 4)
         self._add('Sirajganj', 'Ramgarh', 4)
         self.assertEqual(len(self._rows()), 2)
+
+
+@override_settings(FISTULA_CAMPAIGN_ARCHIVE=True)
+class CampaignArchiveOverlayTest(TestCase):
+    """Q1/Q2 paper archive (RCH request, 17 Aug 2026): archive rows appear in
+    by_upazila tagged source='archive', win over live rows for the same
+    upazila, and the campaign totals include them."""
+    def setUp(self):
+        from accounts.models import User
+        from rest_framework.test import APIClient
+        self.user = User.objects.create_user(
+            email='dev2@x.org', password='Str0ng-Passw0rd-2026', full_name='Dev',
+            organisation='CIPRB', role='developer')
+        self.c = APIClient(); self.c.force_authenticate(self.user)
+
+    def test_archive_rows_present_and_win(self):
+        from fistula.models import FistulaCampaign
+        FistulaCampaign.objects.create(
+            district='Kurigram', upazila='Chilmari',
+            campaign_date=datetime.date(2026, 5, 10),
+            households_visited=99999, population_covered=1,
+            approval_status='APPROVED')
+        r = self.c.get('/api/fistula/aggregates/')
+        camp = r.json()['campaign']
+        rows = {x['upazila'].lower(): x for x in camp['by_upazila']}
+        chil = rows['chilmari']
+        self.assertEqual(chil['source'], 'archive')
+        self.assertEqual(chil['population'], 57380)   # archive wins over live 1
+        self.assertIn('Q2', chil['quarters'])
+        self.assertEqual(rows['panchari']['population'], 31025)  # Q1-only upazila
+        self.assertEqual(camp['population'],
+                         sum(x['population'] or 0 for x in camp['by_upazila']))
+        self.assertEqual(len(camp['archive_rows']), 24)

@@ -354,7 +354,60 @@ def fistula_aggregates(request):
         g['date_from'] = min(dates).isoformat() if dates else None
         g['date_to'] = max(dates).isoformat() if dates else None
         by_upazila.append(g)
-    by_upazila.sort(key=lambda g: (-g['households'], g['district'], g['upazila']))
+    # ── Q1/Q2 paper-archive overlay (RCH request, confirmed 17 Aug 2026) ─────
+    # Archive figures WIN for their upazila (CIPRB's signed compilation); live
+    # daily rows stay authoritative only where the archive is silent. Rows are
+    # tagged source/quarters so the map and table can label provenance.
+    from django.conf import settings as _settings
+    from .campaign_archive import CAMPAIGN_ARCHIVE
+    from collections import defaultdict
+    _archive_on = getattr(_settings, 'FISTULA_CAMPAIGN_ARCHIVE', True)
+    _archive_rows = CAMPAIGN_ARCHIVE if _archive_on else []
+    arch = defaultdict(lambda: {'quarters': set(), 'households': 0,
+                                'population': 0, 'suspected': 0,
+                                'sessions': 0, 'reports': 0,
+                                'dates': [], 'district': '', 'upazila': ''})
+    for a in _archive_rows:
+        k = canon_pair(a['district'], a['upazila'])
+        g = arch[k]
+        g['quarters'].add(a['quarter'])
+        g['district'], g['upazila'] = a['district'], a['upazila']
+        g['households'] += a['households'] or 0
+        g['population'] += a['population'] or 0
+        g['suspected'] += a['suspected'] or 0
+        g['sessions'] += (a['awareness'] or 0) + (a['courtyard'] or 0)
+        g['reports'] += 1
+        for d in (a['start'], a['end']):
+            if d: g['dates'].append(d)
+    live_by_key = {g['key']: g for g in by_upazila}
+    for k, a in arch.items():
+        row = live_by_key.get(k)
+        if row is None:
+            row = {'key': k, 'dkey': canon(a['district']),
+                   'district': a['district'], 'upazila': a['upazila'],
+                   'reports': 0, 'spellings': [a['upazila']],
+                   'gps_lat': None, 'gps_lng': None, 'gps_rows': 0,
+                   'confirmed': 0, 'referred': 0,
+                   'date_from': None, 'date_to': None}
+            by_upazila.append(row)
+        row['households'] = a['households']
+        row['population'] = a['population']
+        row['suspected'] = a['suspected']
+        row['source'] = 'archive'
+        row['quarters'] = sorted(a['quarters'])
+        row['date_from'] = min(a['dates']) if a['dates'] else row.get('date_from')
+        row['date_to'] = max(a['dates']) if a['dates'] else row.get('date_to')
+    for g in by_upazila:
+        g.setdefault('source', 'live')
+        g.setdefault('quarters', [])
+    # Totals now come from the merged rows so tiles, map and table agree.
+    camp_sum['households'] = sum(g['households'] or 0 for g in by_upazila)
+    camp_sum['population'] = sum(g['population'] or 0 for g in by_upazila)
+    camp_sum['suspected'] = sum(g['suspected'] or 0 for g in by_upazila)
+    camp_sum['sessions'] = ((camp_sum['sessions'] or 0)
+                            + sum(a['sessions'] for a in arch.values()))
+    by_upazila.sort(key=lambda g: (-(g['population'] or 0),
+                                   g['district'], g['upazila']))
     dates = [c for c in camp_qs.values_list('campaign_date', flat=True) if c]
     campaign = {
         'reports': camp_qs.count(),
@@ -372,6 +425,7 @@ def fistula_aggregates(request):
         'date_from': min(dates).isoformat() if dates else None,
         'date_to': max(dates).isoformat() if dates else None,
         'by_upazila': by_upazila,
+        'archive_rows': _archive_rows,
     }
 
     return Response({

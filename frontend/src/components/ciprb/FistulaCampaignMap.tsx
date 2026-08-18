@@ -34,6 +34,8 @@ export interface CampaignUpazila {
   reports: number
   households: number
   population: number
+  source?: 'live' | 'archive'
+  quarters?: string[]
   suspected: number
   confirmed: number
   referred: number
@@ -99,9 +101,10 @@ export function FistulaCampaignMap({ rows }: { rows: CampaignUpazila[] }) {
   }, [rows])
   const activeDkeys = useMemo(() => new Set(rows.map((r) => r.dkey)), [rows])
 
-  const maxHh = Math.max(1, ...rows.map((r) => r.households || 0))
-  const classOf = (hh: number) =>
-    Math.min(RAMP.length - 1, Math.floor(((hh || 0) / maxHh) * RAMP.length))
+  // Shaded by POPULATION covered across Q1+Q2+live (RCH request, 17 Aug 2026).
+  const maxPop = Math.max(1, ...rows.map((r) => r.population || 0))
+  const classOf = (v: number) =>
+    Math.min(RAMP.length - 1, Math.floor(((v || 0) / maxPop) * RAMP.length))
 
   // Upazila overlay: only the campaign's upazilas are drawn on top.
   const overlay = useMemo(() => {
@@ -148,7 +151,7 @@ export function FistulaCampaignMap({ rows }: { rows: CampaignUpazila[] }) {
   const overlayStyle = (feature?: GeoJSON.Feature): PathOptions => {
     const row = byKey.get(String((feature?.properties as UProps)?.key ?? ''))
     return {
-      fillColor: row ? RAMP[classOf(row.households)] : NO_DATA,
+      fillColor: row ? RAMP[classOf(row.population)] : NO_DATA,
       fillOpacity: 0.95,
       color: '#7a3300', weight: 1.1,
     }
@@ -161,8 +164,8 @@ export function FistulaCampaignMap({ rows }: { rows: CampaignUpazila[] }) {
     layer.on('mouseout', () => (layer as L.Path).setStyle({ weight: 1.1, color: '#7a3300' }))
     ;(layer as L.Path).bindTooltip(
       `<b>${row.upazila}</b> · ${row.district}<br/>`
-      + `Days: <b>${row.reports}</b> · Households: <b>${fmt(row.households)}</b><br/>`
-      + `Population: <b>${fmt(row.population)}</b> · Suspected: <b>${row.suspected || 0}</b>`
+      + `Population covered: <b>${fmt(row.population)}</b> · Households: <b>${fmt(row.households)}</b><br/>`
+      + `${(row as { quarters?: string[] }).quarters?.length ? 'Quarter: <b>' + (row as { quarters?: string[] }).quarters!.join('+') + '</b> · ' : ''}Suspected: <b>${row.suspected || 0}</b>`
       + (row.spellings.length > 1
         ? `<br/><span style="color:#6b7280">Recorded as: ${row.spellings.join(', ')}</span>`
         : ''),
@@ -177,7 +180,7 @@ export function FistulaCampaignMap({ rows }: { rows: CampaignUpazila[] }) {
   // classed swatch rows.
   const legend = RAMP.map((c, i) => ({
     color: c,
-    label: `${fmt(Math.round((i / RAMP.length) * maxHh) + (i ? 1 : 0))}–${fmt(Math.round(((i + 1) / RAMP.length) * maxHh))}`,
+    label: `${fmt(Math.round((i / RAMP.length) * maxPop) + (i ? 1 : 0))}-${fmt(Math.round(((i + 1) / RAMP.length) * maxPop))}`,
   }))
 
   return (
@@ -190,7 +193,7 @@ export function FistulaCampaignMap({ rows }: { rows: CampaignUpazila[] }) {
       <div style={{ background: '#ffffff', padding: 16, color: '#111827' }}>
         <div style={{ marginBottom: 8 }}>
           <div style={{ fontSize: 15, fontWeight: 700 }}>
-            Campaign coverage — households visited, by upazila
+            Campaign coverage · population covered, by upazila (Q1 + Q2 + live)
           </div>
           <div style={{ fontSize: 11.5, color: '#6b7280' }}>
             Hover an upazila for its numbers · click to zoom · grey districts had no campaign activity
@@ -242,7 +245,7 @@ export function FistulaCampaignMap({ rows }: { rows: CampaignUpazila[] }) {
             boxShadow: '0 1px 4px rgba(0,0,0,0.12)',
           }}>
             <div style={{ fontWeight: 700, marginBottom: 5, fontSize: 10.5, color: '#374151' }}>
-              Households visited
+              Population covered
             </div>
             {legend.map((c) => (
               <div key={c.color} style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
@@ -266,7 +269,7 @@ export function FistulaCampaignMap({ rows }: { rows: CampaignUpazila[] }) {
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
           <thead>
             <tr>
-              {['UPAZILA', 'DAYS', 'HOUSEHOLDS', 'POPULATION', 'SUSPECTED'].map((c, i) => (
+              {['UPAZILA', 'QUARTER', 'POPULATION', 'HOUSEHOLDS', 'SUSPECTED'].map((c, i) => (
                 <th key={c} style={{
                   textAlign: i === 0 ? 'left' : 'right',
                   padding: i === 0 ? '10px 16px' : '10px 14px',
@@ -288,11 +291,19 @@ export function FistulaCampaignMap({ rows }: { rows: CampaignUpazila[] }) {
                       : ''}
                   </div>
                 </td>
-                {[r.reports, r.households, r.population, r.suspected].map((v, i) => (
+                <td style={{ padding: '9px 14px', textAlign: 'right',
+                             borderBottom: '1px solid rgba(19,22,25,0.14)' }}>
+                  <span style={{
+                    fontSize: 10.5, fontWeight: 700, borderRadius: 6, padding: '2px 7px',
+                    background: r.source === 'archive' ? '#FDEDE5' : '#EDF1F5',
+                    color: r.source === 'archive' ? '#C43F17' : '#33475C',
+                  }}>{r.quarters?.length ? r.quarters.join('+') : 'LIVE'}</span>
+                </td>
+                {[r.population, r.households, r.suspected].map((v, i) => (
                   <td key={i} style={{
                     padding: '9px 14px', textAlign: 'right',
                     fontVariantNumeric: 'tabular-nums',
-                    fontWeight: i === 1 ? 650 : 400,
+                    fontWeight: i === 0 ? 650 : 400,
                     borderBottom: '1px solid rgba(19,22,25,0.14)',
                   }}>{fmt(v)}</td>
                 ))}
