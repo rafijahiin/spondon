@@ -1036,9 +1036,14 @@ def handle_ciprb_mpdsr_action_plan(payload, lat, lng):
     # ── New plan — register ONE action, keyed on the worker-typed action_id. ──
     if not district:
         return HttpResponse('Bad Request — district required', status=400)
+    # The action id may be TYPED (older form versions, and the field worker who
+    # already knows the number) or left BLANK, in which case the server issues
+    # the next free one for the district. Blank used to be a 400: Rina in
+    # Sunamganj could only guess, typed SU-001, and the duplicate rule blocked
+    # her (2026-08-20). No worker can know which serials are taken, so guessing
+    # is not a workable design.
     code = _norm_id(payload.get('action_id'))
-    if not code:
-        return HttpResponse('Bad Request — action_id required', status=400)
+    auto_id = not code
     activity = _s(payload.get('act_activity'))
     if not activity:
         return HttpResponse('Bad Request — activity required', status=400)
@@ -1051,6 +1056,11 @@ def handle_ciprb_mpdsr_action_plan(payload, lat, lng):
     for attempt in range(3):
         try:
             with transaction.atomic():
+                if auto_id:
+                    # Allocate inside the transaction, and re-allocate on every
+                    # retry: a concurrent plan may have taken the number that
+                    # this attempt computed.
+                    code = MPDSRAction.next_action_id(district)
                 act = _lookup(code)
                 is_new = act is None
                 if not is_new:

@@ -285,3 +285,60 @@ class ModifiableFactorTest(TestCase):
         row = next(a for a in res.json()['actions'] if a['action_id'] == 'DH-106')
         self.assertEqual(row['sub_category'], 'home_delivery_tba')
         self.assertEqual(row['sub_category_label'], 'Home delivery by TBA')
+
+
+class ServerIssuedActionIdTest(TestCase):
+    """A blank action_id must be issued by the server, not rejected.
+
+    Rina in Sunamganj could only guess a serial, typed SU-001, and the form's
+    duplicate rule blocked her because SU-001 to SU-023 already existed
+    (2026-08-20). No field worker can know which serials a district has used,
+    so the server now allocates the next free one.
+    """
+    def _blank(self, district='sunamganj', who='Rina', sub_id='B1',
+               activity='Notify maternal deaths within 24 hours'):
+        return handle_ciprb_mpdsr_action_plan({
+            'ap_mode': 'new_plan',
+            'district': district,
+            'action_id': '',
+            'act_activity': activity,
+            'rp_section': 'system_strengthening',
+            'enumerator_name': who,
+            '_id': sub_id,
+            '_submitted_by': 'kobo',
+        }, None, None)
+
+    def test_blank_id_is_issued_not_rejected(self):
+        resp = self._blank()
+        self.assertEqual(resp.status_code, 200, resp.content)
+        act = MPDSRAction.objects.get()
+        self.assertEqual(act.action_id, 'SU-001')
+        self.assertEqual(act.district, 'Sunamganj')
+        self.assertEqual(act.creator_name, 'Rina')
+
+    def test_issued_id_continues_after_existing_serials(self):
+        for n in range(1, 24):
+            MPDSRAction.objects.create(action_id='SU-%03d' % n,
+                                       district='Sunamganj', organisation='CIPRB',
+                                       activity='existing %d' % n)
+        resp = self._blank()
+        self.assertEqual(resp.status_code, 200, resp.content)
+        self.assertEqual(
+            MPDSRAction.objects.get(creator_name='Rina').action_id, 'SU-024')
+
+    def test_two_blank_submissions_get_different_ids(self):
+        self._blank(sub_id='B1', who='Rina')
+        self._blank(sub_id='B2', who='Karim', activity='Second action')
+        ids = sorted(MPDSRAction.objects.values_list('action_id', flat=True))
+        self.assertEqual(ids, ['SU-001', 'SU-002'])
+
+    def test_typed_id_from_an_older_phone_still_works(self):
+        resp = _new_plan('SU-050', district='sunamganj', who='Rina', sub_id='T1')
+        self.assertEqual(resp.status_code, 200, resp.content)
+        self.assertEqual(MPDSRAction.objects.get().action_id, 'SU-050')
+
+    def test_districts_number_independently(self):
+        self._blank(district='sunamganj', sub_id='B1')
+        self._blank(district='kurigram', sub_id='B2', who='Karim')
+        ids = set(MPDSRAction.objects.values_list('action_id', flat=True))
+        self.assertEqual(ids, {'SU-001', 'KU-001'})

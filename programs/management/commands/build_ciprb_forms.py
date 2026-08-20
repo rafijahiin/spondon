@@ -3538,11 +3538,8 @@ def _response_plan_survey():
                     'What do you want to do?', 'আপনি কী করতে চান?', required='yes'))
 
     # ═══ MODE A — register ONE action (mirrors the fistula suspected stage:
-    #     the worker TYPES the action_id, the form shows the district-code
-    #     prefix + blocks duplicates; one action per submission, no repeat). ═══
-    NORM_AID = ("translate(normalize-space(${action_id}),"
-                "'abcdefghijklmnopqrstuvwxyz',"
-                "'ABCDEFGHIJKLMNOPQRSTUVWXYZ')")
+    #     the server ISSUES the action_id on submission; the form only shows the
+    #     district-code prefix; one action per submission, no repeat). ═══
     rows.append(_sr('begin_group', 'grp_new_plan', 'Register a new action',
                     'নতুন পদক্ষেপ নিবন্ধন', relevant="${ap_mode}='new_plan'"))
     # District-code prefix — UPPERCASE LETTER codes (Patuakhali=PA, Dhaka=DH),
@@ -3556,32 +3553,19 @@ def _response_plan_survey():
     rows.append(_sr('select_one rp_section', 'rp_section',
                     'Which table / section is this action from?',
                     'এই পদক্ষেপটি কোন টেবিল / বিভাগের?', required='yes'))
-    # The unique action ID — typed at registration (the fistula patient_code shape):
-    #   (1) regex anchors the FULL prefix (^<code>-<digits>$);
-    #   (2) pulldata(...)='' blocks re-using an action ID that already exists.
-    rows.append(_sr('text', 'action_id',
-        'Action ID (district letter code + 3-digit number, e.g. PA-001)',
-        'পদক্ষেপ আইডি (জেলার অক্ষর কোড + ৩ অঙ্ক, যেমন PA-001)',
-        required='yes',
-        # regex uppercases the typed value first, so 'pa-001' is accepted and
-        # stored canonical as PA-001 (the handler's _norm_id upper-cases too).
-        constraint=("regex(translate(normalize-space(.),"
-                    "'abcdefghijklmnopqrstuvwxyz','ABCDEFGHIJKLMNOPQRSTUVWXYZ'), "
-                    "concat('^', ${_act_dist_code}, '-[0-9]{3}$')) and "
-                    "pulldata('mpdsr_actions','activity','action_id'," + NORM_AID + ")=''"),
-        cmsg='⚠ Invalid or duplicate ID. It must be <district-letter-code>-<3 digits> '
-             '(e.g. PA-001, Dhaka = DH-001) and not already used. / '
-             'ভুল বা ডুপ্লিকেট আইডি — জেলার অক্ষর কোড + ৩ অঙ্ক হতে হবে এবং আগে ব্যবহৃত হওয়া যাবে না।',
-        hint='Format: your district letter code + a 3-digit serial. Patuakhali = PA-001, Dhaka = DH-001.'))
-    # Duplicate-ID soft warning — shows the activity already using this ID.
-    rows.append(_sr('calculate', '_act_dup',
-        calc=("pulldata('mpdsr_actions','activity','action_id'," + NORM_AID + ")")))
-    rows.append(_sr('note', '_act_dup_warn',
-        '⚠ This ID is already used for: ${_act_dup}. '
-        'Use a new number, or switch to "Update an existing action".',
-        '⚠ এই আইডি ইতিমধ্যে ব্যবহৃত: ${_act_dup}। '
-        'নতুন নম্বর দিন, অথবা "বিদ্যমান একটি পদক্ষেপ হালনাগাদ" বেছে নিন।',
-        relevant="${action_id}!='' and ${_act_dup}!=''"))
+    # The action ID is ISSUED BY THE SERVER, not typed. It used to be a required
+    # typed field guarded by a regex + duplicate check, which is unusable in the
+    # field: nobody can know which serials a district has already used. On
+    # 2026-08-20 a Sunamganj worker could only guess, typed SU-001, and was
+    # blocked because SU-001 to SU-023 already existed. The field is kept (so
+    # older phones that still send a typed ID keep working, and so the issued ID
+    # has a column to be written back into) but it is now optional and hidden
+    # behind a note.
+    rows.append(_sr('note', '_act_auto_id',
+        'The Action ID is created automatically when you submit, for example '
+        '${_act_dist_code}-024. You do not type it.',
+        'পদক্ষেপ আইডি জমা দেওয়ার পর স্বয়ংক্রিয়ভাবে তৈরি হবে (যেমন '
+        '${_act_dist_code}-024)। আপনাকে লিখতে হবে না।'))
     # The action's details (flat — one action per submission).
     rows.append(_sr('select_one rp_subcat', 'act_subcat',
         'Sub-category (System Strengthening only)',
