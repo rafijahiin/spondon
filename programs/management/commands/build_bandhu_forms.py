@@ -1062,22 +1062,12 @@ class Command(BaseCommand):
                 self.stdout.write('     uploading…')
                 api = f'{KOBO_BASE}/api/v2'
                 headers = {'Authorization': f'Token {token}'}
-                q = requests.get(f'{api}/assets/?q=settings__id_string:{f["id"]}',
-                                 headers=headers, timeout=30).json()
-                asset_uid = None
-                for a in q.get('results', []):
-                    if a.get('settings', {}).get('id_string') == f['id']:
-                        asset_uid = a.get('uid')
-                        break
-                if not asset_uid:
-                    allq = requests.get(f'{api}/assets/?limit=300', headers=headers, timeout=30).json()
-                    for a in allq.get('results', []):
-                        if (a.get('name') or '') == f['title']:
-                            asset_uid = a.get('uid')
-                            break
-                if not asset_uid:
-                    self.stdout.write(self.style.ERROR(
-                        f'    no Kobo asset for {f["id"]} — create a blank asset named "{f["title"]}" first.'))
+                from programs.kobo_assets import AssetNotFound, resolve_asset_uid
+                try:
+                    asset_uid = resolve_asset_uid(f['id'], f['title'], token,
+                                                  stdout=self.stdout)
+                except AssetNotFound as exc:
+                    self.stdout.write(self.style.ERROR('    ' + str(exc)))
                     continue
                 if _import_xlsform(path, asset_uid, token, self.stdout):
                     _deploy(asset_uid, token, self.stdout)

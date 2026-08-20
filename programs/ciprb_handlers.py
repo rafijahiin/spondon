@@ -112,6 +112,9 @@ from programs.bandhu_handlers import _writeback_kobo_id
 
 _FISTULA_ASSET_UID = _os.environ.get(
     'KOBO_ASSET_UID_FISTULA_QB', 'aH86Euq2AeJ8S9VYdry4PC')
+# CIPRB 10 (MPDSR Response Plan) — target of the issued-action-id write-back.
+_MPDSR_ACTION_ASSET_UID = _os.environ.get(
+    'KOBO_ASSET_UID_MPDSR_ACTION', 'auFCf7bfBDtrP6xeW5F2KJ')
 
 
 def _allocate_fistula_case(payload, district, name, tries=40):
@@ -1125,6 +1128,13 @@ def handle_ciprb_mpdsr_action_plan(payload, lat, lng):
                 act.add_audit_entry(user, 'created' if is_new else 're-registered',
                                     'plan %s · by %s' % (meeting_date or '', enum_name or user))
                 act.save()
+            if auto_id:
+                # Put the issued id on the Kobo record so the district can see
+                # its own Action ID without opening the dashboard. Best effort,
+                # in a daemon thread: a Kobo outage must never turn a saved
+                # action into a 500 that Kobo would then retry.
+                _writeback_kobo_id(_MPDSR_ACTION_ASSET_UID, sub_id, code,
+                                   field_path='action_id')
             return HttpResponse('OK — 1 action (%s)' % code, status=200)
         except IntegrityError:
             if attempt == 2:

@@ -11,6 +11,8 @@ from rest_framework.test import APIClient
 from accounts.models import Organisation, Role, User
 from mpdsr.models import (MPDSRAction, ActionStatus, STUB_ACTIVITY_SENTINEL,
                           DISTRICT_ACTION_CODE)
+from unittest import mock
+
 from programs.ciprb_handlers import handle_ciprb_mpdsr_action_plan
 from programs.management.commands.export_mpdsr_actions import build_csv
 
@@ -342,3 +344,37 @@ class ServerIssuedActionIdTest(TestCase):
         self._blank(district='kurigram', sub_id='B2', who='Karim')
         ids = set(MPDSRAction.objects.values_list('action_id', flat=True))
         self.assertEqual(ids, {'SU-001', 'KU-001'})
+
+
+class IssuedActionIdWriteBackTest(TestCase):
+    """The issued id must be written back onto the Kobo submission, or the
+    district can never see its own Action ID without the dashboard."""
+
+    def _blank(self, sub_id='W1'):
+        return handle_ciprb_mpdsr_action_plan({
+            'ap_mode': 'new_plan', 'district': 'sunamganj', 'action_id': '',
+            'act_activity': 'Notify maternal deaths', 'rp_section': 'system_strengthening',
+            'enumerator_name': 'Rina', '_id': sub_id, '_submitted_by': 'kobo',
+        }, None, None)
+
+    @mock.patch('programs.ciprb_handlers._writeback_kobo_id')
+    def test_issued_id_is_written_back(self, wb):
+        self._blank()
+        wb.assert_called_once()
+        args, kwargs = wb.call_args
+        self.assertEqual(args[1], 'W1')          # the Kobo submission id
+        self.assertEqual(args[2], 'SU-001')      # the issued action id
+        self.assertEqual(kwargs['field_path'], 'action_id')
+
+    @mock.patch('programs.ciprb_handlers._writeback_kobo_id')
+    def test_typed_id_is_not_written_back(self, wb):
+        _new_plan('SU-050', district='sunamganj', who='Rina', sub_id='T9')
+        wb.assert_not_called()
+
+    @mock.patch('programs.ciprb_handlers._writeback_kobo_id',
+                side_effect=RuntimeError('kobo down'))
+    def test_writeback_failure_does_not_lose_the_action(self, wb):
+        with self.assertRaises(RuntimeError):
+            self._blank()
+        # The action itself was committed before the write-back was attempted.
+        self.assertEqual(MPDSRAction.objects.count(), 1)

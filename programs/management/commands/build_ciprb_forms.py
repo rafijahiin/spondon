@@ -3561,6 +3561,11 @@ def _response_plan_survey():
     # older phones that still send a typed ID keep working, and so the issued ID
     # has a column to be written back into) but it is now optional and hidden
     # behind a note.
+    # Empty column that the server writes the ISSUED id back into, so the record
+    # in Kobo shows its Action ID after submission (the fistula form keeps
+    # patient_code_final for exactly the same reason). The worker never sees or
+    # types it; the handler reads it as blank and allocates.
+    rows.append(_sr('calculate', 'action_id', calc="''"))
     rows.append(_sr('note', '_act_auto_id',
         'The Action ID is created automatically when you submit, for example '
         '${_act_dist_code}-024. You do not type it.',
@@ -3925,6 +3930,9 @@ class Command(BaseCommand):
         parser.add_argument('--output-dir', default=OUTDIR)
         parser.add_argument('--upload', action='store_true',
             help='Upload to Kobo, create assets when missing, deploy.')
+        parser.add_argument('--allow-create', action='store_true',
+            help='Permit creating a NEW Kobo asset when none matches. Off by '
+                 'default: a silent create is what produced stray duplicate forms.')
         parser.add_argument('--only', default='',
             help='Build/deploy ONLY the form with this id (e.g. '
                  'ciprb_mpdsr_response_plan_v1). Avoids touching the others.')
@@ -3952,21 +3960,18 @@ class Command(BaseCommand):
                 f"  OK  {f['file']:55s}  {len(survey):3d} rows  id: {f['id']}"))
 
             if opts['upload']:
-                # Look up existing asset by form_id (id_string), create if absent.
+                # Resolve the EXISTING asset; never create one silently.
+                # See programs/kobo_assets.py for why the old id_string query
+                # could not work and how it created stray duplicate forms.
                 self.stdout.write('     uploading…')
-                api = f'{KOBO_BASE}/api/v2'
-                headers = {'Authorization': f'Token {token}'}
-                q = requests.get(
-                    f'{api}/assets/?q=settings__id_string:{f["id"]}',
-                    headers=headers, timeout=30).json()
-                asset_uid = None
-                for a in q.get('results', []):
-                    if a.get('settings', {}).get('id_string') == f['id']:
-                        asset_uid = a.get('uid')
-                        break
-                if not asset_uid:
-                    asset_uid = _create_asset(f['id'], f['title'], token, self.stdout)
-                if not asset_uid:
+                from programs.kobo_assets import AssetNotFound, resolve_asset_uid
+                try:
+                    asset_uid = resolve_asset_uid(
+                        f['id'], f['title'], token,
+                        allow_create=opts.get('allow_create', False),
+                        stdout=self.stdout)
+                except AssetNotFound as exc:
+                    self.stdout.write(self.style.ERROR('    ' + str(exc)))
                     continue
                 ok = _import_xlsform(path, asset_uid, token, self.stdout)
                 if ok:
