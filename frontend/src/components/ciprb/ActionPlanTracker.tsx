@@ -72,28 +72,37 @@ function Bars({ rows }: { rows: Rollup[] }) {
   )
 }
 
-// BY DISTRICT answers "how many actions has each district recorded?", so the
-// bar length is the COUNT, not the completion percentage (RCH review, 23 Aug
-// 2026). Completion stays on the row as a coloured percentage, and colours the
-// bar, so one panel still carries both volume and health.
+// BY DISTRICT is a plain bar chart of the number of actions each district has
+// recorded (RCH review, 23 Aug 2026). One bar carries ONE variable: the count.
+//
+// The first pass kept the old full-width grey track and tinted the bar by
+// completion. That read as a percentage bar with two variables fighting inside
+// it: a district on 22 actions and 9% completion showed a part-filled pink bar
+// that looked like "9% done" measured against a whole. No track, one colour,
+// and completion demoted to a coloured number on the right, so the bar means
+// exactly what the caption says it means.
 function CountBars({ rows }: { rows: Rollup[] }) {
   if (!rows.length) return <div style={{ fontSize: 12.5, color: 'var(--muted)' }}>—</div>
   const ranked = [...rows].sort((a, b) => b.n - a.n)
   const max = Math.max(...ranked.map((r) => r.n), 1)
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
       {ranked.map((r) => (
         <div key={r.key} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ width: 116, fontSize: 12.5, color: 'var(--ink-2)', textAlign: 'right', flexShrink: 0 }}>
+          <div style={{ width: 106, fontSize: 12.5, color: 'var(--ink-2)', textAlign: 'right', flexShrink: 0 }}>
             {r.key}
           </div>
-          <div style={{ flex: 1, height: 16, background: 'var(--hair-2)', borderRadius: 4, overflow: 'hidden' }}>
-            <div style={{ width: `${(r.n / max) * 100}%`, height: '100%', background: compColor(r.pct), transition: 'width .4s ease' }} />
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+            {/* minWidth keeps a one-action district visible instead of a sliver. */}
+            <div style={{
+              width: `${(r.n / max) * 100}%`, minWidth: 4, height: 15,
+              background: CIPRB_ORANGE, borderRadius: 3, transition: 'width .4s ease',
+            }} />
+            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)', fontVariantNumeric: 'tabular-nums' }}>
+              {r.n}
+            </div>
           </div>
-          <div style={{ width: 30, fontSize: 13, fontWeight: 700, color: 'var(--ink)', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
-            {r.n}
-          </div>
-          <div style={{ width: 40, fontSize: 11.5, color: compColor(r.pct), textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+          <div style={{ width: 42, fontSize: 11.5, color: compColor(r.pct), textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
             {r.pct}%
           </div>
         </div>
@@ -240,7 +249,7 @@ export function ActionPlanTracker({ districts }: { districts?: readonly string[]
         <div className="card" style={{ padding: '14px 18px' }}>
           <div className="mono" style={{ fontSize: 10, color: 'var(--muted)', letterSpacing: '0.08em', fontWeight: 700, marginBottom: 3 }}>BY DISTRICT</div>
           <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 12 }}>
-            Bar length is the number of actions recorded. The percentage on the right is that district&rsquo;s completion.
+            Bar length is the number of actions recorded. The percentage on the right is that district&rsquo;s completion, and is not what the bar measures.
           </div>
           <CountBars rows={by_district} />
         </div>
