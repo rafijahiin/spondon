@@ -564,7 +564,13 @@
     "saEmpty": "No social autopsies recorded yet — submissions to CIPRB 6 will populate this.",
     "saPlaceKicker": "Place of death",
     "saPlaceTitle": "Place of maternal death",
-    "saOtherKinds": "{{other}} further social autopsies reviewed a neonatal death or a stillbirth ({{neonatal}} neonatal, {{stillbirth}} stillbirth) and are not counted in this maternal figure."
+    "saOtherKinds": "{{other}} further social autopsies reviewed a neonatal death or a stillbirth ({{neonatal}} neonatal, {{stillbirth}} stillbirth) and are not counted in this maternal figure.",
+    "saKindKicker": "Type of death reviewed",
+    "saKindTitle": "Social autopsies by type",
+    "saKindMaternal": "Maternal death",
+    "saKindNeonatal": "Neonatal death",
+    "saKindStillbirth": "Stillbirth",
+    "saKindUnclassified": "Type not recorded"
   },
   "mpdsrMap": {
     "kicker": "GEOGRAPHIC COVERAGE · MPDSR INTERVENTION DISTRICTS",

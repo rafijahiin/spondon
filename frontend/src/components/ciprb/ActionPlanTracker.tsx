@@ -72,6 +72,36 @@ function Bars({ rows }: { rows: Rollup[] }) {
   )
 }
 
+// BY DISTRICT answers "how many actions has each district recorded?", so the
+// bar length is the COUNT, not the completion percentage (RCH review, 23 Aug
+// 2026). Completion stays on the row as a coloured percentage, and colours the
+// bar, so one panel still carries both volume and health.
+function CountBars({ rows }: { rows: Rollup[] }) {
+  if (!rows.length) return <div style={{ fontSize: 12.5, color: 'var(--muted)' }}>—</div>
+  const ranked = [...rows].sort((a, b) => b.n - a.n)
+  const max = Math.max(...ranked.map((r) => r.n), 1)
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      {ranked.map((r) => (
+        <div key={r.key} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ width: 116, fontSize: 12.5, color: 'var(--ink-2)', textAlign: 'right', flexShrink: 0 }}>
+            {r.key}
+          </div>
+          <div style={{ flex: 1, height: 16, background: 'var(--hair-2)', borderRadius: 4, overflow: 'hidden' }}>
+            <div style={{ width: `${(r.n / max) * 100}%`, height: '100%', background: compColor(r.pct), transition: 'width .4s ease' }} />
+          </div>
+          <div style={{ width: 30, fontSize: 13, fontWeight: 700, color: 'var(--ink)', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+            {r.n}
+          </div>
+          <div style={{ width: 40, fontSize: 11.5, color: compColor(r.pct), textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+            {r.pct}%
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 function StatusBreakdown({ rows, total }: { rows: StatusRow[]; total: number }) {
   const shown = rows.filter((r) => r.count > 0)
   if (!total) return null
@@ -208,8 +238,11 @@ export function ActionPlanTracker({ districts }: { districts?: readonly string[]
       {/* By district + by section */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 14, marginBottom: 14 }}>
         <div className="card" style={{ padding: '14px 18px' }}>
-          <div className="mono" style={{ fontSize: 10, color: 'var(--muted)', letterSpacing: '0.08em', fontWeight: 700, marginBottom: 12 }}>BY DISTRICT</div>
-          <Bars rows={by_district} />
+          <div className="mono" style={{ fontSize: 10, color: 'var(--muted)', letterSpacing: '0.08em', fontWeight: 700, marginBottom: 3 }}>BY DISTRICT</div>
+          <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 12 }}>
+            Bar length is the number of actions recorded. The percentage on the right is that district&rsquo;s completion.
+          </div>
+          <CountBars rows={by_district} />
         </div>
         <div className="card" style={{ padding: '14px 18px' }}>
           <div className="mono" style={{ fontSize: 10, color: 'var(--muted)', letterSpacing: '0.08em', fontWeight: 700, marginBottom: 12 }}>BY SECTION</div>

@@ -25,7 +25,7 @@ import { api } from '@/api/client'
 import { DataUnavailable } from '@/components/ciprb/DataUnavailable'
 import { SourceChip } from '@/components/ui/SourceChip'
 import type { MPDSRCase } from '@/types/index'
-import { BarBreakdown, DonutBreakdown, Histogram, StatTile } from './IndicatorCharts'
+import { BarBreakdown, DonutBreakdown, Histogram } from './IndicatorCharts'
 
 // ─── Aggregates fetched from /api/mpdsr/aggregates/ ─────────────────────────
 
@@ -136,10 +136,14 @@ interface AggregatesPayload {
     by_level: { community: number; facility: number }
     by_district: Record<string, number>
   }
-  // Social Autopsy (CIPRB 6) — maternal-death re-review.
+  // Social Autopsy (CIPRB 6) — maternal-death re-review. `total` is the
+  // MATERNAL subset; `by_kind` carries the whole sa_md cohort, which the
+  // by-type chart renders.
   social_autopsy?: {
     total: number
     place_of_death: Record<string, number>
+    all_kinds_total?: number
+    by_kind?: { maternal: number; neonatal: number; stillbirth: number; unclassified: number }
   }
 }
 
@@ -1221,16 +1225,11 @@ function FacilityDeepDive({ facility }: {
           data={facility.review_status}
           labels={REVIEW_STATUS_LABELS}
         />
-        <StatTile
-          title="Action plan documented"
-          kicker="Committee follow-through"
-          data={{
-            with_plan: facility.action_plan_coverage.with_plan,
-            without_plan: facility.action_plan_coverage.without_plan,
-          }}
-          highlight="with_plan"
-          labels={{ with_plan: 'With action plan', without_plan: 'No action plan yet' }}
-        />
+        {/* "Action plan documented" removed at RCH's request (23 Aug 2026).
+            Form 4 has no field the committees actually fill for it, so it sat
+            at 0% permanently and read as a programme failure rather than a
+            missing question. action_plan_coverage still ships in the aggregate
+            for the monthly report. */}
       </div>
     </div>
   )
@@ -1448,6 +1447,25 @@ function SocialAutopsy({ socialAutopsy }: {
             </div>
           )}
         </div>
+        {/* The three kinds of death this form reviews, split graphically at
+            RCH's request (23 Aug 2026). The headline count above stays
+            maternal-only, so this is the panel that shows the whole cohort. */}
+        <DonutBreakdown
+          title={t('mpdsrViz.saKindTitle')}
+          kicker={t('mpdsrViz.saKindKicker')}
+          data={{
+            maternal: data.by_kind?.maternal ?? data.total,
+            neonatal: data.by_kind?.neonatal ?? 0,
+            stillbirth: data.by_kind?.stillbirth ?? 0,
+            unclassified: data.by_kind?.unclassified ?? 0,
+          }}
+          labels={{
+            maternal: t('mpdsrViz.saKindMaternal'),
+            neonatal: t('mpdsrViz.saKindNeonatal'),
+            stillbirth: t('mpdsrViz.saKindStillbirth'),
+            unclassified: t('mpdsrViz.saKindUnclassified'),
+          }}
+        />
         <DonutBreakdown
           title={t('mpdsrViz.saPlaceTitle')}
           kicker={t('mpdsrViz.saPlaceKicker')}
@@ -1506,7 +1524,10 @@ function MPDSRIndicators({ indicators, recordsByDistrict }: {
             22" while the breakdown below it showed 19 women with visits. */}
         <BarBreakdown   title="5. Postnatal care visits"   data={ind.pnc_received ?? z} ordered />
         <DonutBreakdown title="6. Mode of delivery"        data={ind.mode_of_delivery ?? z} />
-        <StatTile       title="7. Delivery outcome"        data={ind.delivery_outcome ?? z} highlight="Live birth" />
+        {/* Was a single-ratio stat tile; RCH asked for a graphical split
+            instead of the numeric ratio (23 Aug 2026). All five outcomes
+            are mutually exclusive, so they read as one whole. */}
+        <DonutBreakdown title="7. Delivery outcome"        data={ind.delivery_outcome ?? z} />
         <BarBreakdown   title="8. Place of delivery"       data={ind.place_of_delivery ?? z} />
         <BarBreakdown   title="9. Person assisted delivery" data={ind.person_assisted_delivery ?? z} />
         <Histogram      title="10. Maternal age distribution" data={ind.maternal_age ?? z} />

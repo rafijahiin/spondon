@@ -92,7 +92,10 @@ export function FistulaIndicators({ districts }: { districts?: readonly string[]
         <BarBreakdown   title="10. Reasons for no institutional delivery" data={data.reasons_no_institutional_delivery} labels={L.reasons} />
         <Histogram      title="11. Time fistula occurred after delivery" data={data.time_duration_fistula_occurrence} />
         <Histogram      title="12. Duration of suffering"   data={data.duration_suffering} />
-        <StatTile       title="13. Outcome of last delivery" data={data.delivery_outcome} highlight="livebirth" labels={L.outcome} />
+        {/* Was a single-ratio stat tile; RCH asked for the split as a pie
+            (23 Aug 2026), so livebirth and stillbirth read against each
+            other rather than as one highlighted percentage. */}
+        <DonutBreakdown title="13. Outcome of last delivery" data={data.delivery_outcome} labels={L.outcome} />
         <DonutBreakdown title="14. Cause of fistula (type)" data={data.fistula_type_v2} labels={L.ftype} />
         <BarBreakdown   title="15. Cause of iatrogenic fistula" data={data.iatrogenic_cause} labels={L.iatro} />
         <DonutBreakdown title="16. Type of genital fistula" data={data.genital_fistula_type} labels={L.genital} />
