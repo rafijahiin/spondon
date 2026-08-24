@@ -3,8 +3,8 @@
  *
  * It mounts the REAL components (not copies) and feeds them fixtures through
  * the shared axios instance, so what renders here is what the dashboard
- * renders. Fixtures use the exact numbers from the RCH screenshots, so each
- * panel can be compared side by side with the version being corrected.
+ * renders. Fixtures carry the LIVE production figures, read from the API in
+ * an authenticated session, so a panel shot here matches the dashboard.
  *
  * Dev-only: reachable at /preview.html under `npm run dev`. It is not linked
  * from the app and never ships to Railway (vite builds index.html only).
@@ -23,32 +23,32 @@ const dist = (pairs: [string, number, number][]) =>
   pairs.map(([key, n, pct]) => ({ key, n, pct }))
 
 const ACTION_AGGREGATES = {
-  overall_pct: 41,
+  overall_pct: 40,
   total: 81,
-  overdue: 4,
+  overdue: 51,
   by_status: [
-    { status: 'implemented', label: 'Implemented', count: 26 },
-    { status: 'in_progress', label: 'In progress', count: 19 },
-    { status: 'delayed', label: 'Delayed', count: 7 },
-    { status: 'pending', label: 'Pending', count: 27 },
-    { status: 'dropped', label: 'Dropped', count: 2 },
+    { status: 'pending', label: 'Pending / not started', count: 1 },
+    { status: 'in_progress', label: 'In progress', count: 63 },
+    { status: 'implemented', label: 'Implemented', count: 17 },
+    { status: 'delayed', label: 'Delayed', count: 0 },
+    { status: 'dropped', label: 'Dropped', count: 0 },
   ],
-  // Exactly the figures in the RCH screenshot.
+  // Live production figures, read from the API in an authenticated session.
   by_district: dist([
     ['Kurigram', 29, 72], ['Sirajganj', 3, 67], ['Gaibandha', 8, 62],
     ['Noakhali', 5, 60], ['Sunamganj', 22, 9], ['Bhola', 3, 0],
     ['Sherpur', 11, 0],
   ]),
   by_section: dist([
-    ['Common modifiable factors (Community)', 13, 50],
+    ['Common Modifiable Factor (Community)', 13, 50],
     ['MPDSR System Strengthening', 59, 40],
-    ['Common modifiable factors (Facility)', 9, 31],
+    ['Common Modifiable Factor (Facility)', 9, 31],
   ]),
   actions: [],
 }
 
 const FISTULA_AGGREGATES = {
-  total: 149,
+  total: 162,
   age: { '20-24': 31, '25-29': 44, '30-34': 38, '35+': 36 },
   education: { no_education: 51, primary: 44, secondary: 38, higher_secondary: 16 },
   marital_status: { married: 118, separated: 14, divorced: 9, widowed: 8 },
@@ -61,8 +61,8 @@ const FISTULA_AGGREGATES = {
   reasons_no_institutional_delivery: { financial: 38, transport: 27, traditional: 21, no_idea: 12, other: 8 },
   time_duration_fistula_occurrence: { '<1 week': 63, '1-4 weeks': 48, '>1 month': 38 },
   duration_suffering: { '<1 year': 44, '1-5 years': 61, '>5 years': 44 },
-  // The panel RCH asked to turn into a pie: 79 livebirth / 70 stillbirth.
-  delivery_outcome: { livebirth: 79, stillbirth: 70 },
+  // The panel RCH asked to turn into a pie.
+  delivery_outcome: { stillbirth: 74, livebirth: 81 },
   fistula_type_v2: { obstetric: 108, iatrogenic: 27, traumatic: 9, congenital: 5 },
   iatrogenic_cause: { hysterectomy: 14, csection: 10, laparoscopy: 3 },
   genital_fistula_type: { vvf: 91, rvf: 32, ureterovaginal: 14, urethrovaginal: 12 },
@@ -86,11 +86,11 @@ const MPDSR_AGGREGATES = {
     Noakhali: 14, Sirajganj: 11, Bhola: 8,
   },
   facility: {
-    total: 22,
-    admission_to_death: { '<6h': 7, '6-24h': 6, '1-3 days': 5, '>3 days': 4 },
-    review_status: { reported: 5, under_review: 6, committee_review: 7, closed: 4 },
+    total: 8,
+    admission_to_death: { '<1 day': 6, '1-2 days': 2, '3-7 days': 0, '7+ days': 0, Unknown: 0 },
+    review_status: { reported: 8 },
     // Still returned by the API; the tile that displayed it has been removed.
-    action_plan_coverage: { with_plan: 0, without_plan: 22 },
+    action_plan_coverage: { with_plan: 0, without_plan: 8 },
   },
   neonatal: {
     total: 59,
@@ -103,12 +103,12 @@ const MPDSR_AGGREGATES = {
     by_level: { community: 80, facility: 68 },
     by_district: { Kurigram: 41, Sunamganj: 32, Sherpur: 22, Gaibandha: 19, Noakhali: 15, Sirajganj: 11, Bhola: 8 },
   },
-  // The panel RCH asked to split by type: maternal 45, neonatal 22, stillbirth 3.
+  // The panel RCH asked to split by type.
   social_autopsy: {
-    total: 45,
-    place_of_death: { home: 21, facility: 17, on_the_way: 7 },
-    all_kinds_total: 70,
-    by_kind: { maternal: 45, neonatal: 22, stillbirth: 3, unclassified: 0 },
+    total: 46,
+    place_of_death: { 'Health facility': 46 },
+    all_kinds_total: 72,
+    by_kind: { maternal: 46, neonatal: 23, stillbirth: 3, unclassified: 0 },
   },
   indicators: {
     place_of_death: { Home: 31, 'Government facility': 24, 'Private facility': 12, 'On the way': 9 },
@@ -119,7 +119,7 @@ const MPDSR_AGGREGATES = {
     mode_of_delivery: { 'Normal vaginal': 44, 'Caesarean section': 26, 'Assisted vaginal': 6 },
     // The stat tile RCH asked to render graphically.
     delivery_outcome: {
-      'Live birth': 41, 'Not delivered': 18, Stillbirth: 12, Abortion: 3, Other: 2,
+      Stillbirth: 12, 'Live birth': 45, 'Not delivered': 18, Abortion: 3, Other: 2,
     },
     place_of_delivery: { Home: 29, 'Upazila health complex': 21, 'District hospital': 17, 'Private clinic': 9 },
     person_assisted_delivery: { Doctor: 27, Nurse: 18, Midwife: 14, TBA: 17 },
