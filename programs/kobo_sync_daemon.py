@@ -84,6 +84,7 @@ def run_once(org):
         r = reconcile(apply=True, actor='auto-sync',
                       max_delete=AUTO_MAX_DELETE, force=False, org=org)
         row.candidates = len(r['candidates'])
+        row.candidate_ids = r['candidate_keys']
         row.deleted = len(r['deleted'])
         row.blocked = len(r['blocked'])
         row.live_ids = r['live_ids']

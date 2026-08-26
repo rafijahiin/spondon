@@ -178,10 +178,14 @@ class CommandOutputTests(TestCase):
     def test_blocked_row_is_not_printed_as_removed(self):
         from io import StringIO
         from django.core.management import call_command
+        from programs.models import KoboSyncRun
         centre = _centre()
         c = _client(centre, 'HB-0001', '111')
         ClinicVisit.objects.create(organisation='Bandhu', center=centre,
                                    client=c, visit_date='2026-08-01')
+        # A deletion needs two passes to agree, so stand in for the first.
+        KoboSyncRun.objects.create(
+            org='', candidate_ids=['programs.Client:%s' % c.pk])
         out = StringIO()
         with mock.patch.object(kw, 'live_submission_ids',
                                return_value=({'999'}, {'F1': 1})):
@@ -238,11 +242,81 @@ class SyncDaemonTests(TestCase):
     def test_a_large_removal_is_left_for_a_person(self):
         from programs.models import KoboSyncRun
         centre = _centre()
-        for i in range(self.d.AUTO_MAX_DELETE + 1):
-            _client(centre, 'HB-%04d' % i, str(9000 + i))
+        made = [_client(centre, 'HB-%04d' % i, str(9000 + i))
+                for i in range(self.d.AUTO_MAX_DELETE + 1)]
+        # The cap is only reached once a second pass confirms them.
+        KoboSyncRun.objects.create(
+            org='Bandhu',
+            candidate_ids=['programs.Client:%s' % c.pk for c in made])
         with mock.patch.object(kw, 'live_submission_ids',
                                return_value=({'1'}, {'F1': 1})):
             row = self.d.run_once('Bandhu')
         self.assertIn('above the limit', row.error)
         self.assertEqual(row.deleted, 0)
         self.assertEqual(Client.objects.count(), self.d.AUTO_MAX_DELETE + 1)
+
+
+class TwoPassTests(TestCase):
+    """One read is not evidence.
+
+    On 2026-08-26 a single read of KoboToolbox missed 26 live submissions, 22
+    of them CIPRB response plan actions, because Kobo pages by offset and new
+    submissions arriving mid-read shift the window. Acting on that read would
+    have destroyed real programme data. A record now has to be missing from two
+    consecutive passes before it is touched.
+    """
+
+    def setUp(self):
+        self.centre = _centre()
+        self.client_row = _client(self.centre, 'HB-0001', '111')
+
+    def _reconcile(self, apply):
+        with mock.patch.object(kw, 'live_submission_ids',
+                               return_value=({'999'}, {'F1': 1})):
+            return kw.reconcile(apply=apply, org='Bandhu')
+
+    def test_first_pass_deletes_nothing(self):
+        from programs.models import KoboSyncRun
+        r = self._reconcile(apply=True)
+        self.assertEqual(len(r['candidates']), 1)
+        self.assertEqual(r['confirmed'], [])
+        self.assertEqual(r['deleted'], [])
+        self.assertTrue(Client.objects.filter(pk=self.client_row.pk).exists())
+        self.assertEqual(KoboSyncRun.objects.count(), 0)
+
+    def test_second_pass_deletes_what_both_passes_agree_on(self):
+        from programs.models import KoboSyncRun
+        first = self._reconcile(apply=True)
+        KoboSyncRun.objects.create(org='Bandhu',
+                                   candidate_ids=first['candidate_keys'])
+        r = self._reconcile(apply=True)
+        self.assertEqual(len(r['deleted']), 1)
+        self.assertFalse(Client.objects.filter(pk=self.client_row.pk).exists())
+
+    def test_a_record_that_reappears_is_never_touched(self):
+        """Exactly the 22 response plan actions: gone from one read, back on
+        the next, and so never eligible."""
+        from programs.models import KoboSyncRun
+        first = self._reconcile(apply=True)
+        KoboSyncRun.objects.create(org='Bandhu',
+                                   candidate_ids=first['candidate_keys'])
+        with mock.patch.object(kw, 'live_submission_ids',
+                               return_value=({'111'}, {'F1': 1})):
+            r = kw.reconcile(apply=True, org='Bandhu')
+        self.assertEqual(r['candidates'], [])
+        self.assertEqual(r['deleted'], [])
+        self.assertTrue(Client.objects.filter(pk=self.client_row.pk).exists())
+
+    def test_an_aborted_pass_is_not_treated_as_a_first_pass(self):
+        from programs.models import KoboSyncRun
+        KoboSyncRun.objects.create(org='Bandhu', error='kobo down',
+                                   candidate_ids=[])
+        r = self._reconcile(apply=True)
+        self.assertEqual(r['deleted'], [])
+
+    def test_pages_are_read_in_a_fixed_order(self):
+        """Offset paging without a sort is what skipped the rows."""
+        import inspect
+        src = inspect.getsource(kw.live_submission_ids)
+        self.assertIn('sort=', src)
+        self.assertIn('_id', src)

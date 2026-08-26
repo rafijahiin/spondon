@@ -18,7 +18,10 @@ below exists to make a partial read impossible to mistake for a deletion:
     likely to be a broken token than a real mass deletion;
   * a run that would remove more than `max_delete` records aborts and asks for
     an explicit override, so one bad day cannot cascade;
-  * nothing is removed without `--apply`; the default is a dry run.
+  * nothing is removed without `--apply`; the default is a dry run;
+  * and nothing is removed on the strength of a single read. A record has to
+    be missing from TWO consecutive passes before it is touched, so a read
+    that skips rows costs nothing but a delay.
 
 Records that cannot be deleted because a service record still points at them
 are reported as blocked, never force-cascaded. programs.Client carries
@@ -104,7 +107,13 @@ def live_submission_ids(token=None, stdout=None):
     ids, per_asset = set(), {}
     for asset in deployed_assets(token):
         uid = asset['uid']
-        url = '%s/assets/%s/data/?fields=["_id"]&limit=%d' % (KOBO_BASE, uid, PAGE)
+        # Sorted by _id. Kobo pages by offset, so without a deterministic
+        # order a submission arriving mid-read shifts the window and rows are
+        # skipped. That is not theoretical: a read on 2026-08-26 missed 26
+        # live submissions, 22 of them CIPRB response plan actions, and would
+        # have deleted every one of them as "no longer in Kobo".
+        url = ('%s/assets/%s/data/?fields=["_id"]&sort={"_id":1}&limit=%d'
+               % (KOBO_BASE, uid, PAGE))
         n = 0
         while url:
             data = _get(url, token)
@@ -219,6 +228,28 @@ def withdraw(rows, actor='', max_delete=MAX_DELETE, force=False):
     return deleted, blocked
 
 
+def confirmed_missing(rows, org=None):
+    """Keep only what the previous pass also found missing.
+
+    One read is not evidence. Kobo pages by offset and a submission arriving
+    mid-read can push rows out of the window, so a single pass can report a
+    record as gone when it is sitting there. Requiring two passes to agree
+    turns that from data loss into a delay.
+    """
+    from programs.models import KoboSyncRun
+
+    prev = KoboSyncRun.objects.filter(org=org or '', error='').first()
+    if prev is None:
+        return [], set()
+    seen = set(prev.candidate_ids or [])
+    return [(m, o) for m, o in rows
+            if '%s:%s' % (m._meta.label, o.pk) in seen], seen
+
+
+def _key(model, obj):
+    return '%s:%s' % (model._meta.label, obj.pk)
+
+
 def reconcile(apply=False, actor='', max_delete=MAX_DELETE, force=False,
               org=None, stdout=None):
     """One full pass. Returns a plain dict so callers can report it."""
@@ -228,6 +259,7 @@ def reconcile(apply=False, actor='', max_delete=MAX_DELETE, force=False,
     say('  %d submissions live across %d forms' % (len(live), len(per_asset)))
 
     rows = find_withdrawn(live, org=org)
+    repeat, _seen = confirmed_missing(rows, org=org)
     result = {
         'checked_at': timezone.now().isoformat(),
         'live_ids': len(live),
@@ -235,6 +267,9 @@ def reconcile(apply=False, actor='', max_delete=MAX_DELETE, force=False,
         'assets': per_asset,
         'candidates': [(m._meta.label, str(o.pk), str(o.kobo_submission_id))
                        for m, o in rows],
+        'candidate_keys': [_key(m, o) for m, o in rows],
+        'confirmed': [(m._meta.label, str(o.pk), str(o.kobo_submission_id))
+                      for m, o in repeat],
         'deleted': [],
         'blocked': [],
         'applied': bool(apply),
@@ -242,12 +277,15 @@ def reconcile(apply=False, actor='', max_delete=MAX_DELETE, force=False,
     if not rows:
         say('Nothing to withdraw: every stored record still exists in Kobo.')
         return result
-    say('%d record(s) are no longer in Kobo%s.'
-        % (len(rows), ' for %s' % org if org else ''))
+    say('%d record(s) are no longer in Kobo%s; %d of those were also missing '
+        'last pass.' % (len(rows), ' for %s' % org if org else '', len(repeat)))
     if not apply:
-        say('Dry run. Re-run with --apply to remove them.')
+        say('Dry run. Re-run with --apply to remove the confirmed ones.')
         return result
-    deleted, blocked = withdraw(rows, actor=actor, max_delete=max_delete,
+    if not repeat:
+        say('Nothing confirmed by a second pass yet, so nothing removed.')
+        return result
+    deleted, blocked = withdraw(repeat, actor=actor, max_delete=max_delete,
                                force=force)
     result['deleted'] = deleted
     result['blocked'] = blocked

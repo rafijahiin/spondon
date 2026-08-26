@@ -55,6 +55,9 @@ class KoboSyncRun(TimestampedModel):
     # KoboToolbox stores why, so a run of failures is visible rather than
     # looking like a quiet period with nothing to delete.
     error = models.TextField(blank=True)
+    # What this pass thought was missing. The next pass deletes only what is
+    # missing again, so a read that skipped rows costs a delay and not data.
+    candidate_ids = models.JSONField(default=list, blank=True)
 
     class Meta:
         ordering = ('-created_at',)
