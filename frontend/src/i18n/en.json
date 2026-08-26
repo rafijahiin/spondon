@@ -108,7 +108,7 @@
     "unknownUser": "Unknown",
     "tagLegacy": "Legacy",
     "tagUrgent": "URGENT",
-    "reviewerNote": "REVIEWER NOTE — OPTIONAL",
+    "reviewerNote": "REVIEWER NOTE",
     "reviewerPlaceholder": "Context for the field team…",
     "btnReject": "Reject",
     "btnApprove": "Approve & log",
