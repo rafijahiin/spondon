@@ -94,10 +94,19 @@ class BandhuIdAllocationTest(TestCase):
                          '02-0777')
 
     def test_existing_id_of_another_person_does_not_overwrite_her(self):
+        """Asha keeps her id, and Bina is registered rather than discarded.
+
+        Until 2026-08-26 this returned 200 and Bina was never registered at
+        all, with nothing on screen to say so. Manual entry makes that far more
+        likely, so the collision now reallocates instead of dropping her.
+        """
         self._reg(9001, 'Asha', existing='02-0777')
         resp = self._reg(9002, 'Bina', existing='02-0777')
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 201)
         self.assertEqual(Client.objects.get(client_id='02-0777').name, 'Asha')
+        bina = Client.objects.get(name='Bina')
+        self.assertNotEqual(bina.client_id, '02-0777')
+        self.assertTrue(bina.client_id.startswith('02-'))
 
     # ── the typo guard ────────────────────────────────────────────────────
     def test_a_birth_year_typed_as_a_serial_does_not_drag_new_ids_into_the_1900s(self):

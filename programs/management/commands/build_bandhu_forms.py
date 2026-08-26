@@ -365,50 +365,54 @@ def _mother_list_survey():
         # fixes the old free-text IDs (02001 / 020007 / 020010) that never
         # matched on lookup and broke "registration".
         _sr('calculate', 'centre_district_code', calc=_bandhu_dist_code_calc()),
-        # ── THE SERIAL IS NO LONGER TYPED (2026-08-06) ───────────────────────
-        # It used to be a hand-typed 4-digit field guarded by a constraint that
-        # refused a serial already in bandhu_clients.csv. That guard cannot work:
-        # the CSV is a SNAPSHOT that only reaches a phone when the device
-        # re-downloads the form, so two peer educators registering different
-        # people in the same sitting never see each other's brand-new number and
-        # neither is blocked. Of the 97 collisions cleaned up on 2026-08-06, 77
-        # were made on the SAME DAY as the record they collided with and 63
-        # involved two different enumerators; three more appeared while the
-        # clean-up was still running. No export cadence closes that race.
+        # ── MANUAL ENTRY, WITH THE TWO MISTAKES DESIGNED OUT (2026-08-26) ───
+        # Bandhu asked for the field team to enter the number themselves so it
+        # can go straight onto the paper register. Free typing is what produced
+        # the 97 collisions cleaned up on 2026-08-06, so both failure modes are
+        # closed rather than the request refused:
         #
-        # Spondon now allocates the serial itself, in one place, under the
-        # client_id unique constraint (see handle_bandhu_mother_list), and
-        # writes the issued ID back onto the Kobo submission. The field worker
-        # never types an ID, so two of them can no longer choose the same one.
-        _sr('text', 'ml_existing_id', 'Existing Beneficiary ID (only if she is '
-            'already registered — leave blank for a new registration)',
-            'পুরোনো সুবিধাভোগী আইডি (আগে নিবন্ধিত হলে লিখুন — নতুন হলে ফাঁকা রাখুন)',
-            constraint="regex(., '^[0-9]{2}-[0-9]{4}$')",
-            cmsg='Format is 02-0007. Leave blank for a new registration. / '
-                 'ফরম্যাট 02-0007। নতুন নিবন্ধনে ফাঁকা রাখুন।',
-            hint='Leave this blank unless she already has a card. / '
-                 'তাঁর আগে থেকে কার্ড না থাকলে ফাঁকা রাখুন।'),
+        #   wrong centre  — the constraint below forces the prefix to match the
+        #                   centre chosen above, so a Habiganj worker cannot
+        #                   enter a Manikganj number. One such record already
+        #                   exists in the data (07-0001, registered at
+        #                   Manikganj) from the earlier free-text period.
+        #   duplicate     — the form warns when the number is already in
+        #                   bandhu_clients.csv, and because that file is a
+        #                   snapshot that cannot see a number created minutes
+        #                   ago on another phone, the server has the last word:
+        #                   a clash with a DIFFERENT person registers her under
+        #                   the next free number and writes it back here. Nobody
+        #                   is silently dropped.
+        #
+        # Leaving the box blank still works and lets Spondon issue the number,
+        # so a centre can switch either way without a form change.
+        _sr('text', 'ml_existing_id', 'Beneficiary ID',
+            'সুবিধাভোগী আইডি',
+            constraint=("regex(., '^[0-9]{2}-[0-9]{4}$') and "
+                        "starts-with(., concat(${centre_district_code},'-'))"),
+            cmsg='Use this centre’s own number, like ${centre_district_code}-0007. / '
+                 'এই কেন্দ্রের নম্বর লিখুন, যেমন ${centre_district_code}-0007।',
+            hint='Write the number from the centre register. Leave blank to have '
+                 'one issued automatically. / '
+                 'কেন্দ্রের রেজিস্টারের নম্বরটি লিখুন। '
+                 'ফাঁকা রাখলে স্বয়ংক্রিয়ভাবে দেওয়া হবে।'),
         _sr('calculate', 'ml_id_no', calc='${ml_existing_id}'),
-        # Looked up only to confirm an EXISTING id belongs to the right person.
+        # Whose number is it, if the snapshot knows.
         _sr('calculate', '_dup_name',
             calc=("pulldata('bandhu_clients','name','id_no',"
                   "translate(normalize-space(${ml_existing_id}),"
                   "'abcdefghijklmnopqrstuvwxyz','ABCDEFGHIJKLMNOPQRSTUVWXYZ'))")),
         _sr('note', '_dup_warn',
-            '✓ ${ml_existing_id} is registered for ${_dup_name}. If that is not '
-            'her, clear this box and leave it blank.',
-            '✓ ${ml_existing_id} নিবন্ধিত আছে ${_dup_name} এর নামে। তিনি না হলে ঘরটি ফাঁকা করুন।',
+            '⚠ ${ml_existing_id} already belongs to ${_dup_name}. If this is '
+            'not her, use the next free number in the register.',
+            '⚠ ${ml_existing_id} ইতিমধ্যে ${_dup_name} এর নামে। তিনি না হলে '
+            'রেজিস্টারের পরের খালি নম্বরটি লিখুন।',
             relevant="${ml_existing_id}!='' and ${_dup_name}!=''"),
-        _sr('note', '_unknown_id_warn',
-            '⚠ ${ml_existing_id} is not in the beneficiary list. Leave the box '
-            'blank and a new ID will be issued automatically.',
-            '⚠ ${ml_existing_id} তালিকায় নেই। ঘরটি ফাঁকা রাখুন, নতুন আইডি স্বয়ংক্রিয়ভাবে দেওয়া হবে।',
-            relevant="${ml_existing_id}!='' and ${_dup_name}=''"),
         _sr('note', '_ml_id_auto',
-            'ℹ A new Beneficiary ID will be issued automatically for this '
-            'centre once the form is sent. You do not need to enter one.',
-            'ℹ ফরমটি পাঠানোর পর এই কেন্দ্রের জন্য নতুন সুবিধাভোগী আইডি স্বয়ংক্রিয়ভাবে দেওয়া হবে। '
-            'আপনাকে কোনো নম্বর লিখতে হবে না।',
+            'ℹ Leave blank and a Beneficiary ID will be issued for this centre '
+            'when the form is sent.',
+            'ℹ ফাঁকা রাখলে ফরম পাঠানোর পর এই কেন্দ্রের জন্য '
+            'আইডি দেওয়া হবে।',
             relevant="${ml_existing_id}=''"),
         _sr('text', 'ml_name', 'Name', 'নাম', required='yes'),
         _sr('text', 'ml_parent_name', "Father's / Mother's name", 'পিতা/মাতার নাম'),

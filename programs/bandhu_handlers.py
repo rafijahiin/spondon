@@ -604,6 +604,21 @@ def _next_free_serial(prefix, used):
     return n
 
 
+def locked_name(client):
+    """The stored name, re-read so a concurrent upgrade is not missed."""
+    fresh = Client.objects.filter(pk=client.pk).values_list('name', flat=True).first()
+    return fresh if fresh is not None else client.name
+
+
+def _same_name(a, b):
+    """Same woman, allowing for spacing and case only.
+
+    Deliberately strict: anything looser would merge two different people, and
+    merging is the failure this whole branch exists to prevent.
+    """
+    return ' '.join(str(a or '').split()).casefold() ==            ' '.join(str(b or '').split()).casefold()
+
+
 def _allocate_client(dist_code, defaults, tries=40):
     """Create the Client under the next free id for this centre.
 
@@ -753,10 +768,39 @@ def handle_bandhu_mother_list(payload, lat, lng):
                     'Bandhu Mother List upgraded stub client %s (ml_id_no=%s) → %r',
                     locked.pk, client_id, locked.name)
                 return HttpResponse('Stub upgraded to full registration', status=200)
+        # Two different women can reach the same typed id. The duplicate check
+        # in the form reads bandhu_clients.csv, which only lands on a phone when
+        # the form is re-downloaded, so two peer educators registering different
+        # people in one sitting never see each other's new number. That is not a
+        # theory: of the 97 collisions cleaned up on 2026-08-06, 77 were made on
+        # the same day as the record they clashed with and 63 involved two
+        # different enumerators.
+        #
+        # This branch used to keep the existing record and return 200, which
+        # meant the SECOND woman was never registered and nothing anywhere said
+        # so. Registering her under the next free id is the only outcome that
+        # loses nobody; the issued id is written back onto her Kobo submission
+        # so the field can correct the paper register. Same behaviour as the
+        # MPDSR action-id collision path.
+        same_person = _same_name(locked_name(client), defaults['name'])
+        if same_person:
+            logger.warning(
+                'Duplicate Bandhu Mother List ml_id_no=%s (kobo=%s) ignored — '
+                'same person already registered as client %s (%r).',
+                client_id, kobo_id or '-', client.pk, client.name,
+            )
+            return HttpResponse('Duplicate ml_id_no — existing registration kept',
+                                status=200)
+
+        dist = str(payload.get('centre_district_code', '')).strip() or client_id[:2]
+        reissued = _allocate_client(dist, defaults)
         logger.warning(
-            'Duplicate Bandhu Mother List ml_id_no=%s (kobo=%s) ignored — '
-            'existing client %s (%r) kept.',
-            client_id, kobo_id or '-', client.pk, client.name,
+            'Bandhu Mother List id collision: %s already belongs to %r; '
+            'registering the incoming %r as %s instead (kobo=%s).',
+            client_id, client.name, reissued.name, reissued.client_id,
+            kobo_id or '-',
         )
-        return HttpResponse('Duplicate ml_id_no — existing registration kept', status=200)
+        _writeback_kobo_id(_BANDHU_ML_ASSET_UID, kobo_id, reissued.client_id)
+        return HttpResponse('Id in use — registered as %s' % reissued.client_id,
+                            status=201)
     return HttpResponse('Created', status=201)
