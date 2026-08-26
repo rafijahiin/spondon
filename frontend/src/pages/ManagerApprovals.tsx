@@ -1773,44 +1773,36 @@ export default function ManagerApprovals() {
                       />
                       <div style={{ fontSize: 11, marginTop: 6, color: error ? 'var(--coral)' : 'var(--muted)' }}>
                         {error
-                          ? '⚠ A note is required to reject — type the reason above, then click Reject.'
-                          : 'Required to reject or delete. On a rejection the worker sees this note and a link to resubmit; on a deletion it is the only record of what was removed.'}
+                          ? '⚠ A note is required to delete — type the reason above, then click Delete.'
+                          : 'Required to delete. It is the only record of what was removed and why.'}
                       </div>
                     </div>
 
-                    {/* Actions */}
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, paddingTop: 20, flexWrap: 'wrap' }}>
-                      {/* Delete sits apart from approve and reject: it is not a
-                          decision about the record, it removes it. Programme
-                          records only. */}
-                      {selected.kind === 'program' ? (
-                        <button
-                          className="btn ghost"
-                          onClick={() => (confirmDelete ? removeRecord(selected) : setConfirmDelete(true))}
-                          onBlur={() => setConfirmDelete(false)}
-                          disabled={deleting}
-                          title="Remove this record from SIMPLE for good. The KoboToolbox copy is kept."
-                          style={{
-                            display: 'flex', alignItems: 'center', gap: 6,
-                            color: 'var(--coral)',
-                            borderColor: confirmDelete ? 'var(--coral)' : undefined,
-                          }}
-                        >
-                          {deleting ? <LoadingSpinner size="sm" /> : (
-                            <><Trash2 size={14} />{confirmDelete ? 'Click again to delete' : 'Delete'}</>
-                          )}
-                        </button>
-                      ) : <span />}
+                    {/* Actions. Two outcomes only: keep it or remove it.
+                        Reject was dropped at Bandhu's request (2026-08-26); the
+                        backend action still exists, so restoring the button is
+                        one block if the send-it-back-to-be-corrected step is
+                        ever wanted again. Delete is programme records only,
+                        because the legacy and baseline queues have no delete
+                        endpoint. */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8, paddingTop: 20, flexWrap: 'wrap' }}>
                       <div style={{ display: 'flex', gap: 8 }}>
+                        {selected.kind === 'program' && (
                         <button
                           className="btn danger lg"
-                          onClick={() => decide(selected, 'reject')}
-                          disabled={rejecting || !reviewerNote.trim()}
-                          title={!reviewerNote.trim() ? 'Write a reviewer note first — the worker needs to know what to fix' : ''}
+                          onClick={() => (confirmDelete ? removeRecord(selected) : setConfirmDelete(true))}
+                          onBlur={() => setConfirmDelete(false)}
+                          disabled={deleting || !reviewerNote.trim()}
+                          title={!reviewerNote.trim()
+                            ? 'Say why it is being deleted first — the note is the only record of what was removed'
+                            : 'Remove this record from SIMPLE for good. The KoboToolbox copy is kept.'}
                           style={{ display: 'flex', alignItems: 'center', gap: 6 }}
                         >
-                          {rejecting ? <LoadingSpinner size="sm" /> : <><X size={14} /> {t('approvals.btnReject')}</>}
+                          {deleting ? <LoadingSpinner size="sm" /> : (
+                            <><Trash2 size={14} /> {confirmDelete ? 'Click again to delete' : 'Delete'}</>
+                          )}
                         </button>
+                        )}
                         <button
                           className="btn success lg"
                           onClick={() => decide(selected, 'approve')}
