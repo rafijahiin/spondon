@@ -11,7 +11,7 @@ from .operations import TrainingEvent, CoordMeeting, MobileHealthCamp, VisitorRe
 from .gbv_corner import GBVCornerRecord
 from .counselling_report import PHDCounsellingReport
 from .nil_report import NilReport
-from .withdrawal import KoboWithdrawal
+from .withdrawal import KoboWithdrawal, KoboSyncRun
 
 __all__ = [
     'ServiceCenter', 'Client',
@@ -25,5 +25,5 @@ __all__ = [
     'Referral',
     'StockEntry', 'TemperatureLog', 'SafetyHygieneKit', 'StoreRequisition',
     'TrainingEvent', 'CoordMeeting', 'MobileHealthCamp', 'VisitorRegister',
-    'NilReport', 'KoboWithdrawal',
+    'NilReport', 'KoboWithdrawal', 'KoboSyncRun',
 ]

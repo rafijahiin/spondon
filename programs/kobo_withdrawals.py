@@ -127,7 +127,7 @@ def live_submission_ids(token=None, stdout=None):
 # The audit table records a submission id so a withdrawal can be traced back,
 # which means a naive field scan picks it up as a Kobo-sourced record and the
 # trail would delete itself on the next run.
-NEVER_SCAN = {'programs.KoboWithdrawal'}
+NEVER_SCAN = {'programs.KoboWithdrawal', 'programs.KoboSyncRun'}
 
 
 def submission_models():

@@ -32,3 +32,30 @@ class KoboWithdrawal(TimestampedModel):
     def __str__(self):
         return '%s %s (kobo %s)' % (self.model_label, self.record_pk,
                                     self.kobo_submission_id)
+
+
+class KoboSyncRun(TimestampedModel):
+    """One pass of the Kobo deletion sweep, successful or not.
+
+    Persisted rather than held in memory because the web worker recycles every
+    500 requests; without a row on disk the schedule would restart from zero
+    each time and the sweep would run far more often than intended.
+    """
+    org = models.CharField(max_length=50, blank=True)
+    applied = models.BooleanField(default=False)
+    candidates = models.PositiveIntegerField(default=0)
+    deleted = models.PositiveIntegerField(default=0)
+    blocked = models.PositiveIntegerField(default=0)
+    live_ids = models.PositiveIntegerField(default=0)
+    # Empty when the pass completed. A pass that aborted on a partial read of
+    # KoboToolbox stores why, so a run of failures is visible rather than
+    # looking like a quiet period with nothing to delete.
+    error = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ('-created_at',)
+        verbose_name = 'Kobo sync run'
+
+    def __str__(self):
+        return '%s %s %s' % (self.created_at, self.org or 'all',
+                             self.error or '%d deleted' % self.deleted)

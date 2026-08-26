@@ -190,3 +190,59 @@ class CommandOutputTests(TestCase):
         self.assertIn('BLOCKED', text)
         self.assertNotIn('removed      programs.Client', text)
         self.assertTrue(Client.objects.filter(pk=c.pk).exists())
+
+
+class SyncDaemonTests(TestCase):
+    """The schedule must survive worker recycling and stay switched off by
+    default."""
+
+    def setUp(self):
+        from programs import kobo_sync_daemon as d
+        self.d = d
+
+    def _env(self, **kw):
+        return mock.patch.dict('os.environ', kw, clear=False)
+
+    def test_off_unless_configured(self):
+        with mock.patch.dict('os.environ', {}, clear=True):
+            self.assertEqual(self.d._orgs(), [])
+            self.assertFalse(self.d.start())
+
+    def test_named_organisations_are_parsed(self):
+        with self._env(KOBO_DELETION_SYNC='Bandhu, PHD'):
+            self.assertEqual(self.d._orgs(), ['Bandhu', 'PHD'])
+
+    def test_all_means_unscoped(self):
+        with self._env(KOBO_DELETION_SYNC='all'):
+            self.assertEqual(self.d._orgs(), [None])
+
+    def test_first_pass_is_due_then_not(self):
+        from programs.models import KoboSyncRun
+        self.assertTrue(self.d._due('Bandhu', 6))
+        KoboSyncRun.objects.create(org='Bandhu')
+        self.assertFalse(self.d._due('Bandhu', 6))
+        # A different organisation has its own schedule.
+        self.assertTrue(self.d._due('PHD', 6))
+
+    def test_abort_is_recorded_not_swallowed(self):
+        from programs.models import KoboSyncRun
+        with mock.patch.object(kw, 'live_submission_ids',
+                               side_effect=kw.FetchIncomplete('kobo down')):
+            row = self.d.run_once('Bandhu')
+        self.assertIn('kobo down', row.error)
+        self.assertEqual(KoboSyncRun.objects.count(), 1)
+
+    def test_unattended_cap_is_tighter_than_the_manual_one(self):
+        self.assertLess(self.d.AUTO_MAX_DELETE, kw.MAX_DELETE)
+
+    def test_a_large_removal_is_left_for_a_person(self):
+        from programs.models import KoboSyncRun
+        centre = _centre()
+        for i in range(self.d.AUTO_MAX_DELETE + 1):
+            _client(centre, 'HB-%04d' % i, str(9000 + i))
+        with mock.patch.object(kw, 'live_submission_ids',
+                               return_value=({'1'}, {'F1': 1})):
+            row = self.d.run_once('Bandhu')
+        self.assertIn('above the limit', row.error)
+        self.assertEqual(row.deleted, 0)
+        self.assertEqual(Client.objects.count(), self.d.AUTO_MAX_DELETE + 1)
