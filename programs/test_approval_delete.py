@@ -128,3 +128,42 @@ class DeleteFromQueueTests(TestCase):
         r = self._post(o, action='destroy')
         self.assertEqual(r.status_code, 400)
         self.assertTrue(OutreachSession.objects.filter(pk=o.pk).exists())
+
+
+class SimpleOnlyTests(TestCase):
+    """The button removes the record from SIMPLE and nothing else.
+
+    Rafi, 2026-08-26: the delete button works for SIMPLE only, not for Kobo.
+    The KoboToolbox submission is the raw evidence of what was removed, and
+    nothing re-imports it, so it stays. This test exists so that a later change
+    cannot quietly add a Kobo deletion to this path.
+    """
+
+    def setUp(self):
+        self.centre = _centre()
+        self.api = APIClient()
+        self.api.force_authenticate(_user('bmgr2', 'Bandhu'))
+
+    def test_no_request_leaves_the_server(self):
+        from unittest import mock
+        o = _outreach(self.centre)
+        with mock.patch('requests.request') as req, \
+             mock.patch('requests.delete') as dele, \
+             mock.patch('requests.post') as post:
+            r = self.api.post(URL, {'id': str(o.id),
+                                    'model_type': 'outreach_session',
+                                    'action': 'delete', 'reason': 'wrong entry'},
+                              format='json')
+        self.assertEqual(r.status_code, 200)
+        self.assertFalse(OutreachSession.objects.filter(pk=o.pk).exists())
+        req.assert_not_called()
+        dele.assert_not_called()
+        post.assert_not_called()
+
+    def test_the_kobo_id_is_kept_on_the_trail(self):
+        """Kobo still holds the submission, so the trail records which one."""
+        o = _outreach(self.centre)
+        self.api.post(URL, {'id': str(o.id), 'model_type': 'outreach_session',
+                            'action': 'delete', 'reason': 'wrong entry'},
+                      format='json')
+        self.assertEqual(KoboWithdrawal.objects.get().kobo_submission_id, '555')
