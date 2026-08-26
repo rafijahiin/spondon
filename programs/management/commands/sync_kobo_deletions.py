@@ -36,9 +36,14 @@ class Command(BaseCommand):
             # Never fall through to "nothing came back, so delete everything".
             raise CommandError('Aborted without changing anything: %s' % exc)
 
-        for label, pk, sid in r['candidates']:
-            mark = 'removed' if o['apply'] else 'would remove'
-            self.stdout.write('  %s %-42s kobo=%s' % (mark, label, sid))
+        if o['apply']:
+            # Report what actually happened. Printing "removed" for every
+            # candidate said a blocked row had been deleted when it had not.
+            for label, sid in r['deleted']:
+                self.stdout.write('  removed      %-38s kobo=%s' % (label, sid))
+        else:
+            for label, pk, sid in r['candidates']:
+                self.stdout.write('  would remove %-38s kobo=%s' % (label, sid))
         for label, pk, why in r['blocked']:
             self.stdout.write(self.style.WARNING(
                 '  BLOCKED %s %s: a service record still points at it. %s'

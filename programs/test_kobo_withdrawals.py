@@ -170,3 +170,23 @@ class OrgScopeTests(TestCase):
         has_org = 'organisation' in {f.name for f in MPDSRAction._meta.get_fields()}
         rows = kw.find_withdrawn(set(), org='Bandhu')
         self.assertFalse(any(m is MPDSRAction for m, _ in rows) and not has_org)
+
+
+class CommandOutputTests(TestCase):
+    """A blocked row must never be reported as removed."""
+
+    def test_blocked_row_is_not_printed_as_removed(self):
+        from io import StringIO
+        from django.core.management import call_command
+        centre = _centre()
+        c = _client(centre, 'HB-0001', '111')
+        ClinicVisit.objects.create(organisation='Bandhu', center=centre,
+                                   client=c, visit_date='2026-08-01')
+        out = StringIO()
+        with mock.patch.object(kw, 'live_submission_ids',
+                               return_value=({'999'}, {'F1': 1})):
+            call_command('sync_kobo_deletions', '--apply', stdout=out)
+        text = out.getvalue()
+        self.assertIn('BLOCKED', text)
+        self.assertNotIn('removed      programs.Client', text)
+        self.assertTrue(Client.objects.filter(pk=c.pk).exists())
