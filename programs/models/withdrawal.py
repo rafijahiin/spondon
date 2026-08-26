@@ -24,6 +24,10 @@ class KoboWithdrawal(TimestampedModel):
     approval_status = models.CharField(max_length=20, blank=True)
     snapshot = models.JSONField(default=dict, blank=True)
     actor = models.CharField(max_length=100, blank=True)
+    # Why it was removed. Required when a person deletes from the approval
+    # queue: without it the trail says a record vanished but not what was
+    # wrong with it, which is the one thing anyone reading it later needs.
+    reason = models.TextField(blank=True)
 
     class Meta:
         ordering = ('-created_at',)

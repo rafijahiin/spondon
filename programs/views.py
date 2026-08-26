@@ -112,6 +112,80 @@ def _send_approval_telegram(org: str, form_label: str, reviewer_name: str, appro
         logger.error('Programs approval Telegram error: %s', exc)
 
 
+def _authorise_review(obj, user):
+    """May this user act on this record? Shared by approve, reject and delete.
+
+    A developer is the system super-admin (acts on any stage or org) even
+    though their org is UNFPA. UNFPA non-developers are the dedicated stage-2
+    gate for Bandhu.
+    """
+    uorg = user.organisation
+    urole = getattr(user, 'role', '')
+    is_super = (urole == 'developer') or (
+        bool(getattr(user, 'can_see_all_orgs', False)) and uorg != 'UNFPA')
+    is_unfpa = (uorg == 'UNFPA') and urole != 'developer'
+    if not user.can_approve_submissions:
+        return Response({'detail': 'Not authorised.'}, status=status.HTTP_403_FORBIDDEN)
+    if not (is_super or obj.organisation == uorg
+            or (is_unfpa and obj.organisation == 'Bandhu')):
+        return Response({'detail': 'Not authorised.'}, status=status.HTTP_403_FORBIDDEN)
+    return None
+
+
+def _delete_record(obj, user, reason=''):
+    """Remove a record from Spondon for good, with a trail.
+
+    Rejecting takes a record out of every figure and keeps it visible. Deleting
+    is for data that should never have been submitted at all, which partners
+    previously had to do in KoboToolbox and which then left the row here still
+    counted. Doing it from the approval queue keeps both sides in one action.
+
+    The KoboToolbox copy is deliberately left alone: it is the raw submission
+    and the only remaining evidence of what was removed. Nothing re-imports it,
+    so the record does not come back.
+    """
+    from django.db.models import ProtectedError
+    from programs.kobo_withdrawals import _snapshot
+    from programs.models import KoboWithdrawal
+
+    err = _authorise_review(obj, user)
+    if err is not None:
+        return err
+    if not (reason or '').strip():
+        return Response(
+            {'detail': 'Say why this record is being deleted. The reason is '
+                       'kept as the only record of what was removed.'},
+            status=status.HTTP_400_BAD_REQUEST)
+
+    entry = KoboWithdrawal(
+        model_label=obj._meta.label,
+        record_pk=str(obj.pk),
+        kobo_submission_id=str(getattr(obj, 'kobo_submission_id', '') or ''),
+        organisation=str(getattr(obj, 'organisation', '') or ''),
+        approval_status=str(getattr(obj, 'approval_status', '') or ''),
+        snapshot=_snapshot(obj),
+        # The user model logs in by email; there is no username, and a
+        # blank actor would make the trail useless.
+        actor=(getattr(user, 'email', '') or
+               getattr(user, 'full_name', '') or 'dashboard'),
+        reason=(reason or '').strip(),
+    )
+    try:
+        with _tx.atomic():
+            entry.save()
+            obj.delete()
+    except ProtectedError:
+        # Service records point at this row. Deleting would leave a woman's
+        # clinic or counselling history attached to nobody, so it is refused
+        # here exactly as it is refused in the Kobo sweep.
+        return Response(
+            {'detail': 'This record cannot be deleted because service records '
+                       'are attached to it. Remove those first, or reject it '
+                       'instead so it stops being counted.'},
+            status=status.HTTP_409_CONFLICT)
+    return None
+
+
 def _apply_decision(obj, user, action_type, reason):
     """Apply an approve/reject decision with the org-aware two-stage rules.
 
@@ -124,18 +198,13 @@ def _apply_decision(obj, user, action_type, reason):
     Mutates `obj` in place on success and returns None; returns a DRF Response
     on any authorisation / state error (caller returns it as-is).
     """
+    err = _authorise_review(obj, user)
+    if err is not None:
+        return err
     uorg = user.organisation
     urole = getattr(user, 'role', '')
-    # A developer is the system super-admin (acts on any stage / org), even
-    # though their org is UNFPA. UNFPA NON-developers (e.g. supervisors) are
-    # the dedicated stage-2 gate.
     is_super = (urole == 'developer') or (bool(getattr(user, 'can_see_all_orgs', False)) and uorg != 'UNFPA')
     is_unfpa = (uorg == 'UNFPA') and urole != 'developer'
-    if not user.can_approve_submissions:
-        return Response({'detail': 'Not authorised.'}, status=status.HTTP_403_FORBIDDEN)
-    if not (is_super or obj.organisation == uorg
-            or (is_unfpa and obj.organisation == 'Bandhu')):
-        return Response({'detail': 'Not authorised.'}, status=status.HTTP_403_FORBIDDEN)
 
     # Two-stage (Bandhu manager → UNFPA) applies ONLY to models that carry the
     # manager-stage fields, i.e. SubmissionBase records. Client (the Mother List
@@ -205,7 +274,7 @@ def _apply_decision(obj, user, action_type, reason):
             return Response({'status': cur, 'detail': 'Already processed.'},
                             status=status.HTTP_409_CONFLICT)
     else:
-        return Response({'detail': "action must be 'approve' or 'reject'."},
+        return Response({'detail': "action must be 'approve', 'reject' or 'delete'."},
                         status=status.HTTP_400_BAD_REQUEST)
 
     # Record the decision in the object's own durable audit trail when it keeps
@@ -1243,10 +1312,10 @@ class PendingApprovalsView(views.APIView):
         })
 
     def post(self, request):
-        """Approve or reject a single pending item."""
+        """Approve, reject or delete a single pending item."""
         pk = request.data.get('id')
         model_type = request.data.get('model_type')
-        action_type = request.data.get('action')  # 'approve' or 'reject'
+        action_type = request.data.get('action')  # approve | reject | delete
         reason = request.data.get('reason', '')
 
         if not all([pk, model_type, action_type]):
@@ -1261,6 +1330,17 @@ class PendingApprovalsView(views.APIView):
 
         if model_mgr is None:
             return Response({'detail': f'Unknown model_type: {model_type}'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if action_type == 'delete':
+            try:
+                obj = model_mgr.get(id=pk)
+            except Exception:
+                return Response({'detail': 'Record not found.'},
+                                status=status.HTTP_404_NOT_FOUND)
+            err = _delete_record(obj, request.user, reason)
+            if err is not None:
+                return err
+            return Response({'detail': 'Record deleted.', 'deleted': True})
 
         with _tx.atomic():
             try:

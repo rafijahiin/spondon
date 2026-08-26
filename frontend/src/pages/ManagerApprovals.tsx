@@ -7,7 +7,7 @@
  */
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import {
-  X, Check, AlertTriangle, FileText, Plus, RefreshCw,
+  X, Check, AlertTriangle, FileText, Plus, RefreshCw, Trash2,
 } from 'lucide-react'
 import { useReducedMotion } from 'motion/react'
 import { useTranslation } from 'react-i18next'
@@ -616,6 +616,10 @@ export default function ManagerApprovals() {
   const noteRef = useRef<HTMLTextAreaElement>(null)
   const [approving, setApproving] = useState(false)
   const [rejecting, setRejecting] = useState(false)
+  // Deleting is irreversible, so the button asks a second time rather than
+  // acting on the first click. Cleared whenever the selection changes.
+  const [deleting, setDeleting] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
   // Reviewer note (Animesh: permanent reviewer notes as evidence). Captured
   // here, sent on approve (as `note`) or reject (as `rejection_reason`),
   // then persisted server-side into the immutable review_history trail.
@@ -761,6 +765,39 @@ export default function ManagerApprovals() {
   }, [selected?.id, selected?.kind, selected?.endpoint, detailRetryKey])
 
   // ── Actions ─────────────────────────────────────────────────────────────────
+
+  // Remove a record from SIMPLE for good. Rejecting takes a record out of
+  // every figure but keeps it visible; deleting is for data that should never
+  // have been submitted. Programme records only: the legacy and baseline
+  // queues have no delete endpoint.
+  const removeRecord = useCallback(async (item: QueueItem) => {
+    const note = reviewerNote.trim()
+    if (!note) {
+      setError('Say why this record is being deleted. The reason is the only record of what was removed.')
+      noteRef.current?.focus()
+      noteRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      return
+    }
+    setError('')
+    setDeleting(true)
+    try {
+      await api.post('/programs/pending-approvals/', {
+        id: item.id, model_type: item.model_type, action: 'delete', reason: note,
+      })
+      refetchPrograms()
+      setReviewerNote('')
+      setConfirmDelete(false)
+      const idx = filtered.findIndex(x => x.id === item.id)
+      if (idx < filtered.length - 1) setSelectedId(filtered[idx + 1].id)
+      else if (idx > 0) setSelectedId(filtered[idx - 1].id)
+    } catch (err) {
+      setError(apiErrorMessage(err))
+    } finally {
+      setDeleting(false)
+    }
+  }, [filtered, refetchPrograms, reviewerNote])
+
+  useEffect(() => { setConfirmDelete(false) }, [selectedId])
 
   const decide = useCallback(async (item: QueueItem, action: 'approve' | 'reject') => {
     // A rejection must say why — the field worker needs to know what to fix,
@@ -1737,12 +1774,33 @@ export default function ManagerApprovals() {
                       <div style={{ fontSize: 11, marginTop: 6, color: error ? 'var(--coral)' : 'var(--muted)' }}>
                         {error
                           ? '⚠ A note is required to reject — type the reason above, then click Reject.'
-                          : 'Required when rejecting — the worker sees this note and a link to resubmit a corrected entry.'}
+                          : 'Required to reject or delete. On a rejection the worker sees this note and a link to resubmit; on a deletion it is the only record of what was removed.'}
                       </div>
                     </div>
 
                     {/* Actions */}
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingTop: 20 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, paddingTop: 20, flexWrap: 'wrap' }}>
+                      {/* Delete sits apart from approve and reject: it is not a
+                          decision about the record, it removes it. Programme
+                          records only. */}
+                      {selected.kind === 'program' ? (
+                        <button
+                          className="btn ghost"
+                          onClick={() => (confirmDelete ? removeRecord(selected) : setConfirmDelete(true))}
+                          onBlur={() => setConfirmDelete(false)}
+                          disabled={deleting}
+                          title="Remove this record from SIMPLE for good. The KoboToolbox copy is kept."
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: 6,
+                            color: 'var(--coral)',
+                            borderColor: confirmDelete ? 'var(--coral)' : undefined,
+                          }}
+                        >
+                          {deleting ? <LoadingSpinner size="sm" /> : (
+                            <><Trash2 size={14} />{confirmDelete ? 'Click again to delete' : 'Delete'}</>
+                          )}
+                        </button>
+                      ) : <span />}
                       <div style={{ display: 'flex', gap: 8 }}>
                         <button
                           className="btn danger lg"
