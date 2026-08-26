@@ -1789,7 +1789,7 @@ export default function ManagerApprovals() {
                       <div style={{ display: 'flex', gap: 8 }}>
                         {selected.kind === 'program' && (
                         <button
-                          className="btn danger lg"
+                          className="btn danger filled lg"
                           onClick={() => (confirmDelete ? removeRecord(selected) : setConfirmDelete(true))}
                           onBlur={() => setConfirmDelete(false)}
                           disabled={deleting || !reviewerNote.trim()}
