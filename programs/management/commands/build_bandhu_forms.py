@@ -1044,6 +1044,10 @@ class Command(BaseCommand):
         parser.add_argument('--output-dir', default=OUTDIR)
         parser.add_argument('--upload', action='store_true',
             help='Import each xlsx into its existing Kobo asset and redeploy.')
+        # Redeploying a form makes every field phone re-download it, so a change
+        # to one form should not disturb the other two.
+        parser.add_argument('--only', default='',
+            help='Comma-separated form ids to build, e.g. bandhu_mother_list_v1.')
 
     def handle(self, *args, **options):
         out = options['output_dir']
@@ -1053,7 +1057,16 @@ class Command(BaseCommand):
             self.stdout.write(self.style.ERROR('KOBO_TOKEN not set — cannot --upload.'))
             return
 
+        wanted = {x.strip() for x in options['only'].split(',') if x.strip()}
+        if wanted:
+            unknown = wanted - {f['id'] for f in FORMS}
+            if unknown:
+                self.stdout.write(self.style.ERROR(
+                    'unknown form id(s): %s' % ', '.join(sorted(unknown))))
+                return
         for f in FORMS:
+            if wanted and f['id'] not in wanted:
+                continue
             survey  = f['survey']()
             choices = f['choices']()
             wb = _wb(f['id'], f['title'], survey, choices)
