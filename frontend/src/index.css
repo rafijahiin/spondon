@@ -787,15 +787,15 @@ html.dark ::selection { background: rgba(249, 96, 0, 0.30); color: var(--ink); }
 .btn.brand:hover { background: var(--unfpa-deep); border-color: var(--unfpa-deep); }
 .btn.success { background: var(--emerald); color: var(--surface); border-color: var(--emerald); }
 .btn.success:hover { background: #18815C; border-color: #18815C; }
-.btn.danger { background: var(--surface); color: var(--rose); border-color: rgba(233,69,96,0.4); }
+.btn.danger { background: var(--surface); color: var(--coral); border-color: rgba(233,69,96,0.4); }
 .btn.danger:hover { background: rgba(233,69,96,0.06); }
 /* Filled variant, for the one action that destroys data. The outline danger
    button reads as secondary next to a filled Approve, and deleting is not a
    secondary action. Kept as a modifier so every other danger button stays
    quiet. */
-.btn.danger.filled { background: var(--rose); color: var(--surface); border-color: var(--rose); }
-.btn.danger.filled:hover { background: #C9203C; border-color: #C9203C; }
-.btn.danger.filled:disabled { background: var(--rose); border-color: var(--rose); }
+.btn.danger.filled { background: var(--unfpa-red); color: #fff; border-color: var(--unfpa-red); }
+.btn.danger.filled:hover { background: var(--unfpa-red-dark); border-color: var(--unfpa-red-dark); }
+.btn.danger.filled:disabled { background: var(--unfpa-red); border-color: var(--unfpa-red); }
 .btn.ghost { background: transparent; border-color: transparent; color: var(--muted); }
 .btn.ghost:hover { background: var(--surface-3); color: var(--ink); }
 .btn.sm { height: 30px; padding: 0 10px; font-size: 12px; border-radius: 8px; }
@@ -1329,7 +1329,7 @@ html.dark .hero-card {
   background: rgba(31,154,109,0.10);
   color: var(--emerald);
 }
-.tile-delta.down { background: rgba(233,69,96,0.10); color: var(--rose); }
+.tile-delta.down { background: rgba(233,69,96,0.10); color: var(--coral); }
 .tile-delta.neutral { background: var(--surface-3); color: var(--muted); }
 
 .tile-num {
