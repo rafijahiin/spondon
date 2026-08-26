@@ -135,3 +135,38 @@ class DryRunTests(TestCase):
         self.assertEqual(r['deleted'], [])
         self.assertEqual(Client.objects.count(), 1)
         self.assertEqual(KoboWithdrawal.objects.count(), 0)
+
+
+class OrgScopeTests(TestCase):
+    """A deletion request from one partner must not sweep another's records."""
+
+    def setUp(self):
+        self.bandhu = _centre()
+        self.phd = ServiceCenter.objects.create(
+            code='PHD-99', name='PHD Centre', organisation='PHD',
+            district='Rajbari')
+
+    def test_scope_limits_to_one_organisation(self):
+        _client(self.bandhu, 'HB-0001', '111')
+        Client.objects.create(client_id='R001-1', organisation='PHD',
+                              center=self.phd, name='B',
+                              kobo_submission_id='222')
+        rows = kw.find_withdrawn(set(), org='Bandhu')
+        self.assertEqual([r[1].kobo_submission_id for r in rows], ['111'])
+
+    def test_unscoped_still_finds_everything(self):
+        _client(self.bandhu, 'HB-0001', '111')
+        Client.objects.create(client_id='R001-1', organisation='PHD',
+                              center=self.phd, name='B',
+                              kobo_submission_id='222')
+        self.assertEqual(len(kw.find_withdrawn(set())), 2)
+
+    def test_models_without_an_organisation_are_skipped_when_scoped(self):
+        """MPDSR actions carry no organisation, so a scoped run must not touch
+        them rather than guess that they belong to the partner asking."""
+        from mpdsr.models import MPDSRAction
+        scanned = [m._meta.label for m in kw.submission_models()]
+        self.assertIn('mpdsr.MPDSRAction', scanned)
+        has_org = 'organisation' in {f.name for f in MPDSRAction._meta.get_fields()}
+        rows = kw.find_withdrawn(set(), org='Bandhu')
+        self.assertFalse(any(m is MPDSRAction for m, _ in rows) and not has_org)

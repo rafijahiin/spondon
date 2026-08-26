@@ -144,17 +144,28 @@ def submission_models():
     return out
 
 
-def find_withdrawn(live_ids):
+def find_withdrawn(live_ids, org=None):
     """Rows whose Kobo submission no longer exists.
 
     Records with no kobo_submission_id are never touched: they were entered in
     the dashboard by hand or seeded, and Kobo has no opinion about them.
+
+    `org` scopes the sweep to one implementing partner. A deletion request
+    always comes from one organisation, and acting on another partner's records
+    on the back of it is how a Bandhu clean-up quietly removes CIPRB response
+    plan actions. Models that carry no organisation are skipped entirely when a
+    scope is given, rather than being swept in on a guess.
     """
     found = []
     for model in submission_models():
+        if org:
+            if 'organisation' not in {f.name for f in model._meta.get_fields()}:
+                continue
         qs = (model.objects
               .exclude(kobo_submission_id__isnull=True)
               .exclude(kobo_submission_id=''))
+        if org:
+            qs = qs.filter(organisation=org)
         for obj in qs.only('id', 'kobo_submission_id').iterator():
             if str(obj.kobo_submission_id) not in live_ids:
                 found.append((model, obj))
@@ -209,17 +220,18 @@ def withdraw(rows, actor='', max_delete=MAX_DELETE, force=False):
 
 
 def reconcile(apply=False, actor='', max_delete=MAX_DELETE, force=False,
-              stdout=None):
+              org=None, stdout=None):
     """One full pass. Returns a plain dict so callers can report it."""
     say = stdout or (lambda _m: None)
     say('Reading KoboToolbox...')
     live, per_asset = live_submission_ids(stdout=say)
     say('  %d submissions live across %d forms' % (len(live), len(per_asset)))
 
-    rows = find_withdrawn(live)
+    rows = find_withdrawn(live, org=org)
     result = {
         'checked_at': timezone.now().isoformat(),
         'live_ids': len(live),
+        'org': org or 'all',
         'assets': per_asset,
         'candidates': [(m._meta.label, str(o.pk), str(o.kobo_submission_id))
                        for m, o in rows],
@@ -230,7 +242,8 @@ def reconcile(apply=False, actor='', max_delete=MAX_DELETE, force=False,
     if not rows:
         say('Nothing to withdraw: every stored record still exists in Kobo.')
         return result
-    say('%d record(s) are no longer in Kobo.' % len(rows))
+    say('%d record(s) are no longer in Kobo%s.'
+        % (len(rows), ' for %s' % org if org else ''))
     if not apply:
         say('Dry run. Re-run with --apply to remove them.')
         return result

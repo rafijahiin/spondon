@@ -24,12 +24,14 @@ class Command(BaseCommand):
                             help='refuse to remove more than this in one run')
         parser.add_argument('--actor', default='sync_kobo_deletions',
                             help='who or what triggered this run')
+        parser.add_argument('--org', default=None,
+                            help='limit to one organisation, e.g. Bandhu')
 
     def handle(self, *args, **o):
         try:
             r = reconcile(apply=o['apply'], actor=o['actor'],
                           max_delete=o['max_delete'], force=o['force'],
-                          stdout=self.stdout.write)
+                          org=o['org'], stdout=self.stdout.write)
         except FetchIncomplete as exc:
             # Never fall through to "nothing came back, so delete everything".
             raise CommandError('Aborted without changing anything: %s' % exc)
