@@ -260,10 +260,14 @@ export function Spine() {
   // The old /dashboard/kpis/ submissions_pending counted only PENDING for
   // everyone, so UNFPA's stage-2 queue showed 0. Fall back to it if the
   // per-role endpoint is unavailable — the badge can never get worse.
+  // count_only: this poll runs every 30s on every page for every signed-in
+  // user and reads one number. Without it the server serialises the whole
+  // queue (~86 KB an answer) to deliver that number — it was 57% of the
+  // deployment's HTTP egress. The response still carries total / counts_by_org.
   useEffect(() => {
     let cancelled = false
     const fetchPending = () => {
-      api.get('/programs/pending-approvals/')
+      api.get('/programs/pending-approvals/', { params: { count_only: 1 } })
         .then(r => { if (!cancelled) setPendingCount(r.data?.total ?? 0) })
         .catch(() => {
           api.get('/dashboard/kpis/')

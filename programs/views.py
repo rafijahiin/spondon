@@ -1007,7 +1007,8 @@ def _build_narrative(obj, model_type: str) -> str:
 
 
 def _pending_for_model(queryset, model_type: str, org_filter_org=None,
-                       statuses=('PENDING',), reviewed_only=False):
+                       statuses=('PENDING',), reviewed_only=False,
+                       count_only=False):
     """Return approval dicts for a queryset at the given approval stage(s).
 
     statuses lets the queue show stage-1 (PENDING) and/or stage-2
@@ -1049,6 +1050,11 @@ def _pending_for_model(queryset, model_type: str, org_filter_org=None,
         row['organisation']: row['n']
         for row in qs.values('organisation').annotate(n=_Count('id'))
     }
+    # The badge caller wants the numbers above and nothing else. Both counts are
+    # already computed, so stop here rather than fetching up to _CAP rows per
+    # model and building a summary + narrative for each.
+    if count_only:
+        return [], full_count, counts_by_org
     results = []
     for obj in qs.order_by('created_at')[:_CAP]:
         results.append({
@@ -1256,27 +1262,44 @@ class PendingApprovalsView(views.APIView):
         review_mode = request.query_params.get('status', '') == 'reviewed'
         REVIEWED = ('APPROVED', 'REJECTED')
 
+        # ?count_only=1 → the counts, without the rows. The Spine badge polls
+        # this endpoint every 30s on every page for every signed-in user and
+        # reads one field (`total`), but was being served the whole queue: ~86 KB
+        # an answer, 57% of measured HTTP egress and the largest single line on
+        # the Railway bill. The counts come from queries that run either way.
+        count_only = (request.query_params.get('count_only', '').strip().lower()
+                      in ('1', 'true', 'yes', 'on'))
+
         def lane(qs, model_type):
             if review_mode:
                 scope = None if is_super else ('Bandhu' if is_unfpa else org)
                 return _pending_for_model(qs, model_type, scope,
-                                          statuses=REVIEWED, reviewed_only=True)
+                                          statuses=REVIEWED, reviewed_only=True,
+                                          count_only=count_only)
             if is_unfpa:
-                return _pending_for_model(qs, model_type, 'Bandhu', statuses=('MANAGER_APPROVED',))
+                return _pending_for_model(qs, model_type, 'Bandhu',
+                                          statuses=('MANAGER_APPROVED',),
+                                          count_only=count_only)
             if is_super:
                 # Stage-1 / single-stage only. A super can no longer finalise a
                 # Bandhu MANAGER_APPROVED item (that is UNFPA-only), so it must
                 # not sit in their action queue as an un-actionable row.
                 return _pending_for_model(qs, model_type, None,
-                                          statuses=('PENDING',))
-            return _pending_for_model(qs, model_type, org, statuses=('PENDING',))
+                                          statuses=('PENDING',),
+                                          count_only=count_only)
+            return _pending_for_model(qs, model_type, org, statuses=('PENDING',),
+                                      count_only=count_only)
 
         all_pending = []
         grand_total = 0
         full_counts_by_org = {}   # TRUE pre-cap backlog per partner (drives tabs)
+        full_counts_by_type = {}  # TRUE pre-cap backlog per model (count_only)
         for model_type, qs_fn in _APPROVAL_MODELS:
             items, full_count, counts_by_org = lane(qs_fn(), model_type)
             grand_total += full_count
+            if full_count:
+                full_counts_by_type[model_type] = (
+                    full_counts_by_type.get(model_type, 0) + full_count)
             for _org, _n in counts_by_org.items():
                 full_counts_by_org[_org] = full_counts_by_org.get(_org, 0) + _n
             for item in items:
@@ -1291,18 +1314,26 @@ class PendingApprovalsView(views.APIView):
             # Oldest first — work the queue FIFO.
             all_pending.sort(key=lambda x: x['created_at'])
 
-        # Summary counts by model_type (over the rows actually returned).
-        counts = {}
-        for item in all_pending:
-            counts[item['model_type']] = counts.get(item['model_type'], 0) + 1
+        # Summary counts by model_type (over the rows actually returned). In
+        # count_only mode there are no rows, so report the TRUE pre-cap backlog
+        # per model instead of an empty dict.
+        if count_only:
+            counts = full_counts_by_type
+        else:
+            counts = {}
+            for item in all_pending:
+                counts[item['model_type']] = counts.get(item['model_type'], 0) + 1
 
         # `total` is the TRUE backlog (pre-cap); `returned` is how many rows this
         # response actually carries. `truncated` tells the UI to show "showing N
         # of M" instead of silently implying the queue is fully drained. (F1.)
+        # `count_only` says the rows were dropped on purpose, so an empty
+        # `items` can never be read as a drained queue either.
         return Response({
             'total': grand_total,
             'returned': len(all_pending),
             'truncated': grand_total > len(all_pending),
+            'count_only': count_only,
             'counts_by_type': counts,
             # TRUE per-partner backlog (pre-cap). The frontend tabs use this so
             # the Bandhu/PHD/CIPRB badge reflects the real pending count and
