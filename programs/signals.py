@@ -16,6 +16,7 @@ Strategy:
   * Debounce bursts (a flood of registrations / re-seed) into one push, and
     coalesce per-org so a mixed PHD+Bandhu burst still pushes each once.
 """
+import hashlib
 import logging
 import os
 import threading
@@ -50,12 +51,48 @@ _lock = threading.Lock()
 _timer: Optional[threading.Timer] = None
 _pending_orgs = set()
 
+# org → sha256 of the CSV bytes Kobo last ACCEPTED from this process.
+#
+# Most Client saves do not touch an exported column: a service log stamping
+# updated_at, an approval flag, a status change. Each one still scheduled a
+# push, so byte-identical CSVs were re-uploaded and three forms redeployed all
+# day (487 uploads / 484 redeploys in a measured 24h, the bulk of the egress
+# bill). Skipping an unchanged push is invisible to the field: a real
+# registration or edit changes the CSV, and build_csv exports identity columns
+# only — no timestamps — so equal bytes mean nothing a worker would see moved.
+#
+# Deliberately in memory and per-process. gunicorn recycles the worker every
+# 500 requests, so the cache empties often and the next push re-uploads. That
+# makes the guard fail-open: it can only ever make the system less chatty, never
+# more stale. Genuine Kobo-side drift is not this cache's problem either — the
+# resync_client_csvs backstop compares against what is actually attached to the
+# form every 10 minutes and heals it.
+#
+# Its own lock: the debounce machinery above serialises a different thing, and
+# a push holds this one only across a dict read or write, never across the
+# network calls.
+_last_push_hash: dict = {}
+_hash_lock = threading.Lock()
+
+
+def reset_push_cache() -> None:
+    """Forget which CSVs were last pushed, so the next push re-uploads."""
+    with _hash_lock:
+        _last_push_hash.clear()
+
+
+def _load_export(org: str):
+    """The export command module for an org. Seam for tests."""
+    import importlib
+    return importlib.import_module(_ORG_EXPORT[org])
+
 
 def _push_org(org: str) -> None:
-    """Build + upload + redeploy one org's clients CSV. Off the request thread."""
-    import importlib
+    """Build + upload + redeploy one org's clients CSV. Off the request thread.
+
+    No-op when the CSV is byte-identical to the last one Kobo accepted."""
     try:
-        mod = importlib.import_module(_ORG_EXPORT[org])
+        mod = _load_export(org)
     except Exception:
         logger.exception('client-csv sync: failed to import export for %s', org)
         return
@@ -69,10 +106,27 @@ def _push_org(org: str) -> None:
 
     try:
         csv_bytes, row_count = mod.build_csv()
+        digest = hashlib.sha256(csv_bytes or b'').hexdigest()
+        with _hash_lock:
+            unchanged = _last_push_hash.get(org) == digest
+        if unchanged:
+            logger.debug('client-csv sync[%s]: unchanged (%d rows) — skipped',
+                         org, row_count)
+            return
         if mod.upload_to_kobo(csv_bytes, _SilentStdout()):
             # Redeploy so Enketo re-transforms with the fresh CSV — the media
             # swap alone is invisible to the field forms until then.
-            mod.redeploy_forms(_SilentStdout())
+            redeployed = mod.redeploy_forms(_SilentStdout())
+            # Only remember a push that fully landed. BOTH halves report failure
+            # by returning False rather than raising: upload_to_kobo when any
+            # form's media POST is rejected, redeploy_forms when a version fetch
+            # or PATCH fails. Caching either partial result would suppress the
+            # re-push on the next save — and a CSV that uploaded but never got
+            # redeployed is exactly the "registered, but the form says not in
+            # the list" failure this whole path exists to prevent.
+            if redeployed:
+                with _hash_lock:
+                    _last_push_hash[org] = digest
         logger.info('client-csv sync[%s]: pushed %d rows', org, row_count)
     except Exception:
         logger.exception('client-csv sync[%s]: push failed', org)
