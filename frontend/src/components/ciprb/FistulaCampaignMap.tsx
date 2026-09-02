@@ -200,7 +200,11 @@ export function FistulaCampaignMap({ rows }: { rows: CampaignUpazila[] }) {
           </div>
         </div>
 
-        <div style={{ position: 'relative', height: 600, borderRadius: 8, overflow: 'hidden',
+        {/* maxWidth tracks the height: Bangladesh is taller than it is wide, so
+            a container wider than this fills with sea, not country. */}
+        <div style={{ position: 'relative', height: 560, maxWidth: 540,
+                      margin: '0 auto', width: '100%',
+                      borderRadius: 8, overflow: 'hidden',
                       background: SEA, border: '1px solid #dbe3e9' }}>
           {geoError ? (
             <div style={{ display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center', color: '#6b7280', fontSize: 13 }}>

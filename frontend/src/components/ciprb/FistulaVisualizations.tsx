@@ -375,16 +375,25 @@ function CampaignFunnelStrip({ funnel }: { funnel: CampaignFunnel }) {
   )
 }
 
-/** District by district, the same five stages. Sits beside the map: the map
- *  answers where the campaign went, this answers what came of it.
+/** District by district. Sits beside the map: the map answers where the
+ *  campaign went, this answers what came of it.
  *
- *  The bar IS the percentage beside it. An earlier version shaded five stages
- *  in five tints of the same orange and scaled each bar against the district's
- *  suspected count, so the colours were indistinguishable and a bar's length
- *  disagreed with the figure printed next to it. Now every row is named, every
- *  bar is that row's conversion from the stage above, and colour carries no
- *  meaning at all.
+ *  Diagnosed is the base. Every row below is that stage as a share of the
+ *  DIAGNOSED patients, one fixed denominator all the way down, so the bars
+ *  shrink monotonically and a row can be compared with the same row in another
+ *  district. Chaining each stage to the one above it instead produced a
+ *  sawtooth (79%, then 83%, then 44%) that read as noise.
+ *
+ *  Suspected is not a row. It is larger than diagnosed, so it would draw past
+ *  the base; it sits in the header as context instead.
  */
+const D_STAGES = [
+  { key: 'diagnosed',     label: 'Diagnosed' },
+  { key: 'referred',      label: 'Referred' },
+  { key: 'repaired',      label: 'Repaired' },
+  { key: 'rehabilitated', label: 'Rehabilitated' },
+] as const
+
 function CampaignDistrictFunnel({ rows }: { rows: CampaignDistrict[] }) {
   if (!rows.length) return null
   return (
@@ -392,69 +401,75 @@ function CampaignDistrictFunnel({ rows }: { rows: CampaignDistrict[] }) {
       <h4 style={{ margin: 0, fontSize: 14.5, fontWeight: 700, color: 'var(--ink)' }}>
         What came of it, district by district
       </h4>
-      <p style={{ fontSize: 11.5, color: 'var(--muted)', margin: '4px 0 10px' }}>
-        Each bar is how many of the stage above reached this one.
+      <p style={{ fontSize: 11.5, color: 'var(--muted)', margin: '4px 0 12px' }}>
+        Every bar is a share of that district&rsquo;s diagnosed patients.
       </p>
       <div style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fit, minmax(248px, 1fr))',
         gap: '16px 22px',
       }}>
-        {rows.map((r) => (
-          <div key={r.district}>
-            <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 }}>
-              <span style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--ink)', textTransform: 'capitalize' }}>
-                {r.district}
-              </span>
-              <span style={{ fontSize: 10.5, color: 'var(--muted)', fontVariantNumeric: 'tabular-nums' }}>
-                {r.chw_suspected.toLocaleString()} suspected by CHWs
-              </span>
+        {rows.map((r) => {
+          const base = r.diagnosed
+          return (
+            <div key={r.district}>
+              <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 }}>
+                <span style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--ink)', textTransform: 'capitalize' }}>
+                  {r.district}
+                </span>
+                <span style={{ fontSize: 10.5, color: 'var(--muted)', fontVariantNumeric: 'tabular-nums' }}>
+                  {r.suspected.toLocaleString()} suspected · {r.chw_suspected.toLocaleString()} by CHWs
+                </span>
+              </div>
+              {base === 0 ? (
+                <p style={{ fontSize: 11.5, color: 'var(--muted)', margin: '7px 0 0', lineHeight: 1.45 }}>
+                  The campaign ran here, but nobody from this district has been
+                  diagnosed yet.
+                </p>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 3, marginTop: 6 }}>
+                  {D_STAGES.map((st, i) => {
+                    const value = r[st.key]
+                    const share = (value / base) * 100
+                    return (
+                      <div key={st.key} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span style={{
+                          flex: '0 0 76px', fontSize: 11,
+                          color: i === 0 ? 'var(--ink)' : 'var(--muted)',
+                          fontWeight: i === 0 ? 700 : 500,
+                        }}>{st.label}</span>
+                        <div style={{ flex: 1, height: 9, borderRadius: 3, background: 'var(--hair)' }}>
+                          <div style={{
+                            width: `${Math.min(100, share)}%`, height: 9,
+                            minWidth: value > 0 ? 3 : 0,
+                            borderRadius: 3, background: CIPRB_BLUE,
+                            transition: 'width .4s ease',
+                          }} />
+                        </div>
+                        <span style={{
+                          flex: '0 0 26px', textAlign: 'right', fontSize: 12, fontWeight: 700,
+                          color: 'var(--ink)', fontVariantNumeric: 'tabular-nums',
+                        }}>{value.toLocaleString()}</span>
+                        <span style={{
+                          flex: '0 0 36px', textAlign: 'right', fontSize: 11, fontWeight: 700,
+                          color: i > 0 && share < 50 ? '#A32E1C' : 'var(--muted)',
+                          fontVariantNumeric: 'tabular-nums',
+                        }}>{i === 0 ? 'base' : `${share.toFixed(0)}%`}</span>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 3, marginTop: 6 }}>
-              {STAGES.map((st, i) => {
-                const value = r[st.key]
-                const prev = i === 0 ? null : r[STAGES[i - 1].key]
-                const share = prev == null ? null : pct(value, prev)
-                // Stage one has nothing above it, so it is the full-width
-                // reference the rows below are read against.
-                const width = share == null ? 100 : Math.min(100, share)
-                return (
-                  <div key={st.key} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{
-                      flex: '0 0 76px', fontSize: 11,
-                      color: i === 0 ? 'var(--ink)' : 'var(--muted)',
-                      fontWeight: i === 0 ? 700 : 500,
-                    }}>{st.label}</span>
-                    <div style={{ flex: 1, height: 9, borderRadius: 3, background: 'var(--hair)' }}>
-                      <div style={{
-                        width: `${width}%`, height: 9, minWidth: value > 0 ? 3 : 0,
-                        borderRadius: 3, background: CIPRB_BLUE,
-                        opacity: i === 0 ? 1 : 0.85,
-                        transition: 'width .4s ease',
-                      }} />
-                    </div>
-                    <span style={{
-                      flex: '0 0 26px', textAlign: 'right', fontSize: 12, fontWeight: 700,
-                      color: 'var(--ink)', fontVariantNumeric: 'tabular-nums',
-                    }}>{value.toLocaleString()}</span>
-                    <span style={{
-                      flex: '0 0 36px', textAlign: 'right', fontSize: 11, fontWeight: 700,
-                      color: share != null && share < 50 ? '#A32E1C' : 'var(--muted)',
-                      fontVariantNumeric: 'tabular-nums',
-                    }}>{share == null ? 'base' : `${share.toFixed(0)}%`}</span>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
       <p style={{ fontSize: 10.5, color: 'var(--muted)', margin: '12px 0 0', lineHeight: 1.5 }}>
-        Suspected is the base for each district and draws full width. Every row
-        below it is that stage as a percentage of the row above, so a short bar
-        is a drop-off. Anything under half is marked in red. Suspected by CHWs
-        is the campaign form&rsquo;s own field tally and is counted separately
-        from the registered cases.
+        Diagnosed is the base for each district and draws full width. Referred,
+        repaired and rehabilitated are shares of it, so the bars only shrink and
+        the same row can be read across districts. Anything under half is marked
+        in red. Suspected and the CHW field tally sit in the header because they
+        are larger than the diagnosed cohort and counted differently.
       </p>
     </div>
   )

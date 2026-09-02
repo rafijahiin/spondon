@@ -175,7 +175,11 @@ export function MPDSRDistrictMap() {
             {t('mpdsrMap.sub')}
           </span>
         </div>
-        <div style={{ position: 'relative', height: 340, borderRadius: 8, overflow: 'hidden',
+        <div style={{
+          display: 'grid', gap: 20, alignItems: 'center',
+          gridTemplateColumns: 'minmax(280px, 420px) minmax(200px, 1fr)',
+        }}>
+        <div style={{ position: 'relative', height: 440, borderRadius: 8, overflow: 'hidden',
                       background: SEA, border: '1px solid #dbe3e9' }}>
           {geo ? (
             <MapContainer
@@ -199,16 +203,18 @@ export function MPDSRDistrictMap() {
           )}
         </div>
 
-        {/* Legend */}
+        {/* Legend, beside the map rather than under it: the map cannot use the
+            full card width without stretching a portrait country across a
+            landscape box, and this is what the freed width is for. */}
         <div style={{
-          display: 'flex', flexWrap: 'wrap', gap: 16,
-          marginTop: 16, fontSize: 12.5,
+          display: 'flex', flexDirection: 'column', gap: 14, fontSize: 12.5,
         }}>
           <LegendSwatch color={TINT.gac}  label={t('mpdsrMap.legendGac')}  sub={t('mpdsrMap.intervention')} />
           <LegendSwatch color={TINT.sida} label={t('mpdsrMap.legendSida')} sub={t('mpdsrMap.intervention')} />
           <LegendSwatch color={TINT.both} label={t('mpdsrMap.legendOverlap')} sub="Sunamganj" />
           <LegendSwatch color={TINT.cp}   label={t('mpdsrMap.legendCp')}    sub={t('mpdsrMap.countryProgramme')} />
           <LegendSwatch color={TINT.none} label={t('mpdsrMap.legendNone')} sub="" />
+        </div>
         </div>
       </div>
       </div>
