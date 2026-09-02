@@ -376,74 +376,81 @@ function CampaignFunnelStrip({ funnel }: { funnel: CampaignFunnel }) {
 }
 
 /** District by district, the same five stages. Sits beside the map: the map
- *  answers where the campaign went, this answers what came of it. */
+ *  answers where the campaign went, this answers what came of it.
+ *
+ *  The bar IS the percentage beside it. An earlier version shaded five stages
+ *  in five tints of the same orange and scaled each bar against the district's
+ *  suspected count, so the colours were indistinguishable and a bar's length
+ *  disagreed with the figure printed next to it. Now every row is named, every
+ *  bar is that row's conversion from the stage above, and colour carries no
+ *  meaning at all.
+ */
 function CampaignDistrictFunnel({ rows }: { rows: CampaignDistrict[] }) {
   if (!rows.length) return null
   return (
     <div className="card" style={{ padding: 18, display: 'flex', flexDirection: 'column', gap: 4 }}>
-      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
-        <h4 style={{ margin: 0, fontSize: 14.5, fontWeight: 700, color: 'var(--ink)' }}>
-          What came of it, district by district
-        </h4>
-      </div>
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', margin: '8px 0 4px' }}>
-        {STAGES.map((st) => (
-          <span key={st.key} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11, color: 'var(--muted)' }}>
-            <span style={{ width: 11, height: 11, borderRadius: 3, background: st.color }} />
-            {st.label}
-          </span>
+      <h4 style={{ margin: 0, fontSize: 14.5, fontWeight: 700, color: 'var(--ink)' }}>
+        What came of it, district by district
+      </h4>
+      <p style={{ fontSize: 11.5, color: 'var(--muted)', margin: '4px 0 10px' }}>
+        Each bar is how many of the stage above reached this one.
+      </p>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14, maxHeight: 420, overflowY: 'auto' }}>
+        {rows.map((r) => (
+          <div key={r.district}>
+            <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 }}>
+              <span style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--ink)', textTransform: 'capitalize' }}>
+                {r.district}
+              </span>
+              <span style={{ fontSize: 10.5, color: 'var(--muted)', fontVariantNumeric: 'tabular-nums' }}>
+                {r.chw_suspected.toLocaleString()} suspected by CHWs
+              </span>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 3, marginTop: 6 }}>
+              {STAGES.map((st, i) => {
+                const value = r[st.key]
+                const prev = i === 0 ? null : r[STAGES[i - 1].key]
+                const share = prev == null ? null : pct(value, prev)
+                // Stage one has nothing above it, so it is the full-width
+                // reference the rows below are read against.
+                const width = share == null ? 100 : Math.min(100, share)
+                return (
+                  <div key={st.key} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{
+                      flex: '0 0 88px', fontSize: 11.5,
+                      color: i === 0 ? 'var(--ink)' : 'var(--muted)',
+                      fontWeight: i === 0 ? 700 : 500,
+                    }}>{st.label}</span>
+                    <div style={{ flex: 1, height: 9, borderRadius: 3, background: 'var(--hair)' }}>
+                      <div style={{
+                        width: `${width}%`, height: 9, minWidth: value > 0 ? 3 : 0,
+                        borderRadius: 3, background: CIPRB_BLUE,
+                        opacity: i === 0 ? 1 : 0.85,
+                        transition: 'width .4s ease',
+                      }} />
+                    </div>
+                    <span style={{
+                      flex: '0 0 30px', textAlign: 'right', fontSize: 12.5, fontWeight: 700,
+                      color: 'var(--ink)', fontVariantNumeric: 'tabular-nums',
+                    }}>{value.toLocaleString()}</span>
+                    <span style={{
+                      flex: '0 0 40px', textAlign: 'right', fontSize: 11.5, fontWeight: 700,
+                      color: share != null && share < 50 ? '#A32E1C' : 'var(--muted)',
+                      fontVariantNumeric: 'tabular-nums',
+                    }}>{share == null ? 'base' : `${share.toFixed(0)}%`}</span>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
         ))}
       </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxHeight: 392, overflowY: 'auto' }}>
-        {rows.map((r) => {
-          // Each district is scaled against its own suspected count, so the
-          // bar shows conversion rather than which district is biggest. The
-          // counts beside it carry the size.
-          const base = Math.max(1, r.suspected)
-          return (
-            <div key={r.district}>
-              <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 }}>
-                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)', textTransform: 'capitalize' }}>
-                  {r.district}
-                </span>
-                <span style={{ fontSize: 10.5, color: 'var(--muted)', fontVariantNumeric: 'tabular-nums' }}>
-                  {r.chw_suspected.toLocaleString()} suspected by CHWs
-                </span>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 2, marginTop: 5 }}>
-                {STAGES.map((st, i) => {
-                  const value = r[st.key]
-                  const prev = i === 0 ? null : r[STAGES[i - 1].key]
-                  const share = prev == null ? null : pct(value, prev)
-                  return (
-                    <div key={st.key} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <div style={{ flex: 1, height: 7, borderRadius: 3, background: 'var(--hair)' }}>
-                        <div style={{
-                          width: `${(value / base) * 100}%`, height: 7, minWidth: value > 0 ? 3 : 0,
-                          borderRadius: 3, background: st.color, transition: 'width .4s ease',
-                        }} />
-                      </div>
-                      <span style={{
-                        flex: '0 0 30px', textAlign: 'right', fontSize: 12, fontWeight: 700,
-                        color: 'var(--ink)', fontVariantNumeric: 'tabular-nums',
-                      }}>{value.toLocaleString()}</span>
-                      <span style={{
-                        flex: '0 0 38px', textAlign: 'right', fontSize: 10.5,
-                        color: 'var(--muted)', fontVariantNumeric: 'tabular-nums',
-                      }}>{share == null ? '' : `${share.toFixed(0)}%`}</span>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-          )
-        })}
-      </div>
-      <p style={{ fontSize: 10.5, color: 'var(--muted)', margin: '10px 0 0', lineHeight: 1.5 }}>
-        Bars are scaled within each district, so the shape shows conversion and
-        the figures beside them carry the size. Percentages are of the stage
-        above. Suspected by CHWs is the campaign form&rsquo;s own field tally
-        and is counted separately from the registered cases.
+      <p style={{ fontSize: 10.5, color: 'var(--muted)', margin: '12px 0 0', lineHeight: 1.5 }}>
+        Suspected is the base for each district and draws full width. Every row
+        below it is that stage as a percentage of the row above, so a short bar
+        is a drop-off. Anything under half is marked in red. Suspected by CHWs
+        is the campaign form&rsquo;s own field tally and is counted separately
+        from the registered cases.
       </p>
     </div>
   )
