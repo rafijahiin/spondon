@@ -200,10 +200,7 @@ export function FistulaCampaignMap({ rows }: { rows: CampaignUpazila[] }) {
           </div>
         </div>
 
-        {/* Map and table side by side: the country is taller than wide, so a
-            full-width map wasted its right half — the table earns it. */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(340px, 1.15fr) minmax(300px, 1fr)', gap: 14, alignItems: 'stretch' }}>
-        <div style={{ position: 'relative', height: 460, borderRadius: 8, overflow: 'hidden',
+        <div style={{ position: 'relative', height: 600, borderRadius: 8, overflow: 'hidden',
                       background: SEA, border: '1px solid #dbe3e9' }}>
           {geoError ? (
             <div style={{ display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center', color: '#6b7280', fontSize: 13 }}>
@@ -259,8 +256,6 @@ export function FistulaCampaignMap({ rows }: { rows: CampaignUpazila[] }) {
             </div>
           </div>
         </div>
-
-      </div>
 
       {missing.length > 0 && (
         <p style={{ fontSize: 11.5, color: '#6b7280', margin: '8px 2px 0' }}>

@@ -395,7 +395,11 @@ function CampaignDistrictFunnel({ rows }: { rows: CampaignDistrict[] }) {
       <p style={{ fontSize: 11.5, color: 'var(--muted)', margin: '4px 0 10px' }}>
         Each bar is how many of the stage above reached this one.
       </p>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 14, maxHeight: 420, overflowY: 'auto' }}>
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(248px, 1fr))',
+        gap: '16px 22px',
+      }}>
         {rows.map((r) => (
           <div key={r.district}>
             <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 }}>
@@ -417,7 +421,7 @@ function CampaignDistrictFunnel({ rows }: { rows: CampaignDistrict[] }) {
                 return (
                   <div key={st.key} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <span style={{
-                      flex: '0 0 88px', fontSize: 11.5,
+                      flex: '0 0 76px', fontSize: 11,
                       color: i === 0 ? 'var(--ink)' : 'var(--muted)',
                       fontWeight: i === 0 ? 700 : 500,
                     }}>{st.label}</span>
@@ -430,11 +434,11 @@ function CampaignDistrictFunnel({ rows }: { rows: CampaignDistrict[] }) {
                       }} />
                     </div>
                     <span style={{
-                      flex: '0 0 30px', textAlign: 'right', fontSize: 12.5, fontWeight: 700,
+                      flex: '0 0 26px', textAlign: 'right', fontSize: 12, fontWeight: 700,
                       color: 'var(--ink)', fontVariantNumeric: 'tabular-nums',
                     }}>{value.toLocaleString()}</span>
                     <span style={{
-                      flex: '0 0 40px', textAlign: 'right', fontSize: 11.5, fontWeight: 700,
+                      flex: '0 0 36px', textAlign: 'right', fontSize: 11, fontWeight: 700,
                       color: share != null && share < 50 ? '#A32E1C' : 'var(--muted)',
                       fontVariantNumeric: 'tabular-nums',
                     }}>{share == null ? 'base' : `${share.toFixed(0)}%`}</span>
@@ -555,7 +559,7 @@ export function FistulaVisualizations({
             <div style={{
               marginTop: 16, display: 'grid', gap: 16,
               gridTemplateColumns: agg.campaign.by_district?.length
-                ? 'minmax(0, 1.35fr) minmax(300px, 1fr)'
+                ? 'minmax(320px, 0.85fr) minmax(420px, 1.15fr)'
                 : '1fr',
               alignItems: 'start',
             }}>
