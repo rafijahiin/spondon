@@ -176,11 +176,12 @@ export function MPDSRDistrictMap() {
           </span>
         </div>
         <div style={{
-          display: 'grid', gap: 28, alignItems: 'center',
-          gridTemplateColumns: 'minmax(0, 400px) minmax(0, 300px)',
-          justifyContent: 'center',
+          display: 'flex', gap: 32, alignItems: 'center',
+          justifyContent: 'center', flexWrap: 'wrap',
         }}>
-        <div style={{ position: 'relative', height: 440, borderRadius: 8, overflow: 'hidden',
+        <div style={{ position: 'relative', height: 440, width: 400,
+                      flex: '0 0 auto', maxWidth: '100%',
+                      borderRadius: 8, overflow: 'hidden',
                       background: SEA, border: '1px solid #dbe3e9' }}>
           {geo ? (
             <MapContainer
@@ -209,6 +210,7 @@ export function MPDSRDistrictMap() {
             landscape box, and this is what the freed width is for. */}
         <div style={{
           display: 'flex', flexDirection: 'column', gap: 14, fontSize: 12.5,
+          flex: '0 0 auto',
         }}>
           <LegendSwatch color={TINT.gac}  label={t('mpdsrMap.legendGac')}  sub={t('mpdsrMap.intervention')} />
           <LegendSwatch color={TINT.sida} label={t('mpdsrMap.legendSida')} sub={t('mpdsrMap.intervention')} />
