@@ -83,10 +83,29 @@ interface RecentSubmission {
   partner: string
 }
 
-export function MPDSRDistrictMap() {
+export function MPDSRDistrictMap({ districts }: {
+  districts?: readonly string[] | null
+} = {}) {
   const { t } = useTranslation()
   const [geo, setGeo] = useState<GeoJSON.FeatureCollection | null>(null)
   const [latest, setLatest] = useState<RecentSubmission | null>(null)
+  const [records, setRecords] = useState<Record<string, number> | null>(null)
+
+  // Bangladesh is portrait, so a map in a wide card leaves space beside it
+  // whatever its size. Rather than pad that with nothing, the review records
+  // per district sit there: same geography, read as numbers instead of colour.
+  // Honours ?districts= so the panel never disagrees with the donor pill.
+  const districtsKey = districts ? districts.join(',') : ''
+  useEffect(() => {
+    let cancelled = false
+    const params: Record<string, string> = {}
+    if (districtsKey) params.districts = districtsKey
+    api.get<{ records_by_district?: Record<string, number> }>(
+      '/mpdsr/aggregates/', { params })
+      .then(r => { if (!cancelled) setRecords(r.data?.records_by_district ?? null) })
+      .catch(() => { /* the map still stands on its own */ })
+    return () => { cancelled = true }
+  }, [districtsKey])
 
   useEffect(() => {
     let cancelled = false
@@ -176,7 +195,7 @@ export function MPDSRDistrictMap() {
           </span>
         </div>
         <div style={{
-          display: 'flex', gap: 32, alignItems: 'center',
+          display: 'flex', gap: 28, alignItems: 'flex-start',
           justifyContent: 'center', flexWrap: 'wrap',
         }}>
         <div style={{ position: 'relative', height: 440, width: 400,
@@ -205,9 +224,49 @@ export function MPDSRDistrictMap() {
           )}
         </div>
 
-        {/* Legend, beside the map rather than under it: the map cannot use the
-            full card width without stretching a portrait country across a
-            landscape box, and this is what the freed width is for. */}
+        {/* Review records per district: what the freed width is actually for. */}
+        {records && Object.keys(records).length > 0 && (
+          <div style={{ flex: '1 1 300px', minWidth: 260, maxWidth: 460 }}>
+            <div className="mono" style={{
+              fontSize: 10, letterSpacing: '0.08em', color: '#6b7280',
+              textTransform: 'uppercase', marginBottom: 10,
+            }}>Review records by district</div>
+            {(() => {
+              const rows = Object.entries(records)
+                .filter(([, v]) => v > 0)
+                .sort((a, b) => b[1] - a[1])
+              const total = rows.reduce((sum, [, v]) => sum + v, 0)
+              const top = rows.length ? rows[0][1] : 1
+              return rows.map(([name, value]) => (
+                <div key={name} style={{
+                  display: 'flex', alignItems: 'center', gap: 10, marginBottom: 7,
+                }}>
+                  <span style={{
+                    flex: '0 0 84px', fontSize: 12, color: '#111827',
+                    textTransform: 'capitalize',
+                  }}>{name}</span>
+                  <div style={{ flex: 1, height: 9, borderRadius: 3, background: '#eceae4' }}>
+                    <div style={{
+                      width: `${(value / top) * 100}%`, height: 9, minWidth: 3,
+                      borderRadius: 3, background: TINT.gac,
+                    }} />
+                  </div>
+                  <span style={{
+                    flex: '0 0 34px', textAlign: 'right', fontSize: 12.5,
+                    fontWeight: 700, color: '#111827',
+                    fontVariantNumeric: 'tabular-nums',
+                  }}>{value.toLocaleString()}</span>
+                  <span style={{
+                    flex: '0 0 34px', textAlign: 'right', fontSize: 11,
+                    color: '#6b7280', fontVariantNumeric: 'tabular-nums',
+                  }}>{total ? `${Math.round((value / total) * 100)}%` : ''}</span>
+                </div>
+              ))
+            })()}
+          </div>
+        )}
+
+        {/* Legend */}
         <div style={{
           display: 'flex', flexDirection: 'column', gap: 14, fontSize: 12.5,
           flex: '0 0 auto',

@@ -1154,7 +1154,7 @@ export function MPDSRVisualizations({
             <SocialAutopsy socialAutopsy={agg?.social_autopsy ?? null} />
           </div>
           <div>
-            <MPDSRIndicators indicators={agg?.indicators ?? null} recordsByDistrict={agg?.records_by_district ?? null} />
+            <MPDSRIndicators indicators={agg?.indicators ?? null} />
           </div>
         </>
       )}
@@ -1448,9 +1448,8 @@ function SocialAutopsy({ socialAutopsy }: {
 // CIPRB and UNFPA. Decoding now happens once in mpdsr/code_labels.py, checked
 // against the deployed forms by mpdsr/test_code_labels.py.
 
-function MPDSRIndicators({ indicators, recordsByDistrict }: {
+function MPDSRIndicators({ indicators }: {
   indicators: Record<string, Record<string, number>> | null
-  recordsByDistrict?: Record<string, number> | null
 }) {
   const ind = indicators ?? {}
   const z = {} as Record<string, number>
@@ -1500,7 +1499,9 @@ function MPDSRIndicators({ indicators, recordsByDistrict }: {
         {Object.values(ind.time_death_after_birth_hours ?? {}).some((v) => v > 0) && (
           <Histogram title="11. Time of death after birth" data={ind.time_death_after_birth_hours ?? z} />
         )}
-        <BarBreakdown   title="12. Review records by district" data={recordsByDistrict ?? z} />
+        {/* 12 (review records by district) moved beside the coverage map, where
+            it fills the width a portrait map cannot use. Removed here rather
+            than shown twice on one page. */}
       </div>
     </div>
   )

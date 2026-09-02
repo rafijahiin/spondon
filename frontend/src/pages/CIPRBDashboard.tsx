@@ -452,7 +452,7 @@ function MPDSRSection({
 
       {/* ─── Geographic coverage map (SIDA / GAC / CP highlight) ─── */}
       <div>
-        <MPDSRDistrictMap />
+        <MPDSRDistrictMap districts={districts} />
       </div>
 
       {/* ─── Visualizations: Notify vs Review · Cause breakdown · Response Plan ─── */}
