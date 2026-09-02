@@ -245,7 +245,7 @@ export function ActionPlanTracker({ districts }: { districts?: readonly string[]
       </div>
 
       {/* By district + by section */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 14, marginBottom: 14 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 14, marginBottom: 14, alignItems: 'start' }}>
         <div className="card" style={{ padding: '14px 18px' }}>
           <div className="mono" style={{ fontSize: 10, color: 'var(--muted)', letterSpacing: '0.08em', fontWeight: 700, marginBottom: 3 }}>BY DISTRICT</div>
           <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 12 }}>

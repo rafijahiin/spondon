@@ -704,9 +704,12 @@ export default function CIPRBDashboard() {
               <span className="dot" style={{ background: CIPRB_BLUE }} />{t('ciprbExtras.coverage')}
             </div>
             <div className="card shimmer" style={{ padding: 10 }}>
+              {/* Held to the width the country needs; wider than this and the
+                  card fills with sea. */}
+              <div style={{ maxWidth: 400, margin: '0 auto' }}>
               <PartnerOverlapMap
                 variant="atlas"
-                height={340}
+                height={400}
                 partner="CIPRB"
                 subgroups={[
                   // Provided by CIPRB (Near Miss tool, June 2026) — donor
@@ -728,6 +731,7 @@ export default function CIPRBDashboard() {
                   },
                 ]}
               />
+              </div>
             </div>
           </div>
         </div>

@@ -333,8 +333,6 @@ const STAGES = [
   { key: 'rehabilitated', label: 'Rehabilitated', color: '#6E2B1B' },
 ] as const
 
-const pct = (n: number, d: number) => (d > 0 ? (n / d) * 100 : null)
-
 /** The campaign's own at-a-glance band. Same five stages and the same
  *  each-of-the-previous denominators as the Fistula band at the top of the
  *  page, so a reader who has scrolled past it sees the same arithmetic
@@ -348,8 +346,11 @@ function CampaignFunnelStrip({ funnel }: { funnel: CampaignFunnel }) {
     }}>
       {STAGES.map((st, i) => {
         const value = funnel[st.key]
-        const prev = i === 0 ? null : funnel[STAGES[i - 1].key]
-        const share = prev == null ? null : pct(value, prev)
+        // Diagnosed is the base, exactly as in the district panel below, so
+        // every percentage on this surface answers the same question.
+        const base = funnel.diagnosed
+        const share = st.key === 'suspected' || st.key === 'diagnosed' || base === 0
+          ? null : (value / base) * 100
         return (
           <div key={st.key} className="card" style={{
             padding: 16, display: 'flex', flexDirection: 'column', gap: 6,
@@ -363,10 +364,14 @@ function CampaignFunnelStrip({ funnel }: { funnel: CampaignFunnel }) {
               fontSize: 28, fontWeight: 800, lineHeight: 1, color: 'var(--ink)',
               fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em',
             }}>{value.toLocaleString()}</div>
-            <div style={{ fontSize: 11.5, color: 'var(--muted)' }}>
-              {share == null
-                ? 'cases in campaign districts'
-                : `${share.toFixed(0)}% of ${STAGES[i - 1].label.toLowerCase()}`}
+            <div style={{
+              fontSize: 11.5,
+              color: share != null && share < 50 ? '#A32E1C' : 'var(--muted)',
+              fontWeight: share != null && share < 50 ? 700 : 400,
+            }}>
+              {st.key === 'suspected' ? 'found in campaign districts'
+                : st.key === 'diagnosed' ? 'the base for every figure below'
+                : `${share!.toFixed(0)}% of diagnosed`}
             </div>
           </div>
         )
@@ -609,7 +614,7 @@ export function FistulaVisualizations({
       {/* ─── 2b + 3: the two pies share one row — each was a full-width card
           around a 220px circle, i.e. mostly empty space and a page of scroll
           (Rafi, 4 Aug 2026). They stack again below ~900px. ─── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(420px, 1fr))', gap: 18, alignItems: 'stretch' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(420px, 1fr))', gap: 18, alignItems: 'start' }}>
       {(agg.outcomeDry + agg.outcomeNotDry + agg.outcomeFailed) > 0 && (
         <div className="card" style={{ padding: 20, display: 'flex', flexDirection: 'column' }}>
           {/* Header lives INSIDE the card so the two boxes in this row align
