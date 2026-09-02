@@ -428,6 +428,52 @@ def fistula_aggregates(request):
         'archive_rows': _archive_rows,
     }
 
+    # ── The campaign funnel, per district (RCH, 2 Sep 2026) ──────────────────
+    #    The CHW activity form records only `suspected`. Diagnosed, referred,
+    #    repaired and rehabilitated exist nowhere but the case registry, so
+    #    those four are read from `qs` and scoped to the districts the campaign
+    #    actually worked in.
+    #
+    #    The CHW suspected tally is carried alongside as its own column and is
+    #    deliberately NOT folded in as the funnel's first stage. A CHW day-count
+    #    and a registered patient are different units; merging them is what put
+    #    two denominators under one heading and drew the CIPRB complaint on
+    #    3 Aug 2026. Both numbers are shown, each labelled with its source.
+    camp_names = {}
+    chw_suspected = {}
+    for g in by_upazila:
+        d = (g.get('district') or '').strip()
+        if not d:
+            continue
+        k = d.lower()
+        camp_names.setdefault(k, d)
+        chw_suspected[k] = chw_suspected.get(k, 0) + (g.get('suspected') or 0)
+
+    stage_by_district = _Counter()
+    for d, st in qs.values_list('district', 'current_stage'):
+        k = (d or '').strip().lower()
+        if k in camp_names:
+            stage_by_district[(k, st)] += 1
+
+    camp_by_district = []
+    for k in camp_names:
+        row = {'district': camp_names[k], 'chw_suspected': chw_suspected.get(k, 0)}
+        # Same monotonic rule as the national pipeline: a case at a later stage
+        # has passed through every earlier one, so suspected >= diagnosed >=
+        # referred >= repaired >= rehabilitated can never be violated.
+        for i, st in enumerate(ORDER):
+            row[st] = sum(stage_by_district.get((k, s), 0) for s in ORDER[i:])
+        camp_by_district.append(row)
+    camp_by_district.sort(key=lambda r: (-r['suspected'], -r['chw_suspected'],
+                                         r['district']))
+
+    # Districts are disjoint, so summing the per-district cumulative counts
+    # gives the same national figures the strip needs.
+    campaign['funnel'] = {st: sum(r[st] for r in camp_by_district)
+                          for st in ORDER}
+    campaign['funnel']['chw_suspected'] = sum(chw_suspected.values())
+    campaign['by_district'] = camp_by_district
+
     return Response({
         'total': qs.count(),
         'pipeline': pipeline,

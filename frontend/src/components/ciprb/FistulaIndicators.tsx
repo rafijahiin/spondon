@@ -10,7 +10,7 @@
 import { useEffect, useState } from 'react'
 import { api } from '@/api/client'
 import { SourceChip } from '@/components/ui/SourceChip'
-import { BarBreakdown, DonutBreakdown, Histogram, StatTile } from './IndicatorCharts'
+import { BarBreakdown, DonutBreakdown, Histogram } from './IndicatorCharts'
 
 const CIPRB_ORANGE = '#F96000'
 
@@ -98,8 +98,11 @@ export function FistulaIndicators({ districts }: { districts?: readonly string[]
         <DonutBreakdown title="13. Outcome of last delivery" data={data.delivery_outcome} labels={L.outcome} />
         <DonutBreakdown title="14. Cause of fistula (type)" data={data.fistula_type_v2} labels={L.ftype} />
         <BarBreakdown   title="15. Cause of iatrogenic fistula" data={data.iatrogenic_cause} labels={L.iatro} />
-        <DonutBreakdown title="16. Type of genital fistula" data={data.genital_fistula_type} labels={L.genital} />
-        <StatTile       title="17. Outcome of surgery"      data={data.surgery_outcome_v2} highlight="success_dry" labels={L.surgery} />
+        <BarBreakdown   title="16. Type of genital fistula" data={data.genital_fistula_type} labels={L.genital} />
+        {/* Was a single-figure stat tile. The three outcomes are mutually
+            exclusive and sum to the operated cohort, so they read as one whole
+            (RCH, 2 Sep 2026). */}
+        <DonutBreakdown title="17. Outcome of surgery"      data={data.surgery_outcome_v2} labels={L.surgery} />
       </div>
     </div>
   )

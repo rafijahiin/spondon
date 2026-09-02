@@ -41,119 +41,29 @@ export interface CampaignAgg {
   date_from: string | null
   date_to: string | null
   by_upazila: CampaignUpazila[]
-  // Q1/Q2 paper archive (RCH request, 17 Aug 2026) — fixed figures.
-  archive_rows?: ArchiveRow[]
+  // The five case-registry stages scoped to the districts the campaign worked
+  // in, with the CHW form's own suspected tally carried separately.
+  funnel?: CampaignFunnel
+  by_district?: CampaignDistrict[]
 }
 
-interface ArchiveRow {
-  quarter: 'Q1' | 'Q2'
+export interface CampaignFunnel {
+  suspected: number
+  diagnosed: number
+  referred: number
+  repaired: number
+  rehabilitated: number
+  chw_suspected: number
+}
+
+export interface CampaignDistrict {
   district: string
-  upazila: string
-  start: string | null
-  end: string | null
-  chw: number | null
-  unions: number | null
-  awareness: number | null
-  courtyard: number | null
-  households: number | null
-  population: number | null
-  suspected: number | null
-}
-
-/** Q1 + Q2 merged campaign table — CIPRB's paper-era compilation, colour-coded
- *  (quarter chips + population heat). Fixed archive figures, not live records. */
-function CampaignArchiveTable({ rows }: { rows: ArchiveRow[] }) {
-  if (!rows.length) return null
-  const maxPop = Math.max(1, ...rows.map((r) => r.population ?? 0))
-  const heat = (v: number | null) => {
-    const t = (v ?? 0) / maxPop
-    return `rgba(232, 86, 43, ${0.06 + t * 0.34})`
-  }
-  const qChip = (q: string) => (
-    <span style={{
-      fontSize: 10.5, fontWeight: 700, borderRadius: 6, padding: '2px 8px',
-      background: q === 'Q1' ? '#EDF1F5' : '#FDEDE5',
-      color: q === 'Q1' ? '#33475C' : '#C43F17',
-    }}>{q}</span>
-  )
-  const fmtN = (v: number | null) => (v === null ? '–' : v.toLocaleString())
-  const totals = {
-    chw: rows.reduce((a, r) => a + (r.chw ?? 0), 0),
-    awareness: rows.reduce((a, r) => a + (r.awareness ?? 0), 0),
-    courtyard: rows.reduce((a, r) => a + (r.courtyard ?? 0), 0),
-    households: rows.reduce((a, r) => a + (r.households ?? 0), 0),
-    population: rows.reduce((a, r) => a + (r.population ?? 0), 0),
-    suspected: rows.reduce((a, r) => a + (r.suspected ?? 0), 0),
-  }
-  const th = (label: string, right = true) => (
-    <th key={label} style={{
-      textAlign: right ? 'right' : 'left', padding: '10px 12px', fontSize: 10.5,
-      letterSpacing: '.05em', color: '#6b7280', whiteSpace: 'nowrap',
-      borderBottom: '1px solid rgba(19,22,25,0.14)', background: '#f7f9fc',
-    }}>{label}</th>
-  )
-  const td = (v: string, opts: { right?: boolean; bg?: string; bold?: boolean } = {}) => (
-    <td style={{
-      padding: '8px 12px', textAlign: opts.right === false ? 'left' : 'right',
-      fontVariantNumeric: 'tabular-nums', fontWeight: opts.bold ? 700 : 400,
-      background: opts.bg, borderBottom: '1px solid rgba(19,22,25,0.10)',
-      whiteSpace: 'nowrap',
-    }}>{v}</td>
-  )
-  return (
-    <div className="card campaign-atlas" style={{ padding: 0, overflow: 'hidden', marginTop: 16 }}>
-      <div style={{ background: '#ffffff', padding: 16, color: '#111827' }}>
-        <div style={{ fontSize: 15, fontWeight: 700 }}>
-          Fistula Campaign · Quarter 1 + Quarter 2, merged
-        </div>
-        <div style={{ fontSize: 11.5, color: '#6b7280', marginBottom: 10 }}>
-          Campaign archive (paper records, Feb to May 2026, compiled by CIPRB RCH) ·
-          fixed figures, not live submissions · population column shaded by size ·
-          blank cells were blank in the source file
-        </div>
-        <div style={{ overflow: 'auto', border: '1px solid #e5e7eb', borderRadius: 8 }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5, color: '#111827' }}>
-            <thead><tr>
-              {th('DISTRICT', false)}{th('UPAZILA', false)}{th('QUARTER')}
-              {th('DATES')}{th('CHW')}{th('UNIONS')}{th('AWARENESS')}
-              {th('COURTYARD')}{th('HOUSEHOLDS')}{th('POPULATION')}{th('SUSPECTED')}
-            </tr></thead>
-            <tbody>
-              {rows.map((r, i) => (
-                <tr key={i}>
-                  {td(r.district, { right: false, bold: true })}
-                  {td(r.upazila, { right: false })}
-                  <td style={{ padding: '8px 12px', textAlign: 'right',
-                               borderBottom: '1px solid rgba(19,22,25,0.10)' }}>{qChip(r.quarter)}</td>
-                  {td(r.start && r.end ? `${r.start.slice(5)} to ${r.end.slice(5)}` : '–')}
-                  {td(fmtN(r.chw))}
-                  {td(fmtN(r.unions))}
-                  {td(fmtN(r.awareness))}
-                  {td(fmtN(r.courtyard))}
-                  {td(fmtN(r.households))}
-                  {td(fmtN(r.population), { bg: heat(r.population), bold: true })}
-                  {td(fmtN(r.suspected))}
-                </tr>
-              ))}
-              <tr>
-                {td('TOTAL', { right: false, bold: true })}
-                {td(`${rows.length} campaigns`, { right: false })}
-                {td('')}
-                {td('')}
-                {td(totals.chw.toLocaleString(), { bold: true })}
-                {td('')}
-                {td(totals.awareness.toLocaleString(), { bold: true })}
-                {td(totals.courtyard.toLocaleString(), { bold: true })}
-                {td(totals.households.toLocaleString(), { bold: true })}
-                {td(totals.population.toLocaleString(), { bg: heat(maxPop), bold: true })}
-                {td(totals.suspected.toLocaleString(), { bold: true })}
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  )
+  chw_suspected: number
+  suspected: number
+  diagnosed: number
+  referred: number
+  repaired: number
+  rehabilitated: number
 }
 
 interface AggregateData {
@@ -412,12 +322,144 @@ function DiagnosisLegend({ data }: { data: { name: string; value: number; color:
 
 // ─── Main export ─────────────────────────────────────────────────────────────
 
+// ─── Campaign funnel ─────────────────────────────────────────────────────────
+// The five stages, in the order a patient passes through them, each shaded a
+// step darker so the drop-off is visible before any number is read.
+const STAGES = [
+  { key: 'suspected',     label: 'Suspected',     color: '#F96000' },
+  { key: 'diagnosed',     label: 'Diagnosed',     color: '#D9500B' },
+  { key: 'referred',      label: 'Referred',      color: '#B94314' },
+  { key: 'repaired',      label: 'Repaired',      color: '#94371A' },
+  { key: 'rehabilitated', label: 'Rehabilitated', color: '#6E2B1B' },
+] as const
+
+const pct = (n: number, d: number) => (d > 0 ? (n / d) * 100 : null)
+
+/** The campaign's own at-a-glance band. Same five stages and the same
+ *  each-of-the-previous denominators as the Fistula band at the top of the
+ *  page, so a reader who has scrolled past it sees the same arithmetic
+ *  applied to the districts the campaign worked in. */
+function CampaignFunnelStrip({ funnel }: { funnel: CampaignFunnel }) {
+  return (
+    <div style={{
+      display: 'grid',
+      gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))',
+      gap: 12,
+    }}>
+      {STAGES.map((st, i) => {
+        const value = funnel[st.key]
+        const prev = i === 0 ? null : funnel[STAGES[i - 1].key]
+        const share = prev == null ? null : pct(value, prev)
+        return (
+          <div key={st.key} className="card" style={{
+            padding: 16, display: 'flex', flexDirection: 'column', gap: 6,
+            borderTop: `3px solid ${st.color}`,
+          }}>
+            <div className="mono" style={{
+              fontSize: 10, letterSpacing: '0.08em', color: 'var(--muted)',
+              textTransform: 'uppercase',
+            }}>{st.label}</div>
+            <div style={{
+              fontSize: 28, fontWeight: 800, lineHeight: 1, color: 'var(--ink)',
+              fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em',
+            }}>{value.toLocaleString()}</div>
+            <div style={{ fontSize: 11.5, color: 'var(--muted)' }}>
+              {share == null
+                ? 'cases in campaign districts'
+                : `${share.toFixed(0)}% of ${STAGES[i - 1].label.toLowerCase()}`}
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+/** District by district, the same five stages. Sits beside the map: the map
+ *  answers where the campaign went, this answers what came of it. */
+function CampaignDistrictFunnel({ rows }: { rows: CampaignDistrict[] }) {
+  if (!rows.length) return null
+  return (
+    <div className="card" style={{ padding: 18, display: 'flex', flexDirection: 'column', gap: 4 }}>
+      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
+        <h4 style={{ margin: 0, fontSize: 14.5, fontWeight: 700, color: 'var(--ink)' }}>
+          What came of it, district by district
+        </h4>
+      </div>
+      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', margin: '8px 0 4px' }}>
+        {STAGES.map((st) => (
+          <span key={st.key} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11, color: 'var(--muted)' }}>
+            <span style={{ width: 11, height: 11, borderRadius: 3, background: st.color }} />
+            {st.label}
+          </span>
+        ))}
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxHeight: 392, overflowY: 'auto' }}>
+        {rows.map((r) => {
+          // Each district is scaled against its own suspected count, so the
+          // bar shows conversion rather than which district is biggest. The
+          // counts beside it carry the size.
+          const base = Math.max(1, r.suspected)
+          return (
+            <div key={r.district}>
+              <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 }}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)', textTransform: 'capitalize' }}>
+                  {r.district}
+                </span>
+                <span style={{ fontSize: 10.5, color: 'var(--muted)', fontVariantNumeric: 'tabular-nums' }}>
+                  {r.chw_suspected.toLocaleString()} suspected by CHWs
+                </span>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 2, marginTop: 5 }}>
+                {STAGES.map((st, i) => {
+                  const value = r[st.key]
+                  const prev = i === 0 ? null : r[STAGES[i - 1].key]
+                  const share = prev == null ? null : pct(value, prev)
+                  return (
+                    <div key={st.key} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div style={{ flex: 1, height: 7, borderRadius: 3, background: 'var(--hair)' }}>
+                        <div style={{
+                          width: `${(value / base) * 100}%`, height: 7, minWidth: value > 0 ? 3 : 0,
+                          borderRadius: 3, background: st.color, transition: 'width .4s ease',
+                        }} />
+                      </div>
+                      <span style={{
+                        flex: '0 0 30px', textAlign: 'right', fontSize: 12, fontWeight: 700,
+                        color: 'var(--ink)', fontVariantNumeric: 'tabular-nums',
+                      }}>{value.toLocaleString()}</span>
+                      <span style={{
+                        flex: '0 0 38px', textAlign: 'right', fontSize: 10.5,
+                        color: 'var(--muted)', fontVariantNumeric: 'tabular-nums',
+                      }}>{share == null ? '' : `${share.toFixed(0)}%`}</span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+      <p style={{ fontSize: 10.5, color: 'var(--muted)', margin: '10px 0 0', lineHeight: 1.5 }}>
+        Bars are scaled within each district, so the shape shows conversion and
+        the figures beside them carry the size. Percentages are of the stage
+        above. Suspected by CHWs is the campaign form&rsquo;s own field tally
+        and is counted separately from the registered cases.
+      </p>
+    </div>
+  )
+}
+
 export function FistulaVisualizations({
   period,
   districts,
+  only,
 }: {
   period?: ReportingPeriod
   districts?: readonly string[] | null
+  /** Which half to render. The campaign band and the case-data pies now sit in
+   *  different places on the CIPRB dashboard, so the component is mounted
+   *  twice and each mount draws one of them. */
+  only?: 'campaign' | 'charts'
 } = {}) {
   const { t } = useTranslation()
   // Reporting-period (Contract / Annual) from the CIPRB Dashboard toggle
@@ -457,6 +499,7 @@ export function FistulaVisualizations({
     <div style={{ display: 'flex', flexDirection: 'column', gap: 36 }}>
 
       {/* ─── 1. Campaign Metrics ─── */}
+      {only !== 'charts' && (
       <div>
         <div style={{ marginBottom: 14 }}>
           <div className="kicker">
@@ -496,13 +539,22 @@ export function FistulaVisualizations({
               <MetricTile icon={<Building2 size={13} />} label={t('fistulaViz.upazilas')} value={agg.campaign.upazilas} sub={t('fistulaViz.upazilasSub')} />
               <MetricTile icon={<Home size={13} />} label="Households visited" value={agg.campaign.households} sub="Door-to-door reach" />
               <MetricTile icon={<Users size={13} />} label="Population covered" value={agg.campaign.population} sub="People in visited households" />
-              <MetricTile icon={<Search size={13} />} label="Suspected found in campaign" value={agg.campaign.suspected}
-                sub="Reported by CHWs in the field" />
             </div>
-            <div style={{ marginTop: 16 }}>
+            {agg.campaign.funnel && (
+              <div style={{ marginTop: 18 }}>
+                <CampaignFunnelStrip funnel={agg.campaign.funnel} />
+              </div>
+            )}
+            <div style={{
+              marginTop: 16, display: 'grid', gap: 16,
+              gridTemplateColumns: agg.campaign.by_district?.length
+                ? 'minmax(0, 1.35fr) minmax(300px, 1fr)'
+                : '1fr',
+              alignItems: 'start',
+            }}>
               <FistulaCampaignMap rows={agg.campaign.by_upazila} />
+              <CampaignDistrictFunnel rows={agg.campaign.by_district ?? []} />
             </div>
-            <CampaignArchiveTable rows={agg.campaign.archive_rows ?? []} />
             <p style={{ fontSize: 11.5, color: 'var(--muted)', margin: '10px 2px 0' }}>
               Campaign tallies are the field team&rsquo;s own day counts and are
               reported separately from the patient registry below, so no case is
@@ -512,6 +564,9 @@ export function FistulaVisualizations({
         )}
       </div>
 
+      )}
+
+      {only === 'campaign' ? null : <>
       {/* ─── 2. Patient funnel REMOVED 2026-08-04 (Rafi): it repeated the
           At-a-glance band's five numbers and four percentages verbatim. The
           band keeps the summary; the new diagnosed-denominator layer under it
@@ -669,6 +724,7 @@ export function FistulaVisualizations({
       </div>
       </div>
 
+    </>}
     </div>
   )
 }

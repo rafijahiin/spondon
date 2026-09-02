@@ -260,58 +260,6 @@ export function FistulaCampaignMap({ rows }: { rows: CampaignUpazila[] }) {
           </div>
         </div>
 
-        {/* Names and volumes in full — also the only place a boundary-less
-          upazila (Guimara) stays visible. */}
-      {/* Plain div, NOT className="card": the card class flips dark with the
-          theme, which put this table's fixed dark ink on a dark background. */}
-      <div style={{ padding: 0, overflow: 'auto', maxHeight: 460, background: '#ffffff',
-                    border: '1px solid #e5e7eb', borderRadius: 8 }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-          <thead>
-            <tr>
-              {['UPAZILA', 'QUARTER', 'POPULATION', 'HOUSEHOLDS', 'SUSPECTED'].map((c, i) => (
-                <th key={c} style={{
-                  textAlign: i === 0 ? 'left' : 'right',
-                  padding: i === 0 ? '10px 16px' : '10px 14px',
-                  fontSize: 10.5, letterSpacing: '.05em', color: '#6b7280',
-                  borderBottom: '1px solid rgba(19,22,25,0.14)', background: '#f7f9fc',
-                }}>{c}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((r) => (
-              <tr key={r.key}>
-                <td style={{ padding: '9px 16px', borderBottom: '1px solid rgba(19,22,25,0.14)' }}>
-                  <span style={{ fontWeight: 650 }}>{r.upazila}</span>
-                  <div style={{ fontSize: 11, color: '#6b7280', textTransform: 'capitalize' }}>
-                    {r.district}
-                    {r.spellings.length > 1
-                      ? ` · also written ${r.spellings.filter((x) => x !== r.upazila).join(', ')}`
-                      : ''}
-                  </div>
-                </td>
-                <td style={{ padding: '9px 14px', textAlign: 'right',
-                             borderBottom: '1px solid rgba(19,22,25,0.14)' }}>
-                  <span style={{
-                    fontSize: 10.5, fontWeight: 700, borderRadius: 6, padding: '2px 7px',
-                    background: r.source === 'archive' ? '#FDEDE5' : '#EDF1F5',
-                    color: r.source === 'archive' ? '#C43F17' : '#33475C',
-                  }}>{r.quarters?.length ? r.quarters.join('+') : 'LIVE'}</span>
-                </td>
-                {[r.population, r.households, r.suspected].map((v, i) => (
-                  <td key={i} style={{
-                    padding: '9px 14px', textAlign: 'right',
-                    fontVariantNumeric: 'tabular-nums',
-                    fontWeight: i === 0 ? 650 : 400,
-                    borderBottom: '1px solid rgba(19,22,25,0.14)',
-                  }}>{fmt(v)}</td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
       </div>
 
       {missing.length > 0 && (
@@ -320,7 +268,8 @@ export function FistulaCampaignMap({ rows }: { rows: CampaignUpazila[] }) {
           The national boundary file has no matching shape — either a newer
           upazila (Guimara was created in 2014 from parts of Ramgarh, Matiranga
           and Mahalchhari) or a district recorded incorrectly in the field.
-          The figures are in the table above either way.
+          Its figures are still counted in the totals and in the district
+          funnel beside the map.
         </p>
       )}
       </div>

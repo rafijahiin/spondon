@@ -906,14 +906,22 @@ export default function CIPRBDashboard() {
             (Rafi, 4 Aug 2026). */}
       </section>
 
-      {/* ───────────────── Fistula visualizations (campaign / funnel / pie) ───────────────── */}
+      {/* ───────────────── Fistula case-data charts (outcome / diagnosis pies) ───────────────── */}
       <section className="section" style={{ marginTop: 8 }}>
-        <FistulaVisualizations period={{ from: activePeriod.from, to: activePeriod.to }} districts={activeDonor.districts} />
+        <FistulaVisualizations only="charts" period={{ from: activePeriod.from, to: activePeriod.to }} districts={activeDonor.districts} />
       </section>
 
       {/* ───────────────── Fistula 17 major indicators (CIPRB spec) ───────────────── */}
       <section className="section" style={{ marginTop: 8 }}>
         <FistulaIndicators districts={activeDonor.districts} />
+      </section>
+
+      {/* ───────────────── Fistula Campaign ─────────────────
+          Moved down to sit directly above the MPDSR tracker (RCH, 2 Sep 2026).
+          The campaign is community fieldwork, not case data, so it now closes
+          the fistula band instead of opening it. */}
+      <section className="section" id="fistula-campaign-section" style={{ marginTop: 8, scrollMarginTop: 80 }}>
+        <FistulaVisualizations only="campaign" period={{ from: activePeriod.from, to: activePeriod.to }} districts={activeDonor.districts} />
       </section>
 
       {/* ───────────────── Divider ───────────────── */}

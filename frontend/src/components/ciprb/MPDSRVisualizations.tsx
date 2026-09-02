@@ -1397,8 +1397,6 @@ function SocialAutopsy({ socialAutopsy }: {
 }) {
   const { t } = useTranslation()
   const data = socialAutopsy ?? { total: 0, place_of_death: {} }
-  const other = Math.max(0, (data.all_kinds_total ?? data.total) - data.total)
-  const z = {} as Record<string, number>
   return (
     <div>
       <div style={{
@@ -1421,35 +1419,6 @@ function SocialAutopsy({ socialAutopsy }: {
         <SourceChip>CIPRB 6 — Social Autopsy</SourceChip>
       </div>
       <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
-        {/* Count stat — sa_md cases reviewed. */}
-        <div className="card" style={{ padding: 22, flex: '1 1 240px', minWidth: 220 }}>
-          <div className="mono" style={{ fontSize: 10, color: 'var(--muted)', letterSpacing: '0.08em', marginBottom: 6 }}>
-            {t('mpdsrViz.saCountKicker')}
-          </div>
-          <div style={{
-            fontSize: 44, fontWeight: 800, color: CIPRB_BLUE, lineHeight: 1,
-            fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em',
-          }}>
-            {data.total.toLocaleString()}
-          </div>
-          <div style={{ fontSize: 12, color: 'var(--ink-3)', marginTop: 8 }}>
-            {data.total === 0 ? t('mpdsrViz.saEmpty') : t('mpdsrViz.saCountSub')}
-          </div>
-          {/* The form also reviews neonatal deaths and stillbirths. Say so,
-              rather than letting those rows vanish from a maternal section. */}
-          {other > 0 && (
-            <div style={{ fontSize: 11.5, color: 'var(--muted)', marginTop: 6 }}>
-              {t('mpdsrViz.saOtherKinds', {
-                other,
-                neonatal: data.by_kind?.neonatal ?? 0,
-                stillbirth: data.by_kind?.stillbirth ?? 0,
-              })}
-            </div>
-          )}
-        </div>
-        {/* The three kinds of death this form reviews, split graphically at
-            RCH's request (23 Aug 2026). The headline count above stays
-            maternal-only, so this is the panel that shows the whole cohort. */}
         <DonutBreakdown
           title={t('mpdsrViz.saKindTitle')}
           kicker={t('mpdsrViz.saKindKicker')}
@@ -1465,11 +1434,6 @@ function SocialAutopsy({ socialAutopsy }: {
             stillbirth: t('mpdsrViz.saKindStillbirth'),
             unclassified: t('mpdsrViz.saKindUnclassified'),
           }}
-        />
-        <DonutBreakdown
-          title={t('mpdsrViz.saPlaceTitle')}
-          kicker={t('mpdsrViz.saPlaceKicker')}
-          data={data.place_of_death ?? z}
         />
       </div>
     </div>

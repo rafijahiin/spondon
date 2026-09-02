@@ -475,3 +475,98 @@ class CampaignArchiveOverlayTest(TestCase):
         self.assertEqual(camp['population'],
                          sum(x['population'] or 0 for x in camp['by_upazila']))
         self.assertEqual(len(camp['archive_rows']), 24)
+
+
+class CampaignDistrictFunnelTest(TestCase):
+    """The per-district campaign funnel beside the map (RCH, 2 Sep 2026).
+
+    The campaign form records only `suspected`, so the other four stages come
+    from the case registry scoped to the districts the campaign worked in. The
+    two must stay distinguishable: a CHW day-count is not a registered patient,
+    and folding one into the other is the 3 Aug 2026 complaint all over again.
+    """
+
+    def setUp(self):
+        from .models import CIPRBFistulaCase
+        self.client = APIClient()
+        self.user = make_user('rch@x.org', Organisation.CIPRB, Role.ORG_LEAD)
+        self.client.force_authenticate(user=self.user)
+
+        # Kurigram is a campaign district. One case at each of three stages.
+        for i, stage in enumerate(['suspected', 'referred', 'rehabilitated']):
+            CIPRBFistulaCase.objects.create(
+                case_serial='K%d' % i, district='Kurigram', upazila='Nageshwari',
+                current_stage=stage, approval_status='APPROVED')
+        # Dhaka is NOT a campaign district. It must not appear at all.
+        CIPRBFistulaCase.objects.create(
+            case_serial='D1', district='Dhaka', upazila='Savar',
+            current_stage='repaired', approval_status='APPROVED')
+
+        FistulaCampaign.objects.create(
+            district='Kurigram', upazila='Nageshwari',
+            campaign_date=datetime.date(2026, 7, 1),
+            households_visited=100, population_covered=500,
+            suspected_fistula_cases=9, approval_status='APPROVED',
+            latitude=25.8, longitude=89.6)
+
+    def _camp(self):
+        r = self.client.get('/api/fistula/aggregates/')
+        self.assertEqual(r.status_code, 200)
+        return r.json()['campaign']
+
+    def test_only_campaign_districts_appear(self):
+        # The Q1/Q2 paper archive is merged into by_upazila unconditionally,
+        # so its eight districts are campaign districts too and belong here.
+        # What must NOT appear is a district with cases but no campaign.
+        names = [r['district'] for r in self._camp()['by_district']]
+        self.assertIn('Kurigram', names)
+        self.assertNotIn('Dhaka', names)
+
+    def _row(self, name='Kurigram'):
+        for r in self._camp()['by_district']:
+            if r['district'] == name:
+                return r
+        self.fail('%s missing from by_district' % name)
+
+    def test_stages_are_cumulative_and_never_invert(self):
+        row = self._row()
+        # 3 cases at suspected / referred / rehabilitated. A case at a later
+        # stage has passed every earlier one.
+        self.assertEqual(row['suspected'], 3)
+        self.assertEqual(row['diagnosed'], 2)
+        self.assertEqual(row['referred'], 2)
+        self.assertEqual(row['repaired'], 1)
+        self.assertEqual(row['rehabilitated'], 1)
+        order = ['suspected', 'diagnosed', 'referred', 'repaired', 'rehabilitated']
+        for a, b in zip(order, order[1:]):
+            self.assertGreaterEqual(row[a], row[b])
+
+    def test_chw_tally_is_carried_separately_not_folded_in(self):
+        row = self._row()
+        # 9 from the live activity day, plus whatever the Q1/Q2 paper archive
+        # holds for Kurigram. Either way it is a CHW field tally.
+        self.assertGreaterEqual(row['chw_suspected'], 9)
+        # And it must NOT have become the funnel's first stage: that stays the
+        # registered-case count, which is 3.
+        self.assertEqual(row['suspected'], 3)
+        self.assertNotEqual(row['chw_suspected'], row['suspected'])
+
+    def test_national_funnel_is_the_sum_of_the_districts(self):
+        camp = self._camp()
+        rows = camp['by_district']
+        for stage in ('suspected', 'diagnosed', 'referred', 'repaired',
+                      'rehabilitated'):
+            self.assertEqual(camp['funnel'][stage],
+                             sum(r[stage] for r in rows))
+        self.assertEqual(camp['funnel']['chw_suspected'],
+                         sum(r['chw_suspected'] for r in rows))
+        # Kurigram also carries a Q1 archive row, so the CHW tally is the
+        # live 9 plus the archive's own. The point is that it is summed from
+        # the same rows the panel draws, not that it equals any one figure.
+
+    def test_a_district_the_campaign_missed_is_excluded_from_the_funnel(self):
+        camp = self._camp()
+        # Dhaka has a repaired case but no campaign activity, so it must not
+        # inflate the campaign's repaired count.
+        self.assertEqual(camp['funnel']['repaired'], 1)
+        self.assertNotIn('Dhaka', [r['district'] for r in camp['by_district']])
