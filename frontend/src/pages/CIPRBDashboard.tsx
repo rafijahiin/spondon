@@ -929,10 +929,10 @@ export default function CIPRBDashboard() {
       </section>
 
       {/* ───────────────── Divider ───────────────── */}
-      <div style={{ height: 1, background: 'var(--hair)', margin: '24px 0' }} />
+      <div style={{ height: 1, background: 'var(--hair)', margin: '18px 0 4px' }} />
 
       {/* ───────────────── MPDSR ───────────────── */}
-      <section className="section" id="mpdsr-section" style={{ marginBottom: 40, scrollMarginTop: 80 }}>
+      <section className="section" id="mpdsr-section" style={{ marginTop: 0, marginBottom: 24, scrollMarginTop: 80 }}>
         <MPDSRSection period={activePeriod} districts={activeDonor.districts} />
       </section>
 
