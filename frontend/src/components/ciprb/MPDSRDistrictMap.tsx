@@ -176,8 +176,9 @@ export function MPDSRDistrictMap() {
           </span>
         </div>
         <div style={{
-          display: 'grid', gap: 20, alignItems: 'center',
-          gridTemplateColumns: 'minmax(280px, 420px) minmax(200px, 1fr)',
+          display: 'grid', gap: 24, alignItems: 'center',
+          gridTemplateColumns: 'minmax(260px, 400px) minmax(230px, 330px)',
+          justifyContent: 'center', maxWidth: 780, margin: '0 auto',
         }}>
         <div style={{ position: 'relative', height: 440, borderRadius: 8, overflow: 'hidden',
                       background: SEA, border: '1px solid #dbe3e9' }}>
