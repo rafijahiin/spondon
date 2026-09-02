@@ -339,11 +339,7 @@ const STAGES = [
  *  applied to the districts the campaign worked in. */
 function CampaignFunnelStrip({ funnel }: { funnel: CampaignFunnel }) {
   return (
-    <div style={{
-      display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))',
-      gap: 12,
-    }}>
+    <div className="band-5">
       {STAGES.map((st, i) => {
         const value = funnel[st.key]
         // Diagnosed is the base, exactly as in the district panel below, so
@@ -557,11 +553,7 @@ export function FistulaVisualizations({
           <EmptyState message={t('fistulaViz.emptyReach')} />
         ) : (
           <>
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-              gap: 12,
-            }}>
+            <div className="band-5">
               <MetricTile icon={<ClipboardList size={13} />} label="Activity reports" value={agg.campaign.reports}
                 sub={agg.campaign.date_from && agg.campaign.date_to
                   ? `${agg.campaign.date_from} to ${agg.campaign.date_to}`

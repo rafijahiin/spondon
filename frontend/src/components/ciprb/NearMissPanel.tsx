@@ -263,7 +263,7 @@ export function NearMissPanel({ districts }: { districts?: readonly string[] | n
           </div>
         </div>
       ) : (
-        <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'flex-start' }}>
           <CountSection
             kicker="SECTION 1"
             title="Severe maternal complications"

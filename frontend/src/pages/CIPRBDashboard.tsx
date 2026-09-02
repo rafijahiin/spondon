@@ -862,11 +862,7 @@ export default function CIPRBDashboard() {
         {kpisError ? (
           <DataUnavailable label="The fistula at-a-glance figures" onRetry={retryKpis} />
         ) : (
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-          gap: 12,
-        }}>
+        <div className="band-5">
           <KPITile icon={<Search size={14} />}     label={t('ciprb.kpiSuspected')}    sub={t('ciprb.kpiSuspectedSub')}    value={kpis.suspected}   />
           <KPITile icon={<Stethoscope size={14} />} label={t('ciprb.kpiIdentified')}  sub={t('ciprb.kpiIdentifiedSub')}   value={kpis.identified}
             pct={kpis.suspected > 0 ? (kpis.identified / kpis.suspected) * 100 : null} pctLabel="of suspected" />

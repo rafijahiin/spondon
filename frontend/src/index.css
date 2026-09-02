@@ -2149,3 +2149,15 @@ html.dark {
   white-space: nowrap;
 }
 .leaflet-tooltip.fp-dot-label::before { display: none; }
+
+/* ── Bands that always hold a fixed number of tiles ─────────────────────────
+   `repeat(auto-fit, minmax(180px, 1fr))` lays out as many tracks as fit, so a
+   five-tile funnel in a wide card got six tracks and left the sixth empty.
+   These bands know how many tiles they have, so they say so, and step down at
+   the widths where the tiles would otherwise be squeezed. */
+.band-5 { display: grid; gap: 12px; grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.pair-2 { display: grid; gap: 14px; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
+@media (max-width: 1180px) { .band-5 { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 860px)  { .band-5 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+                             .pair-2 { grid-template-columns: 1fr; } }
+@media (max-width: 560px)  { .band-5 { grid-template-columns: 1fr; } }
