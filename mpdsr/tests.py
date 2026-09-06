@@ -259,3 +259,74 @@ class StatsEndpointTest(TestCase):
         self.client.force_authenticate(user=self.supervisor)
         resp = self.client.get(f'{BASE_URL}stats/?partner=PHD')
         self.assertEqual(resp.data['total'], 0)
+
+
+class MaternalReportingRateTest(TestCase):
+    """RCH's ask (Dr Tanjina, 6 Sep 2026): each district's reported maternal
+    deaths against the 2026 projection.
+
+    The numerator has to be the notification slip. A death commonly carries
+    both a community and a facility review, so counting reviews would put
+    districts over a hundred per cent for a reason that has nothing to do with
+    reporting performance."""
+
+    def setUp(self):
+        import datetime
+        from mpdsr.ciprb_models import MPDSRDeathNotification
+        from mpdsr.models import MPDSRDistrictDenominator
+        self.dod = datetime.date(2026, 3, 4)
+        self.client = APIClient()
+        self.user = make_user('rate@unfpa.org', Organisation.UNFPA, Role.SUPERVISOR)
+        self.client.force_authenticate(user=self.user)
+
+        MPDSRDistrictDenominator.objects.create(district='Sunamganj',
+                                                project_deaths_md=99)
+        MPDSRDistrictDenominator.objects.create(district='Bhola',
+                                                project_deaths_md=46)
+        # A district that is expected to see deaths and has reported none.
+        MPDSRDistrictDenominator.objects.create(district='Bogura',
+                                                project_deaths_md=97)
+
+        for i in range(3):
+            MPDSRDeathNotification.objects.create(
+                case_serial='S%d' % i, district='Sunamganj',
+                death_kind='maternal', approval_status='APPROVED',
+                date_of_death=self.dod)
+        MPDSRDeathNotification.objects.create(
+            case_serial='B1', district='Bhola', death_kind='maternal',
+            approval_status='APPROVED', date_of_death=self.dod)
+        # Neither of these should reach the maternal panel.
+        MPDSRDeathNotification.objects.create(
+            case_serial='N1', district='Sunamganj', death_kind='neonatal',
+            approval_status='APPROVED', date_of_death=self.dod)
+        MPDSRDeathNotification.objects.create(
+            case_serial='P1', district='Sunamganj', death_kind='maternal',
+            approval_status='PENDING', date_of_death=self.dod)
+
+    def _rows(self):
+        r = self.client.get('/api/mpdsr/aggregates/')
+        self.assertEqual(r.status_code, 200)
+        return {x['district']: x for x in r.json()['maternal_reporting']['rows']}
+
+    def test_counts_maternal_slips_only(self):
+        rows = self._rows()
+        self.assertEqual(rows['Sunamganj']['reported'], 3)
+        self.assertEqual(rows['Bhola']['reported'], 1)
+
+    def test_percentage_is_reported_over_projected(self):
+        rows = self._rows()
+        self.assertEqual(rows['Sunamganj']['projected'], 99)
+        self.assertEqual(rows['Sunamganj']['pct'], round(3 / 99 * 100, 1))
+        self.assertEqual(rows['Bhola']['pct'], round(1 / 46 * 100, 1))
+
+    def test_a_district_that_reported_nothing_is_still_listed(self):
+        rows = self._rows()
+        self.assertIn('Bogura', rows)
+        self.assertEqual(rows['Bogura']['reported'], 0)
+        self.assertEqual(rows['Bogura']['pct'], 0.0)
+
+    def test_totals_match_the_rows(self):
+        r = self.client.get('/api/mpdsr/aggregates/').json()['maternal_reporting']
+        self.assertEqual(r['reported_total'], sum(x['reported'] for x in r['rows']))
+        self.assertEqual(r['projected_total'],
+                         sum(x['projected'] or 0 for x in r['rows']))

@@ -14,7 +14,7 @@
  * Each block answers a programmatic question in one glance — no Excel-like
  * tables, no raw-number sprawl.
  */
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { Fragment, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, Tooltip,
@@ -28,6 +28,15 @@ import type { MPDSRCase } from '@/types/index'
 import { BarBreakdown, DonutBreakdown, Histogram } from './IndicatorCharts'
 
 // ─── Aggregates fetched from /api/mpdsr/aggregates/ ─────────────────────────
+
+/** Reported maternal deaths against the year's projection, per district.
+ *  RCH's request, 6 September 2026. */
+export interface MaternalReporting {
+  rows: { district: string; reported: number; projected: number | null; pct: number | null }[]
+  reported_total: number
+  projected_total: number
+  basis: string
+}
 
 interface FacilityTotals {
   cdn_md?: number; cdn_nd?: number; cdn_sb?: number
@@ -114,6 +123,7 @@ interface AggregatesPayload {
   indicators?: Record<string, Record<string, number>>
   // RCH review (17 Aug 2026): MPDSR review records per district.
   records_by_district?: Record<string, number>
+  maternal_reporting?: MaternalReporting
   // Facility (Form 04) deep-dive — admission→death interval + review
   // committee progress. Only the facility form carries these.
   facility?: {
@@ -1148,6 +1158,9 @@ export function MPDSRVisualizations({
             <NeonatalDeaths neonatal={agg?.neonatal ?? null} />
           </div>
           <div>
+            <MaternalReportingRate data={agg?.maternal_reporting ?? null} />
+          </div>
+          <div>
             <DeathNotifications notifications={agg?.notifications ?? null} />
           </div>
           <div>
@@ -1377,6 +1390,104 @@ function DeathNotifications({ notifications }: {
           data={data.by_district ?? z}
         />
       </div>
+    </div>
+  )
+}
+
+/** Maternal death notification against the 2026 projection, district by
+ *  district. RCH asked for this to be given real prominence: the point is not
+ *  how many slips a district filed but how many of the deaths it is expected
+ *  to see were ever reported at all.
+ *
+ *  The bar is the percentage, so the eye reads performance rather than size,
+ *  and the two counts sit beside it so nobody has to trust the bar alone. */
+function MaternalReportingRate({ data }: { data: MaternalReporting | null }) {
+  if (!data || !data.rows.length) return null
+  const overall = data.projected_total
+    ? (data.reported_total / data.projected_total) * 100 : null
+  const shade = (p: number | null) =>
+    p == null ? 'var(--hair)' : p >= 50 ? '#4E7A3E' : p >= 25 ? CIPRB_BLUE : '#A32E1C'
+  return (
+    <div>
+      <div style={{
+        marginBottom: 14, display: 'flex', alignItems: 'flex-start',
+        justifyContent: 'space-between', gap: 8, flexWrap: 'wrap',
+      }}>
+        <div>
+          <div className="kicker">
+            <span className="dot" style={{ background: CIPRB_BLUE }} />
+            MATERNAL DEATH NOTIFICATION · REPORTED AGAINST PROJECTED
+          </div>
+          <h3 style={{ margin: '6px 0 2px', fontSize: 18, fontWeight: 700, color: 'var(--ink)' }}>
+            How much of each district&rsquo;s expected maternal mortality is reaching the system
+          </h3>
+          <p style={{ fontSize: 12.5, color: 'var(--muted)', margin: 0 }}>
+            {data.basis}. One notification slip per death, so a death reviewed twice is still counted once.
+          </p>
+        </div>
+        <SourceChip>CIPRB 7 + CIPRB 8 · RCH projections 2026</SourceChip>
+      </div>
+
+      {overall != null && (
+        <div style={{
+          display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap',
+          marginBottom: 16,
+        }}>
+          <span style={{
+            fontSize: 34, fontWeight: 800, color: CIPRB_BLUE, lineHeight: 1,
+            fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em',
+          }}>{overall.toFixed(0)}%</span>
+          <span style={{ fontSize: 13, color: 'var(--ink-3)' }}>
+            of the projected maternal deaths in these districts have been notified
+            &mdash; {data.reported_total.toLocaleString()} of {data.projected_total.toLocaleString()}
+          </span>
+        </div>
+      )}
+
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'minmax(96px, 128px) minmax(0, 1fr) 62px 74px',
+        rowGap: 11, columnGap: 12, alignItems: 'center',
+      }}>
+        <span className="mono" style={{ fontSize: 9.5, letterSpacing: '0.08em', color: 'var(--muted)' }}>DISTRICT</span>
+        <span className="mono" style={{ fontSize: 9.5, letterSpacing: '0.08em', color: 'var(--muted)' }}>REPORTED AS A SHARE OF PROJECTED</span>
+        <span className="mono" style={{ fontSize: 9.5, letterSpacing: '0.08em', color: 'var(--muted)', textAlign: 'right' }}>REPORTED</span>
+        <span className="mono" style={{ fontSize: 9.5, letterSpacing: '0.08em', color: 'var(--muted)', textAlign: 'right' }}>PROJECTED</span>
+        {data.rows.map((r) => (
+          <Fragment key={r.district}>
+            <span style={{ fontSize: 13, color: 'var(--ink)', textTransform: 'capitalize' }}>
+              {r.district}
+            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+              <div style={{ flex: 1, height: 11, borderRadius: 3, background: 'var(--hair)' }}>
+                <div style={{
+                  width: `${Math.min(100, r.pct ?? 0)}%`, height: 11, borderRadius: 3,
+                  minWidth: (r.reported > 0 ? 3 : 0), background: shade(r.pct),
+                  transition: 'width .4s ease',
+                }} />
+              </div>
+              <span style={{
+                flex: '0 0 44px', textAlign: 'right', fontSize: 13, fontWeight: 700,
+                color: shade(r.pct), fontVariantNumeric: 'tabular-nums',
+              }}>{r.pct == null ? '—' : `${r.pct.toFixed(0)}%`}</span>
+            </div>
+            <span style={{ textAlign: 'right', fontSize: 13, fontWeight: 700, color: 'var(--ink)', fontVariantNumeric: 'tabular-nums' }}>
+              {r.reported.toLocaleString()}
+            </span>
+            <span style={{ textAlign: 'right', fontSize: 13, color: 'var(--muted)', fontVariantNumeric: 'tabular-nums' }}>
+              {r.projected == null ? '—' : r.projected.toLocaleString()}
+            </span>
+          </Fragment>
+        ))}
+      </div>
+
+      <p style={{ fontSize: 11, color: 'var(--muted)', margin: '14px 0 0', lineHeight: 1.55 }}>
+        Projections are for the whole of 2026, so a district reporting steadily
+        all year would still be well under 100 per cent part way through it. A
+        district at a few per cent this late in the year is not reporting most
+        of the deaths it is expected to see. Districts with a projection but no
+        notification are shown at zero rather than left out.
+      </p>
     </div>
   )
 }

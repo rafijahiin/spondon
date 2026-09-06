@@ -558,6 +558,55 @@ def mpdsr_aggregates(request):
         'by_district': notif_by_district,
     }
 
+    # ── Maternal notification against the year's projection, per district ────
+    #    RCH's ask (Dr Tanjina, 6 Sep 2026): show each district's reported
+    #    maternal deaths beside what 2026 is projected to produce there, so a
+    #    reader can see reporting performance rather than only volume.
+    #
+    #    The numerator is the notification slip, not the review. A death can
+    #    carry a community review and a facility review, so counting reviews
+    #    would report some districts at over a hundred per cent for the wrong
+    #    reason. The slip is filed once per death, and "reported" is what the
+    #    request asks for.
+    #
+    #    The denominator is a FULL YEAR projection. The percentage is
+    #    therefore against the whole of 2026 regardless of how much of the year
+    #    has run, and the payload says so rather than leaving the reader to
+    #    assume it is a year-to-date figure.
+    md_slip_qs = apply_donor(
+        MPDSRDeathNotification.objects.filter(approval_status='APPROVED',
+                                              death_kind='maternal'))
+    md_reported = _Counter(
+        d.strip() for d in md_slip_qs.values_list('district', flat=True) if d)
+    projected = {}
+    for row in MPDSRDistrictDenominator.objects.exclude(
+            project_deaths_md__isnull=True).values('district', 'project_deaths_md'):
+        projected[row['district'].strip().lower()] = row['project_deaths_md']
+
+    maternal_reporting = []
+    for district, reported in md_reported.items():
+        proj = projected.get(district.lower())
+        maternal_reporting.append({
+            'district': district,
+            'reported': reported,
+            'projected': proj,
+            'pct': round((reported / proj) * 100, 1) if proj else None,
+        })
+    # Districts with a projection but nothing reported are the point of the
+    # panel, so they are listed too rather than silently dropped.
+    seen = {d.lower() for d in md_reported}
+    for row in MPDSRDistrictDenominator.objects.exclude(
+            project_deaths_md__isnull=True).values('district', 'project_deaths_md'):
+        name = row['district'].strip()
+        if name.lower() in seen:
+            continue
+        if district_names and name.lower() not in {d.lower() for d in district_names}:
+            continue
+        maternal_reporting.append({'district': name, 'reported': 0,
+                                   'projected': row['project_deaths_md'], 'pct': 0.0})
+    maternal_reporting.sort(key=lambda r: (r['pct'] is None, -(r['pct'] or 0),
+                                           -r['reported']))
+
     # (3) Social Autopsy (sa_md). The paper form reviews maternal deaths,
     #     neonatal deaths AND stillbirths (sa_death_type 1/2/3), so the whole
     #     sa_md cohort is NOT "social autopsy of maternal deaths". This block
@@ -608,6 +657,12 @@ def mpdsr_aggregates(request):
         'facility': facility,
         'neonatal': neonatal,
         'notifications': notifications,
+        'maternal_reporting': {
+            'rows': maternal_reporting,
+            'reported_total': sum(r['reported'] for r in maternal_reporting),
+            'projected_total': sum(r['projected'] or 0 for r in maternal_reporting),
+            'basis': 'Notification slips against the full-year 2026 projection',
+        },
         'social_autopsy': social_autopsy,
     })
 
