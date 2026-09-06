@@ -1485,8 +1485,9 @@ function MaternalReportingRate({ data }: { data: MaternalReporting | null }) {
         Projections are for the whole of 2026, so a district reporting steadily
         all year would still be well under 100 per cent part way through it. A
         district at a few per cent this late in the year is not reporting most
-        of the deaths it is expected to see. Districts with a projection but no
-        notification are shown at zero rather than left out.
+        of the deaths it is expected to see. CIPRB working districts only:
+        a district with a projection but no notification is shown at zero
+        rather than left out, because that is the gap this panel exists for.
       </p>
     </div>
   )

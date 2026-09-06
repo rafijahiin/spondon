@@ -283,7 +283,11 @@ class MaternalReportingRateTest(TestCase):
                                                 project_deaths_md=99)
         MPDSRDistrictDenominator.objects.create(district='Bhola',
                                                 project_deaths_md=46)
-        # A district that is expected to see deaths and has reported none.
+        # A CIPRB district that is expected to see deaths and has reported none.
+        MPDSRDistrictDenominator.objects.create(district='Barguna',
+                                                project_deaths_md=34)
+        # Bogura is in RCH's projection file but is not a CIPRB working
+        # district, so it must not appear as a reporting failure.
         MPDSRDistrictDenominator.objects.create(district='Bogura',
                                                 project_deaths_md=97)
 
@@ -321,9 +325,22 @@ class MaternalReportingRateTest(TestCase):
 
     def test_a_district_that_reported_nothing_is_still_listed(self):
         rows = self._rows()
-        self.assertIn('Bogura', rows)
-        self.assertEqual(rows['Bogura']['reported'], 0)
-        self.assertEqual(rows['Bogura']['pct'], 0.0)
+        self.assertIn('Barguna', rows)
+        self.assertEqual(rows['Barguna']['reported'], 0)
+        self.assertEqual(rows['Barguna']['pct'], 0.0)
+
+    def test_districts_outside_the_ciprb_footprint_are_excluded(self):
+        # RCH's file covers districts CIPRB does not work in. Listing them at
+        # zero would read as a reporting failure rather than an absence of
+        # programme.
+        self.assertNotIn('Bogura', self._rows())
+
+    def test_the_mirrored_district_list_matches_the_kobo_forms(self):
+        # The list the API filters on is a mirror of the one the field forms
+        # offer. If they drift, a district silently vanishes from this panel.
+        from mpdsr.ciprb_districts import CIPRB_DISTRICTS as MIRROR
+        from programs.management.commands.build_ciprb_forms import CIPRB_DISTRICTS
+        self.assertEqual(list(MIRROR), list(CIPRB_DISTRICTS))
 
     def test_totals_match_the_rows(self):
         r = self.client.get('/api/mpdsr/aggregates/').json()['maternal_reporting']

@@ -573,15 +573,23 @@ def mpdsr_aggregates(request):
     #    therefore against the whole of 2026 regardless of how much of the year
     #    has run, and the payload says so rather than leaving the reader to
     #    assume it is a year-to-date figure.
+    #    Scoped to the CIPRB working districts. RCH's projection file also
+    #    covers districts CIPRB does not work in (Bogura, Rajshahi), and those
+    #    would have read as reporting failures when they are simply outside
+    #    the programme.
+    from .ciprb_districts import is_ciprb_district
+
     md_slip_qs = apply_donor(
         MPDSRDeathNotification.objects.filter(approval_status='APPROVED',
                                               death_kind='maternal'))
     md_reported = _Counter(
-        d.strip() for d in md_slip_qs.values_list('district', flat=True) if d)
+        d.strip() for d in md_slip_qs.values_list('district', flat=True)
+        if d and is_ciprb_district(d))
     projected = {}
     for row in MPDSRDistrictDenominator.objects.exclude(
             project_deaths_md__isnull=True).values('district', 'project_deaths_md'):
-        projected[row['district'].strip().lower()] = row['project_deaths_md']
+        if is_ciprb_district(row['district']):
+            projected[row['district'].strip().lower()] = row['project_deaths_md']
 
     maternal_reporting = []
     for district, reported in md_reported.items():
@@ -598,7 +606,7 @@ def mpdsr_aggregates(request):
     for row in MPDSRDistrictDenominator.objects.exclude(
             project_deaths_md__isnull=True).values('district', 'project_deaths_md'):
         name = row['district'].strip()
-        if name.lower() in seen:
+        if name.lower() in seen or not is_ciprb_district(name):
             continue
         if district_names and name.lower() not in {d.lower() for d in district_names}:
             continue
@@ -661,7 +669,7 @@ def mpdsr_aggregates(request):
             'rows': maternal_reporting,
             'reported_total': sum(r['reported'] for r in maternal_reporting),
             'projected_total': sum(r['projected'] or 0 for r in maternal_reporting),
-            'basis': 'Notification slips against the full-year 2026 projection',
+            'basis': 'Notification slips against the full-year 2026 projection, CIPRB working districts only',
         },
         'social_autopsy': social_autopsy,
     })
