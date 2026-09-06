@@ -1405,8 +1405,13 @@ function MaternalReportingRate({ data }: { data: MaternalReporting | null }) {
   if (!data || !data.rows.length) return null
   const overall = data.projected_total
     ? (data.reported_total / data.projected_total) * 100 : null
-  const shade = (p: number | null) =>
-    p == null ? 'var(--hair)' : p >= 50 ? '#4E7A3E' : p >= 25 ? CIPRB_BLUE : '#A32E1C'
+  // Deliberately no red/amber/green banding. These are shares of a FULL YEAR
+  // projection read eight months in, so a district "on track" would sit near
+  // 67 per cent and every district here is far below that. Thresholds at 25 or
+  // 50 would have put Bhola on 28 per cent in a different colour from
+  // Sunamganj on 21 and implied a difference in performance that does not
+  // exist. One colour for anything reported; the figure carries the message,
+  // and only a district reporting nothing at all is called out.
   return (
     <div>
       <div style={{
@@ -1462,13 +1467,14 @@ function MaternalReportingRate({ data }: { data: MaternalReporting | null }) {
               <div style={{ flex: 1, height: 11, borderRadius: 3, background: 'var(--hair)' }}>
                 <div style={{
                   width: `${Math.min(100, r.pct ?? 0)}%`, height: 11, borderRadius: 3,
-                  minWidth: (r.reported > 0 ? 3 : 0), background: shade(r.pct),
+                  minWidth: (r.reported > 0 ? 3 : 0), background: CIPRB_BLUE,
                   transition: 'width .4s ease',
                 }} />
               </div>
               <span style={{
                 flex: '0 0 44px', textAlign: 'right', fontSize: 13, fontWeight: 700,
-                color: shade(r.pct), fontVariantNumeric: 'tabular-nums',
+                color: r.reported === 0 ? '#A32E1C' : CIPRB_BLUE,
+                fontVariantNumeric: 'tabular-nums',
               }}>{r.pct == null ? '—' : `${r.pct.toFixed(0)}%`}</span>
             </div>
             <span style={{ textAlign: 'right', fontSize: 13, fontWeight: 700, color: 'var(--ink)', fontVariantNumeric: 'tabular-nums' }}>
