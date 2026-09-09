@@ -27,6 +27,7 @@ Run:
     python manage.py build_ciprb_forms --upload       # also uploads to Kobo
 """
 import os
+import time
 import openpyxl
 import requests
 from openpyxl.styles import Font, PatternFill, Alignment
@@ -4013,15 +4014,30 @@ def _deploy(asset_uid: str, token: str, stdout):
     except Exception:
         stdout.write('    no version yet — skipping deploy')
         return False
-    r = requests.patch(
-        f'{api}/assets/{asset_uid}/deployment/',
-        headers=headers,
-        json={'version_id': vhash, 'active': True},
-        timeout=60,
-    )
-    if r.status_code in (200, 201):
-        stdout.write('    deployed')
-        return True
+    # Kobo processes the import asynchronously, so a PATCH fired immediately
+    # after it races the processing and comes back 500. The POST fallback below
+    # then answers "Use PATCH to update an existing deployment" and the whole
+    # deploy fails, leaving the new version IMPORTED BUT NOT DEPLOYED — the
+    # field keeps filling the old form while the build reports only a failure
+    # line. Retry the PATCH before falling back (2026-09-09, fistula cost
+    # fields).
+    r = None
+    for attempt in range(5):
+        r = requests.patch(
+            f'{api}/assets/{asset_uid}/deployment/',
+            headers=headers,
+            json={'version_id': vhash, 'active': True},
+            timeout=60,
+        )
+        if r.status_code in (200, 201):
+            stdout.write('    deployed'
+                         + (f' (after {attempt + 1} attempts)' if attempt else ''))
+            return True
+        # 405 means the deployment does not exist yet — POST is genuinely the
+        # right verb, so stop retrying and fall through.
+        if r.status_code == 405:
+            break
+        time.sleep(6)
     # First-time deploy may need POST.
     r2 = requests.post(
         f'{api}/assets/{asset_uid}/deployment/',
@@ -4033,6 +4049,8 @@ def _deploy(asset_uid: str, token: str, stdout):
         stdout.write('    deployed (POST)')
         return True
     stdout.write(f'    deploy FAILED ({r.status_code}/{r2.status_code}): {r2.text[:160]}')
+    stdout.write('    NOTE: the new version is IMPORTED but NOT DEPLOYED. The '
+                 'field still sees the old form until a deploy succeeds.')
     return False
 
 
