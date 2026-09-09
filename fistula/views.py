@@ -9,6 +9,7 @@ from accounts.permissions import (
     IsSupervisorOrManager,
     OrgFilterMixin,
 )
+from .ciprb_models import CIPRBFistulaCaseCost
 from .geo_names import canon, canon_pair
 from .models import FistulaCampaign, FistulaCornerCase, FistulaCampaignVisit
 from .serializers import (
@@ -474,9 +475,101 @@ def fistula_aggregates(request):
     campaign['funnel']['chw_suspected'] = sum(chw_suspected.values())
     campaign['by_district'] = camp_by_district
 
+    # ── Treatment cost. CIPRB pays the whole cost of a fistula patient's
+    #    treatment, so these are NOT out-of-pocket figures (which by definition
+    #    are what the household pays); they are the actual cost per patient
+    #    borne by the project. The question they exist to answer is whether the
+    #    BDT 10,000-12,000 per patient the project budgets matches reality.
+    #    (Dr Tanjina Pervin, RCH CIPRB, 9 September 2026.)
+    BUDGET_LOW, BUDGET_HIGH = 10000, 12000
+    cost_rows = list(CIPRBFistulaCaseCost.objects
+                     .filter(case__in=qs)
+                     .values('case_id', 'cost_point', 'amount_disbursed',
+                             'medical_cost', 'investigation_cost', 'ot_cost',
+                             'travel_cost', 'food_cost', 'other_cost'))
+    HEADS = [('medical_cost', 'Medical'), ('investigation_cost', 'Investigation'),
+             ('ot_cost', 'OT'), ('travel_cost', 'Travel'),
+             ('food_cost', 'Food'), ('other_cost', 'Others')]
+
+    by_head = []
+    for fld, label in HEADS:
+        vals = [r[fld] for r in cost_rows if r[fld] is not None]
+        by_head.append({'head': label, 'total': sum(vals), 'entries': len(vals)})
+
+    def _row_total(r):
+        return sum(r[f] or 0 for f, _ in HEADS)
+
+    per_patient = _Counter()
+    for r in cost_rows:
+        per_patient[r['case_id']] += _row_total(r)
+
+    repair_totals = [_row_total(r) for r in cost_rows
+                     if r['cost_point'] == 'repaired']
+    patient_totals = sorted(per_patient.values())
+    grand_total = sum(patient_totals)
+
+    # Only patients with a figure recorded are averaged. Dividing by every
+    # registered woman would report an average that no one actually spent.
+    n_patients = len(patient_totals)
+
+    # ── Released against spent. CIPRB does not pay the facility: a District
+    #    Coordinator releases the money to the woman and she settles the bill,
+    #    and CIPRB transacts the total. So the programme's real financial
+    #    control question is not only "what did it cost" but "does what we
+    #    released match what was spent", which is what CIPRB's ledger has to
+    #    reconcile against. Only episodes with a disbursement recorded are
+    #    counted, so an unrecorded release is never read as a zero release.
+    disb_rows = [r for r in cost_rows if r['amount_disbursed'] is not None]
+    total_disbursed = sum(r['amount_disbursed'] for r in disb_rows)
+    spent_where_disbursed = sum(_row_total(r) for r in disb_rows)
+    vs_disbursed = {'matched': 0, 'underspent': 0, 'overspent': 0}
+    for r in disb_rows:
+        gap = r['amount_disbursed'] - _row_total(r)
+        key = ('matched' if gap == 0
+               else 'underspent' if gap > 0 else 'overspent')
+        vs_disbursed[key] += 1
+
+    cost = {
+        'episodes_with_disbursement': len(disb_rows),
+        'total_disbursed': total_disbursed,
+        'spent_where_disbursed': spent_where_disbursed,
+        # Positive = money released but not spent (returnable). Negative =
+        # spent beyond what was released, which someone absorbed.
+        'balance': total_disbursed - spent_where_disbursed,
+        'vs_disbursed': vs_disbursed,
+        'entries': len(cost_rows),
+        'patients_costed': n_patients,
+        'total_bdt': grand_total,
+        'avg_per_patient': round(grand_total / n_patients) if n_patients else 0,
+        'median_per_patient': (patient_totals[n_patients // 2]
+                               if n_patients else 0),
+        'avg_per_operation': (round(sum(repair_totals) / len(repair_totals))
+                              if repair_totals else 0),
+        'operations_costed': len(repair_totals),
+        'by_head': by_head,
+        'budget_low': BUDGET_LOW,
+        'budget_high': BUDGET_HIGH,
+        # How the reality sits against the allocation. This is the whole point
+        # of collecting the figures, so it is computed here rather than left
+        # for the frontend to guess at.
+        'vs_budget': {
+            'under': sum(1 for t in patient_totals if t < BUDGET_LOW),
+            'within': sum(1 for t in patient_totals
+                          if BUDGET_LOW <= t <= BUDGET_HIGH),
+            'over': sum(1 for t in patient_totals if t > BUDGET_HIGH),
+        },
+        'basis': ('Actual cost per patient, borne by the project. A District '
+                  'Coordinator releases the money to the patient and she '
+                  'settles the bill with it, so the household spends nothing '
+                  'of its own: these are not out-of-pocket figures. Budget '
+                  f'allocation is BDT {BUDGET_LOW:,}-{BUDGET_HIGH:,} per '
+                  'patient.'),
+    }
+
     return Response({
         'total': qs.count(),
         'pipeline': pipeline,
+        'cost': cost,
         'campaign_reach': campaign_reach,
         'campaign': campaign,
         'age': _fis_band(ages, [(0,18),(18,25),(25,35),(35,45),(45,200)],

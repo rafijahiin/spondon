@@ -240,6 +240,14 @@ _FISTULA_STAGES = [
 ]
 
 
+# A cost entry is NOT a clinical stage. It rides the same `stage` selector so
+# the worker uses one form and one patient dropdown, but it is listed apart
+# here (and excluded from CIPRBFistulaCase.STAGE_CHOICES) so that recording
+# money can never move a woman's position in the pipeline.
+_FISTULA_COST_STAGE = ('cost', 'Treatment cost (referral or operation)',
+                       'চিকিৎসা খরচ (রেফার বা অপারেশন)')
+
+
 def _fistula_survey():
     rows = _meta('Annual fistula serial number', 'ফিস্টুলা বাৎসরিক ক্রমিক নং')
 
@@ -337,7 +345,8 @@ def _fistula_survey():
     #    selected value is her id_no; pulldata() shows her details read-only so
     #    the worker confirms the right woman before recording the new stage.
     LATER = ("${stage}='diagnosed' or ${stage}='referred' or "
-             "${stage}='repaired' or ${stage}='rehabilitated'")
+             "${stage}='repaired' or ${stage}='rehabilitated' or "
+             "${stage}='cost'")
     # Normalise the dropdown value the same way the CSV / handler key is stored.
     # Braces around the field name are doubled so str.format() (below) leaves
     # the ${...} XPath reference intact and only substitutes {col}.
@@ -516,6 +525,102 @@ def _fistula_survey():
             relevant="${stage}='rehabilitated'"),
         _sr('end_group', 'grp_rehab'),
     ]
+
+    # ── COST ENTRY · what this woman's treatment actually cost.
+    #    Not a clinical stage: it never advances her in the pipeline. Attaches
+    #    from REFERRAL onward, because a woman who was referred and travelled
+    #    but was not operated (a comorbidity ruled out theatre) still cost the
+    #    project money. One entry per occurrence, so a second operation's costs
+    #    are added rather than overwriting the first.
+    #    (Dr Tanjina Pervin, RCH CIPRB, 9 September 2026.)
+    rows += [
+        _sr('begin_group', 'grp_cost',
+            'Treatment cost',
+            'চিকিৎসা খরচ',
+            relevant="${stage}='cost'"),
+        _sr('select_one cost_point', 'cost_point',
+            'What was this money spent on?',
+            'এই খরচটি কীসের জন্য?', required='yes'),
+        # "একই আইডি ২নং ওটি" — the same patient ID carries a second operation
+        # and its own costs. The number keeps them apart; re-entering the same
+        # number corrects that entry instead of adding a duplicate.
+        # Numbered for BOTH points, not just operations. A woman referred
+        # twice travels twice, and forcing every referral to number 1 would
+        # make the second entry overwrite the first instead of adding to it.
+        _sr('integer', 'episode_no',
+            'Which one is this? (1 = first, 2 = second …)',
+            'এটি কত নম্বর? (১ = প্রথম, ২ = দ্বিতীয় …)',
+            hint='For an operation, the operation number. For a referral, the '
+                 'referral number. / অপারেশনের ক্ষেত্রে অপারেশন নম্বর, রেফারের '
+                 'ক্ষেত্রে রেফার নম্বর।',
+            default='1', constraint='.>=1',
+            cmsg='Enter 1 or more. / ১ বা তার বেশি লিখুন।'),
+        _sr('calculate', 'episode_final',
+            calc="if(${episode_no}='',1,${episode_no})"),
+        _sr('date', 'cost_date',
+            'Date the cost was incurred', 'খরচের তারিখ'),
+        # CIPRB does not pay the hospital. A District Coordinator releases the
+        # money to the woman and she settles the bill with it, so what was
+        # RELEASED and what was SPENT are two figures. Recording only the spend
+        # would leave nothing for CIPRB's ledger to reconcile against.
+        _sr('integer', 'amount_disbursed',
+            'Amount given to the patient for this (BDT)',
+            'এই বাবদ রোগীকে দেওয়া টাকা',
+            constraint='.>=0',
+            cmsg='Amount cannot be negative. / পরিমাণ ঋণাত্মক হতে পারে না।'),
+        _sr('text', 'disbursed_by',
+            'District Coordinator who gave the money',
+            'যে জেলা সমন্বয়কারী টাকা দিয়েছেন'),
+        _sr('note', '_cost_help',
+            'Leave a box EMPTY if the amount is not known. Enter 0 only when '
+            'it genuinely cost nothing.',
+            'পরিমাণ জানা না থাকলে ঘরটি খালি রাখুন। সত্যিই কোনো খরচ না হলে তবেই ০ লিখুন।'),
+        _sr('integer', 'medical_cost',
+            'Medical cost (BDT)',
+            'চিকিৎসা খরচ (টাকা)',
+            constraint='.>=0',
+            cmsg='Amount cannot be negative. / পরিমাণ ঋণাত্মক হতে পারে না।'),
+        _sr('integer', 'investigation_cost',
+            'Investigation cost (BDT)',
+            'পরীক্ষা-নিরীক্ষার খরচ (টাকা)',
+            constraint='.>=0',
+            cmsg='Amount cannot be negative. / পরিমাণ ঋণাত্মক হতে পারে না।'),
+        _sr('integer', 'ot_cost',
+            'OT cost (BDT)',
+            'ওটি খরচ (টাকা)',
+            constraint='.>=0',
+            cmsg='Amount cannot be negative. / পরিমাণ ঋণাত্মক হতে পারে না।'),
+        _sr('integer', 'travel_cost',
+            'Travel cost (BDT)',
+            'যাতায়াত খরচ (টাকা)',
+            constraint='.>=0',
+            cmsg='Amount cannot be negative. / পরিমাণ ঋণাত্মক হতে পারে না।'),
+        _sr('integer', 'food_cost',
+            'Food cost (BDT)',
+            'খাবার খরচ (টাকা)',
+            constraint='.>=0',
+            cmsg='Amount cannot be negative. / পরিমাণ ঋণাত্মক হতে পারে না।'),
+        _sr('integer', 'other_cost',
+            'Others (BDT)',
+            'অন্যান্য (টাকা)',
+            constraint='.>=0',
+            cmsg='Amount cannot be negative. / পরিমাণ ঋণাত্মক হতে পারে না।'),
+        _sr('calculate', 'cost_total_calc', calc="if(${medical_cost}='',0,${medical_cost}) + if(${investigation_cost}='',0,${investigation_cost}) + if(${ot_cost}='',0,${ot_cost}) + if(${travel_cost}='',0,${travel_cost}) + if(${food_cost}='',0,${food_cost}) + if(${other_cost}='',0,${other_cost})"),
+        _sr('note', '_cost_total',
+            'Spent so far: BDT ${cost_total_calc}',
+            'এ পর্যন্ত খরচ: ${cost_total_calc} টাকা'),
+        # Shown back to the worker so a mistyped figure is caught on the spot,
+        # not months later during reconciliation.
+        _sr('calculate', 'cost_balance_calc',
+            calc="if(${amount_disbursed}='','',"
+                 "${amount_disbursed} - ${cost_total_calc})"),
+        _sr('note', '_cost_balance',
+            'Left over from what was given: BDT ${cost_balance_calc}',
+            'দেওয়া টাকা থেকে বাকি: ${cost_balance_calc} টাকা',
+            relevant="${amount_disbursed}!=''"),
+        _sr('text', 'cost_remarks', 'Remarks', 'মন্তব্য'),
+        _sr('end_group', 'grp_cost'),
+    ]
     return rows
 
 
@@ -532,6 +637,14 @@ def _fistula_choices():
     ]
     ch = list(fistula_districts) + list(YES_NO)
     ch += [_ch('stage', s, en, bn) for s, en, bn in _FISTULA_STAGES]
+    ch += [_ch('stage', *_FISTULA_COST_STAGE)]
+    ch += [
+        _ch('cost_point', 'referred',
+            'Referral (travel / investigation, no operation)',
+            'রেফার (যাতায়াত / পরীক্ষা, অপারেশন হয়নি)'),
+        _ch('cost_point', 'repaired', 'Operation (surgical repair)',
+            'অপারেশন (অস্ত্রোপচার)'),
+    ]
 
     ch += [
         _ch('education', 'no_education',       'No education',

@@ -570,3 +570,222 @@ class CampaignDistrictFunnelTest(TestCase):
         # inflate the campaign's repaired count.
         self.assertEqual(camp['funnel']['repaired'], 1)
         self.assertNotIn('Dhaka', [r['district'] for r in camp['by_district']])
+
+
+class FistulaTreatmentCostTest(TestCase):
+    """Treatment cost entries (Question Bank rows 96-102).
+
+    The rules locked down here all come from Dr Tanjina Pervin (RCH CIPRB,
+    9 September 2026): cost attaches from referral onward, a woman can be
+    operated twice and each operation carries its own cost, and the project
+    bears the whole cost so the figures exist to be compared against the
+    BDT 10,000-12,000 per patient allocation.
+    """
+
+    def setUp(self):
+        from fistula.ciprb_models import CIPRBFistulaCase
+        self.case = CIPRBFistulaCase.objects.create(
+            patient_code='1-0001', organisation='CIPRB', district='Sunamganj',
+            name='Test Woman', approval_status='APPROVED',
+            current_stage=CIPRBFistulaCase.STAGE_REPAIRED)
+
+    def _post(self, **over):
+        from programs.ciprb_handlers import handle_ciprb_fistula
+        payload = {
+            'stage': 'cost',
+            'patient_code_final': '1-0001',
+            'cost_point': 'repaired',
+            'episode_final': '1',
+            'cost_date': '2026-09-01',
+            'medical_cost': '3000',
+            'investigation_cost': '1500',
+            'ot_cost': '5000',
+            'travel_cost': '800',
+            'food_cost': '700',
+            'other_cost': '0',
+            'cost_remarks': 'first repair',
+            '_id': 'cost-1',
+        }
+        payload.update(over)
+        return handle_ciprb_fistula(payload, lat=None, lng=None)
+
+    def test_a_cost_entry_is_recorded_and_totalled(self):
+        from fistula.ciprb_models import CIPRBFistulaCaseCost
+        self.assertEqual(self._post().status_code, 200)
+        row = CIPRBFistulaCaseCost.objects.get()
+        self.assertEqual(row.case, self.case)
+        self.assertEqual(row.total, 11000)
+        self.assertEqual(row.remarks, 'first repair')
+
+    def test_recording_cost_does_not_move_the_clinical_stage(self):
+        """Money is not a step in the pathway. If a cost entry advanced
+        current_stage the woman would leave the pipeline counts entirely."""
+        from fistula.ciprb_models import CIPRBFistulaCase
+        self._post()
+        self.case.refresh_from_db()
+        self.assertEqual(self.case.current_stage,
+                         CIPRBFistulaCase.STAGE_REPAIRED)
+
+    def test_a_second_operation_is_a_second_row_not_an_overwrite(self):
+        from fistula.ciprb_models import CIPRBFistulaCaseCost
+        self._post()
+        self._post(episode_final='2', ot_cost='6000', medical_cost='2000',
+                   investigation_cost='', travel_cost='', food_cost='',
+                   other_cost='', _id='cost-2')
+        self.assertEqual(CIPRBFistulaCaseCost.objects.count(), 2)
+        totals = sorted(r.total for r in CIPRBFistulaCaseCost.objects.all())
+        self.assertEqual(totals, [8000, 11000])
+
+    def test_resending_the_same_episode_corrects_it_not_duplicates_it(self):
+        """A webhook redelivery, or a worker fixing a typo, must not double the
+        programme's reported spend."""
+        from fistula.ciprb_models import CIPRBFistulaCaseCost
+        self._post()
+        self._post(ot_cost='5500')
+        self.assertEqual(CIPRBFistulaCaseCost.objects.count(), 1)
+        self.assertEqual(CIPRBFistulaCaseCost.objects.get().total, 11500)
+
+    def test_a_referral_cost_needs_no_operation(self):
+        """A woman referred and travelled but never operated (a comorbidity
+        ruled out theatre) still cost the project money."""
+        from fistula.ciprb_models import CIPRBFistulaCaseCost
+        r = self._post(cost_point='referred', episode_final='', ot_cost='',
+                       medical_cost='', investigation_cost='1200',
+                       travel_cost='900', food_cost='300', other_cost='',
+                       _id='cost-ref')
+        self.assertEqual(r.status_code, 200)
+        row = CIPRBFistulaCaseCost.objects.get(cost_point='referred')
+        self.assertEqual(row.episode_no, 1)
+        self.assertEqual(row.total, 2400)
+        self.assertIsNone(row.ot_cost)
+
+    def test_a_second_referral_is_its_own_row(self):
+        """A woman referred twice travels twice. Collapsing both onto one row
+        would let the second entry's travel cost replace the first."""
+        from fistula.ciprb_models import CIPRBFistulaCaseCost
+        base = dict(cost_point='referred', ot_cost='', medical_cost='',
+                    investigation_cost='', food_cost='', other_cost='')
+        self._post(episode_final='1', travel_cost='900', _id='ref-1', **base)
+        self._post(episode_final='2', travel_cost='650', _id='ref-2', **base)
+        rows = CIPRBFistulaCaseCost.objects.filter(cost_point='referred')
+        self.assertEqual(rows.count(), 2)
+        self.assertEqual(sum(r.total for r in rows), 1550)
+
+    def test_blank_is_not_recorded_and_zero_is_a_real_figure(self):
+        """Collapsing the two would fill the data with meaningless zeroes and
+        make 'we do not know' indistinguishable from 'it was free'."""
+        from fistula.ciprb_models import CIPRBFistulaCaseCost
+        self._post(food_cost='', other_cost='0')
+        row = CIPRBFistulaCaseCost.objects.get()
+        self.assertIsNone(row.food_cost)
+        self.assertEqual(row.other_cost, 0)
+
+    def test_the_amount_released_is_recorded_beside_what_was_spent(self):
+        """CIPRB does not pay the facility. A District Coordinator releases the
+        money to the woman and she settles the bill, so what was released and
+        what was spent are two figures and the gap must stay visible."""
+        from fistula.ciprb_models import CIPRBFistulaCaseCost
+        self._post(amount_disbursed='12000', disbursed_by='DC Sunamganj')
+        row = CIPRBFistulaCaseCost.objects.get()
+        self.assertEqual(row.amount_disbursed, 12000)
+        self.assertEqual(row.disbursed_by, 'DC Sunamganj')
+        self.assertEqual(row.total, 11000)
+        self.assertEqual(row.balance, 1000)
+
+    def test_balance_is_none_when_nothing_was_recorded_as_released(self):
+        """0 minus the spend would read as an overspend that never happened."""
+        from fistula.ciprb_models import CIPRBFistulaCaseCost
+        self._post()
+        self.assertIsNone(CIPRBFistulaCaseCost.objects.get().balance)
+
+    def test_spending_beyond_what_was_released_shows_as_a_negative_balance(self):
+        from fistula.ciprb_models import CIPRBFistulaCaseCost
+        self._post(amount_disbursed='9000')
+        self.assertEqual(CIPRBFistulaCaseCost.objects.get().balance, -2000)
+
+    def test_cost_for_an_unregistered_patient_is_rejected(self):
+        """A stub would park money against a woman who was never registered
+        and inflate the programme total."""
+        from fistula.ciprb_models import CIPRBFistulaCaseCost
+        r = self._post(patient_code_final='9-9999')
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(CIPRBFistulaCaseCost.objects.count(), 0)
+
+    def test_an_unknown_cost_point_is_rejected(self):
+        self.assertEqual(self._post(cost_point='rehabilitated').status_code, 400)
+
+
+class FistulaCostAggregateTest(TestCase):
+    """The cost block on /api/fistula/aggregates/."""
+
+    def setUp(self):
+        from django.contrib.auth import get_user_model
+        from fistula.ciprb_models import (CIPRBFistulaCase,
+                                          CIPRBFistulaCaseCost)
+        self.user = get_user_model().objects.create_user(
+            email='cost@test.local', password='x', role='SUPER_ADMIN')
+        # Three women: 8,000 (under budget), 11,000 (within), 20,000 (over).
+        for i, amounts in enumerate([(8000,), (11000,), (14000, 6000)], start=1):
+            case = CIPRBFistulaCase.objects.create(
+                patient_code='1-000%d' % i, organisation='CIPRB',
+                district='Sunamganj', name='W%d' % i,
+                approval_status='APPROVED', current_stage='repaired')
+            for ep, amt in enumerate(amounts, start=1):
+                CIPRBFistulaCaseCost.objects.create(
+                    case=case, cost_point='repaired', episode_no=ep,
+                    ot_cost=amt)
+
+    def _get(self):
+        from rest_framework.test import APIClient
+        c = APIClient()
+        c.force_authenticate(self.user)
+        return c.get('/api/fistula/aggregates/').data['cost']
+
+    def test_totals_and_averages(self):
+        d = self._get()
+        self.assertEqual(d['total_bdt'], 39000)
+        self.assertEqual(d['patients_costed'], 3)
+        self.assertEqual(d['avg_per_patient'], 13000)
+        # Four operations across three women, so the per-operation average is
+        # NOT the per-patient average. Reporting one as the other would
+        # understate what a repair costs.
+        self.assertEqual(d['operations_costed'], 4)
+        self.assertEqual(d['avg_per_operation'], 9750)
+
+    def test_the_budget_comparison_is_the_point_of_the_panel(self):
+        d = self._get()
+        self.assertEqual(d['budget_low'], 10000)
+        self.assertEqual(d['budget_high'], 12000)
+        self.assertEqual(d['vs_budget'], {'under': 1, 'within': 1, 'over': 1})
+
+    def test_released_against_spent_reconciles(self):
+        """The figure CIPRB's ledger has to match. Only episodes with a
+        disbursement recorded are counted, so an unrecorded release is never
+        read as a zero release."""
+        from fistula.ciprb_models import CIPRBFistulaCaseCost
+        rows = list(CIPRBFistulaCaseCost.objects.order_by('case__patient_code',
+                                                          'episode_no'))
+        # Release 10,000 against the 8,000 episode and 5,000 against the 6,000
+        # one. The remaining two episodes carry no release at all.
+        rows[0].amount_disbursed = 10000
+        rows[0].save()
+        rows[3].amount_disbursed = 5000
+        rows[3].save()
+        d = self._get()
+        self.assertEqual(d['episodes_with_disbursement'], 2)
+        self.assertEqual(d['total_disbursed'], 15000)
+        self.assertEqual(d['spent_where_disbursed'], 14000)
+        self.assertEqual(d['balance'], 1000)
+        self.assertEqual(d['vs_disbursed'],
+                         {'matched': 0, 'underspent': 1, 'overspent': 1})
+
+    def test_no_disbursement_recorded_is_not_a_zero_disbursement(self):
+        d = self._get()
+        self.assertEqual(d['episodes_with_disbursement'], 0)
+        self.assertEqual(d['total_disbursed'], 0)
+        self.assertEqual(d['balance'], 0)
+
+    def test_the_basis_line_does_not_call_this_out_of_pocket(self):
+        """CIPRB pays the full cost, so out-of-pocket expenditure is zero by
+        definition. The wording must not invite that mislabel in a report."""
+        self.assertNotIn('out-of-pocket expenditure', self._get()['basis'])

@@ -22,7 +22,8 @@ from django.db.models import Q
 from django.http import HttpResponse
 from django.utils.dateparse import parse_date
 
-from fistula.ciprb_models import CIPRBFistulaCase
+from fistula.ciprb_models import (CIPRBFistulaCase, CIPRBFistulaCaseCost,
+                                  FISTULA_COST_STAGE)
 from mpdsr.ciprb_models import MPDSRDeathNotification, MaternalNearMissCase
 from mpdsr.models import MPDSRCase, DeathType, PlaceOfDeath, ReviewStatus
 
@@ -155,6 +156,70 @@ def _allocate_fistula_case(payload, district, name, tries=40):
     raise RuntimeError(f'could not allocate a fistula patient id for {prefix}')
 
 
+def _save_fistula_cost(payload):
+    """Record what one episode of a woman's treatment cost.
+
+    Keyed on (case, cost_point, episode_no) so re-sending the same episode
+    CORRECTS it rather than doubling the programme's reported spend — a webhook
+    redelivery and a worker fixing a typo must both be safe.
+
+    Amounts are merged, not replaced wholesale: a head left blank on a
+    correcting submission keeps whatever was already recorded, matching how
+    every other stage in this handler behaves. A head sent as 0 is a real
+    figure and does overwrite.
+    """
+    code = _norm_id(payload.get('patient_code_final')
+                    or payload.get('patient_code_sel'))
+    if not code:
+        return HttpResponse('Bad Request — patient_code required for a cost '
+                            'entry', status=400)
+
+    point = _s(payload.get('cost_point')) or CIPRBFistulaCaseCost.POINT_REPAIRED
+    if point not in dict(CIPRBFistulaCaseCost.POINT_CHOICES):
+        return HttpResponse(f'Bad Request — unknown cost_point {point!r}',
+                            status=400)
+
+    # Numbered for both points. "একই আইডি ২নং ওটি" is the operation case, but a
+    # woman referred twice travels twice, so referrals are numbered too rather
+    # than being collapsed onto one row that the second entry would overwrite.
+    episode = _int(payload.get('episode_final') or payload.get('episode_no'))
+    if not episode or episode < 1:
+        episode = 1
+
+    with transaction.atomic():
+        case = (CIPRBFistulaCase.objects.select_for_update()
+                .filter(patient_code=code).first())
+        if case is None:
+            # Unlike a clinical stage, a cost with no patient cannot be given a
+            # stub: the money would sit against a woman who was never
+            # registered and would inflate the programme total. Reject it so
+            # Kobo retries and the gap is visible.
+            return HttpResponse('Bad Request — no registered patient for '
+                                f'{code}', status=400)
+
+        row, _created = CIPRBFistulaCaseCost.objects.select_for_update().get_or_create(
+            case=case, cost_point=point, episode_no=episode)
+
+        for fld in CIPRBFistulaCaseCost.COST_FIELDS:
+            v = _int(payload.get(fld))
+            if v is not None:
+                setattr(row, fld, v)
+
+        disb = _int(payload.get('amount_disbursed'))
+        if disb is not None:
+            row.amount_disbursed = disb
+        row.disbursed_by = _s(payload.get('disbursed_by')) or row.disbursed_by
+        row.cost_date = _date(payload.get('cost_date')) or row.cost_date
+        row.remarks = _s(payload.get('cost_remarks')) or row.remarks
+        row.kobo_submission_id = (str(payload.get('_id', ''))
+                                  or row.kobo_submission_id)
+        row.submitted_by_kobo_user = (_s(payload.get('_submitted_by'))
+                                      or row.submitted_by_kobo_user)
+        row.save()
+
+    return HttpResponse('OK', status=200)
+
+
 # ╔══════════════════════════════════════════════════════════════════════════╗
 # ║   Form 1 — CIPRB Fistula Question Bank                                  ║
 # ║   The form is staged: each submission carries data for ONE stage.        ║
@@ -166,6 +231,11 @@ def _allocate_fistula_case(payload, district, name, tries=40):
 
 def handle_ciprb_fistula(payload, lat, lng):
     stage = _s(payload.get('stage')) or CIPRBFistulaCase.STAGE_SUSPECTED
+    # A cost entry rides the same form and the same patient dropdown, but it is
+    # not a step in the clinical pathway: it must never move current_stage. It
+    # is handled here, before the stage machinery below can touch the case row.
+    if stage == FISTULA_COST_STAGE:
+        return _save_fistula_cost(payload)
     if stage not in dict(CIPRBFistulaCase.STAGE_CHOICES):
         return HttpResponse(f'Bad Request — unknown stage {stage!r}', status=400)
 

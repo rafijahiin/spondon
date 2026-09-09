@@ -214,3 +214,143 @@ class CIPRBFistulaCase(models.Model):
     def __str__(self):
         s = self.case_serial or str(self.id)[:8]
         return f'CIPRB Fistula {s} — {self.name} ({self.current_stage})'
+
+
+# The Question Bank form's `stage` selector carries one extra value that is
+# NOT a clinical stage: a cost entry. It is deliberately kept out of
+# CIPRBFistulaCase.STAGE_CHOICES so that recording what a woman's treatment
+# cost can never advance (or appear to advance) her position in the clinical
+# pipeline. The handler branches on it before the stage machinery runs.
+FISTULA_COST_STAGE = 'cost'
+
+
+class CIPRBFistulaCaseCost(models.Model):
+    """What one fistula patient's treatment actually cost, per episode.
+
+    A child of CIPRBFistulaCase rather than six more columns on the case row,
+    because a woman can be operated more than once (the case row already
+    carries `times_of_operations`). Flat columns would let the second
+    operation's costs overwrite the first and silently understate the total.
+    One row per (patient, point in the pathway, occurrence) keeps every
+    episode and lets the dashboard report both a per-woman total and an
+    average cost per repair.
+
+    Costs attach from the REFERRAL stage onward, not only to surgery: a woman
+    who was referred and travelled but was never operated (a comorbidity ruled
+    out theatre) still incurred travel and investigation cost, and that money
+    is spent whether or not an operation follows.
+    (Dr Tanjina Pervin, RCH CIPRB, 9 September 2026.)
+
+    There is deliberately NO "who paid" field. CIPRB pays the whole cost of a
+    fistula patient's treatment and nothing is paid by the woman or her family,
+    so a payer question would be a constant answer on every line and seven
+    extra taps per patient. The purpose of the figures is to compare what a
+    patient ACTUALLY costs against the BDT 10,000-12,000 per patient the
+    project budgets. If the programme ever starts sharing cost with families,
+    this is the assumption to revisit first. (Same source, same date.)
+
+    Note on the accounting term: these figures are NOT out-of-pocket
+    expenditure. Out-of-pocket means a household spending its OWN resources on
+    health. Here the money is the project's throughout: a District Coordinator
+    releases it to the woman and she settles the hospital bill with it, so
+    although the cash passes through her hands she is disbursing project funds,
+    not her own. The household's out-of-pocket expenditure is zero. These are
+    the actual cost per patient, borne by the project and paid through her.
+    """
+
+    POINT_REFERRED = 'referred'
+    POINT_REPAIRED = 'repaired'
+    POINT_CHOICES = [
+        (POINT_REFERRED, 'Referral (travel, investigation, no surgery yet)'),
+        (POINT_REPAIRED, 'Surgical repair'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    case = models.ForeignKey(
+        CIPRBFistulaCase, on_delete=models.CASCADE, related_name='costs')
+
+    cost_point = models.CharField(
+        max_length=20, choices=POINT_CHOICES, default=POINT_REPAIRED,
+        db_index=True,
+        help_text='Which point in the pathway this money was spent at.')
+    # 1st operation, 2nd operation, and so on. Tanjina: "একই আইডি ২নং ওটি" —
+    # the same patient ID carries a second operation, and its own costs.
+    episode_no = models.PositiveSmallIntegerField(
+        default=1, help_text='Which occurrence (1st operation, 2nd operation…).')
+    cost_date = models.DateField(null=True, blank=True)
+
+    # ── The six cost heads, verbatim from the Question Bank (rows 96-102).
+    #    All are NULLABLE on purpose: NULL means "not recorded", 0 means
+    #    "recorded, and it genuinely cost nothing". Making them required would
+    #    collapse the two and fill the data with meaningless zeroes. Whole taka
+    #    only — no one itemises a fistula repair to the poisha.
+    # ── What the project handed over, as distinct from what was spent.
+    #    CIPRB does not pay the facility. A District Coordinator draws the money
+    #    and gives it to the woman, who pays the hospital herself (at Dhaka
+    #    Medical the Coordinator posted there receives it), and CIPRB transacts
+    #    the total. So cash passes through hands, and the amount released and
+    #    the amount actually spent are two different figures that can diverge.
+    #    Recording only the spend would leave the difference invisible and
+    #    nothing to reconcile CIPRB's ledger against.
+    #    (Dr Tanjina Pervin, RCH CIPRB, 9 September 2026.)
+    amount_disbursed = models.PositiveIntegerField(
+        null=True, blank=True,
+        help_text='Amount released to the patient for this episode.')
+    disbursed_by = models.CharField(
+        max_length=200, blank=True, default='',
+        help_text='District Coordinator who handed the money over.')
+
+    medical_cost       = models.PositiveIntegerField(null=True, blank=True)
+    investigation_cost = models.PositiveIntegerField(null=True, blank=True)
+    ot_cost            = models.PositiveIntegerField(null=True, blank=True)
+    travel_cost        = models.PositiveIntegerField(null=True, blank=True)
+    food_cost          = models.PositiveIntegerField(null=True, blank=True)
+    other_cost         = models.PositiveIntegerField(null=True, blank=True)
+    remarks            = models.TextField(blank=True, default='')
+
+    # ── Provenance. Mirrors the case row so the approval queue and the audit
+    #    trail can attribute a cost entry the same way they attribute a stage.
+    kobo_submission_id     = models.CharField(max_length=100, blank=True, default='')
+    submitted_by_kobo_user = models.CharField(max_length=100, blank=True, default='')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    COST_FIELDS = ('medical_cost', 'investigation_cost', 'ot_cost',
+                   'travel_cost', 'food_cost', 'other_cost')
+
+    @property
+    def total(self) -> int:
+        """Sum of the recorded heads. Unrecorded heads count as nothing rather
+        than breaking the sum, so a partially-filled entry still totals."""
+        return sum(getattr(self, f) or 0 for f in self.COST_FIELDS)
+
+    @property
+    def balance(self):
+        """Released minus spent. None when nothing was recorded as released,
+        because 0 - spent would read as an overspend that never happened."""
+        if self.amount_disbursed is None:
+            return None
+        return self.amount_disbursed - self.total
+
+    @property
+    def is_empty(self) -> bool:
+        """True when no head carries a figure. Such a row is a remark only."""
+        return all(getattr(self, f) is None for f in self.COST_FIELDS)
+
+    class Meta:
+        ordering = ['case', 'cost_point', 'episode_no']
+        verbose_name = 'CIPRB Fistula Case Cost'
+        verbose_name_plural = 'CIPRB Fistula Case Costs'
+        constraints = [
+            # Re-entering the same episode CORRECTS it instead of duplicating.
+            # Without this a webhook redelivery, or a worker fixing a typo,
+            # would double the programme's reported spend.
+            models.UniqueConstraint(
+                fields=['case', 'cost_point', 'episode_no'],
+                name='uniq_fistula_cost_per_episode'),
+        ]
+        indexes = [models.Index(fields=['cost_point', 'cost_date'])]
+
+    def __str__(self):
+        return (f'{self.case.patient_code} · {self.cost_point} '
+                f'#{self.episode_no} · BDT {self.total}')
