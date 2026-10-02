@@ -16,6 +16,9 @@ import { motion, AnimatePresence } from 'motion/react'
 import { MapContainer, GeoJSON } from 'react-leaflet'
 import { api } from '@/api/client'
 import { normaliseDistrict } from '@/data/partnerDistricts'
+import {
+  DONOR_DISTRICTS, DONOR_TINT, donorCounts, donorKey, type DonorProject,
+} from '@/data/donorDistricts'
 import type { Layer, PathOptions, LeafletEvent } from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { Info } from 'lucide-react'
@@ -24,27 +27,17 @@ const GEOJSON_URL = '/bangladesh-adm2.geojson'
 // UNFPA branding — orange instead of CIPRB blue.
 const CIPRB_BLUE = '#F96000'
 
-// Mappings — must mirror MPDSRVisualizations.tsx DISTRICT_MAPPING.
-// Provided by CIPRB (Near Miss tool, June 2026): GAC + SIDA sit inside
-// the canonical 18 CIPRB working districts. CP = the full 18.
-const GAC  = ['Sunamganj', 'Bhola', 'Sherpur', 'Kurigram', 'Khagrachari']
-const SIDA = ['Noakhali', 'Chandpur', 'Bandarban', 'Patuakhali', 'Barguna']
-const CP   = [
-  'Sunamganj', 'Sherpur', 'Bhola', 'Kurigram', 'Gaibandha',
-  'Khagrachari', 'Noakhali', 'Patuakhali', 'Sirajganj', 'Barguna',
-  'Jamalpur', 'Bagerhat', 'Habiganj', 'Moulavibazar', 'Sylhet',
-  'Bandarban', 'Chandpur', 'Rangpur',
-]
-
-// Use the shared alias-aware normaliser (partnerDistricts.ts) so spelling
-// variants match the GeoJSON — e.g. Khagrachari→Khagrachhari,
-// Moulavibazar→Maulvibazar. The previous local version had no alias table,
-// so those two districts silently never highlighted on this map.
+// Donor coverage comes from data/donorDistricts.ts, transcribed from Dr.
+// Sayeed's request of 27 September 2026. The lists that used to sit here were
+// the June 2026 near-miss split and no longer match what CIPRB reports.
+// The shared alias-aware normaliser keeps spelling variants matching the
+// GeoJSON, for example Khagrachari to Khagrachhari.
 const normalise = normaliseDistrict
 
-const GAC_SET = new Set(GAC.map(normalise))
-const SIDA_SET = new Set(SIDA.map(normalise))
-const CP_SET = new Set(CP.map(normalise))
+const DONOR_BY_DISTRICT: Record<DonorProject, Map<string, string>> = {
+  mpdsr: new Map(DONOR_DISTRICTS.mpdsr.map(r => [normalise(r.district), donorKey(r.donors)])),
+  fistula: new Map(DONOR_DISTRICTS.fistula.map(r => [normalise(r.district), donorKey(r.donors)])),
+}
 
 // Colour palette — UNFPA orange tonal scale. Three distinguishable shades
 // of orange so GAC / SIDA / CP coverage layers stay readable, plus a deep
@@ -61,16 +54,10 @@ const TINT = {
 }
 const SEA = '#e7eef4'
 
-function tintFor(name: string): { fill: string; opacity: number; group: string } {
-  const key = normalise(name)
-  const inGAC = GAC_SET.has(key)
-  const inSIDA = SIDA_SET.has(key)
-  const inCP = CP_SET.has(key)
-  if (inGAC && inSIDA) return { fill: TINT.both, opacity: 0.85, group: 'GAC + SIDA' }
-  if (inGAC)            return { fill: TINT.gac,  opacity: 0.8,  group: 'GAC' }
-  if (inSIDA)           return { fill: TINT.sida, opacity: 0.8,  group: 'SIDA' }
-  if (inCP)             return { fill: TINT.cp,   opacity: 0.75, group: 'CP' }
-  return { fill: TINT.none, opacity: 1, group: '' }
+function tintFor(project: DonorProject, name: string): { fill: string; opacity: number; group: string } {
+  const group = DONOR_BY_DISTRICT[project].get(normalise(name)) ?? ''
+  if (!group) return { fill: TINT.none, opacity: 1, group: '' }
+  return { fill: DONOR_TINT[group] ?? TINT.gac, opacity: 0.85, group }
 }
 
 interface DistrictFeatureProps {
@@ -83,8 +70,11 @@ interface RecentSubmission {
   partner: string
 }
 
-export function MPDSRDistrictMap({ districts }: {
+export function MPDSRDistrictMap({ districts, project = 'mpdsr', title, sub }: {
   districts?: readonly string[] | null
+  project?: DonorProject
+  title?: string
+  sub?: string
 } = {}) {
   const { t } = useTranslation()
   const [geo, setGeo] = useState<GeoJSON.FeatureCollection | null>(null)
@@ -97,6 +87,7 @@ export function MPDSRDistrictMap({ districts }: {
   // Honours ?districts= so the panel never disagrees with the donor pill.
   const districtsKey = districts ? districts.join(',') : ''
   useEffect(() => {
+    if (project !== 'mpdsr') return      // the fistula map has no review records
     let cancelled = false
     const params: Record<string, string> = {}
     if (districtsKey) params.districts = districtsKey
@@ -105,7 +96,7 @@ export function MPDSRDistrictMap({ districts }: {
       .then(r => { if (!cancelled) setRecords(r.data?.records_by_district ?? null) })
       .catch(() => { /* the map still stands on its own */ })
     return () => { cancelled = true }
-  }, [districtsKey])
+  }, [districtsKey, project])
 
   useEffect(() => {
     let cancelled = false
@@ -120,6 +111,7 @@ export function MPDSRDistrictMap({ districts }: {
   // Pulses the most-recent submission's district name into a floating
   // badge over the map. Polls every 45s.
   useEffect(() => {
+    if (project !== 'mpdsr') return      // the pulse tracks MPDSR submissions
     let cancelled = false
     const fetchLatest = () =>
       api.get<any>('/dashboard/activity/?limit=1')
@@ -139,11 +131,11 @@ export function MPDSRDistrictMap({ districts }: {
     fetchLatest()
     const id = setInterval(fetchLatest, 45_000)
     return () => { cancelled = true; clearInterval(id) }
-  }, [])
+  }, [project])
 
   const style = (feature?: GeoJSON.Feature): PathOptions => {
     const name = (feature?.properties as DistrictFeatureProps | undefined)?.shapeName ?? ''
-    const { fill, opacity } = tintFor(name)
+    const { fill, opacity } = tintFor(project, name)
     return {
       fillColor: fill,
       fillOpacity: opacity,
@@ -155,7 +147,7 @@ export function MPDSRDistrictMap({ districts }: {
 
   const onEachFeature = (feature: GeoJSON.Feature, layer: Layer) => {
     const name = (feature.properties as DistrictFeatureProps | undefined)?.shapeName ?? ''
-    const { group } = tintFor(name)
+    const { group } = tintFor(project, name)
     if (group) {
       layer.bindTooltip(`<b>${name}</b><br/><span style="font-size:11px;color:#555">${group}</span>`, {
         sticky: true, direction: 'top',
@@ -187,11 +179,11 @@ export function MPDSRDistrictMap({ districts }: {
               {t('mpdsrMap.kicker')}
             </div>
             <h3 style={{ margin: '6px 0 0', fontSize: 17, fontWeight: 700, color: '#111827' }}>
-              {t('mpdsrMap.title')}
+              {title ?? t('mpdsrMap.title')}
             </h3>
           </div>
           <span style={{ fontSize: 12, color: '#6b7280', maxWidth: 380, textAlign: 'right' }}>
-            {t('mpdsrMap.sub')}
+            {sub ?? t('mpdsrMap.sub')}
           </span>
         </div>
         <div style={{
@@ -269,12 +261,11 @@ export function MPDSRDistrictMap({ districts }: {
         {/* Legend */}
         <div style={{
           display: 'flex', flexDirection: 'column', gap: 14, fontSize: 12.5,
-          flex: '0 0 auto',
+          flex: '0 0 auto', maxWidth: 230,
         }}>
-          <LegendSwatch color={TINT.gac}  label={t('mpdsrMap.legendGac')}  sub={t('mpdsrMap.intervention')} />
-          <LegendSwatch color={TINT.sida} label={t('mpdsrMap.legendSida')} sub={t('mpdsrMap.intervention')} />
-          <LegendSwatch color={TINT.both} label={t('mpdsrMap.legendOverlap')} sub="Sunamganj" />
-          <LegendSwatch color={TINT.cp}   label={t('mpdsrMap.legendCp')}    sub={t('mpdsrMap.countryProgramme')} />
+          {donorCounts(project).map(({ donor, districts: ds }) => (
+            <LegendSwatch key={donor} color={DONOR_TINT[donor]} label={donor} sub={ds.join(', ')} />
+          ))}
           <LegendSwatch color={TINT.none} label={t('mpdsrMap.legendNone')} sub="" />
         </div>
         </div>
@@ -298,3 +289,7 @@ function LegendSwatch({ color, label, sub }: { color: string; label: string; sub
     </div>
   )
 }
+
+/** The same map, named for what it draws. Used for the End Obstetric Fistula
+ *  donor map on the fistula page, and readable for the MPDSR one. */
+export const DonorDistrictMap = MPDSRDistrictMap

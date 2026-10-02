@@ -452,7 +452,14 @@ function MPDSRSection({
 
       {/* ─── Geographic coverage map (SIDA / GAC / CP highlight) ─── */}
       <div>
-        <MPDSRDistrictMap districts={districts} />
+        <MPDSRDistrictMap
+          districts={districts}
+          project="mpdsr"
+          title={t('mpdsrMap.title', { defaultValue: 'MPDSR districts' })}
+          sub={t('mpdsrMap.sub', {
+            defaultValue: 'CIPRB and UNFPA supported districts, coloured by the donor funding the work.',
+          })}
+        />
       </div>
 
       {/* ─── Visualizations: Notify vs Review · Cause breakdown · Response Plan ─── */}

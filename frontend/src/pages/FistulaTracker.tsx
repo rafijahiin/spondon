@@ -18,6 +18,7 @@ import { motion, AnimatePresence, useReducedMotion } from 'motion/react'
 import { ClipboardList, Megaphone, Search, Stethoscope, Send, Scissors } from 'lucide-react'
 import { api } from '@/api/client'
 import { FistulaCornerPanel, FistulaCampaignPanel } from '@/components/fistula/FistulaPanels'
+import { DonorDistrictMap } from '@/components/ciprb/MPDSRDistrictMap'
 
 // UNFPA branding — orange across the board, no partner-specific hues.
 const CIPRB_BLUE = '#F96000'
@@ -220,6 +221,17 @@ export default function FistulaTracker() {
             value={kpis.surgeryDone}
           />
         </div>
+      </section>
+
+      {/* ───── Donor coverage map (Dr. Sayeed, 27 September 2026) ───── */}
+      <section className="section" style={{ marginTop: 8 }}>
+        <DonorDistrictMap
+          project="fistula"
+          title={t('fistulaMap.title', { defaultValue: 'End Obstetric Fistula districts' })}
+          sub={t('fistulaMap.sub', {
+            defaultValue: 'CIPRB and UNFPA supported districts, coloured by the donor funding the work.',
+          })}
+        />
       </section>
 
       {/* ───────────────── Tabs ───────────────── */}
