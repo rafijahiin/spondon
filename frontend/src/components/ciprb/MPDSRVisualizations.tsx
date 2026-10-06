@@ -25,6 +25,7 @@ import { api } from '@/api/client'
 import { DataUnavailable } from '@/components/ciprb/DataUnavailable'
 import { SourceChip } from '@/components/ui/SourceChip'
 import type { MPDSRCase } from '@/types/index'
+import { districtsForDonor } from '@/data/donorDistricts'
 import { BarBreakdown, DonutBreakdown, Histogram } from './IndicatorCharts'
 
 // ─── Aggregates fetched from /api/mpdsr/aggregates/ ─────────────────────────
@@ -583,19 +584,24 @@ function bucketForCause(raw: string): string {
 //
 // Matching uses a normalised form (lowercase, alphanumeric only) so
 // "Cox's Bazar" / "Coxsbazar" / "Cox Bazar" all collapse to the same key.
+// Derived from donorDistricts.ts, the list Dr. Sayeed supplied on 27
+// September 2026, so these tabs cannot disagree with the donor pills or the
+// maps. The lists hardcoded here before came from the June 2026 Near Miss
+// tool and were wrong in two ways:
+//
+//   sida  carried Patuakhali and Barguna, which CP funds, and was missing
+//         Sunamganj, which SIDA co-funds with GAC.
+//   cp    was not the CP donor list at all. It was the whole CIPRB working
+//         footprint (18 districts including Habiganj, Sylhet, Rangpur and
+//         Moulavibazar, none of which CP funds), which made the CP tab
+//         almost identical to Cumulative and therefore meaningless.
+//
+// gac was already correct and is unchanged.
 const DISTRICT_MAPPING: Record<DistrictGroup, string[] | null> = {
   cumulative: null,    // null = no filter (all districts)
-  // Provided by CIPRB (Near Miss tool, June 2026) — these 18 districts are
-  // the canonical CIPRB working footprint. GAC and SIDA splits below sit
-  // inside this 18-district set.
-  gac:  ['Sunamganj', 'Bhola', 'Sherpur', 'Kurigram', 'Khagrachari'],
-  sida: ['Noakhali', 'Chandpur', 'Bandarban', 'Patuakhali', 'Barguna'],
-  cp:   [
-    'Sunamganj', 'Sherpur', 'Bhola', 'Kurigram', 'Gaibandha',
-    'Khagrachari', 'Noakhali', 'Patuakhali', 'Sirajganj', 'Barguna',
-    'Jamalpur', 'Bagerhat', 'Habiganj', 'Moulavibazar', 'Sylhet',
-    'Bandarban', 'Chandpur', 'Rangpur',
-  ],
+  gac:  districtsForDonor('GAC'),
+  sida: districtsForDonor('SIDA'),
+  cp:   districtsForDonor('CP'),
 }
 
 function normaliseDistrict(s: string): string {
