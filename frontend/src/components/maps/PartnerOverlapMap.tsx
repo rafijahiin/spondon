@@ -84,8 +84,20 @@ export function PartnerOverlapMap({
     keys: new Set(s.districts.map(normaliseDistrict)),
   }))
 
+  // Does any district actually sit in two subgroups? Drives the legend.
+  const hasOverlap = !!subgroupKeys && subgroupKeys.length >= 2 &&
+    [...new Set(subgroupKeys.flatMap((s) => [...s.keys]))]
+      .some((k) => subgroupKeys.filter((s) => s.keys.has(k)).length >= 2)
+
   const atlas = variant === 'atlas'
-  const stroke = atlas ? '#c3cdd4' : '#ffffff'
+  // The atlas hairline was #c3cdd4 at 0.6: too pale and too thin to survive
+  // either a small card or a printed page, so district boundaries dissolved.
+  const stroke = atlas ? '#97a1a9' : '#ffffff'
+  const hairline = atlas ? 0.8 : 0.8
+  // A district that carries a donor is the subject of the map, so it gets a
+  // heavier, darker outline than its neighbours.
+  const KEY_STROKE = '#3f464c'
+  const KEY_WEIGHT = 1.2
   const styleFeature = (feature?: GeoJSON.Feature): PathOptions => {
     const key = normaliseDistrict((feature?.properties?.shapeName as string) ?? '')
     const partners = coverage.get(key)
@@ -104,30 +116,39 @@ export function PartnerOverlapMap({
       const inPartner = partners?.includes(partner) || hits.length > 0
       if (!inPartner) {
         return {
-          fillColor: atlas ? '#eceae4' : NO_COVERAGE,
+          // A cool grey rather than the warm paper used elsewhere: CP's pale
+          // peach is the lightest donor tint, and against warm paper at card
+          // size the two were hard to tell apart.
+          fillColor: atlas ? '#e6e9ec' : NO_COVERAGE,
           fillOpacity: atlas ? 1 : 0.5,
           color: stroke,
-          weight: atlas ? 0.6 : 0.8,
+          weight: hairline,
         }
       }
       if (hits.length >= 2) {
-        return { fillColor: subgroupOverlapColor, fillOpacity: 0.9, color: stroke, weight: 0.8 }
+        return {
+          fillColor: subgroupOverlapColor, fillOpacity: 1,
+          color: KEY_STROKE, weight: KEY_WEIGHT,
+        }
       }
       if (hits.length === 1) {
-        return { fillColor: hits[0].color, fillOpacity: 0.85, color: stroke, weight: 0.8 }
+        return {
+          fillColor: hits[0].color, fillOpacity: 1,
+          color: KEY_STROKE, weight: KEY_WEIGHT,
+        }
       }
       return {
         fillColor: PARTNER_TINTS[partner],
         fillOpacity: 0.85,
         color: stroke,
-        weight: 0.8,
+        weight: hairline,
       }
     }
     return {
       fillColor: fillForPartners(partners),
       fillOpacity: partners?.length ? 0.78 : (atlas ? 1 : 0.5),
       color: stroke,
-      weight: atlas ? 0.6 : 0.8,
+      weight: hairline,
     }
   }
 
@@ -239,10 +260,14 @@ export function PartnerOverlapMap({
               <LegendSwatch
                 key={s.name}
                 color={s.color}
-                label={`${s.name} · ${s.districts.length} districts`}
+                label={`${s.name} · ${s.districts.length} district${s.districts.length === 1 ? '' : 's'}`}
               />
             ))}
-            {subgroups.length >= 2 && (
+            {/* Only when a district really does fall in two groups. Groups
+                that already name their own combination ("GAC + SIDA") are
+                disjoint, so this generic swatch would otherwise sit in the
+                legend pointing at nothing. */}
+            {hasOverlap && (
               <LegendSwatch color={subgroupOverlapColor} label={t('home.donorOverlap')} />
             )}
             <LegendSwatch

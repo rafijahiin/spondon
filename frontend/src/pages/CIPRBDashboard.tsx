@@ -24,6 +24,7 @@ import { StatusBadge } from '@/components/ui/StatusBadge'
 import { PageLoader } from '@/components/ui/LoadingSpinner'
 import { formatDate, formatDateTime } from '@/utils/format'
 import { PartnerOverlapMap } from '@/components/maps/PartnerOverlapMap'
+import { donorUnionGroups, districtsForDonor } from '@/data/donorDistricts'
 import { SourceChip } from '@/components/ui/SourceChip'
 import { FistulaVisualizations } from '@/components/ciprb/FistulaVisualizations'
 import { MPDSRVisualizations } from '@/components/ciprb/MPDSRVisualizations'
@@ -633,18 +634,18 @@ function MPDSRSection({
 // Donor filter — Animesh asked for one-click GAC and SIDA pills.
 // Districts confirmed by Rafi 2026-06-02 (override Sayed's earlier
 // 3-district mention in meeting minutes).
+// Derived from donorDistricts.ts, the list Dr. Sayeed supplied on 27
+// September 2026, so the pills and the maps can never disagree. The list
+// hardcoded here before came from the June 2026 Near Miss tool and had gone
+// stale three ways: Patuakhali and Barguna sat under SIDA when CP funds
+// them, Sunamganj was missing from SIDA, and CP had no pill at all despite
+// funding six districts. Because the pills filter every figure below them,
+// that was wrong data and not only a wrong colour.
 const DONOR_FILTERS = {
   all:  { label: 'All',  districts: null as string[] | null },
-  // Provided by CIPRB (Near Miss tool, June 2026) — donor splits sit
-  // inside the canonical 18 CIPRB working districts.
-  GAC:  {
-    label: 'GAC',
-    districts: ['Sunamganj', 'Bhola', 'Sherpur', 'Kurigram', 'Khagrachari'],
-  },
-  SIDA: {
-    label: 'SIDA',
-    districts: ['Noakhali', 'Chandpur', 'Bandarban', 'Patuakhali', 'Barguna'],
-  },
+  GAC:  { label: 'GAC',  districts: districtsForDonor('GAC') },
+  SIDA: { label: 'SIDA', districts: districtsForDonor('SIDA') },
+  CP:   { label: 'CP',   districts: districtsForDonor('CP') },
 } as const
 type DonorKey = keyof typeof DONOR_FILTERS
 
@@ -718,25 +719,15 @@ export default function CIPRBDashboard() {
                 variant="atlas"
                 height={400}
                 partner="CIPRB"
-                subgroups={[
-                  // Provided by CIPRB (Near Miss tool, June 2026) — donor
-                  // splits sit inside the canonical 18-district footprint.
-                  {
-                    name: 'GAC',
-                    color: '#F96000',
-                    districts: ['Sunamganj', 'Bhola', 'Sherpur', 'Kurigram', 'Khagrachari'],
-                  },
-                  {
-                    // SIDA was #2171EC (blue), nearly identical to the CIPRB
-                    // "other" base tint (#0072BC) — indistinguishable on the
-                    // map. Switched to a clearly separate green so the three
-                    // footprints (GAC orange / SIDA green / CIPRB-other blue)
-                    // are readable, mirroring the proven homepage palette.
-                    name: 'SIDA',
-                    color: '#16A34A',
-                    districts: ['Noakhali', 'Chandpur', 'Bandarban', 'Patuakhali', 'Barguna'],
-                  },
-                ]}
+                // Donor split from donorDistricts.ts, the list Dr. Sayeed gave
+                // on 27 September 2026 and the same source the two printed
+                // donor maps use. The lists hardcoded here before came from
+                // the June 2026 Near Miss tool and had since gone stale:
+                // Patuakhali and Barguna were shown as SIDA when they are CP,
+                // and CP's six districts were missing from the map entirely.
+                // One group per tint, so each district takes exactly one
+                // colour and the legend counts add up.
+                subgroups={donorUnionGroups()}
               />
               </div>
             </div>
@@ -855,6 +846,24 @@ export default function CIPRBDashboard() {
           first, above the Fistula band. Live from CIPRB-10 (MPDSRAction). */}
       <section className="section" id="action-plan-section" style={{ marginTop: 0, marginBottom: 8, scrollMarginTop: 80 }}>
         <ActionPlanTracker districts={activeDonor.districts} />
+      </section>
+
+      {/* ─── End Obstetric Fistula districts, coloured by donor ───
+          Dr. Tanjina, 6 October 2026: "show both maps separately in the
+          SIMPLE Dashboard". The MPDSR map already sits in the MPDSR section;
+          this is its fistula counterpart, placed directly above the AT A
+          GLANCE band as her marked-up file asks ("Add the picture end
+          obstetric fistula before this"). Fourteen districts against MPDSR's
+          twelve, which is the reason the two cannot share one map. */}
+      <section className="section" style={{ marginTop: 0, marginBottom: 8 }}>
+        <MPDSRDistrictMap
+          districts={activeDonor.districts}
+          project="fistula"
+          title={t('fistulaMap.title', { defaultValue: 'End Obstetric Fistula districts' })}
+          sub={t('fistulaMap.sub', {
+            defaultValue: 'CIPRB and UNFPA supported districts, coloured by the donor funding the work.',
+          })}
+        />
       </section>
 
       {/* ───────────────── Fistula KPI band ───────────────── */}

@@ -12,7 +12,9 @@
  *
  * One point was resolved when transcribing: the MPDSR table lists Noakhali
  * under SIDA and again under "Common (SIDA+CP)". It is recorded here as
- * SIDA + CP, which is the fuller of the two statements. Worth confirming.
+ * SIDA + CP, which is the fuller of the two statements. CONFIRMED by
+ * Dr. Tanjina Pervin, RCH CIPRB, 6 October 2026: "Noakhali will be a common
+ * district under both SIDA and CP."
  *
  * These lists are the donor split only. They are narrower than the 19 working
  * districts in PARTNER_DISTRICTS.CIPRB (the Kobo form dropdown), which stays
@@ -88,4 +90,67 @@ export function donorCounts(project: DonorProject): { donor: string; districts: 
   return DONOR_LEGEND
     .filter(k => out.has(k))
     .map(k => ({ donor: k, districts: (out.get(k) ?? []).sort() }))
+}
+
+/** Every donor district across both projects, merged.
+ *
+ *  The CIPRB partner page shows one coverage map for the whole partnership,
+ *  not one per project, so a district carries the union of its donors: the
+ *  four GAC districts that only the fistula project adds (Kurigram,
+ *  Khagrachhari) count as GAC here too.
+ */
+export function donorUnion(): DonorDistrict[] {
+  const merged = new Map<string, Set<Donor>>()
+  for (const project of ['mpdsr', 'fistula'] as DonorProject[]) {
+    for (const row of DONOR_DISTRICTS[project]) {
+      const set = merged.get(row.district) ?? new Set<Donor>()
+      row.donors.forEach(d => set.add(d))
+      merged.set(row.district, set)
+    }
+  }
+  return [...merged].map(([district, donors]) => ({
+    district,
+    donors: (['GAC', 'SIDA', 'CP'] as Donor[]).filter(d => donors.has(d)),
+  }))
+}
+
+/** Every district this donor funds, across both projects.
+ *
+ *  A district shared with another donor belongs to BOTH donors' lists, which
+ *  is the difference between this and `donorUnionGroups()`: the groups there
+ *  are disjoint because a map district can only take one colour, whereas a
+ *  filter asking "what does SIDA fund" must include Sunamganj (GAC + SIDA)
+ *  and Noakhali (SIDA + CP).
+ *
+ *  This is the source for the dashboard's donor filter pills. They used to
+ *  carry a list hardcoded from the June 2026 Near Miss tool which had gone
+ *  stale: it put Patuakhali and Barguna under SIDA when CIPRB funds them
+ *  through CP, dropped Sunamganj from SIDA, and had no CP pill at all.
+ */
+export function districtsForDonor(donor: Donor): string[] {
+  return donorUnion()
+    .filter(row => row.donors.includes(donor))
+    .map(row => row.district)
+    .sort()
+}
+
+/** The same union as map subgroups: one group per tint, groups disjoint.
+ *
+ *  A district funded by two donors sits in its own group ("GAC + SIDA")
+ *  rather than in both single-donor groups, so every district takes exactly
+ *  one colour and the legend counts add up to the districts on the map.
+ */
+export function donorUnionGroups(): { name: string; color: string; districts: string[] }[] {
+  const byKey = new Map<string, string[]>()
+  for (const row of donorUnion()) {
+    const k = donorKey(row.donors)
+    byKey.set(k, [...(byKey.get(k) ?? []), row.district])
+  }
+  return DONOR_LEGEND
+    .filter(k => byKey.has(k))
+    .map(k => ({
+      name: k,
+      color: DONOR_TINT[k],
+      districts: (byKey.get(k) ?? []).sort(),
+    }))
 }
