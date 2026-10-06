@@ -16,6 +16,8 @@ Rules:
   - Bangla labels from the source files where available.
 """
 import os
+import time
+
 import openpyxl
 import requests
 from openpyxl.styles import Font, PatternFill, Alignment
@@ -36,17 +38,50 @@ _HFONT = Font(color="FFFFFF", bold=True, size=10)
 
 SURVEY_HDR = [
     'type','name','label::English','label::Bangla',
-    'hint','required','relevant','constraint','constraint_message',
+    'hint::English','hint::Bangla','required','relevant','constraint',
+    'constraint_message::English','constraint_message::Bangla',
     'default','appearance','calculation',
 ]
 CHOICES_HDR = ['list_name','name','label::English','label::Bangla']
 SETTINGS_HDR = ['form_title','form_id','version','default_language','style']
 
 
+def _split_bn(text):
+    """Split a string written as "English / বাংলা" into its two halves.
+
+    Several hints were authored with both languages in one cell, which worked
+    while `hint` was a single untranslated column. Now that the column is
+    translated they have to come apart. A split only counts when the right
+    half actually contains Bangla, so an English sentence containing a slash
+    is left alone.
+    """
+    if not text:
+        return '', ''
+    for sep in (' / ', ' | '):
+        if sep in text:
+            left, right = text.split(sep, 1)
+            if any('\u0980' <= ch <= '\u09ff' for ch in right):
+                return left.strip(), right.strip()
+    return text, ''
+
+
 def _sr(qtype, name, en='', bn='', hint='', required='',
-        relevant='', constraint='', cmsg='', default='', app='', calc=''):
-    return [qtype, name, en, bn, hint, required, relevant,
-            constraint, cmsg, default, app, calc]
+        relevant='', constraint='', cmsg='', default='', app='', calc='',
+        hint_bn='', cmsg_bn=''):
+    """One survey row.
+
+    hint and cmsg may carry both languages in one string ("English / বাংলা");
+    otherwise pass hint_bn / cmsg_bn. Kobo requires every translatable column
+    to be translated once any of them is, so a missing Bangla side falls back
+    to the English text rather than being left blank, which would render an
+    empty hint for Bangla users.
+    """
+    h_en, h_split = _split_bn(hint)
+    c_en, c_split = _split_bn(cmsg)
+    h_bn = hint_bn or h_split or h_en
+    c_bn = cmsg_bn or c_split or c_en
+    return [qtype, name, en, bn, h_en, h_bn, required, relevant,
+            constraint, c_en, c_bn, default, app, calc]
 
 
 def _ch(lst, name, en, bn=''):
@@ -100,11 +135,13 @@ def _meta(center_required=True):
         _sr('select_one wellness_centre','centre_id',
             'Wellness Centre',
             'ওয়েলনেস সেন্টার', required=req,
-            hint='Select your wellness centre.'),
+            hint='Select your wellness centre.',
+            hint_bn='আপনার ওয়েলনেস সেন্টার নির্বাচন করুন।'),
         _sr('select_one medical_assistant','enumerator',
             'Your name (person filling this form)',
             'আপনার নাম (কে পূরণ করছেন)', required='yes',
-            hint='Select your name from the list.'),
+            hint='Select your name from the list.',
+            hint_bn='তালিকা থেকে আপনার নাম নির্বাচন করুন।'),
         _sr('text','enumerator_other',
             'If your name is not in the list, type it here',
             'আপনার নাম তালিকায় না থাকলে এখানে লিখুন',
@@ -213,7 +250,9 @@ def _form1_survey():
                  'does not start with this centre number, or it is already registered. / '
                  'এই আইডি সংরক্ষণ করা যাবে না — উপরের লাল বার্তা দেখুন।',
             hint='Format: centre number + serial, e.g. 1-0001 (Daulatdia), '
-                 '2-0001 (Jashore). Use the same ID in every Service Log.'),
+                 '2-0001 (Jashore). Use the same ID in every Service Log.',
+            hint_bn='গঠন: সেন্টার নম্বর + ক্রমিক নম্বর, যেমন 1-0001 (দৌলতদিয়া), '
+                    '2-0001 (যশোর)। প্রতিটি সার্ভিস লগে একই আইডি ব্যবহার করুন।'),
 
         # Duplicate-ID warning. Looks up the typed ID in phd_clients.csv;
         # if she's already there, blocks accidental re-registration.
@@ -522,7 +561,7 @@ def _form2_survey():
             'Date','তারিখ', required='yes'),
         _sr('text','counsel_month',
             'Name of the month','মাসের নাম', required='yes',
-            hint='e.g. June 2026'),
+            hint='e.g. June 2026', hint_bn='যেমন জুন ২০২৬'),
         _sr('text','counsel_counsellor',
             'Counsellor (Medical Assistant / Midwife cum Counsellor)',
             'কাউন্সেলর (মেডিকেল অ্যাসিস্ট্যান্ট / মিডওয়াইফ কাম কাউন্সেলর)',
@@ -567,7 +606,7 @@ def _form2_survey():
 
         _sr('text','ref_month_year',
             'Month and Year','মাস ও বছর',
-            required='yes', hint='e.g. June 2026'),
+            required='yes', hint='e.g. June 2026', hint_bn='যেমন জুন ২০২৬'),
         _sr('date','ref_date','Date','তারিখ', required='yes'),
         # client_id lives in the shared patient_id_group at the top of the form.
         _sr('text','ref_referred_for',
@@ -951,7 +990,8 @@ def _patient_id_group():
         _sr('text','client_id',
             'FSW ID No.','যৌনকর্মীর আইডি নম্বর',
             required='yes',
-            hint='Type her registered ID, e.g. 1-0001 (centre number + serial).'),
+            hint='Type her registered ID, e.g. 1-0001 (centre number + serial).',
+            hint_bn='তাঁর নিবন্ধিত আইডি লিখুন, যেমন 1-0001 (সেন্টার নম্বর + ক্রমিক নম্বর)।'),
 
         # pulldata() lookups — all keyed on the upper-cased client_id.
         _sr('calculate','_pull_name',     calc=PULL.format(col='name')),
@@ -1098,6 +1138,24 @@ def _import_xlsform(xlsx_path, asset_uid, token, stdout):
                           files=files, data=data, timeout=120)
     if r.status_code not in (200, 201):
         stdout.write(f'    import FAILED ({r.status_code}): {r.text[:200]}')
+        return False
+
+    # The POST only QUEUES the import. Reporting success here, as this used
+    # to, meant a rejected import still printed "imported" and the caller
+    # then redeployed the OLD version: the live form never changed while the
+    # output said it had. That hid a hard failure ("The `hint` column is not
+    # translated") for weeks. Wait for the queue and report what it says.
+    imp = r.json()
+    status_url = imp.get('url') or f'{api}/imports/{imp.get("uid")}/'
+    status, detail = None, None
+    for _ in range(40):                       # ~2 minutes
+        time.sleep(3)
+        s = requests.get(status_url, headers=headers, timeout=60).json()
+        status, detail = s.get('status'), s.get('messages')
+        if status in ('complete', 'error', 'failed'):
+            break
+    if status != 'complete':
+        stdout.write(f'    import {status or "TIMED OUT"}: {str(detail)[:300]}')
         return False
     stdout.write('    imported')
     return True
