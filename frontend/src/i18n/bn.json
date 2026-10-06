@@ -573,14 +573,10 @@
     "saKindUnclassified": "ধরন লেখা হয়নি"
   },
   "mpdsrMap": {
-    "kicker": "ভৌগোলিক আওতা · MPDSR হস্তক্ষেপ জেলা",
-    "title": "যেসব জেলায় ফোকাসড MPDSR সহায়তা চলছে",
-    "sub": "GAC ও SIDA সম্পূর্ণ দৈনিক সহায়তা পায়; বৃহত্তর কান্ট্রি প্রোগ্রাম ১৮টি জেলায় আছে।",
+    "kicker": "ভৌগোলিক আওতা · MPDSR জেলা",
+    "title": "MPDSR জেলা",
+    "sub": "CIPRB ও UNFPA সমর্থিত জেলা, যে দাতা কাজটির অর্থায়ন করছে সেই অনুযায়ী রঙ করা।",
     "loading": "জেলার সীমানা লোড হচ্ছে…",
-    "legendGac": "GAC জেলা (৫)",
-    "legendSida": "SIDA জেলা (৬)",
-    "legendOverlap": "GAC + SIDA ওভারল্যাপ",
-    "legendCp": "CP জেলা",
     "legendNone": "ফোকাসড MPDSR নেই",
     "intervention": "ফোকাসড হস্তক্ষেপ",
     "countryProgramme": "কান্ট্রি প্রোগ্রাম"

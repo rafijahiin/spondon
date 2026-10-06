@@ -573,14 +573,10 @@
     "saKindUnclassified": "Type not recorded"
   },
   "mpdsrMap": {
-    "kicker": "GEOGRAPHIC COVERAGE · MPDSR INTERVENTION DISTRICTS",
-    "title": "Where focused MPDSR support is running",
-    "sub": "GAC and SIDA receive full day-to-day support; the broader Country Programme covers all 18 MPDSR districts.",
+    "kicker": "GEOGRAPHIC COVERAGE · MPDSR DISTRICTS",
+    "title": "MPDSR districts",
+    "sub": "CIPRB and UNFPA supported districts, coloured by the donor funding the work.",
     "loading": "Loading district boundaries…",
-    "legendGac": "GAC districts (5)",
-    "legendSida": "SIDA districts (5)",
-    "legendOverlap": "GAC + SIDA overlap",
-    "legendCp": "CP districts",
     "legendNone": "No focused MPDSR",
     "intervention": "Focused intervention",
     "countryProgramme": "Country Programme"

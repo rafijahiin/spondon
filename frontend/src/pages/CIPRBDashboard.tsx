@@ -23,8 +23,7 @@ import { usePolling } from '@/hooks/usePolling'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { PageLoader } from '@/components/ui/LoadingSpinner'
 import { formatDate, formatDateTime } from '@/utils/format'
-import { PartnerOverlapMap } from '@/components/maps/PartnerOverlapMap'
-import { donorUnionGroups, districtsForDonor } from '@/data/donorDistricts'
+import { districtsForDonor } from '@/data/donorDistricts'
 import { SourceChip } from '@/components/ui/SourceChip'
 import { FistulaVisualizations } from '@/components/ciprb/FistulaVisualizations'
 import { MPDSRVisualizations } from '@/components/ciprb/MPDSRVisualizations'
@@ -712,26 +711,18 @@ export default function CIPRBDashboard() {
             <div className="kicker" style={{ marginBottom: 8 }}>
               <span className="dot" style={{ background: CIPRB_BLUE }} />{t('ciprbExtras.coverage')}
             </div>
-            <div className="card shimmer" style={{ padding: 10 }}>
-              {/* Held to the width the country needs; wider than this and the
-                  card fills with sea. */}
-              <div style={{ maxWidth: 400, margin: '0 auto' }}>
-              <PartnerOverlapMap
-                variant="atlas"
-                height={400}
-                partner="CIPRB"
-                // Donor split from donorDistricts.ts, the list Dr. Sayeed gave
-                // on 27 September 2026 and the same source the two printed
-                // donor maps use. The lists hardcoded here before came from
-                // the June 2026 Near Miss tool and had since gone stale:
-                // Patuakhali and Barguna were shown as SIDA when they are CP,
-                // and CP's six districts were missing from the map entirely.
-                // One group per tint, so each district takes exactly one
-                // colour and the legend counts add up.
-                subgroups={donorUnionGroups()}
-              />
-              </div>
-            </div>
+            {/* Item 1 of Dr. Tanjina's 6 October file: the single merged
+                coverage map that used to sit here is replaced by the A3
+                sheet showing MPDSR and End Obstetric Fistula side by side.
+                That is the point of her note, "show both maps separately":
+                one map cannot carry twelve districts and fourteen at once,
+                and merging them hid which programme a district belongs to.
+                Same sheet CIPRB holds in print, same renderer. */}
+            <DonorMapSheet
+              src="/maps/Both_maps_side_by_side.png"
+              alt="CIPRB and UNFPA supported districts by donor. MPDSR districts, twelve, and End Obstetric Fistula districts, fourteen, side by side."
+              maxWidth={720}
+            />
           </div>
         </div>
 

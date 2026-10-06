@@ -11,12 +11,18 @@
  * Re-render after any change to the donor lists: the PNG is a build
  * artefact, not a drawing to be edited.
  */
-export function DonorMapSheet({ src, alt }: { src: string; alt: string }) {
+export function DonorMapSheet({ src, alt, maxWidth = 560 }: {
+  src: string
+  alt: string
+  /** A4 portrait sheets read well at the default. The A3 landscape sheet
+   *  carries two maps and needs more room before its labels close up. */
+  maxWidth?: number
+}) {
   return (
     <div className="card" style={{ padding: 10 }}>
-      {/* The sheet is A4 portrait, so it is held to a column width that keeps
-          the district labels legible without letting it dominate the page. */}
-      <div style={{ maxWidth: 560, margin: '0 auto' }}>
+      {/* Held to a width that keeps the district labels legible without
+          letting the sheet dominate the page. */}
+      <div style={{ maxWidth, margin: '0 auto' }}>
         <a href={src} target="_blank" rel="noopener noreferrer"
            style={{ display: 'block' }}
            title="Open the full-size sheet">
