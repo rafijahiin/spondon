@@ -89,6 +89,25 @@ export function PartnerOverlapMap({
     [...new Set(subgroupKeys.flatMap((s) => [...s.keys]))]
       .some((k) => subgroupKeys.filter((s) => s.keys.has(k)).length >= 2)
 
+  // The legend footer stated the partner's working-district count (19 for
+  // CIPRB) next to donor swatches adding up to 14, with nothing explaining
+  // the gap. They measure different things: 19 is the programme footprint
+  // from the Kobo form dropdown, 14 is how many of those carry a named
+  // donor. Counted here rather than written as a sentence, so the two
+  // numbers cannot drift apart again.
+  const split = (() => {
+    if (!partner || !subgroupKeys?.length) return null
+    const working = PARTNER_DISTRICTS[partner]
+    const inAGroup = new Set(subgroupKeys.flatMap((s) => [...s.keys]))
+    const named = working.filter((d) => inAGroup.has(normaliseDistrict(d))).length
+    // A donor district outside the working list would make "named of total"
+    // a lie. It has never happened, but if it does the footer drops the
+    // comparison instead of printing a wrong one.
+    const strays = [...inAGroup].filter(
+      (k) => !working.some((d) => normaliseDistrict(d) === k)).length
+    return { named, total: working.length, other: working.length - named, strays }
+  })()
+
   const atlas = variant === 'atlas'
   // The atlas hairline was #c3cdd4 at 0.6: too pale and too thin to survive
   // either a small card or a printed page, so district boundaries dissolved.
@@ -270,9 +289,14 @@ export function PartnerOverlapMap({
             {hasOverlap && (
               <LegendSwatch color={subgroupOverlapColor} label={t('home.donorOverlap')} />
             )}
+            {/* Carries its own count, so the swatches add up to the working
+                total in the footer instead of stopping short at the donor
+                districts. */}
             <LegendSwatch
               color={PARTNER_TINTS[partner]}
-              label={`${PARTNER_NAMES[partner].en} (${t('home.legendOther')})`}
+              label={split && !split.strays
+                ? `${PARTNER_NAMES[partner].en} (${t('home.legendOther')}) · ${split.other} district${split.other === 1 ? '' : 's'}`
+                : `${PARTNER_NAMES[partner].en} (${t('home.legendOther')})`}
             />
             <LegendSwatch color={NO_COVERAGE} label={t('home.legendNotCovered')} />
           </>
@@ -298,10 +322,10 @@ export function PartnerOverlapMap({
           </>
         )}
         <span style={{ marginLeft: 'auto', color: 'var(--muted)', fontStyle: 'italic' }}>
-          {partner === 'CIPRB'
-            ? `CIPRB: ${PARTNER_DISTRICTS.CIPRB.length} working districts`
-            : partner === 'Bandhu'
-            ? `Bandhu: ${PARTNER_DISTRICTS.Bandhu.length} working districts`
+          {split && !split.strays
+            ? `${split.named} of ${split.total} working districts carry a named donor`
+            : partner
+            ? `${PARTNER_NAMES[partner].en}: ${PARTNER_DISTRICTS[partner].length} working districts`
             : `CIPRB ${PARTNER_DISTRICTS.CIPRB.length} · Bandhu ${PARTNER_DISTRICTS.Bandhu.length} · PHD ${PARTNER_DISTRICTS.PHD.length} working districts`}
         </span>
       </div>

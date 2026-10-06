@@ -32,6 +32,7 @@ import { ActionPlanTracker } from '@/components/ciprb/ActionPlanTracker'
 import { NearMissPanel } from '@/components/ciprb/NearMissPanel'
 import { FistulaIndicators } from '@/components/ciprb/FistulaIndicators'
 import { MPDSRDistrictMap } from '@/components/ciprb/MPDSRDistrictMap'
+import { DonorMapSheet } from '@/components/ciprb/DonorMapSheet'
 import { DataUnavailable } from '@/components/ciprb/DataUnavailable'
 import type { MPDSRCase, AuditEntry } from '@/types/index'
 
@@ -850,19 +851,19 @@ export default function CIPRBDashboard() {
 
       {/* ─── End Obstetric Fistula districts, coloured by donor ───
           Dr. Tanjina, 6 October 2026: "show both maps separately in the
-          SIMPLE Dashboard". The MPDSR map already sits in the MPDSR section;
-          this is its fistula counterpart, placed directly above the AT A
-          GLANCE band as her marked-up file asks ("Add the picture end
-          obstetric fistula before this"). Fourteen districts against MPDSR's
-          twelve, which is the reason the two cannot share one map. */}
+          SIMPLE Dashboard", and in her marked-up file "Add the picture end
+          obstetric fistula before this".
+
+          The picture she pasted is the sheet this project already produces
+          from scratchpad/make_donor_maps.py, the one printed for Dr. Sayeed
+          on 27 September. So the dashboard serves that exact rendering
+          rather than drawing the same data a second way: one renderer, one
+          appearance in print and on screen, nothing to drift. The file is
+          written into public/maps/ by the same script. */}
       <section className="section" style={{ marginTop: 0, marginBottom: 8 }}>
-        <MPDSRDistrictMap
-          districts={activeDonor.districts}
-          project="fistula"
-          title={t('fistulaMap.title', { defaultValue: 'End Obstetric Fistula districts' })}
-          sub={t('fistulaMap.sub', {
-            defaultValue: 'CIPRB and UNFPA supported districts, coloured by the donor funding the work.',
-          })}
+        <DonorMapSheet
+          src="/maps/Fistula_districts_by_donor.png"
+          alt="End Obstetric Fistula districts, CIPRB and UNFPA supported districts coloured by donor. Fourteen districts."
         />
       </section>
 
