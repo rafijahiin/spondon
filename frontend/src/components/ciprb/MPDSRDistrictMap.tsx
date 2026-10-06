@@ -1,295 +1,150 @@
 /**
- * MPDSRDistrictMap — Bangladesh choropleth highlighting SIDA / GAC / CP
- * focused-intervention districts per Animesh's spec.
+ * The donor district map for a CIPRB programme, with its live review-record
+ * counts beside it.
  *
- * Three overlays:
- *   - SIDA districts (6): Noakhali, Chandpur, Bandarban, Dhaka, Sunamganj, Cox's Bazar
- *   - GAC districts (5): Sunamganj, Bhola, Sherpur, Kurigram, Khagrachari
- *   - CP districts (broader Country Programme footprint)
+ * The map itself is the printed A4 sheet this project produces from
+ * scratchpad/make_donor_maps.py, the one CIPRB holds on paper. Dr. Tanjina's
+ * 6 October file asked for those sheets in SIMPLE, so there is one renderer
+ * and one appearance in print and on screen. The Leaflet choropleth that used
+ * to sit here drew the same district lists a second way, which meant two
+ * pictures of one fact that could drift apart, and it carried its own legend
+ * duplicating the legend printed on the sheet.
  *
- * Sunamganj appears in both SIDA and GAC (per Sayeed's overlap) — rendered
- * with a striped fill to signal multi-set membership.
+ * Re-render the sheets (make_donor_maps.py) after any change to the donor
+ * lists in donorDistricts.ts. The PNG is a build artefact, not a drawing.
+ *
+ * What the sheet cannot show is live data, so the review-record counts per
+ * district stay, and that is the reason this is still a component rather than
+ * a bare image.
  */
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { motion, AnimatePresence } from 'motion/react'
-import { MapContainer, GeoJSON } from 'react-leaflet'
 import { api } from '@/api/client'
-import { normaliseDistrict } from '@/data/partnerDistricts'
-import {
-  DONOR_DISTRICTS, DONOR_TINT, donorCounts, donorKey, type DonorProject,
-} from '@/data/donorDistricts'
-import type { Layer, PathOptions, LeafletEvent } from 'leaflet'
-import 'leaflet/dist/leaflet.css'
-import { Info } from 'lucide-react'
+import type { DonorProject } from '@/data/donorDistricts'
 
-const GEOJSON_URL = '/bangladesh-adm2.geojson'
-// UNFPA branding — orange instead of CIPRB blue.
 const CIPRB_BLUE = '#F96000'
 
-// Donor coverage comes from data/donorDistricts.ts, transcribed from Dr.
-// Sayeed's request of 27 September 2026. The lists that used to sit here were
-// the June 2026 near-miss split and no longer match what CIPRB reports.
-// The shared alias-aware normaliser keeps spelling variants matching the
-// GeoJSON, for example Khagrachari to Khagrachhari.
-const normalise = normaliseDistrict
-
-const DONOR_BY_DISTRICT: Record<DonorProject, Map<string, string>> = {
-  mpdsr: new Map(DONOR_DISTRICTS.mpdsr.map(r => [normalise(r.district), donorKey(r.donors)])),
-  fistula: new Map(DONOR_DISTRICTS.fistula.map(r => [normalise(r.district), donorKey(r.donors)])),
+/** Written by make_donor_maps.py into public/maps in the same run that
+ *  produces the print PDFs. */
+const SHEET: Record<DonorProject, { src: string; alt: string }> = {
+  mpdsr: {
+    src: '/maps/MPDSR_districts_by_donor.png',
+    alt: 'MPDSR districts. CIPRB and UNFPA supported districts coloured by donor. Twelve districts.',
+  },
+  fistula: {
+    src: '/maps/Fistula_districts_by_donor.png',
+    alt: 'End Obstetric Fistula districts. CIPRB and UNFPA supported districts coloured by donor. Fourteen districts.',
+  },
 }
 
-// Colour palette — UNFPA orange tonal scale. Three distinguishable shades
-// of orange so GAC / SIDA / CP coverage layers stay readable, plus a deep
-// shade for the GAC+SIDA overlap. No foreign hues.
-// Atlas language (matches FistulaCampaignMap, Rafi 2026-08-09: one page,
-// one cartographic style): warm paper land, soft sea, visible hairlines.
-const TINT = {
-  both:     '#7A2E00',   // very deep orange — GAC + SIDA overlap (Sunamganj)
-  gac:      '#F96000',   // UNFPA primary orange
-  sida:     '#C44E00',   // UNFPA deep
-  cp:       '#FDCFB3',   // UNFPA pale tint
-  none:     '#eceae4',   // warm paper — districts with no MPDSR focus
-  stroke:   '#c3cdd4',   // district hairlines
-}
-const SEA = '#e7eef4'
-
-function tintFor(project: DonorProject, name: string): { fill: string; opacity: number; group: string } {
-  const group = DONOR_BY_DISTRICT[project].get(normalise(name)) ?? ''
-  if (!group) return { fill: TINT.none, opacity: 1, group: '' }
-  return { fill: DONOR_TINT[group] ?? TINT.gac, opacity: 0.85, group }
-}
-
-interface DistrictFeatureProps {
-  shapeName: string
-}
-
-interface RecentSubmission {
-  district: string
-  time_ago: string
-  partner: string
-}
-
-export function MPDSRDistrictMap({ districts, project = 'mpdsr', title, sub }: {
+export function MPDSRDistrictMap({ districts, project = 'mpdsr' }: {
   districts?: readonly string[] | null
   project?: DonorProject
-  title?: string
-  sub?: string
 } = {}) {
   const { t } = useTranslation()
-  const [geo, setGeo] = useState<GeoJSON.FeatureCollection | null>(null)
-  const [latest, setLatest] = useState<RecentSubmission | null>(null)
   const [records, setRecords] = useState<Record<string, number> | null>(null)
 
-  // Bangladesh is portrait, so a map in a wide card leaves space beside it
-  // whatever its size. Rather than pad that with nothing, the review records
-  // per district sit there: same geography, read as numbers instead of colour.
-  // Honours ?districts= so the panel never disagrees with the donor pill.
+  // The sheet is portrait, so a card wide enough for it leaves space beside
+  // it whatever its size. Rather than pad that with nothing, the review
+  // records per district sit there: same geography, read as numbers instead
+  // of colour. Honours ?districts= so the panel never disagrees with the
+  // donor pill above it.
   const districtsKey = districts ? districts.join(',') : ''
   useEffect(() => {
-    if (project !== 'mpdsr') return      // the fistula map has no review records
+    if (project !== 'mpdsr') return      // the fistula sheet has no review records
     let cancelled = false
     const params: Record<string, string> = {}
     if (districtsKey) params.districts = districtsKey
     api.get<{ records_by_district?: Record<string, number> }>(
       '/mpdsr/aggregates/', { params })
       .then(r => { if (!cancelled) setRecords(r.data?.records_by_district ?? null) })
-      .catch(() => { /* the map still stands on its own */ })
+      .catch(() => { /* the sheet still stands on its own */ })
     return () => { cancelled = true }
   }, [districtsKey, project])
 
-  useEffect(() => {
-    let cancelled = false
-    fetch(GEOJSON_URL)
-      .then(r => r.json())
-      .then(d => { if (!cancelled) setGeo(d) })
-      .catch(() => { /* graceful — render legend without map */ })
-    return () => { cancelled = true }
-  }, [])
-
-  // Animesh's spec — the map should feel "live" as submissions arrive.
-  // Pulses the most-recent submission's district name into a floating
-  // badge over the map. Polls every 45s.
-  useEffect(() => {
-    if (project !== 'mpdsr') return      // the pulse tracks MPDSR submissions
-    let cancelled = false
-    const fetchLatest = () =>
-      api.get<any>('/dashboard/activity/?limit=1')
-        .then(r => {
-          if (cancelled) return
-          const rows = Array.isArray(r.data) ? r.data : r.data.results ?? []
-          const first = rows[0]
-          if (first?.district) {
-            setLatest({
-              district: first.district,
-              time_ago: first.time_ago,
-              partner: first.partner,
-            })
-          }
-        })
-        .catch(() => {})
-    fetchLatest()
-    const id = setInterval(fetchLatest, 45_000)
-    return () => { cancelled = true; clearInterval(id) }
-  }, [project])
-
-  const style = (feature?: GeoJSON.Feature): PathOptions => {
-    const name = (feature?.properties as DistrictFeatureProps | undefined)?.shapeName ?? ''
-    const { fill, opacity } = tintFor(project, name)
-    return {
-      fillColor: fill,
-      fillOpacity: opacity,
-      color: TINT.stroke,
-      weight: 0.6,
-      opacity: 1,
-    }
-  }
-
-  const onEachFeature = (feature: GeoJSON.Feature, layer: Layer) => {
-    const name = (feature.properties as DistrictFeatureProps | undefined)?.shapeName ?? ''
-    const { group } = tintFor(project, name)
-    if (group) {
-      layer.bindTooltip(`<b>${name}</b><br/><span style="font-size:11px;color:#555">${group}</span>`, {
-        sticky: true, direction: 'top',
-      })
-    } else {
-      layer.bindTooltip(`<b>${name}</b>`, { sticky: true, direction: 'top' })
-    }
-    layer.on({
-      mouseover: (e: LeafletEvent) => {
-        (e.target as any).setStyle?.({ weight: 1.4, fillOpacity: 0.85 })
-      },
-      mouseout: (e: LeafletEvent) => {
-        (e.target as any).setStyle?.(style(feature))
-      },
-    })
-  }
+  const sheet = SHEET[project]
 
   return (
     <div>
       <div className="card campaign-atlas" style={{ padding: 0, overflow: 'hidden' }}>
       {/* Always-light atlas panel, same treatment as the campaign map. */}
       <div style={{ background: '#ffffff', padding: 16, color: '#111827' }}>
-        {/* Header inside the card, one line of copy — the panel was a screen
-            and a half tall for a static coverage picture (Rafi, 4 Aug 2026). */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', marginBottom: 10 }}>
-          <div>
-            <div className="kicker">
-              <span className="dot" style={{ background: CIPRB_BLUE }} />
-              {t('mpdsrMap.kicker')}
-            </div>
-            <h3 style={{ margin: '6px 0 0', fontSize: 17, fontWeight: 700, color: '#111827' }}>
-              {title ?? t('mpdsrMap.title')}
-            </h3>
-          </div>
-          <span style={{ fontSize: 12, color: '#6b7280', maxWidth: 380, textAlign: 'right' }}>
-            {sub ?? t('mpdsrMap.sub')}
-          </span>
+        {/* Only the kicker here. The sheet carries its own title, subtitle,
+            district count and legend, so repeating them around it would read
+            as a mistake. */}
+        <div className="kicker" style={{ marginBottom: 12 }}>
+          <span className="dot" style={{ background: CIPRB_BLUE }} />
+          {t('mpdsrMap.kicker')}
         </div>
+
         <div style={{
           display: 'flex', gap: 28, alignItems: 'flex-start',
           justifyContent: 'center', flexWrap: 'wrap',
         }}>
-        <div style={{ position: 'relative', height: 440, width: 400,
-                      flex: '0 0 auto', maxWidth: '100%',
-                      borderRadius: 8, overflow: 'hidden',
-                      background: SEA, border: '1px solid #dbe3e9' }}>
-          {geo ? (
-            <MapContainer
-              center={[23.685, 90.3563]}
-              zoom={7}
-              style={{ height: '100%', width: '100%', background: SEA }}
-              scrollWheelZoom={false}
-              attributionControl={false}
-              zoomControl={true}
-            >
-              <GeoJSON data={geo} style={style} onEachFeature={onEachFeature} />
-            </MapContainer>
-          ) : (
-            <div style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              height: '100%', color: 'var(--muted)', fontSize: 13,
-            }}>
-              <Info size={16} style={{ marginRight: 8 }} />
-              {t('mpdsrMap.loading')}
+          <a href={sheet.src} target="_blank" rel="noopener noreferrer"
+             title="Open the full-size sheet"
+             style={{ flex: '0 0 auto', maxWidth: '100%', display: 'block' }}>
+            <img
+              src={sheet.src}
+              alt={sheet.alt}
+              loading="lazy"
+              style={{
+                display: 'block', width: 420, maxWidth: '100%', height: 'auto',
+                borderRadius: 8,
+                // Without this the white sheet dissolves into the white panel.
+                outline: '1px solid rgba(0,0,0,0.10)', outlineOffset: -1,
+              }}
+            />
+          </a>
+
+          {/* Review records per district: what the sheet cannot show. */}
+          {records && Object.keys(records).length > 0 && (
+            <div style={{ flex: '1 1 300px', minWidth: 260, maxWidth: 460 }}>
+              <div className="mono" style={{
+                fontSize: 10, letterSpacing: '0.08em', color: '#6b7280',
+                textTransform: 'uppercase', marginBottom: 10,
+              }}>Review records by district</div>
+              {(() => {
+                const rows = Object.entries(records)
+                  .filter(([, v]) => v > 0)
+                  .sort((a, b) => b[1] - a[1])
+                const total = rows.reduce((sum, [, v]) => sum + v, 0)
+                const top = rows.length ? rows[0][1] : 1
+                return rows.map(([name, value]) => (
+                  <div key={name} style={{
+                    display: 'flex', alignItems: 'center', gap: 10, marginBottom: 7,
+                  }}>
+                    <span style={{
+                      flex: '0 0 84px', fontSize: 12, color: '#111827',
+                      textTransform: 'capitalize',
+                    }}>{name}</span>
+                    <div style={{ flex: 1, height: 9, borderRadius: 3, background: '#eceae4' }}>
+                      <div style={{
+                        width: `${(value / top) * 100}%`, height: 9, minWidth: 3,
+                        borderRadius: 3, background: CIPRB_BLUE,
+                      }} />
+                    </div>
+                    <span style={{
+                      flex: '0 0 34px', textAlign: 'right', fontSize: 12.5,
+                      fontWeight: 700, color: '#111827',
+                      fontVariantNumeric: 'tabular-nums',
+                    }}>{value.toLocaleString()}</span>
+                    <span style={{
+                      flex: '0 0 34px', textAlign: 'right', fontSize: 11,
+                      color: '#6b7280', fontVariantNumeric: 'tabular-nums',
+                    }}>{total ? `${Math.round((value / total) * 100)}%` : ''}</span>
+                  </div>
+                ))
+              })()}
             </div>
           )}
         </div>
-
-        {/* Review records per district: what the freed width is actually for. */}
-        {records && Object.keys(records).length > 0 && (
-          <div style={{ flex: '1 1 300px', minWidth: 260, maxWidth: 460 }}>
-            <div className="mono" style={{
-              fontSize: 10, letterSpacing: '0.08em', color: '#6b7280',
-              textTransform: 'uppercase', marginBottom: 10,
-            }}>Review records by district</div>
-            {(() => {
-              const rows = Object.entries(records)
-                .filter(([, v]) => v > 0)
-                .sort((a, b) => b[1] - a[1])
-              const total = rows.reduce((sum, [, v]) => sum + v, 0)
-              const top = rows.length ? rows[0][1] : 1
-              return rows.map(([name, value]) => (
-                <div key={name} style={{
-                  display: 'flex', alignItems: 'center', gap: 10, marginBottom: 7,
-                }}>
-                  <span style={{
-                    flex: '0 0 84px', fontSize: 12, color: '#111827',
-                    textTransform: 'capitalize',
-                  }}>{name}</span>
-                  <div style={{ flex: 1, height: 9, borderRadius: 3, background: '#eceae4' }}>
-                    <div style={{
-                      width: `${(value / top) * 100}%`, height: 9, minWidth: 3,
-                      borderRadius: 3, background: TINT.gac,
-                    }} />
-                  </div>
-                  <span style={{
-                    flex: '0 0 34px', textAlign: 'right', fontSize: 12.5,
-                    fontWeight: 700, color: '#111827',
-                    fontVariantNumeric: 'tabular-nums',
-                  }}>{value.toLocaleString()}</span>
-                  <span style={{
-                    flex: '0 0 34px', textAlign: 'right', fontSize: 11,
-                    color: '#6b7280', fontVariantNumeric: 'tabular-nums',
-                  }}>{total ? `${Math.round((value / total) * 100)}%` : ''}</span>
-                </div>
-              ))
-            })()}
-          </div>
-        )}
-
-        {/* Legend */}
-        <div style={{
-          display: 'flex', flexDirection: 'column', gap: 14, fontSize: 12.5,
-          flex: '0 0 auto', maxWidth: 230,
-        }}>
-          {donorCounts(project).map(({ donor, districts: ds }) => (
-            <LegendSwatch key={donor} color={DONOR_TINT[donor]} label={donor} sub={ds.join(', ')} />
-          ))}
-          <LegendSwatch color={TINT.none} label={t('mpdsrMap.legendNone')} sub="" />
-        </div>
-        </div>
       </div>
       </div>
     </div>
   )
 }
 
-function LegendSwatch({ color, label, sub }: { color: string; label: string; sub: string }) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-      <span style={{
-        display: 'inline-block', width: 16, height: 16, borderRadius: 3,
-        background: color, border: '1px solid rgba(0,0,0,0.08)', flexShrink: 0,
-      }} />
-      <div style={{ display: 'flex', flexDirection: 'column' }}>
-        <span style={{ color: '#2a2f35', fontWeight: 500 }}>{label}</span>
-        {sub && <span style={{ color: '#6b7280', fontSize: 11 }}>{sub}</span>}
-      </div>
-    </div>
-  )
-}
-
-/** The same map, named for what it draws. Used for the End Obstetric Fistula
+/** The same card, named for what it draws. Used for the End Obstetric Fistula
  *  donor map on the fistula page, and readable for the MPDSR one. */
 export const DonorDistrictMap = MPDSRDistrictMap

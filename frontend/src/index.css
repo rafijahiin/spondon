@@ -1255,7 +1255,9 @@ html.dark .hero-card {
 
 .hero-right {
   position: relative;
-  height: 520px;
+  /* No fixed height. It was pinned to 520px for a Leaflet map that is no
+     longer here, and anything shorter left a block of dead space under it
+     before the next section. The content sets the height. */
 }
 
 /* ─── KPI tiles — magazine cover style ───────────────────────────────── */
@@ -1952,7 +1954,6 @@ html.dark .leaflet-control-zoom a {
 @media (max-width: 1100px) {
   .top-pill.hide-md { display: none; }
   .hero-grid { grid-template-columns: 1fr; }
-  .hero-right { height: 360px; }
 }
 
 /* ─── Manager Approvals: queue + focus layout ────────────────────────── */

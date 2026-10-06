@@ -225,13 +225,7 @@ export default function FistulaTracker() {
 
       {/* ───── Donor coverage map (Dr. Sayeed, 27 September 2026) ───── */}
       <section className="section" style={{ marginTop: 8 }}>
-        <DonorDistrictMap
-          project="fistula"
-          title={t('fistulaMap.title', { defaultValue: 'End Obstetric Fistula districts' })}
-          sub={t('fistulaMap.sub', {
-            defaultValue: 'CIPRB and UNFPA supported districts, coloured by the donor funding the work.',
-          })}
-        />
+        <DonorDistrictMap project="fistula" />
       </section>
 
       {/* ───────────────── Tabs ───────────────── */}

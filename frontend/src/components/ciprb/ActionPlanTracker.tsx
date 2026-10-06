@@ -173,7 +173,7 @@ export function ActionPlanTracker({ districts }: { districts?: readonly string[]
           <span className="dot" style={{ background: CIPRB_ORANGE }} />
           MPDSR RESPONSE PLAN · IMPLEMENTATION TRACKER
         </div>
-        <h2 className="section-title" style={{ margin: '8px 0 2px', display: 'flex', alignItems: 'center', gap: 10, fontWeight: 800 }}>
+        <h2 className="section-title" style={{ margin: '8px 0 2px', display: 'flex', alignItems: 'center', gap: 10 }}>
           <ListChecks size={22} style={{ color: CIPRB_ORANGE, flexShrink: 0 }} />
           MPDSR Response Plan · Implementation Tracker
         </h2>
