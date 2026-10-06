@@ -982,12 +982,30 @@ def _patient_id_group():
             'অবস্থা: ${_pull_status}',
             relevant=FOUND + " and ${_pull_status}!=''"),
 
-        # Warning when ID typed but not found in CSV.
+        # Shown when the ID is not in THIS PHONE's copy of the Master List.
+        #
+        # The old wording said the ID "is NOT registered" and told the worker
+        # to go and register her first. Both halves were wrong often enough to
+        # stop real work: pulldata() reads the phd_clients.csv that was bundled
+        # with the form when the phone last downloaded it, so an FSW registered
+        # after that download is invisible here even though the server knows
+        # her. Field teams read it as a block and stopped submitting.
+        #
+        # Nothing here blocks: client_id has required='yes' and NO constraint,
+        # and on the server the service handler resolves the FSW by client_id
+        # through _get_or_create_client(), not through the CSV. So a submission
+        # made over this warning attaches to the right record.
+        #
+        # The note now says what is actually true and what to do.
         _sr('note','_id_not_found',
-            '⚠ This ID is NOT registered in the Master List. '
-            'Register her in PHD 1 (FSW Registration) first, then come back.',
-            '⚠ এই আইডি মাদারলিস্টে নিবন্ধিত নয়। '
-            'প্রথমে PHD 1 (যৌনকর্মী নিবন্ধন) ফর্মে নিবন্ধন করুন।',
+            '⚠ This ID is not in this phone\'s copy of the Master List yet. '
+            'If she is already registered, carry on and submit. '
+            'The service will attach to her record on the server. '
+            'Use PHD 1 (FSW Registration) only if she has never been registered.',
+            '⚠ এই আইডি এখনো এই ফোনের মাদারলিস্টে আসেনি। '
+            'তিনি যদি আগেই নিবন্ধিত হয়ে থাকেন, নির্দ্বিধায় সাবমিট করুন। '
+            'সার্ভারে সেবাটি তাঁর রেকর্ডের সঙ্গে যুক্ত হয়ে যাবে। '
+            'কখনোই নিবন্ধন করা না হয়ে থাকলে তবেই PHD 1 (যৌনকর্মী নিবন্ধন) ফর্মে নিবন্ধন করুন।',
             relevant=NOT_FOUND),
 
         _sr('end_group','patient_id_group'),
