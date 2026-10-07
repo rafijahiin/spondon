@@ -27,6 +27,8 @@ Corrections applied:
   - F-07 & F-09 added as info forms (update the centre roster).
 """
 import os
+import time
+
 import openpyxl
 import requests
 from openpyxl.styles import Font, PatternFill, Alignment
@@ -43,17 +45,50 @@ _HFONT = Font(color="FFFFFF", bold=True, size=10)
 
 SURVEY_HDR = [
     'type', 'name', 'label::English', 'label::Bangla',
-    'hint', 'required', 'relevant', 'constraint', 'constraint_message',
+    'hint::English', 'hint::Bangla', 'required', 'relevant', 'constraint',
+    'constraint_message::English', 'constraint_message::Bangla',
     'default', 'appearance', 'calculation',
 ]
 CHOICES_HDR = ['list_name', 'name', 'label::English', 'label::Bangla']
 SETTINGS_HDR = ['form_title', 'form_id', 'version', 'default_language', 'style']
 
 
+def _split_bn(text):
+    """Split a string written as "English / বাংলা" into its two halves.
+
+    Several hints were authored with both languages in one cell, which worked
+    while `hint` was a single untranslated column. Now that the column must be
+    translated they have to come apart. A split only counts when the right
+    half actually contains Bangla, so an English sentence containing a slash
+    is left alone.
+    """
+    if not text:
+        return '', ''
+    for sep in (' / ', ' | '):
+        if sep in text:
+            left, right = text.split(sep, 1)
+            if any('\u0980' <= ch <= '\u09ff' for ch in right):
+                return left.strip(), right.strip()
+    return text, ''
+
+
 def _sr(qtype, name, en='', bn='', hint='', required='',
-        relevant='', constraint='', cmsg='', default='', app='', calc=''):
-    return [qtype, name, en, bn, hint, required, relevant,
-            constraint, cmsg, default, app, calc]
+        relevant='', constraint='', cmsg='', default='', app='', calc='',
+        hint_bn='', cmsg_bn=''):
+    """One survey row.
+
+    hint and cmsg may carry both languages in one string ("English / বাংলা");
+    otherwise pass hint_bn / cmsg_bn. Kobo requires every translatable column
+    to be translated once any of them is, and a missing Bangla side falls back
+    to the English text rather than rendering blank for a Bangla user.
+    """
+    h_en, h_split = _split_bn(hint)
+    c_en, c_split = _split_bn(cmsg)
+    return [qtype, name, en, bn,
+            h_en, hint_bn or h_split or h_en,
+            required, relevant, constraint,
+            c_en, cmsg_bn or c_split or c_en,
+            default, app, calc]
 
 
 def _ch(lst, name, en, bn=''):
@@ -997,6 +1032,23 @@ def _import_xlsform(xlsx_path, asset_uid, token, stdout):
         r = requests.post(f'{api}/imports/', headers=headers, files=files, data=data, timeout=120)
     if r.status_code not in (200, 201):
         stdout.write(f'    import FAILED ({r.status_code}): {r.text[:200]}')
+        return False
+
+    # The POST only QUEUES the import. Treating its 200 as success meant a
+    # rejected import still printed "imported", the caller then redeployed the
+    # OLD version and printed "redeployed", and the live form never changed
+    # while the output said it had. Wait for the queue and say what it says.
+    imp = r.json()
+    status_url = imp.get('url') or f'{api}/imports/{imp.get("uid")}/'
+    status, detail = None, None
+    for _ in range(40):                       # ~2 minutes
+        time.sleep(3)
+        s = requests.get(status_url, headers=headers, timeout=60).json()
+        status, detail = s.get('status'), s.get('messages')
+        if status in ('complete', 'error', 'failed'):
+            break
+    if status != 'complete':
+        stdout.write(f'    import {status or "TIMED OUT"}: {str(detail)[:300]}')
         return False
     stdout.write('    imported')
     return True
