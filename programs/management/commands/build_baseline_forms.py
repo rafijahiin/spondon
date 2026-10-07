@@ -48,17 +48,50 @@ _HFONT = Font(color="FFFFFF", bold=True, size=10)
 
 SURVEY_HDR = [
     'type', 'name', 'label::English', 'label::Bangla',
-    'hint', 'required', 'relevant', 'constraint', 'constraint_message',
+    'hint::English', 'hint::Bangla', 'required', 'relevant', 'constraint',
+    'constraint_message::English', 'constraint_message::Bangla',
     'default', 'appearance', 'calculation',
 ]
 CHOICES_HDR  = ['list_name', 'name', 'label::English', 'label::Bangla']
 SETTINGS_HDR = ['form_title', 'form_id', 'version', 'default_language', 'style']
 
 
+def _split_bn(text):
+    """Split a value written as "English / বাংলা" into its two halves.
+
+    A split only counts when the right half actually contains Bangla, so an
+    English sentence containing a slash is left alone.
+    """
+    if not text:
+        return '', ''
+    for sep in (' / ', ' | '):
+        if sep in text:
+            left, right = text.split(sep, 1)
+            if any('ঀ' <= ch <= '৿' for ch in right):
+                return left.strip(), right.strip()
+    return text, ''
+
+
 def _sr(qtype, name, en='', bn='', hint='', required='',
-        relevant='', constraint='', cmsg='', default='', app='', calc=''):
-    return [qtype, name, en, bn, hint, required, relevant,
-            constraint, cmsg, default, app, calc]
+        relevant='', constraint='', cmsg='', default='', app='', calc='',
+        hint_bn='', cmsg_bn=''):
+    """One survey row.
+
+    Kobo refuses an XLSForm whose label is translated while hint or
+    constraint_message are not, so both are emitted per language. A missing
+    Bangla side falls back to the English text rather than rendering blank.
+
+    This builder has no upload path: the two baseline forms were imported
+    through the Kobo UI by hand. The columns still have to be right or that
+    manual import will be refused.
+    """
+    h_en, h_split = _split_bn(hint)
+    c_en, c_split = _split_bn(cmsg)
+    return [qtype, name, en, bn,
+            h_en, hint_bn or h_split or h_en,
+            required, relevant, constraint,
+            c_en, cmsg_bn or c_split or c_en,
+            default, app, calc]
 
 
 def _ch(lst, name, en, bn=''):
