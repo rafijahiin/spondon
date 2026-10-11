@@ -2,13 +2,18 @@
 
 The coverage and donor maps shown on the dashboard are rendered here, not
 drawn in the browser. One renderer per family, reading the canonical district
-lists, writing a 150-dpi PNG into `frontend/public/maps/` (served on the
-dashboard by `DonorMapSheet`) and a 300-dpi PDF to the Desktop pack.
+lists, writing output for two different destinations depending on the family.
 
 | Script | Produces | District source |
 |---|---|---|
 | `make_donor_maps.py` | MPDSR (12), End Obstetric Fistula (14), side-by-side | `donorDistricts.ts` |
 | `make_partner_maps.py` | PHD (9), Bandhu (8), SIMPLE all-partners (28) | `partnerDistricts.ts` |
+
+`make_donor_maps.py` writes a PNG into `frontend/public/maps/` (served on the
+CIPRB dashboard by `DonorMapSheet`) and a PDF to the Desktop pack.
+`make_partner_maps.py` writes to the **Desktop pack only** — the partner
+coverage maps are not shown on the dashboard (Home, PHD and Bandhu use the
+interactive Leaflet map); these sheets exist only as the printable PDF.
 
 After changing a district list in `src/data/`, rerun the matching script and
 commit the regenerated PNG. Paths inside the scripts are absolute to this

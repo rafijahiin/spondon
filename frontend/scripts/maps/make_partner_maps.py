@@ -31,10 +31,9 @@ from matplotlib.patches import Polygon as MplPolygon, Rectangle
 from shapely.geometry import LineString, Polygon
 
 GEOJSON = r'C:\Users\HP\Documents\spondon_clone\frontend\public\bangladesh-adm2.geojson'
-WEBDIR = r'C:\Users\HP\Documents\spondon_clone\frontend\public\maps'
 DESK = r'C:\Users\HP\Desktop\SIMPLE_Dashboard_Maps'
 WORK = os.path.join(DESK, '_work')
-WEB_DPI, PRINT_DPI = 150, 300
+PRINT_DPI = 300
 DATED = '11 October 2026'
 
 FONT = 'Atkinson Hyperlegible'
@@ -287,8 +286,10 @@ def page(spec, geo):
              fontsize=8, color=ASH)
 
     out = []
-    web = os.path.join(WEBDIR, f'{spec["file"]}.png')
-    fig.savefig(web, dpi=WEB_DPI, facecolor='white'); out.append(web)
+    # Desktop pack only. The partner coverage maps are NOT served on the
+    # dashboard (Home, PHD and Bandhu use the interactive Leaflet map); only
+    # the CIPRB donor sheets go into frontend/public/maps. So this writes the
+    # print PDF and a raster into the Desktop folder and nothing into the app.
     fig.savefig(os.path.join(WORK, f'{spec["file"]}.png'), dpi=PRINT_DPI, facecolor='white')
     pdf = os.path.join(DESK, f'{spec["file"]}.pdf')
     fig.savefig(pdf, dpi=PRINT_DPI, facecolor='white'); out.append(pdf)
@@ -296,7 +297,6 @@ def page(spec, geo):
     return out
 
 
-os.makedirs(WEBDIR, exist_ok=True)
 os.makedirs(WORK, exist_ok=True)
 geo = json.load(open(GEOJSON, encoding='utf-8'))
 written = []
