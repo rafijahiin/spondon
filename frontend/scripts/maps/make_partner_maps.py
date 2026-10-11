@@ -1,17 +1,19 @@
 # -*- coding: utf-8 -*-
 """Partner-coverage print sheets for the SIMPLE dashboard.
 
-Same house style, boundary file and five-pass drawing as make_donor_maps.py
-(fills and strokes separate, supported districts outlined heavier, generalised
-stroke so the Sundarbans does not smear, scale bar, north arrow, legend laid
-out in inches). Three sheets:
+Same house style and boundary file as make_donor_maps.py. Three sheets:
 
   PHD      9 wellness-centre districts, one centre each
   Bandhu   8 working districts
   SIMPLE   all three partners on one map, overlaps in their own colour
 
-District lists are the canonical PARTNER_DISTRICTS from
-frontend/src/data/partnerDistricts.ts. Change them there, then rerun this.
+District names are NOT stamped on the districts. On a crowded map a centroid
+label slides off a concave or tiny district and collides with its neighbours.
+Instead every supported district is tied by a thin leader to a name in a side
+gutter: west districts to the left column, east to the right, each column
+sorted north to south so leaders do not cross. A coloured dot on the district
+repeats its class, so the gutter list reads as a legend of its own. This
+guarantees no overlap however dense the map gets.
 
 Writes a 150-dpi PNG into frontend/public/maps (served on the dashboard) and a
 300-dpi PDF + PNG into the Desktop deliverable folder, from one run.
@@ -23,10 +25,10 @@ import re
 
 import matplotlib
 matplotlib.use('Agg')
-import matplotlib.patheffects as pe
 import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
 from matplotlib.patches import Polygon as MplPolygon, Rectangle
-from shapely.geometry import LineString
+from shapely.geometry import LineString, Polygon
 
 GEOJSON = r'C:\Users\HP\Documents\spondon_clone\frontend\public\bangladesh-adm2.geojson'
 WEBDIR = r'C:\Users\HP\Documents\spondon_clone\frontend\public\maps'
@@ -43,11 +45,8 @@ INK, ASH, HAIR = '#131619', '#686a6c', '#a8aeb4'
 SEA, LAND = '#eef3f7', '#ece9e4'
 BORDER, BORDER_LW = '#6f777e', 0.85
 EDGE, EDGE_LW = '#26292c', 1.30
+LEADER = '#8b9096'
 
-# Partner palette. Single partners take the dashboard's own partner tints
-# (CIPRB pastel blue, Bandhu pastel green, PHD orange); a two-partner district
-# takes a deeper tone of its own so the legend can name it rather than leaving
-# the eye to guess a blend.
 TINT = {
     'CIPRB':          '#649BF2',
     'Bandhu':         '#4E9A86',
@@ -66,14 +65,10 @@ PHD = ['Rajbari', 'Jessore', 'Bagerhat', 'Patuakhali', 'Faridpur', 'Mymensingh',
 
 
 def partner_class(d):
-    inn = [p for p, lst in (('CIPRB', CIPRB), ('Bandhu', BANDHU), ('PHD', PHD)) if d in lst]
-    return ' + '.join(inn)
+    return ' + '.join(p for p, lst in (('CIPRB', CIPRB), ('Bandhu', BANDHU), ('PHD', PHD)) if d in lst)
 
 
-# All-partners membership, each district to its class.
-ALL = {}
-for d in set(CIPRB) | set(BANDHU) | set(PHD):
-    ALL[d] = partner_class(d)
+ALL = {d: partner_class(d) for d in set(CIPRB) | set(BANDHU) | set(PHD)}
 
 SHEETS = {
     'PHD': {
@@ -100,14 +95,6 @@ SHEETS = {
     },
 }
 
-# Leader offsets (deg) for names that cannot sit on their own small district.
-LEADERS = {
-    'Bhola': (-0.46, -0.46), 'Barguna': (-0.40, -0.22), 'Patuakhali': (-0.58, 0.02),
-    'Chandpur': (-0.62, 0.26), 'Sherpur': (0.02, 0.34), 'Jamalpur': (-0.58, -0.06),
-    'Noakhali': (0.62, -0.28), 'Narayanganj': (0.52, -0.12), 'Manikganj': (-0.52, 0.10),
-    'Dhaka': (0.40, -0.30), 'Faridpur': (-0.48, -0.20), 'Rajbari': (-0.52, 0.06),
-    'Tangail': (-0.40, 0.18),
-}
 ALIASES = {'khagrachari': 'khagrachhari', 'moulavibazar': 'maulvibazar',
            'chattogram': 'chittagong', 'cumilla': 'comilla', 'bogura': 'bogra',
            'jashore': 'jessore', 'barishal': 'barisal'}
@@ -136,8 +123,14 @@ def biggest_ring(feat):
     return best
 
 
-def centroid(ring):
-    return (sum(p[0] for p in ring) / len(ring), sum(p[1] for p in ring) / len(ring))
+def anchor_point(feat):
+    """A point guaranteed inside the district, for the leader dot."""
+    ring = biggest_ring(feat)
+    try:
+        p = Polygon(ring).representative_point()
+        return (p.x, p.y)
+    except Exception:
+        return (sum(q[0] for q in ring) / len(ring), sum(q[1] for q in ring) / len(ring))
 
 
 def thinned(ring, tol):
@@ -146,12 +139,15 @@ def thinned(ring, tol):
     return list(LineString(ring).simplify(tol).coords)
 
 
-def draw_map(ax, spec, geo, *, label_size=7.8):
+def draw_map(ax, spec, geo):
+    """Fills, boundaries, supported outlines, frame, north arrow, scale bar.
+
+    Returns the list of (name, (lon, lat), class) for the gutter labeller.
+    """
     classes = {key(d): c for d, c in spec['classes'].items()}
     pretty = {key(d): d for d in spec['classes']}
-    seen = set()
+    seen, anchors, shaded_rings = set(), [], []
     ax.set_facecolor(SEA)
-    labels, shaded_rings = [], []
 
     for feat in geo['features']:
         name = feat['properties'].get('shapeName', '')
@@ -167,7 +163,7 @@ def draw_map(ax, spec, geo, *, label_size=7.8):
             if shaded:
                 shaded_rings.append(ring)
         if shaded:
-            labels.append((centroid(biggest_ring(feat)), pretty[key(name)]))
+            anchors.append((pretty[key(name)], anchor_point(feat), cls))
 
     for ring in shaded_rings:
         bx = [p[0] for p in ring]; by = [p[1] for p in ring]
@@ -180,17 +176,6 @@ def draw_map(ax, spec, geo, *, label_size=7.8):
     if missing:
         raise SystemExit(f'{spec["title"]}: not on the map file: {missing}')
 
-    for (cx, cy), name in labels:
-        dx, dy = LEADERS.get(name, (0.0, 0.0))
-        tx, ty = cx + dx, cy + dy
-        if dx or dy:
-            ax.annotate('', xy=(cx, cy), xytext=(tx, ty), zorder=7,
-                        arrowprops=dict(arrowstyle='-', color='#7a7a7a', linewidth=0.7,
-                                        shrinkA=1, shrinkB=1))
-        ax.text(tx, ty, name, ha='center', va='center', fontsize=label_size,
-                color='#1a1a1a', zorder=8, fontweight='bold',
-                path_effects=[pe.withStroke(linewidth=2.6, foreground='white')])
-
     xs = [p[0] for f in geo['features'] for r in rings(f['geometry']) for p in r]
     ys = [p[1] for f in geo['features'] for r in rings(f['geometry']) for p in r]
     ax.set_xlim(min(xs) - 0.12, max(xs) + 0.12)
@@ -200,14 +185,14 @@ def draw_map(ax, spec, geo, *, label_size=7.8):
     for side in ax.spines.values():
         side.set_edgecolor(HAIR); side.set_linewidth(1.0)
 
-    ax.annotate('N', xy=(0.962, 0.93), xytext=(0.962, 0.875),
+    ax.annotate('N', xy=(0.955, 0.94), xytext=(0.955, 0.885),
                 xycoords='axes fraction', textcoords='axes fraction',
                 ha='center', va='center', fontsize=9.5, fontweight='bold', color=INK,
                 arrowprops=dict(arrowstyle='-|>', color=INK, linewidth=1.1))
 
     km_per_deg = 111.32 * math.cos(math.radians(23.7))
     bar = 100 / km_per_deg
-    x0, y0 = max(xs) - 0.05 - bar, min(ys) + 0.24
+    x0, y0 = max(xs) - 0.05 - bar, min(ys) + 0.22
     for i in range(2):
         ax.add_patch(Rectangle((x0 + i * bar / 2, y0), bar / 2, 0.055,
                                facecolor=INK if i == 0 else 'white',
@@ -215,14 +200,55 @@ def draw_map(ax, spec, geo, *, label_size=7.8):
     for frac, lab in ((0, '0'), (0.5, '50'), (1, '100 km')):
         ax.text(x0 + bar * frac, y0 - 0.1, lab, ha='center', va='top',
                 fontsize=7, color=ASH, zorder=9)
+    return anchors
+
+
+def gutter_labels(fig, ax, anchors, *, size=8.4):
+    """Tie every district to a name in a side gutter by a leader line.
+
+    West districts go left, east go right, each column sorted north to south
+    so the leaders fan out without crossing. The name never sits on the map,
+    so nothing can slide off or collide.
+    """
+    inv = fig.transFigure.inverted()
+
+    def to_fig(xy):
+        return inv.transform(ax.transData.transform(xy))
+
+    box = ax.get_position()
+    xmid = box.x0 + box.width / 2
+    ytop, ybot = box.y0 + box.height - 0.015, box.y0 + 0.02
+
+    pts = [(name, to_fig(xy), cls) for name, xy, cls in anchors]
+    left = sorted([p for p in pts if p[1][0] < xmid], key=lambda p: -p[1][1])
+    right = sorted([p for p in pts if p[1][0] >= xmid], key=lambda p: -p[1][1])
+
+    def column(items, text_x, lead_x, align):
+        n = len(items)
+        if not n:
+            return
+        ys = ([(ytop + ybot) / 2] if n == 1
+              else [ytop - (ytop - ybot) * i / (n - 1) for i in range(n)])
+        for (name, (fx, fy), cls), gy in zip(items, ys):
+            fig.add_artist(Line2D([fx, lead_x], [fy, gy], color=LEADER, linewidth=0.55,
+                                  zorder=5, transform=fig.transFigure, alpha=0.9))
+            fig.add_artist(Line2D([fx], [fy], marker='o', markersize=3.0,
+                                  markerfacecolor=TINT.get(cls, '#555'),
+                                  markeredgecolor='white', markeredgewidth=0.5,
+                                  zorder=6, transform=fig.transFigure))
+            fig.text(text_x, gy, name, fontsize=size, color=INK, va='center', ha=align,
+                     zorder=7)
+
+    column(left, text_x=box.x0 - 0.035, lead_x=box.x0 - 0.028, align='right')
+    column(right, text_x=box.x0 + box.width + 0.035, lead_x=box.x0 + box.width + 0.028, align='left')
 
 
 def draw_legend(fig, rows, *, y, x0=0.06, x1=0.955, size=9.2):
     width_in = fig.get_size_inches()[0]
     sw, pad, gap = 0.26, 0.11, 0.34
     char = 0.56 * size / 72
-    texts = [f'{lab}  ({n})' for lab, n in rows] + ['Not covered']
     rows2 = list(rows) + [('Not covered', None)]
+    texts = [f'{lab}  ({n})' if n is not None else lab for lab, n in rows2]
     widths = [sw + pad + char * len(t) for t in texts]
     avail = (x1 - x0) * width_in
     span = sum(widths) + gap * (len(rows2) - 1)
@@ -243,9 +269,11 @@ def draw_legend(fig, rows, *, y, x0=0.06, x1=0.955, size=9.2):
 def page(spec, geo):
     fig = plt.figure(figsize=(8.27, 11.69))     # A4 portrait
     fig.patch.set_facecolor('white')
-    ax = fig.add_axes([0.06, 0.12, 0.88, 0.74])
-    draw_map(ax, spec, geo)
-    draw_legend(fig, spec['legend'], y=0.072)
+    # Narrower map, centred, leaving a gutter each side for the name columns.
+    ax = fig.add_axes([0.235, 0.11, 0.53, 0.75])
+    anchors = draw_map(ax, spec, geo)
+    gutter_labels(fig, ax, anchors)
+    draw_legend(fig, spec['legend'], y=0.068)
 
     fig.text(0.06, 0.945, spec['title'], fontsize=21, fontweight='bold', color=INK)
     fig.text(0.06, 0.925, spec['subtitle'], fontsize=10.2, color=ASH)
@@ -255,7 +283,7 @@ def page(spec, geo):
     fig.text(0.06, 0.886, f'{n} districts', fontsize=10, color=INK, fontweight='bold')
     fig.text(0.94, 0.886, f'SIMPLE dashboard  ·  {DATED}', fontsize=9, color=ASH, ha='right')
     fig.text(0.06, 0.022, 'Boundaries: Bangladesh district boundaries (ADM2). '
-             'A district worked by two partners is shown in its own colour.',
+             'Each name is tied by a leader to its district; a two-partner district is shown in its own colour.',
              fontsize=8, color=ASH)
 
     out = []
