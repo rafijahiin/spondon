@@ -16,7 +16,7 @@ import { PageLoader } from '@/components/ui/LoadingSpinner'
 import { ExecutiveBento } from '@/components/home/ExecutiveBento'
 import { PartnerProgress } from '@/components/home/PartnerProgress'
 import { ProgrammeHealthFlags } from '@/components/home/ProgrammeHealthFlags'
-import { PartnerOverlapMap } from '@/components/maps/PartnerOverlapMap'
+import { DonorMapSheet } from '@/components/ciprb/DonorMapSheet'
 import type { IndicatorProgress } from '@/types'
 
 export default function Home() {
@@ -107,9 +107,15 @@ export default function Home() {
             <div className="kicker" style={{ marginBottom: 8 }}>
               <span className="dot" />{t('home.coverageKicker', { defaultValue: 'WHERE PARTNERS WORK' })}
             </div>
-            <div className="card shimmer" style={{ padding: 10 }}>
-              <PartnerOverlapMap height={340} />
-            </div>
+            {/* The printed coverage sheet, the same one in the Desktop pack,
+                so every coverage map in SIMPLE is one rendering from one
+                district list (make_partner_maps.py). Overlaps carry their own
+                colour, which the old interactive map could not show. */}
+            <DonorMapSheet
+              src="/maps/SIMPLE_all_partners.png"
+              alt="SIMPLE partner coverage. CIPRB, Bandhu and PHD districts on one map, 28 districts, with two-partner districts in their own colour."
+              maxWidth={560}
+            />
           </div>
         </div>
       </section>

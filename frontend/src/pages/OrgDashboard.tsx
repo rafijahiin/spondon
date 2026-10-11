@@ -25,7 +25,7 @@ import { api } from '@/api/client'
 import { usePolling } from '@/hooks/usePolling'
 import { PageLoader } from '@/components/ui/LoadingSpinner'
 import { BangladeshMap } from '@/components/maps/BangladeshMap'
-import { PartnerOverlapMap } from '@/components/maps/PartnerOverlapMap'
+import { DonorMapSheet } from '@/components/ciprb/DonorMapSheet'
 import { SourceChip } from '@/components/ui/SourceChip'
 import { IndicatorGrid } from '@/components/indicators/IndicatorGrid'
 import { CumulativeAverageTile } from '@/components/indicators/CumulativeAverageTile'
@@ -399,9 +399,19 @@ export function OrgDashboard({ partner }: Props) {
                 <span className="dot" />COVERAGE
               </div>
             </div>
-            <div className="card shimmer" style={{ padding: 10 }}>
-              <PartnerOverlapMap height={340} partner={partner} />
-            </div>
+            {/* The printed coverage sheet for this partner, the same one in
+                the Desktop pack and rendered by make_partner_maps.py, so the
+                PHD and Bandhu dashboards match CIPRB's sheet rather than
+                showing a bare interactive map. */}
+            <DonorMapSheet
+              src={partner === 'PHD'
+                ? '/maps/PHD_coverage.png'
+                : '/maps/Bandhu_coverage.png'}
+              alt={partner === 'PHD'
+                ? 'PHD wellness-centre districts, nine districts, one centre each.'
+                : 'Bandhu working districts, eight districts.'}
+              maxWidth={440}
+            />
           </div>
         </div>
       </section>
