@@ -65,13 +65,21 @@ def compute_SL4(org, period_start, period_end):
 
 
 # ── SL5 — Essential SRHR & GBV supplies (5 commodity sub-rows) ───────────────
-def _kit_issued(org, period_start, period_end, fragment):
+# Field staff type the commodity name free-hand, so one physical item appears
+# under many names and, critically, under its TEST name rather than the disease
+# name: Hep B kits are logged as "HBsAg" (never "hepatitis b") and Hep C kits as
+# "HCV". Matching only the disease word silently read SL5c/SL5d as 0 while
+# hundreds were issued. Each sub-row therefore matches ALL real aliases (OR), so
+# every spelling of the same commodity is summed into the right indicator.
+def _kit_issued(org, period_start, period_end, *fragments):
+    name_q = Q()
+    for frag in fragments:
+        name_q |= Q(item_name__icontains=frag)
     return StockEntry.objects.filter(
         organisation=org,
         approval_status=APPROVED,   # only manager-approved stock counts (system rule)
         reporting_month__range=(period_start, period_end),
-        item_name__icontains=fragment,
-    ).aggregate(t=Sum('quantity_issued'))['t'] or 0
+    ).filter(name_q).aggregate(t=Sum('quantity_issued'))['t'] or 0
 
 
 def compute_SL5a(org, period_start, period_end):   # condoms
@@ -82,15 +90,15 @@ def compute_SL5b(org, period_start, period_end):   # syphilis
     return _kit_issued(org, period_start, period_end, 'syphilis')
 
 
-def compute_SL5c(org, period_start, period_end):   # hep B
-    return _kit_issued(org, period_start, period_end, 'hepatitis b')
+def compute_SL5c(org, period_start, period_end):   # hep B — logged as "HBsAg"
+    return _kit_issued(org, period_start, period_end, 'hbsag', 'hepatitis b', 'hep b')
 
 
-def compute_SL5d(org, period_start, period_end):   # hep C
-    return _kit_issued(org, period_start, period_end, 'hepatitis c')
+def compute_SL5d(org, period_start, period_end):   # hep C — logged as "HCV"
+    return _kit_issued(org, period_start, period_end, 'hcv', 'hepatitis c', 'hep c')
 
 
-def compute_SL5e(org, period_start, period_end):   # HIV kits
+def compute_SL5e(org, period_start, period_end):   # HIV kits (incl. "Determine HIV1/2")
     return _kit_issued(org, period_start, period_end, 'hiv')
 
 

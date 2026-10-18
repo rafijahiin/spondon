@@ -58,6 +58,14 @@ class StockEntry(TimestampedModel):
     quantity_issued = models.IntegerField(default=0)
     quantity_expired_lost = models.IntegerField(default=0)
 
+    # Kobo submission _ids already folded into the running totals above. Field
+    # staff submit the same item/centre/month MANY times (per issue, not once
+    # monthly), so the webhook ACCUMULATES quantities across submissions rather
+    # than overwriting with the last one. This list is the idempotency guard:
+    # a replayed/retried submission whose _id is already here is a no-op, so a
+    # Kobo retry never double-counts. See programs.webhook._accumulate_stock.
+    source_submission_ids = models.JSONField(default=list, blank=True)
+
     approval_status = models.CharField(max_length=10, choices=APPROVAL_CHOICES, default=PENDING)
     approved_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name='+'

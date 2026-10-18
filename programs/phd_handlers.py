@@ -488,20 +488,20 @@ def _phd_stock(payload: dict, lat, lng) -> HttpResponse:
     rmonth = _date(payload.get('stock_date')) or timezone.now().date()
     rmonth = rmonth.replace(day=1)
 
-    StockEntry.objects.update_or_create(
-        center=center, reporting_month=rmonth, item_name=item_name,
-        defaults={
-            'organisation':       ORG,
-            'batch_number':       _str(payload.get('stock_batch')),
-            'expiry_date':        _date(payload.get('stock_expiry')),
-            'delivery_challan_no': _str(payload.get('stock_challan')),
-            'opening_balance':    _int(payload.get('stock_opening')),
-            'quantity_received':  _int(payload.get('stock_received')),
-            'quantity_issued':    _int(payload.get('stock_issued')),
-            'quantity_expired_lost': _int(payload.get('stock_expired_lost')),
-            'notes':              _str(payload.get('stock_comments')),
-            'approval_status':    StockEntry.PENDING,
-        },
+    # Accumulate across the many per-issue submissions for the same item/month
+    # instead of overwriting with the last one (idempotent via submission _id).
+    from .webhook import _accumulate_stock
+    _accumulate_stock(
+        center=center, reporting_month=rmonth, item_name=item_name, org=ORG,
+        submission_id=payload.get('_id', ''),
+        batch_number=_str(payload.get('stock_batch')),
+        expiry_date=_date(payload.get('stock_expiry')),
+        delivery_challan_no=_str(payload.get('stock_challan')),
+        opening_balance=_int(payload.get('stock_opening')),
+        quantity_received=_int(payload.get('stock_received')),
+        quantity_issued=_int(payload.get('stock_issued')),
+        quantity_expired_lost=_int(payload.get('stock_expired_lost')),
+        notes=_str(payload.get('stock_comments')),
     )
     return HttpResponse('Created', status=201)
 
