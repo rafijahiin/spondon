@@ -840,6 +840,7 @@ def safe_surgery(request):
                 q |= Q(district__iexact=n)
             qs = qs.filter(q)
 
+    from collections import Counter
     total = qs.count()
     compliant = qs.filter(fully_compliant=True).count()
     phase_complete = {
@@ -847,6 +848,7 @@ def safe_surgery(request):
         'timeout': qs.filter(timeout_complete=True).count(),
         'signout': qs.filter(signout_complete=True).count(),
     }
+    by_district = dict(Counter(qs.values_list('district', flat=True)))
 
     operations = []
     for o in qs[:500]:   # newest first (model default ordering)
@@ -875,6 +877,7 @@ def safe_surgery(request):
         'compliant': compliant,
         'compliance_pct': round(compliant / total * 100, 1) if total else None,
         'phase_complete': phase_complete,
+        'by_district': by_district,
         'operations': operations,
     })
 

@@ -142,6 +142,7 @@ class SafeSurgeryHandlerTest(TestCase):
         self.assertEqual(body['compliance_pct'], 100.0)
         self.assertEqual(body['phase_complete'],
                          {'signin': 1, 'timeout': 1, 'signout': 1})
+        self.assertEqual(body['by_district'], {'Dhaka': 1})
         op = body['operations'][0]
         self.assertEqual(op['system_ref'], 'SS-DH-0001')
         self.assertTrue(op['fully_compliant'])

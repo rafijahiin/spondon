@@ -16,6 +16,7 @@ import { api } from '@/api/client'
 import { SourceChip } from '@/components/ui/SourceChip'
 import { formatDateTime } from '@/utils/format'
 import { Scissors, Info, Check, MapPin } from 'lucide-react'
+import { DonutBreakdown, ColumnBreakdown, BarBreakdown } from './IndicatorCharts'
 
 const CIPRB_BLUE = '#F96000'
 const OK = '#1E9E6A'      // phase complete (green reads as "compliant")
@@ -39,6 +40,7 @@ interface SurgeryData {
   compliant: number
   compliance_pct: number | null
   phase_complete: { signin: number; timeout: number; signout: number }
+  by_district: Record<string, number>
   operations: Operation[]
 }
 
@@ -188,6 +190,33 @@ export function SafeSurgeryPanel({ districts }: { districts?: readonly string[] 
           </div>
         </div>
       </div>
+
+      {/* ─── Charts: compliance split · phase completion · by district ─── */}
+      {total > 0 && (
+        <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginBottom: 18 }}>
+          <DonutBreakdown
+            kicker="COMPLIANCE"
+            title="Fully compliant vs incomplete"
+            data={{ compliant, incomplete: Math.max(0, total - compliant) }}
+            labels={{ compliant: 'Fully compliant', incomplete: 'Incomplete' }}
+          />
+          <ColumnBreakdown
+            kicker="BY PHASE"
+            title="Operations completing each phase"
+            data={{
+              signin: data?.phase_complete?.signin ?? 0,
+              timeout: data?.phase_complete?.timeout ?? 0,
+              signout: data?.phase_complete?.signout ?? 0,
+            }}
+            labels={{ signin: 'Sign In', timeout: 'Time Out', signout: 'Sign Out' }}
+          />
+          <BarBreakdown
+            kicker="GEOGRAPHY"
+            title="Operations by district"
+            data={data?.by_district ?? {}}
+          />
+        </div>
+      )}
 
       {/* ─── Operations table ─── */}
       {total === 0 ? (
