@@ -263,3 +263,134 @@ class MaternalNearMissCase(models.Model):
                                self.life_coag, self.life_hepatic, self.life_neuro,
                                self.life_uterine)
                    if v is True)
+
+
+# ╔══════════════════════════════════════════════════════════════════════════╗
+# ║   SurgeryChecklist — WHO Surgical Safety Checklist (CIPRB-11)            ║
+# ║                                                                          ║
+# ║   Not a death-surveillance form: this is a clinical-quality checklist    ║
+# ║   (Bangladesh QIS Annex-13) the OT team fills per operation. It lives    ║
+# ║   here beside the other CIPRB standalone case models to reuse the same   ║
+# ║   single-stage approval gate + system-ref machinery, rather than open a  ║
+# ║   new app for one model. Tanjina (CIPRB RCH) asked for the three phases  ║
+# ║   — Sign In / Time Out / Sign Out — with per-phase completion trackable  ║
+# ║   at a glance, plus an automatic operation ID (the system_ref).          ║
+# ╚══════════════════════════════════════════════════════════════════════════╝
+
+# The checklist items that make up each phase, in form order. Single source of
+# truth for both the webhook handler (which scores a submission) and the
+# dashboard aggregate (which reports compliance), so the two can never drift.
+# These are the select_one question names in build_ciprb_forms._safe_surgery_survey.
+SURGERY_PHASE_ITEMS = {
+    'signin': [
+        'si_identity', 'si_site_marked', 'si_anesthesia_check',
+        'si_allergy', 'si_airway', 'si_blood_loss',
+    ],
+    'timeout': [
+        'to_team_intro', 'to_patient_confirm', 'to_antibiotic',
+        'to_surgeon_steps', 'to_surgeon_duration', 'to_surgeon_blood',
+        'to_anesth_concerns', 'to_nursing_sterility', 'to_nursing_equipment',
+        'to_imaging',
+    ],
+    'signout': [
+        'so_procedure_name', 'so_counts', 'so_specimen',
+        'so_equipment', 'so_recovery',
+    ],
+}
+# The one answer value that means the checklist step was NOT carried out. Every
+# other value (yes / no / na / done / the equipment-ready variants) means the
+# team addressed the item — WHO compliance is "the check happened", not "the
+# answer was yes". A blank answer is also treated as not-done (step skipped).
+SURGERY_NOT_DONE = 'not_done'
+
+
+class SurgeryChecklist(models.Model):
+    """One WHO Surgical Safety Checklist per operation (CIPRB-11).
+
+    Phase completion is computed on ingestion and stored as counts + a boolean
+    per phase so the dashboard can show Sign In / Time Out / Sign Out status at
+    a glance without re-reading raw_payload. `fully_compliant` is true only when
+    all three phases are complete. patient_name is encrypted at rest and is kept
+    OUT of the at-a-glance dashboard list (it surfaces only in the PII-gated
+    approval drawer)."""
+
+    PHASES = ('signin', 'timeout', 'signout')
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    organisation = models.CharField(max_length=20, default='CIPRB', db_index=True)
+
+    # Location (the shared _meta community block the form carries).
+    district = models.CharField(max_length=100, db_index=True)
+    upazila  = models.CharField(max_length=100, blank=True)
+    union    = models.CharField(max_length=100, blank=True)
+    village  = models.CharField(max_length=100, blank=True)
+
+    # Operation identity.
+    facility_name  = models.CharField(max_length=200, blank=True)
+    ward_unit      = models.CharField(max_length=120, blank=True)
+    operation_name = models.CharField(max_length=300)
+    op_datetime    = models.DateTimeField(null=True, blank=True, db_index=True)
+    collection_date = models.DateField(null=True, blank=True)
+    surgeon         = models.CharField(max_length=200, blank=True)
+    anesthesiologist = models.CharField(max_length=200, blank=True)
+    # Patient name is PII — encrypted at rest, never returned by the at-a-glance
+    # dashboard list (only the PII-gated approval drawer / register shows it).
+    patient_name = EncryptedCharField(blank=True)
+
+    # Per-phase completion, computed on ingestion from SURGERY_PHASE_ITEMS.
+    signin_total   = models.PositiveSmallIntegerField(default=0)
+    signin_done    = models.PositiveSmallIntegerField(default=0)
+    signin_complete = models.BooleanField(default=False, db_index=True)
+    timeout_total  = models.PositiveSmallIntegerField(default=0)
+    timeout_done   = models.PositiveSmallIntegerField(default=0)
+    timeout_complete = models.BooleanField(default=False, db_index=True)
+    signout_total  = models.PositiveSmallIntegerField(default=0)
+    signout_done   = models.PositiveSmallIntegerField(default=0)
+    signout_complete = models.BooleanField(default=False, db_index=True)
+    fully_compliant = models.BooleanField(default=False, db_index=True)
+
+    # Provenance.
+    latitude  = models.DecimalField(max_digits=10, decimal_places=7, null=True, blank=True)
+    longitude = models.DecimalField(max_digits=10, decimal_places=7, null=True, blank=True)
+    raw_payload = models.JSONField(default=dict, blank=True)
+    enumerator_name = EncryptedCharField(blank=True)     # Fernet at rest
+    enumerator_mobile = EncryptedCharField(blank=True)   # Fernet at rest
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    # ── Manager approval (single-stage CIPRB) — see module note above.
+    approval_status = models.CharField(
+        max_length=20, choices=_APPROVAL_CHOICES, default='APPROVED', db_index=True)
+    approved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='+')
+    approved_at = models.DateTimeField(null=True, blank=True)
+    rejected_reason = models.TextField(blank=True, default='')
+    kobo_submission_id = models.CharField(max_length=100, blank=True, default='',
+                                          db_index=True)
+    submitted_by_kobo_user = models.CharField(max_length=100, blank=True, default='')
+    # Server-issued operation ID (<SS>-<DIST>-<NNNN>, e.g. SS-DH-0007) — the
+    # "automated unique ID" Tanjina asked for. Allocated by programs.refs on
+    # ingestion; distinct from any paper serial.
+    system_ref = models.CharField(max_length=24, blank=True, null=True,
+                                  unique=True, db_index=True)
+    center = models.ForeignKey(
+        'programs.ServiceCenter', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='+')
+
+    class Meta:
+        ordering = ['-op_datetime', '-created_at']
+        verbose_name = 'Safe Surgery Checklist'
+        verbose_name_plural = 'Safe Surgery Checklists'
+        indexes = [
+            models.Index(fields=['organisation', 'op_datetime']),
+            models.Index(fields=['district', 'fully_compliant']),
+        ]
+
+    def __str__(self):
+        return f'Surgery {self.system_ref or str(self.id)[:8]} ({self.operation_name})'
+
+    @property
+    def phases_complete_count(self) -> int:
+        return sum(1 for v in (self.signin_complete, self.timeout_complete,
+                               self.signout_complete) if v)

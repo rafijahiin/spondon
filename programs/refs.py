@@ -36,6 +36,8 @@ MPDSR_FORM_CODE = {
 }
 SLIP_FORM_CODE = {'01': 'NS1', '02': 'NS2'}
 NEAR_MISS_FORM_CODE = 'NM'
+# Safe Surgery Checklist (CIPRB-11): the automatic operation ID reads SS-DH-0007.
+SURGERY_FORM_CODE = 'SS'
 
 # form code → Kobo asset slug, for the write-back.
 _FORM_CODE_TO_SLUG = {
@@ -47,6 +49,7 @@ _FORM_CODE_TO_SLUG = {
     'NS1': 'ciprb_notification_slip_01_v1',
     'NS2': 'ciprb_notification_slip_02_v1',
     'NM': 'ciprb_near_miss_v1',
+    'SS': 'ciprb_safe_surgery_v1',
 }
 
 

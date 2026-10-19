@@ -19,7 +19,8 @@ from .models import (
 from fistula.ciprb_models import CIPRBFistulaCase
 from fistula.models import FistulaCampaign
 from mpdsr.models import MPDSRCase, MPDSRAction
-from mpdsr.ciprb_models import MPDSRDeathNotification, MaternalNearMissCase
+from mpdsr.ciprb_models import (MPDSRDeathNotification, MaternalNearMissCase,
+                                SurgeryChecklist)
 
 
 class CIPRBFistulaCaseSerializer(serializers.ModelSerializer):
@@ -117,6 +118,23 @@ class MaternalNearMissApprovalSerializer(serializers.ModelSerializer):
             'id', 'approval_status', 'approved_by', 'approved_at',
             'rejected_reason', 'kobo_submission_id', 'submitted_by_kobo_user',
             'created_at', 'updated_at',
+        ]
+
+
+class SafeSurgeryApprovalSerializer(serializers.ModelSerializer):
+    """Detail serializer for the Safe Surgery Checklist (CIPRB-11) approval
+    queue. Shown only in the PII-gated approval drawer, so patient_name
+    (decrypted) is included for the reviewer who is signing it off."""
+    class Meta:
+        model = SurgeryChecklist
+        fields = '__all__'
+        read_only_fields = [
+            'id', 'approval_status', 'approved_by', 'approved_at',
+            'rejected_reason', 'kobo_submission_id', 'submitted_by_kobo_user',
+            'system_ref', 'signin_total', 'signin_done', 'signin_complete',
+            'timeout_total', 'timeout_done', 'timeout_complete',
+            'signout_total', 'signout_done', 'signout_complete',
+            'fully_compliant', 'created_at', 'updated_at',
         ]
 
 

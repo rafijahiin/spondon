@@ -36,6 +36,7 @@ CIPRB_SLUG_TO_UID = {
     'ciprb_notification_slip_02_v1':     'aaCnfRHHgkukkhDgXwUnXX',
     'ciprb_near_miss_v1':                'aTzdRTvhZ8yUQCGhA8UG5R',
     'ciprb_mpdsr_response_plan_v1':      'auFCf7bfBDtrP6xeW5F2KJ',
+    'ciprb_safe_surgery_v1':             'a7YYwChtSu7cdrMZQtxUKT',
 }
 
 

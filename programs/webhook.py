@@ -290,74 +290,6 @@ def _already_exists(model, payload: dict) -> bool:
     ).exists()
 
 
-def _accumulate_stock(*, center, reporting_month, item_name, org, submission_id,
-                      opening_balance=0, quantity_received=0, quantity_issued=0,
-                      quantity_expired_lost=0, batch_number='', expiry_date=None,
-                      delivery_challan_no='', item_category=None, notes=''):
-    """Fold one stock submission into the (center, month, item) StockEntry row.
-
-    Field staff log stock per-issue, submitting the same item/centre/month many
-    times (observed: one item 16x in a month). The old update_or_create kept only
-    the LAST submission, so SL5 commodity totals were badly understated. We now
-    SUM quantity_received/issued/expired across every distinct submission.
-
-    Idempotent: StockEntry has no kobo_submission_id (natural-keyed), so the
-    running list `source_submission_ids` is the guard — a submission already
-    folded in is a no-op, so a Kobo retry (or a rebuild replay) never
-    double-counts. opening_balance is taken from the FIRST submission only (it is
-    a point-in-time figure, not additive)."""
-    from django.db import transaction
-    sid = str(submission_id or '')
-    with transaction.atomic():
-        obj, created = (StockEntry.objects
-                        .select_for_update()
-                        .get_or_create(
-                            center=center,
-                            reporting_month=reporting_month,
-                            item_name=item_name,
-                            defaults={
-                                'organisation': org,
-                                'opening_balance': opening_balance,
-                                'quantity_received': quantity_received,
-                                'quantity_issued': quantity_issued,
-                                'quantity_expired_lost': quantity_expired_lost,
-                                'batch_number': batch_number,
-                                'expiry_date': expiry_date,
-                                'delivery_challan_no': delivery_challan_no,
-                                'item_category': item_category or StockEntry.OTHER,
-                                'notes': notes,
-                                'approval_status': StockEntry.PENDING,
-                                'source_submission_ids': [sid] if sid else [],
-                            },
-                        ))
-        if created:
-            return obj
-        if sid and sid in (obj.source_submission_ids or []):
-            return obj  # already counted — idempotent no-op
-        obj.quantity_received += quantity_received
-        obj.quantity_issued += quantity_issued
-        obj.quantity_expired_lost += quantity_expired_lost
-        # Latest-submission metadata (informational, not additive).
-        if batch_number:
-            obj.batch_number = batch_number
-        if expiry_date:
-            obj.expiry_date = expiry_date
-        if delivery_challan_no:
-            obj.delivery_challan_no = delivery_challan_no
-        if notes:
-            obj.notes = notes
-        ids = list(obj.source_submission_ids or [])
-        if sid:
-            ids.append(sid)
-        obj.source_submission_ids = ids
-        obj.save(update_fields=[
-            'quantity_received', 'quantity_issued', 'quantity_expired_lost',
-            'batch_number', 'expiry_date', 'delivery_challan_no', 'notes',
-            'source_submission_ids', 'updated_at',
-        ])
-        return obj
-
-
 # ─── Form handlers ─────────────────────────────────────────────────────────────
 
 def _handle_clinic_visit(payload, lat, lng):
@@ -945,18 +877,21 @@ def _handle_stock_entry(payload, lat, lng):
     rmonth = _date(payload.get('reporting_month')) or timezone.now().date()
     rmonth = rmonth.replace(day=1)  # normalise to first of month
 
-    _accumulate_stock(
-        center=center, reporting_month=rmonth, item_name=item_name, org=org,
-        submission_id=payload.get('_id', ''),
-        item_category=_str(payload.get('item_category'), StockEntry.OTHER),
-        batch_number=_str(payload.get('batch_number')),
-        expiry_date=_date(payload.get('expiry_date')),
-        delivery_challan_no=_str(payload.get('delivery_challan_no')),
-        opening_balance=_int(payload.get('opening_balance')),
-        quantity_received=_int(payload.get('quantity_received')),
-        quantity_issued=_int(payload.get('quantity_issued')),
-        quantity_expired_lost=_int(payload.get('quantity_expired_lost')),
-        notes=_str(payload.get('notes')),
+    StockEntry.objects.update_or_create(
+        center=center, reporting_month=rmonth, item_name=item_name,
+        defaults={
+            'organisation': org,
+            'item_category': _str(payload.get('item_category'), StockEntry.OTHER),
+            'batch_number': _str(payload.get('batch_number')),
+            'expiry_date': _date(payload.get('expiry_date')),
+            'delivery_challan_no': _str(payload.get('delivery_challan_no')),
+            'opening_balance': _int(payload.get('opening_balance')),
+            'quantity_received': _int(payload.get('quantity_received')),
+            'quantity_issued': _int(payload.get('quantity_issued')),
+            'quantity_expired_lost': _int(payload.get('quantity_expired_lost')),
+            'notes': _str(payload.get('notes')),
+            'approval_status': StockEntry.PENDING,
+        },
     )
     return HttpResponse('Created', status=201)
 
@@ -1136,6 +1071,10 @@ FORM_HANDLERS: dict = {
         _lazy_ciprb('handle_ciprb_notification_slip_02'),
     'ciprb_near_miss_v1':
         _lazy_ciprb('handle_ciprb_near_miss'),
+    # Safe Surgery Checklist (CIPRB 11) — one WHO Surgical Safety Checklist per
+    # operation; phase completion scored on ingestion (→ SurgeryChecklist).
+    'ciprb_safe_surgery_v1':
+        _lazy_ciprb('handle_ciprb_safe_surgery'),
     # MPDSR Action Plan (CIPRB 10) — staged per-action tracker (new_plan / update).
     'ciprb_mpdsr_response_plan_v1':
         _lazy_ciprb('handle_ciprb_mpdsr_action_plan'),

@@ -24,7 +24,9 @@ from django.utils.dateparse import parse_date
 
 from fistula.ciprb_models import (CIPRBFistulaCase, CIPRBFistulaCaseCost,
                                   FISTULA_COST_STAGE)
-from mpdsr.ciprb_models import MPDSRDeathNotification, MaternalNearMissCase
+from mpdsr.ciprb_models import (MPDSRDeathNotification, MaternalNearMissCase,
+                                SurgeryChecklist, SURGERY_PHASE_ITEMS,
+                                SURGERY_NOT_DONE)
 from mpdsr.models import MPDSRCase, DeathType, PlaceOfDeath, ReviewStatus
 
 logger = logging.getLogger(__name__)
@@ -937,6 +939,116 @@ def handle_ciprb_near_miss(payload, lat, lng):
 
     from programs.refs import NEAR_MISS_FORM_CODE, allocate_system_ref
     allocate_system_ref(case, NEAR_MISS_FORM_CODE)
+    return HttpResponse('OK', status=200)
+
+
+# ╔══════════════════════════════════════════════════════════════════════════╗
+# ║   Safe Surgery Checklist (CIPRB 11) — WHO Surgical Safety Checklist     ║
+# ║   One submission = one operation. Phase completion (Sign In / Time Out  ║
+# ║   / Sign Out) is scored here so the dashboard shows status at a glance.  ║
+# ╚══════════════════════════════════════════════════════════════════════════╝
+
+def _parse_dt(v):
+    """Parse a Kobo dateTime ('2026-10-19T14:30:00.000+06:00') → datetime, or
+    None. Falls back to a date-only value promoted to midnight so an operation
+    that carried only a date still sorts on the timeline."""
+    if not v:
+        return None
+    from django.utils.dateparse import parse_datetime
+    dt = parse_datetime(str(v).strip())
+    if dt is not None:
+        return dt
+    d = _date(v)
+    if d is None:
+        return None
+    from datetime import datetime as _dtcls, time as _time
+    return _dtcls.combine(d, _time.min)
+
+
+def _score_surgery_phase(payload, item_names):
+    """Return (total, done) for one checklist phase.
+
+    total = number of items in the phase (fixed by the form).
+    done  = items the team addressed — answered with anything other than
+            'Not done'. WHO compliance is "the check happened", not "the answer
+            was yes", so 'no' / 'na' / the equipment-ready variants all count as
+            done. A blank answer counts as not-done (step skipped), so a
+            partially-filled phase never reads as complete."""
+    total = len(item_names)
+    done = 0
+    for name in item_names:
+        v = _s(payload.get(name)).lower()
+        if v and v != SURGERY_NOT_DONE:
+            done += 1
+    return total, done
+
+
+def handle_ciprb_safe_surgery(payload, lat, lng):
+    """CIPRB-11 Safe Surgery Checklist — one operation per submission.
+
+    Scores each of the three WHO phases on ingestion (Sign In / Time Out /
+    Sign Out), stores the counts + a per-phase complete flag + overall
+    compliance, and holds the record PENDING for CIPRB (Tanjina) approval.
+    Idempotent on the Kobo submission id so a webhook re-delivery updates the
+    same operation rather than creating a duplicate. patient_name is stored
+    encrypted and never leaves the PII-gated approval drawer."""
+    district = _district(payload)
+    operation_name = _s(payload.get('operation_name'))
+    if not operation_name:
+        return HttpResponse('Bad Request — operation_name required', status=400)
+
+    sub_id = str(payload.get('_id') or '')
+    op_dt = _parse_dt(payload.get('op_datetime'))
+
+    with transaction.atomic():
+        row = (SurgeryChecklist.objects.select_for_update()
+               .filter(kobo_submission_id=sub_id).first()
+               if sub_id else None)
+        is_new = row is None
+        if is_new:
+            row = SurgeryChecklist(organisation=ORG, approval_status='PENDING')
+
+        row.organisation = ORG
+        row.district = district
+        row.upazila  = _s(payload.get('upazila'))
+        row.union    = _s(payload.get('union'))
+        row.village  = _s(payload.get('village'))
+        row.facility_name  = _s(payload.get('facility_name'))
+        row.ward_unit      = _s(payload.get('ward_unit'))
+        row.operation_name = operation_name
+        row.op_datetime    = op_dt
+        row.collection_date = _date(payload.get('collection_date'))
+        row.surgeon          = _s(payload.get('surgeon'))
+        row.anesthesiologist = _s(payload.get('anesthesiologist'))
+        row.patient_name     = _s(payload.get('patient_name'))
+
+        # Score the three phases from the single-source item lists so the
+        # handler and the dashboard aggregate can never disagree.
+        st, sd = _score_surgery_phase(payload, SURGERY_PHASE_ITEMS['signin'])
+        tt, td = _score_surgery_phase(payload, SURGERY_PHASE_ITEMS['timeout'])
+        ot, od = _score_surgery_phase(payload, SURGERY_PHASE_ITEMS['signout'])
+        row.signin_total,  row.signin_done  = st, sd
+        row.timeout_total, row.timeout_done = tt, td
+        row.signout_total, row.signout_done = ot, od
+        row.signin_complete  = (st > 0 and sd == st)
+        row.timeout_complete = (tt > 0 and td == tt)
+        row.signout_complete = (ot > 0 and od == ot)
+        row.fully_compliant  = (row.signin_complete and row.timeout_complete
+                                and row.signout_complete)
+
+        row.enumerator_name   = _s(payload.get('enumerator_name'))
+        row.enumerator_mobile = _s(payload.get('enumerator_mobile'))
+        row.submitted_by_kobo_user = (_s(payload.get('_submitted_by'))
+                                      or row.submitted_by_kobo_user)
+        row.kobo_submission_id = sub_id or row.kobo_submission_id
+        row.latitude, row.longitude = lat, lng
+        row.raw_payload = payload
+        row.save()
+
+    # System ref (the automatic operation ID) — outside the atomic block, as the
+    # IntegrityError retry would poison a wrapping transaction.
+    from programs.refs import SURGERY_FORM_CODE, allocate_system_ref
+    allocate_system_ref(row, SURGERY_FORM_CODE)
     return HttpResponse('OK', status=200)
 
 

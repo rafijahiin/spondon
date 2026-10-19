@@ -21,6 +21,7 @@ from .views import (
     MPDSRCaseApprovalViewSet,
     MPDSRDeathNotificationViewSet,
     MaternalNearMissViewSet,
+    SafeSurgeryChecklistViewSet,
     MPDSRActionViewSet,
 )
 
@@ -55,6 +56,7 @@ router.register('fistula-campaigns',   FistulaCampaignViewSet,        basename='
 router.register('mpdsr-cases',         MPDSRCaseApprovalViewSet,      basename='prog-mpdsr-case')
 router.register('mpdsr-notifications', MPDSRDeathNotificationViewSet, basename='prog-mpdsr-notification')
 router.register('near-miss-cases',     MaternalNearMissViewSet,       basename='prog-near-miss')
+router.register('surgery-checklists',  SafeSurgeryChecklistViewSet,   basename='prog-surgery-checklist')
 router.register('mpdsr-actions',       MPDSRActionViewSet,            basename='prog-mpdsr-action')
 
 urlpatterns = [

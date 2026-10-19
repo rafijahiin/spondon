@@ -3934,6 +3934,142 @@ def _fistula_campaign_choices():
     return list(DISTRICT_CHOICES)
 
 
+
+# ─── CIPRB 11: Safe Surgery Checklist (WHO / QIS Annex-13) ────────────────────
+# Three phases. Each checklist item is a select_one that can record the step as
+# performed (its clinical answer) or "Not done", so compliance is measurable:
+# a phase is compliant only when every item is answered and none is "Not done".
+# The unique operation ID is issued server-side on ingest (system-ref pattern),
+# so it is not collected on the form.
+def _safe_surgery_choices():
+    return list(DISTRICT_CHOICES) + [
+        _ch('ss_confirm', 'yes', 'Yes', 'হ্যাঁ'),
+        _ch('ss_confirm', 'not_done', 'Not done', 'করা হয়নি'),
+        _ch('ss_yes_na', 'yes', 'Yes', 'হ্যাঁ'),
+        _ch('ss_yes_na', 'na', 'Not applicable', 'প্রযোজ্য নয়'),
+        _ch('ss_yes_na', 'not_done', 'Not done', 'করা হয়নি'),
+        _ch('ss_allergy', 'no', 'No', 'না'),
+        _ch('ss_allergy', 'yes', 'Yes', 'হ্যাঁ'),
+        _ch('ss_allergy', 'not_done', 'Not done', 'করা হয়নি'),
+        _ch('ss_airway', 'no', 'No', 'না'),
+        _ch('ss_airway', 'yes_equip', 'Yes, equipment and assistance available',
+            'হ্যাঁ, যন্ত্রপাতি ও সহায়তা প্রস্তুত'),
+        _ch('ss_airway', 'not_done', 'Not done', 'করা হয়নি'),
+        _ch('ss_blood', 'no', 'No', 'না'),
+        _ch('ss_blood', 'yes_iv', 'Yes, two IVs / central access and fluids planned',
+            'হ্যাঁ, দুটি আইভি / সেন্ট্রাল অ্যাক্সেস ও ফ্লুইড পরিকল্পিত'),
+        _ch('ss_blood', 'not_done', 'Not done', 'করা হয়নি'),
+        _ch('ss_done', 'done', 'Done', 'সম্পন্ন'),
+        _ch('ss_done', 'not_done', 'Not done', 'করা হয়নি'),
+    ]
+
+
+def _safe_surgery_survey():
+    rows = list(_meta())
+    rows += [
+        _sr('begin_group', 'grp_op', 'Operation details', 'অপারেশনের তথ্য'),
+        _sr('note', 'op_id_note',
+            'A unique operation ID is generated automatically after submission.',
+            'সাবমিট করার পর একটি স্বয়ংক্রিয় অপারেশন আইডি তৈরি হবে।'),
+        _sr('text', 'facility_name', 'Facility / Hospital', 'প্রতিষ্ঠান / হাসপাতাল',
+            required='yes'),
+        _sr('dateTime', 'op_datetime', 'Date and time of operation',
+            'অপারেশনের তারিখ ও সময়', required='yes'),
+        _sr('text', 'ward_unit', 'Ward / Unit', 'ওয়ার্ড / ইউনিট'),
+        _sr('text', 'patient_name', 'Patient name', 'রোগীর নাম'),
+        _sr('text', 'operation_name', 'Name of operation', 'অপারেশনের নাম',
+            required='yes'),
+        _sr('text', 'surgeon', 'Surgeon', 'সার্জন'),
+        _sr('text', 'anesthesiologist', 'Anesthesiologist', 'অ্যানেসথেসিওলজিস্ট'),
+        _sr('end_group', 'grp_op'),
+
+        _sr('begin_group', 'grp_signin', 'Sign In (before induction of anesthesia)',
+            'সাইন ইন (অ্যানেসথেসিয়া শুরুর আগে)'),
+        _sr('select_one ss_confirm', 'si_identity',
+            'Patient has confirmed identity, site, procedure and consent',
+            'রোগীর পরিচয়, স্থান, পদ্ধতি ও সম্মতি নিশ্চিত হয়েছে', required='yes'),
+        _sr('select_one ss_yes_na', 'si_site_marked',
+            'Surgical site marked', 'অস্ত্রোপচারের স্থান চিহ্নিত', required='yes'),
+        _sr('select_one ss_confirm', 'si_anesthesia_check',
+            'Anesthesia machine and medication check complete',
+            'অ্যানেসথেসিয়া মেশিন ও ওষুধ পরীক্ষা সম্পন্ন', required='yes'),
+        _sr('select_one ss_allergy', 'si_allergy',
+            'Does the patient have a known allergy?', 'রোগীর পরিচিত অ্যালার্জি আছে কি?',
+            required='yes'),
+        _sr('select_one ss_airway', 'si_airway',
+            'Difficult airway or aspiration risk?',
+            'কঠিন শ্বাসনালী বা অ্যাসপিরেশন ঝুঁকি?', required='yes'),
+        _sr('select_one ss_blood', 'si_blood_loss',
+            'Risk of >500 ml blood loss (7 ml/kg in children)?',
+            '৫০০ মিলি-র বেশি রক্তক্ষরণের ঝুঁকি (শিশুদের ৭ মিলি/কেজি)?', required='yes'),
+        _sr('text', 'si_sign_name', 'Sign In confirmed by (name)',
+            'সাইন ইন স্বাক্ষরকারীর নাম'),
+        _sr('text', 'si_sign_desig', 'Designation', 'পদবী'),
+        _sr('end_group', 'grp_signin'),
+
+        _sr('begin_group', 'grp_timeout', 'Time Out (before skin incision)',
+            'টাইম আউট (চিরা দেওয়ার আগে)'),
+        _sr('select_one ss_done', 'to_team_intro',
+            'All team members have introduced themselves by name and role',
+            'সকল দলের সদস্য নাম ও দায়িত্বসহ পরিচয় দিয়েছেন', required='yes'),
+        _sr('select_one ss_done', 'to_patient_confirm',
+            'Patient name, procedure and incision site confirmed',
+            'রোগীর নাম, পদ্ধতি ও চিরার স্থান নিশ্চিত', required='yes'),
+        _sr('select_one ss_yes_na', 'to_antibiotic',
+            'Antibiotic prophylaxis given within the last 60 minutes',
+            'গত ৬০ মিনিটে অ্যান্টিবায়োটিক প্রফাইল্যাক্সিস দেওয়া হয়েছে', required='yes'),
+        _sr('note', 'to_ace_note', 'Anticipated critical events',
+            'প্রত্যাশিত গুরুত্বপূর্ণ ঘটনা'),
+        _sr('select_one ss_done', 'to_surgeon_steps',
+            'Surgeon: critical or non-routine steps reviewed',
+            'সার্জন: গুরুত্বপূর্ণ বা অস্বাভাবিক ধাপ পর্যালোচিত', required='yes'),
+        _sr('select_one ss_done', 'to_surgeon_duration',
+            'Surgeon: expected duration of the case',
+            'সার্জন: অপারেশনে প্রত্যাশিত সময়', required='yes'),
+        _sr('select_one ss_done', 'to_surgeon_blood',
+            'Surgeon: anticipated blood loss',
+            'সার্জন: প্রত্যাশিত রক্তক্ষরণ', required='yes'),
+        _sr('select_one ss_done', 'to_anesth_concerns',
+            'Anesthesiologist: patient-specific concerns',
+            'অ্যানেসথেসিওলজিস্ট: রোগী-সম্পর্কিত বিশেষ উদ্বেগ', required='yes'),
+        _sr('select_one ss_done', 'to_nursing_sterility',
+            'Nursing: sterility (including indicator results) confirmed',
+            'নার্সিং: স্টেরিলিটি (ইন্ডিকেটর ফলাফলসহ) নিশ্চিত', required='yes'),
+        _sr('select_one ss_done', 'to_nursing_equipment',
+            'Nursing: equipment issues or concerns addressed',
+            'নার্সিং: যন্ত্রপাতির সমস্যা বা উদ্বেগ আলোচিত', required='yes'),
+        _sr('select_one ss_yes_na', 'to_imaging',
+            'Essential imaging displayed', 'প্রয়োজনীয় ইমেজিং প্রদর্শিত', required='yes'),
+        _sr('text', 'to_sign_name', 'Time Out confirmed by (name)',
+            'টাইম আউট স্বাক্ষরকারীর নাম'),
+        _sr('text', 'to_sign_desig', 'Designation', 'পদবী'),
+        _sr('end_group', 'grp_timeout'),
+
+        _sr('begin_group', 'grp_signout', 'Sign Out (before patient leaves operating room)',
+            'সাইন আউট (রোগী অপারেশন থিয়েটার ছাড়ার আগে)'),
+        _sr('select_one ss_done', 'so_procedure_name',
+            'Nurse confirms the name of the procedure recorded',
+            'নার্স পদ্ধতির নাম লিপিবদ্ধ নিশ্চিত করেছেন', required='yes'),
+        _sr('select_one ss_done', 'so_counts',
+            'Instrument, sponge and needle counts complete',
+            'যন্ত্র, স্পঞ্জ ও সুইয়ের গণনা সম্পন্ন', required='yes'),
+        _sr('select_one ss_done', 'so_specimen',
+            'Specimen labeling confirmed (read aloud, including patient name)',
+            'নমুনা লেবেলিং নিশ্চিত (রোগীর নামসহ পড়ে শোনানো)', required='yes'),
+        _sr('select_one ss_done', 'so_equipment',
+            'Equipment problems to be addressed identified',
+            'সমাধানযোগ্য যন্ত্রপাতির সমস্যা চিহ্নিত', required='yes'),
+        _sr('select_one ss_done', 'so_recovery',
+            'Key concerns for recovery and management discussed',
+            'রোগীর সুস্থতা ও ব্যবস্থাপনার মূল উদ্বেগ আলোচিত', required='yes'),
+        _sr('text', 'so_sign_name', 'Sign Out confirmed by (name)',
+            'সাইন আউট স্বাক্ষরকারীর নাম'),
+        _sr('text', 'so_sign_desig', 'Designation', 'পদবী'),
+        _sr('end_group', 'grp_signout'),
+    ]
+    return rows
+
+
 FORMS = [
     dict(file='CIPRB-1_Fistula_Question_Bank.xlsx',
          id='ciprb_fistula_questions_v1',
@@ -3986,6 +4122,10 @@ FORMS = [
          id='ciprb_mpdsr_response_plan_v1',
          title='CIPRB 10 — MPDSR Response Plan',
          survey=_response_plan_survey, choices=_response_plan_choices),
+    dict(file='CIPRB-11_Safe_Surgery_Checklist.xlsx',
+         id='ciprb_safe_surgery_v1',
+         title='CIPRB 11 — Safe Surgery Checklist',
+         survey=_safe_surgery_survey, choices=_safe_surgery_choices),
 ]
 
 

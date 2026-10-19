@@ -29,6 +29,7 @@ import { FistulaVisualizations } from '@/components/ciprb/FistulaVisualizations'
 import { MPDSRVisualizations } from '@/components/ciprb/MPDSRVisualizations'
 import { ActionPlanTracker } from '@/components/ciprb/ActionPlanTracker'
 import { NearMissPanel } from '@/components/ciprb/NearMissPanel'
+import { SafeSurgeryPanel } from '@/components/ciprb/SafeSurgeryPanel'
 import { FistulaIndicators } from '@/components/ciprb/FistulaIndicators'
 import { MPDSRDistrictMap } from '@/components/ciprb/MPDSRDistrictMap'
 import { DonorMapSheet } from '@/components/ciprb/DonorMapSheet'
@@ -823,6 +824,13 @@ export default function CIPRBDashboard() {
           fontSize: 13, fontWeight: 600, textDecoration: 'none',
           border: '1px solid rgba(249,96,0,0.22)',
         }}>{t('ciprbExtras.jumpNearMiss')}</a>
+        <a href="#safe-surgery-section" style={{
+          display: 'inline-flex', alignItems: 'center', gap: 6,
+          padding: '6px 16px', borderRadius: 999,
+          background: 'rgba(249,96,0,0.10)', color: CIPRB_BLUE,
+          fontSize: 13, fontWeight: 600, textDecoration: 'none',
+          border: '1px solid rgba(249,96,0,0.22)',
+        }}>{t('ciprbExtras.jumpSafeSurgery', { defaultValue: 'Safe Surgery' })}</a>
       </div>
 
       {/* ───────────────── MPDSR Response-Plan tracker (headline surface) ─────────────────
@@ -934,8 +942,16 @@ export default function CIPRBDashboard() {
       </section>
 
       {/* ───────────────── Maternal Near Miss ───────────────── */}
-      <section className="section" id="nearmiss-section" style={{ marginBottom: 80, scrollMarginTop: 80 }}>
+      <section className="section" id="nearmiss-section" style={{ marginBottom: 24, scrollMarginTop: 80 }}>
         <NearMissPanel districts={activeDonor.districts} />
+      </section>
+
+      {/* ───────────────── Safe Surgery Checklist (CIPRB-11) ─────────────────
+          Tanjina, 13–19 Oct 2026: visualise the WHO Safe Surgery Checklist in
+          SIMPLE — operation + automatic ID, date/time, and the three phases
+          (Sign In / Time Out / Sign Out) with completion trackable at a glance. */}
+      <section className="section" id="safe-surgery-section" style={{ marginBottom: 80, scrollMarginTop: 80 }}>
+        <SafeSurgeryPanel districts={activeDonor.districts} />
       </section>
     </div>
   )

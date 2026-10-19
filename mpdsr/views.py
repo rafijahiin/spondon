@@ -819,6 +819,68 @@ def mnm_aggregates(request):
 
 @api_view(['GET'])
 @drf_permission_classes([IsAuthenticated, CanAccessMPDSR])
+def safe_surgery(request):
+    """Safe Surgery Checklist surface for the CIPRB dashboard (CIPRB-11).
+
+    Returns the operations list — each with its automatic ID, operation name,
+    facility, date/time and the three WHO-phase completion states (Sign In /
+    Time Out / Sign Out) — plus a compliance summary, so Tanjina can track
+    checklist compliance at a glance. patient_name is deliberately OMITTED: it
+    is PII and the dashboard is an at-a-glance view, not the patient register."""
+    from django.db.models import Q
+    from .ciprb_models import SurgeryChecklist
+    qs = SurgeryChecklist.objects.filter(approval_status='APPROVED')
+    # Honour the donor (GAC / SIDA / CP) district filter like the rest of /ciprb.
+    districts_param = request.query_params.get('districts')
+    if districts_param:
+        names = [n.strip() for n in districts_param.split(',') if n.strip()]
+        if names:
+            q = Q()
+            for n in names:
+                q |= Q(district__iexact=n)
+            qs = qs.filter(q)
+
+    total = qs.count()
+    compliant = qs.filter(fully_compliant=True).count()
+    phase_complete = {
+        'signin':  qs.filter(signin_complete=True).count(),
+        'timeout': qs.filter(timeout_complete=True).count(),
+        'signout': qs.filter(signout_complete=True).count(),
+    }
+
+    operations = []
+    for o in qs[:500]:   # newest first (model default ordering)
+        operations.append({
+            'id': str(o.id),
+            'system_ref': o.system_ref or '',
+            'operation_name': o.operation_name,
+            'facility_name': o.facility_name,
+            'ward_unit': o.ward_unit,
+            'district': o.district,
+            'op_datetime': o.op_datetime.isoformat() if o.op_datetime else None,
+            'surgeon': o.surgeon,
+            'phases': {
+                'signin':  {'total': o.signin_total,  'done': o.signin_done,
+                            'complete': o.signin_complete},
+                'timeout': {'total': o.timeout_total, 'done': o.timeout_done,
+                            'complete': o.timeout_complete},
+                'signout': {'total': o.signout_total, 'done': o.signout_done,
+                            'complete': o.signout_complete},
+            },
+            'fully_compliant': o.fully_compliant,
+        })
+
+    return Response({
+        'total': total,
+        'compliant': compliant,
+        'compliance_pct': round(compliant / total * 100, 1) if total else None,
+        'phase_complete': phase_complete,
+        'operations': operations,
+    })
+
+
+@api_view(['GET'])
+@drf_permission_classes([IsAuthenticated, CanAccessMPDSR])
 def ciprb_reconciliation(request):
     """Read-only health snapshot for the CIPRB dashboard strip.
 

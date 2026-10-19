@@ -45,12 +45,14 @@ from .models import (
 from fistula.ciprb_models import CIPRBFistulaCase
 from fistula.models import FistulaCampaign
 from mpdsr.models import MPDSRCase, MPDSRAction, STUB_ACTIVITY_SENTINEL
-from mpdsr.ciprb_models import MPDSRDeathNotification, MaternalNearMissCase
+from mpdsr.ciprb_models import (MPDSRDeathNotification, MaternalNearMissCase,
+                                SurgeryChecklist)
 from .serializers import CIPRBFistulaCaseSerializer, FistulaCampaignApprovalSerializer
 from .serializers import (
     MPDSRCaseApprovalSerializer,
     MPDSRDeathNotificationApprovalSerializer,
     MaternalNearMissApprovalSerializer,
+    SafeSurgeryApprovalSerializer,
     MPDSRActionSerializer,
 )
 from .serializers import (
@@ -863,6 +865,15 @@ def _build_summary(obj, model_type: str) -> str:
             if (obj.cause_of_near_miss or '').strip():
                 parts.append(obj.cause_of_near_miss)
             return ' · '.join(p for p in parts if p)
+        if model_type == 'surgery_checklist':
+            # Keep patient_name OUT of the queue summary (PII) — show the
+            # operation, where, when, and the phase-completion state.
+            phases = f"{obj.phases_complete_count}/3 phases"
+            when = (obj.op_datetime.date().isoformat() if obj.op_datetime
+                    else (str(obj.collection_date) if obj.collection_date else ''))
+            parts = ['Safe Surgery', obj.operation_name,
+                     obj.facility_name or obj.district, when, phases]
+            return ' · '.join(p for p in parts if p)
         if model_type == 'nil_report':
             # Was falling through to a dateless "Nil report record" in the queue
             # (the date + centre + reason only existed in the UNFPA narrative).
@@ -1143,6 +1154,16 @@ class MaternalNearMissViewSet(OrgFilteredViewSet):
     serializer_class = MaternalNearMissApprovalSerializer
 
 
+class SafeSurgeryChecklistViewSet(OrgFilteredViewSet):
+    """Safe Surgery Checklists (CIPRB-11) — detail + approve/reject (single-stage
+    CIPRB: Tanjina / Setu). Carries decrypted patient_name + raw_payload, so the
+    approval drawer reads are gated by CanAccessMPDSR — the CIPRB-scoped PII gate
+    used for the other case-level CIPRB surveillance records."""
+    permission_classes = [CanAccessMPDSR]
+    queryset = SurgeryChecklist.objects.select_related('approved_by').all()
+    serializer_class = SafeSurgeryApprovalSerializer
+
+
 class MPDSRActionViewSet(OrgFilteredViewSet):
     """CIPRB-10 MPDSR Action-Plan rows — detail + approve/reject for the queue
     (single-stage CIPRB: Tanjina / Setu). District-level programme actions, NOT
@@ -1189,6 +1210,7 @@ _APPROVAL_MODELS = [
     ('mpdsr_case',           lambda: MPDSRCase.objects),
     ('mpdsr_notification',   lambda: MPDSRDeathNotification.objects),
     ('near_miss_case',       lambda: MaternalNearMissCase.objects),
+    ('surgery_checklist',    lambda: SurgeryChecklist.objects),
     # Exclude '[awaiting plan record]' stubs — placeholders left by an
     # out-of-order update, not real actions an approver should ever see.
     ('mpdsr_action',         lambda: MPDSRAction.objects.exclude(activity=STUB_ACTIVITY_SENTINEL)),
@@ -1227,6 +1249,7 @@ _ENDPOINT_OVERRIDES = {
     'mpdsr_case': 'mpdsr-cases',
     'mpdsr_notification': 'mpdsr-notifications',
     'near_miss_case': 'near-miss-cases',
+    'surgery_checklist': 'surgery-checklists',
     'mpdsr_action': 'mpdsr-actions',
 }
 
