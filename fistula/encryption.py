@@ -1,20 +1,56 @@
 import logging
 
-from cryptography.fernet import Fernet, InvalidToken
+from cryptography.fernet import Fernet, InvalidToken, MultiFernet
 from django.conf import settings
 from django.db import models
 
 logger = logging.getLogger('programs')
 
 
-def _fernet() -> Fernet:
-    key = settings.FERNET_KEY
-    if not key:
+# ── Key handling: one ENCRYPTION key, many DECRYPTION keys ───────────────────
+# Rotating FERNET_KEY used to be impossible without data loss: every existing
+# ciphertext was encrypted with the old key, so a new key made all PII read
+# back blank. MultiFernet fixes that — it ENCRYPTS with the first key and
+# DECRYPTS by trying every key in order.
+#
+# So a rotation is now:
+#   1. set FERNET_KEY_FALLBACKS = <old key>, FERNET_KEY = <new key>, deploy
+#      (nothing breaks: new writes use the new key, old rows still decrypt)
+#   2. run `manage.py rotate_fernet_key --commit` to re-encrypt everything
+#   3. clear FERNET_KEY_FALLBACKS
+#
+# Keys are cached per key-tuple: building Fernet objects does key derivation,
+# and these run on every PII field read.
+_CACHE: dict = {}
+
+
+def _key_tuple() -> tuple:
+    primary = settings.FERNET_KEY
+    if not primary:
+        return ()
+    fallbacks = getattr(settings, 'FERNET_KEY_FALLBACKS', []) or []
+    return tuple([primary] + [k for k in fallbacks if k and k != primary])
+
+
+def _multi(keys: tuple) -> MultiFernet:
+    """MultiFernet for these keys — encrypts with keys[0], decrypts with any."""
+    cached = _CACHE.get(keys)
+    if cached is None:
+        cached = MultiFernet([
+            Fernet(k.encode() if isinstance(k, str) else k) for k in keys
+        ])
+        _CACHE[keys] = cached
+    return cached
+
+
+def _fernet() -> MultiFernet:
+    keys = _key_tuple()
+    if not keys:
         raise ValueError(
             'FERNET_KEY is not configured. '
             'Generate one with: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"'
         )
-    return Fernet(key.encode() if isinstance(key, str) else key)
+    return _multi(keys)
 
 
 def encrypt(plaintext: str) -> str:
@@ -47,25 +83,26 @@ def decrypt(ciphertext: str) -> str:
 def _enc(value: str) -> str:
     if not value:
         return ''
-    key = settings.FERNET_KEY
-    if not key:                       # dev/test only — prod guards FERNET_KEY
+    keys = _key_tuple()
+    if not keys:                      # dev/test only — prod guards FERNET_KEY
         return value
-    return Fernet(key.encode() if isinstance(key, str) else key).encrypt(
-        value.encode()).decode()
+    # MultiFernet encrypts with the PRIMARY key (keys[0]).
+    return _multi(keys).encrypt(value.encode()).decode()
 
 
 def _dec(value: str) -> str:
     if not value:
         return ''
-    key = settings.FERNET_KEY
-    if not key:
+    keys = _key_tuple()
+    if not keys:
         return value
     try:
-        return Fernet(key.encode() if isinstance(key, str) else key).decrypt(
-            value.encode()).decode()
+        # Tries the primary key first, then any rotation fallbacks.
+        return _multi(keys).decrypt(value.encode()).decode()
     except InvalidToken:
         # Plaintext legacy rows / wrong key / corruption — never echo raw bytes.
-        logger.error('EncryptedCharField decrypt failed (InvalidToken) — check FERNET_KEY')
+        logger.error('EncryptedCharField decrypt failed (InvalidToken) — check '
+                     'FERNET_KEY / FERNET_KEY_FALLBACKS')
         return ''
 
 

@@ -10,7 +10,6 @@ All access logged to GBVAccessLog.
 """
 import logging
 import uuid
-from cryptography.fernet import Fernet, InvalidToken
 from django.db import models
 from django.conf import settings
 from .._base_choices import ORG_CHOICES
@@ -19,36 +18,15 @@ from ._base import SubmissionBase
 logger = logging.getLogger('programs')
 
 
-def _encrypt(value: str) -> str:
-    if not value:
-        return ''
-    key = settings.FERNET_KEY
-    # Dev/test only — production asserts FERNET_KEY is set (see
-    # spondon/settings/production.py), so this passthrough never stores
-    # PII in cleartext on a real deployment.
-    if not key:
-        return value
-    return Fernet(key.encode() if isinstance(key, str) else key).encrypt(
-        value.encode()
-    ).decode()
-
-
-def _decrypt(value: str) -> str:
-    if not value:
-        return ''
-    key = settings.FERNET_KEY
-    if not key:
-        return value
-    try:
-        return Fernet(key.encode() if isinstance(key, str) else key).decrypt(
-            value.encode()
-        ).decode()
-    except InvalidToken:
-        # Wrong/rotated key or corrupted ciphertext. NEVER return the raw
-        # ciphertext as if it were plaintext (audit FIX H1). Surface a blank
-        # value and log loudly so a key misconfiguration is visible.
-        logger.error('GBV PII decrypt failed (InvalidToken) — check FERNET_KEY')
-        return ''
+# Key handling is delegated to fistula.encryption, which is the ONE place that
+# knows about FERNET_KEY + FERNET_KEY_FALLBACKS. This module used to carry its
+# own copy of the Fernet logic; during the Oct 2026 key rotation that meant GBV
+# survivor/perpetrator PII (and Client PII, which imports this field) would NOT
+# have decrypted with the rotation fallback key and would have silently read
+# back blank. The ciphertext format is identical, so delegating is safe for
+# existing rows. The EncryptedCharField class below stays defined here so the
+# path recorded in existing migrations keeps resolving.
+from fistula.encryption import _enc as _encrypt, _dec as _decrypt  # noqa: E402
 
 
 class EncryptedCharField(models.TextField):

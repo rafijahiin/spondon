@@ -1,7 +1,6 @@
 import logging
 import uuid
 
-from cryptography.fernet import Fernet, InvalidToken
 from django.conf import settings
 from django.db import models
 from django.utils import timezone
@@ -24,32 +23,12 @@ def _safe_int(value, default=0):
 # key is present (spondon/settings/production.py), so the passthrough never
 # stores PII in cleartext on a real deployment.
 
-def _encrypt(value: str) -> str:
-    if not value:
-        return ''
-    key = settings.FERNET_KEY
-    if not key:
-        return value
-    return Fernet(key.encode() if isinstance(key, str) else key).encrypt(
-        value.encode()
-    ).decode()
-
-
-def _decrypt(value: str) -> str:
-    if not value:
-        return ''
-    key = settings.FERNET_KEY
-    if not key:
-        return value
-    try:
-        return Fernet(key.encode() if isinstance(key, str) else key).decrypt(
-            value.encode()
-        ).decode()
-    except InvalidToken:
-        # Wrong/rotated key or corrupted ciphertext. NEVER return the raw
-        # ciphertext as if it were plaintext (audit FIX H1). Blank + log.
-        logger.error('Fistula PII decrypt failed (InvalidToken) — check FERNET_KEY')
-        return ''
+# Delegated to fistula.encryption — the single place that knows about
+# FERNET_KEY + FERNET_KEY_FALLBACKS. See the note in programs/models/gbv.py:
+# a local copy of this logic would not honour the rotation fallback key and
+# would blank PII during a key rotation. Ciphertext format is unchanged, so
+# existing rows are unaffected.
+from .encryption import _enc as _encrypt, _dec as _decrypt  # noqa: E402
 
 
 class EncryptedCharField(models.TextField):

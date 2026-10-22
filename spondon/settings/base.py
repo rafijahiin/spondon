@@ -185,6 +185,13 @@ LOGOUT_REDIRECT_URL = '/login/'
 
 # App-level config pulled from env — consumed by individual apps
 FERNET_KEY = os.environ.get('FERNET_KEY', '')
+# Old keys kept ONLY for decryption during a key rotation (comma-separated).
+# Set this to the previous FERNET_KEY when rotating, run
+# `manage.py rotate_fernet_key --commit`, then clear it. See fistula/encryption.py.
+FERNET_KEY_FALLBACKS = [
+    k.strip() for k in os.environ.get('FERNET_KEY_FALLBACKS', '').split(',')
+    if k.strip()
+]
 GROQ_API_KEY = os.environ.get('GROQ_API_KEY', '')
 TELEGRAM_BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN', '')
 TELEGRAM_CHAT_IDS = os.environ.get('TELEGRAM_CHAT_IDS', '{}')
