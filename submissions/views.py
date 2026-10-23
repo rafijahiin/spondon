@@ -70,6 +70,15 @@ def _form_type_from_payload(payload: dict) -> str | None:
         getattr(settings, 'KOBO_ASSET_UID_ACTIVITY', ''): FormType.ACTIVITY,
         getattr(settings, 'KOBO_ASSET_UID_BASELINE', ''): FormType.BASELINE,
     }
+    # Drop unconfigured env overrides. Those settings default to the literal
+    # 'placeholder' (spondon/settings/base.py), so an unset KOBO_ASSET_UID_*
+    # would otherwise leave a GUESSABLE routing key that maps to a real form
+    # type: anyone holding the webhook secret could post _xform_id_string=
+    # 'placeholder' and have it ingested. Worse, if several were unset they
+    # would collide on that one key and last-wins would route it to BASELINE,
+    # which is the one form type that auto-approves. Security audit, Oct 2026.
+    for _unset in ('', 'placeholder'):
+        asset_uid_map.pop(_unset, None)
     return asset_uid_map.get(xform_id)
 
 
