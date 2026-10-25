@@ -161,6 +161,9 @@ const KOBO_GROUPS: KoboGroup[] = [
       { url: 'https://ee.kobotoolbox.org/x/S07hvhWy',
         label: 'CIPRB 10 — MPDSR Response Plan',
         labelBn: 'সিআইপিআরবি ১০ — এমপিডিএসআর রেসপন্স প্ল্যান' },
+      { url: 'https://ee.kobotoolbox.org/x/zsM2QmAv',
+        label: 'CIPRB 11 — Safe Surgery Checklist',
+        labelBn: 'সিআইপিআরবি ১১ — নিরাপদ অস্ত্রোপচার চেকলিস্ট' },
       // Older CIPRB forms still in use — listed under CIPRB (no separate legacy section).
       { url: 'https://ee.kobotoolbox.org/x/fgFVgdrF', label: 'KF-Fistula Staged',     labelBn: 'ফিস্টুলা স্টেজড ট্র্যাকার' },
       { url: 'https://ee.kobotoolbox.org/x/DwFp6Nhx', label: 'MPDSR Form',             labelBn: 'মাতৃমৃত্যু ফর্ম' },
