@@ -52,10 +52,10 @@ class SafeSurgeryHandlerTest(TestCase):
         self.assertTrue(row.signout_complete)
         self.assertTrue(row.fully_compliant)
         self.assertEqual(row.phases_complete_count, 3)
-        # Counts reflect the fixed phase sizes.
-        self.assertEqual((row.signin_total, row.signin_done), (6, 6))
-        self.assertEqual((row.timeout_total, row.timeout_done), (10, 10))
-        self.assertEqual((row.signout_total, row.signout_done), (5, 5))
+        # Counts reflect the fixed phase sizes (maternal WHO checklist).
+        self.assertEqual((row.signin_total, row.signin_done), (19, 19))
+        self.assertEqual((row.timeout_total, row.timeout_done), (11, 11))
+        self.assertEqual((row.signout_total, row.signout_done), (7, 7))
         # New record is held for CIPRB approval, and carries the auto operation ID.
         self.assertEqual(row.approval_status, 'PENDING')
         self.assertEqual(row.system_ref, 'SS-DH-0001')
@@ -64,12 +64,12 @@ class SafeSurgeryHandlerTest(TestCase):
         # One Time Out step not carried out — Time Out is incomplete, the other
         # two phases still complete, so the operation is not fully compliant.
         p = _full_payload()
-        p['to_antibiotic'] = 'not_done'
+        p['to_skin_prep'] = 'not_done'
         handle_ciprb_safe_surgery(p, lat=None, lng=None)
         row = SurgeryChecklist.objects.get()
         self.assertTrue(row.signin_complete)
         self.assertFalse(row.timeout_complete)
-        self.assertEqual((row.timeout_done, row.timeout_total), (9, 10))
+        self.assertEqual((row.timeout_done, row.timeout_total), (10, 11))
         self.assertTrue(row.signout_complete)
         self.assertFalse(row.fully_compliant)
         self.assertEqual(row.phases_complete_count, 2)
@@ -81,7 +81,7 @@ class SafeSurgeryHandlerTest(TestCase):
         handle_ciprb_safe_surgery(p, lat=None, lng=None)
         row = SurgeryChecklist.objects.get()
         self.assertFalse(row.signin_complete)
-        self.assertEqual((row.signin_done, row.signin_total), (5, 6))
+        self.assertEqual((row.signin_done, row.signin_total), (18, 19))
 
     def test_no_item_variant_still_counts_as_addressed(self, wb):
         # 'no' / 'na' answers mean the check happened (WHO compliance = the
@@ -89,7 +89,8 @@ class SafeSurgeryHandlerTest(TestCase):
         p = _full_payload()
         p['si_allergy'] = 'no'
         p['si_airway'] = 'no'
-        p['to_antibiotic'] = 'na'
+        p['si_antacid'] = 'na'
+        p['si_blood_available'] = 'na'
         handle_ciprb_safe_surgery(p, lat=None, lng=None)
         row = SurgeryChecklist.objects.get()
         self.assertTrue(row.fully_compliant)

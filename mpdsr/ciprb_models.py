@@ -280,21 +280,26 @@ class MaternalNearMissCase(models.Model):
 # The checklist items that make up each phase, in form order. Single source of
 # truth for both the webhook handler (which scores a submission) and the
 # dashboard aggregate (which reports compliance), so the two can never drift.
-# These are the select_one question names in build_ciprb_forms._safe_surgery_survey.
+# These are the checklist item names in build_ciprb_forms._safe_surgery_survey
+# (mostly `acknowledge` tick boxes, plus a few select_one); a blank/unticked
+# answer counts as not done.
 SURGERY_PHASE_ITEMS = {
     'signin': [
-        'si_identity', 'si_site_marked', 'si_anesthesia_check',
-        'si_allergy', 'si_airway', 'si_blood_loss',
+        'si_team_mobilized', 'si_urgency', 'si_identity', 'si_sterility',
+        'si_anesthesia_check', 'si_pulse_oximeter', 'si_allergy',
+        'si_antibiotic', 'si_antacid', 'si_airway', 'si_asa', 'si_pph',
+        'si_iv_access', 'si_blood_available', 'si_haemoglobin', 'si_platelet',
+        'si_other_labs', 'si_blood_group', 'si_newborn_resus',
     ],
     'timeout': [
-        'to_team_intro', 'to_patient_confirm', 'to_antibiotic',
-        'to_surgeon_steps', 'to_surgeon_duration', 'to_surgeon_blood',
-        'to_anesth_concerns', 'to_nursing_sterility', 'to_nursing_equipment',
-        'to_imaging',
+        'to_team_intro', 'to_patient_confirm', 'to_nursing_equipment',
+        'to_skin_prep', 'to_vaginal_prep', 'to_surgeon_steps',
+        'to_surgeon_difficulty', 'to_surgeon_blood', 'to_surgeon_concerns',
+        'to_anesth_concerns', 'to_newborn_concerns',
     ],
     'signout': [
-        'so_procedure_name', 'so_counts', 'so_specimen',
-        'so_equipment', 'so_recovery',
+        'so_surgery_performed', 'so_counts', 'so_blood_loss', 'so_specimen',
+        'so_equipment', 'so_recovery', 'so_ward',
     ],
 }
 # The one answer value that means the checklist step was NOT carried out. Every
